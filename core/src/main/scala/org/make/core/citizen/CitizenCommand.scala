@@ -1,9 +1,18 @@
 package org.make.core.citizen
 
-sealed trait CitizenCommand
+import java.time.LocalDate
 
-case class RegisterCommand() extends CitizenCommand
-case class UpdateProfileCommand() extends CitizenCommand
+sealed trait CitizenCommand {
+  def citizenId: CitizenId
+}
 
-case object GetCitizen
+case class RegisterCommand(citizenId: CitizenId,
+                           email: String,
+                           dateOfBirth: LocalDate,
+                           firstName: String,
+                           lastName: String) extends CitizenCommand
+
+case class UpdateProfileCommand(citizenId: CitizenId) extends CitizenCommand
+
+case class GetCitizen(citizenId: CitizenId) extends CitizenCommand
 

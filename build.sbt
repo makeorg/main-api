@@ -1,8 +1,20 @@
+import sbt.Keys.scalacOptions
+
 lazy val commonSettings = Seq(
   organization := "org.make",
   version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.12.1",
-  libraryDependencies += Dependencies.scalaTest
+  libraryDependencies += Dependencies.scalaTest,
+
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-unchecked",
+    "-Xfatal-warnings",
+    "-Ywarn-unused",
+    "-Ywarn-dead-code",
+    "-feature",
+    "-language:_"
+  )
 )
 
 lazy val elastic = project.in(file("."))

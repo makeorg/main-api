@@ -2,5 +2,6 @@
 name := "make-core"
 
 libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence
+  Dependencies.akkaPersistence,
+  Dependencies.akkaClusterSharding
 )
