@@ -20,5 +20,6 @@ object Dependencies {
 
   val scalaTest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   val akkaTest: ModuleID = "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
+  val mockito: ModuleID = "org.mockito" % "mockito-core" % "2.7.22" % "test"
 
 }

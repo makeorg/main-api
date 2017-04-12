@@ -25,7 +25,7 @@ object MakeApi extends TwitterServer
 
   def main(): Unit = {
     val api: Service[Request, Response] = {
-      (getCitizen :+: register).handle({
+      citizenOperations.handle({
         case e: Exception => Output.failure(e)
       }).toServiceAs[Application.Json]
     }

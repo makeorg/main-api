@@ -4,7 +4,10 @@ lazy val commonSettings = Seq(
   organization := "org.make",
   version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.12.1",
-  libraryDependencies += Dependencies.scalaTest,
+  libraryDependencies ++= Seq(
+    Dependencies.scalaTest,
+    Dependencies.mockito
+  ),
 
   scalacOptions ++= Seq(
     "-deprecation",

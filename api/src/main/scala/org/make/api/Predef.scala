@@ -5,9 +5,6 @@ import scala.concurrent.{Future => SFuture, Promise => SPromise, ExecutionContex
 import scala.util.{Success, Failure}
 
 
-/**
-  * Created by francois on 12/04/17.
-  */
 object Predef {
 
   implicit class RichTFuture[A](val f: TFuture[A]) extends AnyVal {

@@ -7,7 +7,6 @@ import io.finch._
 import io.finch.circe._
 import org.make.api.Predef._
 import org.make.core.citizen.{Citizen, CitizenId}
-
 import org.make.api.SerializationPredef._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,6 +35,9 @@ trait CitizenApi {
       case None => InternalServerError(new Exception("Unable to register citizen"))
     }
   }
+
+  // Type not shown since it is unreadable
+  def citizenOperations = getCitizen :+: register
 
   case class RegisterCitizenRequest(
                                      email: String,
