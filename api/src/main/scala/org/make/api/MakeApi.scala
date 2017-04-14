@@ -1,40 +1,81 @@
 package org.make.api
 
-import akka.actor.ActorSystem
-import com.twitter.finagle.http.{Request, Response}
-import com.twitter.finagle.{Http, ListeningServer, Service}
-import com.twitter.server.TwitterServer
-import com.twitter.util.Await
-import io.circe.generic.auto._
-import io.finch._
-import io.finch.circe._
+import akka.actor.{ActorSystem, Extension}
+import akka.event.Logging
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.citizen.{CitizenActors, CitizenApi, CitizenServiceComponent}
-import SerializationPredef._
 
-object MakeApi extends TwitterServer
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+
+object MakeApi extends App
   with CitizenServiceComponent
   with IdGeneratorComponent
-  with CitizenApi {
+  with CitizenApi
+  with RequestTimeout {
 
-  private val actorSystem = ActorSystem("make-app")
+  private implicit val actorSystem = ActorSystem("make-api")
   private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
 
-  override def idGenerator: MakeApi.IdGenerator = new UUIDIdGenerator
-  override def citizenService: MakeApi.CitizenService = new CitizenService(citizenCoordinator)
+  override val idGenerator: MakeApi.IdGenerator = new UUIDIdGenerator
+  override val citizenService: MakeApi.CitizenService = new CitizenService(citizenCoordinator)
 
 
-  def main(): Unit = {
-    val api: Service[Request, Response] = {
-      citizenOperations.handle({
-        case e: Exception => Output.failure(e)
-      }).toServiceAs[Application.Json]
-    }
+  val config = actorSystem.settings.config
+  val settings = new MakeSettings(actorSystem.settings.config)
 
-    val server: ListeningServer = Http.server.serve("0.0.0.0:9000", api)
-    onExit {
-      server.close()
-    }
-    Await.ready(adminHttpServer)
+  if(settings.useEmbeddedElasticSearch) {
+    org.make.api.EmbeddedApplication.embeddedElastic.start()
+  }
+
+  val host = settings.http.host
+  val port = settings.http.port
+
+  implicit val ec = actorSystem.dispatcher
+  implicit val materializer = ActorMaterializer()
+
+  val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(routes, host, port)
+
+  val log = Logging(actorSystem.eventStream, "make-api")
+  bindingFuture.map { serverBinding =>
+    log.info(s"Shoppers API bound to ${serverBinding.localAddress} ")
+  }.onComplete {
+    case util.Failure(ex) =>
+      log.error(ex, "Failed to bind to {}:{}!", host, port)
+      actorSystem.terminate()
+    case _ =>
   }
 
 }
+
+trait RequestTimeout {
+
+  import scala.concurrent.duration._
+
+  def requestTimeout(config: Config): Timeout = {
+    val t = config.getString("akka.http.server.request-timeout")
+    val d = Duration(t)
+    FiniteDuration(d.length, d.unit)
+  }
+}
+
+class MakeSettings(config: Config) extends Extension {
+
+  val passivateTimeout: Duration = Duration(config.getString("make-api.passivate-timeout"))
+  val useEmbeddedElasticSearch: Boolean =
+    if(config.hasPath("make-api.dev.embeddedElasticSearch")) config.getBoolean("make-api.dev.embeddedElasticSearch")
+    else false
+
+  object http {
+    val host: String = config.getString("make-api.http.host")
+    val port: Int = config.getInt("make-api.http.port")
+  }
+
+}
+
+
+

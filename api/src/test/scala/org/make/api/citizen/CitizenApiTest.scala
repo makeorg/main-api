@@ -2,7 +2,9 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import io.finch.Input
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.make.api.IdGeneratorComponent
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers
@@ -13,6 +15,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.Future
 
 class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
+  with ScalatestRouteTest
   with CitizenServiceComponent
   with IdGeneratorComponent
   with CitizenApi {
@@ -36,16 +39,21 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
         ))
       )
 
-    val output = getCitizen(Input.get("/citizen/1234")).awaitOutputUnsafe().get
-    output.status.code should be(200)
+    Get("/citizen/1234") ~> routes ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[Citizen].citizenId.value should be("1234")
+    }
   }
 
 
   it should "return a 404 if citizen doesn't exist" in {
     when(citizenService.getCitizen(ArgumentMatchers.any(classOf[CitizenId])))
       .thenReturn(Future.successful(None))
-    val output = getCitizen(Input.get("/citizen/1234")).awaitOutputUnsafe().get
-    output.status.code should be(404)
+
+    Get("/citizen/1234") ~> routes ~> check {
+      status shouldEqual StatusCodes.NotFound
+    }
+
   }
 
 

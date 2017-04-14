@@ -2,49 +2,57 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import io.circe.generic.auto._
-import io.finch._
-import io.finch.circe._
-import org.make.api.Predef._
-import org.make.core.citizen.{Citizen, CitizenId}
-import org.make.api.SerializationPredef._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes.{NotFound, OK}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
+import org.make.api.Formatters
+import org.make.core.citizen.CitizenId
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try
 
-trait CitizenApi {
+trait CitizenApi extends Formatters {
   this: CitizenServiceComponent =>
 
-  def citizenId: Endpoint[CitizenId] = string.map(CitizenId)
 
-  def getCitizen: Endpoint[Citizen] = get("citizen" :: citizenId) { citizenId: CitizenId =>
-    citizenService.getCitizen(citizenId).asTwitter.map {
-      case Some(citizen) => Ok(citizen)
-      case None => NotFound(new Exception(s"Citizen with id ${citizenId.value} not found"))
-    }
-
-  }
-
-  def register: Endpoint[Citizen] = post("citizen" :: jsonBody[RegisterCitizenRequest]) { body: RegisterCitizenRequest =>
-    citizenService.register(
-      email = body.email,
-      dateOfBirth = body.dateOfBirth,
-      firstName = body.firstName,
-      lastName = body.lastName
-    ).asTwitter.map {
-      case Some(citizen) => Ok(citizen)
-      case None => InternalServerError(new Exception("Unable to register citizen"))
+  def getCitizen: Route = get {
+    path("citizen" / citizenId) { citizenId =>
+      onSuccess(citizenService.getCitizen(citizenId)) {
+        case Some(citizen) => complete(citizen)
+        case None => complete(NotFound)
+      }
     }
   }
 
-  // Type not shown since it is unreadable
-  def citizenOperations = getCitizen :+: register
 
-  case class RegisterCitizenRequest(
-                                     email: String,
-                                     dateOfBirth: LocalDate,
-                                     firstName: String,
-                                     lastName: String
-                                   )
+  def register: Route = post {
+    path("citizen") {
+      decodeRequest {
+        entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
+          onSuccess(citizenService.register(
+            email = request.email,
+            dateOfBirth = request.dateOfBirth,
+            firstName = request.firstName,
+            lastName = request.lastName
+          )) {
+            case Some(citizen) => complete(citizen)
+            case None => complete(NotFound)
+          }
+        }
+      }
+    }
+  }
 
+  def routes: Route = register ~ getCitizen
+
+  val citizenId: PathMatcher1[CitizenId] = Segment.flatMap(id => Try(CitizenId(id)).toOption)
 
 }
+
+case class RegisterCitizenRequest(
+                                   email: String,
+                                   dateOfBirth: LocalDate,
+                                   firstName: String,
+                                   lastName: String
+                                 )
+
