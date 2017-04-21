@@ -6,6 +6,7 @@ import akka.actor.Props
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.pattern.{Patterns, ask}
 import org.make.core.citizen.CitizenActor.Snapshot
+import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenRegistered}
 
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
@@ -34,15 +35,19 @@ class CitizenActor extends PersistentActor {
   }
 
   override def receiveCommand: Receive = {
-    case register: RegisterCommand => persist(
-      CitizenRegistered(
-        citizenId = citizenId,
+    case register: RegisterCommand =>
+      val events = CitizenRegistered(
+        id = citizenId,
         email = register.email,
         dateOfBirth = register.dateOfBirth,
         firstName = register.firstName,
         lastName = register.lastName
       )
-    )(applyEvent)
+
+      persist(events)(applyEvent)
+
+      context.system.eventStream.publish(events)
+
       Patterns.pipe((self ? GetCitizen(citizenId)) (1.second), Implicits.global).to(sender())
       self ! Snapshot
 

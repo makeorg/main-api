@@ -5,14 +5,17 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.12.1",
   libraryDependencies ++= Seq(
+    Dependencies.logger,
+    Dependencies.loggerBridge,
+    Dependencies.scalaLogging,
     Dependencies.scalaTest,
     Dependencies.mockito
   ),
-
+  resolvers += "Confluent Releases" at "http://packages.confluent.io/maven/",
   scalacOptions ++= Seq(
     "-deprecation",
     "-unchecked",
-    "-Xfatal-warnings",
+//    "-Xfatal-warnings",
     "-Ywarn-unused",
     "-Ywarn-dead-code",
     "-feature",

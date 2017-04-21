@@ -26,7 +26,7 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
   override val idGenerator: IdGenerator = mock[IdGenerator]
 
   // seal routes so that error management gets called in tests
-  val allRoutes: Route = Route.seal(routes)
+  val allRoutes: Route = Route.seal(route)
 
   val citizenInTheFuture: Future[Option[Citizen]] = Future.successful(Option(
     Citizen(

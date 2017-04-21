@@ -19,7 +19,6 @@ case class Citizen(
                     lastName: String
                   )
 
-
 case class CitizenId(value: String) extends StringValue
 
 

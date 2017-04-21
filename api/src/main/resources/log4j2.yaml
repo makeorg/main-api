@@ -1,0 +1,16 @@
+Configuration:
+  status: info
+  name: make-api
+  appenders:
+    Console:
+      name: console
+      PatternLayout:
+        Pattern: "%d %p %C{1.} [%t] %m%n"
+  Loggers:
+    logger:
+      - name: org.make
+        level: debug
+    Root:
+     level: info
+     AppenderRef:
+       ref: console
