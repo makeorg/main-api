@@ -18,8 +18,9 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaPersistenceCassandra: ModuleID = 	"com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50"
   val akkaHttpSwagger: ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1"
-  val jaxRsApi: ModuleID = "javax.ws.rs" % "javax.ws.rs-api" % "2.0"
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % "2.2.8"
+  val levelDB: ModuleID = "org.iq80.leveldb"            % "leveldb"          % "0.7"
+  val levelDBJni: ModuleID = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
 
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
 
