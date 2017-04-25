@@ -21,3 +21,12 @@ services:
         ZOOKEEPER_PORT_2181_TCP_ADDR: localhost
         ZOOKEEPER_PORT_2181_TCP_PORT: 2181
     restart: on-failure:2
+  cockroach:
+    image: cockroachdb/cockroach:alpha-18828-g1227734
+    network_mode: host
+    command: start --insecure
+  cassandra:
+    image: cassandra:3.10
+    network_mode: host
+
+

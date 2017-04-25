@@ -13,16 +13,10 @@ libraryDependencies ++= Seq(
   Dependencies.avro4s,
   Dependencies.levelDB,
   Dependencies.levelDBJni,
-  Dependencies.akkaHttpTest
+  Dependencies.akkaHttpTest,
+  Dependencies.scalaOAuth,
+  Dependencies.akkaHttpOAuth,
+  Dependencies.scalikeAsync,
+  Dependencies.scalikeAsyncPostgres,
+  Dependencies.nettyEpoll
 )
-
-mainClass in assembly := Some("org.make.api.MakeApi")
-
-assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", other @_*) => other.map(_.toLowerCase) match {
-    case "manifest.mf" :: Nil => MergeStrategy.discard
-    case "webjars" :: _ => MergeStrategy.first
-    case _ => MergeStrategy.first
-  }
-  case _ => MergeStrategy.first
-}

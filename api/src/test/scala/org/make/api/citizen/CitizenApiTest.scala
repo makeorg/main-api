@@ -18,11 +18,11 @@ import scala.concurrent.Future
 
 class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
   with ScalatestRouteTest
-  with CitizenServiceComponent
+  with PersistentCitizenServiceComponent
   with IdGeneratorComponent
   with CitizenApi {
 
-  override val citizenService: CitizenService = mock[CitizenService]
+  override val citizenService: PersistentCitizenService = mock[PersistentCitizenService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
 
   // seal routes so that error management gets called in tests

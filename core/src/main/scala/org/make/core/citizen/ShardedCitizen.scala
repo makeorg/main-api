@@ -21,7 +21,7 @@ object ShardedCitizen {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: CitizenCommand => (cmd.citizenId.value.hashCode % 12).toString
+    case cmd: CitizenCommand => Math.abs(cmd.citizenId.value.hashCode % 12).toString
   }
 
 }

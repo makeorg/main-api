@@ -37,6 +37,6 @@ trait Formatters {
     DefaultJsonProtocol.jsonFormat5(Citizen)
 
   implicit val registerCitizenRequestFormatter: RootJsonFormat[RegisterCitizenRequest] =
-    DefaultJsonProtocol.jsonFormat4(RegisterCitizenRequest)
+    DefaultJsonProtocol.jsonFormat5(RegisterCitizenRequest)
 
 }

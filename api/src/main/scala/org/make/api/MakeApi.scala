@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
-import org.make.api.citizen.{CitizenActors, CitizenApi, CitizenServiceComponent}
+import org.make.api.citizen.{CitizenActors, CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{ConsumerActor, ProducerActor}
 import org.make.api.swagger.MakeDocumentation
@@ -29,7 +29,7 @@ object MakeApi extends App
   private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
 
   override val idGenerator: MakeApi.IdGenerator = new UUIDIdGenerator
-  override val citizenService: MakeApi.CitizenService = new CitizenService(citizenCoordinator)
+  override val citizenService: CitizenService = new CitizenService(citizenCoordinator)
 
 
   val config = actorSystem.settings.config

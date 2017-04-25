@@ -69,6 +69,7 @@ trait CitizenApi extends Formatters with Directives {
 
 case class RegisterCitizenRequest(
                                    email: String,
+                                   password: String,
                                    dateOfBirth: LocalDate,
                                    firstName: String,
                                    lastName: String

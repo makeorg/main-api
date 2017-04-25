@@ -10,6 +10,8 @@ object Dependencies {
   val logger: ModuleID = "org.apache.logging.log4j" % "log4j" % "2.8.2"
   val loggerBridge: ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.8.2"
 
+  val nettyEpoll: ModuleID = "io.netty" % "netty-transport-native-epoll" % "4.0.37.Final" classifier "linux-x86_64"
+
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
   val akkaHttpSprayJson: ModuleID = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
@@ -21,6 +23,11 @@ object Dependencies {
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % "2.2.8"
   val levelDB: ModuleID = "org.iq80.leveldb"            % "leveldb"          % "0.7"
   val levelDBJni: ModuleID = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
+  val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
+  val akkaHttpOAuth: ModuleID = "com.nulab-inc" %% "akka-http-oauth2-provider" % "1.3.0"
+
+  val scalikeAsync: ModuleID = "org.scalikejdbc"     %% "scalikejdbc-async" % "0.7.1"
+  val scalikeAsyncPostgres: ModuleID = "com.github.mauricio" %% "postgresql-async"  % "0.2.21"
 
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
 

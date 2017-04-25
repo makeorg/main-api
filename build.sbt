@@ -11,11 +11,18 @@ lazy val commonSettings = Seq(
     Dependencies.scalaTest,
     Dependencies.mockito
   ),
+  publishTo := {
+    if (isSnapshot.value) {
+      Some("Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-snapshots/")
+    } else {
+      Some("Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-releases/")
+    }
+  },
   resolvers += "Confluent Releases" at "http://packages.confluent.io/maven/",
   scalacOptions ++= Seq(
     "-deprecation",
     "-unchecked",
-//    "-Xfatal-warnings",
+    //    "-Xfatal-warnings",
     "-Ywarn-unused",
     "-Ywarn-dead-code",
     "-feature",
