@@ -18,5 +18,6 @@ libraryDependencies ++= Seq(
   Dependencies.akkaHttpOAuth,
   Dependencies.scalikeAsync,
   Dependencies.scalikeAsyncPostgres,
+  Dependencies.nettyAll,
   Dependencies.nettyEpoll
 )
