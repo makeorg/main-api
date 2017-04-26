@@ -4,7 +4,7 @@ object Dependencies {
 
   private val akkaVersion = "2.5.0"
   private val akkaHttpVersion = "10.0.5"
-  private val nettyVersion = "4.1.7.Final"
+  private val nettyVersion = "4.1.9.Final"
   private val kafkaVersion = "0.10.2.0"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
