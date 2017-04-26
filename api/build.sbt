@@ -1,3 +1,7 @@
+import java.time.ZonedDateTime
+
+import com.typesafe.sbt.SbtGit.GitKeys._
+
 name := "make-api"
 
 libraryDependencies ++= Seq(
@@ -21,3 +25,13 @@ libraryDependencies ++= Seq(
   Dependencies.nettyAll,
   Dependencies.nettyEpoll
 )
+
+lazy val now: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("now", "time of build")
+
+now := {
+  ZonedDateTime.now()
+}
+
+enablePlugins(BuildInfoPlugin)
+
+buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, now)

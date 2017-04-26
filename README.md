@@ -54,3 +54,8 @@ docker run --rm -it -p 9100:9100 mobz/elasticsearch-head:5
 then you can connect to your $DOCKER_HOST (most likely localhost) 
 on port 9100 with your browser to have the stats.
 
+## Misc
+
+- The netty version has been forced, so when new dependencies are added, it may be a good idea to exclude netty if it includes it
+- Because of the that, there may be some weird behaviour once we start tests with several nodes
+
