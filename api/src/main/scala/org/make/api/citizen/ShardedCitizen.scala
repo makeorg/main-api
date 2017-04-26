@@ -1,9 +1,10 @@
-package org.make.core.citizen
+package org.make.api.citizen
 
 import akka.actor.{Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
+import org.make.core.citizen.{CitizenCommand, CitizenId}
 
 import scala.concurrent.duration._
 

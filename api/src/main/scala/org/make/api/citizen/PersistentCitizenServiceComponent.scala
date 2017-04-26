@@ -41,6 +41,7 @@ trait PersistentCitizenServiceComponent {
   }
 
   class PersistentCitizenService extends ShortenedNames {
+
     def find(email: String, password: String)(implicit cxt: EC = ECGlobal): Future[Option[Citizen]] = {
       implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
       withSQL {

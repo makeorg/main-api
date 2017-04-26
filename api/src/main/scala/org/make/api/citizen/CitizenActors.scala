@@ -2,7 +2,7 @@ package org.make.api.citizen
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
-import org.make.core.citizen.{CitizenCommand, ShardedCitizen}
+import org.make.core.citizen.CitizenCommand
 
 object CitizenActors {
   def props: Props = Props(new CitizenActors)

@@ -1,12 +1,13 @@
-package org.make.core.citizen
+package org.make.api.citizen
 
 import java.time.LocalDate
 
 import akka.actor.Props
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.pattern.{Patterns, ask}
-import org.make.core.citizen.CitizenActor.Snapshot
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import org.make.api.citizen.CitizenActor.Snapshot
 import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenRegistered}
+import org.make.core.citizen._
 
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
@@ -51,7 +52,7 @@ class CitizenActor extends PersistentActor {
       Patterns.pipe((self ? GetCitizen(citizenId)) (1.second), Implicits.global).to(sender())
       self ! Snapshot
 
-    case updateProfile: UpdateProfileCommand =>
+    case _: UpdateProfileCommand =>
     case GetCitizen(_) => sender() ! state.map(_.toCitizen)
     case Snapshot => state.foreach(state => saveSnapshot(state.toCitizen))
   }
