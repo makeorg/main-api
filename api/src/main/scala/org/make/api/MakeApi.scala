@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
 import org.make.api.citizen.{CitizenActors, CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
+import org.make.api.database.DatabaseConfiguration
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{ConsumerActor, ProducerActor}
 import org.make.api.swagger.MakeDocumentation
@@ -18,24 +19,29 @@ import scala.concurrent.duration.Duration
 object MakeApi extends App
   with CitizenServiceComponent
   with IdGeneratorComponent
+  with PersistentCitizenServiceComponent
   with CitizenApi
   with RequestTimeout {
 
   val site =
-    path("swagger") { getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html") } ~
+    path("swagger") {
+      getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
+    } ~
       getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.2.8")
 
   private implicit val actorSystem = ActorSystem("make-api")
-  private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
+  actorSystem.registerExtension(DatabaseConfiguration)
+
+//  private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
 
   override val idGenerator: MakeApi.IdGenerator = new UUIDIdGenerator
-  override val citizenService: CitizenService = new CitizenService(citizenCoordinator)
-
+  override val citizenService: CitizenService = new CitizenService()
+  override val persistentCitizenService: PersistentCitizenService = new PersistentCitizenService()
 
   val config = actorSystem.settings.config
   val settings = new MakeSettings(actorSystem.settings.config)
 
-  if(settings.useEmbeddedElasticSearch) {
+  if (settings.useEmbeddedElasticSearch) {
     org.make.api.EmbeddedApplication.embeddedElastic.start()
   }
 
@@ -79,7 +85,7 @@ class MakeSettings(config: Config) extends Extension {
 
   val passivateTimeout: Duration = Duration(config.getString("make-api.passivate-timeout"))
   val useEmbeddedElasticSearch: Boolean =
-    if(config.hasPath("make-api.dev.embeddedElasticSearch")) config.getBoolean("make-api.dev.embeddedElasticSearch")
+    if (config.hasPath("make-api.dev.embeddedElasticSearch")) config.getBoolean("make-api.dev.embeddedElasticSearch")
     else false
 
   object http {

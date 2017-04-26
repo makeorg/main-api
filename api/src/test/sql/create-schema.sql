@@ -4,7 +4,7 @@ CREATE TABLE citizen (
   first_name VARCHAR(512) NOT NULL,
   last_name VARCHAR(512) NOT NULL,
   hashed_password VARCHAR(2048) NOT NULL,
-  date_of_birth DATE
+  date_of_birth TIMESTAMP WITH TIME ZONE
 );
 
 

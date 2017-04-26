@@ -51,10 +51,10 @@ trait CitizenApi extends Formatters with Directives {
             email = request.email,
             dateOfBirth = request.dateOfBirth,
             firstName = request.firstName,
-            lastName = request.lastName
+            lastName = request.lastName,
+            password = request.password
           )) {
-            case Some(citizen) => complete(citizen)
-            case None => complete(NotFound)
+            complete(_)
           }
         }
       }

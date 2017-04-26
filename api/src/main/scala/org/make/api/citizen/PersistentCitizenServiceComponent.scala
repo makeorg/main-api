@@ -1,6 +1,6 @@
 package org.make.api.citizen
 
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import org.make.core.citizen.{Citizen, CitizenId}
 import scalikejdbc._
@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 trait PersistentCitizenServiceComponent {
 
-  def PersistentCitizenService: PersistentCitizenService
+  def persistentCitizenService: PersistentCitizenService
 
 
   case class PersistentCitizen(
@@ -26,21 +26,33 @@ trait PersistentCitizenServiceComponent {
   object PersistentCitizen extends SQLSyntaxSupport[PersistentCitizen] with ShortenedNames {
 
     override val columnNames = Seq("id", "email", "first_name", "last_name", "hashed_password", "date_of_birth")
+    override val tableName: String = "citizen"
 
     lazy val c: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[PersistentCitizen], PersistentCitizen] = syntax("c")
 
     def toCitizen(c: SyntaxProvider[PersistentCitizen])(rs: WrappedResultSet): Citizen = toCitizen(c.resultName)(rs)
 
-    def toCitizen(c: ResultName[PersistentCitizen])(rs: WrappedResultSet): Citizen = Citizen(
-      citizenId = CitizenId(rs.string(column.id)),
-      email = rs.string(column.email),
-      firstName = rs.string(column.firstName),
-      lastName = rs.string(column.lastName),
-      dateOfBirth = LocalDate.parse(rs.string(column.dateOfBirth))
-    )
+    def toCitizen(c: ResultName[PersistentCitizen])(rs: WrappedResultSet): Citizen = {
+      Citizen(
+        citizenId = CitizenId(rs.string(c.id)),
+        email = rs.string(c.email),
+        firstName = rs.string(c.firstName),
+        lastName = rs.string(c.lastName),
+        dateOfBirth = ZonedDateTime.parse(rs.string(c.dateOfBirth)).toLocalDate
+      )
+    }
   }
 
   class PersistentCitizenService extends ShortenedNames {
+
+    def get(id: CitizenId)(implicit cxt: EC = ECGlobal): Future[Option[Citizen]] = {
+      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
+      withSQL {
+        select.from(PersistentCitizen as PersistentCitizen.c)
+          .where
+          .append(sqls.eq(PersistentCitizen.column.id, id.value))
+      }.single.map(PersistentCitizen.toCitizen(PersistentCitizen.c))
+    }
 
     def find(email: String, password: String)(implicit cxt: EC = ECGlobal): Future[Option[Citizen]] = {
       implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
@@ -60,7 +72,8 @@ trait PersistentCitizenServiceComponent {
           PersistentCitizen.column.email -> citizen.email,
           PersistentCitizen.column.dateOfBirth -> citizen.dateOfBirth.toString,
           PersistentCitizen.column.firstName -> citizen.firstName,
-          PersistentCitizen.column.lastName -> citizen.lastName
+          PersistentCitizen.column.lastName -> citizen.lastName,
+          PersistentCitizen.column.hashedPassword -> hashedPassword
         )
       }.execute().map {_ => citizen}
     }
