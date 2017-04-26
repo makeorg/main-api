@@ -2,7 +2,6 @@ import sbt.Keys.scalacOptions
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.12.1",
   libraryDependencies ++= Seq(
     Dependencies.logger,

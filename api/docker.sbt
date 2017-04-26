@@ -1,3 +1,4 @@
+enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
 
@@ -8,3 +9,15 @@ daemonUser in Docker := "user"
 packageName in Docker := "repository/docker-dev/make-api"
 
 dockerCmd := Seq("-Dconfig.resource=default-application.conf")
+
+publishLocal := {
+  (packageBin in Universal).value
+  (publishLocal in Docker).value
+  publishLocal.value
+}
+
+publish := {
+  (packageBin in Universal).value
+  (publish in Docker).value
+  publish.value
+}
