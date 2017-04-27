@@ -6,12 +6,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.Config
-import org.make.api.citizen.{CitizenActors, CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
+import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.database.DatabaseConfiguration
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{ConsumerActor, ProducerActor}
 import org.make.api.swagger.MakeDocumentation
+import org.make.core.EventWrapper
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -54,7 +56,7 @@ object MakeApi extends App
   val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(new MakeDocumentation(actorSystem).routes ~ route ~ site, host, port)
 
   val producer = actorSystem.actorOf(ProducerActor.props, ProducerActor.name)
-  val consumer = actorSystem.actorOf(ConsumerActor.props, ConsumerActor.name)
+  val consumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[EventWrapper]), ConsumerActor.name)
 
   consumer ! Consume
 

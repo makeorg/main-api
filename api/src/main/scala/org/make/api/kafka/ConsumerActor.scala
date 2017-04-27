@@ -9,17 +9,17 @@ import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.make.api.kafka.ConsumerActor.Consume
-import org.make.core.citizen.CitizenEvent.EventWrapper
+import org.make.core.EventWrapper
 
 import scala.util.Try
 
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T]) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
 
   private var consumer: KafkaConsumer[String, GenericRecord] = _
-  private val format: RecordFormat[EventWrapper] = RecordFormat[EventWrapper]
+//  private val format: RecordFormat[EventWrapper] = RecordFormat[EventWrapper]
 
   override def preStart(): Unit = {
     consumer = createConsumer()
@@ -60,7 +60,7 @@ class ConsumerActor extends Actor with KafkaConfigurationExtension with AvroSeri
 
 object ConsumerActor {
 
-  val props: Props = Props(new ConsumerActor)
+  def props(format: RecordFormat[EventWrapper]): Props = Props(new ConsumerActor(format))
   val name: String = "read-model-consumer"
 
   case object Consume

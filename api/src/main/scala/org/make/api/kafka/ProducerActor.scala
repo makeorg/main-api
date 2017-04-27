@@ -8,7 +8,8 @@ import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
-import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenRegistered, EventWrapper}
+import org.make.core.EventWrapper
+import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenEventWrapper, CitizenRegistered}
 
 import scala.util.Try
 
@@ -46,12 +47,12 @@ class ProducerActor extends Actor with KafkaConfigurationExtension with AvroSeri
       logger.debug(s"Received event $event")
 
       val record = format.to(
-        EventWrapper(
+        CitizenEventWrapper(
           version = 1,
           id = event.id.value,
           date = ZonedDateTime.now(),
           eventType = event.getClass.getSimpleName,
-          event = EventWrapper.wrapEvent(event)
+          event = CitizenEventWrapper.wrapEvent(event)
         )
       )
 

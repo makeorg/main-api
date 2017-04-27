@@ -3,15 +3,16 @@ package org.make.core.citizen
 import java.time.{LocalDate, ZonedDateTime}
 
 import shapeless.{:+:, CNil, Coproduct}
-
+import org.make.core.EventWrapper
 
 object CitizenEvent {
 
   type AnyCitizenEvent = CitizenRegistered :+: CitizenViewed :+: CNil
 
-  case class EventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyCitizenEvent)
+  case class CitizenEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyCitizenEvent)
+    extends EventWrapper
 
-  object EventWrapper {
+  object CitizenEventWrapper {
     def wrapEvent(event: CitizenEvent): AnyCitizenEvent = event match {
       case e: CitizenRegistered => Coproduct[AnyCitizenEvent](e)
       case e: CitizenViewed => Coproduct[AnyCitizenEvent](e)
