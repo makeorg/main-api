@@ -11,9 +11,9 @@ CREATE TABLE citizen (
 CREATE TABLE token (
   id VARCHAR(256) NOT NULL PRIMARY KEY,
   refresh_token VARCHAR(256) NOT NULL,
-  citizenId VARCHAR(256) NOT NULL,
+  citizen_id VARCHAR(256) NOT NULL,
   scope VARCHAR(256) NOT NULL,
   creation_date TIMESTAMP WITH TIME ZONE,
-  validity_duration_seconds INTEGER NOT NULL,
+  validity_duration_seconds DECIMAL NOT NULL,
   parameters TEXT
 );

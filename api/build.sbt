@@ -19,7 +19,6 @@ libraryDependencies ++= Seq(
   Dependencies.levelDBJni,
   Dependencies.akkaHttpTest,
   Dependencies.scalaOAuth,
-  Dependencies.akkaHttpOAuth,
   Dependencies.scalikeAsync,
   Dependencies.scalikeAsyncPostgres,
   Dependencies.nettyAll,

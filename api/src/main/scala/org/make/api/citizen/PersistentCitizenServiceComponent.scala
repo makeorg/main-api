@@ -55,8 +55,7 @@ trait PersistentCitizenServiceComponent {
       withSQL {
         select(c.*)
           .from(PersistentCitizen as c)
-          .where
-          .append(sqls.eq(c.id, id.value))
+          .where(sqls.eq(c.id, id.value))
       }.single.map(PersistentCitizen.toCitizen(c))
     }
 
@@ -65,9 +64,7 @@ trait PersistentCitizenServiceComponent {
       withSQL {
         select(c.*)
           .from(PersistentCitizen as c)
-          .where
-          .append(sqls.eq(c.email, email))
-          .append(sqls.eq(c.hashedPassword, password))
+          .where(sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password))
       }.map(PersistentCitizen.toCitizen(c))
     }
 
@@ -76,8 +73,7 @@ trait PersistentCitizenServiceComponent {
       withSQL {
         select(count(c.asterisk))
           .from(PersistentCitizen as c)
-          .where
-          .append(sqls.eq(c.email, email))
+          .where(sqls.eq(c.email, email))
       }.single().map(rs => rs.int(1) > 0).execute()
     }
 
