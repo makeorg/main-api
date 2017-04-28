@@ -12,9 +12,9 @@ import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.database.DatabaseConfiguration
 import org.make.api.kafka.ConsumerActor.Consume
-import org.make.api.kafka.{ConsumerActor, ProducerActor}
+import org.make.api.kafka.{AvroSerializers, ConsumerActor, ProducerActor}
 import org.make.api.swagger.MakeDocumentation
-import org.make.core.EventWrapper
+import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -27,7 +27,8 @@ object MakeApi extends App
   with CitizenApi
   with MakeDataHandlerComponent
   with TokenServiceComponent
-  with RequestTimeout {
+  with RequestTimeout
+  with AvroSerializers {
 
   implicit val ctx: EC = ECGlobal
 
@@ -82,9 +83,9 @@ object MakeApi extends App
     host, port)
 
   val producer = actorSystem.actorOf(ProducerActor.props, ProducerActor.name)
-  val consumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[EventWrapper]), ConsumerActor.name)
+  val citizenConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[CitizenEventWrapper]), ConsumerActor.name)
 
-  consumer ! Consume
+  citizenConsumer ! Consume
 
   val log = Logging(actorSystem.eventStream, "make-api")
   bindingFuture.map { serverBinding =>

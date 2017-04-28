@@ -60,7 +60,7 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T]) exte
 
 object ConsumerActor {
 
-  def props(format: RecordFormat[EventWrapper]): Props = Props(new ConsumerActor(format))
+  def props[T <: EventWrapper](format: RecordFormat[T]): Props = Props(new ConsumerActor(format))
   val name: String = "read-model-consumer"
 
   case object Consume

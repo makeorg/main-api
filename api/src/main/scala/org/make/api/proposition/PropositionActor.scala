@@ -23,7 +23,7 @@ class PropositionActor extends PersistentActor {
     case SnapshotOffer(_, snapshot: PropositionState) =>
       println(s"Recovering from snapshot $snapshot")
       state = Some(snapshot)
-    case _: RecoveryCompleted => _
+    case _: RecoveryCompleted =>
   }
 
   override def receiveCommand: Receive = {

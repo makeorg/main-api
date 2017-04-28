@@ -13,9 +13,9 @@ import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenEventWrapper, Ci
 
 import scala.util.Try
 
-class ProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class CitizenProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
 
-  private val format: RecordFormat[EventWrapper] = RecordFormat[EventWrapper]
+  private val format: RecordFormat[CitizenEventWrapper] = RecordFormat[CitizenEventWrapper]
 
   private var producer: KafkaProducer[String, GenericRecord] = _
 
@@ -35,7 +35,7 @@ class ProducerActor extends Actor with KafkaConfigurationExtension with AvroSeri
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
     props.put("schema.registry.url", kafkaConfiguration.schemaRegistry)
-    props.put("value.schema", SchemaFor[EventWrapper].toString)
+    props.put("value.schema", SchemaFor[CitizenEventWrapper].toString)
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer")
     new KafkaProducer[A, B](props)
@@ -68,6 +68,6 @@ class ProducerActor extends Actor with KafkaConfigurationExtension with AvroSeri
 
 
 object ProducerActor {
-  val props: Props = Props(new ProducerActor)
+  val props: Props = Props(new CitizenProducerActor)
   val name: String = "kafka-event-writer"
 }

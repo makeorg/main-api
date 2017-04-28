@@ -23,10 +23,10 @@ class VoteActor extends PersistentActor {
     case e: VoteEvent =>
       println(s"Recovering event $e")
       applyEvent(e)
-    case SnapshotOffer(_, snapshot: List[VoteState]) =>
+    case SnapshotOffer(_, snapshot) =>
       println(s"Recovering from snapshot $snapshot")
-      state = Some(snapshot)
-    case _: RecoveryCompleted => _
+      state = Some(snapshot.asInstanceOf[List[VoteState]])
+    case _: RecoveryCompleted =>
   }
 
   override def receiveCommand: Receive = {
