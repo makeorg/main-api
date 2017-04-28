@@ -26,7 +26,6 @@ object Dependencies {
   val levelDB: ModuleID = "org.iq80.leveldb"            % "leveldb"          % "0.7"
   val levelDBJni: ModuleID = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
-  val akkaHttpOAuth: ModuleID = "com.nulab-inc" %% "akka-http-oauth2-provider" % "1.3.0"
 
   val scalikeAsync: ModuleID = "org.scalikejdbc"     %% "scalikejdbc-async" % "0.7.1"
   val scalikeAsyncPostgres: ModuleID = ("com.github.mauricio" %% "postgresql-async"  % "0.2.21").exclude("io.netty", "netty-all")
