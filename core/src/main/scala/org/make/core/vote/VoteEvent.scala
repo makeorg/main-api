@@ -9,16 +9,16 @@ import org.make.core.proposition.PropositionId
 
 object VoteEvent {
 
-  type AnyVoteEvent = VoteAgreed :+: VoteDisagreed :+: VoteUnsured :+: CNil
+  type AnyVoteEvent = VotedAgree :+: VotedDisagree :+: VotedUnsure :+: CNil
 
   case class VoteEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyVoteEvent)
     extends EventWrapper
 
   object VoteEventWrapper {
     def wrapEvent(event: VoteEvent): AnyVoteEvent = event match {
-      case e: VoteAgreed => Coproduct[AnyVoteEvent](e)
-      case e: VoteDisagreed => Coproduct[AnyVoteEvent](e)
-      case e: VoteUnsured => Coproduct[AnyVoteEvent](e)
+      case e: VotedAgree => Coproduct[AnyVoteEvent](e)
+      case e: VotedDisagree => Coproduct[AnyVoteEvent](e)
+      case e: VotedUnsure => Coproduct[AnyVoteEvent](e)
     }
   }
 
@@ -26,9 +26,24 @@ object VoteEvent {
     def id: VoteId
   }
 
-  case class VoteAgreed(id: VoteId, propositionId: PropositionId, citizenId: CitizenId) extends VoteEvent
+  case class VotedAgree(
+                         id: VoteId,
+                         propositionId: PropositionId,
+                         citizenId: CitizenId,
+                         createdAt: ZonedDateTime
+                       ) extends VoteEvent
 
-  case class VoteDisagreed(id: VoteId, propositionId: PropositionId, citizenId: CitizenId) extends VoteEvent
+  case class VotedDisagree(
+                            id: VoteId,
+                            propositionId: PropositionId,
+                            citizenId: CitizenId,
+                            createdAt: ZonedDateTime
+                          ) extends VoteEvent
 
-  case class VoteUnsured(id: VoteId, propositionId: PropositionId, citizenId: CitizenId) extends VoteEvent
+  case class VotedUnsure(
+                          id: VoteId,
+                          propositionId: PropositionId,
+                          citizenId: CitizenId,
+                          createdAt: ZonedDateTime
+                        ) extends VoteEvent
 }
