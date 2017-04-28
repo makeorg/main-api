@@ -31,7 +31,7 @@ object PropositionEvent {
                           content: String
                           ) extends PropositionEvent
 
-  case class PropositionViewed(id: PropositionId)
+  case class PropositionViewed(id: PropositionId) extends PropositionEvent
 
-  case class PropositionUpdated(id: PropositionId)
+  case class PropositionUpdated(id: PropositionId, content: String) extends PropositionEvent
 }

@@ -12,6 +12,8 @@ case class ProposeCommand(
                            content: String
                          ) extends PropositionCommand
 
-case class UpdatePropositionCommand(propositionId: PropositionId) extends PropositionCommand
+case class UpdatePropositionCommand(propositionId: PropositionId, content: String) extends PropositionCommand
 
-case class GetPropositionCommand(propositionId: PropositionId) extends PropositionCommand
+case class ViewPropositionCommand(propositionId: PropositionId) extends PropositionCommand
+
+case class GetProposition(propositionId: PropositionId) extends PropositionCommand
