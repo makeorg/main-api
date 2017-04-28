@@ -23,6 +23,6 @@ class PropositionCoordinator extends Actor {
   }
 
   override def receive: Receive = {
-    case cmd: PropositionCommand =>
+    case cmd: PropositionCommand => shardedProposition forward cmd
   }
 }
