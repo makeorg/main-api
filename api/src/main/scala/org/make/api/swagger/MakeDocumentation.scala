@@ -5,15 +5,13 @@ import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.models.auth.{OAuth2Definition, SecuritySchemeDefinition}
-import org.make.api.citizen.CitizenApi
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 
-class MakeDocumentation(system: ActorSystem) extends SwaggerHttpService with HasActorSystem with Directives with StrictLogging {
+class MakeDocumentation(system: ActorSystem, override val apiTypes: Seq[ru.Type]) extends SwaggerHttpService with HasActorSystem with Directives with StrictLogging {
 
   override implicit val actorSystem: ActorSystem = system
-  override val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi])
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
   override val securitySchemeDefinitions: Map[String, SecuritySchemeDefinition] = Map(
     "MakeApi" -> {

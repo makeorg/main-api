@@ -1,5 +1,7 @@
 package org.make.api.proposition
 
+import java.time.ZonedDateTime
+
 import akka.actor.Props
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
@@ -34,6 +36,7 @@ class PropositionActor extends PersistentActor {
       persistAndPublishEvent(PropositionProposed(
         id = propositionId,
         citizenId = propose.citizenId,
+        createdAt = propose.createdAt,
         content = propose.content
       ))
       Patterns.pipe((self ? GetProposition(propositionId)) (1.second), Implicits.global).to(sender)
@@ -41,6 +44,7 @@ class PropositionActor extends PersistentActor {
     case update: UpdatePropositionCommand =>
       persistAndPublishEvent(PropositionUpdated(
         id = propositionId,
+        updatedAt = update.updatedAt,
         content = update.content
       ))
       Patterns.pipe((self ? GetProposition(propositionId)) (1.second), Implicits.global).to(sender)
@@ -54,9 +58,14 @@ class PropositionActor extends PersistentActor {
     case e: PropositionProposed => state = Some(PropositionState(
       propositionId = propositionId,
       citizenId = Option(e.citizenId),
+      createdAt = Option(e.createdAt),
+      updatedAt = Option(e.createdAt),
       content = Option(e.content)
     ))
-    case e: PropositionUpdated => state.foreach(_.content = Option(e.content))
+    case e: PropositionUpdated => state.foreach(p => {
+      p.content = Option(e.content)
+      p.updatedAt = Option(e.updatedAt)
+    })
     case _ =>
   }
 
@@ -68,12 +77,16 @@ class PropositionActor extends PersistentActor {
   case class PropositionState(
                                propositionId: PropositionId,
                                citizenId: Option[CitizenId],
+                               createdAt: Option[ZonedDateTime],
+                               var updatedAt: Option[ZonedDateTime],
                                var content: Option[String]
                              ) {
     def toProposition: Proposition = {
       Proposition(
         this.propositionId,
         this.citizenId.orNull,
+        this.createdAt.orNull,
+        this.updatedAt.orNull,
         this.content.orNull
       )
     }

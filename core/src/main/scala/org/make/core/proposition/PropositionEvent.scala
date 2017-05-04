@@ -28,10 +28,11 @@ object PropositionEvent {
   case class PropositionProposed(
                           id: PropositionId,
                           citizenId: CitizenId,
+                          createdAt: ZonedDateTime,
                           content: String
                           ) extends PropositionEvent
 
   case class PropositionViewed(id: PropositionId) extends PropositionEvent
 
-  case class PropositionUpdated(id: PropositionId, content: String) extends PropositionEvent
+  case class PropositionUpdated(id: PropositionId, updatedAt: ZonedDateTime, content: String) extends PropositionEvent
 }

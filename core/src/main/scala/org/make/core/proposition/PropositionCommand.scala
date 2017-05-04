@@ -1,5 +1,7 @@
 package org.make.core.proposition
 
+import java.time.ZonedDateTime
+
 import org.make.core.citizen.CitizenId
 
 sealed trait PropositionCommand {
@@ -9,10 +11,15 @@ sealed trait PropositionCommand {
 case class ProposeCommand(
                            propositionId: PropositionId,
                            citizenId: CitizenId,
+                           createdAt: ZonedDateTime,
                            content: String
                          ) extends PropositionCommand
 
-case class UpdatePropositionCommand(propositionId: PropositionId, content: String) extends PropositionCommand
+case class UpdatePropositionCommand(
+                                     propositionId: PropositionId,
+                                     updatedAt: ZonedDateTime,
+                                     content: String
+                                   ) extends PropositionCommand
 
 case class ViewPropositionCommand(propositionId: PropositionId) extends PropositionCommand
 

@@ -13,11 +13,13 @@ import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCiti
 import org.make.api.database.DatabaseConfiguration
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{AvroSerializers, ConsumerActor, ProducerActor}
+import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent}
 import org.make.api.swagger.MakeDocumentation
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
+import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 object MakeApi extends App
@@ -25,6 +27,8 @@ object MakeApi extends App
   with IdGeneratorComponent
   with PersistentCitizenServiceComponent
   with CitizenApi
+  with PropositionServiceComponent
+  with PropositionApi
   with MakeDataHandlerComponent
   with TokenServiceComponent
   with RequestTimeout
@@ -46,8 +50,10 @@ object MakeApi extends App
   actorSystem.registerExtension(DatabaseConfiguration)
 
   //  private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
+  private val propositionCoordinator = actorSystem.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val citizenService: CitizenService = new CitizenService()
+  override val propositionService: PropositionService = new PropositionService(propositionCoordinator)
   override val persistentCitizenService: PersistentCitizenService = new PersistentCitizenService()
   override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()
   override val tokenService: TokenService = new TokenService()
@@ -74,11 +80,13 @@ object MakeApi extends App
   implicit val ec = actorSystem.dispatcher
   implicit val materializer = ActorMaterializer()
 
+  val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
   val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(
-    new MakeDocumentation(actorSystem).routes ~
+    new MakeDocumentation(actorSystem, apiTypes).routes ~
       swagger ~
       login ~
       citizenRoutes ~
+      propositionRoutes ~
       accessTokenRoute,
     host, port)
 
