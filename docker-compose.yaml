@@ -2,31 +2,48 @@ version: '3'
 services:
   zookeeper:
     image: zookeeper:3.4.10
-    network_mode: host
     environment:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=localhost:2888:3888
+    networks:
+      - makeapi
   kafka:
     image: wurstmeister/kafka:0.10.2.0
-    network_mode: host
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+      KAFKA_ADVERTISED_HOST: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_PORT: 9092
+    ports:
+      - 9092:9092
+      - 18081:8081
+    networks:
+      - makeapi
   schema_registry:
     image: cgswong/confluent-schema-registry:2.0.1
     depends_on:
       - kafka
-    network_mode: host
+    network_mode: service:kafka
     environment:
-        ZOOKEEPER_PORT_2181_TCP_ADDR: localhost
+        ZOOKEEPER_PORT_2181_TCP_ADDR: zookeeper
         ZOOKEEPER_PORT_2181_TCP_PORT: 2181
     restart: on-failure:2
   cockroach:
     image: cockroachdb/cockroach:alpha-18828-g1227734
-    network_mode: host
     command: start --insecure
+    ports:
+      - 26257:26257
+    networks:
+      - makeapi
   cassandra:
     image: cassandra:3.10
-    network_mode: host
-
-
+    ports:
+      - 7000:7000
+      - 9042:9042
+    networks:
+      - makeapi
+networks:
+  makeapi:
+    ipam:
+      driver: default
+      config:
+        - subnet: 20.0.0.0/24
