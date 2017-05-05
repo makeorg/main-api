@@ -6,6 +6,7 @@ object Dependencies {
   private val akkaHttpVersion = "10.0.5"
   private val nettyVersion = "4.1.9.Final"
   private val kafkaVersion = "0.10.2.0"
+  private val elastic4sVersion = "5.3.2"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
   val logger: ModuleID = "org.apache.logging.log4j" % "log4j" % "2.8.2"
@@ -38,10 +39,15 @@ object Dependencies {
   val configuration: ModuleID = "com.typesafe" % "config" % "1.3.1"
 
   val embeddedElasticSearch: ModuleID = "pl.allegro.tech" % "embedded-elasticsearch" % "2.1.0"
+  val elastic4s: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-core" % elastic4sVersion
+  val elastic4sHttp: ModuleID =   "com.sksamuel.elastic4s" %% "elastic4s-http" % elastic4sVersion
+  val elastic4sStream: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion
+  val elastic4sSprayJson: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-spray-json" % elastic4sVersion
 
   val scalaTest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   val akkaTest: ModuleID = "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
+  val akkaStreamKafka: ModuleID = "com.typesafe.akka" %% "akka-stream-kafka" % "0.16"
   val mockito: ModuleID = "org.mockito" % "mockito-core" % "2.7.22" % "test"
 
 }
