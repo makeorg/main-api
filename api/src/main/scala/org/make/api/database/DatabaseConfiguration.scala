@@ -2,41 +2,49 @@ package org.make.api.database
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
+import org.apache.commons.dbcp2.BasicDataSource
 import org.make.api.ConfigurationSupport
-import scalikejdbc.async._
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 
 class DatabaseConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
 
-  private val host: String = configuration.getString("host")
-  private val port: Int = configuration.getInt("port")
   private val user: String = configuration.getString("user")
   private val password: String = configuration.getString("password")
-  private val database: String = configuration.getString("database")
 
-  AsyncConnectionPool.add('READ,
-    s"jdbc:postgresql://$host:$port/$database", user, password,
-    AsyncConnectionPoolSettings(
-      maxPoolSize = 50,
-      maxQueueSize = 10,
-      maxIdleMillis = 20000
+  private val jdbcUrl: String = configuration.getString("jdbc-url")
+
+  val readDatasource = new BasicDataSource()
+  readDatasource.setDriverClassName("org.postgresql.Driver")
+  readDatasource.setUrl(jdbcUrl)
+  readDatasource.setUsername(user)
+  readDatasource.setPassword(password)
+  readDatasource.setInitialSize(10)
+  readDatasource.setMaxTotal(50)
+  readDatasource.setMaxIdle(10)
+
+  val writeDatasource = new BasicDataSource()
+  writeDatasource.setDriverClassName("org.postgresql.Driver")
+  writeDatasource.setUrl(jdbcUrl)
+  writeDatasource.setUsername(user)
+  writeDatasource.setPassword(password)
+  writeDatasource.setInitialSize(10)
+  writeDatasource.setMaxTotal(50)
+  writeDatasource.setMaxIdle(10)
+
+
+
+  ConnectionPool.add('READ,
+    new DataSourceConnectionPool(
+      dataSource = readDatasource
     )
   )
-  AsyncConnectionPool.add('WRITE,
-    s"jdbc:postgresql://$host:$port/$database", user, password,
-    AsyncConnectionPoolSettings(
-      maxPoolSize = 10,
-      maxQueueSize = 5,
-      maxIdleMillis = 20000
+
+  ConnectionPool.add('WRITE,
+    new DataSourceConnectionPool(
+      dataSource = writeDatasource
     )
   )
-
-  val readDatasource: AsyncConnectionPool = AsyncConnectionPool('READ)
-  val writeDatasource: AsyncConnectionPool = AsyncConnectionPool('WRITE)
-
-  NamedAsyncDB('READ).localTx { session => ???
-
-  }
 
 }
 

@@ -4,16 +4,17 @@ import java.time.ZonedDateTime
 
 import org.make.core.citizen.{Citizen, CitizenId}
 import scalikejdbc._
-import scalikejdbc.async.FutureImplicits._
-import scalikejdbc.async._
+import scalikejdbc.async.ShortenedNames
 import scalikejdbc.interpolation.SQLSyntax._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 trait PersistentCitizenServiceComponent {
 
   def persistentCitizenService: PersistentCitizenService
+  def readExecutionContext: ExecutionContext
+  def writeExecutionContext: ExecutionContext
 
 
   case class PersistentCitizen(
@@ -50,47 +51,62 @@ trait PersistentCitizenServiceComponent {
     private val column = PersistentCitizen.column
 
 
-    def get(id: CitizenId)(implicit cxt: EC = ECGlobal): Future[Option[Citizen]] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(c.*)
-          .from(PersistentCitizen as c)
-          .where(sqls.eq(c.id, id.value))
-      }.single.map(PersistentCitizen.toCitizen(c))
+    def get(id: CitizenId): Future[Option[Citizen]] = {
+      implicit val cxt: EC = readExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(c.*)
+              .from(PersistentCitizen as c)
+              .where(sqls.eq(c.id, id.value))
+          }.map(PersistentCitizen.toCitizen(c)).single.apply
+        }
+      )(readExecutionContext)
     }
 
-    def find(email: String, password: String)(implicit cxt: EC = ECGlobal): Future[Option[Citizen]] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(c.*)
-          .from(PersistentCitizen as c)
-          .where(sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password))
-      }.map(PersistentCitizen.toCitizen(c))
+    def find(email: String, password: String): Future[Option[Citizen]] = {
+      implicit val cxt: EC = readExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(c.*)
+              .from(PersistentCitizen as c)
+              .where(sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password))
+          }.map(PersistentCitizen.toCitizen(c)).single().apply()
+        }
+      )
     }
 
     def emailExists(email: String): Future[Boolean] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(count(c.asterisk))
-          .from(PersistentCitizen as c)
-          .where(sqls.eq(c.email, email))
-      }.single().map(rs => rs.int(1) > 0).execute()
+      implicit val ctx = readExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(count(c.asterisk))
+              .from(PersistentCitizen as c)
+              .where(sqls.eq(c.email, email))
+          }.map(rs => rs.int(1) > 0).single().apply()
+        }
+      ).map(_.getOrElse(false))
     }
 
-    def persist(citizen: Citizen, hashedPassword: String)(implicit cxt: EC = ECGlobal): Future[Citizen] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('WRITE).sharedSession
-      withSQL {
-        insert.into(PersistentCitizen).namedValues (
-          column.id -> citizen.citizenId.value,
-          column.email -> citizen.email,
-          column.dateOfBirth -> citizen.dateOfBirth.toString,
-          column.firstName -> citizen.firstName,
-          column.lastName -> citizen.lastName,
-          column.hashedPassword -> hashedPassword
-        )
-      }.execute().map {_ => citizen}
+    def persist(citizen: Citizen, hashedPassword: String): Future[Citizen] = {
+      implicit val ctx = writeExecutionContext
+      Future(
+        NamedDB('WRITE).localTx { implicit session =>
+          withSQL {
+            insert.into(PersistentCitizen).namedValues(
+              column.id -> citizen.citizenId.value,
+              column.email -> citizen.email,
+              column.dateOfBirth -> citizen.dateOfBirth.toString,
+              column.firstName -> citizen.firstName,
+              column.lastName -> citizen.lastName,
+              column.hashedPassword -> hashedPassword
+            )
+          }.execute()
+        }
+      ).map { _ => citizen }
     }
   }
-
 
 }

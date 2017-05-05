@@ -4,11 +4,11 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.make.api.{Formatters, IdGeneratorComponent}
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.{Formatters, IdGeneratorComponent}
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -33,6 +33,9 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()(ECGlobal)
   override val tokenEndpoint: TokenEndpoint = TokenEndpoint
+
+  override def readExecutionContext: EC = ECGlobal
+  override def writeExecutionContext: EC = ECGlobal
 
   override val tokenService: TokenService = mock[TokenService]
   override val citizenService: CitizenService = mock[CitizenService]
@@ -78,7 +81,7 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
 
   "get citizen" should "return a json citizen if citizen exists" in {
 
-    when(persistentCitizenService.get(ArgumentMatchers.eq(CitizenId("citizen-1")))(any[EC]))
+    when(persistentCitizenService.get(ArgumentMatchers.eq(CitizenId("citizen-1"))))
       .thenReturn(maybeCitizenInTheFuture)
     when(citizenService.getCitizen(ArgumentMatchers.eq(CitizenId("citizen-1"))))
       .thenReturn(maybeCitizenInTheFuture)
