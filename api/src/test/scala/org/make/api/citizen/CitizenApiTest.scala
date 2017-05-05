@@ -1,12 +1,14 @@
 package org.make.api.citizen
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.IdGeneratorComponent
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.make.api.{Formatters, IdGeneratorComponent}
+import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -15,50 +17,83 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Future
+import scalaoauth2.provider.TokenEndpoint
 
 class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
+  with Formatters
   with ScalatestRouteTest
   with PersistentCitizenServiceComponent
+  with CitizenServiceComponent
   with IdGeneratorComponent
+  with MakeDataHandlerComponent
+  with TokenServiceComponent
   with CitizenApi {
 
-  override val citizenService: PersistentCitizenService = mock[PersistentCitizenService]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
+  override val persistentCitizenService: PersistentCitizenService = mock[PersistentCitizenService]
+  override val idGenerator: IdGenerator = new UUIDIdGenerator
+  override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()(ECGlobal)
+  override val tokenEndpoint: TokenEndpoint = TokenEndpoint
+
+  override val tokenService: TokenService = mock[TokenService]
+  override val citizenService: CitizenService = mock[CitizenService]
+
+  val token1 = Token(
+    id = "user-1",
+    refreshToken = "refresh-1",
+    citizenId = CitizenId("citizen-1"),
+    scope = "all",
+    creationDate = ZonedDateTime.now(),
+    validityDurationSeconds = 999999,
+    parameters = ""
+  )
+  val token2 = Token(
+    id = "user-2",
+    refreshToken = "refresh-2",
+    citizenId = CitizenId("citizen-2"),
+    scope = "all",
+    creationDate = ZonedDateTime.now(),
+    validityDurationSeconds = 999999,
+    parameters = ""
+  )
+
+  when(tokenService.getToken(ArgumentMatchers.eq("invalid-auth"))(any[EC])).thenReturn(Future.successful(None))
+  when(tokenService.getToken(ArgumentMatchers.eq("user-1"))(any[EC])).thenReturn(Future.successful(Some(token1)))
+  when(tokenService.getToken(ArgumentMatchers.eq("user-2"))(any[EC])).thenReturn(Future.successful(Some(token2)))
+
 
   // seal routes so that error management gets called in tests
   val allRoutes: Route = Route.seal(citizenRoutes)
 
-  val citizenInTheFuture: Future[Option[Citizen]] = Future.successful(Option(
-    Citizen(
-      citizenId = CitizenId("1234"),
-      email = "test@test.com",
-      dateOfBirth = LocalDate.parse("1970-01-01"),
-      firstName = "testFirstName",
-      lastName = "testLastName"
-    )
-  ))
+  private val citizen = Citizen(
+    citizenId = CitizenId("citizen-1"),
+    email = "test@test.com",
+    dateOfBirth = LocalDate.parse("1970-01-01"),
+    firstName = "testFirstName",
+    lastName = "testLastName"
+  )
+
+  val maybeCitizenInTheFuture: Future[Option[Citizen]] = Future.successful(Some(citizen))
+  val citizenInTheFuture: Future[Citizen] = Future.successful(citizen)
 
 
   "get citizen" should "return a json citizen if citizen exists" in {
 
-    when(citizenService.getCitizen(ArgumentMatchers.eq(CitizenId("1234"))))
-      .thenReturn(
-        citizenInTheFuture
-      )
+    when(persistentCitizenService.get(ArgumentMatchers.eq(CitizenId("citizen-1")))(any[EC]))
+      .thenReturn(maybeCitizenInTheFuture)
+    when(citizenService.getCitizen(ArgumentMatchers.eq(CitizenId("citizen-1"))))
+      .thenReturn(maybeCitizenInTheFuture)
 
-    Get("/citizen/1234") ~> allRoutes ~> check {
+    Get("/citizen/citizen-1").withHeaders(Authorization(OAuth2BearerToken("user-1"))) ~> allRoutes ~> check {
       status shouldEqual StatusCodes.OK
-      responseAs[Citizen].citizenId.value should be("1234")
+      responseAs[Citizen].citizenId.value should be("citizen-1")
     }
   }
 
 
-  it should "return a 404 if citizen doesn't exist" in {
-    when(citizenService.getCitizen(any(classOf[CitizenId])))
-      .thenReturn(Future.successful(None))
+  it should "return a 403 if user doesn't have the right to view resource" in {
 
-    Get("/citizen/1234") ~> allRoutes ~> check {
-      status shouldEqual StatusCodes.NotFound
+    Get("/citizen/1234").withHeaders(Authorization(OAuth2BearerToken("user-1"))) ~> allRoutes ~> check {
+      status shouldEqual StatusCodes.Forbidden
     }
 
   }
@@ -70,6 +105,7 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
         """
           |{
           |  "email": "youppy@yopmail.com",
+          |  "password": "toto-fait-du-vélo",
           |  "dateOfBirth": "something difference from a date",
           |  "firstName": "aaaa",
           |  "lastName": "bbbb"
@@ -82,14 +118,21 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
 
   it should "succeed if everything is valid" in {
 
-    when(citizenService.register(any(classOf[String]), any(classOf[LocalDate]), any(classOf[String]), any(classOf[String])))
-      .thenReturn(citizenInTheFuture)
+    when(citizenService.register(
+      ArgumentMatchers.eq("youppy@yopmail.com"),
+      ArgumentMatchers.eq(LocalDate.parse("1970-01-01")),
+      ArgumentMatchers.eq("aaaa"),
+      ArgumentMatchers.eq("bbbb"),
+      ArgumentMatchers.eq("toto-fait-du-vélo")
+    )).thenReturn(citizenInTheFuture)
+
 
     Post("/citizen",
       HttpEntity(ContentTypes.`application/json`,
         """
           |{
           |  "email": "youppy@yopmail.com",
+          |  "password": "toto-fait-du-vélo",
           |  "dateOfBirth": "1970-01-01",
           |  "firstName": "aaaa",
           |  "lastName": "bbbb"
