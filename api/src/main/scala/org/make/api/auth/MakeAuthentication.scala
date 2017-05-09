@@ -6,9 +6,9 @@ import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.{Directives, Route}
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
+import org.make.api.ShortenedNames
 import org.make.api.auth.OAuth2Provider.TokenResponse
 import org.make.core.citizen.Citizen
-import scalikejdbc.async.ShortenedNames
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

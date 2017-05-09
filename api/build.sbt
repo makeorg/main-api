@@ -18,12 +18,9 @@ libraryDependencies ++= Seq(
   Dependencies.kafkaClients,
   Dependencies.avroSerializer,
   Dependencies.avro4s,
-  Dependencies.levelDB,
-  Dependencies.levelDBJni,
   Dependencies.akkaHttpTest,
   Dependencies.scalaOAuth,
-  Dependencies.scalikeAsync,
-  Dependencies.scalikeAsyncPostgres,
+  Dependencies.scalike,
   Dependencies.postgresql,
   Dependencies.nettyAll,
   Dependencies.nettyEpoll,
@@ -33,12 +30,15 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4sStream
 )
 
-lazy val now: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("now", "time of build")
 
-now := {
+lazy val buildTime: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("now", "time of build")
+
+
+buildTime := {
   ZonedDateTime.now()
 }
 
+
 enablePlugins(BuildInfoPlugin)
 
-buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, now)
+buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime)

@@ -2,9 +2,9 @@ package org.make.api.citizen
 
 import java.time.ZoneOffset
 
+import org.make.api.ShortenedNames
 import org.make.core.citizen.{Citizen, CitizenId}
 import scalikejdbc._
-import scalikejdbc.async.ShortenedNames
 import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.{ExecutionContext, Future}

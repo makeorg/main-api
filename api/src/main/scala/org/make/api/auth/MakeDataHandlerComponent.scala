@@ -3,10 +3,9 @@ package org.make.api.auth
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.util.Date
 
-import org.make.api.IdGeneratorComponent
+import org.make.api.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.citizen.PersistentCitizenServiceComponent
 import org.make.core.citizen.Citizen
-import scalikejdbc.async.ShortenedNames
 
 import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider._

@@ -4,9 +4,8 @@ import java.time.ZonedDateTime
 
 import org.make.core.citizen.CitizenId
 import scalikejdbc._
-import scalikejdbc.async.ShortenedNames
-
 import org.make.api.Predef._
+import org.make.api.ShortenedNames
 
 import scala.concurrent.{ExecutionContext, Future}
 
