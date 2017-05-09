@@ -1,21 +1,35 @@
 package org.make.api
 
+import akka.NotUsed
 import akka.actor.{ActorSystem, Extension}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset, CommittableOffsetBatch}
+import akka.kafka.scaladsl.Consumer
+import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
+import io.confluent.kafka.serializers.KafkaAvroDeserializer
+import org.apache.avro.generic.GenericRecord
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.database.DatabaseConfiguration
+import org.make.api.elasticsearch.{ElasticsearchAPI, PropositionElasticsearch}
 import org.make.api.kafka.ConsumerActor.Consume
-import org.make.api.kafka.{AvroSerializers, ConsumerActor, ProducerActor}
+import org.make.api.kafka._
 import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent}
 import org.make.api.swagger.MakeDocumentation
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
+import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
+import org.make.core.vote.VoteEvent.VoteEventWrapper
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -32,7 +46,8 @@ object MakeApi extends App
   with MakeDataHandlerComponent
   with TokenServiceComponent
   with RequestTimeout
-  with AvroSerializers {
+  with AvroSerializers
+  with StrictLogging {
 
   implicit val ctx: EC = ECGlobal
 
@@ -90,10 +105,58 @@ object MakeApi extends App
       accessTokenRoute,
     host, port)
 
-  val producer = actorSystem.actorOf(ProducerActor.props, ProducerActor.name)
-  val citizenConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[CitizenEventWrapper]), ConsumerActor.name)
+
+  val citizenProducer = actorSystem.actorOf(CitizenProducerActor.props, CitizenProducerActor.name)
+  val citizenConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[CitizenEventWrapper], "citizens"), "citizens-" + ConsumerActor.name)
+
+  val propositionProducer = actorSystem.actorOf(PropositionProducerActor.props, PropositionProducerActor.name)
+  val propositionConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[PropositionEventWrapper], "propositions"), "propositions-" + ConsumerActor.name)
+
+  val voteProducer = actorSystem.actorOf(VoteProducerActor.props, VoteProducerActor.name)
+  val voteConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"), "votes-" + ConsumerActor.name)
 
   citizenConsumer ! Consume
+
+  //EXPERIMENTAL --> test integration
+  propositionConsumer ! Consume
+
+  case class AkkaStreamKafkaRecord(record: PropositionElasticsearch, committableOffset: CommittableOffset)
+
+  val client = new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry,1000)
+  val propositionConsumerSettings = ConsumerSettings(actorSystem, new StringDeserializer, new KafkaAvroDeserializer(client))
+    .withBootstrapServers(KafkaConfiguration(actorSystem).connectionString)
+    .withGroupId("stream-proposition-to-es")
+    .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+
+  def shape: Flow[CommittableMessage[String, AnyRef], Future[AkkaStreamKafkaRecord], NotUsed] =
+    Flow[CommittableMessage[String, AnyRef]].map( msg => {
+      PropositionElasticsearch.shape(
+        RecordFormat[PropositionEventWrapper].from(msg.record.asInstanceOf[GenericRecord])
+      ) map {
+        case Some(propositionElasticsearch) => Some(AkkaStreamKafkaRecord(
+          propositionElasticsearch,
+          msg.committableOffset
+        ))
+        case _ => None
+      } filter ( _.isDefined ) map (_.get)
+    })
+
+  val runnableGraph: RunnableGraph[Consumer.Control] =
+    Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
+      .via(shape)
+      .mapAsync(1) { msg =>
+        msg.map(committableRecord => {
+          ElasticsearchAPI.api.save(committableRecord.record)
+          committableRecord.committableOffset
+        })
+      }
+      .batch(max = 20, first => CommittableOffsetBatch.empty.updated(first)) { (batch, elem) =>
+        batch.updated(elem)
+      }
+      .mapAsync(3)(_.commitScaladsl())
+      .toMat(Sink.foreach(msg => logger.info(msg.toString)))(Keep.left)
+  val control: Consumer.Control = runnableGraph.run()
+  //END EXPERIMENTAL
 
   val log = Logging(actorSystem.eventStream, "make-api")
   bindingFuture.map { serverBinding =>

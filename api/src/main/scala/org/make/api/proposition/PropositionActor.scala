@@ -5,6 +5,7 @@ import java.time.ZonedDateTime
 import akka.actor.Props
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposition.PropositionActor.Snapshot
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionEvent._
@@ -13,17 +14,17 @@ import org.make.core.proposition._
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
 
-class PropositionActor extends PersistentActor {
+class PropositionActor extends PersistentActor with StrictLogging {
   def propositionId = PropositionId(self.path.name)
 
   private[this] var state: Option[PropositionState] = None
 
   override def receiveRecover: Receive = {
     case e: PropositionEvent =>
-      println(s"Recovering event $e")
+      logger.info(s"Recovering event $e")
       applyEvent(e)
     case SnapshotOffer(_, snapshot: PropositionState) =>
-      println(s"Recovering from snapshot $snapshot")
+      logger.info(s"Recovering from snapshot $snapshot")
       state = Some(snapshot)
     case _: RecoveryCompleted =>
   }
@@ -70,8 +71,10 @@ class PropositionActor extends PersistentActor {
   }
 
   private def persistAndPublishEvent(event: PropositionEvent): Unit = {
-    persist(event)(applyEvent)
-    context.system.eventStream.publish(event)
+    persist(event){ (e: PropositionEvent) =>
+      applyEvent(e)
+      context.system.eventStream.publish(e)
+    }
   }
 
   case class PropositionState(

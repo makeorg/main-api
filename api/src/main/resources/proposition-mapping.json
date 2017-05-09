@@ -1,0 +1,40 @@
+{
+  "propositions" : {
+    "mappings" : {
+      "proposition" : {
+        "properties" : {
+          "citizenId" : {
+            "type" : "long"
+          },
+          "content" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "createdAt" : {
+            "type" : "date"
+          },
+          "id" : {
+            "type" : "text"
+          },
+          "updatedAt" : {
+            "type" : "date"
+          },
+          "nbVotesAgree": {
+            "type": "number"
+          },
+          "nbVotesDisagree": {
+            "type": "number"
+          },
+          "nbVotesUnsure": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}

@@ -16,10 +16,9 @@ import scala.util.Try
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T]) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
 
   private var consumer: KafkaConsumer[String, GenericRecord] = _
-//  private val format: RecordFormat[EventWrapper] = RecordFormat[EventWrapper]
 
   override def preStart(): Unit = {
     consumer = createConsumer()
@@ -39,7 +38,7 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T]) exte
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer")
     val consumer = new KafkaConsumer[A, B](props)
-    consumer.subscribe(util.Arrays.asList(kafkaConfiguration.topic))
+    consumer.subscribe(util.Arrays.asList(kafkaConfiguration.topics(kafkaTopic)))
     consumer
   }
 
@@ -60,7 +59,8 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T]) exte
 
 object ConsumerActor {
 
-  def props[T <: EventWrapper](format: RecordFormat[T]): Props = Props(new ConsumerActor(format))
+  def props[T <: EventWrapper](format: RecordFormat[T], kafkaTopic: String): Props =
+    Props(new ConsumerActor(format, kafkaTopic))
   val name: String = "read-model-consumer"
 
   case object Consume

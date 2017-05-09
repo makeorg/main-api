@@ -1,16 +1,16 @@
 package org.make.api.proposition
 
 import java.time.ZonedDateTime
-import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
+import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.IdGeneratorComponent
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition._
-import akka.pattern.ask
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 trait PropositionServiceComponent {
   this: IdGeneratorComponent with PropositionServiceComponent =>
@@ -19,7 +19,7 @@ trait PropositionServiceComponent {
 
   class PropositionService(actor: ActorRef) {
 
-    implicit private val defaultTimeout = new Timeout(2, TimeUnit.SECONDS)
+    implicit private val defaultTimeout = new Timeout(5.seconds)
 
     def getProposition(propositionId: PropositionId): Future[Option[Proposition]] = {
       (actor ? ViewPropositionCommand(propositionId)).mapTo[Option[Proposition]]

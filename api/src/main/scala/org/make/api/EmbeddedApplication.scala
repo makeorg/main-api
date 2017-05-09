@@ -1,6 +1,8 @@
 package org.make.api
 
-import pl.allegro.tech.embeddedelasticsearch.{EmbeddedElastic, PopularProperties}
+import pl.allegro.tech.embeddedelasticsearch.{EmbeddedElastic, IndexSettings, PopularProperties}
+
+import scala.io.Source
 
 object EmbeddedApplication {
 
@@ -9,6 +11,11 @@ object EmbeddedApplication {
     .withSetting(PopularProperties.TRANSPORT_TCP_PORT, 9300)
     .withSetting(PopularProperties.HTTP_PORT, 9200)
     .withSetting(PopularProperties.CLUSTER_NAME, "make-search")
+    .withIndex("propositions",
+      IndexSettings.builder()
+        .withType("proposition", Source.fromResource("proposition-mapping.json").toString)
+        .build()
+    )
     //    .withIndex("cars",
     //      IndexSettings.builder()
     //        .withType("car", getSystemResourceAsStream("car-mapping.json"))

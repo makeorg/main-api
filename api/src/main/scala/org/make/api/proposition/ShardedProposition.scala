@@ -35,9 +35,8 @@ class ShardedProposition extends PropositionActor {
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout => context.parent ! Passivate(stopMessage = StopProposition)
     case StopProposition => context.stop(self)
-    case SaveSnapshotSuccess(_) => println("Snapshot saved")
+    case SaveSnapshotSuccess(_) => logger.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>
-      println("Error while saving snapshot")
-      cause.printStackTrace()
+      logger.error("Error while saving snapshot", cause)
   }
 }

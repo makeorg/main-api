@@ -3,20 +3,18 @@ package org.make.api
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
-import org.make.core.citizen.{Citizen, CitizenId}
-import spray.json.{DefaultJsonProtocol, DeserializationException, JsString, JsValue, JsonFormat, RootJsonFormat}
-import DefaultJsonProtocol._
 import com.sksamuel.elastic4s.http.Shards
 import com.sksamuel.elastic4s.http.index.IndexResponse
 import org.make.api.citizen.RegisterCitizenRequest
+import org.make.api.elasticsearch.PropositionElasticsearch
 import org.make.api.proposition.{ProposePropositionRequest, UpdatePropositionRequest}
+import org.make.core.citizen.{Citizen, CitizenId}
 import org.make.core.proposition.{Proposition, PropositionId}
+import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, DeserializationException, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by francois on 14/04/17.
-  */
 trait Formatters {
 
   implicit val localDateFormat: JsonFormat[LocalDate] = new JsonFormat[LocalDate] {
@@ -88,5 +86,8 @@ trait Formatters {
 
   implicit val updatePropositionRequestFormatter: RootJsonFormat[UpdatePropositionRequest] =
     DefaultJsonProtocol.jsonFormat1(UpdatePropositionRequest)
+
+  implicit val propositionEsFormatter: RootJsonFormat[PropositionElasticsearch] =
+    DefaultJsonProtocol.jsonFormat8(PropositionElasticsearch.apply)
 
 }

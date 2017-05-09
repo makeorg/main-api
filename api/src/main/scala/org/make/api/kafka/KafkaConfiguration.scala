@@ -8,7 +8,12 @@ import org.make.api.ConfigurationSupport
 class KafkaConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
 
   val connectionString: String = configuration.getString("connection-string")
-  val topic: String = configuration.getString("topic")
+  val topics: Map[String, String] = Map(
+    "citizens" -> configuration.getString("topics.citizens"),
+    "propositions" -> configuration.getString("topics.propositions"),
+    "votes" -> configuration.getString("topics.votes")
+  )
+
   val pollTimeout: Long = configuration.getLong("poll-timeout")
   val schemaRegistry: String = configuration.getString("schema-registry")
 

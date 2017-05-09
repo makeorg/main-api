@@ -1,0 +1,91 @@
+package org.make.api.kafka
+
+import java.time.ZonedDateTime
+import java.util.Properties
+
+import akka.actor.{Actor, ActorSystem, Props}
+import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.typesafe.scalalogging.StrictLogging
+import org.apache.avro.generic.GenericRecord
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
+import org.make.core.proposition.PropositionEvent.{PropositionEvent, PropositionEventWrapper, PropositionProposed, PropositionUpdated}
+
+import scala.util.Try
+
+class PropositionProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+
+  val kafkaTopic: String = kafkaConfiguration.topics(PropositionProducerActor.topicKey)
+
+  private val format: RecordFormat[PropositionEventWrapper] = RecordFormat[PropositionEventWrapper]
+
+  private var producer: KafkaProducer[String, GenericRecord] = _
+
+  override def preStart(): Unit = {
+    context.system.eventStream.subscribe(self, classOf[PropositionEvent])
+    producer = createProducer()
+  }
+
+  private def createProducer[A, B](): KafkaProducer[A, B] = {
+    val props = new Properties()
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
+    props.put(ProducerConfig.ACKS_CONFIG, "all")
+    props.put(ProducerConfig.RETRIES_CONFIG, "0")
+    props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")
+    props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
+    props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
+    props.put("schema.registry.url", kafkaConfiguration.schemaRegistry)
+    props.put("value.schema", SchemaFor[PropositionEventWrapper].toString)
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer")
+    new KafkaProducer[A, B](props)
+  }
+
+  override def receive: Receive = {
+
+    case event: PropositionProposed =>
+      logger.debug(s"Received event $event")
+
+      val record = format.to(
+        PropositionEventWrapper(
+          version = 1,
+          id = event.id.value,
+          date = ZonedDateTime.now(),
+          eventType = event.getClass.getSimpleName,
+          event = PropositionEventWrapper.wrapEvent(event)
+        )
+      )
+
+      producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record),
+        (r: RecordMetadata, e: Exception) => {
+          Option(e).foreach(e => logger.debug("[EXCEPTION] Producer sent: ", e))
+          Option(r).foreach(r => logger.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
+        }
+      )
+    case event: PropositionUpdated =>
+      logger.debug(s"Received event $event")
+
+      val record = format.to(
+        PropositionEventWrapper(
+          version = 1,
+          id = event.id.value,
+          date = ZonedDateTime.now(),
+          eventType = event.getClass.getSimpleName,
+          event = PropositionEventWrapper.wrapEvent(event)
+        )
+      )
+
+      producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record))
+    case other => logger.info(s"Unknown event $other")
+  }
+
+  override def postStop(): Unit = {
+    Try(producer.close())
+  }
+}
+
+object PropositionProducerActor {
+  val props: Props = Props(new PropositionProducerActor)
+  val name: String = "kafka-propositions-event-writer"
+  val topicKey = "propositions"
+  def kafkaTopic(actorSystem: ActorSystem): String = KafkaConfiguration(actorSystem).topics(topicKey)
+}

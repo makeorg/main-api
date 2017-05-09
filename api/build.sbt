@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
   Dependencies.elastic4sSprayJson,
+  Dependencies.elastic4sCirce,
   Dependencies.elastic4sStream
 )
 

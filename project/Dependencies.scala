@@ -6,7 +6,7 @@ object Dependencies {
   private val akkaHttpVersion = "10.0.5"
   private val nettyVersion = "4.1.9.Final"
   private val kafkaVersion = "0.10.2.0"
-  private val elastic4sVersion = "5.3.2"
+  private val elastic4sVersion = "5.4.1"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
   val logger: ModuleID = "org.apache.logging.log4j" % "log4j" % "2.8.2"
@@ -42,6 +42,7 @@ object Dependencies {
   val elastic4s: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-core" % elastic4sVersion
   val elastic4sHttp: ModuleID =   "com.sksamuel.elastic4s" %% "elastic4s-http" % elastic4sVersion
   val elastic4sStream: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion
+  val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
   val elastic4sSprayJson: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-spray-json" % elastic4sVersion
 
   val scalaTest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.1" % "test"

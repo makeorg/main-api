@@ -85,7 +85,6 @@ trait MakeDataHandlerComponent {
     }
 
     override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[Citizen]]] = {
-      println(s"findAuthInfoByRefreshToken($refreshToken)")
       tokenService.getTokenByRefreshToken(refreshToken).flatMap {
         case Some(token) => persistentCitizenService.get(token.citizenId).map(_.map { citizen =>
           AuthInfo(
