@@ -2,6 +2,7 @@ package org.make.core.citizen
 
 import java.time.LocalDate
 
+import io.circe._
 import org.make.core.StringValue
 
 //
@@ -18,5 +19,8 @@ case class Citizen(
 
 case class CitizenId(value: String) extends StringValue
 
-
+object CitizenId {
+  implicit lazy val citizenIdEncoder: Encoder[CitizenId] = (a: CitizenId) => Json.fromString(a.value)
+  implicit lazy val citizenIdDecoder: Decoder[CitizenId] = Decoder.decodeString.map(CitizenId(_))
+}
 

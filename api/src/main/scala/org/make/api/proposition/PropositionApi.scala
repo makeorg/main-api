@@ -3,12 +3,13 @@ package org.make.api.proposition
 import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
+import de.knutwalker.akka.http.support.CirceHttpSupport
+import io.circe.generic.auto._
 import io.swagger.annotations._
-import org.make.api.Formatters
 import org.make.api.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.{Proposition, PropositionId}
 
@@ -17,7 +18,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposition")
 @Path(value = "/proposition")
-trait PropositionApi extends Formatters with Directives with MakeAuthentication {
+trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directives with MakeAuthentication {
   this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
 

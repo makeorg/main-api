@@ -2,16 +2,16 @@ package org.make.api.citizen
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import io.circe.generic.auto._
+import org.make.api.IdGeneratorComponent
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
-import org.make.api.{Formatters, IdGeneratorComponent}
+import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -20,7 +20,7 @@ import scala.concurrent.Future
 import scalaoauth2.provider.TokenEndpoint
 
 class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
-  with Formatters
+  with CirceFormatters
   with ScalatestRouteTest
   with PersistentCitizenServiceComponent
   with CitizenServiceComponent
@@ -59,9 +59,9 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
     parameters = ""
   )
 
-  when(tokenService.getToken(ArgumentMatchers.eq("invalid-auth"))(any[EC])).thenReturn(Future.successful(None))
-  when(tokenService.getToken(ArgumentMatchers.eq("user-1"))(any[EC])).thenReturn(Future.successful(Some(token1)))
-  when(tokenService.getToken(ArgumentMatchers.eq("user-2"))(any[EC])).thenReturn(Future.successful(Some(token2)))
+  when(tokenService.getToken(ArgumentMatchers.eq("invalid-auth"))).thenReturn(Future.successful(None))
+  when(tokenService.getToken(ArgumentMatchers.eq("user-1"))).thenReturn(Future.successful(Some(token1)))
+  when(tokenService.getToken(ArgumentMatchers.eq("user-2"))).thenReturn(Future.successful(Some(token2)))
 
 
   // seal routes so that error management gets called in tests

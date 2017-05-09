@@ -7,7 +7,9 @@ name := "make-api"
 libraryDependencies ++= Seq(
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
-  Dependencies.akkaHttpSprayJson,
+  Dependencies.akkaHttpCirce,
+  Dependencies.akkaStreamCirce,
+  Dependencies.circeGeneric,
   Dependencies.akkaClusterSharding,
   Dependencies.akkaPersistenceCassandra,
   Dependencies.akkaStreamKafka,
@@ -27,7 +29,6 @@ libraryDependencies ++= Seq(
   Dependencies.nettyEpoll,
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
-  Dependencies.elastic4sSprayJson,
   Dependencies.elastic4sCirce,
   Dependencies.elastic4sStream
 )

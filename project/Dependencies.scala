@@ -15,8 +15,12 @@ object Dependencies {
   val nettyEpoll: ModuleID = "io.netty" % "netty-transport-native-epoll" % nettyVersion classifier "linux-x86_64"
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
+  val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % "0.7.1"
+
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
+  val akkaHttpCirce: ModuleID = "de.knutwalker" %% "akka-http-circe" % "3.3.0"
+  val akkaStreamCirce: ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"
   val akkaHttpSprayJson: ModuleID = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
   val akkaCluster: ModuleID = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion

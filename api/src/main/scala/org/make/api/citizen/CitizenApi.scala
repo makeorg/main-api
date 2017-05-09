@@ -3,20 +3,22 @@ package org.make.api.citizen
 import java.time.LocalDate
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
+import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.swagger.annotations._
-import org.make.api.Formatters
 import org.make.api.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
+
+import io.circe.generic.auto._
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Citizen")
 @Path(value = "/citizen")
-trait CitizenApi extends Formatters with Directives with MakeAuthentication {
+trait CitizenApi extends CirceFormatters with Directives with CirceHttpSupport with MakeAuthentication {
   this: CitizenServiceComponent with MakeDataHandlerComponent =>
 
 

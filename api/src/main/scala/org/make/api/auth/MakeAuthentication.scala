@@ -2,12 +2,13 @@ package org.make.api.auth
 
 import akka.http.scaladsl._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.server.directives.Credentials
+import akka.http.scaladsl.server.{Directives, Route}
+import de.knutwalker.akka.http.support.CirceHttpSupport
+import io.circe.generic.auto._
 import org.make.api.auth.OAuth2Provider.TokenResponse
 import org.make.core.citizen.Citizen
 import scalikejdbc.async.ShortenedNames
-import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -16,10 +17,8 @@ import scalaoauth2.provider._
 /**
   * Mostly taken from https://github.com/nulab/akka-http-oauth2-provider with added support for redirect
   */
-trait MakeAuthentication extends ShortenedNames with Directives {
+trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSupport {
   self: MakeDataHandlerComponent =>
-
-  import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 
   def makeOAuth2(f: (AuthInfo[Citizen]) => server.Route)(implicit ctx: EC = ECGlobal): Route = {
@@ -34,14 +33,12 @@ trait MakeAuthentication extends ShortenedNames with Directives {
 
   val tokenEndpoint: TokenEndpoint
 
-  def grantResultToTokenResponse(grantResult: GrantHandlerResult[Citizen]): JsValue =
-    OAuth2Provider.tokenResponseFormat.write(
+  def grantResultToTokenResponse(grantResult: GrantHandlerResult[Citizen]): TokenResponse =
       TokenResponse(
         grantResult.tokenType,
         grantResult.accessToken,
         grantResult.expiresIn.getOrElse(1L),
         grantResult.refreshToken.getOrElse("")
-      )
     )
 
   def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[Citizen]]] =
@@ -83,9 +80,9 @@ trait MakeAuthentication extends ShortenedNames with Directives {
 
 }
 
-object OAuth2Provider extends DefaultJsonProtocol {
+object OAuth2Provider {
 
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
-  implicit val tokenResponseFormat: RootJsonFormat[TokenResponse] = jsonFormat4(TokenResponse)
+//  implicit val tokenResponseFormat: RootJsonFormat[TokenResponse] = jsonFormat4(TokenResponse)
 }
