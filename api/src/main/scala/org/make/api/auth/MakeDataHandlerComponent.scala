@@ -18,12 +18,10 @@ trait MakeDataHandlerComponent {
     with IdGeneratorComponent
     with ShortenedNames =>
 
-  implicit val ctx: ExecutionContext
 
   def oauth2DataHandler: MakeDataHandler
 
-
-  class MakeDataHandler extends DataHandler[Citizen] {
+  class MakeDataHandler(implicit val ctx: ExecutionContext) extends DataHandler[Citizen] {
 
     private def toAccessToken(token: Token): AccessToken = {
       AccessToken(

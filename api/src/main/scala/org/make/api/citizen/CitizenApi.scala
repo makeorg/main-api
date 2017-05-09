@@ -22,8 +22,8 @@ trait CitizenApi extends Formatters with Directives with MakeAuthentication {
 
   @ApiOperation(value = "get-citizen", httpMethod = "GET", code = 200, authorizations = Array(
     new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope (scope = "user", description = "application user"),
-      new AuthorizationScope (scope = "admin", description = "BO Admin")
+      new AuthorizationScope(scope = "user", description = "application user"),
+      new AuthorizationScope(scope = "admin", description = "BO Admin")
     ))
   ))
   @ApiResponses(value = Array(
@@ -34,9 +34,9 @@ trait CitizenApi extends Formatters with Directives with MakeAuthentication {
   ))
   @Path(value = "/{citizenId}")
   def getCitizen: Route = {
-    makeOAuth2 { user: AuthInfo[Citizen] =>
-      get {
-        path("citizen" / citizenId) { citizenId =>
+    get {
+      path("citizen" / citizenId) { citizenId =>
+        makeOAuth2 { user: AuthInfo[Citizen] =>
           if (citizenId == user.user.citizenId) {
             onSuccess(citizenService.getCitizen(citizenId)) {
               case Some(citizen) => complete(citizen)
@@ -61,22 +61,20 @@ trait CitizenApi extends Formatters with Directives with MakeAuthentication {
   def register: Route = post {
     path("citizen") {
       decodeRequest {
-        entity(as[RegisterCitizenRequest]) {
-          request: RegisterCitizenRequest =>
-            onSuccess(citizenService.register(
-              email = request.email,
-              dateOfBirth = request.dateOfBirth,
-              firstName = request.firstName,
-              lastName = request.lastName,
-              password = request.password
-            )) {
-              complete(_)
-            }
+        entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
+          onSuccess(citizenService.register(
+            email = request.email,
+            dateOfBirth = request.dateOfBirth,
+            firstName = request.firstName,
+            lastName = request.lastName,
+            password = request.password
+          )) {
+            complete(_)
+          }
         }
       }
     }
   }
-
 
 
   val citizenRoutes: Route = register ~ getCitizen

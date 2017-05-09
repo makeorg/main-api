@@ -51,4 +51,6 @@ object Dependencies {
   val akkaStreamKafka: ModuleID = "com.typesafe.akka" %% "akka-stream-kafka" % "0.16"
   val mockito: ModuleID = "org.mockito" % "mockito-core" % "2.7.22" % "test"
 
+  val postgresql: ModuleID = "org.postgresql" % "postgresql" % "42.1.0"
+
 }

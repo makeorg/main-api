@@ -59,3 +59,7 @@ on port 9100 with your browser to have the stats.
 - The netty version has been forced, so when new dependencies are added, it may be a good idea to exclude netty if it includes it
 - Because of the that, there may be some weird behaviour once we start tests with several nodes
 
+## Secure connection to cockroach
+
+See: https://forum.cockroachlabs.com/t/connecting-to-an-ssl-secure-server-using-jdbc-java-and-client-certificate-authentication/400
+

@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.directives.Credentials
 import org.make.api.auth.OAuth2Provider.TokenResponse
 import org.make.core.citizen.Citizen
 import scalikejdbc.async.ShortenedNames
-import spray.json.{DefaultJsonProtocol, JsValue}
+import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -44,7 +44,7 @@ trait MakeAuthentication extends ShortenedNames with Directives {
       )
     )
 
-  def oauth2Authenticator(credentials: Credentials): Future[Option[AuthInfo[Citizen]]] =
+  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[Citizen]]] =
     credentials match {
       case Credentials.Provided(token) =>
         oauth2DataHandler.findAccessToken(token).flatMap {
@@ -54,7 +54,7 @@ trait MakeAuthentication extends ShortenedNames with Directives {
       case _ => Future.successful(None)
     }
 
-  def accessTokenRoute: Route = pathPrefix("oauth") {
+  def accessTokenRoute(implicit ctx: EC = ECGlobal): Route = pathPrefix("oauth") {
     path("access_token") {
       post {
         formFieldMap { fields =>
@@ -87,5 +87,5 @@ object OAuth2Provider extends DefaultJsonProtocol {
 
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
-  implicit val tokenResponseFormat = jsonFormat4(TokenResponse)
+  implicit val tokenResponseFormat: RootJsonFormat[TokenResponse] = jsonFormat4(TokenResponse)
 }

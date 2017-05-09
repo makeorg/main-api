@@ -1,6 +1,7 @@
 package org.make.api
 
 import akka.NotUsed
+import java.util.concurrent.Executors
 import akka.actor.{ActorSystem, Extension}
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -30,8 +31,9 @@ import org.make.api.swagger.MakeDocumentation
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
 import org.make.core.vote.VoteEvent.VoteEventWrapper
+import scalikejdbc.{GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
@@ -64,7 +66,6 @@ object MakeApi extends App
   private implicit val actorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)
 
-  //  private val citizenCoordinator = actorSystem.actorOf(CitizenActors.props, CitizenActors.name)
   private val propositionCoordinator = actorSystem.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val citizenService: CitizenService = new CitizenService()
@@ -72,6 +73,10 @@ object MakeApi extends App
   override val persistentCitizenService: PersistentCitizenService = new PersistentCitizenService()
   override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()
   override val tokenService: TokenService = new TokenService()
+
+  override def readExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(50))
+  override def writeExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(20))
+
   override val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
     override val handlers = Map(
       OAuthGrantType.IMPLICIT -> new Implicit,
@@ -81,6 +86,14 @@ object MakeApi extends App
       OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
     )
   }
+
+  GlobalSettings.loggingSQLErrors = true
+  GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
+    enabled = true,
+    warningEnabled = false,
+    printUnprocessedStackTrace = false,
+    logLevel = 'info
+  )
 
   val config = actorSystem.settings.config
   val settings = new MakeSettings(actorSystem.settings.config)

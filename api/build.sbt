@@ -22,6 +22,7 @@ libraryDependencies ++= Seq(
   Dependencies.scalaOAuth,
   Dependencies.scalikeAsync,
   Dependencies.scalikeAsyncPostgres,
+  Dependencies.postgresql,
   Dependencies.nettyAll,
   Dependencies.nettyEpoll,
   Dependencies.elastic4s,

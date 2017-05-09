@@ -4,63 +4,85 @@ import java.time.ZonedDateTime
 
 import org.make.core.citizen.CitizenId
 import scalikejdbc._
-import scalikejdbc.async._
-import scalikejdbc.async.FutureImplicits._
+import scalikejdbc.async.ShortenedNames
 
-import scala.concurrent.Future
+import org.make.api.Predef._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait TokenServiceComponent {
 
   def tokenService: TokenService
+
+  def readExecutionContext: ExecutionContext
+
+  def writeExecutionContext: ExecutionContext
 
   class TokenService extends ShortenedNames {
 
     private val t = PersistentToken.t
     private val column = PersistentToken.column
 
-    def getToken(id: String)(implicit cxt: EC = ECGlobal): Future[Option[Token]] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(t.*)
-          .from(PersistentToken as t)
-          .where(sqls.eq(t.id, id))
-      }.single().map(PersistentToken.toToken(t))
+    def getToken(id: String): Future[Option[Token]] = {
+      implicit val ctx = writeExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(t.*)
+              .from(PersistentToken as t)
+              .where(sqls.eq(t.id, id))
+          }.map(PersistentToken.toToken(t)).single().apply()
+        }
+      )
     }
 
     def getTokenByRefreshToken(refreshToken: String): Future[Option[Token]] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(t.*)
-          .from(PersistentToken as t)
-          .where(sqls.eq(t.refreshToken, refreshToken))
-      }.single().map(PersistentToken.toToken(t))
+      implicit val ctx = writeExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(t.*)
+              .from(PersistentToken as t)
+              .where(sqls.eq(t.refreshToken, refreshToken))
+          }.map(PersistentToken.toToken(t)).single().apply()
+        }
+      )
     }
+
 
     def latestTokenForUser(citizenId: CitizenId): Future[Option[Token]] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('READ).sharedSession
-      withSQL {
-        select(t.*)
-          .from(PersistentToken as t)
-          .where(sqls.eq(t.citizenId, citizenId.value))
-          .orderBy(t.creationDate.desc)
-          .limit(1)
-      }.single().map(PersistentToken.toToken(t))
+      implicit val ctx = writeExecutionContext
+      Future(
+        NamedDB('READ).localTx { implicit session =>
+          withSQL {
+            select(t.*)
+              .from(PersistentToken as t)
+              .where(sqls.eq(t.citizenId, citizenId.value))
+              .orderBy(t.creationDate.desc)
+              .limit(1)
+          }.map(PersistentToken.toToken(t)).single().apply()
+        }
+      )
     }
 
-    def insert(token: Token)(implicit cxt: EC = ECGlobal): Future[Token] = {
-      implicit val session: AsyncDBSession = NamedAsyncDB('WRITE).sharedSession
-      withSQL {
-        insertInto(PersistentToken)
-          .namedValues(
-            column.id -> token.id,
-            column.refreshToken -> token.refreshToken,
-            column.citizenId -> token.citizenId.value,
-            column.scope -> token.scope,
-            column.creationDate -> token.creationDate,
-            column.validityDurationSeconds -> token.validityDurationSeconds,
-            column.parameters -> token.parameters
-          )
-      }.execute().map(_ => token)
+    def insert(token: Token): Future[Token] = {
+      implicit val ctx = writeExecutionContext
+      Future(
+        NamedDB('WRITE).localTx { implicit session =>
+          withSQL {
+            insertInto(PersistentToken)
+              .namedValues(
+                column.id -> token.id,
+                column.refreshToken -> token.refreshToken,
+                column.citizenId -> token.citizenId.value,
+                column.scope -> token.scope,
+                column.creationDate -> token.creationDate,
+                column.validityDurationSeconds -> token.validityDurationSeconds,
+                column.parameters -> token.parameters
+              )
+          }.execute().apply()
+        }
+      ).map(_ => token)
     }
   }
 
@@ -91,7 +113,7 @@ trait TokenServiceComponent {
         citizenId = CitizenId(rs.string(column.citizenId)),
         refreshToken = rs.string(column.refreshToken),
         scope = rs.string(column.scope),
-        creationDate = ZonedDateTime.parse(rs.string(column.creationDate)),
+        creationDate = rs.jodaDateTime(column.creationDate).toJavaTime,
         validityDurationSeconds = rs.int(column.validityDurationSeconds),
         parameters = rs.string(column.parameters)
       )

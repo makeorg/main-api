@@ -10,6 +10,8 @@ Configuration:
     logger:
       - name: org.make
         level: debug
+      - name: scalikejdbc
+        level: debug
     Root:
      level: info
      AppenderRef:
