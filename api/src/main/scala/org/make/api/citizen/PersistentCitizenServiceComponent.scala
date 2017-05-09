@@ -1,6 +1,6 @@
 package org.make.api.citizen
 
-import java.time.ZonedDateTime
+import java.time.ZoneOffset
 
 import org.make.core.citizen.{Citizen, CitizenId}
 import scalikejdbc._
@@ -40,7 +40,7 @@ trait PersistentCitizenServiceComponent {
         email = rs.string(column.email),
         firstName = rs.string(column.firstName),
         lastName = rs.string(column.lastName),
-        dateOfBirth = ZonedDateTime.parse(rs.string(column.dateOfBirth)).toLocalDate
+        dateOfBirth = rs.date(column.dateOfBirth).toLocalDate
       )
     }
   }
@@ -98,12 +98,12 @@ trait PersistentCitizenServiceComponent {
             insert.into(PersistentCitizen).namedValues(
               column.id -> citizen.citizenId.value,
               column.email -> citizen.email,
-              column.dateOfBirth -> citizen.dateOfBirth.toString,
+              column.dateOfBirth -> citizen.dateOfBirth.atStartOfDay(ZoneOffset.UTC),
               column.firstName -> citizen.firstName,
               column.lastName -> citizen.lastName,
               column.hashedPassword -> hashedPassword
             )
-          }.execute()
+          }.execute().apply()
         }
       ).map { _ => citizen }
     }

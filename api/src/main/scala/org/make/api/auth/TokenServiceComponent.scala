@@ -6,6 +6,8 @@ import org.make.core.citizen.CitizenId
 import scalikejdbc._
 import scalikejdbc.async.ShortenedNames
 
+import org.make.api.Predef._
+
 import scala.concurrent.{ExecutionContext, Future}
 
 trait TokenServiceComponent {
@@ -66,7 +68,7 @@ trait TokenServiceComponent {
     def insert(token: Token): Future[Token] = {
       implicit val ctx = writeExecutionContext
       Future(
-        NamedDB('READ).localTx { implicit session =>
+        NamedDB('WRITE).localTx { implicit session =>
           withSQL {
             insertInto(PersistentToken)
               .namedValues(
@@ -78,7 +80,7 @@ trait TokenServiceComponent {
                 column.validityDurationSeconds -> token.validityDurationSeconds,
                 column.parameters -> token.parameters
               )
-          }.execute()
+          }.execute().apply()
         }
       ).map(_ => token)
     }
@@ -111,7 +113,7 @@ trait TokenServiceComponent {
         citizenId = CitizenId(rs.string(column.citizenId)),
         refreshToken = rs.string(column.refreshToken),
         scope = rs.string(column.scope),
-        creationDate = ZonedDateTime.parse(rs.string(column.creationDate)),
+        creationDate = rs.jodaDateTime(column.creationDate).toJavaTime,
         validityDurationSeconds = rs.int(column.validityDurationSeconds),
         parameters = rs.string(column.parameters)
       )

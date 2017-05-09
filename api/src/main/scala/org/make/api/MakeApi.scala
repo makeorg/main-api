@@ -18,6 +18,7 @@ import org.make.api.kafka.{AvroSerializers, ConsumerActor, ProducerActor}
 import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent}
 import org.make.api.swagger.MakeDocumentation
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
+import scalikejdbc.{GlobalSettings, LoggingSQLAndTimeSettings}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
@@ -71,6 +72,14 @@ object MakeApi extends App
       OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
     )
   }
+
+  GlobalSettings.loggingSQLErrors = true
+  GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
+    enabled = true,
+    warningEnabled = false,
+    printUnprocessedStackTrace = false,
+    logLevel = 'info
+  )
 
   val config = actorSystem.settings.config
   val settings = new MakeSettings(actorSystem.settings.config)
