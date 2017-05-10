@@ -32,6 +32,8 @@ class VoteActor extends PersistentActor with StrictLogging {
 
   override def receiveCommand: Receive = {
     case GetVote(voteId) => sender ! state.map(_.filter(_.voteId == voteId))
+    case e: ViewVoteCommand =>
+      persistAndPublishEvent(VotedView(id = e.voteId, propositionId = e.propositionId))
     case agree: AgreeCommand =>
       if (citizenCanVote(agree.citizenId))
         persistAndPublishEvent(VotedAgree(
