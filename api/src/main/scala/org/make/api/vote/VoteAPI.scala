@@ -28,9 +28,10 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])
   ))
   @ApiImplicitParams(value = Array(
+    new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "String"),
     new ApiImplicitParam(name = "VoteId", paramType = "path", dataType = "string")
   ))
-  @Path(value = "/{VoteId}")
+  @Path(value = "/{propopsitionId}/{voteId}")
   def getVote: Route = {
     get {
       path("proposition" / propositionId / "vote" / voteId) { (propositionId, voteId) =>
@@ -49,18 +50,19 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     ))
   ))
   @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.AgreeVoteRequest")
+    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.VoteAgreeRequest")
   ))
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])
   ))
+  @Path(value = "/{propositionId}")
   def agree: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("vote" / propositionId) { propositionId =>
+        path("proposition" / propositionId) { propositionId =>
           decodeRequest {
-            entity(as[ProposeVoteRequest]) {
-              request: ProposeVoteRequest =>
+            entity(as[VoteAgreeRequest]) {
+              request: VoteAgreeRequest =>
                 onSuccess(voteService.agree(
                   propositionId = propositionId,
                   citizenId = user.user.citizenId,
@@ -82,18 +84,19 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     ))
   ))
   @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.DisagreeVoteRequest")
+    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.VoteDisagreeRequest")
   ))
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])
   ))
+  @Path(value = "/{propositionId}")
   def disagree: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("vote" / propositionId) { propositionId =>
+        path("proposition" / propositionId) { propositionId =>
           decodeRequest {
-            entity(as[ProposeVoteRequest]) {
-              request: ProposeVoteRequest =>
+            entity(as[VoteDisagreeRequest]) {
+              request: VoteDisagreeRequest =>
                 onSuccess(voteService.disagree(
                   propositionId = propositionId,
                   citizenId = user.user.citizenId,
@@ -114,18 +117,19 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     ))
   ))
   @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.UnsureVoteRequest")
+    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.VoteUnsureRequest")
   ))
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])
   ))
+  @Path(value = "/{propositionId}")
   def unsure: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("vote" / propositionId) { propositionId =>
+        path("proposition" / propositionId) { propositionId =>
           decodeRequest {
-            entity(as[ProposeVoteRequest]) {
-              request: ProposeVoteRequest =>
+            entity(as[VoteUnsureRequest]) {
+              request: VoteUnsureRequest =>
                 onSuccess(voteService.unsure(
                   propositionId = propositionId,
                   citizenId = user.user.citizenId,
@@ -144,5 +148,6 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
   val propositionId: PathMatcher1[PropositionId] = Segment.flatMap(id => Try(PropositionId(id)).toOption)
 }
 
-case class ProposeVoteRequest(content: String)
-case class UpdateVoteRequest(content: String)
+case class VoteAgreeRequest(content: String)
+case class VoteDisagreeRequest(content: String)
+case class VoteUnsureRequest(content: String)
