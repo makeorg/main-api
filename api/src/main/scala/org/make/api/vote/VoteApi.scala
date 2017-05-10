@@ -59,7 +59,7 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
   def agree: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("proposition" / propositionId) { propositionId =>
+        path("agree" / propositionId) { propositionId =>
           decodeRequest {
             entity(as[VoteAgreeRequest]) {
               request: VoteAgreeRequest =>
@@ -93,7 +93,7 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
   def disagree: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("proposition" / propositionId) { propositionId =>
+        path("disagree" / propositionId) { propositionId =>
           decodeRequest {
             entity(as[VoteDisagreeRequest]) {
               request: VoteDisagreeRequest =>
@@ -126,7 +126,7 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
   def unsure: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("proposition" / propositionId) { propositionId =>
+        path("unsure" / propositionId) { propositionId =>
           decodeRequest {
             entity(as[VoteUnsureRequest]) {
               request: VoteUnsureRequest =>
