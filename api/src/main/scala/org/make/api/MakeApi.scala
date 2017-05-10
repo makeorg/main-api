@@ -128,6 +128,8 @@ object MakeApi extends App
   val voteProducer = actorSystem.actorOf(VoteProducerActor.props, VoteProducerActor.name)
   val voteConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"), "votes-" + ConsumerActor.name)
 
+  val deadLettersListener = actorSystem.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name)
+
   citizenConsumer ! Consume
 
   //EXPERIMENTAL --> test integration
