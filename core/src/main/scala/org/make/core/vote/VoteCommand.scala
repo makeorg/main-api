@@ -31,4 +31,6 @@ case class UnsureCommand(
                           createdAt: ZonedDateTime
                         ) extends VoteCommand
 
+case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId) extends VoteCommand
+
 case class GetVote(voteId: VoteId)

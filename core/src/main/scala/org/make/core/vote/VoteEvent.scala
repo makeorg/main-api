@@ -46,4 +46,6 @@ object VoteEvent {
                           citizenId: CitizenId,
                           createdAt: ZonedDateTime
                         ) extends VoteEvent
+
+  case class VotedView(id: VoteId, propositionId: PropositionId) extends VoteEvent
 }
