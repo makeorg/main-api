@@ -31,24 +31,24 @@ class PropositionActor extends PersistentActor with StrictLogging {
 
   override def receiveCommand: Receive = {
     case GetProposition(_) => sender ! state.map(_.toProposition)
-    case _: ViewPropositionCommand =>
-      persistAndPublishEvent(PropositionViewed(id = propositionId))
+    case v: ViewPropositionCommand =>
+      persistAndPublishEvent(PropositionViewed(id = v.propositionId))
     case propose: ProposeCommand =>
       persistAndPublishEvent(PropositionProposed(
-        id = propositionId,
+        id = propose.propositionId,
         citizenId = propose.citizenId,
         createdAt = propose.createdAt,
         content = propose.content
       ))
-      Patterns.pipe((self ? GetProposition(propositionId)) (1.second), Implicits.global).to(sender)
+      Patterns.pipe((self ? GetProposition(propose.propositionId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
     case update: UpdatePropositionCommand =>
       persistAndPublishEvent(PropositionUpdated(
-        id = propositionId,
+        id = update.propositionId,
         updatedAt = update.updatedAt,
         content = update.content
       ))
-      Patterns.pipe((self ? GetProposition(propositionId)) (1.second), Implicits.global).to(sender)
+      Patterns.pipe((self ? GetProposition(update.propositionId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
     case Snapshot => state.foreach(state => saveSnapshot(state.toProposition))
   }
@@ -57,7 +57,7 @@ class PropositionActor extends PersistentActor with StrictLogging {
 
   private val applyEvent: PartialFunction[PropositionEvent, Unit] = {
     case e: PropositionProposed => state = Some(PropositionState(
-      propositionId = propositionId,
+      propositionId = e.id,
       citizenId = Option(e.citizenId),
       createdAt = Option(e.createdAt),
       updatedAt = Option(e.createdAt),

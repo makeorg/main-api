@@ -1,7 +1,9 @@
 package org.make.api
 
-import akka.NotUsed
+import java.time.ZonedDateTime
 import java.util.concurrent.Executors
+
+import akka.NotUsed
 import akka.actor.{ActorSystem, Extension}
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -10,7 +12,7 @@ import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset, Commit
 import akka.kafka.scaladsl.Consumer
 import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink}
+import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.Config
@@ -30,12 +32,14 @@ import org.make.api.proposition.{PropositionApi, PropositionCoordinator, Proposi
 import org.make.api.swagger.MakeDocumentation
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
+import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteEvent.VoteEventWrapper
 import scalikejdbc.{GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
+import scala.util.{Failure, Success}
 import scalaoauth2.provider._
 
 object MakeApi extends App
@@ -135,6 +139,13 @@ object MakeApi extends App
   //EXPERIMENTAL --> test integration
   propositionConsumer ! Consume
 
+  logger.debug("Proposing...")
+  val propId: PropositionId = Await.result(propositionService
+    .propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
+      case Some(proposition) => proposition.propositionId
+      case None => PropositionId("Invalid PropositionId")
+    }
+
   case class AkkaStreamKafkaRecord(record: PropositionElasticsearch, committableOffset: CommittableOffset)
 
   val client = new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry,1000)
@@ -143,34 +154,60 @@ object MakeApi extends App
     .withGroupId("stream-proposition-to-es")
     .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
-  def shape: Flow[CommittableMessage[String, AnyRef], Future[AkkaStreamKafkaRecord], NotUsed] =
-    Flow[CommittableMessage[String, AnyRef]].map( msg => {
+  def shape(msg: CommittableMessage[String, AnyRef]): Future[Option[AkkaStreamKafkaRecord]] = {
+      logger.debug("Flowing through shape")
+      logger.debug(msg.record.toString)
       PropositionElasticsearch.shape(
-        RecordFormat[PropositionEventWrapper].from(msg.record.asInstanceOf[GenericRecord])
+        RecordFormat[PropositionEventWrapper].from(msg.record.value.asInstanceOf[GenericRecord])
       ) map {
-        case Some(propositionElasticsearch) => Some(AkkaStreamKafkaRecord(
-          propositionElasticsearch,
-          msg.committableOffset
-        ))
-        case _ => None
-      } filter ( _.isDefined ) map (_.get)
-    })
-
-  val runnableGraph: RunnableGraph[Consumer.Control] =
-    Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
-      .via(shape)
-      .mapAsync(1) { msg =>
-        msg.map(committableRecord => {
-          ElasticsearchAPI.api.save(committableRecord.record)
-          committableRecord.committableOffset
-        })
+        case Some(propositionElasticsearch) =>
+          logger.debug("Shaped as propositionElasticsearch:")
+          logger.debug(propositionElasticsearch.toString)
+          Some(AkkaStreamKafkaRecord(
+            propositionElasticsearch,
+            msg.committableOffset
+          ))
+        case _ =>
+          logger.debug("Shaped as None ...")
+          None
       }
+    }
+
+  val filter: Flow[Option[AkkaStreamKafkaRecord], AkkaStreamKafkaRecord, NotUsed] =
+    Flow[Option[AkkaStreamKafkaRecord]].filter(_.isDefined).map(_.get)
+
+  val esPush: Flow[AkkaStreamKafkaRecord, CommittableOffset, NotUsed] = {
+    Flow[AkkaStreamKafkaRecord].map { committableRecord =>
+      logger.debug("Stream shaped")
+      logger.debug(committableRecord.record.toString)
+      //Condition not perfect...
+      if (committableRecord.record.createdAt == committableRecord.record.updatedAt)
+        ElasticsearchAPI.api.save(committableRecord.record)
+      else
+        ElasticsearchAPI.api.updateProposition(committableRecord.record)
+      committableRecord.committableOffset
+    }
+  }
+
+  val runnableGraph =
+    Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
+      .mapAsync(1)(shape)
+      .via(filter)
+      .via(esPush)
       .batch(max = 20, first => CommittableOffsetBatch.empty.updated(first)) { (batch, elem) =>
         batch.updated(elem)
       }
       .mapAsync(3)(_.commitScaladsl())
-      .toMat(Sink.foreach(msg => logger.info(msg.toString)))(Keep.left)
-  val control: Consumer.Control = runnableGraph.run()
+      .runWith(Sink.foreach(msg => logger.info("Stream done: " + msg.toString)))
+
+  runnableGraph.onComplete {
+    case Success(result) => logger.debug("Stream processed: {}", result)
+    case Failure(e) => logger.warn("Failure in stream", e)
+  }
+
+//  Thread.sleep(3000) // Be sure the previous proposition is actually saved in ES.
+  propositionService.update(propId,ZonedDateTime.now, "Il faut mettre a jour une proposition")
+  logger.debug("Sent propositions...")
   //END EXPERIMENTAL
 
   val log = Logging(actorSystem.eventStream, "make-api")

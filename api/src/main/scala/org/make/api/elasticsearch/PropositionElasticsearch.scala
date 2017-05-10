@@ -4,7 +4,10 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 import com.sksamuel.elastic4s.http.get.GetResponse
-import org.make.core.proposition.PropositionEvent.{PropositionEventWrapper, PropositionProposed, PropositionUpdated}
+import com.typesafe.scalalogging.StrictLogging
+import org.make.api.Predef._
+import org.make.core.proposition.PropositionEvent.{PropositionEventWrapper, PropositionProposed, PropositionUpdated, PropositionViewed}
+import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,51 +24,82 @@ case class PropositionElasticsearch(
                                    )
 
 
-object PropositionElasticsearch {
+object PropositionElasticsearch extends StrictLogging {
 
-  def shape: PartialFunction[AnyRef, Future[Option[PropositionElasticsearch]]] = {
-    case e: PropositionEventWrapper => e.event match {
-      case p: PropositionUpdated => ElasticsearchAPI.api.getPropositionById(p.id.value) map {
-        case Some(actual: PropositionElasticsearch) =>
-          Some(PropositionElasticsearch(
+  object shapePropositionEvent extends Poly1 {
+
+    def fromViewed(p: PropositionViewed): Future[Option[PropositionElasticsearch]] =
+      Future.successful(None)
+
+    def fromProposed(p: PropositionProposed): Future[Option[PropositionElasticsearch]] = {
+      logger.debug("In shape as PropositionProposed" + p.toString)
+      Future.successful(Some(PropositionElasticsearch(
+        id = UUID.fromString(p.id.value),
+        citizenId = UUID.fromString(p.citizenId.value),
+        createdAt = p.createdAt.toUTC,
+        updatedAt = p.createdAt.toUTC,
+        content = p.content,
+        nbVotesAgree = 0,
+        nbVotesDisagree = 0,
+        nbVotesUnsure = 0
+      )))
+    }
+
+    def fromUpdated(p: PropositionUpdated): Future[Option[PropositionElasticsearch]] = {
+      logger.debug("In shape as PropositionUpdated")
+      ElasticsearchAPI.api.getPropositionById(p.id) map {
+        _.map { actual =>
+          PropositionElasticsearch(
             id = actual.id,
             citizenId = actual.citizenId,
-            createdAt = actual.createdAt,
-            updatedAt = p.updatedAt,
+            createdAt = actual.createdAt.toUTC,
+            updatedAt = p.updatedAt.toUTC,
             content = p.content,
             nbVotesAgree = actual.nbVotesAgree,
             nbVotesDisagree = actual.nbVotesDisagree,
             nbVotesUnsure = actual.nbVotesUnsure
-          ))
-        case None => None
+          )
+        }
       }
-      case p: PropositionProposed =>
-        Future(Some(PropositionElasticsearch(
-          id = UUID.fromString(p.id.value),
-          citizenId = UUID.fromString(p.citizenId.value),
-          createdAt = p.createdAt,
-          updatedAt = p.createdAt,
-          content = p.content,
-          nbVotesAgree = 0,
-          nbVotesDisagree = 0,
-          nbVotesUnsure = 0
-        )))
     }
-    case res: GetResponse => res.storedFieldsAsMap match {
-      case x if x == Map.empty => Future(None)
-      case fields: Map[String, AnyRef] =>
-        Future(Some(PropositionElasticsearch(
-          id = UUID.fromString(fields.getOrElse("id", "NotFound").toString),
-          citizenId = UUID.fromString(fields.getOrElse("citizenId", "NotFound").toString),
-          createdAt = fields.getOrElse("createdAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime],
-          updatedAt = fields.getOrElse("updatedAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime],
-          content = fields.getOrElse("content", "No content").toString,
-          nbVotesAgree = fields.getOrElse("nbVotesAgree", 0).asInstanceOf[Int],
-          nbVotesDisagree = fields.getOrElse("nbVotesDisagree", 0).asInstanceOf[Int],
-          nbVotesUnsure = fields.getOrElse("nbVotesUnsure", 0).asInstanceOf[Int]
-        )))
-    }
-    case _ => Future(None)
+
+    implicit def caseViewed = at[PropositionViewed](fromViewed)
+    implicit def caseProposed = at[PropositionProposed](fromProposed)
+    implicit def caseUpdated = at[PropositionUpdated](fromUpdated)
+  }
+
+  def shape: PartialFunction[AnyRef, Future[Option[PropositionElasticsearch]]] = {
+    case e: PropositionEventWrapper =>
+      logger.debug("In shape as PropositionEventWrapper: Type: " + e.eventType + " Event: " + e)
+      val result =
+        e.event
+        .map(shapePropositionEvent)
+      logger.debug("In shape as PropositionEventWrapper: Result Type: " + result.toString)
+      result
+        .select[Future[Option[PropositionElasticsearch]]]
+        .getOrElse(Future.successful(None))
+    case res: GetResponse =>
+      logger.debug("In shape as GetResponse")
+      res.sourceAsMap match {
+        case x if x.isEmpty =>
+          logger.debug("In shape as GetResponse: Map.empty" + res.toString)
+          Future.successful(None)
+        case source: Map[String, AnyRef] =>
+          logger.debug("In shape as GetResponse: source: " + source.toString)
+          Future.successful(Some(PropositionElasticsearch(
+            id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
+            citizenId = UUID.fromString(source.getOrElse("citizenId", "NotFound").toString),
+            createdAt = source.getOrElse("createdAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime].toUTC,
+            updatedAt = source.getOrElse("updatedAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime].toUTC,
+            content = source.getOrElse("content", "No content").toString,
+            nbVotesAgree = source.getOrElse("nbVotesAgree", 0).asInstanceOf[Int],
+            nbVotesDisagree = source.getOrElse("nbVotesDisagree", 0).asInstanceOf[Int],
+            nbVotesUnsure = source.getOrElse("nbVotesUnsure", 0).asInstanceOf[Int]
+          )))
+      }
+    case _ =>
+      logger.debug("In shape as _")
+      Future.successful(None)
   }
 
 }

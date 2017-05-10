@@ -1,39 +1,47 @@
 {
-  "propositions" : {
-    "mappings" : {
-      "proposition" : {
-        "properties" : {
-          "citizenId" : {
-            "type" : "long"
-          },
-          "content" : {
-            "type" : "text",
-            "fields" : {
-              "keyword" : {
-                "type" : "keyword",
-                "ignore_above" : 256
-              }
-            }
-          },
-          "createdAt" : {
-            "type" : "date"
-          },
-          "id" : {
-            "type" : "text"
-          },
-          "updatedAt" : {
-            "type" : "date"
-          },
-          "nbVotesAgree": {
-            "type": "number"
-          },
-          "nbVotesDisagree": {
-            "type": "number"
-          },
-          "nbVotesUnsure": {
-            "type": "number"
+  "proposition" : {
+    "properties" : {
+      "citizenId" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 36
           }
         }
+      },
+      "content" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 140
+          }
+        }
+      },
+      "createdAt" : {
+        "type" : "date"
+      },
+      "id" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 36
+          }
+        }
+      },
+      "nbVotesAgree" : {
+        "type" : "long"
+      },
+      "nbVotesDisagree" : {
+        "type" : "long"
+      },
+      "nbVotesUnsure" : {
+        "type" : "long"
+      },
+      "updatedAt" : {
+        "type" : "date"
       }
     }
   }

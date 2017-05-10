@@ -49,7 +49,7 @@ trait PropositionServiceComponent {
       (
         actor ?
           UpdatePropositionCommand(
-            propositionId = idGenerator.nextPropositionId(),
+            propositionId = propositionId,
             updatedAt = updatedAt,
             content = content
           )

@@ -12,6 +12,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder, Json}
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
+import org.make.core.proposition.PropositionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,16 +30,26 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
   val client = HttpClient(ElasticsearchClientUri("localhost", 9200))
 
   val propositionIndex: IndexAndType = "propositions" / "proposition"
-  def getPropositionById(id: Any): Future[Option[PropositionElasticsearch]] = {
+  def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
     client execute {
-      get(id = id).from("propositions/proposition")
-    } flatMap { PropositionElasticsearch.shape.applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](_, _ => Future.successful(None)) }
+      get(id = propositionId.value).from(propositionIndex)
+    } flatMap {
+      PropositionElasticsearch.shape
+        .applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](_, _ => Future.successful(None))
+    }
   }
 
   def save(record: PropositionElasticsearch): Future[Done] = {
     logger.info(s"Saving in Elasticsearch: $record")
     client.execute {
       indexInto(propositionIndex) doc record refresh RefreshPolicy.IMMEDIATE id record.id.toString
+    } map { _ => Done }
+  }
+
+  def updateProposition(record: PropositionElasticsearch): Future[Done] = {
+    logger.info(s"Saving in Elasticsearch: $record")
+    client.execute {
+      update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
     } map { _ => Done }
   }
 }

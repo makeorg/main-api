@@ -3,7 +3,7 @@ package org.make.api.kafka
 import java.util
 import java.util.Properties
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
@@ -16,7 +16,7 @@ import scala.util.Try
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging with ActorLogging {
 
   private var consumer: KafkaConsumer[String, GenericRecord] = _
 
@@ -48,6 +48,7 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], priv
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
       records.forEach { record =>
         val event = format.from(record.value())
+        log.info(s"Got event: $event")
         logger.info(s"Got event: $event")
       }
       // TODO: handle record

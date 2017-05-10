@@ -1,6 +1,6 @@
 package org.make.api
 
-import java.time.{ZoneId, ZonedDateTime}
+import java.time.{ZoneId, ZoneOffset, ZonedDateTime}
 
 import org.joda.time.DateTime
 
@@ -23,5 +23,12 @@ object Predef {
     }
   }
 
+
+  implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
+
+    def toUTC: ZonedDateTime = {
+      self.withZoneSameInstant(ZoneOffset.UTC)
+    }
+  }
 
 }

@@ -1,19 +1,24 @@
 package org.make.api
 
+import com.typesafe.scalalogging.StrictLogging
 import pl.allegro.tech.embeddedelasticsearch.{EmbeddedElastic, IndexSettings, PopularProperties}
 
 import scala.io.Source
 
-object EmbeddedApplication {
+object EmbeddedApplication extends StrictLogging {
+
+  val schema: String = Source.fromResource("proposition-mapping.json").mkString
+
+  logger.debug("Applying schema for proposition: {}", schema)
 
   lazy val embeddedElastic: EmbeddedElastic = EmbeddedElastic.builder()
-    .withElasticVersion("5.0.0")
+    .withElasticVersion("5.4.0")
     .withSetting(PopularProperties.TRANSPORT_TCP_PORT, 9300)
     .withSetting(PopularProperties.HTTP_PORT, 9200)
     .withSetting(PopularProperties.CLUSTER_NAME, "make-search")
     .withIndex("propositions",
       IndexSettings.builder()
-        .withType("proposition", Source.fromResource("proposition-mapping.json").toString)
+        .withType("proposition", schema)
         .build()
     )
     //    .withIndex("cars",
