@@ -36,8 +36,8 @@ trait VoteServiceComponent {
         actor ?
           AgreeCommand(
             voteId = idGenerator.nextVoteId(),
-            citizenId = citizenId,
             propositionId = propositionId,
+            citizenId = citizenId,
             createdAt = createdAt
           )
         ).mapTo[Option[Vote]]
