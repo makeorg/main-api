@@ -6,6 +6,7 @@ import shapeless.{:+:, CNil, Coproduct}
 import org.make.core.EventWrapper
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionId
+import org.make.core.vote.VoteStatus.VoteStatus
 
 object VoteEvent {
 
@@ -30,21 +31,24 @@ object VoteEvent {
                          id: VoteId,
                          propositionId: PropositionId,
                          citizenId: CitizenId,
-                         createdAt: ZonedDateTime
+                         createdAt: ZonedDateTime,
+                         status: VoteStatus
                        ) extends VoteEvent
 
   case class VotedDisagree(
                             id: VoteId,
                             propositionId: PropositionId,
                             citizenId: CitizenId,
-                            createdAt: ZonedDateTime
+                            createdAt: ZonedDateTime,
+                            status: VoteStatus
                           ) extends VoteEvent
 
   case class VotedUnsure(
                           id: VoteId,
                           propositionId: PropositionId,
                           citizenId: CitizenId,
-                          createdAt: ZonedDateTime
+                          createdAt: ZonedDateTime,
+                          status: VoteStatus
                         ) extends VoteEvent
 
   case class VotedView(id: VoteId, propositionId: PropositionId) extends VoteEvent
