@@ -21,7 +21,7 @@ class MakeDocumentation(system: ActorSystem, override val apiTypes: Seq[ru.Type]
       definition.setAuthorizationUrl("/login.html")
       definition.setType("oauth2")
       definition.setScopes(
-        Map("user" -> "applucation user", "admin" -> "application admin").asJava
+        Map("user" -> "application user", "admin" -> "application admin").asJava
       )
       definition
     }
