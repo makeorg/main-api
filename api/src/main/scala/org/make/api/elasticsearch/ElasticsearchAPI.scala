@@ -33,9 +33,10 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
   def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
     client execute {
       get(id = propositionId.value).from(propositionIndex)
-    } flatMap {
+    } flatMap { response =>
+      logger.debug("Received response from Elasticsearch: " + response.toString)
       PropositionElasticsearch.shape
-        .applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](_, _ => Future.successful(None))
+        .applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](response, _ => Future.successful(None))
     }
   }
 
@@ -47,7 +48,7 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
   }
 
   def updateProposition(record: PropositionElasticsearch): Future[Done] = {
-    logger.info(s"Saving in Elasticsearch: $record")
+    logger.info(s"Updating in Elasticsearch: $record")
     client.execute {
       update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
     } map { _ => Done }

@@ -28,12 +28,12 @@ object PropositionElasticsearch extends StrictLogging {
 
   object shapePropositionEvent extends Poly1 {
 
-    def fromViewed(p: PropositionViewed): Future[Option[PropositionElasticsearch]] =
-      Future.successful(None)
+    def fromViewed(p: PropositionViewed): () => Future[Option[PropositionElasticsearch]] =
+      () => Future.successful(None)
 
-    def fromProposed(p: PropositionProposed): Future[Option[PropositionElasticsearch]] = {
+    def fromProposed(p: PropositionProposed): () => Future[Option[PropositionElasticsearch]] = {
       logger.debug("In shape as PropositionProposed" + p.toString)
-      Future.successful(Some(PropositionElasticsearch(
+      () => Future.successful(Some(PropositionElasticsearch(
         id = UUID.fromString(p.id.value),
         citizenId = UUID.fromString(p.citizenId.value),
         createdAt = p.createdAt.toUTC,
@@ -45,9 +45,9 @@ object PropositionElasticsearch extends StrictLogging {
       )))
     }
 
-    def fromUpdated(p: PropositionUpdated): Future[Option[PropositionElasticsearch]] = {
+    def fromUpdated(p: PropositionUpdated): () => Future[Option[PropositionElasticsearch]] = {
       logger.debug("In shape as PropositionUpdated")
-      ElasticsearchAPI.api.getPropositionById(p.id) map {
+      val eventualMaybePropositionElasticsearch = ElasticsearchAPI.api.getPropositionById(p.id) map {
         _.map { actual =>
           PropositionElasticsearch(
             id = actual.id,
@@ -61,6 +61,7 @@ object PropositionElasticsearch extends StrictLogging {
           )
         }
       }
+      () => eventualMaybePropositionElasticsearch
     }
 
     implicit def caseViewed = at[PropositionViewed](fromViewed)
@@ -76,8 +77,8 @@ object PropositionElasticsearch extends StrictLogging {
         .map(shapePropositionEvent)
       logger.debug("In shape as PropositionEventWrapper: Result Type: " + result.toString)
       result
-        .select[Future[Option[PropositionElasticsearch]]]
-        .getOrElse(Future.successful(None))
+        .select[() => Future[Option[PropositionElasticsearch]]]
+        .getOrElse(() => Future.successful(None))()
     case res: GetResponse =>
       logger.debug("In shape as GetResponse")
       res.sourceAsMap match {
@@ -89,8 +90,8 @@ object PropositionElasticsearch extends StrictLogging {
           Future.successful(Some(PropositionElasticsearch(
             id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
             citizenId = UUID.fromString(source.getOrElse("citizenId", "NotFound").toString),
-            createdAt = source.getOrElse("createdAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime].toUTC,
-            updatedAt = source.getOrElse("updatedAt", ZonedDateTime.now).asInstanceOf[ZonedDateTime].toUTC,
+            createdAt = ZonedDateTime.parse(source.getOrElse("createdAt", ZonedDateTime.now).toString).toUTC,
+            updatedAt = ZonedDateTime.parse(source.getOrElse("updatedAt", ZonedDateTime.now).toString).toUTC,
             content = source.getOrElse("content", "No content").toString,
             nbVotesAgree = source.getOrElse("nbVotesAgree", 0).asInstanceOf[Int],
             nbVotesDisagree = source.getOrElse("nbVotesDisagree", 0).asInstanceOf[Int],
