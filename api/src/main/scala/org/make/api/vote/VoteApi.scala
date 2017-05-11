@@ -60,17 +60,18 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
         path("vote" / propositionId) { propositionId =>
-          decodeRequest
-          entity(as[VoteRequest]) {
-            request: VoteRequest =>
-              onSuccess(voteService.vote(
-                propositionId = propositionId,
-                citizenId = user.user.citizenId,
-                createdAt = ZonedDateTime.now,
-                status = request.status
-              )) {
-                complete(_)
-              }
+          decodeRequest {
+            entity(as[VoteRequest]) {
+              request: VoteRequest =>
+                onSuccess(voteService.vote(
+                  propositionId = propositionId,
+                  citizenId = user.user.citizenId,
+                  createdAt = ZonedDateTime.now,
+                  status = request.status
+                )) {
+                  complete(_)
+                }
+            }
           }
         }
       }
