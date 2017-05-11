@@ -4,32 +4,20 @@ import java.time.ZonedDateTime
 
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionId
+import org.make.core.vote.VoteStatus.VoteStatus
 
 trait VoteCommand {
   def voteId: VoteId
   def propositionId: PropositionId
 }
 
-case class AgreeCommand(
+case class PutVoteCommand(
                          voteId: VoteId,
                          propositionId: PropositionId,
                          citizenId: CitizenId,
-                         createdAt: ZonedDateTime
+                         createdAt: ZonedDateTime,
+                         status: VoteStatus
                        ) extends VoteCommand
-
-case class DisagreeCommand(
-                            voteId: VoteId,
-                            propositionId: PropositionId,
-                            citizenId: CitizenId,
-                            createdAt: ZonedDateTime
-                          ) extends VoteCommand
-
-case class UnsureCommand(
-                          voteId: VoteId,
-                          propositionId: PropositionId,
-                          citizenId: CitizenId,
-                          createdAt: ZonedDateTime
-                        ) extends VoteCommand
 
 case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId) extends VoteCommand
 
