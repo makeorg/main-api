@@ -74,7 +74,7 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
       }
     }
 
-  @ApiOperation(value = "propose-proposition", httpMethod = "POST", code = 200, authorizations = Array(
+  @ApiOperation(value = "propose-proposition", httpMethod = "PUT", code = 200, authorizations = Array(
     new Authorization(value = "MakeApi", scopes = Array(
       new AuthorizationScope (scope = "user", description = "application user"),
       new AuthorizationScope (scope = "admin", description = "BO Admin")
@@ -86,6 +86,7 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
   ))
+  @Path(value = "/proposition/{propositionId}")
   def update: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       put {

@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 import akka.Done
+import akka.actor.Actor
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
@@ -26,8 +27,8 @@ trait CustomFormatters {
 }
 
 
-class ElasticsearchAPI extends CustomFormatters with StrictLogging {
-  val client = HttpClient(ElasticsearchClientUri("localhost", 9200))
+class ElasticsearchAPI extends Actor with CustomFormatters with StrictLogging with ElasticsearchConfigurationExtension {
+  val client = HttpClient(ElasticsearchClientUri(elasticsearchConfiguration.host, elasticsearchConfiguration.port))
 
   val propositionIndex: IndexAndType = "propositions" / "proposition"
   def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
@@ -35,8 +36,8 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
       get(id = propositionId.value).from(propositionIndex)
     } flatMap { response =>
       logger.debug("Received response from Elasticsearch: " + response.toString)
-      PropositionElasticsearch.shape
-        .applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](response, _ => Future.successful(None))
+      Future.successful(PropositionElasticsearch.shape
+        .applyOrElse[AnyRef, Option[PropositionElasticsearch]](response, _ => None))
     }
   }
 
@@ -53,6 +54,8 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
       update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
     } map { _ => Done }
   }
+
+  override def receive: Receive = ???
 }
 
 object ElasticsearchAPI {

@@ -24,68 +24,23 @@ import org.make.core.proposition.PropositionEvent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-//case class CommittableOffsetWrapper[T](record: T, committableOffset: CommittableOffset)
-
 class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit val materializer: Materializer) extends StrictLogging with AvroSerializers {
-
 
   private val client = new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry,1000)
 
   private val propositionConsumerSettings = ConsumerSettings(actorSystem, new StringDeserializer, new KafkaAvroDeserializer(client))
     .withBootstrapServers(KafkaConfiguration(actorSystem).connectionString)
     .withGroupId("stream-proposition-to-es")
-    .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+    .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
 
   type FlowGraph = Graph[FlowShape[CommittableMessage[String, AnyRef], Done], NotUsed]
-
-//  type UpdatedPropositionFlowGraph = Graph[FlowShape[PropositionUpdated, PropositionElasticsearch], NotUsed]
-//
-//  val updatedProposition: UpdatedPropositionFlowGraph = {
-//    Flow.fromGraph(
-//      GraphDSL.create() { implicit builder =>
-//        import GraphDSL.Implicits._
-//
-//        val bcast = builder.add(Broadcast[PropositionUpdated](2))
-//
-//        val getPropositionFromES: Flow[PropositionUpdated, Option[PropositionElasticsearch], NotUsed] =
-//          Flow[PropositionUpdated].mapAsync(1)(p => ElasticsearchAPI.api.getPropositionById(p.id))
-//
-//        def filter[T]: Flow[Option[T], T, NotUsed] =
-//          Flow[Option[T]].filter(_.isDefined).map(_.get)
-//
-//        val zip = builder.add(Zip[PropositionUpdated, PropositionElasticsearch]())
-//
-//        val x: Flow[(PropositionUpdated, PropositionElasticsearch), PropositionElasticsearch, NotUsed] = {
-//          Flow[(PropositionUpdated, PropositionElasticsearch)].map { xx =>
-//            val update = xx._1
-//            val actual = xx._2
-//            logger.debug("ZIPPING update: " + update + " actual: " + actual)
-//            PropositionElasticsearch(
-//              id = actual.id,
-//              citizenId = actual.citizenId,
-//              createdAt = actual.createdAt.toUTC,
-//              updatedAt = update.updatedAt.toUTC,
-//              content = update.content,
-//              nbVotesAgree = actual.nbVotesAgree,
-//              nbVotesDisagree = actual.nbVotesDisagree,
-//              nbVotesUnsure = actual.nbVotesUnsure
-//            )
-//          }
-//        }
-//
-//        bcast                                                             ~> zip.in0
-//        bcast ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> zip.in1
-//
-//        FlowShape(bcast.in, (zip.out ~> x).outlet)
-//      })
-//  }
 
   val esPush: FlowGraph = {
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
 
-        val bcast = builder.add(Broadcast[CommittableMessage[String, AnyRef]](2))
+        val bcast = builder.add(Broadcast[CommittableMessage[String, AnyRef]](3))
 
         val proposeEvent: Flow[CommittableMessage[String, AnyRef], PropositionProposed, NotUsed] =
           Flow[CommittableMessage[String, AnyRef]]
@@ -125,7 +80,6 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
             ElasticsearchAPI.api.getPropositionById(update.id).map {
               _.map {
                 p =>
-                  logger.debug("ZIPPING update: " + update + " actual: " + p)
                   PropositionElasticsearch(
                     id = p.id,
                     citizenId = p.citizenId,
@@ -148,23 +102,6 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
         val update: Flow[PropositionElasticsearch, Done, NotUsed] =
           Flow[PropositionElasticsearch].mapAsync(1)(ElasticsearchAPI.api.updateProposition)
 
-        val merge = builder.add(Merge[Done](2))
-
-        bcast ~> proposeEvent ~> toPropositionEs                                          ~> save   ~> merge
-        bcast ~> updateEvent  ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> update ~> merge
-
-        FlowShape(bcast.in, merge.out)
-      })
-  }
-
-  val commitOffset: FlowGraph = {
-    Flow.fromGraph(
-      GraphDSL.create() { implicit builder =>
-        import GraphDSL.Implicits._
-
-        val bcast = builder.add(Broadcast[CommittableMessage[String, AnyRef]](2))
-        val zip = builder.add(Zip[CommittableMessage[String, AnyRef], Done]())
-
         val commitOffset: Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
           Flow[(CommittableMessage[String, AnyRef], Done)].map(_._1.committableOffset)
             .batch(max = 20, first => CommittableOffsetBatch.empty.updated(first)) { (batch, elem) =>
@@ -172,8 +109,13 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
             }
             .mapAsync(1)(_.commitScaladsl())
 
-        bcast           ~> zip.in0
-        bcast ~> esPush ~> zip.in1
+        val merge = builder.add(Merge[Done](2))
+        val zip = builder.add(Zip[CommittableMessage[String, AnyRef], Done]())
+
+        bcast                                                                                                ~> zip.in0
+        bcast ~> proposeEvent ~> toPropositionEs                                          ~> save   ~> merge
+        bcast ~> updateEvent  ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> update ~> merge
+                                                                                                       merge ~> zip.in1
 
         FlowShape(bcast.in, (zip.out ~> commitOffset).outlet)
       })
@@ -182,7 +124,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
   def run: Future[Done] =
     Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
       .via(esPush)
-      .runWith(Sink.foreach(msg => logger.info("Stream done: " + msg.toString)))
+      .runWith(Sink.foreach(msg => logger.info("Streaming of one message: " + msg.toString)))
 }
 
 object PropositionStreamToElasticsearch {

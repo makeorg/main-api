@@ -49,7 +49,6 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], priv
       records.forEach { record =>
         val event = format.from(record.value())
         log.info(s"Got event: $event")
-        logger.info(s"Got event: $event")
       }
       // TODO: handle record
       consumer.commitSync()

@@ -136,20 +136,17 @@ object MakeApi extends App
   }
 
   if (settings.sendtestData) {
+    Thread.sleep(3000)
     logger.debug("Proposing...")
+    propositionService.propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
     val propId: PropositionId = Await.result(propositionService
-      .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
+      .propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
       case Some(proposition) => proposition.propositionId
       case None => PropositionId("Invalid PropositionId")
     }
-
-
-    Thread.sleep(3000) // Be sure the previous proposition is actually saved in ES.
-
     propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
     logger.debug("Sent propositions...")
   }
-
   //END EXPERIMENTAL
 
   val log = Logging(actorSystem.eventStream, "make-api")
