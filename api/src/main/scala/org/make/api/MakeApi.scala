@@ -15,6 +15,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.database.DatabaseConfiguration
+import org.make.api.elasticsearch.{ElasticsearchAPI, ElasticsearchConfiguration}
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka._
 import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent, PropositionStreamToElasticsearch}
@@ -96,6 +97,10 @@ object MakeApi extends App
     org.make.api.EmbeddedApplication.embeddedElastic.start()
   }
 
+  if(settings.autoCreateSchemas) {
+
+  }
+
   val host = settings.http.host
   val port = settings.http.port
 
@@ -129,13 +134,16 @@ object MakeApi extends App
   //EXPERIMENTAL --> test integration
   propositionConsumer ! Consume
 
-  val runnableGraph = PropositionStreamToElasticsearch.stream(actorSystem, materializer).run
+  val esConfiguration = ElasticsearchConfiguration(actorSystem)
+  val esApi = new ElasticsearchAPI(esConfiguration.host, esConfiguration.port.toInt)
+
+  val runnableGraph = PropositionStreamToElasticsearch.stream(actorSystem, materializer).run(esApi)
   runnableGraph.onComplete {
     case Success(result) => logger.debug("Stream processed: {}", result)
     case Failure(e) => logger.warn("Failure in stream", e)
   }
 
-  if (settings.sendtestData) {
+  if (settings.sendTestData) {
     logger.debug("Proposing...")
     val propId: PropositionId = Await.result(propositionService
       .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
@@ -182,8 +190,12 @@ class MakeSettings(config: Config) extends Extension {
     if (config.hasPath("make-api.dev.embedded-elasticsearch")) config.getBoolean("make-api.dev.embedded-elasticsearch")
     else false
 
-  val sendtestData: Boolean =
+  val sendTestData: Boolean =
     if (config.hasPath("make-api.dev.send-test-data")) config.getBoolean("make-api.dev.send-test-data")
+    else false
+
+  val autoCreateSchemas: Boolean =
+    if (config.hasPath("make-api.dev.auto-create-db-schemas")) config.getBoolean("make-api.dev.auto-create-db-schemas")
     else false
 
   object http {

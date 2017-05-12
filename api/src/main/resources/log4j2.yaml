@@ -14,6 +14,8 @@ Configuration:
         level: debug
       - name: org.apache.kafka
         level: warn
+      - name: io.confluent.common.config
+        level: warn
     Root:
      level: info
      AppenderRef:

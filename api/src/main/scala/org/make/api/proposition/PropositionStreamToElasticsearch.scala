@@ -80,7 +80,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
 //      })
 //  }
 
-  val esPush: FlowGraph = {
+  def esPush(api: ElasticsearchAPI): FlowGraph = {
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
@@ -122,7 +122,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
 
         val getPropositionFromES: Flow[PropositionUpdated, Option[PropositionElasticsearch], NotUsed] =
           Flow[PropositionUpdated].mapAsync(1) { update =>
-            ElasticsearchAPI.api.getPropositionById(update.id).map {
+            api.getPropositionById(update.id).map {
               _.map {
                 p =>
                   logger.debug("ZIPPING update: " + update + " actual: " + p)
@@ -144,9 +144,9 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
           Flow[Option[T]].filter(_.isDefined).map(_.get)
 
         val save: Flow[PropositionElasticsearch, Done, NotUsed] =
-          Flow[PropositionElasticsearch].mapAsync(1)(ElasticsearchAPI.api.save)
+          Flow[PropositionElasticsearch].mapAsync(1)(api.save)
         val update: Flow[PropositionElasticsearch, Done, NotUsed] =
-          Flow[PropositionElasticsearch].mapAsync(1)(ElasticsearchAPI.api.updateProposition)
+          Flow[PropositionElasticsearch].mapAsync(1)(api.updateProposition)
 
         val merge = builder.add(Merge[Done](2))
 
@@ -157,7 +157,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
       })
   }
 
-  val commitOffset: FlowGraph = {
+  def commitOffset(api: ElasticsearchAPI): FlowGraph = {
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
@@ -172,16 +172,16 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
             }
             .mapAsync(1)(_.commitScaladsl())
 
-        bcast           ~> zip.in0
-        bcast ~> esPush ~> zip.in1
+        bcast                ~> zip.in0
+        bcast ~> esPush(api) ~> zip.in1
 
         FlowShape(bcast.in, (zip.out ~> commitOffset).outlet)
       })
   }
 
-  def run: Future[Done] =
-    Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
-      .via(esPush)
+  def run(api: ElasticsearchAPI): Future[Done] =
+    Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(KafkaConfiguration(actorSystem).topics(PropositionProducerActor.topicKey)))
+      .via(esPush(api))
       .runWith(Sink.foreach(msg => logger.info("Stream done: " + msg.toString)))
 }
 

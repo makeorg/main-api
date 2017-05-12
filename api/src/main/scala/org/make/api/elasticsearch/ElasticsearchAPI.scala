@@ -26,8 +26,8 @@ trait CustomFormatters {
 }
 
 
-class ElasticsearchAPI extends CustomFormatters with StrictLogging {
-  val client = HttpClient(ElasticsearchClientUri("localhost", 9200))
+class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
+  val client = HttpClient(ElasticsearchClientUri(host, port))
 
   val propositionIndex: IndexAndType = "propositions" / "proposition"
   def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
@@ -35,6 +35,7 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
       get(id = propositionId.value).from(propositionIndex)
     } flatMap { response =>
       logger.debug("Received response from Elasticsearch: " + response.toString)
+      implicit val api: ElasticsearchAPI = this
       PropositionElasticsearch.shape
         .applyOrElse[AnyRef, Future[Option[PropositionElasticsearch]]](response, _ => Future.successful(None))
     }
@@ -53,8 +54,4 @@ class ElasticsearchAPI extends CustomFormatters with StrictLogging {
       update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
     } map { _ => Done }
   }
-}
-
-object ElasticsearchAPI {
-  val api = new ElasticsearchAPI
 }

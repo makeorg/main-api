@@ -45,9 +45,9 @@ object PropositionElasticsearch extends StrictLogging {
       )))
     }
 
-    def fromUpdated(p: PropositionUpdated): () => Future[Option[PropositionElasticsearch]] = {
+    def fromUpdated(p: PropositionUpdated)(implicit api: ElasticsearchAPI): () => Future[Option[PropositionElasticsearch]] = {
       logger.debug("In shape as PropositionUpdated")
-      val eventualMaybePropositionElasticsearch = ElasticsearchAPI.api.getPropositionById(p.id) map {
+      val eventualMaybePropositionElasticsearch = api.getPropositionById(p.id) map {
         _.map { actual =>
           PropositionElasticsearch(
             id = actual.id,
@@ -66,10 +66,10 @@ object PropositionElasticsearch extends StrictLogging {
 
     implicit def caseViewed = at[PropositionViewed](fromViewed)
     implicit def caseProposed = at[PropositionProposed](fromProposed)
-    implicit def caseUpdated = at[PropositionUpdated](fromUpdated)
+    implicit def caseUpdated(implicit api: ElasticsearchAPI) = at[PropositionUpdated](fromUpdated)
   }
 
-  def shape: PartialFunction[AnyRef, Future[Option[PropositionElasticsearch]]] = {
+  def shape(implicit api: ElasticsearchAPI): PartialFunction[AnyRef, Future[Option[PropositionElasticsearch]]] = {
     case e: PropositionEventWrapper =>
       logger.debug("In shape as PropositionEventWrapper: Type: " + e.eventType + " Event: " + e)
       val result =
