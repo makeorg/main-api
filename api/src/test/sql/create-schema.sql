@@ -1,3 +1,6 @@
+DROP DATABASE makeapi;
+CREATE DATABASE makeapi;
+
 CREATE TABLE citizen (
   id VARCHAR(256) NOT NULL PRIMARY KEY,
   email VARCHAR(512) NOT NULL,
@@ -14,6 +17,6 @@ CREATE TABLE token (
   citizen_id VARCHAR(256) NOT NULL,
   scope VARCHAR(256) NOT NULL,
   creation_date TIMESTAMP WITH TIME ZONE,
-  validity_duration_seconds DECIMAL NOT NULL,
+  validity_duration_seconds INT NOT NULL,
   parameters TEXT
 );

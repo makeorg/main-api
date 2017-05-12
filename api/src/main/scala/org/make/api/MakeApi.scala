@@ -68,6 +68,7 @@ object MakeApi extends App
   override val tokenService: TokenService = new TokenService()
 
   override def readExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(50))
+
   override def writeExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(20))
 
   override val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
@@ -128,28 +129,32 @@ object MakeApi extends App
   //EXPERIMENTAL --> test integration
   propositionConsumer ! Consume
 
-  logger.debug("Proposing...")
-  val propId: PropositionId = Await.result(propositionService
-    .propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
-      case Some(proposition) => proposition.propositionId
-      case None => PropositionId("Invalid PropositionId")
-    }
-
   val runnableGraph = PropositionStreamToElasticsearch.stream(actorSystem, materializer).run
   runnableGraph.onComplete {
     case Success(result) => logger.debug("Stream processed: {}", result)
     case Failure(e) => logger.warn("Failure in stream", e)
   }
 
-  Thread.sleep(3000) // Be sure the previous proposition is actually saved in ES.
+  if (settings.sendtestData) {
+    logger.debug("Proposing...")
+    val propId: PropositionId = Await.result(propositionService
+      .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
+      case Some(proposition) => proposition.propositionId
+      case None => PropositionId("Invalid PropositionId")
+    }
 
-  propositionService.update(propId,ZonedDateTime.now, "Il faut mettre a jour une proposition")
-  logger.debug("Sent propositions...")
+
+    Thread.sleep(3000) // Be sure the previous proposition is actually saved in ES.
+
+    propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
+    logger.debug("Sent propositions...")
+  }
+
   //END EXPERIMENTAL
 
   val log = Logging(actorSystem.eventStream, "make-api")
   bindingFuture.map { serverBinding =>
-    log.info(s"Shoppers API bound to ${serverBinding.localAddress} ")
+    log.info(s"Make API bound to ${serverBinding.localAddress} ")
   }.onComplete {
     case util.Failure(ex) =>
       log.error(ex, "Failed to bind to {}:{}!", host, port)
@@ -174,7 +179,11 @@ class MakeSettings(config: Config) extends Extension {
 
   val passivateTimeout: Duration = Duration(config.getString("make-api.passivate-timeout"))
   val useEmbeddedElasticSearch: Boolean =
-    if (config.hasPath("make-api.dev.embeddedElasticSearch")) config.getBoolean("make-api.dev.embeddedElasticSearch")
+    if (config.hasPath("make-api.dev.embedded-elasticsearch")) config.getBoolean("make-api.dev.embedded-elasticsearch")
+    else false
+
+  val sendtestData: Boolean =
+    if (config.hasPath("make-api.dev.send-test-data")) config.getBoolean("make-api.dev.send-test-data")
     else false
 
   object http {

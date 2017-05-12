@@ -23,9 +23,15 @@ class PropositionActor extends PersistentActor with StrictLogging {
     case e: PropositionEvent =>
       logger.info(s"Recovering event $e")
       applyEvent(e)
-    case SnapshotOffer(_, snapshot: PropositionState) =>
+    case SnapshotOffer(_, snapshot: Proposition) =>
       logger.info(s"Recovering from snapshot $snapshot")
-      state = Some(snapshot)
+      state = Some(PropositionState(
+        propositionId = snapshot.propositionId,
+        citizenId = Option(snapshot.citizenId),
+        createdAt = Option(snapshot.createdAt),
+        updatedAt = Option(snapshot.updatedAt),
+        content = Option(snapshot.content)
+      ))
     case _: RecoveryCompleted =>
   }
 

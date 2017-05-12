@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.0"
+  private val akkaVersion = "2.5.1"
   private val akkaHttpVersion = "10.0.5"
   private val nettyVersion = "4.1.9.Final"
   private val kafkaVersion = "0.10.2.0"
@@ -19,9 +19,10 @@ object Dependencies {
 
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaStreamCirce: ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"
+  val akka: ModuleID = "com.typesafe.akka" %% "akka-actor" % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion
-  val akkaClusterSharding: ModuleID = ("com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion).exclude("io.netty", "netty")
+  val akkaClusterSharding: ModuleID = ("com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion)
   val akkaPersistenceCassandra: ModuleID = ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50").exclude("io.netty", "netty-handler")
   val akkaStreamKafka: ModuleID = "com.typesafe.akka" %% "akka-stream-kafka" % "0.16"
   val akkaHttp: ModuleID = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion

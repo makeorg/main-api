@@ -1,0 +1,165 @@
+version: '3'
+services:
+  seed1:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
+    hostname: seed1
+    networks:
+      - makeapi
+    environment:
+      - TCP_HOST=seed1
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+  seed2:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
+    hostname: seed2
+    networks:
+      - makeapi
+    environment:
+      - TCP_HOST=seed2
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+  seed3:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
+    hostname: seed3
+    networks:
+      - makeapi
+    environment:
+      - TCP_HOST=seed3
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+  api1:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    hostname: api1
+    ports:
+      - 9000:9000
+    environment:
+      - TCP_HOST=api1
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+      - KAFKA_URI=kafka:9092
+      - AVRO_REGISTRY_URL=http://schema_registry:8081
+      - ES_HOST=elasticsearch
+      - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - CASSANDRA_0=cassandra
+    networks:
+      - makeapi
+    depends_on:
+      - seed1
+      - seed2
+      - seed3
+      - kafka
+      - cockroach
+      - elasticsearch
+      - cassandra
+  api2:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    hostname: api2
+    ports:
+      - 19000:9000
+    environment:
+      - TCP_HOST=api2
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+      - KAFKA_URI=kafka:9092
+      - AVRO_REGISTRY_URL=http://schema_registry:8081
+      - ES_HOST=elasticsearch
+      - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - CASSANDRA_0=cassandra
+    networks:
+      - makeapi
+    depends_on:
+      - seed1
+      - seed2
+      - seed3
+      - kafka
+      - cockroach
+      - elasticsearch
+      - cassandra
+      - api1
+  api3:
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    hostname: api3
+    ports:
+      - 29000:9000
+    environment:
+      - TCP_HOST=api3
+      - SEED_0=akka.tcp://make-api@seed1:2551
+      - SEED_1=akka.tcp://make-api@seed2:2551
+      - SEED_2=akka.tcp://make-api@seed3:2551
+      - KAFKA_URI=kafka:9092
+      - AVRO_REGISTRY_URL=http://schema_registry:8081
+      - ES_HOST=elasticsearch
+      - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - CASSANDRA_0=cassandra
+    networks:
+      - makeapi
+    depends_on:
+      - seed1
+      - seed2
+      - seed3
+      - kafka
+      - cockroach
+      - elasticsearch
+      - cassandra
+      - api2
+  elasticsearch:
+    image: elasticsearch:5.4.0
+    hostname: elasticsearch
+  zookeeper:
+    image: zookeeper:3.4.10
+    hostname: zookeeper
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=localhost:2888:3888
+    networks:
+      - makeapi
+  kafka:
+    image: wurstmeister/kafka:0.10.2.0
+    hostname: kafka
+    environment:
+      KAFKA_ADVERTISED_HOST: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_PORT: 9092
+    ports:
+      - 9092:9092
+      - 18081:8081
+    networks:
+      - makeapi
+  schema_registry:
+    image: cgswong/confluent-schema-registry:2.0.1
+    hostname: schema_registry
+    depends_on:
+      - kafka
+    networks:
+      - makeapi
+    environment:
+        ZOOKEEPER_PORT_2181_TCP_ADDR: zookeeper
+        ZOOKEEPER_PORT_2181_TCP_PORT: 2181
+    restart: on-failure:2
+  cockroach:
+    image: cockroachdb/cockroach:alpha-18828-g1227734
+    hostname: cockroach
+    command: start --insecure
+    ports:
+      - 26257:26257
+    networks:
+      - makeapi
+  cassandra:
+    image: cassandra:3.10
+    hostname: cassandra
+    ports:
+      - 7000:7000
+      - 9042:9042
+    networks:
+      - makeapi
+networks:
+  makeapi:
+    ipam:
+      driver: default
+      config:
+        - subnet: 20.0.0.0/24

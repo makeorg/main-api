@@ -12,6 +12,8 @@ Configuration:
         level: debug
       - name: scalikejdbc
         level: debug
+      - name: org.apache.kafka
+        level: warn
     Root:
      level: info
      AppenderRef:
