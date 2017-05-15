@@ -1,7 +1,5 @@
 package org.make.api.proposition
 
-import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffsetBatch}
 import akka.kafka.scaladsl.Consumer
@@ -62,35 +60,11 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
             .map(_.get)
 
         val toPropositionEs: Flow[PropositionProposed, PropositionElasticsearch, NotUsed] =
-          Flow[PropositionProposed].map { p =>
-            PropositionElasticsearch(
-              id = UUID.fromString(p.id.value),
-              citizenId = UUID.fromString(p.citizenId.value),
-              createdAt = p.createdAt.toUTC,
-              updatedAt = p.createdAt.toUTC,
-              content = p.content,
-              nbVotesAgree = 0,
-              nbVotesDisagree = 0,
-              nbVotesUnsure = 0
-            )
-          }
-
+          Flow[PropositionProposed].map(PropositionElasticsearch.shape(_).get)
         val getPropositionFromES: Flow[PropositionUpdated, Option[PropositionElasticsearch], NotUsed] =
           Flow[PropositionUpdated].mapAsync(1) { update =>
             api.getPropositionById(update.id).map {
-              _.map {
-                p =>
-                  PropositionElasticsearch(
-                    id = p.id,
-                    citizenId = p.citizenId,
-                    createdAt = p.createdAt.toUTC,
-                    updatedAt = update.updatedAt.toUTC,
-                    content = update.content,
-                    nbVotesAgree = p.nbVotesAgree,
-                    nbVotesDisagree = p.nbVotesDisagree,
-                    nbVotesUnsure = p.nbVotesUnsure
-                  )
-              }
+              _.map(_.copy(updatedAt = update.updatedAt.toUTC, content = update.content))
             }
           }
 

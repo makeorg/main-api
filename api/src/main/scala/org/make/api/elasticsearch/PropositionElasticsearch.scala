@@ -6,8 +6,7 @@ import java.util.UUID
 import com.sksamuel.elastic4s.http.get.GetResponse
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.Predef._
-
-import scala.concurrent.Future
+import org.make.core.proposition.PropositionEvent.PropositionProposed
 
 case class PropositionElasticsearch(
                                      id: UUID,
@@ -24,6 +23,16 @@ case class PropositionElasticsearch(
 object PropositionElasticsearch extends StrictLogging {
 
   def shape: PartialFunction[AnyRef, Option[PropositionElasticsearch]] = {
+    case p: PropositionProposed => Some(PropositionElasticsearch(
+      id = UUID.fromString(p.id.value),
+      citizenId = UUID.fromString(p.citizenId.value),
+      createdAt = p.createdAt.toUTC,
+      updatedAt = p.createdAt.toUTC,
+      content = p.content,
+      nbVotesAgree = 0,
+      nbVotesDisagree = 0,
+      nbVotesUnsure = 0
+    ))
     case res: GetResponse =>
       logger.debug("In shape as GetResponse")
       res.sourceAsMap match {
