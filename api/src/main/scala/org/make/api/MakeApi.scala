@@ -26,7 +26,7 @@ import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteEvent.VoteEventWrapper
 import scalikejdbc.{GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success}
@@ -59,6 +59,10 @@ object MakeApi extends App
 
   private implicit val actorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)
+
+  Runtime.getRuntime.addShutdownHook(new Thread({() =>
+    Await.result(actorSystem.terminate(), atMost = 5.seconds)
+  }))
 
   private val propositionCoordinator = actorSystem.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
   override val idGenerator: IdGenerator = new UUIDIdGenerator
