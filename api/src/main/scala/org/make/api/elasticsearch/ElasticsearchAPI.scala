@@ -4,7 +4,6 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 import akka.Done
-import akka.actor.Actor
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
@@ -27,8 +26,8 @@ trait CustomFormatters {
 }
 
 
-class ElasticsearchAPI extends Actor with CustomFormatters with StrictLogging with ElasticsearchConfigurationExtension {
-  val client = HttpClient(ElasticsearchClientUri(elasticsearchConfiguration.host, elasticsearchConfiguration.port))
+class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
+  val client = HttpClient(ElasticsearchClientUri(host, port))
 
   val propositionIndex: IndexAndType = "propositions" / "proposition"
   def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
@@ -54,10 +53,4 @@ class ElasticsearchAPI extends Actor with CustomFormatters with StrictLogging wi
       update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
     } map { _ => Done }
   }
-
-  override def receive: Receive = ???
-}
-
-object ElasticsearchAPI {
-  val api = new ElasticsearchAPI
 }

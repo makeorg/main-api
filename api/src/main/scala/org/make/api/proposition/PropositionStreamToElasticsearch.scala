@@ -35,7 +35,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
 
   type FlowGraph = Graph[FlowShape[CommittableMessage[String, AnyRef], Done], NotUsed]
 
-  val esPush: FlowGraph = {
+  def esPush(api: ElasticsearchAPI): FlowGraph = {
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
@@ -77,7 +77,7 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
 
         val getPropositionFromES: Flow[PropositionUpdated, Option[PropositionElasticsearch], NotUsed] =
           Flow[PropositionUpdated].mapAsync(1) { update =>
-            ElasticsearchAPI.api.getPropositionById(update.id).map {
+            api.getPropositionById(update.id).map {
               _.map {
                 p =>
                   PropositionElasticsearch(
@@ -98,9 +98,9 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
           Flow[Option[T]].filter(_.isDefined).map(_.get)
 
         val save: Flow[PropositionElasticsearch, Done, NotUsed] =
-          Flow[PropositionElasticsearch].mapAsync(1)(ElasticsearchAPI.api.save)
+          Flow[PropositionElasticsearch].mapAsync(1)(api.save)
         val update: Flow[PropositionElasticsearch, Done, NotUsed] =
-          Flow[PropositionElasticsearch].mapAsync(1)(ElasticsearchAPI.api.updateProposition)
+          Flow[PropositionElasticsearch].mapAsync(1)(api.updateProposition)
 
         val commitOffset: Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
           Flow[(CommittableMessage[String, AnyRef], Done)].map(_._1.committableOffset)
@@ -121,9 +121,9 @@ class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit va
       })
   }
 
-  def run: Future[Done] =
+  def run(api: ElasticsearchAPI): Future[Done] =
     Consumer.committableSource(propositionConsumerSettings, Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem)))
-      .via(esPush)
+      .via(esPush(api))
       .runWith(Sink.foreach(msg => logger.info("Streaming of one message: " + msg.toString)))
 }
 
