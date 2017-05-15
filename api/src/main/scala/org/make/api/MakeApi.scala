@@ -9,28 +9,24 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.database.DatabaseConfiguration
 import org.make.api.elasticsearch.{ElasticsearchAPI, ElasticsearchConfiguration}
-import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka._
 import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent, PropositionStreamToElasticsearch}
 import org.make.api.swagger.MakeDocumentation
-import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
-import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
 import org.make.core.proposition.PropositionId
-import org.make.core.vote.VoteEvent.VoteEventWrapper
 import scalikejdbc.{GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.concurrent.duration.{Duration, _}
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success}
 import scalaoauth2.provider._
+
 
 object MakeApi extends App
   with CitizenServiceComponent
@@ -45,7 +41,42 @@ object MakeApi extends App
   with AvroSerializers
   with StrictLogging {
 
-  implicit val ctx: EC = ECGlobal
+  private implicit val actorSystem = ActorSystem("make-api")
+  actorSystem.registerExtension(DatabaseConfiguration)
+
+  val settings = MakeSettings(actorSystem)
+  actorSystem.actorOf(KafkaActor.props, KafkaActor.name)
+  actorSystem.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name)
+
+  val esConfiguration = ElasticsearchConfiguration(actorSystem)
+  val esApi = new ElasticsearchAPI(esConfiguration.host, esConfiguration.port.toInt)
+
+  GlobalSettings.loggingSQLErrors = true
+  GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
+    enabled = true,
+    warningEnabled = false,
+    printUnprocessedStackTrace = false,
+    logLevel = 'info
+  )
+
+
+  if (settings.useEmbeddedElasticSearch) {
+    org.make.api.EmbeddedApplication.embeddedElastic.start()
+  }
+
+  if (settings.autoCreateSchemas) {
+
+  }
+
+  implicit val ec = actorSystem.dispatcher
+  implicit val materializer = ActorMaterializer()
+
+  val runnableGraph = PropositionStreamToElasticsearch.stream(actorSystem, materializer).run(esApi)
+  runnableGraph.onComplete {
+    case Success(result) => logger.debug("Stream processed: {}", result)
+    case Failure(e) => logger.warn("Failure in stream", e)
+  }
+
 
   val swagger =
     path("swagger") {
@@ -57,24 +88,38 @@ object MakeApi extends App
     getFromResource("auth/login.html")
   }
 
-  private implicit val actorSystem = ActorSystem("make-api")
-  actorSystem.registerExtension(DatabaseConfiguration)
+  val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
 
-  Runtime.getRuntime.addShutdownHook(new Thread({() =>
-    Await.result(actorSystem.terminate(), atMost = 5.seconds)
-  }))
+  val host = settings.http.host
+  val port = settings.http.port
 
-  private val propositionCoordinator = actorSystem.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
+  val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(
+    new MakeDocumentation(actorSystem, apiTypes).routes ~
+      swagger ~
+      login ~
+      citizenRoutes ~
+      propositionRoutes ~
+      accessTokenRoute,
+    host, port)
+
+  val log = Logging(actorSystem.eventStream, "make-api")
+  bindingFuture.map { serverBinding =>
+    log.info(s"Make API bound to ${serverBinding.localAddress} ")
+  }.onComplete {
+    case util.Failure(ex) =>
+      log.error(ex, "Failed to bind to {}:{}!", host, port)
+      actorSystem.terminate()
+    case _ =>
+  }
+
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val citizenService: CitizenService = new CitizenService()
-  override val propositionService: PropositionService = new PropositionService(propositionCoordinator)
+  override val propositionService: PropositionService = new PropositionService(actorSystem.actorOf(PropositionCoordinator.props, PropositionCoordinator.name))
   override val persistentCitizenService: PersistentCitizenService = new PersistentCitizenService()
   override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()
   override val tokenService: TokenService = new TokenService()
-
-  override def readExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(50))
-
-  override def writeExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(20))
+  override val readExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(50))
+  override val writeExecutionContext: EC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(20))
 
   override val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
     override val handlers = Map(
@@ -86,88 +131,17 @@ object MakeApi extends App
     )
   }
 
-  GlobalSettings.loggingSQLErrors = true
-  GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
-    enabled = true,
-    warningEnabled = false,
-    printUnprocessedStackTrace = false,
-    logLevel = 'info
-  )
-
-  val config = actorSystem.settings.config
-  val settings = new MakeSettings(actorSystem.settings.config)
-
-  if (settings.useEmbeddedElasticSearch) {
-    org.make.api.EmbeddedApplication.embeddedElastic.start()
-  }
-
-  if(settings.autoCreateSchemas) {
-
-  }
-
-  val host = settings.http.host
-  val port = settings.http.port
-
-  implicit val ec = actorSystem.dispatcher
-  implicit val materializer = ActorMaterializer()
-
-  val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
-  val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(
-    new MakeDocumentation(actorSystem, apiTypes).routes ~
-      swagger ~
-      login ~
-      citizenRoutes ~
-      propositionRoutes ~
-      accessTokenRoute,
-    host, port)
-
-
-  val citizenProducer = actorSystem.actorOf(CitizenProducerActor.props, CitizenProducerActor.name)
-  val citizenConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[CitizenEventWrapper], "citizens"), "citizens-" + ConsumerActor.name)
-
-  val propositionProducer = actorSystem.actorOf(PropositionProducerActor.props, PropositionProducerActor.name)
-  val propositionConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[PropositionEventWrapper], "propositions"), "propositions-" + ConsumerActor.name)
-
-  val voteProducer = actorSystem.actorOf(VoteProducerActor.props, VoteProducerActor.name)
-  val voteConsumer = actorSystem.actorOf(ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"), "votes-" + ConsumerActor.name)
-
-  val deadLettersListener = actorSystem.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name)
-
-  citizenConsumer ! Consume
-
-  //EXPERIMENTAL --> test integration
-  propositionConsumer ! Consume
-
-  val esConfiguration = ElasticsearchConfiguration(actorSystem)
-  val esApi = new ElasticsearchAPI(esConfiguration.host, esConfiguration.port.toInt)
-
-  val runnableGraph = PropositionStreamToElasticsearch.stream(actorSystem, materializer).run(esApi)
-  runnableGraph.onComplete {
-    case Success(result) => logger.debug("Stream processed: {}", result)
-    case Failure(e) => logger.warn("Failure in stream", e)
-  }
-
   if (settings.sendTestData) {
+    Thread.sleep(10000)
     logger.debug("Proposing...")
-    propositionService.propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
+    propositionService.propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
     val propId: PropositionId = Await.result(propositionService
-      .propose(idGenerator.nextCitizenId(),ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
+      .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
       case Some(proposition) => proposition.propositionId
       case None => PropositionId("Invalid PropositionId")
     }
     propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
     logger.debug("Sent propositions...")
-  }
-  //END EXPERIMENTAL
-
-  val log = Logging(actorSystem.eventStream, "make-api")
-  bindingFuture.map { serverBinding =>
-    log.info(s"Make API bound to ${serverBinding.localAddress} ")
-  }.onComplete {
-    case util.Failure(ex) =>
-      log.error(ex, "Failed to bind to {}:{}!", host, port)
-      actorSystem.terminate()
-    case _ =>
   }
 
 }
@@ -205,5 +179,7 @@ class MakeSettings(config: Config) extends Extension {
 
 }
 
-
+object MakeSettings {
+  def apply(system: ActorSystem) = new MakeSettings(system.settings.config)
+}
 

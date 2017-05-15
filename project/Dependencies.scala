@@ -22,9 +22,9 @@ object Dependencies {
   val akka: ModuleID = "com.typesafe.akka" %% "akka-actor" % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion
-  val akkaClusterSharding: ModuleID = ("com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion)
+  val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaPersistenceCassandra: ModuleID = ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50").exclude("io.netty", "netty-handler")
-  val akkaStreamKafka: ModuleID = "com.typesafe.akka" %% "akka-stream-kafka" % "0.16"
+  val akkaStreamKafka: ModuleID = ("com.typesafe.akka" %% "akka-stream-kafka" % "0.16").exclude("org.apache.kafka", "kafka-clients")
   val akkaHttp: ModuleID = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.knutwalker" %% "akka-http-circe" % "3.3.0"
   val akkaHttpSwagger: ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1"

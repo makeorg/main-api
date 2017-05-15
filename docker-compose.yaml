@@ -10,19 +10,30 @@ services:
   kafka:
     image: wurstmeister/kafka:0.10.2.0
     environment:
-      KAFKA_ADVERTISED_HOST: localhost
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
       KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_BROKER_ID: 42
     ports:
       - 9092:9092
-      - 18081:8081
+    networks:
+      - makeapi
+  kafka_registry:
+    image: wurstmeister/kafka:0.10.2.0
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka_registry
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_PORT: 9092
     networks:
       - makeapi
   schema_registry:
     image: cgswong/confluent-schema-registry:2.0.1
     depends_on:
-      - kafka
-    network_mode: service:kafka
+      - kafka_registry
+    networks:
+      - makeapi
+    ports:
+      - 18081:8081
     environment:
         ZOOKEEPER_PORT_2181_TCP_ADDR: zookeeper
         ZOOKEEPER_PORT_2181_TCP_PORT: 2181
@@ -39,6 +50,13 @@ services:
     ports:
       - 7000:7000
       - 9042:9042
+    networks:
+      - makeapi
+  elasticsearch:
+    image: elasticsearch:5.4.0
+    ports:
+      - 9200:9200
+      - 9300:9300
     networks:
       - makeapi
 networks:
