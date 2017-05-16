@@ -5,7 +5,7 @@ Configuration:
     Console:
       name: console
       PatternLayout:
-        Pattern: "%d %p %C{1.} [%t] %m%n"
+        Pattern: "%d %p %C{1.} %m%n"
   Loggers:
     logger:
       - name: org.make
