@@ -49,6 +49,16 @@ services:
       - 9300:9300
     networks:
       - makeapi
+  consul:
+    image: consul:0.8.3
+    networks:
+      - makeapi
+    ports:
+      - 8300:8300
+      - 8301:8301
+      - 8303:8302
+      - 8500:8500
+      - 8600:8600
 networks:
   makeapi:
     ipam:
