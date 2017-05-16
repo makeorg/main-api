@@ -32,33 +32,38 @@ class VoteActor extends PersistentActor with StrictLogging {
 
   override def receiveCommand: Receive = {
     case GetVote(voteId) => sender ! state.map(_.filter(_.voteId == voteId))
-    case agree: AgreeCommand =>
+    case e: ViewVoteCommand =>
+      persistAndPublishEvent(VotedView(id = e.voteId, propositionId = e.propositionId))
+    case agree: PutVoteCommand if agree.status == VoteStatus.AGREE =>
       if (citizenCanVote(agree.citizenId))
         persistAndPublishEvent(VotedAgree(
           id = agree.voteId,
           propositionId = agree.propositionId,
           citizenId = agree.citizenId,
-          createdAt = agree.createdAt
+          createdAt = agree.createdAt,
+          status = agree.status
         ))
       Patterns.pipe((self ? GetVote(agree.voteId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
-    case disagree: DisagreeCommand =>
+    case disagree: PutVoteCommand if disagree.status == VoteStatus.DISAGREE =>
       if (citizenCanVote(disagree.citizenId))
         persistAndPublishEvent(VotedDisagree(
           id = disagree.voteId,
           propositionId = disagree.propositionId,
           citizenId = disagree.citizenId,
-          createdAt = disagree.createdAt
+          createdAt = disagree.createdAt,
+          status = disagree.status
         ))
       Patterns.pipe((self ? GetVote(disagree.voteId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
-    case unsure: UnsureCommand =>
+    case unsure: PutVoteCommand if unsure.status == VoteStatus.UNSURE =>
       if (citizenCanVote(unsure.citizenId))
         persistAndPublishEvent(VotedUnsure(
           id = unsure.voteId,
           propositionId = unsure.propositionId,
           citizenId = unsure.citizenId,
-          createdAt = unsure.createdAt
+          createdAt = unsure.createdAt,
+          status = unsure.status
         ))
       Patterns.pipe((self ? GetVote(unsure.voteId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
