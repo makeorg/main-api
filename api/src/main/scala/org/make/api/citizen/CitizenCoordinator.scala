@@ -4,12 +4,12 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import org.make.core.citizen.CitizenCommand
 
-object CitizenActors {
-  def props: Props = Props(new CitizenActors)
-  val name: String = "citizen-manager"
+object CitizenCoordinator {
+  def props: Props = Props(new CitizenCoordinator)
+  val name: String = "citizen-coordinator"
 }
 
-class CitizenActors extends Actor {
+class CitizenCoordinator extends Actor {
 
   ClusterSharding(context.system).start(
     ShardedCitizen.shardName,

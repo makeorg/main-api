@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, Extension
 import com.typesafe.config.Config
 import org.apache.commons.dbcp2.BasicDataSource
 import org.make.api.ConfigurationSupport
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 
 class DatabaseConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
@@ -44,6 +44,15 @@ class DatabaseConfiguration(override protected val configuration: Config) extend
     new DataSourceConnectionPool(
       dataSource = writeDatasource
     )
+  )
+
+
+  GlobalSettings.loggingSQLErrors = true
+  GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
+    enabled = true,
+    warningEnabled = false,
+    printUnprocessedStackTrace = false,
+    logLevel = 'info
   )
 
 }

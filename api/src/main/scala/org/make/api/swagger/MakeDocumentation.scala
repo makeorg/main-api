@@ -27,15 +27,4 @@ class MakeDocumentation(system: ActorSystem, override val apiTypes: Seq[ru.Type]
     }
   )
 
-  /*
-   "petstore_auth": {
-    "type": "oauth2",
-    "authorizationUrl": "http://swagger.io/api/oauth/dialog",
-    "flow": "implicit",
-    "scopes": {
-      "write:pets": "modify pets in your account",
-      "read:pets": "read your pets"
-    }
-  }
-  */
 }

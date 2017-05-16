@@ -61,7 +61,7 @@ object ConsumerActor {
 
   def props[T <: EventWrapper](format: RecordFormat[T], kafkaTopic: String): Props =
     Props(new ConsumerActor(format, kafkaTopic))
-  val name: String = "read-model-consumer"
+  def name(model: String): String = s"read-model-consumer-$model"
 
   case object Consume
   case class Reset(offset: Long)

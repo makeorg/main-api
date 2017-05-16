@@ -5,8 +5,8 @@ import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import org.make.core.proposition.PropositionCommand
 
 object PropositionCoordinator {
-  def props: Props = Props[PropositionCoordinator]
-  def name: String = "proposition-coordinator"
+  val props: Props = Props[PropositionCoordinator]
+  val name: String = "proposition-coordinator"
 }
 
 class PropositionCoordinator extends Actor {
