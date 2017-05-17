@@ -1,0 +1,15 @@
+image: charafau/docker-sbt-scala
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - sbt compile
+
+test:
+  stage: test
+  script:
+    - sbt test

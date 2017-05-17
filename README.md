@@ -1,3 +1,5 @@
+[![build status](https://gitlab.com/makeorg-scala/make-api/badges/master/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
+
 ## Running the app :
 
 ```
