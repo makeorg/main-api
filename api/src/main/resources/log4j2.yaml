@@ -66,7 +66,7 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
     Root:
-      level: debug
+      level: info
       AppenderRef:
         - ref: AkkaConsole
         - ref: console

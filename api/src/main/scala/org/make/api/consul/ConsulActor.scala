@@ -112,16 +112,11 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
 
     case RenewSession(id) =>
       log.debug(s"Renewing session $id")
-      val value =
-        """
-          |
-        """.stripMargin
       pipe(
         http.singleRequest(
           HttpRequest(
             method = HttpMethods.PUT,
-            uri = s"$consulUrl/v1/session/renew/$id",
-            entity = HttpEntity(ContentTypes.`application/json`, value)
+            uri = s"$consulUrl/v1/session/renew/$id"
           )
         )
           .flatMap(strictToString(_))

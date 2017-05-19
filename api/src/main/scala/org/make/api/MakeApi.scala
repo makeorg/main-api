@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
+import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
@@ -69,6 +70,10 @@ object MakeApi extends App
   initHttpRoutes(actorSystem)
 
   if (settings.sendTestData) {
+    // Wait until cluster is ready to send test data
+    while (Cluster(actorSystem).state.members.isEmpty) {
+      Thread.sleep(10000)
+    }
     Thread.sleep(10000)
     logger.debug("Proposing...")
     propositionService.propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
