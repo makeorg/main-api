@@ -52,7 +52,6 @@ trait PersistentCitizenServiceComponent {
 
 
     def get(id: CitizenId): Future[Option[Citizen]] = {
-      implicit val cxt: EC = readExecutionContext
       Future(
         NamedDB('READ).localTx { implicit session =>
           withSQL {

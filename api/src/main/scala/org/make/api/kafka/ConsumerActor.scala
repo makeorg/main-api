@@ -5,7 +5,6 @@ import java.util.Properties
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.make.api.kafka.ConsumerActor.Consume
@@ -16,7 +15,7 @@ import scala.util.Try
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String) extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging with ActorLogging {
+class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String) extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
 
   private var consumer: KafkaConsumer[String, GenericRecord] = _
 

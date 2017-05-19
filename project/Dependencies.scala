@@ -18,6 +18,7 @@ object Dependencies {
   val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % "0.7.1"
 
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
+  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
   val akkaStreamCirce: ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"
   val akka: ModuleID = "com.typesafe.akka" %% "akka-actor" % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka" %% "akka-cluster" % akkaVersion

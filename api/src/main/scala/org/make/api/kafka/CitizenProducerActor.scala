@@ -3,16 +3,15 @@ package org.make.api.kafka
 import java.time.ZonedDateTime
 import java.util.Properties
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenEventWrapper, CitizenRegistered}
 
 import scala.util.Try
 
-class CitizenProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class CitizenProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
 
   val kafkaTopic: String = kafkaConfiguration.topics(CitizenProducerActor.topicKey)
 
@@ -43,7 +42,7 @@ class CitizenProducerActor extends Actor with KafkaConfigurationExtension with A
   override def receive: Receive = {
 
     case event: CitizenRegistered =>
-      logger.debug(s"Received event $event")
+      log.debug(s"Received event $event")
 
       val record = format.to(
         CitizenEventWrapper(
@@ -56,7 +55,7 @@ class CitizenProducerActor extends Actor with KafkaConfigurationExtension with A
       )
 
       producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record))
-    case other => logger.info(s"Unknown event $other")
+    case other => log.info(s"Unknown event $other")
   }
 
   override def postStop(): Unit = {

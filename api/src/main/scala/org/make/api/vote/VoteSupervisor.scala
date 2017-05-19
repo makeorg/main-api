@@ -1,13 +1,12 @@
 package org.make.api.vote
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{AvroSerializers, ConsumerActor, VoteProducerActor}
 import org.make.core.vote.VoteEvent.VoteEventWrapper
 
-class VoteSupervisor extends Actor with AvroSerializers with StrictLogging {
+class VoteSupervisor extends Actor with AvroSerializers with ActorLogging {
 
 
   override def preStart(): Unit = {
@@ -24,7 +23,7 @@ class VoteSupervisor extends Actor with AvroSerializers with StrictLogging {
   }
 
   override def receive: Receive = {
-    case x => logger.info(s"received $x")
+    case x => log.info(s"received $x")
   }
 
 }

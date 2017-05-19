@@ -2,10 +2,9 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import akka.actor.Props
+import akka.actor.{ActorLogging, Props}
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.citizen.CitizenActor.Snapshot
 import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenRegistered}
 import org.make.core.citizen._
@@ -13,7 +12,7 @@ import org.make.core.citizen._
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
 
-class CitizenActor extends PersistentActor with StrictLogging {
+class CitizenActor extends PersistentActor with ActorLogging {
 
   def citizenId = CitizenId(self.path.name)
 
@@ -21,10 +20,10 @@ class CitizenActor extends PersistentActor with StrictLogging {
 
   override def receiveRecover: Receive = {
     case e: CitizenEvent =>
-      logger.info(s"Recovering event $e")
+      log.info(s"Recovering event $e")
       applyEvent(e)
     case SnapshotOffer(_, snapshot) =>
-      logger.info(s"Recovering from snapshot $snapshot")
+      log.info(s"Recovering from snapshot $snapshot")
       val citizen = snapshot.asInstanceOf[Citizen]
       state = Some(CitizenState(
         citizenId = citizenId,

@@ -2,10 +2,9 @@ package org.make.api.vote
 
 import java.time.ZonedDateTime
 
-import akka.actor.Props
+import akka.actor.{ActorLogging, Props}
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.vote.VoteActor.Snapshot
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionId
@@ -16,16 +15,16 @@ import org.make.core.vote._
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
 
-class VoteActor extends PersistentActor with StrictLogging {
+class VoteActor extends PersistentActor with ActorLogging {
 
   private[this] var state: Option[List[VoteState]] = None
 
   override def receiveRecover: Receive = {
     case e: VoteEvent =>
-      logger.info(s"Recovering event $e")
+      log.info(s"Recovering event $e")
       applyEvent(e)
     case SnapshotOffer(_, snapshot) =>
-      logger.info(s"Recovering from snapshot $snapshot")
+      log.info(s"Recovering from snapshot $snapshot")
       state = Some(snapshot.asInstanceOf[List[VoteState]])
     case _: RecoveryCompleted =>
   }

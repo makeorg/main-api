@@ -3,20 +3,71 @@ Configuration:
   name: make-api
   appenders:
     Console:
-      name: console
-      PatternLayout:
-        Pattern: "%d %p %C{1.} %m%n"
+      - name: AkkaConsole
+        PatternLayout:
+          Pattern: "%highlight{%d %p [%X{akkaSource}:%L] %m%n}"
+        ThreadContextMapFilter:
+          onMatch: ACCEPT
+          onMismatch: DENY
+          KeyValuePair:
+            key: sourceActorSystem
+            value: make-api
+      - name: console
+        PatternLayout:
+          Pattern: "%highlight{%d %p %C:%L %m%n}"
+        ThreadContextMapFilter:
+          onMatch: DENY
+          onMismatch: NEUTRAL
+          KeyValuePair:
+            key: sourceActorSystem
+            value: make-api
   Loggers:
     logger:
       - name: org.make
         level: debug
-      - name: scalikejdbc
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: akka.event.slf4j
         level: debug
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: scalikejdbc
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: io.netty
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: com.datastax
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
       - name: org.apache.kafka
         level: warn
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
       - name: io.confluent
         level: warn
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
     Root:
-     level: info
-     AppenderRef:
-       ref: console
+      level: debug
+      AppenderRef:
+        - ref: AkkaConsole
+        - ref: console
+

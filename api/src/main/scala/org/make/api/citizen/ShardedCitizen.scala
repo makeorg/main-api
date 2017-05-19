@@ -1,10 +1,9 @@
 package org.make.api.citizen
 
-import akka.actor.{Props, ReceiveTimeout}
+import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.core.citizen.{CitizenCommand, CitizenId}
 
 import scala.concurrent.duration._
@@ -28,7 +27,7 @@ object ShardedCitizen {
 
 }
 
-class ShardedCitizen extends CitizenActor with StrictLogging {
+class ShardedCitizen extends CitizenActor with ActorLogging {
 
 
   import ShardedCitizen._
@@ -38,9 +37,9 @@ class ShardedCitizen extends CitizenActor with StrictLogging {
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout => context.parent ! Passivate(stopMessage = StopCitizen)
     case StopCitizen => context.stop(self)
-    case SaveSnapshotSuccess(_) => logger.info("Snapshot saved")
+    case SaveSnapshotSuccess(_) => log.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>
-      logger.error("Error while saving snapshot", cause)
+      log.error("Error while saving snapshot", cause)
   }
 
 }

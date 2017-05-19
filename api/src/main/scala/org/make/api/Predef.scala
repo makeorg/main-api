@@ -1,8 +1,11 @@
 package org.make.api
 
 import java.time.{ZoneId, ZoneOffset, ZonedDateTime}
+import java.util.concurrent.TimeUnit
 
 import org.joda.time.DateTime
+
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 
 object Predef {
@@ -31,4 +34,9 @@ object Predef {
     }
   }
 
+  implicit class RichScalaDuration(val self: java.time.Duration) extends AnyVal {
+    def toScala: FiniteDuration = {
+      FiniteDuration(self.toNanos, TimeUnit.NANOSECONDS)
+    }
+  }
 }

@@ -1,13 +1,12 @@
 package org.make.api.citizen
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.kafka.ConsumerActor.Consume
 import org.make.api.kafka.{AvroSerializers, CitizenProducerActor, ConsumerActor}
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 
-class CitizenSupervisor extends Actor with AvroSerializers with StrictLogging {
+class CitizenSupervisor extends Actor with AvroSerializers with ActorLogging {
 
 
   override def preStart(): Unit = {
@@ -25,7 +24,7 @@ class CitizenSupervisor extends Actor with AvroSerializers with StrictLogging {
   }
 
   override def receive: Receive = {
-    case x => logger.info(s"received $x")
+    case x => log.info(s"received $x")
   }
 }
 

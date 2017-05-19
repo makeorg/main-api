@@ -3,13 +3,11 @@ package org.make.api
 import java.time.ZonedDateTime
 import java.util.concurrent.Executors
 
-import akka.actor.{ActorSystem, Extension}
-import akka.event.Logging
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
@@ -34,7 +32,6 @@ object MakeApi extends App
   with PropositionApi
   with MakeDataHandlerComponent
   with TokenServiceComponent
-  with RequestTimeout
   with AvroSerializers
   with StrictLogging {
 
@@ -43,10 +40,6 @@ object MakeApi extends App
   actorSystem.actorOf(MakeGuardian.props, MakeGuardian.name)
 
   private val settings = MakeSettings(actorSystem)
-
-  if (settings.autoCreateSchemas) {
-
-  }
 
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
   override lazy val citizenService: CitizenService = new CitizenService()
@@ -117,52 +110,16 @@ object MakeApi extends App
         accessTokenRoute,
       host, port)
 
-    val log = Logging(actorSystem.eventStream, "make-api")
     bindingFuture.map { serverBinding =>
-      log.info(s"Make API bound to ${serverBinding.localAddress} ")
+      logger.info(s"Make API bound to ${serverBinding.localAddress} ")
     }.onComplete {
       case util.Failure(ex) =>
-        log.error(ex, "Failed to bind to {}:{}!", host, port)
+        logger.error(s"Failed to bind to $host:$port!", ex)
         actorSystem.terminate()
       case _ =>
     }
   }
 }
 
-trait RequestTimeout {
 
-  import scala.concurrent.duration._
-
-  def requestTimeout(config: Config): Timeout = {
-    val t = config.getString("akka.http.server.request-timeout")
-    val d = Duration(t)
-    FiniteDuration(d.length, d.unit)
-  }
-}
-
-class MakeSettings(config: Config) extends Extension {
-
-  val passivateTimeout: Duration = Duration(config.getString("make-api.passivate-timeout"))
-  val useEmbeddedElasticSearch: Boolean =
-    if (config.hasPath("make-api.dev.embedded-elasticsearch")) config.getBoolean("make-api.dev.embedded-elasticsearch")
-    else false
-
-  val sendTestData: Boolean =
-    if (config.hasPath("make-api.dev.send-test-data")) config.getBoolean("make-api.dev.send-test-data")
-    else false
-
-  val autoCreateSchemas: Boolean =
-    if (config.hasPath("make-api.dev.auto-create-db-schemas")) config.getBoolean("make-api.dev.auto-create-db-schemas")
-    else false
-
-  object http {
-    val host: String = config.getString("make-api.http.host")
-    val port: Int = config.getInt("make-api.http.port")
-  }
-
-}
-
-object MakeSettings {
-  def apply(system: ActorSystem) = new MakeSettings(system.settings.config)
-}
 

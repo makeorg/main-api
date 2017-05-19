@@ -3,16 +3,15 @@ package org.make.api.kafka
 import java.time.ZonedDateTime
 import java.util.Properties
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.make.core.proposition.PropositionEvent.{PropositionEvent, PropositionEventWrapper, PropositionProposed, PropositionUpdated}
 
 import scala.util.Try
 
-class PropositionProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with StrictLogging {
+class PropositionProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
 
   val kafkaTopic: String = kafkaConfiguration.topics(PropositionProducerActor.topicKey)
 
@@ -43,7 +42,7 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
   override def receive: Receive = {
 
     case event: PropositionProposed =>
-      logger.debug(s"Received event $event")
+      log.debug(s"Received event $event")
 
       val record = format.to(
         PropositionEventWrapper(
@@ -57,12 +56,12 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
 
       producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record),
         (r: RecordMetadata, e: Exception) => {
-          Option(e).foreach(e => logger.debug("[EXCEPTION] Producer sent: ", e))
-          Option(r).foreach(r => logger.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
+          Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
+          Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
         }
       )
     case event: PropositionUpdated =>
-      logger.debug(s"Received event $event")
+      log.debug(s"Received event $event")
 
       val record = format.to(
         PropositionEventWrapper(
@@ -75,7 +74,7 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
       )
 
       producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record))
-    case other => logger.info(s"Unknown event $other")
+    case other => log.info(s"Unknown event $other")
   }
 
   override def postStop(): Unit = {

@@ -5,6 +5,7 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 name := "make-api"
 
 libraryDependencies ++= Seq(
+  Dependencies.akkaSlf4j,
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
   Dependencies.akkaHttpCirce,

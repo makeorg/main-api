@@ -1,9 +1,8 @@
 package org.make.api.proposition
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import com.sksamuel.avro4s.RecordFormat
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShortenedNames
 import org.make.api.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.kafka.ConsumerActor.Consume
@@ -13,7 +12,7 @@ import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
 import scala.util.{Failure, Success}
 
 class PropositionSupervisor extends Actor
-  with StrictLogging with ElasticsearchConfigurationExtension
+  with ActorLogging with ElasticsearchConfigurationExtension
   with AvroSerializers with ShortenedNames {
 
 
@@ -36,14 +35,14 @@ class PropositionSupervisor extends Actor
       .run(elasticsearchConfiguration.esApi)
 
     propositionGraph.onComplete {
-      case Success(result) => logger.debug("Stream processed: {}", result)
-      case Failure(e) => logger.warn("Failure in stream", e)
+      case Success(result) => log.debug("Stream processed: {}", result)
+      case Failure(e) => log.warning("Failure in stream", e)
     }(ECGlobal)
 
   }
 
   override def receive: Receive = {
-    case x => logger.info(s"received $x")
+    case x => log.info(s"received $x")
   }
 }
 

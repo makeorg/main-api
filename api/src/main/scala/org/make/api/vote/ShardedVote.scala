@@ -35,8 +35,8 @@ class ShardedVote extends VoteActor {
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout => context.parent ! Passivate(stopMessage = StopVote)
     case StopVote => context.stop(self)
-    case SaveSnapshotSuccess(_) => logger.info("Snapshot saved")
+    case SaveSnapshotSuccess(_) => log.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>
-      logger.error("Error while saving snapshot", cause)
+      log.error("Error while saving snapshot", cause)
   }
 }
