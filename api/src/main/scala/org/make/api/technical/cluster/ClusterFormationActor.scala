@@ -1,4 +1,4 @@
-package org.make.api.cluster
+package org.make.api.technical.cluster
 
 import java.time.{ZoneOffset, ZonedDateTime}
 
@@ -9,11 +9,11 @@ import akka.util.Timeout
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
-import org.make.api.MakeSettingsExtension
-import org.make.api.cluster.ClusterFormationActor._
-import org.make.api.consul.ConsulActor
-import org.make.api.consul.ConsulActor.{RenewSession, _}
-import org.make.api.consul.ConsulEntities.{CreateSessionResponse, ReadResponse, WriteResponse}
+import org.make.api.technical.cluster.ClusterFormationActor._
+import org.make.api.technical.ConsulActor.{RenewSession, _}
+import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, WriteResponse}
+import org.make.api.extensions.MakeSettingsExtension
+import org.make.api.technical.ConsulActor
 import org.make.core.CirceFormatters
 
 import scala.concurrent.duration.{Duration, _}

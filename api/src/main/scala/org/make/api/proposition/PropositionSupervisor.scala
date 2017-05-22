@@ -3,10 +3,9 @@ package org.make.api.proposition
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.ShortenedNames
-import org.make.api.elasticsearch.ElasticsearchConfigurationExtension
-import org.make.api.kafka.ConsumerActor.Consume
-import org.make.api.kafka.{AvroSerializers, ConsumerActor, PropositionProducerActor}
+import org.make.api.technical.ConsumerActor.Consume
+import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
+import org.make.api.technical.{AvroSerializers, ConsumerActor, ShortenedNames}
 import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
 
 import scala.util.{Failure, Success}

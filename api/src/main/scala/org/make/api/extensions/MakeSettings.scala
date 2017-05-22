@@ -1,10 +1,10 @@
-package org.make.api
+package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, Extension}
 import com.typesafe.config.Config
+import org.make.api.Predef._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import org.make.api.Predef._
 
 
 

@@ -1,4 +1,4 @@
-package org.make.api
+package org.make.api.technical
 
 import akka.actor.{Actor, ActorLogging, DeadLetter, Props}
 

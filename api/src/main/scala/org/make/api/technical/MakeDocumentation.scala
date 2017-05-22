@@ -1,5 +1,6 @@
-package org.make.api.swagger
-import akka.actor.{ActorLogging, ActorSystem}
+package org.make.api.technical
+
+import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}

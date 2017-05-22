@@ -2,7 +2,7 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import org.make.api.IdGeneratorComponent
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.citizen.{Citizen, CitizenId}
 
 import scala.concurrent.Future

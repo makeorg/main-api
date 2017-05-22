@@ -1,11 +1,11 @@
-package org.make.api.auth
+package org.make.api.technical.auth
 
 import java.time.ZonedDateTime
 
 import org.make.core.citizen.CitizenId
 import scalikejdbc._
 import org.make.api.Predef._
-import org.make.api.ShortenedNames
+import org.make.api.technical.ShortenedNames
 
 import scala.concurrent.{ExecutionContext, Future}
 

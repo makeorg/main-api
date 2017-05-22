@@ -2,7 +2,7 @@ package org.make.api.citizen
 
 import java.time.ZoneOffset
 
-import org.make.api.ShortenedNames
+import org.make.api.technical.ShortenedNames
 import org.make.core.citizen.{Citizen, CitizenId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._

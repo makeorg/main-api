@@ -1,4 +1,4 @@
-package org.make.api
+package org.make.api.extensions
 
 import com.typesafe.config.Config
 

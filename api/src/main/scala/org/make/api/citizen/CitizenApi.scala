@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.swagger.annotations._
-import org.make.api.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
 

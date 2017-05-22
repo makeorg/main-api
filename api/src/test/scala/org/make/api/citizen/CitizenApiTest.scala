@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe.generic.auto._
-import org.make.api.IdGeneratorComponent
-import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers

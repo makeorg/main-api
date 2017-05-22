@@ -1,4 +1,4 @@
-package org.make.api.consul
+package org.make.api.technical
 
 import java.nio.charset.Charset
 import java.util.concurrent.Executors
@@ -13,9 +13,9 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.parser._
-import org.make.api.MakeSettingsExtension
-import org.make.api.consul.ConsulActor._
-import org.make.api.consul.ConsulEntities.{CreateSessionResponse, ReadResponse, RenewSessionResponse, WriteResponse}
+import org.make.api.extensions.MakeSettingsExtension
+import org.make.api.technical.ConsulActor._
+import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, RenewSessionResponse, WriteResponse}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}

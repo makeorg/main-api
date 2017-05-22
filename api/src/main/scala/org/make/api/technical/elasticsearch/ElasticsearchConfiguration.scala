@@ -1,8 +1,8 @@
-package org.make.api.elasticsearch
+package org.make.api.technical.elasticsearch
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
-import org.make.api.ConfigurationSupport
+import org.make.api.extensions.ConfigurationSupport
 
 class ElasticsearchConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
   val host: String = configuration.getString("host")

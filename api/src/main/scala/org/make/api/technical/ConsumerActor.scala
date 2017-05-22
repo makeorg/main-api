@@ -1,4 +1,4 @@
-package org.make.api.kafka
+package org.make.api.technical
 
 import java.util
 import java.util.Properties
@@ -7,7 +7,8 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
-import org.make.api.kafka.ConsumerActor.Consume
+import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.technical.ConsumerActor.Consume
 import org.make.core.EventWrapper
 
 import scala.util.Try

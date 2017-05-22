@@ -2,8 +2,8 @@ package org.make.api.citizen
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.kafka.ConsumerActor.Consume
-import org.make.api.kafka.{AvroSerializers, CitizenProducerActor, ConsumerActor}
+import org.make.api.technical.ConsumerActor.Consume
+import org.make.api.technical.{AvroSerializers, ConsumerActor}
 import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 
 class CitizenSupervisor extends Actor with AvroSerializers with ActorLogging {

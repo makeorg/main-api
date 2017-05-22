@@ -1,8 +1,7 @@
-package org.make.api.kafka
+package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
-import org.make.api.ConfigurationSupport
 
 
 class KafkaConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {

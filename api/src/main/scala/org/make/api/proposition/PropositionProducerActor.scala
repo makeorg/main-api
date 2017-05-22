@@ -1,4 +1,4 @@
-package org.make.api.kafka
+package org.make.api.proposition
 
 import java.time.ZonedDateTime
 import java.util.Properties
@@ -7,6 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
+import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
+import org.make.api.technical.AvroSerializers
 import org.make.core.proposition.PropositionEvent.{PropositionEvent, PropositionEventWrapper, PropositionProposed, PropositionUpdated}
 
 import scala.util.Try

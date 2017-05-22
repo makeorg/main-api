@@ -1,10 +1,10 @@
-package org.make.api.auth
+package org.make.api.technical.auth
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.util.Date
 
-import org.make.api.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.citizen.PersistentCitizenServiceComponent
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.citizen.Citizen
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -1,9 +1,8 @@
-package org.make.api.database
+package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.apache.commons.dbcp2.BasicDataSource
-import org.make.api.ConfigurationSupport
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 
@@ -65,7 +64,7 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
   override def get(system: ActorSystem): DatabaseConfiguration = super.get(system)
 }
 
-trait DatabaseConfigurationExtension { this: Actor =>
+trait atabaseConfigurationExtension { this: Actor =>
   val databaseConfiguration: DatabaseConfiguration = DatabaseConfiguration(context.system)
 }
 

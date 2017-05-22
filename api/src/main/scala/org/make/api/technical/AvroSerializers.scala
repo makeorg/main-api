@@ -1,4 +1,4 @@
-package org.make.api.kafka
+package org.make.api.technical
 
 import java.time.{LocalDate, ZonedDateTime}
 

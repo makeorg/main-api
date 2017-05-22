@@ -2,8 +2,8 @@ package org.make.api.vote
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.kafka.ConsumerActor.Consume
-import org.make.api.kafka.{AvroSerializers, ConsumerActor, VoteProducerActor}
+import org.make.api.technical.ConsumerActor.Consume
+import org.make.api.technical.{AvroSerializers, ConsumerActor}
 import org.make.core.vote.VoteEvent.VoteEventWrapper
 
 class VoteSupervisor extends Actor with AvroSerializers with ActorLogging {

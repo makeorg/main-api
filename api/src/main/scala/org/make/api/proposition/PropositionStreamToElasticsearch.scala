@@ -15,8 +15,9 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.Predef._
-import org.make.api.elasticsearch.{ElasticsearchAPI, PropositionElasticsearch}
-import org.make.api.kafka.{AvroSerializers, KafkaConfiguration, PropositionProducerActor}
+import org.make.api.technical.elasticsearch.{ElasticsearchAPI, PropositionElasticsearch}
+import org.make.api.extensions.KafkaConfiguration
+import org.make.api.technical.AvroSerializers
 import org.make.core.proposition.PropositionEvent._
 
 import scala.concurrent.ExecutionContext.Implicits.global

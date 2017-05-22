@@ -8,7 +8,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.database.DatabaseConfiguration
+import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
 import org.make.core.proposition.PropositionId
 
 import scala.concurrent.duration.Duration

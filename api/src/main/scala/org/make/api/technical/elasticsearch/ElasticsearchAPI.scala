@@ -1,4 +1,4 @@
-package org.make.api.elasticsearch
+package org.make.api.technical.elasticsearch
 
 import java.time.ZonedDateTime
 import java.util.UUID

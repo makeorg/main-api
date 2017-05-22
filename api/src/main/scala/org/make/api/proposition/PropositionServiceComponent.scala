@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import org.make.api.IdGeneratorComponent
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition._
 

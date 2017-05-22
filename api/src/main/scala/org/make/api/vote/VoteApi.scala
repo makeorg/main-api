@@ -8,7 +8,7 @@ import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import org.make.api.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.PropositionId

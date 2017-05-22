@@ -5,11 +5,10 @@ import java.util.concurrent.Executors
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
-import org.make.api.kafka._
 import org.make.api.proposition._
-import org.make.api.swagger.MakeDocumentation
+import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}

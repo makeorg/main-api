@@ -1,8 +1,8 @@
-package org.make.api.cluster
+package org.make.api.technical.cluster
 
 import akka.actor.{ActorSystem, Props}
 import akka.cluster.DowningProvider
-import org.make.api.MakeSettings
+import org.make.api.extensions.MakeSettings
 
 import scala.concurrent.duration.FiniteDuration
 

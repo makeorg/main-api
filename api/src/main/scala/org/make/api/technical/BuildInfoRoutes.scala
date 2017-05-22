@@ -1,11 +1,10 @@
-package org.make.api
+package org.make.api.technical
 
 import akka.http.scaladsl.server.{Directives, Route}
-import de.knutwalker.akka.http.support.CirceHttpSupport
-import org.make.core.CirceFormatters
 import buildinfo.BuildInfo
-
+import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
+import org.make.core.CirceFormatters
 
 trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatters {
 
