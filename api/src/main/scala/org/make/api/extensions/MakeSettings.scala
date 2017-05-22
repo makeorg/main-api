@@ -19,10 +19,6 @@ class MakeSettings(config: Config) extends Extension {
     if (config.hasPath("dev.send-test-data")) config.getBoolean("dev.send-test-data")
     else false
 
-  val autoCreateSchemas: Boolean =
-    if (config.hasPath("dev.auto-create-db-schemas")) config.getBoolean("dev.auto-create-db-schemas")
-    else false
-
   object http {
     val host: String = config.getString("http.host")
     val port: Int = config.getInt("http.port")
