@@ -20,6 +20,7 @@ object VoteEvent {
       case e: VotedAgree => Coproduct[AnyVoteEvent](e)
       case e: VotedDisagree => Coproduct[AnyVoteEvent](e)
       case e: VotedUnsure => Coproduct[AnyVoteEvent](e)
+      case other => throw new IllegalStateException(s"Unknown event: $other")
     }
   }
 
