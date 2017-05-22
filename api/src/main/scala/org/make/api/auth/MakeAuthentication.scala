@@ -84,5 +84,4 @@ object OAuth2Provider {
 
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
-//  implicit val tokenResponseFormat: RootJsonFormat[TokenResponse] = jsonFormat4(TokenResponse)
 }

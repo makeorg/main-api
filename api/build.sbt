@@ -1,4 +1,4 @@
-import java.time.ZonedDateTime
+import java.time.{ZoneOffset, ZonedDateTime}
 
 import com.typesafe.sbt.SbtGit.GitKeys._
 
@@ -31,12 +31,11 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4sStream
 )
 
-
-lazy val buildTime: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("now", "time of build")
+lazy val buildTime: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("buildTime", "time of build")
 
 
 buildTime := {
-  ZonedDateTime.now()
+  ZonedDateTime.now(ZoneOffset.UTC)
 }
 
 

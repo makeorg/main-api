@@ -1,46 +1,35 @@
 package org.make.api
 
-import java.time.ZonedDateTime
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.ServerBinding
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
-import org.make.api.database.DatabaseConfiguration
 import org.make.api.kafka._
 import org.make.api.proposition._
 import org.make.api.swagger.MakeDocumentation
-import org.make.core.proposition.PropositionId
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 
-object MakeApi extends App
-  with CitizenServiceComponent
+
+trait MakeApi extends CitizenServiceComponent
   with IdGeneratorComponent
   with PersistentCitizenServiceComponent
   with CitizenApi
   with PropositionServiceComponent
   with PropositionApi
-  with MakeDataHandlerComponent
-  with TokenServiceComponent
+  with BuildInfoRoutes
   with AvroSerializers
-  with StrictLogging {
+  with MakeDataHandlerComponent
+  with TokenServiceComponent {
 
-  private val actorSystem = ActorSystem("make-api")
-  actorSystem.registerExtension(DatabaseConfiguration)
-  actorSystem.actorOf(MakeGuardian.props, MakeGuardian.name)
-
-  private val settings = MakeSettings(actorSystem)
+  def actorSystem: ActorSystem
 
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
   override lazy val citizenService: CitizenService = new CitizenService()
@@ -67,63 +56,26 @@ object MakeApi extends App
     )
   }
 
-  initHttpRoutes(actorSystem)
 
-  if (settings.sendTestData) {
-    // Wait until cluster is ready to send test data
-    while (Cluster(actorSystem).state.members.isEmpty) {
-      Thread.sleep(10000)
-    }
-    Thread.sleep(10000)
-    logger.debug("Proposing...")
-    propositionService.propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
-    val propId: PropositionId = Await.result(propositionService
-      .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"), Duration.Inf) match {
-      case Some(proposition) => proposition.propositionId
-      case None => PropositionId("Invalid PropositionId")
-    }
-    propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
-    logger.debug("Sent propositions...")
+  private lazy val swagger: Route =
+    path("swagger") {
+      getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
+    } ~ getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.2.8")
+
+  private lazy val login: Route = path("login.html") {
+    getFromResource("auth/login.html")
   }
 
+  private lazy val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
 
-  private def initHttpRoutes(implicit actorSystem: ActorSystem) = {
-    implicit val ec = actorSystem.dispatcher
-    implicit val materializer = ActorMaterializer()
-
-    val swagger =
-      path("swagger") {
-        getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
-      } ~
-        getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.2.8")
-
-    val login = path("login.html") {
-      getFromResource("auth/login.html")
-    }
-
-    val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
-
-    val host = settings.http.host
-    val port = settings.http.port
-
-    val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(
-      new MakeDocumentation(actorSystem, apiTypes).routes ~
-        swagger ~
-        login ~
-        citizenRoutes ~
-        propositionRoutes ~
-        accessTokenRoute,
-      host, port)
-
-    bindingFuture.map { serverBinding =>
-      logger.info(s"Make API bound to ${serverBinding.localAddress} ")
-    }.onComplete {
-      case util.Failure(ex) =>
-        logger.error(s"Failed to bind to $host:$port!", ex)
-        actorSystem.terminate()
-      case _ =>
-    }
-  }
+  lazy val makeRoutes: Route =
+    new MakeDocumentation(actorSystem, apiTypes).routes ~
+    swagger ~
+    login ~
+    citizenRoutes ~
+    propositionRoutes ~
+    accessTokenRoute ~
+    buildRoutes
 }
 
 
