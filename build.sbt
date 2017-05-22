@@ -34,7 +34,7 @@ lazy val elastic = project.in(file("."))
   .settings(
     moduleName := "make-elastic": _*
   )
-  .aggregate(core, seed, api)
+  .aggregate(core, api)
 
 lazy val core = project.in(file("core"))
   .settings(commonSettings: _*)
@@ -43,7 +43,5 @@ lazy val api = project.in(file("api"))
   .settings(commonSettings: _*)
   .dependsOn(core)
 
-lazy val seed = project.in(file("seed"))
-  .settings(commonSettings: _*)
 
 
