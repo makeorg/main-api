@@ -38,6 +38,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
     case GetProposition(_) => sender ! state.map(_.toProposition)
     case v: ViewPropositionCommand =>
       persistAndPublishEvent(PropositionViewed(id = v.propositionId))
+      Patterns.pipe((self ? GetProposition(v.propositionId)) (1.second), Implicits.global).to(sender)
     case propose: ProposeCommand =>
       persistAndPublishEvent(PropositionProposed(
         id = propose.propositionId,

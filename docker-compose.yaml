@@ -43,12 +43,14 @@ services:
     networks:
       - makeapi
   elasticsearch:
-    image: elasticsearch:5.4.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
     ports:
       - 9200:9200
       - 9300:9300
     networks:
       - makeapi
+    environment:
+      xpack.security.enabled: "false"
   consul:
     image: consul:0.8.3
     networks:

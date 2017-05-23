@@ -9,7 +9,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.api.technical.AvroSerializers
-import org.make.core.proposition.PropositionEvent.{PropositionEvent, PropositionEventWrapper, PropositionProposed, PropositionUpdated}
+import org.make.core.proposition.PropositionEvent._
 
 import scala.util.Try
 
@@ -45,7 +45,6 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
 
     case event: PropositionProposed =>
       log.debug(s"Received event $event")
-
       val record = format.to(
         PropositionEventWrapper(
           version = 1,
@@ -55,16 +54,15 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
           event = PropositionEventWrapper.wrapEvent(event)
         )
       )
-
       producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record),
         (r: RecordMetadata, e: Exception) => {
           Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
           Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
         }
       )
+
     case event: PropositionUpdated =>
       log.debug(s"Received event $event")
-
       val record = format.to(
         PropositionEventWrapper(
           version = 1,
@@ -74,9 +72,32 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
           event = PropositionEventWrapper.wrapEvent(event)
         )
       )
+      producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record),
+        (r: RecordMetadata, e: Exception) => {
+          Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
+          Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
+        }
+      )
 
-      producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record))
-    case other => log.info(s"Unknown event $other")
+    case event: PropositionViewed =>
+      log.debug(s"Received event $event")
+      val record = format.to(
+        PropositionEventWrapper(
+          version = 1,
+          id = event.id.value,
+          date = ZonedDateTime.now(),
+          eventType = event.getClass.getSimpleName,
+          event = PropositionEventWrapper.wrapEvent(event)
+        )
+      )
+      producer.send(new ProducerRecord[String, GenericRecord](kafkaTopic, event.id.value, record),
+        (r: RecordMetadata, e: Exception) => {
+          Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
+          Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
+        }
+      )
+
+    case other => log.warning(s"Unknown event $other")
   }
 
   override def postStop(): Unit = {

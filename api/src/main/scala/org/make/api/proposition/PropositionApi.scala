@@ -55,9 +55,9 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
     new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
   ))
   def propose: Route =
-    makeOAuth2 { user: AuthInfo[Citizen] =>
-      post {
-        path("proposition") {
+    post {
+      path("proposition") {
+        makeOAuth2 { user: AuthInfo[Citizen] =>
           decodeRequest {
             entity(as[ProposePropositionRequest]) {
               request: ProposePropositionRequest =>
@@ -74,23 +74,23 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
       }
     }
 
-  @ApiOperation(value = "propose-proposition", httpMethod = "PUT", code = 200, authorizations = Array(
+  @ApiOperation(value = "update-proposition", httpMethod = "PUT", code = 200, authorizations = Array(
     new Authorization(value = "MakeApi", scopes = Array(
       new AuthorizationScope (scope = "user", description = "application user"),
       new AuthorizationScope (scope = "admin", description = "BO Admin")
     ))
   ))
   @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposition.ProposePropositionRequest")
+    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposition.UpdatePropositionRequest")
   ))
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
   ))
-  @Path(value = "/proposition/{propositionId}")
+  @Path(value = "/{propositionId}")
   def update: Route =
-    makeOAuth2 { user: AuthInfo[Citizen] =>
-      put {
-        path("proposition" / propositionId) { propositionId =>
+    put {
+      path("proposition" / propositionId) { propositionId =>
+        makeOAuth2 { user: AuthInfo[Citizen] =>
           decodeRequest {
             entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
               onSuccess(propositionService.getProposition(propositionId)) {
