@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.cluster.Cluster
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.make.core.citizen.{Citizen, CitizenId, GetCitizen, RegisterCommand}
+import org.make.core.citizen._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 
 class CitizenActorTest extends TestKit(CitizenActorTest.actorSystem)
@@ -59,6 +59,38 @@ class CitizenActorTest extends TestKit(CitizenActorTest.actorSystem)
           )
         )
       )
+
+      coordinator ! GetCitizen(mainCitizenId)
+
+      expectMsg(
+        Some(
+          Citizen(
+            citizenId = mainCitizenId,
+            email = "robb.stark@make.org",
+            dateOfBirth = LocalDate.parse("1970-01-01"),
+            firstName = "Robb",
+            lastName = "Stark"
+          )
+        )
+      )
+
+      coordinator ! KillCitizenShard(mainCitizenId)
+
+      Thread.sleep(100)
+
+      coordinator ! GetCitizen(mainCitizenId)
+
+      expectMsg(
+        Some(
+          Citizen(
+            citizenId = mainCitizenId,
+            email = "robb.stark@make.org",
+            dateOfBirth = LocalDate.parse("1970-01-01"),
+            firstName = "Robb",
+            lastName = "Stark"
+          )
+        )
+      )
     }
   }
 
@@ -91,6 +123,8 @@ object CitizenActorTest {
       |      journal-plugin-id = "inmemory-journal"
       |    }
       |  }
+      |
+      |  test.single-expect-default = "5 seconds"
       |}
     """.stripMargin
 

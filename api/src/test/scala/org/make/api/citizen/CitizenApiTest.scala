@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.generic.auto._
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
@@ -28,6 +29,17 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
   with MakeDataHandlerComponent
   with TokenServiceComponent
   with CitizenApi {
+
+
+  override def testConfig: Config = {
+
+    val config =
+      """
+        |akka.test.timefator=5.0
+      """.stripMargin
+
+    ConfigFactory.parseString(config)
+  }
 
   override val persistentCitizenService: PersistentCitizenService = mock[PersistentCitizenService]
   override val idGenerator: IdGenerator = new UUIDIdGenerator
