@@ -69,6 +69,7 @@ object Dependencies {
   val scalaTest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   val akkaTest: ModuleID = "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "test"
   val mockito: ModuleID = "org.mockito" % "mockito-core" % "2.7.22" % "test"
 
 }

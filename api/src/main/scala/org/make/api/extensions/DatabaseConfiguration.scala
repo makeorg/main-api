@@ -1,7 +1,5 @@
 package org.make.api.extensions
 
-import java.sql.PreparedStatement
-
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging

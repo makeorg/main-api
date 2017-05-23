@@ -10,23 +10,21 @@ libraryDependencies ++= Seq(
   Dependencies.kamonAkkaHttp,
   Dependencies.kamonAkkaRemote,
   Dependencies.kamonScala,
+  Dependencies.aspectJWeaver,
+  Dependencies.aspectJRt,
   Dependencies.akkaSlf4j,
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
   Dependencies.akkaHttpCirce,
   Dependencies.akkaStreamCirce,
-  Dependencies.aspectJWeaver,
-  Dependencies.aspectJRt,
-  Dependencies.circeGeneric,
   Dependencies.akkaClusterSharding,
   Dependencies.akkaPersistenceCassandra,
   Dependencies.akkaStreamKafka,
+  Dependencies.circeGeneric,
   Dependencies.swaggerUi,
-  Dependencies.embeddedElasticSearch,
   Dependencies.kafkaClients,
   Dependencies.avroSerializer,
   Dependencies.avro4s,
-  Dependencies.akkaHttpTest,
   Dependencies.scalaOAuth,
   Dependencies.scalike,
   Dependencies.postgresql,
@@ -35,7 +33,10 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
   Dependencies.elastic4sCirce,
-  Dependencies.elastic4sStream
+  Dependencies.elastic4sStream,
+  Dependencies.akkaHttpTest,
+  Dependencies.akkaPersistenceInMemory,
+  Dependencies.akkaTest
 )
 
 lazy val buildTime: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("buildTime", "time of build")

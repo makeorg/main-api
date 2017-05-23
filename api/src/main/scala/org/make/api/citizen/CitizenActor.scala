@@ -2,7 +2,7 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.citizen.CitizenActor.Snapshot
@@ -55,6 +55,7 @@ class CitizenActor extends PersistentActor with ActorLogging {
     case _: UpdateProfileCommand =>
     case GetCitizen(_) => sender() ! state.map(_.toCitizen)
     case Snapshot => state.foreach(state => saveSnapshot(state.toCitizen))
+    case KillCitizenShard(_) => self ! PoisonPill
   }
 
   override def persistenceId: String = citizenId.value

@@ -16,3 +16,4 @@ case class UpdateProfileCommand(citizenId: CitizenId) extends CitizenCommand
 
 case class GetCitizen(citizenId: CitizenId) extends CitizenCommand
 
+case class KillCitizenShard(citizenId: CitizenId) extends CitizenCommand
