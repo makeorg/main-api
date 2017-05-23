@@ -10,15 +10,15 @@ import io.swagger.annotations._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
-
 import io.circe.generic.auto._
+import kamon.akka.http.KamonTraceDirectives
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Citizen")
 @Path(value = "/citizen")
-trait CitizenApi extends CirceFormatters with Directives with CirceHttpSupport with MakeAuthentication {
+trait CitizenApi extends CirceFormatters with Directives with KamonTraceDirectives with CirceHttpSupport with MakeAuthentication {
   this: CitizenServiceComponent with MakeDataHandlerComponent =>
 
 
@@ -38,14 +38,16 @@ trait CitizenApi extends CirceFormatters with Directives with CirceHttpSupport w
   def getCitizen: Route = {
     get {
       path("citizen" / citizenId) { citizenId =>
-        makeOAuth2 { user: AuthInfo[Citizen] =>
-          if (citizenId == user.user.citizenId) {
-            onSuccess(citizenService.getCitizen(citizenId)) {
-              case Some(citizen) => complete(citizen)
-              case None => complete(NotFound)
+        traceName("GetCitizen") {
+          makeOAuth2 { user: AuthInfo[Citizen] =>
+            if (citizenId == user.user.citizenId) {
+              onSuccess(citizenService.getCitizen(citizenId)) {
+                case Some(citizen) => complete(citizen)
+                case None => complete(NotFound)
+              }
+            } else {
+              complete(Forbidden)
             }
-          } else {
-            complete(Forbidden)
           }
         }
       }
@@ -62,16 +64,18 @@ trait CitizenApi extends CirceFormatters with Directives with CirceHttpSupport w
   ))
   def register: Route = post {
     path("citizen") {
-      decodeRequest {
-        entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
-          onSuccess(citizenService.register(
-            email = request.email,
-            dateOfBirth = request.dateOfBirth,
-            firstName = request.firstName,
-            lastName = request.lastName,
-            password = request.password
-          )) {
-            complete(_)
+      traceName("RegisterCitizen") {
+        decodeRequest {
+          entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
+            onSuccess(citizenService.register(
+              email = request.email,
+              dateOfBirth = request.dateOfBirth,
+              firstName = request.firstName,
+              lastName = request.lastName,
+              password = request.password
+            )) {
+              complete(_)
+            }
           }
         }
       }

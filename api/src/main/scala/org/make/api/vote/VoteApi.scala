@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
@@ -20,7 +21,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Vote")
 @Path(value = "/Vote")
-trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with MakeAuthentication {
+trait VoteApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirectives with Directives with MakeAuthentication {
   this: VoteServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(value = "get-Vote", httpMethod = "GET", code = 200)
@@ -35,9 +36,11 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
   def getVote: Route = {
     get {
       path("proposition" / propositionId / "vote" / voteId) { (propositionId, voteId) =>
-        onSuccess(voteService.getVote(voteId, propositionId)) {
-          case Some(vote) => complete(vote)
-          case None => complete(NotFound)
+        traceName("GetVote") {
+          onSuccess(voteService.getVote(voteId, propositionId)) {
+            case Some(vote) => complete(vote)
+            case None => complete(NotFound)
+          }
         }
       }
     }
@@ -60,17 +63,19 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with Directives with
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
         path("vote" / propositionId) { propositionId =>
-          decodeRequest {
-            entity(as[VoteRequest]) {
-              request: VoteRequest =>
-                onSuccess(voteService.vote(
-                  propositionId = propositionId,
-                  citizenId = user.user.citizenId,
-                  createdAt = ZonedDateTime.now,
-                  status = request.status
-                )) {
-                  complete(_)
-                }
+          traceName("Vote") {
+            decodeRequest {
+              entity(as[VoteRequest]) {
+                request: VoteRequest =>
+                  onSuccess(voteService.vote(
+                    propositionId = propositionId,
+                    citizenId = user.user.citizenId,
+                    createdAt = ZonedDateTime.now,
+                    status = request.status
+                  )) {
+                    complete(_)
+                  }
+              }
             }
           }
         }

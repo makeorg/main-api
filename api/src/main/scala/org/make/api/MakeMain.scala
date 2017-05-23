@@ -8,6 +8,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
+import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
 import org.make.core.proposition.PropositionId
 
@@ -17,6 +18,8 @@ import scala.concurrent.{Await, Future}
 object MakeMain extends App
   with StrictLogging
   with MakeApi {
+
+  Kamon.start()
 
   override implicit val actorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)

@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
@@ -18,7 +19,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposition")
 @Path(value = "/proposition")
-trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directives with MakeAuthentication {
+trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirectives with Directives with MakeAuthentication {
   this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
 
@@ -33,9 +34,11 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
   def getProposition: Route = {
     get {
       path("proposition" / propositionId) { propositionId =>
-        onSuccess(propositionService.getProposition(propositionId)) {
-          case Some(proposition) => complete(proposition)
-          case None => complete(NotFound)
+        traceName("GetProposition") {
+          onSuccess(propositionService.getProposition(propositionId)) {
+            case Some(proposition) => complete(proposition)
+            case None => complete(NotFound)
+          }
         }
       }
     }
@@ -44,8 +47,8 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
 
   @ApiOperation(value = "propose-proposition", httpMethod = "POST", code = 200, authorizations = Array(
     new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope (scope = "user", description = "application user"),
-      new AuthorizationScope (scope = "admin", description = "BO Admin")
+      new AuthorizationScope(scope = "user", description = "application user"),
+      new AuthorizationScope(scope = "admin", description = "BO Admin")
     ))
   ))
   @ApiImplicitParams(value = Array(
@@ -57,17 +60,19 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
   def propose: Route =
     post {
       path("proposition") {
-        makeOAuth2 { user: AuthInfo[Citizen] =>
-          decodeRequest {
-            entity(as[ProposePropositionRequest]) {
-              request: ProposePropositionRequest =>
-                onSuccess(propositionService.propose(
-                  citizenId = user.user.citizenId,
-                  createdAt = ZonedDateTime.now,
-                  content = request.content
-                )) {
-                  complete(_)
-                }
+        traceName("Propose") {
+          makeOAuth2 { user: AuthInfo[Citizen] =>
+            decodeRequest {
+              entity(as[ProposePropositionRequest]) {
+                request: ProposePropositionRequest =>
+                  onSuccess(propositionService.propose(
+                    citizenId = user.user.citizenId,
+                    createdAt = ZonedDateTime.now,
+                    content = request.content
+                  )) {
+                    complete(_)
+                  }
+              }
             }
           }
         }
@@ -76,8 +81,8 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
 
   @ApiOperation(value = "update-proposition", httpMethod = "PUT", code = 200, authorizations = Array(
     new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope (scope = "user", description = "application user"),
-      new AuthorizationScope (scope = "admin", description = "BO Admin")
+      new AuthorizationScope(scope = "user", description = "application user"),
+      new AuthorizationScope(scope = "admin", description = "BO Admin")
     ))
   ))
   @ApiImplicitParams(value = Array(
@@ -90,24 +95,26 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with Directiv
   def update: Route =
     put {
       path("proposition" / propositionId) { propositionId =>
-        makeOAuth2 { user: AuthInfo[Citizen] =>
-          decodeRequest {
-            entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
-              onSuccess(propositionService.getProposition(propositionId)) {
-                case Some(proposition) =>
-                  if (proposition.citizenId == user.user.citizenId) {
-                    onSuccess(propositionService.update(
-                      propositionId = propositionId,
-                      updatedAt = ZonedDateTime.now,
-                      content = request.content
-                    )) {
-                      case Some(prop) => complete(prop)
-                      case None => complete(Forbidden)
+        traceName("EditProposition") {
+          makeOAuth2 { user: AuthInfo[Citizen] =>
+            decodeRequest {
+              entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
+                onSuccess(propositionService.getProposition(propositionId)) {
+                  case Some(proposition) =>
+                    if (proposition.citizenId == user.user.citizenId) {
+                      onSuccess(propositionService.update(
+                        propositionId = propositionId,
+                        updatedAt = ZonedDateTime.now,
+                        content = request.content
+                      )) {
+                        case Some(prop) => complete(prop)
+                        case None => complete(Forbidden)
+                      }
+                    } else {
+                      complete(Forbidden)
                     }
-                  } else {
-                    complete(Forbidden)
-                  }
-                case None => complete(NotFound)
+                  case None => complete(NotFound)
+                }
               }
             }
           }

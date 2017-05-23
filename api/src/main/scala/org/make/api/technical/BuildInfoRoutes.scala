@@ -4,15 +4,18 @@ import akka.http.scaladsl.server.{Directives, Route}
 import buildinfo.BuildInfo
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
+import kamon.akka.http.KamonTraceDirectives
 import org.make.core.CirceFormatters
 
-trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatters {
+trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatters with KamonTraceDirectives {
 
   val buildRoutes: Route = buildInfo
 
   def buildInfo: Route = get {
     path("version") {
-      complete(BuildInformation())
+      traceName("version") {
+        complete(BuildInformation())
+      }
     }
   }
 

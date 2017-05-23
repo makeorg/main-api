@@ -5,11 +5,18 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 name := "make-api"
 
 libraryDependencies ++= Seq(
+  Dependencies.kamonJmx,
+  Dependencies.kamonAkka,
+  Dependencies.kamonAkkaHttp,
+  Dependencies.kamonAkkaRemote,
+  Dependencies.kamonScala,
   Dependencies.akkaSlf4j,
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
   Dependencies.akkaHttpCirce,
   Dependencies.akkaStreamCirce,
+  Dependencies.aspectJWeaver,
+  Dependencies.aspectJRt,
   Dependencies.circeGeneric,
   Dependencies.akkaClusterSharding,
   Dependencies.akkaPersistenceCassandra,
@@ -42,3 +49,9 @@ buildTime := {
 enablePlugins(BuildInfoPlugin)
 
 buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime)
+
+fork in run := true
+
+aspectjSettings
+
+javaOptions ++= (AspectjKeys.weaverOptions in Aspectj).value

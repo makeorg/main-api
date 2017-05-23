@@ -7,6 +7,8 @@ object Dependencies {
   private val nettyVersion = "4.1.9.Final"
   private val kafkaVersion = "0.10.2.0"
   private val elastic4sVersion = "5.4.1"
+  private val kamonVersion = "0.6.6"
+  val aspectJVersion: String = "1.8.10"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
   val logger: ModuleID = "org.apache.logging.log4j" % "log4j" % "2.8.2"
@@ -30,6 +32,20 @@ object Dependencies {
   val akkaHttpCirce: ModuleID = "de.knutwalker" %% "akka-http-circe" % "3.3.0"
   val akkaHttpSwagger: ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1"
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % "2.2.8"
+
+  val kamonAkka: ModuleID = "io.kamon" %% "kamon-akka-2.4" % kamonVersion
+  val kamonAkkaHttp: ModuleID = ("io.kamon" %% "kamon-akka-http" % kamonVersion)
+    .exclude("com.typesafe.akka", "akka-http_2.12")
+    .exclude("com.typesafe.akka", "akka-actor_2.12")
+  val kamonAkkaRemote: ModuleID = "io.kamon" %% "kamon-akka-remote-2.4" % kamonVersion
+  val kamonScala: ModuleID = "io.kamon" %% "kamon-scala" % kamonVersion
+  val kamonJmx: ModuleID = "io.kamon" %% "kamon-jmx" % kamonVersion
+  val kamonLogReporter: ModuleID = "io.kamon" %% "kamon-log-reporter" % kamonVersion
+  val kamonElasticsearch: ModuleID = "io.kamon" %% "kamon-elasticsearch" % kamonVersion
+  val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonVersion
+
+  val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
+  val aspectJRt: ModuleID = "org.aspectj" % "aspectjrt" % aspectJVersion
 
   val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
 
