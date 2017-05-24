@@ -52,6 +52,7 @@ enablePlugins(BuildInfoPlugin)
 buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime)
 
 fork in run := true
+fork in Test := true
 
 aspectjSettings
 
