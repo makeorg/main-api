@@ -2,14 +2,14 @@ image: charafau/docker-sbt-scala
 
 stages:
   - build
-  - test
+  - deploy
 
 build:
   stage: build
   script:
-    - sbt compile
-
-test:
-  stage: test
-  script:
     - sbt test
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Un jour mon appli se deploiera, un jour on l'utilisera !"
