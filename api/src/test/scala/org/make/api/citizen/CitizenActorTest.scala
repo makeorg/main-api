@@ -4,10 +4,12 @@ import java.time.LocalDate
 
 import akka.actor.{ActorRef, PoisonPill}
 import akka.testkit.TestKit
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.core.citizen.{Citizen, CitizenId, GetCitizen, RegisterCommand, _}
+import org.scalatest.GivenWhenThen
 
-class CitizenActorTest extends ShardingActorTest {
+class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
   var coordinator: ActorRef = _
 
@@ -26,9 +28,11 @@ class CitizenActorTest extends ShardingActorTest {
   "Register a citizen" should {
     "Initialize the state if it was empty" in {
 
+      Given("an empty state")
       coordinator ! GetCitizen(mainCitizenId)
       expectMsg(None)
 
+      And("a newly registered Citizen")
       coordinator ! RegisterCommand(
         citizenId = mainCitizenId,
         email = "robb.stark@make.org",
@@ -49,6 +53,8 @@ class CitizenActorTest extends ShardingActorTest {
         )
       )
 
+      Then("have the citizen state after registration")
+
       coordinator ! GetCitizen(mainCitizenId)
 
       expectMsg(
@@ -63,6 +69,7 @@ class CitizenActorTest extends ShardingActorTest {
         )
       )
 
+      And("recover its state after having been kill")
       coordinator ! KillCitizenShard(mainCitizenId)
 
       Thread.sleep(100)
