@@ -35,7 +35,7 @@ class CitizenApiTest extends FlatSpec with Matchers with MockitoSugar
 
     val config =
       """
-        |akka.test.timefator=5.0
+        |akka.test.timefactor=5.0
       """.stripMargin
 
     ConfigFactory.parseString(config)
