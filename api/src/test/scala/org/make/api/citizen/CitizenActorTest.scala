@@ -2,7 +2,7 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import akka.actor.{ActorRef, PoisonPill}
+import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
@@ -11,30 +11,21 @@ import org.scalatest.GivenWhenThen
 
 class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
-  var coordinator: ActorRef = _
-
-  val mainCitizenId = CitizenId("1234")
-
-  override protected def afterEach(): Unit = {
-    coordinator ! PoisonPill
-  }
+  var coordinator: ActorRef = system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  override protected def beforeEach(): Unit = {
-    coordinator = system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
-  }
-
   "Register a citizen" should {
+    val citizenId = CitizenId("1234")
     "Initialize the state if it was empty" in {
 
       Given("an empty state")
-      coordinator ! GetCitizen(mainCitizenId)
+      coordinator ! GetCitizen(citizenId)
       expectMsg(None)
 
       And("a newly registered Citizen")
       coordinator ! RegisterCommand(
-        citizenId = mainCitizenId,
+        citizenId = citizenId,
         email = "robb.stark@make.org",
         dateOfBirth = LocalDate.parse("1970-01-01"),
         firstName = "Robb",
@@ -44,7 +35,7 @@ class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictL
       expectMsg(
         Some(
           Citizen(
-            citizenId = mainCitizenId,
+            citizenId = citizenId,
             email = "robb.stark@make.org",
             dateOfBirth = LocalDate.parse("1970-01-01"),
             firstName = "Robb",
@@ -55,12 +46,12 @@ class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictL
 
       Then("have the citizen state after registration")
 
-      coordinator ! GetCitizen(mainCitizenId)
+      coordinator ! GetCitizen(citizenId)
 
       expectMsg(
         Some(
           Citizen(
-            citizenId = mainCitizenId,
+            citizenId = citizenId,
             email = "robb.stark@make.org",
             dateOfBirth = LocalDate.parse("1970-01-01"),
             firstName = "Robb",
@@ -70,16 +61,16 @@ class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictL
       )
 
       And("recover its state after having been kill")
-      coordinator ! KillCitizenShard(mainCitizenId)
+      coordinator ! KillCitizenShard(citizenId)
 
       Thread.sleep(100)
 
-      coordinator ! GetCitizen(mainCitizenId)
+      coordinator ! GetCitizen(citizenId)
 
       expectMsg(
         Some(
           Citizen(
-            citizenId = mainCitizenId,
+            citizenId = citizenId,
             email = "robb.stark@make.org",
             dateOfBirth = LocalDate.parse("1970-01-01"),
             firstName = "Robb",

@@ -24,3 +24,5 @@ case class UpdatePropositionCommand(
 case class ViewPropositionCommand(propositionId: PropositionId) extends PropositionCommand
 
 case class GetProposition(propositionId: PropositionId) extends PropositionCommand
+
+case class KillPropositionShard(propositionId: PropositionId) extends PropositionCommand

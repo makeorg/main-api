@@ -2,7 +2,7 @@ package org.make.api.proposition
 
 import java.time.ZonedDateTime
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{Patterns, ask}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposition.PropositionActor.Snapshot
@@ -57,6 +57,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
       Patterns.pipe((self ? GetProposition(update.propositionId)) (1.second), Implicits.global).to(sender)
       self ! Snapshot
     case Snapshot => state.foreach(state => saveSnapshot(state.toProposition))
+    case KillPropositionShard(_) => self ! PoisonPill
   }
 
   override def persistenceId: String = propositionId.value
