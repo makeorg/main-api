@@ -38,6 +38,10 @@ object TestHelper {
       |      journal-plugin-id = "inmemory-journal"
       |    }
       |  }
+      |
+      |  test {
+      |    timefactor = 10.0
+      |  }
       |}
     """.stripMargin
 
