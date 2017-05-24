@@ -26,31 +26,38 @@ trait CustomFormatters {
 }
 
 
-class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
-  val client = HttpClient(ElasticsearchClientUri(host, port))
+trait ElasticsearchAPIComponent {
 
-  val propositionIndex: IndexAndType = "propositions" / "proposition"
-  def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
-    client execute {
-      get(id = propositionId.value).from(propositionIndex)
-    } flatMap { response =>
-      logger.debug("Received response from Elasticsearch: " + response.toString)
-      Future.successful(PropositionElasticsearch.shape
-        .applyOrElse[AnyRef, Option[PropositionElasticsearch]](response, _ => None))
+  def elasticsearchAPI: ElasticsearchAPI
+
+  class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
+    private val client = HttpClient(ElasticsearchClientUri(host, port))
+
+    val propositionIndex: IndexAndType = "propositions" / "proposition"
+
+    def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
+      client execute {
+        get(id = propositionId.value).from(propositionIndex)
+      } flatMap { response =>
+        logger.debug("Received response from Elasticsearch: " + response.toString)
+        Future.successful(PropositionElasticsearch.shape
+          .applyOrElse[AnyRef, Option[PropositionElasticsearch]](response, _ => None))
+      }
+    }
+
+    def save(record: PropositionElasticsearch): Future[Done] = {
+      logger.info(s"Saving in Elasticsearch: $record")
+      client.execute {
+        indexInto(propositionIndex) doc record refresh RefreshPolicy.IMMEDIATE id record.id.toString
+      } map { _ => Done }
+    }
+
+    def updateProposition(record: PropositionElasticsearch): Future[Done] = {
+      logger.info(s"Updating in Elasticsearch: $record")
+      client.execute {
+        update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
+      } map { _ => Done }
     }
   }
 
-  def save(record: PropositionElasticsearch): Future[Done] = {
-    logger.info(s"Saving in Elasticsearch: $record")
-    client.execute {
-      indexInto(propositionIndex) doc record refresh RefreshPolicy.IMMEDIATE id record.id.toString
-    } map { _ => Done }
-  }
-
-  def updateProposition(record: PropositionElasticsearch): Future[Done] = {
-    logger.info(s"Updating in Elasticsearch: $record")
-    client.execute {
-      update(id = record.id.toString) in propositionIndex doc record refresh RefreshPolicy.IMMEDIATE
-    } map { _ => Done }
-  }
 }

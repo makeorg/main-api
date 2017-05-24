@@ -7,8 +7,6 @@ import org.make.api.extensions.ConfigurationSupport
 class ElasticsearchConfiguration(override protected val configuration: Config) extends Extension with ConfigurationSupport {
   val host: String = configuration.getString("host")
   val port: Int = configuration.getInt("port")
-
-  def esApi = new ElasticsearchAPI(host, port)
 }
 
 object ElasticsearchConfiguration extends ExtensionId[ElasticsearchConfiguration] with ExtensionIdProvider {
