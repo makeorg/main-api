@@ -12,6 +12,7 @@ import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
 import io.circe.generic.auto._
 import kamon.akka.http.KamonTraceDirectives
+import org.make.core.Validation.{requirement, requirements}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -95,5 +96,17 @@ case class RegisterCitizenRequest(
                                    dateOfBirth: LocalDate,
                                    firstName: String,
                                    lastName: String
-                                 )
+                                 ) {
+
+  requirements(
+    requirement(dateOfBirth != null, "Date of birth mustn't be null"),
+    requirement(firstName != null, "First name mustn't be null"),
+    requirement(lastName != null, "Last name mustn't be null"),
+    requirement(email != null, "Email mustn't be null"),
+    requirement(email != null && email.contains("@"), "Email must be an email"),
+    requirement(password != null, "Password mustn't be null"),
+    requirement(password != null && password.length > 5, "Password must be at least 6 characters")
+  )
+
+}
 

@@ -3,6 +3,7 @@ package org.make.core.citizen
 import java.time.LocalDate
 
 import io.circe._
+import org.make.core.Validation._
 import org.make.core.StringValue
 
 //
@@ -16,6 +17,7 @@ case class Citizen(
                     firstName: String,
                     lastName: String
                   )
+
 
 case class CitizenId(value: String) extends StringValue
 

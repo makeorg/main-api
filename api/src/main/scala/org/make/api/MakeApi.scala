@@ -3,19 +3,21 @@ package org.make.api
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.util.Timeout
-import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import com.typesafe.scalalogging.StrictLogging
+import io.circe.syntax._
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.proposition._
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
+import org.make.core.ValidationError
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
-
-
 
 trait MakeApi extends CitizenServiceComponent
   with IdGeneratorComponent
@@ -26,7 +28,8 @@ trait MakeApi extends CitizenServiceComponent
   with BuildInfoRoutes
   with AvroSerializers
   with MakeDataHandlerComponent
-  with TokenServiceComponent {
+  with TokenServiceComponent
+  with StrictLogging {
 
   def actorSystem: ActorSystem
 
@@ -55,6 +58,24 @@ trait MakeApi extends CitizenServiceComponent
     )
   }
 
+  val exceptionHandler = ExceptionHandler {
+    case ValidationError(messages) => complete(
+      HttpResponse(
+        status = StatusCodes.BadRequest,
+        entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
+      )
+    )
+    case e =>
+      logger.error("", e)
+      complete(
+        HttpResponse(
+          status = StatusCodes.InternalServerError,
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError)
+        )
+      )
+
+  }
+
 
   private lazy val swagger: Route =
     path("swagger") {
@@ -67,15 +88,28 @@ trait MakeApi extends CitizenServiceComponent
 
   private lazy val apiTypes: Seq[ru.Type] = Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
 
-  lazy val makeRoutes: Route =
+  lazy val makeRoutes: Route = handleExceptions(exceptionHandler)(
     new MakeDocumentation(actorSystem, apiTypes).routes ~
-    swagger ~
-    login ~
-    citizenRoutes ~
-    propositionRoutes ~
-    accessTokenRoute ~
-    buildRoutes
+      swagger ~
+      login ~
+      citizenRoutes ~
+      propositionRoutes ~
+      accessTokenRoute ~
+      buildRoutes
+  )
+
+
 }
+
+object MakeApi {
+  val defaultError: String =
+    """
+      |{
+      |  "error": "an error occurred, please try again later."
+      |}
+    """.stripMargin
+}
+
 
 
 
