@@ -2,30 +2,16 @@ package org.make.api.citizen
 
 import java.time.LocalDate
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import akka.cluster.Cluster
-import akka.testkit.{ImplicitSender, TestKit}
-import com.typesafe.config.ConfigFactory
-import org.make.core.citizen._
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import akka.actor.{ActorRef, PoisonPill}
+import akka.testkit.TestKit
+import org.make.api.ShardingActorTest
+import org.make.core.citizen.{Citizen, CitizenId, GetCitizen, RegisterCommand, _}
 
-class CitizenActorTest extends TestKit(CitizenActorTest.actorSystem)
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with BeforeAndAfterEach
-  with ImplicitSender {
+class CitizenActorTest extends ShardingActorTest {
 
   var coordinator: ActorRef = _
 
   val mainCitizenId = CitizenId("1234")
-
-  override protected def beforeAll(): Unit = super.beforeAll()
-
-
-  override protected def beforeEach(): Unit = {
-    coordinator = system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
-  }
 
   override protected def afterEach(): Unit = {
     coordinator ! PoisonPill
@@ -33,6 +19,9 @@ class CitizenActorTest extends TestKit(CitizenActorTest.actorSystem)
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
+  override protected def beforeEach(): Unit = {
+    coordinator = system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
+  }
 
   "Register a citizen" should {
     "Initialize the state if it was empty" in {
@@ -93,48 +82,4 @@ class CitizenActorTest extends TestKit(CitizenActorTest.actorSystem)
       )
     }
   }
-
-
 }
-
-object CitizenActorTest {
-
-  val configuration: String =
-    """
-      |akka {
-      |
-      |  actor {
-      |    provider = "akka.cluster.ClusterActorRefProvider"
-      |  }
-      |
-      |  persistence {
-      |    journal.plugin = "inmemory-journal"
-      |    snapshot-store.plugin = "inmemory-snapshot-store"
-      |  }
-      |
-      |  cluster {
-      |
-      |     sharding {
-      |      guardian-name = sharding
-      |      remember-entities = on
-      |      state-store-mode = persistence
-      |
-      |      snapshot-plugin-id = "inmemory-snapshot-store"
-      |      journal-plugin-id = "inmemory-journal"
-      |    }
-      |  }
-      |
-      |  test.single-expect-default = "5 seconds"
-      |}
-    """.stripMargin
-
-  def actorSystem: ActorSystem = {
-    val system = ActorSystem("test-system", ConfigFactory.parseString(configuration))
-    val cluster = Cluster(system)
-    cluster.join(cluster.selfAddress)
-    system
-  }
-
-}
-
-
