@@ -8,11 +8,11 @@ import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.swagger.annotations._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, Validation}
 import org.make.core.citizen.{Citizen, CitizenId}
 import io.circe.generic.auto._
 import kamon.akka.http.KamonTraceDirectives
-import org.make.core.Validation.{requirement, requirements}
+import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -98,14 +98,14 @@ case class RegisterCitizenRequest(
                                    lastName: String
                                  ) {
 
-  requirements(
-    requirement(dateOfBirth != null, "Date of birth mustn't be null"),
-    requirement(firstName != null, "First name mustn't be null"),
-    requirement(lastName != null, "Last name mustn't be null"),
-    requirement(email != null, "Email mustn't be null"),
-    requirement(email != null && email.contains("@"), "Email must be an email"),
-    requirement(password != null, "Password mustn't be null"),
-    requirement(password != null && password.length > 5, "Password must be at least 6 characters")
+  validate(
+    mandatoryField("dateOfBirth", dateOfBirth),
+    mandatoryField("firstName", firstName),
+    mandatoryField("lastName", lastName ),
+    mandatoryField("email", email),
+    validateEmail("email", email),
+    mandatoryField("password", password),
+    validateField("password", password != null && password.length > 5, "Password must be at least 6 characters")
   )
 
 }

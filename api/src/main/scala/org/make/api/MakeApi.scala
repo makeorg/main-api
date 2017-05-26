@@ -8,11 +8,12 @@ import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.syntax._
+import io.circe.generic.auto._
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
-import org.make.core.ValidationError
+import org.make.core.ValidationFailedError
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
@@ -59,7 +60,7 @@ trait MakeApi extends CitizenServiceComponent
   }
 
   val exceptionHandler = ExceptionHandler {
-    case ValidationError(messages) => complete(
+    case ValidationFailedError(messages) => complete(
       HttpResponse(
         status = StatusCodes.BadRequest,
         entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
