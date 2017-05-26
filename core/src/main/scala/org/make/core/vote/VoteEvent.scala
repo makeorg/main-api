@@ -52,5 +52,5 @@ object VoteEvent {
                           status: VoteStatus
                         ) extends VoteEvent
 
-  case class VotedView(id: VoteId, propositionId: PropositionId) extends VoteEvent
+  case class VoteViewed(id: VoteId, propositionId: PropositionId) extends VoteEvent
 }

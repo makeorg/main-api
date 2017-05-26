@@ -20,22 +20,22 @@ import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Vote")
-@Path(value = "/Vote")
+@Path(value = "/vote")
 trait VoteApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirectives with Directives with MakeAuthentication {
   this: VoteServiceComponent with MakeDataHandlerComponent =>
 
-  @ApiOperation(value = "get-Vote", httpMethod = "GET", code = 200)
+  @ApiOperation(value = "get-vote", httpMethod = "GET", code = 200)
   @ApiResponses(value = Array(
     new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])
   ))
   @ApiImplicitParams(value = Array(
     new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "String"),
-    new ApiImplicitParam(name = "VoteId", paramType = "path", dataType = "string")
+    new ApiImplicitParam(name = "voteId", paramType = "path", dataType = "string")
   ))
   @Path(value = "/{propopsitionId}/{voteId}")
   def getVote: Route = {
     get {
-      path("proposition" / propositionId / "vote" / voteId) { (propositionId, voteId) =>
+      path("proposition" / refPropositionId / "vote" / voteId) { (propositionId, voteId) =>
         traceName("GetVote") {
           onSuccess(voteService.getVote(voteId, propositionId)) {
             case Some(vote) => complete(vote)
@@ -62,11 +62,10 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirec
   def vote: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
-        path("vote" / propositionId) { propositionId =>
+        path("vote" / refPropositionId) { propositionId =>
           traceName("Vote") {
             decodeRequest {
-              entity(as[VoteRequest]) {
-                request: VoteRequest =>
+              entity(as[VoteRequest]) { request: VoteRequest =>
                   onSuccess(voteService.vote(
                     propositionId = propositionId,
                     citizenId = user.user.citizenId,
@@ -85,7 +84,7 @@ trait VoteApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirec
 
   val voteRoutes: Route = vote ~ getVote
   val voteId: PathMatcher1[VoteId] = Segment.flatMap(id => Try(VoteId(id)).toOption)
-  val propositionId: PathMatcher1[PropositionId] = Segment.flatMap(id => Try(PropositionId(id)).toOption)
+  val refPropositionId: PathMatcher1[PropositionId] = Segment.flatMap(id => Try(PropositionId(id)).toOption)
 }
 
 case class VoteRequest(status: VoteStatus)

@@ -25,7 +25,7 @@ case class Vote (
 
 case class VoteId(value: String) extends StringValue
 
-object VoteId {CitizenId
+object VoteId {
   implicit lazy val voteIdEncoder: Encoder[VoteId] = (a: VoteId) => Json.fromString(a.value)
   implicit lazy val voteIdDecoder: Decoder[VoteId] = Decoder.decodeString.map(VoteId(_))
 }

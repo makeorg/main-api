@@ -7,12 +7,13 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusC
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.syntax._
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
-import org.make.api.proposition._
+import org.make.api.proposition.{PropositionApi, PropositionCoordinator, PropositionServiceComponent, PropositionSupervisor}
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
+import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.ValidationFailedError
 
 import scala.concurrent.duration._
@@ -26,6 +27,8 @@ trait MakeApi extends CitizenServiceComponent
   with CitizenApi
   with PropositionServiceComponent
   with PropositionApi
+  with VoteServiceComponent
+  with VoteApi
   with BuildInfoRoutes
   with AvroSerializers
   with MakeDataHandlerComponent
@@ -42,7 +45,13 @@ trait MakeApi extends CitizenServiceComponent
         .resolveOne()(Timeout(2.seconds)),
       atMost = 2.seconds
     )
-
+  )
+  override lazy val voteService: VoteService = new VoteService(
+    Await.result(
+      actorSystem.actorSelection(actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name)
+        .resolveOne()(Timeout(2.seconds)),
+      atMost = 2.seconds
+    )
   )
   override lazy val persistentCitizenService: PersistentCitizenService = new PersistentCitizenService()
   override lazy val oauth2DataHandler: MakeDataHandler = new MakeDataHandler()(ECGlobal)
@@ -95,11 +104,10 @@ trait MakeApi extends CitizenServiceComponent
       login ~
       citizenRoutes ~
       propositionRoutes ~
+//    voteRoutes ~
       accessTokenRoute ~
       buildRoutes
   )
-
-
 }
 
 object MakeApi {
