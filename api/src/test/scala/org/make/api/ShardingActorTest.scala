@@ -50,6 +50,18 @@ object TestHelper {
       |    timefactor = 10.0
       |  }
       |}
+      |make-api {
+      |  kafka {
+      |    connection-string = "nowhere:-1"
+      |    poll-timeout = 10000
+      |    schema-registry = "http://nowhere:-1"
+      |    topics {
+      |      citizens = "citizens"
+      |      propositions = "propositions"
+      |      votes = "votes"
+      |    }
+      |  }
+      |}
     """.stripMargin
 
   def defaultActorSystem(conf: String = configuration): ActorSystem = {

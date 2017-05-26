@@ -18,10 +18,7 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.Predef._
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
-import org.make.api.technical.elasticsearch.{
-  ElasticsearchAPIComponent,
-  PropositionElasticsearch
-}
+import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, PropositionElasticsearch}
 import org.make.core.proposition.PropositionEvent._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -110,15 +107,18 @@ trait PropositionStreamToElasticsearchComponent {
       elasticsearchAPI.updateProposition
     )
 
-    val commitOffset
-      : Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
-      Flow[(CommittableMessage[String, AnyRef], Done)]
-        .map(_._1.committableOffset)
-        .batch(max = 20, first => CommittableOffsetBatch.empty.updated(first)) {
-          (batch, elem) =>
-            batch.updated(elem)
-        }
+    val commitOffset: Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
+      Flow[(CommittableMessage[String, AnyRef], Done)].map(_._1.committableOffset)
+//        WIP:
+//        .batch(max = 20, first => CommittableOffsetBatch.empty.updated(first)) { (batch, elem) =>
+//          batch.updated(elem)
+//        }
         .mapAsync(1)(_.commitScaladsl())
+
+    def debug[T]: Flow[T, T, NotUsed] = Flow[T].map { x =>
+      logger.debug(s"[DEBUG][${x.getClass.getName}] " + x.toString)
+      x
+    }
 
     def esPush: FlowGraph = {
       Flow.fromGraph(GraphDSL.create() { implicit builder =>
