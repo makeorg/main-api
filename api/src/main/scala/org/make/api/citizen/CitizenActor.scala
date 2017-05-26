@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 
 class CitizenActor extends PersistentActor with ActorLogging {
 
-  def citizenId = CitizenId(self.path.name)
+  def citizenId: CitizenId = CitizenId(self.path.name)
 
   private[this] var state: Option[CitizenState] = None
 

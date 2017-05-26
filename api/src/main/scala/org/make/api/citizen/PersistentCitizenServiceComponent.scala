@@ -8,7 +8,6 @@ import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.{ExecutionContext, Future}
-
 trait PersistentCitizenServiceComponent {
 
   def persistentCitizenService: PersistentCitizenService
@@ -36,10 +35,7 @@ trait PersistentCitizenServiceComponent {
     )
     override val tableName: String = "citizen"
 
-    lazy val c
-      : scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[
-        PersistentCitizen
-      ], PersistentCitizen] = syntax("c")
+    lazy val c: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentCitizen], PersistentCitizen] = syntax("c")
 
     def toCitizen(c: SyntaxProvider[PersistentCitizen])(
       rs: WrappedResultSet

@@ -36,7 +36,7 @@ class VoteActor extends PersistentActor with ActorLogging {
         VoteViewed(id = e.voteId, propositionId = e.propositionId)
       )
     case agree: PutVoteCommand if agree.status == VoteStatus.AGREE =>
-      if (citizenCanVote(agree.citizenId))
+      if (citizenCanVote(agree.citizenId)) {
         persistAndPublishEvent(
           VotedAgree(
             id = agree.voteId,
@@ -46,12 +46,13 @@ class VoteActor extends PersistentActor with ActorLogging {
             status = agree.status
           )
         )
+      }
       Patterns
         .pipe((self ? GetVote(agree.voteId))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
     case disagree: PutVoteCommand if disagree.status == VoteStatus.DISAGREE =>
-      if (citizenCanVote(disagree.citizenId))
+      if (citizenCanVote(disagree.citizenId)) {
         persistAndPublishEvent(
           VotedDisagree(
             id = disagree.voteId,
@@ -61,12 +62,13 @@ class VoteActor extends PersistentActor with ActorLogging {
             status = disagree.status
           )
         )
+      }
       Patterns
         .pipe((self ? GetVote(disagree.voteId))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
     case unsure: PutVoteCommand if unsure.status == VoteStatus.UNSURE =>
-      if (citizenCanVote(unsure.citizenId))
+      if (citizenCanVote(unsure.citizenId)) {
         persistAndPublishEvent(
           VotedUnsure(
             id = unsure.voteId,
@@ -76,6 +78,7 @@ class VoteActor extends PersistentActor with ActorLogging {
             status = unsure.status
           )
         )
+      }
       Patterns
         .pipe((self ? GetVote(unsure.voteId))(1.second), Implicits.global)
         .to(sender)

@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration._
 
 class PropositionActor extends PersistentActor with ActorLogging {
-  def propositionId = PropositionId(self.path.name)
+  def propositionId: PropositionId = PropositionId(self.path.name)
 
   private[this] var state: Option[PropositionState] = None
 

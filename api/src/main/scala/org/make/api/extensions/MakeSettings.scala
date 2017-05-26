@@ -12,14 +12,20 @@ class MakeSettings(config: Config) extends Extension {
     config.getString("passivate-timeout")
   )
   val useEmbeddedElasticSearch: Boolean =
-    if (config.hasPath("dev.embedded-elasticsearch"))
+    if (config.hasPath("dev.embedded-elasticsearch")) {
       config.getBoolean("dev.embedded-elasticsearch")
-    else false
+    }
+    else {
+      false
+    }
 
   val sendTestData: Boolean =
-    if (config.hasPath("dev.send-test-data"))
+    if (config.hasPath("dev.send-test-data")) {
       config.getBoolean("dev.send-test-data")
-    else false
+    }
+    else {
+      false
+    }
 
   object http {
     val host: String = config.getString("http.host")
