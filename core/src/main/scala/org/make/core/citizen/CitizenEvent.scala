@@ -9,8 +9,12 @@ object CitizenEvent {
 
   type AnyCitizenEvent = CitizenRegistered :+: CitizenViewed :+: CNil
 
-  case class CitizenEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyCitizenEvent)
-    extends EventWrapper
+  case class CitizenEventWrapper(version: Int,
+                                 id: String,
+                                 date: ZonedDateTime,
+                                 eventType: String,
+                                 event: AnyCitizenEvent)
+      extends EventWrapper
 
   object CitizenEventWrapper {
     def wrapEvent(event: CitizenEvent): AnyCitizenEvent = event match {
@@ -23,16 +27,13 @@ object CitizenEvent {
     def id: CitizenId
   }
 
-  case class CitizenRegistered(
-                                id: CitizenId,
-                                email: String,
-                                dateOfBirth: LocalDate,
-                                firstName: String,
-                                lastName: String
-                              ) extends CitizenEvent
+  case class CitizenRegistered(id: CitizenId,
+                               email: String,
+                               dateOfBirth: LocalDate,
+                               firstName: String,
+                               lastName: String)
+      extends CitizenEvent
 
-  case class CitizenViewed(
-                          id: CitizenId
-                          ) extends CitizenEvent
+  case class CitizenViewed(id: CitizenId) extends CitizenEvent
 
 }

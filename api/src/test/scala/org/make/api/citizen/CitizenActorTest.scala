@@ -6,12 +6,22 @@ import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.core.citizen.{Citizen, CitizenId, GetCitizen, RegisterCommand, _}
+import org.make.core.citizen.{
+  Citizen,
+  CitizenId,
+  GetCitizen,
+  RegisterCommand,
+  _
+}
 import org.scalatest.GivenWhenThen
 
-class CitizenActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+class CitizenActorTest
+    extends ShardingActorTest
+    with GivenWhenThen
+    with StrictLogging {
 
-  var coordinator: ActorRef = system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
+  var coordinator: ActorRef =
+    system.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 

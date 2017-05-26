@@ -17,7 +17,8 @@ trait AvroSerializers {
   }
 
   implicit object DateTimeFromValue extends FromValue[LocalDate] {
-    override def apply(value: Any, field: Field): LocalDate = LocalDate.parse(value.toString)
+    override def apply(value: Any, field: Field): LocalDate =
+      LocalDate.parse(value.toString)
   }
 
   implicit object ZonedDateTimeToSchema extends ToSchema[ZonedDateTime] {
@@ -29,7 +30,8 @@ trait AvroSerializers {
   }
 
   implicit object ZonedDateTimeFromValue extends FromValue[ZonedDateTime] {
-    override def apply(value: Any, field: Field): ZonedDateTime = ZonedDateTime.parse(value.toString)
+    override def apply(value: Any, field: Field): ZonedDateTime =
+      ZonedDateTime.parse(value.toString)
   }
 
 }

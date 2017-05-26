@@ -9,32 +9,45 @@ import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 trait PersistentCitizenServiceComponent {
 
   def persistentCitizenService: PersistentCitizenService
   def readExecutionContext: ExecutionContext
   def writeExecutionContext: ExecutionContext
 
+  case class PersistentCitizen(id: String,
+                               email: String,
+                               firstName: String,
+                               lastName: String,
+                               hashedPassword: String,
+                               dateOfBirth: String)
 
-  case class PersistentCitizen(
-                                id: String,
-                                email: String,
-                                firstName: String,
-                                lastName: String,
-                                hashedPassword: String,
-                                dateOfBirth: String)
+  object PersistentCitizen
+      extends SQLSyntaxSupport[PersistentCitizen]
+      with ShortenedNames {
 
-  object PersistentCitizen extends SQLSyntaxSupport[PersistentCitizen] with ShortenedNames {
-
-    override val columnNames = Seq("id", "email", "first_name", "last_name", "hashed_password", "date_of_birth")
+    override val columnNames = Seq(
+      "id",
+      "email",
+      "first_name",
+      "last_name",
+      "hashed_password",
+      "date_of_birth"
+    )
     override val tableName: String = "citizen"
 
-    lazy val c: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[PersistentCitizen], PersistentCitizen] = syntax("c")
+    lazy val c
+      : scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[
+        PersistentCitizen
+      ], PersistentCitizen] = syntax("c")
 
-    def toCitizen(c: SyntaxProvider[PersistentCitizen])(rs: WrappedResultSet): Citizen = toCitizen(c.resultName)(rs)
+    def toCitizen(c: SyntaxProvider[PersistentCitizen])(
+      rs: WrappedResultSet
+    ): Citizen = toCitizen(c.resultName)(rs)
 
-    def toCitizen(c: ResultName[PersistentCitizen])(rs: WrappedResultSet): Citizen = {
+    def toCitizen(
+      c: ResultName[PersistentCitizen]
+    )(rs: WrappedResultSet): Citizen = {
       Citizen(
         citizenId = CitizenId(rs.string(column.id)),
         email = rs.string(column.email),
@@ -50,61 +63,60 @@ trait PersistentCitizenServiceComponent {
     private val c = PersistentCitizen.c
     private val column = PersistentCitizen.column
 
-
     def get(id: CitizenId): Future[Option[Citizen]] = {
-      Future(
-        NamedDB('READ).localTx { implicit session =>
-          withSQL {
-            select(c.*)
-              .from(PersistentCitizen as c)
-              .where(sqls.eq(c.id, id.value))
-          }.map(PersistentCitizen.toCitizen(c)).single.apply
-        }
-      )(readExecutionContext)
+      Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(c.*)
+            .from(PersistentCitizen as c)
+            .where(sqls.eq(c.id, id.value))
+        }.map(PersistentCitizen.toCitizen(c)).single.apply
+      })(readExecutionContext)
     }
 
     def find(email: String, password: String): Future[Option[Citizen]] = {
       implicit val cxt: EC = readExecutionContext
-      Future(
-        NamedDB('READ).localTx { implicit session =>
-          withSQL {
-            select(c.*)
-              .from(PersistentCitizen as c)
-              .where(sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password))
-          }.map(PersistentCitizen.toCitizen(c)).single().apply()
-        }
-      )
+      Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(c.*)
+            .from(PersistentCitizen as c)
+            .where(
+              sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password)
+            )
+        }.map(PersistentCitizen.toCitizen(c)).single().apply()
+      })
     }
 
     def emailExists(email: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
-      Future(
-        NamedDB('READ).localTx { implicit session =>
-          withSQL {
-            select(count(c.asterisk))
-              .from(PersistentCitizen as c)
-              .where(sqls.eq(c.email, email))
-          }.map(rs => rs.int(1) > 0).single().apply()
-        }
-      ).map(_.getOrElse(false))
+      Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(count(c.asterisk))
+            .from(PersistentCitizen as c)
+            .where(sqls.eq(c.email, email))
+        }.map(rs => rs.int(1) > 0).single().apply()
+      }).map(_.getOrElse(false))
     }
 
     def persist(citizen: Citizen, hashedPassword: String): Future[Citizen] = {
       implicit val ctx = writeExecutionContext
-      Future(
-        NamedDB('WRITE).localTx { implicit session =>
-          withSQL {
-            insert.into(PersistentCitizen).namedValues(
+      Future(NamedDB('WRITE).localTx { implicit session =>
+        withSQL {
+          insert
+            .into(PersistentCitizen)
+            .namedValues(
               column.id -> citizen.citizenId.value,
               column.email -> citizen.email,
-              column.dateOfBirth -> citizen.dateOfBirth.atStartOfDay(ZoneOffset.UTC),
+              column.dateOfBirth -> citizen.dateOfBirth.atStartOfDay(
+                ZoneOffset.UTC
+              ),
               column.firstName -> citizen.firstName,
               column.lastName -> citizen.lastName,
               column.hashedPassword -> hashedPassword
             )
-          }.execute().apply()
-        }
-      ).map { _ => citizen }
+        }.execute().apply()
+      }).map { _ =>
+        citizen
+      }
     }
   }
 

@@ -7,9 +7,7 @@ import org.joda.time.DateTime
 
 import scala.concurrent.duration.FiniteDuration
 
-
 object Predef {
-
 
   implicit class RichJodaDateTime(val self: DateTime) extends AnyVal {
 
@@ -22,10 +20,10 @@ object Predef {
         self.getMinuteOfHour,
         self.getSecondOfMinute,
         self.getMillisOfSecond * 1000000,
-        ZoneId.of(self.getZone.getID, ZoneId.SHORT_IDS))
+        ZoneId.of(self.getZone.getID, ZoneId.SHORT_IDS)
+      )
     }
   }
-
 
   implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
 
@@ -34,7 +32,8 @@ object Predef {
     }
   }
 
-  implicit class RichScalaDuration(val self: java.time.Duration) extends AnyVal {
+  implicit class RichScalaDuration(val self: java.time.Duration)
+      extends AnyVal {
     def toScala: FiniteDuration = {
       FiniteDuration(self.toNanos, TimeUnit.NANOSECONDS)
     }

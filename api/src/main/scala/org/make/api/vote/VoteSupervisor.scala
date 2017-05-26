@@ -8,11 +8,12 @@ import org.make.core.vote.VoteEvent.VoteEventWrapper
 
 class VoteSupervisor extends Actor with AvroSerializers with ActorLogging {
 
-
   override def preStart(): Unit = {
     context.watch(context.actorOf(VoteCoordinator.props, VoteCoordinator.name))
 
-    context.watch(context.actorOf(VoteProducerActor.props, VoteProducerActor.name))
+    context.watch(
+      context.actorOf(VoteProducerActor.props, VoteProducerActor.name)
+    )
 
     val voteConsumer = context.actorOf(
       ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"),

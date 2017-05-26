@@ -15,41 +15,60 @@ object Validation {
   def validate(require: Requirement*): Unit = {
     val messages: Seq[ValidationError] = require.flatMap { requirement =>
       Try(requirement.condition()) match {
-        case Failure(e) => Seq(ValidationError(requirement.field, e.getMessage))
-        case Success(false) => Seq(ValidationError(requirement.field, requirement.message()))
+        case Failure(e) =>
+          Seq(ValidationError(requirement.field, e.getMessage))
+        case Success(false) =>
+          Seq(ValidationError(requirement.field, requirement.message()))
         case _ => Nil
       }
     }
-    if(messages.nonEmpty) {
+    if (messages.nonEmpty) {
       throw ValidationFailedError(messages)
     }
   }
 
-  def validateField(field: String, condition: => Boolean, message: => String): Requirement =
+  def validateField(field: String,
+                    condition: => Boolean,
+                    message: => String): Requirement =
     Requirement(field, () => condition, () => message)
 
-  def mandatoryField(fieldName: String, fieldValue: => Any, message: Option[String] = None): Requirement = {
+  def mandatoryField(fieldName: String,
+                     fieldValue: => Any,
+                     message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value = fieldValue
       value != null && value != None
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is mandatory"))
+    validateField(
+      fieldName,
+      condition(),
+      message.getOrElse(s"$fieldName is mandatory")
+    )
   }
 
-  def validateEmail(fieldName: String, fieldValue: => String, message: Option[String] = None): Requirement = {
+  def validateEmail(fieldName: String,
+                    fieldValue: => String,
+                    message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value: String = fieldValue
       value != null && emailRegex.findFirstIn(value).isDefined
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
+    validateField(
+      fieldName,
+      condition(),
+      message.getOrElse(s"$fieldName is not a valid email")
+    )
   }
 
 }
 
-case class Requirement(field: String, condition: () => Boolean, message: () => String)
+case class Requirement(field: String,
+                       condition: () => Boolean,
+                       message: () => String)
 
-case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception {
-  override def getMessage: String = { errors.asJson.toString}
+case class ValidationFailedError(errors: Seq[ValidationError])
+    extends Exception {
+  override def getMessage: String = { errors.asJson.toString }
 }
 
 case class ValidationError(field: String, message: String)

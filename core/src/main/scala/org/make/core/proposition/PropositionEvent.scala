@@ -8,10 +8,15 @@ import shapeless.{:+:, CNil, Coproduct}
 
 object PropositionEvent {
 
-  type AnyPropositionEvent = PropositionProposed :+: PropositionViewed :+: PropositionUpdated :+: CNil
+  type AnyPropositionEvent =
+    PropositionProposed :+: PropositionViewed :+: PropositionUpdated :+: CNil
 
-  case class PropositionEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyPropositionEvent)
-    extends EventWrapper
+  case class PropositionEventWrapper(version: Int,
+                                     id: String,
+                                     date: ZonedDateTime,
+                                     eventType: String,
+                                     event: AnyPropositionEvent)
+      extends EventWrapper
 
   object PropositionEventWrapper {
     def wrapEvent(event: PropositionEvent): AnyPropositionEvent = event match {
@@ -25,14 +30,16 @@ object PropositionEvent {
     def id: PropositionId
   }
 
-  case class PropositionProposed(
-                          id: PropositionId,
-                          citizenId: CitizenId,
-                          createdAt: ZonedDateTime,
-                          content: String
-                          ) extends PropositionEvent
+  case class PropositionProposed(id: PropositionId,
+                                 citizenId: CitizenId,
+                                 createdAt: ZonedDateTime,
+                                 content: String)
+      extends PropositionEvent
 
   case class PropositionViewed(id: PropositionId) extends PropositionEvent
 
-  case class PropositionUpdated(id: PropositionId, updatedAt: ZonedDateTime, content: String) extends PropositionEvent
+  case class PropositionUpdated(id: PropositionId,
+                                updatedAt: ZonedDateTime,
+                                content: String)
+      extends PropositionEvent
 }

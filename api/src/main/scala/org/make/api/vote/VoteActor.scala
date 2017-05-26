@@ -32,39 +32,53 @@ class VoteActor extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case GetVote(voteId) => sender ! state.map(_.filter(_.voteId == voteId))
     case e: ViewVoteCommand =>
-      persistAndPublishEvent(VoteViewed(id = e.voteId, propositionId = e.propositionId))
+      persistAndPublishEvent(
+        VoteViewed(id = e.voteId, propositionId = e.propositionId)
+      )
     case agree: PutVoteCommand if agree.status == VoteStatus.AGREE =>
       if (citizenCanVote(agree.citizenId))
-        persistAndPublishEvent(VotedAgree(
-          id = agree.voteId,
-          propositionId = agree.propositionId,
-          citizenId = agree.citizenId,
-          createdAt = agree.createdAt,
-          status = agree.status
-        ))
-      Patterns.pipe((self ? GetVote(agree.voteId)) (1.second), Implicits.global).to(sender)
+        persistAndPublishEvent(
+          VotedAgree(
+            id = agree.voteId,
+            propositionId = agree.propositionId,
+            citizenId = agree.citizenId,
+            createdAt = agree.createdAt,
+            status = agree.status
+          )
+        )
+      Patterns
+        .pipe((self ? GetVote(agree.voteId))(1.second), Implicits.global)
+        .to(sender)
       self ! Snapshot
     case disagree: PutVoteCommand if disagree.status == VoteStatus.DISAGREE =>
       if (citizenCanVote(disagree.citizenId))
-        persistAndPublishEvent(VotedDisagree(
-          id = disagree.voteId,
-          propositionId = disagree.propositionId,
-          citizenId = disagree.citizenId,
-          createdAt = disagree.createdAt,
-          status = disagree.status
-        ))
-      Patterns.pipe((self ? GetVote(disagree.voteId)) (1.second), Implicits.global).to(sender)
+        persistAndPublishEvent(
+          VotedDisagree(
+            id = disagree.voteId,
+            propositionId = disagree.propositionId,
+            citizenId = disagree.citizenId,
+            createdAt = disagree.createdAt,
+            status = disagree.status
+          )
+        )
+      Patterns
+        .pipe((self ? GetVote(disagree.voteId))(1.second), Implicits.global)
+        .to(sender)
       self ! Snapshot
     case unsure: PutVoteCommand if unsure.status == VoteStatus.UNSURE =>
       if (citizenCanVote(unsure.citizenId))
-        persistAndPublishEvent(VotedUnsure(
-          id = unsure.voteId,
-          propositionId = unsure.propositionId,
-          citizenId = unsure.citizenId,
-          createdAt = unsure.createdAt,
-          status = unsure.status
-        ))
-      Patterns.pipe((self ? GetVote(unsure.voteId)) (1.second), Implicits.global).to(sender)
+        persistAndPublishEvent(
+          VotedUnsure(
+            id = unsure.voteId,
+            propositionId = unsure.propositionId,
+            citizenId = unsure.citizenId,
+            createdAt = unsure.createdAt,
+            status = unsure.status
+          )
+        )
+      Patterns
+        .pipe((self ? GetVote(unsure.voteId))(1.second), Implicits.global)
+        .to(sender)
       self ! Snapshot
     case Snapshot => saveSnapshot(state.get.map(_.toVote))
   }
@@ -72,27 +86,36 @@ class VoteActor extends PersistentActor with ActorLogging {
   override def persistenceId: String = "Vote-" + self.path.name
 
   private val applyEvent: PartialFunction[VoteEvent, Unit] = {
-    case e: VotedAgree => state = Option(state.getOrElse(Nil) :+ VoteState(
-      voteId = e.id,
-      citizenId = Option(e.citizenId),
-      propositionId = Option(e.propositionId),
-      createdAt = Option(e.createdAt),
-      voteStatus = Option(VoteStatus.AGREE)
-    ))
-    case e: VotedDisagree => state = Option(state.getOrElse(Nil) :+ VoteState(
-      voteId = e.id,
-      citizenId = Option(e.citizenId),
-      propositionId = Option(e.propositionId),
-      createdAt = Option(e.createdAt),
-      voteStatus = Option(VoteStatus.DISAGREE)
-    ))
-    case e: VotedUnsure => state = Option(state.getOrElse(Nil) :+ VoteState(
-      voteId = e.id,
-      citizenId = Option(e.citizenId),
-      propositionId = Option(e.propositionId),
-      createdAt = Option(e.createdAt),
-      voteStatus = Option(VoteStatus.UNSURE)
-    ))
+    case e: VotedAgree =>
+      state = Option(
+        state.getOrElse(Nil) :+ VoteState(
+          voteId = e.id,
+          citizenId = Option(e.citizenId),
+          propositionId = Option(e.propositionId),
+          createdAt = Option(e.createdAt),
+          voteStatus = Option(VoteStatus.AGREE)
+        )
+      )
+    case e: VotedDisagree =>
+      state = Option(
+        state.getOrElse(Nil) :+ VoteState(
+          voteId = e.id,
+          citizenId = Option(e.citizenId),
+          propositionId = Option(e.propositionId),
+          createdAt = Option(e.createdAt),
+          voteStatus = Option(VoteStatus.DISAGREE)
+        )
+      )
+    case e: VotedUnsure =>
+      state = Option(
+        state.getOrElse(Nil) :+ VoteState(
+          voteId = e.id,
+          citizenId = Option(e.citizenId),
+          propositionId = Option(e.propositionId),
+          createdAt = Option(e.createdAt),
+          voteStatus = Option(VoteStatus.UNSURE)
+        )
+      )
     case _ =>
   }
 
@@ -105,13 +128,11 @@ class VoteActor extends PersistentActor with ActorLogging {
     state.map(_.filter(_.citizenId.contains(citizenId))).isEmpty
   }
 
-  case class VoteState(
-                        voteId: VoteId,
-                        citizenId: Option[CitizenId],
-                        propositionId: Option[PropositionId],
-                        createdAt: Option[ZonedDateTime],
-                        voteStatus: Option[VoteStatus]
-                      ) {
+  case class VoteState(voteId: VoteId,
+                       citizenId: Option[CitizenId],
+                       propositionId: Option[PropositionId],
+                       createdAt: Option[ZonedDateTime],
+                       voteStatus: Option[VoteStatus]) {
     def toVote: Vote = {
       Vote(
         voteId,

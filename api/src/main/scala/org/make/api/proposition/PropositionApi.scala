@@ -9,7 +9,10 @@ import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.auth.{
+  MakeAuthentication,
+  MakeDataHandlerComponent
+}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.{Proposition, PropositionId}
@@ -19,17 +22,33 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposition")
 @Path(value = "/proposition")
-trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTraceDirectives with Directives with MakeAuthentication {
+trait PropositionApi
+    extends CirceFormatters
+    with CirceHttpSupport
+    with KamonTraceDirectives
+    with Directives
+    with MakeAuthentication {
   this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
-
   @ApiOperation(value = "get-proposition", httpMethod = "GET", code = 200)
-  @ApiResponses(value = Array(
-    new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
-  ))
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "string")
-  ))
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(
+        code = 200,
+        message = "Ok",
+        response = classOf[Proposition]
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "propositionId",
+        paramType = "path",
+        dataType = "string"
+      )
+    )
+  )
   @Path(value = "/{propositionId}")
   def getProposition: Route = {
     get {
@@ -44,19 +63,41 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTra
     }
   }
 
-
-  @ApiOperation(value = "propose-proposition", httpMethod = "POST", code = 200, authorizations = Array(
-    new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope(scope = "user", description = "application user"),
-      new AuthorizationScope(scope = "admin", description = "BO Admin")
-    ))
-  ))
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposition.ProposePropositionRequest")
-  ))
-  @ApiResponses(value = Array(
-    new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
-  ))
+  @ApiOperation(
+    value = "propose-proposition",
+    httpMethod = "POST",
+    code = 200,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(
+            scope = "user",
+            description = "application user"
+          ),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposition.ProposePropositionRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(
+        code = 200,
+        message = "Ok",
+        response = classOf[Proposition]
+      )
+    )
+  )
   def propose: Route =
     post {
       path("proposition") {
@@ -65,11 +106,13 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTra
             decodeRequest {
               entity(as[ProposePropositionRequest]) {
                 request: ProposePropositionRequest =>
-                  onSuccess(propositionService.propose(
-                    citizenId = user.user.citizenId,
-                    createdAt = ZonedDateTime.now,
-                    content = request.content
-                  )) {
+                  onSuccess(
+                    propositionService.propose(
+                      citizenId = user.user.citizenId,
+                      createdAt = ZonedDateTime.now,
+                      content = request.content
+                    )
+                  ) {
                     complete(_)
                   }
               }
@@ -79,18 +122,41 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTra
       }
     }
 
-  @ApiOperation(value = "update-proposition", httpMethod = "PUT", code = 200, authorizations = Array(
-    new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope(scope = "user", description = "application user"),
-      new AuthorizationScope(scope = "admin", description = "BO Admin")
-    ))
-  ))
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposition.UpdatePropositionRequest")
-  ))
-  @ApiResponses(value = Array(
-    new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])
-  ))
+  @ApiOperation(
+    value = "update-proposition",
+    httpMethod = "PUT",
+    code = 200,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(
+            scope = "user",
+            description = "application user"
+          ),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposition.UpdatePropositionRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(
+        code = 200,
+        message = "Ok",
+        response = classOf[Proposition]
+      )
+    )
+  )
   @Path(value = "/{propositionId}")
   def update: Route =
     put {
@@ -98,23 +164,26 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTra
         traceName("EditProposition") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             decodeRequest {
-              entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
-                onSuccess(propositionService.getProposition(propositionId)) {
-                  case Some(proposition) =>
-                    if (proposition.citizenId == user.user.citizenId) {
-                      onSuccess(propositionService.update(
-                        propositionId = propositionId,
-                        updatedAt = ZonedDateTime.now,
-                        content = request.content
-                      )) {
-                        case Some(prop) => complete(prop)
-                        case None => complete(Forbidden)
+              entity(as[UpdatePropositionRequest]) {
+                request: UpdatePropositionRequest =>
+                  onSuccess(propositionService.getProposition(propositionId)) {
+                    case Some(proposition) =>
+                      if (proposition.citizenId == user.user.citizenId) {
+                        onSuccess(
+                          propositionService.update(
+                            propositionId = propositionId,
+                            updatedAt = ZonedDateTime.now,
+                            content = request.content
+                          )
+                        ) {
+                          case Some(prop) => complete(prop)
+                          case None => complete(Forbidden)
+                        }
+                      } else {
+                        complete(Forbidden)
                       }
-                    } else {
-                      complete(Forbidden)
-                    }
-                  case None => complete(NotFound)
-                }
+                    case None => complete(NotFound)
+                  }
               }
             }
           }
@@ -124,10 +193,10 @@ trait PropositionApi extends CirceFormatters with CirceHttpSupport with KamonTra
 
   val propositionRoutes: Route = propose ~ getProposition ~ update
 
-  val propositionId: PathMatcher1[PropositionId] = Segment.flatMap(id => Try(PropositionId(id)).toOption)
+  val propositionId: PathMatcher1[PropositionId] =
+    Segment.flatMap(id => Try(PropositionId(id)).toOption)
 
 }
 
 case class ProposePropositionRequest(content: String)
 case class UpdatePropositionRequest(content: String)
-

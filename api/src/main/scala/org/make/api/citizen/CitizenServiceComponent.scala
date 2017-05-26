@@ -12,7 +12,6 @@ trait CitizenServiceComponent {
 
   def citizenService: CitizenService
 
-
   class CitizenService {
 
     def getCitizen(id: CitizenId): Future[Option[Citizen]] = {
@@ -23,8 +22,7 @@ trait CitizenServiceComponent {
                  dateOfBirth: LocalDate,
                  firstName: String,
                  lastName: String,
-                 password: String
-                ): Future[Citizen] = {
+                 password: String): Future[Citizen] = {
 
       persistentCitizenService.persist(
         Citizen(

@@ -9,9 +9,17 @@ import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.auth.{
+  MakeAuthentication,
+  MakeDataHandlerComponent
+}
 import org.make.core.CirceFormatters
-import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
+import org.make.core.Validation.{
+  mandatoryField,
+  validate,
+  validateEmail,
+  validateField
+}
 import org.make.core.citizen.{Citizen, CitizenId}
 
 import scala.util.Try
@@ -19,22 +27,45 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Citizen")
 @Path(value = "/citizen")
-trait CitizenApi extends CirceFormatters with Directives with KamonTraceDirectives with CirceHttpSupport with MakeAuthentication {
+trait CitizenApi
+    extends CirceFormatters
+    with Directives
+    with KamonTraceDirectives
+    with CirceHttpSupport
+    with MakeAuthentication {
   this: CitizenServiceComponent with MakeDataHandlerComponent =>
 
-
-  @ApiOperation(value = "get-citizen", httpMethod = "GET", code = 200, authorizations = Array(
-    new Authorization(value = "MakeApi", scopes = Array(
-      new AuthorizationScope(scope = "user", description = "application user"),
-      new AuthorizationScope(scope = "admin", description = "BO Admin")
-    ))
-  ))
-  @ApiResponses(value = Array(
-    new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
-  ))
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(name = "citizenId", paramType = "path", dataType = "string")
-  ))
+  @ApiOperation(
+    value = "get-citizen",
+    httpMethod = "GET",
+    code = 200,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(
+            scope = "user",
+            description = "application user"
+          ),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "citizenId",
+        paramType = "path",
+        dataType = "string"
+      )
+    )
+  )
   @Path(value = "/{citizenId}")
   def getCitizen: Route = {
     get {
@@ -55,58 +86,69 @@ trait CitizenApi extends CirceFormatters with Directives with KamonTraceDirectiv
     }
   }
 
-
   @ApiOperation(value = "register-citizen", httpMethod = "POST", code = 200)
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.citizen.RegisterCitizenRequest")
-  ))
-  @ApiResponses(value = Array(
-    new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
-  ))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.citizen.RegisterCitizenRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
+    )
+  )
   def register: Route = post {
     path("citizen") {
       traceName("RegisterCitizen") {
         decodeRequest {
-          entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
-            onSuccess(citizenService.register(
-              email = request.email,
-              dateOfBirth = request.dateOfBirth,
-              firstName = request.firstName,
-              lastName = request.lastName,
-              password = request.password
-            )) {
-              complete(_)
-            }
+          entity(as[RegisterCitizenRequest]) {
+            request: RegisterCitizenRequest =>
+              onSuccess(
+                citizenService.register(
+                  email = request.email,
+                  dateOfBirth = request.dateOfBirth,
+                  firstName = request.firstName,
+                  lastName = request.lastName,
+                  password = request.password
+                )
+              ) {
+                complete(_)
+              }
           }
         }
       }
     }
   }
 
-
   val citizenRoutes: Route = register ~ getCitizen
 
-  val citizenId: PathMatcher1[CitizenId] = Segment.flatMap(id => Try(CitizenId(id)).toOption)
+  val citizenId: PathMatcher1[CitizenId] =
+    Segment.flatMap(id => Try(CitizenId(id)).toOption)
 
 }
 
-case class RegisterCitizenRequest(
-                                   email: String,
-                                   password: String,
-                                   dateOfBirth: LocalDate,
-                                   firstName: String,
-                                   lastName: String
-                                 ) {
+case class RegisterCitizenRequest(email: String,
+                                  password: String,
+                                  dateOfBirth: LocalDate,
+                                  firstName: String,
+                                  lastName: String) {
 
   validate(
     mandatoryField("dateOfBirth", dateOfBirth),
     mandatoryField("firstName", firstName),
-    mandatoryField("lastName", lastName ),
+    mandatoryField("lastName", lastName),
     mandatoryField("email", email),
     validateEmail("email", email),
     mandatoryField("password", password),
-    validateField("password", password != null && password.length > 5, "Password must be at least 6 characters")
+    validateField(
+      "password",
+      password != null && password.length > 5,
+      "Password must be at least 6 characters"
+    )
   )
 
 }
-

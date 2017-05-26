@@ -22,20 +22,21 @@ object ShardedCitizen {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: CitizenCommand => Math.abs(cmd.citizenId.value.hashCode % 12).toString
+    case cmd: CitizenCommand =>
+      Math.abs(cmd.citizenId.value.hashCode % 12).toString
   }
 
 }
 
 class ShardedCitizen extends CitizenActor with ActorLogging {
 
-
   import ShardedCitizen._
 
   context.setReceiveTimeout(2.minutes)
 
   override def unhandled(msg: Any): Unit = msg match {
-    case ReceiveTimeout => context.parent ! Passivate(stopMessage = StopCitizen)
+    case ReceiveTimeout =>
+      context.parent ! Passivate(stopMessage = StopCitizen)
     case StopCitizen => context.stop(self)
     case SaveSnapshotSuccess(_) => log.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>

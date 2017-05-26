@@ -22,7 +22,8 @@ object ShardedProposition {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: PropositionCommand => Math.abs(cmd.propositionId.value.hashCode % 12).toString
+    case cmd: PropositionCommand =>
+      Math.abs(cmd.propositionId.value.hashCode % 12).toString
   }
 }
 
@@ -33,7 +34,8 @@ class ShardedProposition extends PropositionActor {
   context.setReceiveTimeout(2.minutes)
 
   override def unhandled(msg: Any): Unit = msg match {
-    case ReceiveTimeout => context.parent ! Passivate(stopMessage = StopProposition)
+    case ReceiveTimeout =>
+      context.parent ! Passivate(stopMessage = StopProposition)
     case StopProposition => context.stop(self)
     case SaveSnapshotSuccess(_) => log.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>

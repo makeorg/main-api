@@ -25,13 +25,15 @@ class CitizenActor extends PersistentActor with ActorLogging {
     case SnapshotOffer(_, snapshot) =>
       log.info(s"Recovering from snapshot $snapshot")
       val citizen = snapshot.asInstanceOf[Citizen]
-      state = Some(CitizenState(
-        citizenId = citizenId,
-        email = Option(citizen.email),
-        dateOfBirth = Option(citizen.dateOfBirth),
-        firstName = Option(citizen.firstName),
-        lastName = Option(citizen.lastName)
-    ))
+      state = Some(
+        CitizenState(
+          citizenId = citizenId,
+          email = Option(citizen.email),
+          dateOfBirth = Option(citizen.dateOfBirth),
+          firstName = Option(citizen.firstName),
+          lastName = Option(citizen.lastName)
+        )
+      )
     case _: RecoveryCompleted =>
   }
 
@@ -49,7 +51,9 @@ class CitizenActor extends PersistentActor with ActorLogging {
 
       context.system.eventStream.publish(events)
 
-      Patterns.pipe((self ? GetCitizen(citizenId)) (1.second), Implicits.global).to(sender())
+      Patterns
+        .pipe((self ? GetCitizen(citizenId))(1.second), Implicits.global)
+        .to(sender())
       self ! Snapshot
 
     case _: UpdateProfileCommand =>
@@ -60,26 +64,25 @@ class CitizenActor extends PersistentActor with ActorLogging {
 
   override def persistenceId: String = citizenId.value
 
-
   private val applyEvent: PartialFunction[CitizenEvent, Unit] = {
-    case e: CitizenRegistered => state = Some(CitizenState(
-      citizenId = citizenId,
-      email = Option(e.email),
-      dateOfBirth = Option(e.dateOfBirth),
-      firstName = Option(e.firstName),
-      lastName = Option(e.lastName)
-    ))
+    case e: CitizenRegistered =>
+      state = Some(
+        CitizenState(
+          citizenId = citizenId,
+          email = Option(e.email),
+          dateOfBirth = Option(e.dateOfBirth),
+          firstName = Option(e.firstName),
+          lastName = Option(e.lastName)
+        )
+      )
     case _ =>
   }
 
-  case class CitizenState(
-                           citizenId: CitizenId,
-                           email: Option[String] = None,
-                           dateOfBirth: Option[LocalDate] = None,
-                           firstName: Option[String] = None,
-                           lastName: Option[String] = None
-
-                         ) {
+  case class CitizenState(citizenId: CitizenId,
+                          email: Option[String] = None,
+                          dateOfBirth: Option[LocalDate] = None,
+                          firstName: Option[String] = None,
+                          lastName: Option[String] = None) {
 
     def toCitizen: Citizen = {
       Citizen(

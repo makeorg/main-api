@@ -15,7 +15,12 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.technical.ConsulActor._
-import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, RenewSessionResponse, WriteResponse}
+import org.make.api.technical.ConsulEntities.{
+  CreateSessionResponse,
+  ReadResponse,
+  RenewSessionResponse,
+  WriteResponse
+}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -27,9 +32,12 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
 
   private val consulUrl: String = settings.cluster.consul.httpUrl
 
-  implicit val executor: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(5))
+  implicit val executor: ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(5))
 
-  private implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+  private implicit val materializer: ActorMaterializer = ActorMaterializer(
+    ActorMaterializerSettings(context.system)
+  )
   private val http: HttpExt = Http(context.system)
 
   override def receive: Receive = {
@@ -37,14 +45,13 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
     case GetKey(key) =>
       log.debug(s"reading $key")
       pipe(
-        http.singleRequest(
-          HttpRequest(
-            uri = s"$consulUrl/v1/kv/$key?raw"
-          )
-        ).flatMap {
-          case HttpResponse(StatusCodes.NotFound, _, _, _) => Future.successful(None)
-          case other => strictToString(other).map(Some.apply)
-        }
+        http
+          .singleRequest(HttpRequest(uri = s"$consulUrl/v1/kv/$key?raw"))
+          .flatMap {
+            case HttpResponse(StatusCodes.NotFound, _, _, _) =>
+              Future.successful(None)
+            case other => strictToString(other).map(Some.apply)
+          }
           .map(x => ReadResponse(key = key, value = x))
           .recoverWith {
             case x => Future.successful(ConsulFailure("GetKey", x))
@@ -62,13 +69,14 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
            |}
         """.stripMargin
       pipe(
-        http.singleRequest(
-          HttpRequest(
-            method = HttpMethods.PUT,
-            uri = s"$consulUrl/v1/session/create",
-            entity = HttpEntity(ContentTypes.`application/json`, request)
+        http
+          .singleRequest(
+            HttpRequest(
+              method = HttpMethods.PUT,
+              uri = s"$consulUrl/v1/session/create",
+              entity = HttpEntity(ContentTypes.`application/json`, request)
+            )
           )
-        )
           .flatMap(strictToString(_))
           .map(CreateSessionResponse.fromJson)
           .recoverWith {
@@ -79,15 +87,23 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
     case WriteKey(key, value) =>
       log.debug(s"writing $value in $key")
       pipe(
-        http.singleRequest(
-          HttpRequest(
-            method = HttpMethods.PUT,
-            uri = s"$consulUrl/v1/kv/$key",
-            entity = HttpEntity(ContentTypes.`application/json`, value)
+        http
+          .singleRequest(
+            HttpRequest(
+              method = HttpMethods.PUT,
+              uri = s"$consulUrl/v1/kv/$key",
+              entity = HttpEntity(ContentTypes.`application/json`, value)
+            )
           )
-        )
           .flatMap(strictToString(_))
-          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
+          .map(
+            x =>
+              WriteResponse(
+                result = x.trim.toBoolean,
+                key = key,
+                value = value
+            )
+          )
           .recoverWith {
             case x => Future.successful(ConsulFailure("WriteKey", x))
           }
@@ -96,15 +112,23 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
     case WriteExclusiveKey(key, session, value) =>
       log.debug(s"writing $value in $key")
       pipe(
-        http.singleRequest(
-          HttpRequest(
-            method = HttpMethods.PUT,
-            uri = s"$consulUrl/v1/kv/$key?acquire=$session",
-            entity = HttpEntity(ContentTypes.`application/json`, value)
+        http
+          .singleRequest(
+            HttpRequest(
+              method = HttpMethods.PUT,
+              uri = s"$consulUrl/v1/kv/$key?acquire=$session",
+              entity = HttpEntity(ContentTypes.`application/json`, value)
+            )
           )
-        )
           .flatMap(strictToString(_))
-          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
+          .map(
+            x =>
+              WriteResponse(
+                result = x.trim.toBoolean,
+                key = key,
+                value = value
+            )
+          )
           .recoverWith {
             case x => Future.successful(ConsulFailure("WriteExclusiveKey", x))
           }
@@ -113,12 +137,13 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
     case RenewSession(id) =>
       log.debug(s"Renewing session $id")
       pipe(
-        http.singleRequest(
-          HttpRequest(
-            method = HttpMethods.PUT,
-            uri = s"$consulUrl/v1/session/renew/$id"
+        http
+          .singleRequest(
+            HttpRequest(
+              method = HttpMethods.PUT,
+              uri = s"$consulUrl/v1/session/renew/$id"
+            )
           )
-        )
           .flatMap(strictToString(_))
           .map(x => RenewSessionAnswer(RenewSessionResponse.arrayFromJson(x)))
           .recoverWith {
@@ -126,19 +151,27 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
           }
       ).to(sender())
 
-
     case x => log.warning(s"Unknown message received: ${x.toString}")
   }
 
-  private def strictToString(response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK): Future[String] = {
+  private def strictToString(
+    response: HttpResponse,
+    expectedCode: StatusCode = StatusCodes.OK
+  ): Future[String] = {
     log.debug(s"Server answered $response")
     response match {
       case HttpResponse(`expectedCode`, _, entity, _) =>
-        entity.toStrict(2.second).map(_.data.decodeString(Charset.forName("UTF-8")))
+        entity
+          .toStrict(2.second)
+          .map(_.data.decodeString(Charset.forName("UTF-8")))
       case HttpResponse(code, _, entity, _) =>
         entity.toStrict(2.second).flatMap { entity =>
           val response = entity.data.decodeString(Charset.forName("UTF-8"))
-          Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $response"))
+          Future.failed(
+            new IllegalStateException(
+              s"Got unexpected response code: $code, with body: $response"
+            )
+          )
         }
     }
   }
@@ -170,7 +203,13 @@ object ConsulEntities extends StrictLogging {
 
   case class WriteResponse(result: Boolean, key: String, value: String)
   case class ReadResponse(key: String, value: Option[String])
-  case class RenewSessionResponse(LockDelay: Float, Checks: Seq[String], Node: String, ID: String, CreateIndex: Long, Behavior: String, TTL: String)
+  case class RenewSessionResponse(LockDelay: Float,
+                                  Checks: Seq[String],
+                                  Node: String,
+                                  ID: String,
+                                  CreateIndex: Long,
+                                  Behavior: String,
+                                  TTL: String)
 
   object RenewSessionResponse {
     def arrayFromJson(json: String): Seq[RenewSessionResponse] = {
@@ -199,7 +238,6 @@ object ConsulEntities extends StrictLogging {
       }
     }
   }
-
 
   case class NotFound(message: String) extends Exception
 

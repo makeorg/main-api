@@ -11,14 +11,14 @@ trait VoteCommand {
   def propositionId: PropositionId
 }
 
-case class PutVoteCommand(
-                         voteId: VoteId,
-                         propositionId: PropositionId,
-                         citizenId: CitizenId,
-                         createdAt: ZonedDateTime,
-                         status: VoteStatus
-                       ) extends VoteCommand
+case class PutVoteCommand(voteId: VoteId,
+                          propositionId: PropositionId,
+                          citizenId: CitizenId,
+                          createdAt: ZonedDateTime,
+                          status: VoteStatus)
+    extends VoteCommand
 
-case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId) extends VoteCommand
+case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId)
+    extends VoteCommand
 
 case class GetVote(voteId: VoteId)

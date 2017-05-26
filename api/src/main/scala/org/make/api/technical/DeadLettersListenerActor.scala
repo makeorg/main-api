@@ -10,7 +10,12 @@ class DeadLettersListenerActor extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case DeadLetter(msg, from, to) =>
-      log.info("[DEADLETTERS] [{}] -> [{}]. Message: {}", from.toString, to.toString, msg.toString)
+      log.info(
+        "[DEADLETTERS] [{}] -> [{}]. Message: {}",
+        from.toString,
+        to.toString,
+        msg.toString
+      )
   }
 }
 

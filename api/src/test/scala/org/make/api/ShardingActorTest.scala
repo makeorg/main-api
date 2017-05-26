@@ -4,14 +4,21 @@ import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{
+  BeforeAndAfterAll,
+  BeforeAndAfterEach,
+  Matchers,
+  WordSpecLike
+}
 
-class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem()) extends TestKit(actorSystem)
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with BeforeAndAfterEach
-  with ImplicitSender
+class ShardingActorTest(
+  actorSystem: ActorSystem = TestHelper.defaultActorSystem()
+) extends TestKit(actorSystem)
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ImplicitSender
 
 object TestHelper {
   val configuration: String =

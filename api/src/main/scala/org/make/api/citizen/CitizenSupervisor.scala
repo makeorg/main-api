@@ -8,11 +8,14 @@ import org.make.core.citizen.CitizenEvent.CitizenEventWrapper
 
 class CitizenSupervisor extends Actor with AvroSerializers with ActorLogging {
 
-
   override def preStart(): Unit = {
-    context.watch(context.actorOf(CitizenCoordinator.props, CitizenCoordinator.name))
+    context.watch(
+      context.actorOf(CitizenCoordinator.props, CitizenCoordinator.name)
+    )
 
-    context.watch(context.actorOf(CitizenProducerActor.props, CitizenProducerActor.name))
+    context.watch(
+      context.actorOf(CitizenProducerActor.props, CitizenProducerActor.name)
+    )
 
     val citizenConsumer = context.actorOf(
       ConsumerActor.props(RecordFormat[CitizenEventWrapper], "citizens"),

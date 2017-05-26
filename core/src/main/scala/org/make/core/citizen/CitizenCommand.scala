@@ -10,7 +10,8 @@ case class RegisterCommand(citizenId: CitizenId,
                            email: String,
                            dateOfBirth: LocalDate,
                            firstName: String,
-                           lastName: String) extends CitizenCommand
+                           lastName: String)
+    extends CitizenCommand
 
 case class UpdateProfileCommand(citizenId: CitizenId) extends CitizenCommand
 

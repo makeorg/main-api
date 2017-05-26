@@ -22,7 +22,8 @@ object ShardedVote {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: VoteCommand => Math.abs(cmd.propositionId.value.hashCode % 12).toString
+    case cmd: VoteCommand =>
+      Math.abs(cmd.propositionId.value.hashCode % 12).toString
   }
 }
 

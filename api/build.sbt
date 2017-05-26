@@ -39,17 +39,23 @@ libraryDependencies ++= Seq(
   Dependencies.akkaTest
 )
 
-lazy val buildTime: SettingKey[ZonedDateTime] = SettingKey[ZonedDateTime]("buildTime", "time of build")
-
+lazy val buildTime: SettingKey[ZonedDateTime] =
+  SettingKey[ZonedDateTime]("buildTime", "time of build")
 
 buildTime := {
   ZonedDateTime.now(ZoneOffset.UTC)
 }
 
-
 enablePlugins(BuildInfoPlugin)
 
-buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime)
+buildInfoKeys := Seq[BuildInfoKey](
+  name,
+  version,
+  scalaVersion,
+  sbtVersion,
+  gitHeadCommit,
+  buildTime
+)
 
 fork in run := true
 fork in Test := true
@@ -57,3 +63,5 @@ fork in Test := true
 aspectjSettings
 
 javaOptions ++= (AspectjKeys.weaverOptions in Aspectj).value
+
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")

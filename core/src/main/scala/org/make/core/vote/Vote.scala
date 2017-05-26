@@ -11,21 +11,23 @@ import org.make.core.vote.VoteStatus.VoteStatus
 object VoteStatus extends Enumeration {
   type VoteStatus = Value
   val AGREE, DISAGREE, UNSURE = Value
-  implicit lazy val voteStatusEncoder: Encoder[VoteStatus] = (a: VoteStatus) => Json.fromString(a.toString)
-  implicit lazy val voteStatusDecoder: Decoder[VoteStatus] = Decoder.decodeString.map(VoteStatus.withName)
+  implicit lazy val voteStatusEncoder: Encoder[VoteStatus] = (a: VoteStatus) =>
+    Json.fromString(a.toString)
+  implicit lazy val voteStatusDecoder: Decoder[VoteStatus] =
+    Decoder.decodeString.map(VoteStatus.withName)
 }
 
-case class Vote (
-                  voteId: VoteId,
-                  citizenId: CitizenId,
-                  propositionId: PropositionId,
-                  createdAt: ZonedDateTime,
-                  status: VoteStatus
-                )
+case class Vote(voteId: VoteId,
+                citizenId: CitizenId,
+                propositionId: PropositionId,
+                createdAt: ZonedDateTime,
+                status: VoteStatus)
 
 case class VoteId(value: String) extends StringValue
 
 object VoteId {
-  implicit lazy val voteIdEncoder: Encoder[VoteId] = (a: VoteId) => Json.fromString(a.value)
-  implicit lazy val voteIdDecoder: Decoder[VoteId] = Decoder.decodeString.map(VoteId(_))
+  implicit lazy val voteIdEncoder: Encoder[VoteId] = (a: VoteId) =>
+    Json.fromString(a.value)
+  implicit lazy val voteIdDecoder: Decoder[VoteId] =
+    Decoder.decodeString.map(VoteId(_))
 }

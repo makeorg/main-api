@@ -7,7 +7,11 @@ import io.circe.generic.auto._
 import kamon.akka.http.KamonTraceDirectives
 import org.make.core.CirceFormatters
 
-trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatters with KamonTraceDirectives {
+trait BuildInfoRoutes
+    extends Directives
+    with CirceHttpSupport
+    with CirceFormatters
+    with KamonTraceDirectives {
 
   val buildRoutes: Route = buildInfo
 
@@ -21,8 +25,9 @@ trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatt
 
 }
 
-case class BuildInformation(name: String = BuildInfo.name,
-                            version: String = BuildInfo.version,
-                            gitHeadCommit: String = BuildInfo.gitHeadCommit.get,
-                            buildTime: String = BuildInfo.buildTime)
-
+case class BuildInformation(
+  name: String = BuildInfo.name,
+  version: String = BuildInfo.version,
+  gitHeadCommit: String = BuildInfo.gitHeadCommit.get,
+  buildTime: String = BuildInfo.buildTime
+)

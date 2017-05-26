@@ -12,9 +12,13 @@ lazy val commonSettings = Seq(
   ),
   publishTo := {
     if (isSnapshot.value) {
-      Some("Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-snapshots/")
+      Some(
+        "Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-snapshots/"
+      )
     } else {
-      Some("Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-releases/")
+      Some(
+        "Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-releases/"
+      )
     }
   },
   resolvers += "Confluent Releases" at "http://packages.confluent.io/maven/",
@@ -24,7 +28,8 @@ lazy val commonSettings = Seq(
     "-deprecation",
     // "-Xfatal-warnings",
     "-feature",
-    "-encoding", "UTF-8",
+    "-encoding",
+    "UTF-8",
     "-unchecked",
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
@@ -37,21 +42,18 @@ lazy val commonSettings = Seq(
 )
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
-enablePlugins(ScalafmtPlugin)
 
-lazy val elastic = project.in(file("."))
+lazy val elastic = project
+  .in(file("."))
   .settings(commonSettings: _*)
-  .settings(
-    moduleName := "make-elastic": _*
-  )
+  .settings(moduleName := "make-elastic": _*)
   .aggregate(core, api)
 
-lazy val core = project.in(file("core"))
+lazy val core = project
+  .in(file("core"))
   .settings(commonSettings: _*)
 
-lazy val api = project.in(file("api"))
+lazy val api = project
+  .in(file("api"))
   .settings(commonSettings: _*)
   .dependsOn(core)
-
-
-

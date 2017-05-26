@@ -24,13 +24,15 @@ class PropositionActor extends PersistentActor with ActorLogging {
       applyEvent(e)
     case SnapshotOffer(_, snapshot: Proposition) =>
       log.info(s"Recovering from snapshot $snapshot")
-      state = Some(PropositionState(
-        propositionId = snapshot.propositionId,
-        citizenId = Option(snapshot.citizenId),
-        createdAt = Option(snapshot.createdAt),
-        updatedAt = Option(snapshot.updatedAt),
-        content = Option(snapshot.content)
-      ))
+      state = Some(
+        PropositionState(
+          propositionId = snapshot.propositionId,
+          citizenId = Option(snapshot.citizenId),
+          createdAt = Option(snapshot.createdAt),
+          updatedAt = Option(snapshot.updatedAt),
+          content = Option(snapshot.content)
+        )
+      )
     case _: RecoveryCompleted =>
   }
 
@@ -38,23 +40,42 @@ class PropositionActor extends PersistentActor with ActorLogging {
     case GetProposition(_) => sender ! state.map(_.toProposition)
     case v: ViewPropositionCommand =>
       persistAndPublishEvent(PropositionViewed(id = v.propositionId))
-      Patterns.pipe((self ? GetProposition(v.propositionId)) (1.second), Implicits.global).to(sender)
+      Patterns
+        .pipe(
+          (self ? GetProposition(v.propositionId))(1.second),
+          Implicits.global
+        )
+        .to(sender)
     case propose: ProposeCommand =>
-      persistAndPublishEvent(PropositionProposed(
-        id = propose.propositionId,
-        citizenId = propose.citizenId,
-        createdAt = propose.createdAt,
-        content = propose.content
-      ))
-      Patterns.pipe((self ? GetProposition(propose.propositionId)) (1.second), Implicits.global).to(sender)
+      persistAndPublishEvent(
+        PropositionProposed(
+          id = propose.propositionId,
+          citizenId = propose.citizenId,
+          createdAt = propose.createdAt,
+          content = propose.content
+        )
+      )
+      Patterns
+        .pipe(
+          (self ? GetProposition(propose.propositionId))(1.second),
+          Implicits.global
+        )
+        .to(sender)
       self ! Snapshot
     case update: UpdatePropositionCommand =>
-      persistAndPublishEvent(PropositionUpdated(
-        id = update.propositionId,
-        updatedAt = update.updatedAt,
-        content = update.content
-      ))
-      Patterns.pipe((self ? GetProposition(update.propositionId)) (1.second), Implicits.global).to(sender)
+      persistAndPublishEvent(
+        PropositionUpdated(
+          id = update.propositionId,
+          updatedAt = update.updatedAt,
+          content = update.content
+        )
+      )
+      Patterns
+        .pipe(
+          (self ? GetProposition(update.propositionId))(1.second),
+          Implicits.global
+        )
+        .to(sender)
       self ! Snapshot
     case Snapshot => state.foreach(state => saveSnapshot(state.toProposition))
     case KillPropositionShard(_) => self ! PoisonPill
@@ -63,34 +84,36 @@ class PropositionActor extends PersistentActor with ActorLogging {
   override def persistenceId: String = propositionId.value
 
   private val applyEvent: PartialFunction[PropositionEvent, Unit] = {
-    case e: PropositionProposed => state = Some(PropositionState(
-      propositionId = e.id,
-      citizenId = Option(e.citizenId),
-      createdAt = Option(e.createdAt),
-      updatedAt = Option(e.createdAt),
-      content = Option(e.content)
-    ))
-    case e: PropositionUpdated => state.foreach(p => {
-      p.content = Option(e.content)
-      p.updatedAt = Option(e.updatedAt)
-    })
+    case e: PropositionProposed =>
+      state = Some(
+        PropositionState(
+          propositionId = e.id,
+          citizenId = Option(e.citizenId),
+          createdAt = Option(e.createdAt),
+          updatedAt = Option(e.createdAt),
+          content = Option(e.content)
+        )
+      )
+    case e: PropositionUpdated =>
+      state.foreach(p => {
+        p.content = Option(e.content)
+        p.updatedAt = Option(e.updatedAt)
+      })
     case _ =>
   }
 
   private def persistAndPublishEvent(event: PropositionEvent): Unit = {
-    persist(event){ (e: PropositionEvent) =>
+    persist(event) { (e: PropositionEvent) =>
       applyEvent(e)
       context.system.eventStream.publish(e)
     }
   }
 
-  case class PropositionState(
-                               propositionId: PropositionId,
-                               citizenId: Option[CitizenId],
-                               createdAt: Option[ZonedDateTime],
-                               var updatedAt: Option[ZonedDateTime],
-                               var content: Option[String]
-                             ) {
+  case class PropositionState(propositionId: PropositionId,
+                              citizenId: Option[CitizenId],
+                              createdAt: Option[ZonedDateTime],
+                              var updatedAt: Option[ZonedDateTime],
+                              var content: Option[String]) {
     def toProposition: Proposition = {
       Proposition(
         this.propositionId,

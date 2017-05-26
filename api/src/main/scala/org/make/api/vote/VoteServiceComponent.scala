@@ -23,16 +23,15 @@ trait VoteServiceComponent {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]] = {
+    def getVote(voteId: VoteId,
+                propositionId: PropositionId): Future[Option[Vote]] = {
       (actor ? ViewVoteCommand(voteId, propositionId)).mapTo[Option[Vote]]
     }
 
-    def vote(
-               propositionId: PropositionId,
-               citizenId: CitizenId,
-               createdAt: ZonedDateTime,
-               status: VoteStatus
-             ): Future[Option[Vote]] = {
+    def vote(propositionId: PropositionId,
+             citizenId: CitizenId,
+             createdAt: ZonedDateTime,
+             status: VoteStatus): Future[Option[Vote]] = {
       (
         actor ?
           PutVoteCommand(
@@ -42,7 +41,7 @@ trait VoteServiceComponent {
             createdAt = createdAt,
             status = status
           )
-        ).mapTo[Option[Vote]]
+      ).mapTo[Option[Vote]]
     }
   }
 }
