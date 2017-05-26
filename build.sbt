@@ -37,6 +37,7 @@ lazy val commonSettings = Seq(
 )
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
+enablePlugins(ScalafmtPlugin)
 
 lazy val elastic = project.in(file("."))
   .settings(commonSettings: _*)
