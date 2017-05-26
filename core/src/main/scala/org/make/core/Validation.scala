@@ -1,10 +1,10 @@
 package org.make.core
 
-import scala.util.{Failure, Success, Try}
-import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.syntax._
 
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 object Validation {
 

@@ -3,7 +3,6 @@ package org.make.core.citizen
 import java.time.LocalDate
 
 import io.circe._
-import org.make.core.Validation._
 import org.make.core.StringValue
 
 //

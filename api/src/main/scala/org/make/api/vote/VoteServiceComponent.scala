@@ -8,9 +8,8 @@ import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionId
-import org.make.core.vote._
-import org.make.core.vote.VoteId
 import org.make.core.vote.VoteStatus.VoteStatus
+import org.make.core.vote.{VoteId, _}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

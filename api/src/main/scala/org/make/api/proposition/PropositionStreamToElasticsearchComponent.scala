@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffsetBatch}
 import akka.kafka.scaladsl.Consumer
 import akka.kafka.{ConsumerSettings, Subscriptions}
+import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Sink, Zip}
 import akka.stream.{FlowShape, Graph, Materializer}
 import akka.{Done, NotUsed}
@@ -19,7 +20,7 @@ import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
 import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, PropositionElasticsearch}
 import org.make.core.proposition.PropositionEvent._
-import akka.stream.scaladsl.GraphDSL.Implicits._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

@@ -71,7 +71,7 @@ trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSu
                 }
 
               )
-            case Failure(ex) => complete(InternalServerError, s"An error occurred: ${ex.getMessage}")
+            case Failure(ex) => throw ex
           }
         }
       }

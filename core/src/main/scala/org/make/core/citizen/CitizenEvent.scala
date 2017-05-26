@@ -2,8 +2,8 @@ package org.make.core.citizen
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import shapeless.{:+:, CNil, Coproduct}
 import org.make.core.EventWrapper
+import shapeless.{:+:, CNil, Coproduct}
 
 object CitizenEvent {
 

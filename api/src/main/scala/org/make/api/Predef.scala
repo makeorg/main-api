@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import org.joda.time.DateTime
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 
 object Predef {

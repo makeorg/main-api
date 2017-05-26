@@ -13,8 +13,8 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.PropositionId
-import org.make.core.vote.{Vote, VoteId}
 import org.make.core.vote.VoteStatus.VoteStatus
+import org.make.core.vote.{Vote, VoteId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo

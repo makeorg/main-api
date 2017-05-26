@@ -19,15 +19,24 @@ lazy val commonSettings = Seq(
   },
   resolvers += "Confluent Releases" at "http://packages.confluent.io/maven/",
   scalacOptions ++= Seq(
+    "-Yrangepos",
+    "-Xlint",
     "-deprecation",
-    "-unchecked",
-    //    "-Xfatal-warnings",
-    "-Ywarn-unused",
-    "-Ywarn-dead-code",
+    // "-Xfatal-warnings",
     "-feature",
+    "-encoding", "UTF-8",
+    "-unchecked",
+    "-Yno-adapted-args",
+    "-Ywarn-dead-code",
+    "-Xfuture",
+    "-Ywarn-unused",
+    "-Ywarn-unused-import",
+    "-Ydelambdafy:method",
     "-language:_"
   )
 )
+
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 lazy val elastic = project.in(file("."))
   .settings(commonSettings: _*)

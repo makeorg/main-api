@@ -2,9 +2,9 @@ package org.make.core.proposition
 
 import java.time.ZonedDateTime
 
-import shapeless.{:+:, CNil, Coproduct}
 import org.make.core.EventWrapper
 import org.make.core.citizen.CitizenId
+import shapeless.{:+:, CNil, Coproduct}
 
 object PropositionEvent {
 
