@@ -28,9 +28,7 @@ trait PersistentCitizenServiceComponent {
 
     lazy val c: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentCitizen], PersistentCitizen] = syntax("c")
 
-    def toCitizen(c: SyntaxProvider[PersistentCitizen])(rs: WrappedResultSet): Citizen = toCitizen(c.resultName)(rs)
-
-    def toCitizen(c: ResultName[PersistentCitizen])(rs: WrappedResultSet): Citizen = {
+    def toCitizen(rs: WrappedResultSet): Citizen = {
       Citizen(
         citizenId = CitizenId(rs.string(column.id)),
         email = rs.string(column.email),
@@ -52,7 +50,7 @@ trait PersistentCitizenServiceComponent {
           select(c.*)
             .from(PersistentCitizen.as(c))
             .where(sqls.eq(c.id, id.value))
-        }.map(PersistentCitizen.toCitizen(c)).single.apply
+        }.map(PersistentCitizen.toCitizen).single.apply
       })(readExecutionContext)
     }
 
@@ -63,7 +61,7 @@ trait PersistentCitizenServiceComponent {
           select(c.*)
             .from(PersistentCitizen.as(c))
             .where(sqls.eq(c.email, email).and(sqls.eq(c.hashedPassword, password)))
-        }.map(PersistentCitizen.toCitizen(c)).single().apply()
+        }.map(PersistentCitizen.toCitizen).single().apply()
       })
     }
 

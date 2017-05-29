@@ -27,18 +27,18 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setUrl(jdbcUrl)
   readDatasource.setUsername(user)
   readDatasource.setPassword(password)
-  readDatasource.setInitialSize(10)
-  readDatasource.setMaxTotal(50)
-  readDatasource.setMaxIdle(10)
+  readDatasource.setInitialSize(configuration.getInt("pools.read.initial-size"))
+  readDatasource.setMaxTotal(configuration.getInt("pools.read.max-total"))
+  readDatasource.setMaxIdle(configuration.getInt("pools.read.max-idle"))
 
   val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
   writeDatasource.setUrl(jdbcUrl)
   writeDatasource.setUsername(user)
   writeDatasource.setPassword(password)
-  writeDatasource.setInitialSize(10)
-  writeDatasource.setMaxTotal(50)
-  writeDatasource.setMaxIdle(10)
+  writeDatasource.setInitialSize(configuration.getInt("pools.write.initial-size"))
+  writeDatasource.setMaxTotal(configuration.getInt("pools.write.max-total"))
+  writeDatasource.setMaxIdle(configuration.getInt("pools.write.max-idle"))
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
 
@@ -58,9 +58,11 @@ class DatabaseConfiguration(override protected val configuration: Config)
     val queries = Source
       .fromResource("create-schema.sql")
       .mkString
-      .replace(s"$$dbname", dbname)
-    def createSchema =
+      .replace("$dbname", dbname)
+
+    def createSchema: Boolean =
       writeDatasource.getConnection.createStatement.execute(queries)
+
     Try(createSchema) match {
       case Success(_) => logger.debug("Database schema created.")
       case Failure(e) =>
@@ -75,6 +77,7 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
 
   override def lookup(): ExtensionId[DatabaseConfiguration] =
     DatabaseConfiguration
+
   override def get(system: ActorSystem): DatabaseConfiguration =
     super.get(system)
 }

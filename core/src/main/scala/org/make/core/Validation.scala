@@ -46,10 +46,6 @@ object Validation {
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
   }
 
-  private def isNull(value: Any): Boolean = {
-    Option(value).isEmpty
-  }
-
   private def exists(value: Any): Boolean = {
     Option(value).isDefined
   }

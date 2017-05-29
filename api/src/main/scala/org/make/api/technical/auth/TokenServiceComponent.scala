@@ -29,7 +29,7 @@ trait TokenServiceComponent {
           select(t.*)
             .from(PersistentToken.as(t))
             .where(sqls.eq(t.id, id))
-        }.map(PersistentToken.toToken(t)).single().apply()
+        }.map(PersistentToken.toToken).single().apply()
       })
     }
 
@@ -40,7 +40,7 @@ trait TokenServiceComponent {
           select(t.*)
             .from(PersistentToken.as(t))
             .where(sqls.eq(t.refreshToken, refreshToken))
-        }.map(PersistentToken.toToken(t)).single().apply()
+        }.map(PersistentToken.toToken).single().apply()
       })
     }
 
@@ -53,7 +53,7 @@ trait TokenServiceComponent {
             .where(sqls.eq(t.citizenId, citizenId.value))
             .orderBy(t.creationDate.desc)
             .limit(1)
-        }.map(PersistentToken.toToken(t)).single().apply()
+        }.map(PersistentToken.toToken).single().apply()
       })
     }
 
@@ -92,10 +92,7 @@ trait TokenServiceComponent {
 
     lazy val t: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[Token], Token] = syntax("t")
 
-    def toToken(c: SyntaxProvider[Token])(rs: WrappedResultSet): Token =
-      toToken(t.resultName)(rs)
-
-    def toToken(c: ResultName[Token])(rs: WrappedResultSet): Token = {
+    def toToken(rs: WrappedResultSet): Token = {
       Token(
         id = rs.string(column.id),
         citizenId = CitizenId(rs.string(column.citizenId)),
