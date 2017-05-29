@@ -10,7 +10,7 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, HttpCodes}
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
@@ -28,8 +28,8 @@ trait VoteApi
     with Directives
     with MakeAuthentication { this: VoteServiceComponent with MakeDataHandlerComponent =>
 
-  @ApiOperation(value = "get-vote", httpMethod = "GET", code = 200)
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])))
+  @ApiOperation(value = "get-vote", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "String"),
@@ -53,7 +53,7 @@ trait VoteApi
   @ApiOperation(
     value = "vote",
     httpMethod = "POST",
-    code = 200,
+    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -67,7 +67,7 @@ trait VoteApi
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.VoteRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Vote])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @Path(value = "/{propositionId}")
   def vote: Route =
     makeOAuth2 { user: AuthInfo[Citizen] =>

@@ -23,37 +23,43 @@ class MakeSettings(config: Config) extends Extension {
       false
     }
 
-  object http {
+  object Http {
     val host: String = config.getString("http.host")
     val port: Int = config.getInt("http.port")
   }
 
-  object cluster {
+  object Cluster {
     val name: String = config.getString("cluster.name")
 
-    object consul {
+    object Consul {
       val httpUrl: String = config.getString("cluster.consul.http-url")
     }
 
-    val heartbeatInterval: FiniteDuration =
+    val heartbeatInterval: FiniteDuration = {
       config.getDuration("cluster.heartbeat-interval").toScala
-    val sessionTimeout: FiniteDuration =
+    }
+    val sessionTimeout: FiniteDuration = {
       config.getDuration("cluster.session-timeout").toScala
-    val sessionRenewInterval: FiniteDuration =
+    }
+    val sessionRenewInterval: FiniteDuration = {
       config.getDuration("cluster.session-renew-interval").toScala
-    val retriesBeforeSeeding: Int =
+    }
+    val retriesBeforeSeeding: Int = {
       config.getInt("cluster.retries-before-seeding")
-    val nodeTimeout: FiniteDuration =
+    }
+    val nodeTimeout: FiniteDuration = {
       config.getDuration("cluster.node-timeout").toScala
-    val cleanupInterval: FiniteDuration =
+    }
+    val cleanupInterval: FiniteDuration = {
       config.getDuration("cluster.cleanup-interval").toScala
+    }
 
   }
 
 }
 
 object MakeSettings {
-  def apply(system: ActorSystem) =
+  def apply(system: ActorSystem): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
 }
 

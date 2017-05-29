@@ -10,7 +10,7 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, HttpCodes}
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.{Proposition, PropositionId}
 
@@ -26,8 +26,8 @@ trait PropositionApi
     with Directives
     with MakeAuthentication { this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
-  @ApiOperation(value = "get-proposition", httpMethod = "GET", code = 200)
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
+  @ApiOperation(value = "get-proposition", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "string"))
   )
@@ -48,7 +48,7 @@ trait PropositionApi
   @ApiOperation(
     value = "propose-proposition",
     httpMethod = "POST",
-    code = 200,
+    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -68,7 +68,7 @@ trait PropositionApi
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))
   def propose: Route =
     post {
       path("proposition") {
@@ -92,7 +92,7 @@ trait PropositionApi
   @ApiOperation(
     value = "update-proposition",
     httpMethod = "PUT",
-    code = 200,
+    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -112,7 +112,7 @@ trait PropositionApi
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))
   @Path(value = "/{propositionId}")
   def update: Route =
     put {

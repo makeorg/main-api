@@ -33,7 +33,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
   // Schedule administrative tasks
   override def preStart(): Unit = {
     val scheduler = context.system.scheduler
-    val clusterSettings = settings.cluster
+    val clusterSettings = settings.Cluster
 
     consulClient = context.actorOf(ConsulActor.props, ConsulActor.name)
 
@@ -52,21 +52,61 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
   }
 
   override def receive: Receive = {
-    case Init =>
-      log.debug("Starting init process")
+    case Init => InitOperations.onInit
+    case CreateSessionResponse(id) => InitOperations.onSessionCreated(id)
+    case GetSessionFailed(cause) => InitOperations.onCreateSessionFailed(cause)
+    case WriteSeedSucceeded(_) => InitOperations.onNewSeed()
+    case WriteSeedFailed(_) => InitOperations.onSeedAlreadyLocked()
+    case SeedRetrieved(node) => InitOperations.onSeedRetrieved(node)
+    case ConsulFailure(operation, e) => InitOperations.onConsuleFailure(operation, e)
+    case x => InitOperations.onOtherInitMessage(x)
 
-      val sessionInTheFuture =
-        (consulClient ? CreateSession(settings.cluster.sessionTimeout)).recoverWith {
-          case x => Future.failed(GetSessionFailed(x))
-        }
-      pipe(sessionInTheFuture).to(self)
+  }
 
-    case CreateSessionResponse(id) =>
+  object InitOperations {
+
+    private[ClusterFormationActor] def onOtherInitMessage(x: Any) = {
+      context.system.scheduler.scheduleOnce(100.milliseconds, self, x)
+    }
+
+    private[ClusterFormationActor] def onConsuleFailure(operation: String, e: Throwable) = {
+      log.error("Error when calling {} on consul: {}", operation, e)
+      context.system.scheduler.scheduleOnce(2.seconds, self, Init)
+    }
+
+    private[ClusterFormationActor] def onSeedRetrieved(node: Node) = {
+      Cluster(context.system).join(AddressFromURIString(node.address))
+      context.become(ready)
+    }
+
+    private[ClusterFormationActor] def onSeedAlreadyLocked() = {
+      // Some other node already has the lock, retrieve it and connect to it
+      val seedInTheFuture = consulClient ? GetKey(s"${settings.Cluster.name}/seed")
+
+      pipe(seedInTheFuture.map {
+        case ReadResponse(_, Some(value)) => SeedRetrieved(parseNode(value))
+        case _ => Init
+      }).to(self)
+    }
+
+    private[ClusterFormationActor] def onNewSeed() = {
+      // I became the master, so I need to connect to myself
+      val cluster = Cluster(context.system)
+      cluster.join(cluster.selfAddress)
+      context.become(ready)
+    }
+
+    private[ClusterFormationActor] def onCreateSessionFailed(cause: Throwable) = {
+      log.error("Unable to initialize session {}", cause)
+      context.system.scheduler.scheduleOnce(2.seconds, self, Init)
+    }
+
+    private[ClusterFormationActor] def onSessionCreated(id: String) = {
       log.debug("Got session id {}", id)
       sessionId = id
 
       val writingSeedInTheFuture = consulClient ? WriteExclusiveKey(
-        s"${settings.cluster.name}/seed",
+        s"${settings.Cluster.name}/seed",
         id,
         Node(Cluster(context.system).selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson.toString
       )
@@ -76,37 +116,17 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
         case r @ WriteResponse(false, _, _) => WriteSeedFailed(r)
         case other => log.error(s"Unexpected message: $other")
       }).to(self)
+    }
 
-    case GetSessionFailed(cause) =>
-      log.error("Unable to initialize session {}", cause)
-      context.system.scheduler.scheduleOnce(2.seconds, self, Init)
+    private[ClusterFormationActor] def onInit = {
+      log.debug("Starting init process")
 
-    case WriteSeedSucceeded(_) =>
-      // I became the master, so I need to connect to myself
-      val cluster = Cluster(context.system)
-      cluster.join(cluster.selfAddress)
-      context.become(ready)
-
-    case WriteSeedFailed(_) =>
-      // Some other node already has the lock, retrieve it and connect to it
-      val seedInTheFuture = consulClient ? GetKey(s"${settings.cluster.name}/seed")
-
-      pipe(seedInTheFuture.map {
-        case ReadResponse(_, Some(value)) => SeedRetrieved(parseNode(value))
-        case _ => Init
-      }).to(self)
-
-    case SeedRetrieved(node) =>
-      Cluster(context.system).join(AddressFromURIString(node.address))
-      context.become(ready)
-
-    case ConsulFailure(operation, e) =>
-      log.error("Error when calling {} on consul: {}", operation, e)
-      context.system.scheduler.scheduleOnce(2.seconds, self, Init)
-
-    case x =>
-      context.system.scheduler.scheduleOnce(100.milliseconds, self, x)
-
+      val sessionInTheFuture =
+        (consulClient ? CreateSession(settings.Cluster.sessionTimeout)).recoverWith {
+          case x => Future.failed(GetSessionFailed(x))
+        }
+      pipe(sessionInTheFuture).to(self)
+    }
   }
 
   def parseNode(json: String): Node = {
@@ -133,14 +153,14 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       log.debug("Received Heartbeat message")
       val cluster = Cluster(context.system)
       consulClient ! WriteExclusiveKey(
-        s"${settings.cluster.name}/seed",
+        s"${settings.Cluster.name}/seed",
         sessionId,
         Node(cluster.selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson
           .toString()
       )
       val address = cluster.selfAddress
       consulClient ! WriteKey(
-        s"${settings.cluster.name}/${address.host.get}-${address.port.get}",
+        s"${settings.Cluster.name}/${address.host.get}-${address.port.get}",
         Node(cluster.selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson
           .toString()
       )
@@ -172,10 +192,15 @@ object ClusterFormationActor {
   case object Connect
 
   case object Init
+
   case class InitSessionId(id: String)
+
   case class GetSessionFailed(cause: Throwable) extends Exception(cause)
+
   case class WriteSeedSucceeded(consulResponse: WriteResponse)
+
   case class WriteSeedFailed(consulResponse: WriteResponse)
+
   case class SeedRetrieved(node: Node)
 
 }

@@ -10,7 +10,7 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, HttpCodes}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.citizen.{Citizen, CitizenId}
 
@@ -29,7 +29,7 @@ trait CitizenApi
   @ApiOperation(
     value = "get-citizen",
     httpMethod = "GET",
-    code = 200,
+    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -40,7 +40,7 @@ trait CitizenApi
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "citizenId", paramType = "path", dataType = "string")))
   @Path(value = "/{citizenId}")
   def getCitizen: Route = {
@@ -62,7 +62,7 @@ trait CitizenApi
     }
   }
 
-  @ApiOperation(value = "register-citizen", httpMethod = "POST", code = 200)
+  @ApiOperation(value = "register-citizen", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -72,7 +72,7 @@ trait CitizenApi
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
   def register: Route = post {
     path("citizen") {
       traceName("RegisterCitizen") {

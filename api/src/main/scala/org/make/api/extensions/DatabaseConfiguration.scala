@@ -1,11 +1,14 @@
 package org.make.api.extensions
 
+import java.util.concurrent.Executors
+
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.dbcp2.BasicDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -22,7 +25,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   private val autoCreateSchemas: Boolean =
     configuration.getBoolean("auto-create-db-schemas")
 
-  val readDatasource = new BasicDataSource()
+  private val readDatasource = new BasicDataSource()
   readDatasource.setDriverClassName("org.postgresql.Driver")
   readDatasource.setUrl(jdbcUrl)
   readDatasource.setUsername(user)
@@ -31,7 +34,10 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setMaxTotal(configuration.getInt("pools.read.max-total"))
   readDatasource.setMaxIdle(configuration.getInt("pools.read.max-idle"))
 
-  val writeDatasource = new BasicDataSource()
+  val readThreadPool: ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(configuration.getInt("pools.read.max-total")))
+
+  private val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
   writeDatasource.setUrl(jdbcUrl)
   writeDatasource.setUsername(user)
@@ -39,6 +45,9 @@ class DatabaseConfiguration(override protected val configuration: Config)
   writeDatasource.setInitialSize(configuration.getInt("pools.write.initial-size"))
   writeDatasource.setMaxTotal(configuration.getInt("pools.write.max-total"))
   writeDatasource.setMaxIdle(configuration.getInt("pools.write.max-idle"))
+
+  val writeThreadPool: ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(configuration.getInt("pools.write.max-total")))
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
 

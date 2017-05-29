@@ -14,6 +14,7 @@ trait MakeDataHandlerComponent {
   this: TokenServiceComponent with PersistentCitizenServiceComponent with IdGeneratorComponent with ShortenedNames =>
 
   def oauth2DataHandler: MakeDataHandler
+  val validityDurationSeconds = 12000000
 
   class MakeDataHandler(implicit val ctx: ExecutionContext) extends DataHandler[Citizen] {
 
@@ -51,7 +52,7 @@ trait MakeDataHandlerComponent {
             citizenId = citizen.citizenId,
             scope = "user",
             creationDate = ZonedDateTime.now(ZoneOffset.UTC),
-            validityDurationSeconds = 12000000,
+            validityDurationSeconds = validityDurationSeconds,
             parameters = ""
           )
         )
@@ -74,12 +75,10 @@ trait MakeDataHandlerComponent {
     }
 
     override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[Citizen]]] = {
-      println(s"findAuthInfoByCode($code)")
       ???
     }
 
     override def deleteAuthCode(code: String): Future[Unit] = {
-      println(s"deleteAuthCode($code)")
       ???
     }
 

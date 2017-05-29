@@ -36,11 +36,14 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
       Graph[FlowShape[CommittableMessage[String, AnyRef], Done], NotUsed]
     type ElasticFlow = Flow[PropositionElasticsearch, Done, NotUsed]
 
+    private val identityMapCapacity = 1000
     private val propositionConsumerSettings =
       ConsumerSettings(
         actorSystem,
         new StringDeserializer,
-        new KafkaAvroDeserializer(new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry, 1000))
+        new KafkaAvroDeserializer(
+          new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry, identityMapCapacity)
+        )
       ).withBootstrapServers(KafkaConfiguration(actorSystem).connectionString)
         .withGroupId("stream-proposition-to-es")
         .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")

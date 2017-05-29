@@ -1,7 +1,5 @@
 package org.make.api
 
-import java.util.concurrent.Executors
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
@@ -10,19 +8,15 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
-import org.make.api.proposition.{
-  PropositionApi,
-  PropositionCoordinator,
-  PropositionServiceComponent,
-  PropositionSupervisor
-}
+import org.make.api.extensions.DatabaseConfiguration
+import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.ValidationFailedError
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
@@ -67,10 +61,8 @@ trait MakeApi
   override lazy val oauth2DataHandler: MakeDataHandler =
     new MakeDataHandler()(ECGlobal)
   override lazy val tokenService: TokenService = new TokenService()
-  override lazy val readExecutionContext: EC =
-    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(50))
-  override lazy val writeExecutionContext: EC =
-    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(20))
+  override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
+  override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
     override val handlers = Map(
       OAuthGrantType.IMPLICIT -> new Implicit,

@@ -25,107 +25,117 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
   */
 class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
 
-  private val consulUrl: String = settings.cluster.consul.httpUrl
+  private val consulUrl: String = settings.Cluster.Consul.httpUrl
 
   implicit val executor: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(5))
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(defaultThreadNumber))
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
   private val http: HttpExt = Http(context.system)
 
   override def receive: Receive = {
 
-    case GetKey(key) =>
-      log.debug(s"reading $key")
-      pipe(
-        http
-          .singleRequest(HttpRequest(uri = s"$consulUrl/v1/kv/$key?raw"))
-          .flatMap {
-            case HttpResponse(StatusCodes.NotFound, _, _, _) =>
-              Future.successful(None)
-            case other => strictToString(other).map(Some.apply)
-          }
-          .map(x => ReadResponse(key = key, value = x))
-          .recoverWith {
-            case x => Future.successful(ConsulFailure("GetKey", x))
-          }
-      ).to(sender())
-
-    case CreateSession(ttl) =>
-      log.debug(s"Creating session with ttl $ttl")
-      val address = Cluster(context.system).selfAddress.toString
-      val request =
-        s"""
-           |{
-           |"Name": "Consul session for node $address",
-           |"TTL": "${ttl.toSeconds}s"
-           |}
-        """.stripMargin
-      pipe(
-        http
-          .singleRequest(
-            HttpRequest(
-              method = HttpMethods.PUT,
-              uri = s"$consulUrl/v1/session/create",
-              entity = HttpEntity(ContentTypes.`application/json`, request)
-            )
-          )
-          .flatMap(strictToString(_))
-          .map(CreateSessionResponse.fromJson)
-          .recoverWith {
-            case x => Future.successful(ConsulFailure("CreateSession", x))
-          }
-      ).to(sender())
-
-    case WriteKey(key, value) =>
-      log.debug(s"writing $value in $key")
-      pipe(
-        http
-          .singleRequest(
-            HttpRequest(
-              method = HttpMethods.PUT,
-              uri = s"$consulUrl/v1/kv/$key",
-              entity = HttpEntity(ContentTypes.`application/json`, value)
-            )
-          )
-          .flatMap(strictToString(_))
-          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
-          .recoverWith {
-            case x => Future.successful(ConsulFailure("WriteKey", x))
-          }
-      ).to(sender())
-
-    case WriteExclusiveKey(key, session, value) =>
-      log.debug(s"writing $value in $key")
-      pipe(
-        http
-          .singleRequest(
-            HttpRequest(
-              method = HttpMethods.PUT,
-              uri = s"$consulUrl/v1/kv/$key?acquire=$session",
-              entity = HttpEntity(ContentTypes.`application/json`, value)
-            )
-          )
-          .flatMap(strictToString(_))
-          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
-          .recoverWith {
-            case x => Future.successful(ConsulFailure("WriteExclusiveKey", x))
-          }
-      ).to(sender())
-
-    case RenewSession(id) =>
-      log.debug(s"Renewing session $id")
-      pipe(
-        http
-          .singleRequest(HttpRequest(method = HttpMethods.PUT, uri = s"$consulUrl/v1/session/renew/$id"))
-          .flatMap(strictToString(_))
-          .map(x => RenewSessionAnswer(RenewSessionResponse.arrayFromJson(x)))
-          .recoverWith {
-            case x => Future.successful(ConsulFailure("RenewSession", x))
-          }
-      ).to(sender())
-
+    case GetKey(key) => retrieveKey(key)
+    case CreateSession(ttl) => createSession(ttl)
+    case WriteKey(key, value) => writeKey(key, value)
+    case WriteExclusiveKey(key, session, value) => writeExclusively(key, value, session)
+    case RenewSession(id) => renewSession(id)
     case x => log.warning(s"Unknown message received: ${x.toString}")
+  }
+
+  private def renewSession(id: String) = {
+    log.debug(s"Renewing session $id")
+    pipe(
+      http
+        .singleRequest(HttpRequest(method = HttpMethods.PUT, uri = s"$consulUrl/v1/session/renew/$id"))
+        .flatMap(strictToString(_))
+        .map(x => RenewSessionAnswer(RenewSessionResponse.arrayFromJson(x)))
+        .recoverWith {
+          case x => Future.successful(ConsulFailure("RenewSession", x))
+        }
+    ).to(sender())
+  }
+
+  private def writeExclusively(key: String, value: String, session: String) = {
+    log.debug(s"writing $value in $key")
+    pipe(
+      http
+        .singleRequest(
+          HttpRequest(
+            method = HttpMethods.PUT,
+            uri = s"$consulUrl/v1/kv/$key?acquire=$session",
+            entity = HttpEntity(ContentTypes.`application/json`, value)
+          )
+        )
+        .flatMap(strictToString(_))
+        .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
+        .recoverWith {
+          case x => Future.successful(ConsulFailure("WriteExclusiveKey", x))
+        }
+    ).to(sender())
+  }
+
+  private def writeKey(key: String, value: String) = {
+    log.debug(s"writing $value in $key")
+    pipe(
+      http
+        .singleRequest(
+          HttpRequest(
+            method = HttpMethods.PUT,
+            uri = s"$consulUrl/v1/kv/$key",
+            entity = HttpEntity(ContentTypes.`application/json`, value)
+          )
+        )
+        .flatMap(strictToString(_))
+        .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
+        .recoverWith {
+          case x => Future.successful(ConsulFailure("WriteKey", x))
+        }
+    ).to(sender())
+  }
+
+  private def createSession(ttl: FiniteDuration): Unit = {
+    log.debug(s"Creating session with ttl $ttl")
+    val address = Cluster(context.system).selfAddress.toString
+    val request =
+      s"""
+         |{
+         |"Name": "Consul session for node $address",
+         |"TTL": "${ttl.toSeconds}s"
+         |}
+        """.stripMargin
+    pipe(
+      http
+        .singleRequest(
+          HttpRequest(
+            method = HttpMethods.PUT,
+            uri = s"$consulUrl/v1/session/create",
+            entity = HttpEntity(ContentTypes.`application/json`, request)
+          )
+        )
+        .flatMap(strictToString(_))
+        .map(CreateSessionResponse.fromJson)
+        .recoverWith {
+          case x => Future.successful(ConsulFailure("CreateSession", x))
+        }
+    ).to(sender())
+  }
+
+  private def retrieveKey(key: String): Unit = {
+    log.debug(s"reading $key")
+    pipe(
+      http
+        .singleRequest(HttpRequest(uri = s"$consulUrl/v1/kv/$key?raw"))
+        .flatMap {
+          case HttpResponse(StatusCodes.NotFound, _, _, _) =>
+            Future.successful(None)
+          case other => strictToString(other).map(Some.apply)
+        }
+        .map(x => ReadResponse(key = key, value = x))
+        .recoverWith {
+          case x => Future.successful(ConsulFailure("GetKey", x))
+        }
+    ).to(sender())
   }
 
   private def strictToString(response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK): Future[String] = {
@@ -149,6 +159,8 @@ object ConsulActor {
 
   val name: String = "consul-client"
   val props: Props = Props[ConsulActor]
+
+  val defaultThreadNumber: Int = 5
 
   case class CreateSession(ttl: FiniteDuration)
 

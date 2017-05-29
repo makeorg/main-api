@@ -12,7 +12,7 @@ import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
 import org.make.core.proposition.PropositionId
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 object MakeMain extends App with StrictLogging with MakeApi {
@@ -27,8 +27,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
   implicit val ec = actorSystem.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  val host = settings.http.host
-  val port = settings.http.port
+  val host = settings.Http.host
+  val port = settings.Http.port
 
   val bindingFuture: Future[ServerBinding] =
     Http().bindAndHandle(makeRoutes, host, port)
@@ -45,9 +45,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
   if (settings.sendTestData) {
     // Wait until cluster is ready to send test data
     while (Cluster(actorSystem).state.members.isEmpty) {
-      Thread.sleep(10000)
+      Thread.sleep(10.seconds.toMillis)
     }
-    Thread.sleep(10000)
+    Thread.sleep(10.seconds.toMillis)
     logger.debug("Proposing...")
     propositionService.propose(
       idGenerator.nextCitizenId(),
