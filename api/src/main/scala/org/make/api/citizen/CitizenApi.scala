@@ -3,7 +3,6 @@ package org.make.api.citizen
 import java.time.LocalDate
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import de.knutwalker.akka.http.support.CirceHttpSupport
@@ -25,8 +24,7 @@ trait CitizenApi
     with Directives
     with KamonTraceDirectives
     with CirceHttpSupport
-    with MakeAuthentication {
-  this: CitizenServiceComponent with MakeDataHandlerComponent =>
+    with MakeAuthentication { this: CitizenServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(
     value = "get-citizen",
@@ -36,29 +34,14 @@ trait CitizenApi
       new Authorization(
         value = "MakeApi",
         scopes = Array(
-          new AuthorizationScope(
-            scope = "user",
-            description = "application user"
-          ),
+          new AuthorizationScope(scope = "user", description = "application user"),
           new AuthorizationScope(scope = "admin", description = "BO Admin")
         )
       )
     )
   )
-  @ApiResponses(
-    value = Array(
-      new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "citizenId",
-        paramType = "path",
-        dataType = "string"
-      )
-    )
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])))
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "citizenId", paramType = "path", dataType = "string")))
   @Path(value = "/{citizenId}")
   def getCitizen: Route = {
     get {
@@ -89,28 +72,23 @@ trait CitizenApi
       )
     )
   )
-  @ApiResponses(
-    value = Array(
-      new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])
-    )
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Citizen])))
   def register: Route = post {
     path("citizen") {
       traceName("RegisterCitizen") {
         decodeRequest {
-          entity(as[RegisterCitizenRequest]) {
-            request: RegisterCitizenRequest =>
-              onSuccess(
-                citizenService.register(
-                  email = request.email,
-                  dateOfBirth = request.dateOfBirth,
-                  firstName = request.firstName,
-                  lastName = request.lastName,
-                  password = request.password
-                )
-              ) {
-                complete(_)
-              }
+          entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
+            onSuccess(
+              citizenService.register(
+                email = request.email,
+                dateOfBirth = request.dateOfBirth,
+                firstName = request.firstName,
+                lastName = request.lastName,
+                password = request.password
+              )
+            ) {
+              complete(_)
+            }
           }
         }
       }
@@ -137,11 +115,7 @@ case class RegisterCitizenRequest(email: String,
     mandatoryField("email", email),
     validateEmail("email", email),
     mandatoryField("password", password),
-    validateField(
-      "password",
-      Option(password).exists(_.length > 5),
-      "Password must be at least 6 characters"
-    )
+    validateField("password", Option(password).exists(_.length > 5), "Password must be at least 6 characters")
   )
 
 }

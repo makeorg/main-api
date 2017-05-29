@@ -3,44 +3,22 @@ package org.make.api
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{
-  ContentTypes,
-  HttpEntity,
-  HttpResponse,
-  StatusCodes
-}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.syntax._
-import org.make.api.citizen.{
-  CitizenApi,
-  CitizenServiceComponent,
-  PersistentCitizenServiceComponent
-}
+import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.proposition.{
   PropositionApi,
   PropositionCoordinator,
   PropositionServiceComponent,
   PropositionSupervisor
 }
-import org.make.api.technical.auth.{
-  MakeDataHandlerComponent,
-  TokenServiceComponent
-}
-import org.make.api.technical.{
-  AvroSerializers,
-  BuildInfoRoutes,
-  IdGeneratorComponent,
-  MakeDocumentation
-}
-import org.make.api.vote.{
-  VoteApi,
-  VoteCoordinator,
-  VoteServiceComponent,
-  VoteSupervisor
-}
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
+import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.ValidationFailedError
 
 import scala.concurrent.duration._
@@ -71,9 +49,7 @@ trait MakeApi
     new PropositionService(
       Await.result(
         actorSystem
-          .actorSelection(
-            actorSystem / MakeGuardian.name / PropositionSupervisor.name / PropositionCoordinator.name
-          )
+          .actorSelection(actorSystem / MakeGuardian.name / PropositionSupervisor.name / PropositionCoordinator.name)
           .resolveOne()(Timeout(2.seconds)),
         atMost = 2.seconds
       )
@@ -81,9 +57,7 @@ trait MakeApi
   override lazy val voteService: VoteService = new VoteService(
     Await.result(
       actorSystem
-        .actorSelection(
-          actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name
-        )
+        .actorSelection(actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name)
         .resolveOne()(Timeout(2.seconds)),
       atMost = 2.seconds
     )
@@ -112,10 +86,7 @@ trait MakeApi
       complete(
         HttpResponse(
           status = StatusCodes.BadRequest,
-          entity = HttpEntity(
-            ContentTypes.`application/json`,
-            messages.asJson.toString
-          )
+          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
         )
       )
     case e =>
@@ -123,8 +94,7 @@ trait MakeApi
       complete(
         HttpResponse(
           status = StatusCodes.InternalServerError,
-          entity =
-            HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError)
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError)
         )
       )
 

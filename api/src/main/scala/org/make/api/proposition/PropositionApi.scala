@@ -9,10 +9,7 @@ import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{
-  MakeAuthentication,
-  MakeDataHandlerComponent
-}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.{Proposition, PropositionId}
@@ -27,27 +24,12 @@ trait PropositionApi
     with CirceHttpSupport
     with KamonTraceDirectives
     with Directives
-    with MakeAuthentication {
-  this: PropositionServiceComponent with MakeDataHandlerComponent =>
+    with MakeAuthentication { this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(value = "get-proposition", httpMethod = "GET", code = 200)
-  @ApiResponses(
-    value = Array(
-      new ApiResponse(
-        code = 200,
-        message = "Ok",
-        response = classOf[Proposition]
-      )
-    )
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
   @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "propositionId",
-        paramType = "path",
-        dataType = "string"
-      )
-    )
+    value = Array(new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "string"))
   )
   @Path(value = "/{propositionId}")
   def getProposition: Route = {
@@ -71,10 +53,7 @@ trait PropositionApi
       new Authorization(
         value = "MakeApi",
         scopes = Array(
-          new AuthorizationScope(
-            scope = "user",
-            description = "application user"
-          ),
+          new AuthorizationScope(scope = "user", description = "application user"),
           new AuthorizationScope(scope = "admin", description = "BO Admin")
         )
       )
@@ -89,32 +68,20 @@ trait PropositionApi
       )
     )
   )
-  @ApiResponses(
-    value = Array(
-      new ApiResponse(
-        code = 200,
-        message = "Ok",
-        response = classOf[Proposition]
-      )
-    )
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
   def propose: Route =
     post {
       path("proposition") {
         traceName("Propose") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             decodeRequest {
-              entity(as[ProposePropositionRequest]) {
-                request: ProposePropositionRequest =>
-                  onSuccess(
-                    propositionService.propose(
-                      citizenId = user.user.citizenId,
-                      createdAt = ZonedDateTime.now,
-                      content = request.content
-                    )
-                  ) {
-                    complete(_)
-                  }
+              entity(as[ProposePropositionRequest]) { request: ProposePropositionRequest =>
+                onSuccess(
+                  propositionService
+                    .propose(citizenId = user.user.citizenId, createdAt = ZonedDateTime.now, content = request.content)
+                ) {
+                  complete(_)
+                }
               }
             }
           }
@@ -130,10 +97,7 @@ trait PropositionApi
       new Authorization(
         value = "MakeApi",
         scopes = Array(
-          new AuthorizationScope(
-            scope = "user",
-            description = "application user"
-          ),
+          new AuthorizationScope(scope = "user", description = "application user"),
           new AuthorizationScope(scope = "admin", description = "BO Admin")
         )
       )
@@ -148,15 +112,7 @@ trait PropositionApi
       )
     )
   )
-  @ApiResponses(
-    value = Array(
-      new ApiResponse(
-        code = 200,
-        message = "Ok",
-        response = classOf[Proposition]
-      )
-    )
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = 200, message = "Ok", response = classOf[Proposition])))
   @Path(value = "/{propositionId}")
   def update: Route =
     put {
@@ -164,26 +120,25 @@ trait PropositionApi
         traceName("EditProposition") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             decodeRequest {
-              entity(as[UpdatePropositionRequest]) {
-                request: UpdatePropositionRequest =>
-                  onSuccess(propositionService.getProposition(propositionId)) {
-                    case Some(proposition) =>
-                      if (proposition.citizenId == user.user.citizenId) {
-                        onSuccess(
-                          propositionService.update(
-                            propositionId = propositionId,
-                            updatedAt = ZonedDateTime.now,
-                            content = request.content
-                          )
-                        ) {
-                          case Some(prop) => complete(prop)
-                          case None => complete(Forbidden)
-                        }
-                      } else {
-                        complete(Forbidden)
+              entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
+                onSuccess(propositionService.getProposition(propositionId)) {
+                  case Some(proposition) =>
+                    if (proposition.citizenId == user.user.citizenId) {
+                      onSuccess(
+                        propositionService.update(
+                          propositionId = propositionId,
+                          updatedAt = ZonedDateTime.now,
+                          content = request.content
+                        )
+                      ) {
+                        case Some(prop) => complete(prop)
+                        case None => complete(Forbidden)
                       }
-                    case None => complete(NotFound)
-                  }
+                    } else {
+                      complete(Forbidden)
+                    }
+                  case None => complete(NotFound)
+                }
               }
             }
           }

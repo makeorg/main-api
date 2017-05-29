@@ -27,7 +27,7 @@ trait TokenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(t.*)
-            .from(PersistentToken as t)
+            .from(PersistentToken.as(t))
             .where(sqls.eq(t.id, id))
         }.map(PersistentToken.toToken(t)).single().apply()
       })
@@ -38,7 +38,7 @@ trait TokenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(t.*)
-            .from(PersistentToken as t)
+            .from(PersistentToken.as(t))
             .where(sqls.eq(t.refreshToken, refreshToken))
         }.map(PersistentToken.toToken(t)).single().apply()
       })
@@ -49,7 +49,7 @@ trait TokenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(t.*)
-            .from(PersistentToken as t)
+            .from(PersistentToken.as(t))
             .where(sqls.eq(t.citizenId, citizenId.value))
             .orderBy(t.creationDate.desc)
             .limit(1)
@@ -87,19 +87,10 @@ trait TokenServiceComponent {
   object PersistentToken extends SQLSyntaxSupport[Token] with ShortenedNames {
     override def tableName: String = "token"
 
-    override def columnNames: Seq[String] = Seq(
-      "id",
-      "refresh_token",
-      "citizen_id",
-      "scope",
-      "creation_date",
-      "validity_duration_seconds",
-      "parameters"
-    )
+    override def columnNames: Seq[String] =
+      Seq("id", "refresh_token", "citizen_id", "scope", "creation_date", "validity_duration_seconds", "parameters")
 
-    lazy val t
-      : scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[Token],
-                                           Token] = syntax("t")
+    lazy val t: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[Token], Token] = syntax("t")
 
     def toToken(c: SyntaxProvider[Token])(rs: WrappedResultSet): Token =
       toToken(t.resultName)(rs)

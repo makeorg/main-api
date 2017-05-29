@@ -27,47 +27,38 @@ object Validation {
     }
   }
 
-  def validateField(field: String,
-                    condition: => Boolean,
-                    message: => String): Requirement =
+  def validateField(field: String, condition: => Boolean, message: => String): Requirement =
     Requirement(field, () => condition, () => message)
 
-  def mandatoryField(fieldName: String,
-                     fieldValue: => Any,
-                     message: Option[String] = None): Requirement = {
+  def mandatoryField(fieldName: String, fieldValue: => Any, message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value = fieldValue
-      value != null && value != None
+      exists(value) && value != None
     }
-    validateField(
-      fieldName,
-      condition(),
-      message.getOrElse(s"$fieldName is mandatory")
-    )
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is mandatory"))
   }
 
-  def validateEmail(fieldName: String,
-                    fieldValue: => String,
-                    message: Option[String] = None): Requirement = {
+  def validateEmail(fieldName: String, fieldValue: => String, message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value: String = fieldValue
-      value != null && emailRegex.findFirstIn(value).isDefined
+      exists(value) && emailRegex.findFirstIn(value).isDefined
     }
-    validateField(
-      fieldName,
-      condition(),
-      message.getOrElse(s"$fieldName is not a valid email")
-    )
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
+  }
+
+  private def isNull(value: Any): Boolean = {
+    Option(value).isEmpty
+  }
+
+  private def exists(value: Any): Boolean = {
+    Option(value).isDefined
   }
 
 }
 
-case class Requirement(field: String,
-                       condition: () => Boolean,
-                       message: () => String)
+case class Requirement(field: String, condition: () => Boolean, message: () => String)
 
-case class ValidationFailedError(errors: Seq[ValidationError])
-    extends Exception {
+case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception {
   override def getMessage: String = { errors.asJson.toString }
 }
 

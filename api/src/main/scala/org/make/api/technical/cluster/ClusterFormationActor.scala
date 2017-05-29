@@ -12,11 +12,7 @@ import io.circe.syntax._
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.technical.ConsulActor
 import org.make.api.technical.ConsulActor.{RenewSession, _}
-import org.make.api.technical.ConsulEntities.{
-  CreateSessionResponse,
-  ReadResponse,
-  WriteResponse
-}
+import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, WriteResponse}
 import org.make.api.technical.cluster.ClusterFormationActor._
 import org.make.core.CirceFormatters
 
@@ -26,11 +22,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 /**
   * Actor responsible for connecting an actor to seeds and handle the node lifecycle
   */
-class ClusterFormationActor
-    extends Actor
-    with MakeSettingsExtension
-    with ActorLogging
-    with CirceFormatters {
+class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorLogging with CirceFormatters {
 
   private var consulClient: ActorRef = _
   private var sessionId: String = _
@@ -47,30 +39,15 @@ class ClusterFormationActor
 
     self ! Init
 
-    scheduler.schedule(
-      Duration.Zero,
-      clusterSettings.heartbeatInterval,
-      self,
-      Heartbeat
-    )
-    scheduler.schedule(
-      Duration.Zero,
-      clusterSettings.heartbeatInterval,
-      self,
-      Connect
-    )
+    scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Heartbeat)
+    scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Connect)
     scheduler.schedule(
       clusterSettings.sessionRenewInterval,
       clusterSettings.sessionRenewInterval,
       self,
       RenewMySession
     )
-    scheduler.schedule(
-      clusterSettings.cleanupInterval,
-      clusterSettings.cleanupInterval,
-      self,
-      Cleanup
-    )
+    scheduler.schedule(clusterSettings.cleanupInterval, clusterSettings.cleanupInterval, self, Cleanup)
 
   }
 
@@ -79,10 +56,9 @@ class ClusterFormationActor
       log.debug("Starting init process")
 
       val sessionInTheFuture =
-        (consulClient ? CreateSession(settings.cluster.sessionTimeout))
-          .recoverWith {
-            case x => Future.failed(GetSessionFailed(x))
-          }
+        (consulClient ? CreateSession(settings.cluster.sessionTimeout)).recoverWith {
+          case x => Future.failed(GetSessionFailed(x))
+        }
       pipe(sessionInTheFuture).to(self)
 
     case CreateSessionResponse(id) =>
@@ -92,10 +68,7 @@ class ClusterFormationActor
       val writingSeedInTheFuture = consulClient ? WriteExclusiveKey(
         s"${settings.cluster.name}/seed",
         id,
-        Node(
-          Cluster(context.system).selfAddress.toString,
-          ZonedDateTime.now(ZoneOffset.UTC)
-        ).asJson.toString
+        Node(Cluster(context.system).selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson.toString
       )
 
       pipe(writingSeedInTheFuture.map {
@@ -116,9 +89,7 @@ class ClusterFormationActor
 
     case WriteSeedFailed(_) =>
       // Some other node already has the lock, retrieve it and connect to it
-      val seedInTheFuture = consulClient ? GetKey(
-        s"${settings.cluster.name}/seed"
-      )
+      val seedInTheFuture = consulClient ? GetKey(s"${settings.cluster.name}/seed")
 
       pipe(seedInTheFuture.map {
         case ReadResponse(_, Some(value)) => SeedRetrieved(parseNode(value))

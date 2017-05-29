@@ -33,16 +33,14 @@ object MakeMain extends App with StrictLogging with MakeApi {
   val bindingFuture: Future[ServerBinding] =
     Http().bindAndHandle(makeRoutes, host, port)
 
-  bindingFuture
-    .map { serverBinding =>
-      logger.info(s"Make API bound to ${serverBinding.localAddress} ")
-    }
-    .onComplete {
-      case util.Failure(ex) =>
-        logger.error(s"Failed to bind to $host:$port!", ex)
-        actorSystem.terminate()
-      case _ =>
-    }
+  bindingFuture.map { serverBinding =>
+    logger.info(s"Make API bound to ${serverBinding.localAddress} ")
+  }.onComplete {
+    case util.Failure(ex) =>
+      logger.error(s"Failed to bind to $host:$port!", ex)
+      actorSystem.terminate()
+    case _ =>
+  }
 
   if (settings.sendTestData) {
     // Wait until cluster is ready to send test data
@@ -58,21 +56,13 @@ object MakeMain extends App with StrictLogging with MakeApi {
     )
     val propId: PropositionId = Await.result(
       propositionService
-        .propose(
-          idGenerator.nextCitizenId(),
-          ZonedDateTime.now,
-          "Il faut faire une proposition"
-        ),
+        .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"),
       Duration.Inf
     ) match {
       case Some(proposition) => proposition.propositionId
       case None => PropositionId("Invalid PropositionId")
     }
-    propositionService.update(
-      propId,
-      ZonedDateTime.now,
-      "Il faut mettre a jour une proposition"
-    )
+    propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
     logger.debug("Sent propositions...")
   }
 

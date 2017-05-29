@@ -24,6 +24,6 @@ class VoteCoordinator extends Actor {
   }
 
   override def receive: Receive = {
-    case cmd: VoteCommand => shardedVote forward cmd
+    case cmd: VoteCommand => shardedVote.forward(cmd)
   }
 }

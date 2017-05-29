@@ -10,72 +10,56 @@ object Dependencies {
   private val kamonVersion = "0.6.6"
   val aspectJVersion: String = "1.8.10"
 
-  val scalaLogging
-    : ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
-  val logger: ModuleID = "org.apache.logging.log4j" % "log4j" % "2.8.2"
-  val loggerBridge
-    : ModuleID = "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.8.2"
+  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.5.0"
+  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.8.2"
+  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.8.2"
 
-  val nettyEpoll
-    : ModuleID = "io.netty" % "netty-transport-native-epoll" % nettyVersion classifier "linux-x86_64"
+  val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
   val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % "0.7.1"
 
-  val akkaPersistence
-    : ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
-  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
-  val akkaStreamCirce
-    : ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"
-  val akka: ModuleID = "com.typesafe.akka" %% "akka-actor" % akkaVersion
-  val akkaCluster
-    : ModuleID = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
-  val akkaClusterTools
-    : ModuleID = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion
-  val akkaClusterSharding
-    : ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
+  val akkaPersistence: ModuleID = "com.typesafe.akka"     %% "akka-persistence"      % akkaVersion
+  val akkaSlf4j: ModuleID = "com.typesafe.akka"           %% "akka-slf4j"            % akkaVersion
+  val akkaStreamCirce: ModuleID = "de.knutwalker"         %% "akka-stream-circe"     % "3.3.0"
+  val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor"            % akkaVersion
+  val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster"          % akkaVersion
+  val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
+  val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50")
       .exclude("io.netty", "netty-handler")
   val akkaStreamKafka: ModuleID =
     ("com.typesafe.akka" %% "akka-stream-kafka" % "0.16")
       .exclude("org.apache.kafka", "kafka-clients")
-  val akkaHttp: ModuleID = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.knutwalker" %% "akka-http-circe" % "3.3.0"
-  val akkaHttpSwagger
-    : ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1"
-  val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % "2.2.8"
+  val akkaHttp: ModuleID = "com.typesafe.akka"                   %% "akka-http"         % akkaHttpVersion
+  val akkaHttpCirce: ModuleID = "de.knutwalker"                  %% "akka-http-circe"   % "3.3.0"
+  val akkaHttpSwagger: ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1"
+  val swaggerUi: ModuleID = "org.webjars"                        % "swagger-ui"         % "2.2.8"
 
   val kamonAkka: ModuleID = "io.kamon" %% "kamon-akka-2.4" % kamonVersion
   val kamonAkkaHttp: ModuleID =
     ("io.kamon" %% "kamon-akka-http" % kamonVersion)
       .exclude("com.typesafe.akka", "akka-http_2.12")
       .exclude("com.typesafe.akka", "akka-actor_2.12")
-  val kamonAkkaRemote
-    : ModuleID = "io.kamon" %% "kamon-akka-remote-2.4" % kamonVersion
-  val kamonScala: ModuleID = "io.kamon" %% "kamon-scala" % kamonVersion
-  val kamonJmx: ModuleID = "io.kamon" %% "kamon-jmx" % kamonVersion
-  val kamonLogReporter
-    : ModuleID = "io.kamon" %% "kamon-log-reporter" % kamonVersion
-  val kamonElasticsearch
-    : ModuleID = "io.kamon" %% "kamon-elasticsearch" % kamonVersion
-  val kamonSystemMetrics
-    : ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonVersion
+  val kamonAkkaRemote: ModuleID = "io.kamon"    %% "kamon-akka-remote-2.4" % kamonVersion
+  val kamonScala: ModuleID = "io.kamon"         %% "kamon-scala"           % kamonVersion
+  val kamonJmx: ModuleID = "io.kamon"           %% "kamon-jmx"             % kamonVersion
+  val kamonLogReporter: ModuleID = "io.kamon"   %% "kamon-log-reporter"    % kamonVersion
+  val kamonElasticsearch: ModuleID = "io.kamon" %% "kamon-elasticsearch"   % kamonVersion
+  val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics"  % kamonVersion
 
-  val aspectJWeaver
-    : ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
-  val aspectJRt: ModuleID = "org.aspectj" % "aspectjrt" % aspectJVersion
+  val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
+  val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
 
   val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
 
-  val scalike: ModuleID = "org.scalikejdbc" %% "scalikejdbc" % "3.0.0-RC4"
-  val postgresql: ModuleID = "org.postgresql" % "postgresql" % "42.1.0"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.0-RC4"
+  val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.1.0"
 
   // Kafka + AVRO
-  val kafkaClients
-    : ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
-  val avro4s
-    : ModuleID = "com.sksamuel.avro4s" %% "avro4s-core" % "1.6.4"
+  val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
+  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.6.4"
   val avroSerializer: ModuleID =
     ("io.confluent" % "kafka-avro-serializer" % "3.2.0")
       .exclude("org.slf4j", "slf4j-log4j12")
@@ -83,25 +67,17 @@ object Dependencies {
 
   val configuration: ModuleID = "com.typesafe" % "config" % "1.3.1"
 
-  val embeddedElasticSearch
-    : ModuleID = "pl.allegro.tech" % "embedded-elasticsearch" % "2.1.0"
-  val elastic4s
-    : ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-core" % elastic4sVersion
-  val elastic4sHttp
-    : ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-http" % elastic4sVersion
+  val embeddedElasticSearch: ModuleID = "pl.allegro.tech" % "embedded-elasticsearch" % "2.1.0"
+  val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"        % elastic4sVersion
+  val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"        % elastic4sVersion
 
   // Test related dependencies
-  val elastic4sStream
-    : ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion
-  val elastic4sCirce
-    : ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
-  val scalaTest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
-  val akkaTest
-    : ModuleID = "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
-  val akkaHttpTest
-    : ModuleID = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
-  val akkaPersistenceInMemory
-    : ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "test"
-  val mockito: ModuleID = "org.mockito" % "mockito-core" % "2.7.22" % "test"
+  val elastic4sStream: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-streams"         % elastic4sVersion
+  val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s"       %% "elastic4s-circe"           % elastic4sVersion
+  val scalaTest: ModuleID = "org.scalatest"                     %% "scalatest"                 % "3.0.1" % "test"
+  val akkaTest: ModuleID = "com.typesafe.akka"                  %% "akka-testkit"              % akkaVersion % "test"
+  val akkaHttpTest: ModuleID = "com.typesafe.akka"              %% "akka-http-testkit"         % akkaHttpVersion % "test"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "test"
+  val mockito: ModuleID = "org.mockito"                         % "mockito-core"               % "2.7.22" % "test"
 
 }

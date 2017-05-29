@@ -12,11 +12,7 @@ object VoteEvent {
 
   type AnyVoteEvent = VotedAgree :+: VotedDisagree :+: VotedUnsure :+: CNil
 
-  case class VoteEventWrapper(version: Int,
-                              id: String,
-                              date: ZonedDateTime,
-                              eventType: String,
-                              event: AnyVoteEvent)
+  case class VoteEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: AnyVoteEvent)
       extends EventWrapper
 
   object VoteEventWrapper {
@@ -53,6 +49,5 @@ object VoteEvent {
                          status: VoteStatus)
       extends VoteEvent
 
-  case class VoteViewed(id: VoteId, propositionId: PropositionId)
-      extends VoteEvent
+  case class VoteViewed(id: VoteId, propositionId: PropositionId) extends VoteEvent
 }

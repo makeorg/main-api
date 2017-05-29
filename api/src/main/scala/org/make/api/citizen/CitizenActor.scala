@@ -3,7 +3,7 @@ package org.make.api.citizen
 import java.time.LocalDate
 
 import akka.actor.{ActorLogging, PoisonPill, Props}
-import akka.pattern.{Patterns, ask}
+import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.citizen.CitizenActor.Snapshot
 import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenRegistered}

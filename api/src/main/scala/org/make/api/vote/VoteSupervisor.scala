@@ -11,14 +11,10 @@ class VoteSupervisor extends Actor with AvroSerializers with ActorLogging {
   override def preStart(): Unit = {
     context.watch(context.actorOf(VoteCoordinator.props, VoteCoordinator.name))
 
-    context.watch(
-      context.actorOf(VoteProducerActor.props, VoteProducerActor.name)
-    )
+    context.watch(context.actorOf(VoteProducerActor.props, VoteProducerActor.name))
 
-    val voteConsumer = context.actorOf(
-      ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"),
-      ConsumerActor.name("votes")
-    )
+    val voteConsumer =
+      context.actorOf(ConsumerActor.props(RecordFormat[VoteEventWrapper], "votes"), ConsumerActor.name("votes"))
     context.watch(voteConsumer)
     voteConsumer ! Consume
   }

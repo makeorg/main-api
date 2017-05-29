@@ -32,8 +32,7 @@ object Predef {
     }
   }
 
-  implicit class RichScalaDuration(val self: java.time.Duration)
-      extends AnyVal {
+  implicit class RichScalaDuration(val self: java.time.Duration) extends AnyVal {
     def toScala: FiniteDuration = {
       FiniteDuration(self.toNanos, TimeUnit.NANOSECONDS)
     }

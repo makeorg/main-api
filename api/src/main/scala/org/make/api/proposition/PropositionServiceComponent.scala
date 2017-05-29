@@ -12,8 +12,7 @@ import org.make.core.proposition._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait PropositionServiceComponent {
-  this: IdGeneratorComponent with PropositionServiceComponent =>
+trait PropositionServiceComponent { this: IdGeneratorComponent with PropositionServiceComponent =>
 
   def propositionService: PropositionService
 
@@ -21,16 +20,12 @@ trait PropositionServiceComponent {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    def getProposition(
-      propositionId: PropositionId
-    ): Future[Option[Proposition]] = {
+    def getProposition(propositionId: PropositionId): Future[Option[Proposition]] = {
       (actor ? ViewPropositionCommand(propositionId))
         .mapTo[Option[Proposition]]
     }
 
-    def propose(citizenId: CitizenId,
-                createdAt: ZonedDateTime,
-                content: String): Future[Option[Proposition]] = {
+    def propose(citizenId: CitizenId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
       (
         actor ?
           ProposeCommand(
@@ -42,16 +37,10 @@ trait PropositionServiceComponent {
       ).mapTo[Option[Proposition]]
     }
 
-    def update(propositionId: PropositionId,
-               updatedAt: ZonedDateTime,
-               content: String): Future[Option[Proposition]] = {
+    def update(propositionId: PropositionId, updatedAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
       (
         actor ?
-          UpdatePropositionCommand(
-            propositionId = propositionId,
-            updatedAt = updatedAt,
-            content = content
-          )
+          UpdatePropositionCommand(propositionId = propositionId, updatedAt = updatedAt, content = content)
       ).mapTo[Option[Proposition]]
     }
 

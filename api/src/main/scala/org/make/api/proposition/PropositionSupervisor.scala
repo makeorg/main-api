@@ -4,10 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.ConsumerActor.Consume
-import org.make.api.technical.elasticsearch.{
-  ElasticsearchAPIComponent,
-  ElasticsearchConfigurationExtension
-}
+import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ElasticsearchConfigurationExtension}
 import org.make.api.technical.{AvroSerializers, ConsumerActor, ShortenedNames}
 import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
 
@@ -22,10 +19,8 @@ class PropositionSupervisor
     with AvroSerializers
     with ShortenedNames {
 
-  override val elasticsearchAPI = new ElasticsearchAPI(
-    elasticsearchConfiguration.host,
-    elasticsearchConfiguration.port
-  )
+  override val elasticsearchAPI =
+    new ElasticsearchAPI(elasticsearchConfiguration.host, elasticsearchConfiguration.port)
 
   implicit private val materializer = ActorMaterializer()(context.system)
   val propositionStreamToElasticsearch: PropositionStreamToElasticsearch =

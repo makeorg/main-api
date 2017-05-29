@@ -3,7 +3,7 @@ package org.make.api.vote
 import java.time.ZonedDateTime
 
 import akka.actor.{ActorLogging, Props}
-import akka.pattern.{Patterns, ask}
+import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.vote.VoteActor.Snapshot
 import org.make.core.citizen.CitizenId
@@ -32,9 +32,7 @@ class VoteActor extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case GetVote(voteId) => sender ! state.map(_.filter(_.voteId == voteId))
     case e: ViewVoteCommand =>
-      persistAndPublishEvent(
-        VoteViewed(id = e.voteId, propositionId = e.propositionId)
-      )
+      persistAndPublishEvent(VoteViewed(id = e.voteId, propositionId = e.propositionId))
     case agree: PutVoteCommand if agree.status == VoteStatus.AGREE =>
       if (citizenCanVote(agree.citizenId)) {
         persistAndPublishEvent(
@@ -137,13 +135,7 @@ class VoteActor extends PersistentActor with ActorLogging {
                        createdAt: Option[ZonedDateTime],
                        voteStatus: Option[VoteStatus]) {
     def toVote: Vote = {
-      Vote(
-        voteId,
-        citizenId.orNull,
-        propositionId.orNull,
-        createdAt.orNull,
-        voteStatus.orNull
-      )
+      Vote(voteId, citizenId.orNull, propositionId.orNull, createdAt.orNull, voteStatus.orNull)
     }
   }
 }

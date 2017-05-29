@@ -44,26 +44,17 @@ object PropositionElasticsearch extends StrictLogging {
           Some(
             PropositionElasticsearch(
               id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
-              citizenId = UUID.fromString(
-                source.getOrElse("citizenId", "NotFound").toString
-              ),
+              citizenId = UUID.fromString(source.getOrElse("citizenId", "NotFound").toString),
               createdAt = ZonedDateTime
-                .parse(
-                  source.getOrElse("createdAt", ZonedDateTime.now).toString
-                )
+                .parse(source.getOrElse("createdAt", ZonedDateTime.now).toString)
                 .toUTC,
               updatedAt = ZonedDateTime
-                .parse(
-                  source.getOrElse("updatedAt", ZonedDateTime.now).toString
-                )
+                .parse(source.getOrElse("updatedAt", ZonedDateTime.now).toString)
                 .toUTC,
               content = source.getOrElse("content", "No content").toString,
-              nbVotesAgree =
-                source.getOrElse("nbVotesAgree", 0).asInstanceOf[Int],
-              nbVotesDisagree =
-                source.getOrElse("nbVotesDisagree", 0).asInstanceOf[Int],
-              nbVotesUnsure =
-                source.getOrElse("nbVotesUnsure", 0).asInstanceOf[Int]
+              nbVotesAgree = source.getOrElse("nbVotesAgree", 0).asInstanceOf[Int],
+              nbVotesDisagree = source.getOrElse("nbVotesDisagree", 0).asInstanceOf[Int],
+              nbVotesUnsure = source.getOrElse("nbVotesUnsure", 0).asInstanceOf[Int]
             )
           )
       }

@@ -21,29 +21,16 @@ trait PersistentCitizenServiceComponent {
                                hashedPassword: String,
                                dateOfBirth: String)
 
-  object PersistentCitizen
-      extends SQLSyntaxSupport[PersistentCitizen]
-      with ShortenedNames {
+  object PersistentCitizen extends SQLSyntaxSupport[PersistentCitizen] with ShortenedNames {
 
-    override val columnNames = Seq(
-      "id",
-      "email",
-      "first_name",
-      "last_name",
-      "hashed_password",
-      "date_of_birth"
-    )
+    override val columnNames = Seq("id", "email", "first_name", "last_name", "hashed_password", "date_of_birth")
     override val tableName: String = "citizen"
 
     lazy val c: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentCitizen], PersistentCitizen] = syntax("c")
 
-    def toCitizen(c: SyntaxProvider[PersistentCitizen])(
-      rs: WrappedResultSet
-    ): Citizen = toCitizen(c.resultName)(rs)
+    def toCitizen(c: SyntaxProvider[PersistentCitizen])(rs: WrappedResultSet): Citizen = toCitizen(c.resultName)(rs)
 
-    def toCitizen(
-      c: ResultName[PersistentCitizen]
-    )(rs: WrappedResultSet): Citizen = {
+    def toCitizen(c: ResultName[PersistentCitizen])(rs: WrappedResultSet): Citizen = {
       Citizen(
         citizenId = CitizenId(rs.string(column.id)),
         email = rs.string(column.email),
@@ -63,7 +50,7 @@ trait PersistentCitizenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(c.*)
-            .from(PersistentCitizen as c)
+            .from(PersistentCitizen.as(c))
             .where(sqls.eq(c.id, id.value))
         }.map(PersistentCitizen.toCitizen(c)).single.apply
       })(readExecutionContext)
@@ -74,10 +61,8 @@ trait PersistentCitizenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(c.*)
-            .from(PersistentCitizen as c)
-            .where(
-              sqls.eq(c.email, email) and sqls.eq(c.hashedPassword, password)
-            )
+            .from(PersistentCitizen.as(c))
+            .where(sqls.eq(c.email, email).and(sqls.eq(c.hashedPassword, password)))
         }.map(PersistentCitizen.toCitizen(c)).single().apply()
       })
     }
@@ -87,7 +72,7 @@ trait PersistentCitizenServiceComponent {
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(count(c.asterisk))
-            .from(PersistentCitizen as c)
+            .from(PersistentCitizen.as(c))
             .where(sqls.eq(c.email, email))
         }.map(rs => rs.int(1) > 0).single().apply()
       }).map(_.getOrElse(false))
@@ -102,9 +87,7 @@ trait PersistentCitizenServiceComponent {
             .namedValues(
               column.id -> citizen.citizenId.value,
               column.email -> citizen.email,
-              column.dateOfBirth -> citizen.dateOfBirth.atStartOfDay(
-                ZoneOffset.UTC
-              ),
+              column.dateOfBirth -> citizen.dateOfBirth.atStartOfDay(ZoneOffset.UTC),
               column.firstName -> citizen.firstName,
               column.lastName -> citizen.lastName,
               column.hashedPassword -> hashedPassword

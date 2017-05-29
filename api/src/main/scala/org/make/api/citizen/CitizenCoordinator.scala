@@ -24,7 +24,7 @@ class CitizenCoordinator extends Actor {
   }
 
   def receive: Receive = {
-    case cmd: CitizenCommand => shardedCitizen forward cmd
+    case cmd: CitizenCommand => shardedCitizen.forward(cmd)
   }
 
 }

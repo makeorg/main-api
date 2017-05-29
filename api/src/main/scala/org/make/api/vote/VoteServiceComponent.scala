@@ -14,8 +14,7 @@ import org.make.core.vote.{VoteId, _}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait VoteServiceComponent {
-  this: IdGeneratorComponent with VoteServiceComponent =>
+trait VoteServiceComponent { this: IdGeneratorComponent with VoteServiceComponent =>
 
   def voteService: VoteService
 
@@ -23,8 +22,7 @@ trait VoteServiceComponent {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    def getVote(voteId: VoteId,
-                propositionId: PropositionId): Future[Option[Vote]] = {
+    def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]] = {
       (actor ? ViewVoteCommand(voteId, propositionId)).mapTo[Option[Vote]]
     }
 

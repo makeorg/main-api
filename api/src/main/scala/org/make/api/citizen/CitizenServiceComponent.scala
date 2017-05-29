@@ -7,8 +7,7 @@ import org.make.core.citizen.{Citizen, CitizenId}
 
 import scala.concurrent.Future
 
-trait CitizenServiceComponent {
-  this: IdGeneratorComponent with PersistentCitizenServiceComponent =>
+trait CitizenServiceComponent { this: IdGeneratorComponent with PersistentCitizenServiceComponent =>
 
   def citizenService: CitizenService
 

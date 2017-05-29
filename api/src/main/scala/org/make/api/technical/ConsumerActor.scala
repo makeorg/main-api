@@ -16,8 +16,7 @@ import scala.util.Try
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T],
-                                       private val kafkaTopic: String)
+class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String)
     extends Actor
     with KafkaConfigurationExtension
     with AvroSerializers
@@ -35,25 +34,14 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T],
 
   private def createConsumer[A, B](): KafkaConsumer[A, B] = {
     val props = new Properties()
-    props.put(
-      ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-      kafkaConfiguration.connectionString
-    )
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "read-model-update")
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
     props.put("schema.registry.url", kafkaConfiguration.schemaRegistry)
-    props.put(
-      ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-      "org.apache.kafka.common.serialization.StringDeserializer"
-    )
-    props.put(
-      ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-      "io.confluent.kafka.serializers.KafkaAvroDeserializer"
-    )
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer")
     val consumer = new KafkaConsumer[A, B](props)
-    consumer.subscribe(
-      util.Arrays.asList(kafkaConfiguration.topics(kafkaTopic))
-    )
+    consumer.subscribe(util.Arrays.asList(kafkaConfiguration.topics(kafkaTopic)))
     consumer
   }
 
@@ -74,8 +62,7 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T],
 
 object ConsumerActor {
 
-  def props[T <: EventWrapper](format: RecordFormat[T],
-                               kafkaTopic: String): Props =
+  def props[T <: EventWrapper](format: RecordFormat[T], kafkaTopic: String): Props =
     Props(new ConsumerActor(format, kafkaTopic))
   def name(model: String): String = s"read-model-consumer-$model"
 

@@ -10,16 +10,13 @@ import org.make.core.citizen.CitizenId
 import org.make.core.proposition._
 import org.scalatest.GivenWhenThen
 
-class PropositionActorTest
-    extends ShardingActorTest
-    with GivenWhenThen
-    with StrictLogging {
+class PropositionActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
   val coordinator: ActorRef =
     system.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
 
   val mainCitizenId: CitizenId = CitizenId("1234")
-  val mainCreatedAt: ZonedDateTime = ZonedDateTime.now minusSeconds 10
+  val mainCreatedAt: ZonedDateTime = ZonedDateTime.now.minusSeconds(10)
   val mainUpdatedAt: ZonedDateTime = ZonedDateTime.now
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)

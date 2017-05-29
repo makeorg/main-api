@@ -12,13 +12,11 @@ trait CirceFormatters {
   implicit lazy val zonedDateTimeDecoder: Decoder[ZonedDateTime] =
     Decoder.decodeString.map(ZonedDateTime.parse)
 
-  implicit lazy val localDateEncoder: Encoder[LocalDate] = (a: LocalDate) =>
-    Json.fromString(a.toString)
+  implicit lazy val localDateEncoder: Encoder[LocalDate] = (a: LocalDate) => Json.fromString(a.toString)
   implicit lazy val localDateDecoder: Decoder[LocalDate] =
     Decoder.decodeString.map(LocalDate.parse)
 
-  implicit lazy val uuidEncoder: Encoder[UUID] = (a: UUID) =>
-    Json.fromString(a.toString)
+  implicit lazy val uuidEncoder: Encoder[UUID] = (a: UUID) => Json.fromString(a.toString)
   implicit lazy val uuidDecoder: Decoder[UUID] =
     Decoder.decodeString.map(UUID.fromString)
 

@@ -1,5 +1,9 @@
 [![build status](https://gitlab.com/makeorg-scala/make-api/badges/master/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
 
+## Setting up the dev environment
+
+- Install the _scalafmt_ plugin
+
 ## Running the app :
 
 ```

@@ -15,12 +15,7 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.technical.ConsulActor._
-import org.make.api.technical.ConsulEntities.{
-  CreateSessionResponse,
-  ReadResponse,
-  RenewSessionResponse,
-  WriteResponse
-}
+import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, RenewSessionResponse, WriteResponse}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -35,9 +30,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   implicit val executor: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(5))
 
-  private implicit val materializer: ActorMaterializer = ActorMaterializer(
-    ActorMaterializerSettings(context.system)
-  )
+  private implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
   private val http: HttpExt = Http(context.system)
 
   override def receive: Receive = {
@@ -96,14 +89,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
             )
           )
           .flatMap(strictToString(_))
-          .map(
-            x =>
-              WriteResponse(
-                result = x.trim.toBoolean,
-                key = key,
-                value = value
-            )
-          )
+          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
           .recoverWith {
             case x => Future.successful(ConsulFailure("WriteKey", x))
           }
@@ -121,14 +107,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
             )
           )
           .flatMap(strictToString(_))
-          .map(
-            x =>
-              WriteResponse(
-                result = x.trim.toBoolean,
-                key = key,
-                value = value
-            )
-          )
+          .map(x => WriteResponse(result = x.trim.toBoolean, key = key, value = value))
           .recoverWith {
             case x => Future.successful(ConsulFailure("WriteExclusiveKey", x))
           }
@@ -138,12 +117,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
       log.debug(s"Renewing session $id")
       pipe(
         http
-          .singleRequest(
-            HttpRequest(
-              method = HttpMethods.PUT,
-              uri = s"$consulUrl/v1/session/renew/$id"
-            )
-          )
+          .singleRequest(HttpRequest(method = HttpMethods.PUT, uri = s"$consulUrl/v1/session/renew/$id"))
           .flatMap(strictToString(_))
           .map(x => RenewSessionAnswer(RenewSessionResponse.arrayFromJson(x)))
           .recoverWith {
@@ -154,10 +128,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
     case x => log.warning(s"Unknown message received: ${x.toString}")
   }
 
-  private def strictToString(
-    response: HttpResponse,
-    expectedCode: StatusCode = StatusCodes.OK
-  ): Future[String] = {
+  private def strictToString(response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK): Future[String] = {
     log.debug(s"Server answered $response")
     response match {
       case HttpResponse(`expectedCode`, _, entity, _) =>
@@ -167,11 +138,7 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
       case HttpResponse(code, _, entity, _) =>
         entity.toStrict(2.second).flatMap { entity =>
           val response = entity.data.decodeString(Charset.forName("UTF-8"))
-          Future.failed(
-            new IllegalStateException(
-              s"Got unexpected response code: $code, with body: $response"
-            )
-          )
+          Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $response"))
         }
     }
   }

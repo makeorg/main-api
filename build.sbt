@@ -12,16 +12,12 @@ lazy val commonSettings = Seq(
   ),
   publishTo := {
     if (isSnapshot.value) {
-      Some(
-        "Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-snapshots/"
-      )
+      Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-snapshots/"))
     } else {
-      Some(
-        "Sonatype Snapshots Nexus" at "https://nexus.prod.makeorg.tech/repository/maven-releases/"
-      )
+      Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-releases/"))
     }
   },
-  resolvers += "Confluent Releases" at "http://packages.confluent.io/maven/",
+  resolvers += "Confluent Releases".at("http://packages.confluent.io/maven/"),
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint",

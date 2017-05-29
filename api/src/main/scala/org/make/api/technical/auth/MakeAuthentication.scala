@@ -17,17 +17,11 @@ import scalaoauth2.provider._
 /**
   * Mostly taken from https://github.com/nulab/akka-http-oauth2-provider with added support for redirect
   */
-trait MakeAuthentication
-    extends ShortenedNames
-    with Directives
-    with CirceHttpSupport { self: MakeDataHandlerComponent =>
+trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSupport {
+  self: MakeDataHandlerComponent =>
 
-  def makeOAuth2(f: (AuthInfo[Citizen]) => server.Route)(implicit ctx: EC =
-                                                           ECGlobal): Route = {
-    authenticateOAuth2Async[AuthInfo[Citizen]](
-      "make.org API",
-      oauth2Authenticator
-    ).tapply { (u) =>
+  def makeOAuth2(f: (AuthInfo[Citizen]) => server.Route)(implicit ctx: EC = ECGlobal): Route = {
+    authenticateOAuth2Async[AuthInfo[Citizen]]("make.org API", oauth2Authenticator).tapply { (u) =>
       f(u._1)
     }
   }
@@ -36,9 +30,7 @@ trait MakeAuthentication
 
   val tokenEndpoint: TokenEndpoint
 
-  def grantResultToTokenResponse(
-    grantResult: GrantHandlerResult[Citizen]
-  ): TokenResponse =
+  def grantResultToTokenResponse(grantResult: GrantHandlerResult[Citizen]): TokenResponse =
     TokenResponse(
       grantResult.tokenType,
       grantResult.accessToken,
@@ -46,9 +38,7 @@ trait MakeAuthentication
       grantResult.refreshToken.getOrElse("")
     )
 
-  def oauth2Authenticator(
-    credentials: Credentials
-  )(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[Citizen]]] =
+  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[Citizen]]] =
     credentials match {
       case Credentials.Provided(token) =>
         oauth2DataHandler.findAccessToken(token).flatMap {
@@ -64,29 +54,18 @@ trait MakeAuthentication
         post {
           formFieldMap { fields =>
             onComplete(
-              tokenEndpoint.handleRequest(
-                new AuthorizationRequest(
-                  Map(),
-                  fields.map(m => m._1 -> Seq(m._2))
-                ),
-                oauth2DataHandler
-              )
+              tokenEndpoint
+                .handleRequest(new AuthorizationRequest(Map(), fields.map(m => m._1 -> Seq(m._2))), oauth2DataHandler)
             ) {
               case Success(maybeGrantResponse) =>
-                maybeGrantResponse.fold(
-                  _ => complete(Unauthorized),
-                  grantResult => {
-                    val redirectUri = fields.getOrElse("redirect_uri", "")
-                    if (redirectUri != "") {
-                      redirect(
-                        redirectUri + "#access_token=" + grantResult.accessToken,
-                        Found
-                      )
-                    } else {
-                      complete(grantResultToTokenResponse(grantResult))
-                    }
+                maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                  val redirectUri = fields.getOrElse("redirect_uri", "")
+                  if (redirectUri != "") {
+                    redirect(redirectUri + "#access_token=" + grantResult.accessToken, Found)
+                  } else {
+                    complete(grantResultToTokenResponse(grantResult))
                   }
-                )
+                })
               case Failure(ex) => throw ex
             }
           }
@@ -98,9 +77,6 @@ trait MakeAuthentication
 
 object OAuth2Provider {
 
-  case class TokenResponse(token_type: String,
-                           access_token: String,
-                           expires_in: Long,
-                           refresh_token: String)
+  case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
 }

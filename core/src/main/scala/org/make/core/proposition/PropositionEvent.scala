@@ -30,16 +30,10 @@ object PropositionEvent {
     def id: PropositionId
   }
 
-  case class PropositionProposed(id: PropositionId,
-                                 citizenId: CitizenId,
-                                 createdAt: ZonedDateTime,
-                                 content: String)
+  case class PropositionProposed(id: PropositionId, citizenId: CitizenId, createdAt: ZonedDateTime, content: String)
       extends PropositionEvent
 
   case class PropositionViewed(id: PropositionId) extends PropositionEvent
 
-  case class PropositionUpdated(id: PropositionId,
-                                updatedAt: ZonedDateTime,
-                                content: String)
-      extends PropositionEvent
+  case class PropositionUpdated(id: PropositionId, updatedAt: ZonedDateTime, content: String) extends PropositionEvent
 }

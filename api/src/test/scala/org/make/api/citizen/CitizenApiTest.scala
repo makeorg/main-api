@@ -9,10 +9,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.generic.auto._
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{
-  MakeDataHandlerComponent,
-  TokenServiceComponent
-}
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.core.CirceFormatters
 import org.make.core.citizen.{Citizen, CitizenId}
 import org.mockito.ArgumentMatchers
@@ -102,16 +99,10 @@ class CitizenApiTest
 
   "get citizen" should "return a json citizen if citizen exists" in {
 
-    when(
-      persistentCitizenService.get(ArgumentMatchers.eq(CitizenId("citizen-1")))
-    ).thenReturn(maybeCitizenInTheFuture)
-    when(
-      citizenService.getCitizen(ArgumentMatchers.eq(CitizenId("citizen-1")))
-    ).thenReturn(maybeCitizenInTheFuture)
+    when(persistentCitizenService.get(ArgumentMatchers.eq(CitizenId("citizen-1")))).thenReturn(maybeCitizenInTheFuture)
+    when(citizenService.getCitizen(ArgumentMatchers.eq(CitizenId("citizen-1")))).thenReturn(maybeCitizenInTheFuture)
 
-    Get("/citizen/citizen-1").withHeaders(
-      Authorization(OAuth2BearerToken("user-1"))
-    ) ~> allRoutes ~> check {
+    Get("/citizen/citizen-1").withHeaders(Authorization(OAuth2BearerToken("user-1"))) ~> allRoutes ~> check {
       status shouldEqual StatusCodes.OK
       responseAs[Citizen].citizenId.value should be("citizen-1")
     }
@@ -119,9 +110,7 @@ class CitizenApiTest
 
   it should "return a 403 if user doesn't have the right to view resource" in {
 
-    Get("/citizen/1234").withHeaders(
-      Authorization(OAuth2BearerToken("user-1"))
-    ) ~> allRoutes ~> check {
+    Get("/citizen/1234").withHeaders(Authorization(OAuth2BearerToken("user-1"))) ~> allRoutes ~> check {
       status shouldEqual StatusCodes.Forbidden
     }
 
@@ -129,11 +118,7 @@ class CitizenApiTest
 
   "register citizen" should "fail with a status code 400 if date is invalid" in {
 
-    Post(
-      "/citizen",
-      HttpEntity(
-        ContentTypes.`application/json`,
-        """
+    Post("/citizen", HttpEntity(ContentTypes.`application/json`, """
           |{
           |  "email": "youppy@yopmail.com",
           |  "password": "toto-fait-du-vélo",
@@ -141,9 +126,7 @@ class CitizenApiTest
           |  "firstName": "aaaa",
           |  "lastName": "bbbb"
           |}
-        """.stripMargin
-      )
-    ) ~> allRoutes ~> check {
+        """.stripMargin)) ~> allRoutes ~> check {
       status shouldEqual StatusCodes.BadRequest
     }
 
@@ -161,11 +144,7 @@ class CitizenApiTest
       )
     ).thenReturn(citizenInTheFuture)
 
-    Post(
-      "/citizen",
-      HttpEntity(
-        ContentTypes.`application/json`,
-        """
+    Post("/citizen", HttpEntity(ContentTypes.`application/json`, """
           |{
           |  "email": "youppy@yopmail.com",
           |  "password": "toto-fait-du-vélo",
@@ -173,9 +152,7 @@ class CitizenApiTest
           |  "firstName": "aaaa",
           |  "lastName": "bbbb"
           |}
-        """.stripMargin
-      )
-    ) ~> allRoutes ~> check {
+        """.stripMargin)) ~> allRoutes ~> check {
       status shouldEqual StatusCodes.OK
     }
 

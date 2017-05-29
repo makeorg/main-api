@@ -9,8 +9,7 @@ trait ConfigurationSupport {
   protected def optionalString(path: String): Option[String] = {
     if (configuration.hasPath(path)) {
       Some(configuration.getString(path))
-    }
-    else {
+    } else {
       None
     }
   }
@@ -18,8 +17,7 @@ trait ConfigurationSupport {
   protected def stringWithDefault(path: String, default: String): String = {
     if (configuration.hasPath(path)) {
       configuration.getString(path)
-    }
-    else {
+    } else {
       default
     }
   }
@@ -27,8 +25,7 @@ trait ConfigurationSupport {
   protected def optionalInt(path: String): Option[Int] = {
     if (configuration.hasPath(path)) {
       Some(configuration.getInt(path))
-    }
-    else {
+    } else {
       None
     }
   }
@@ -36,8 +33,7 @@ trait ConfigurationSupport {
   protected def intWithDefault(path: String, default: Int): Int = {
     if (configuration.hasPath(path)) {
       configuration.getInt(path)
-    }
-    else {
+    } else {
       default
     }
   }
@@ -45,8 +41,7 @@ trait ConfigurationSupport {
   protected def optionalBoolean(path: String): Option[Boolean] = {
     if (configuration.hasPath(path)) {
       Some(configuration.getBoolean(path))
-    }
-    else {
+    } else {
       None
     }
   }
@@ -54,8 +49,7 @@ trait ConfigurationSupport {
   protected def booleanWithDefault(path: String, default: Boolean): Boolean = {
     if (configuration.hasPath(path)) {
       configuration.getBoolean(path)
-    }
-    else {
+    } else {
       default
     }
   }
@@ -63,8 +57,7 @@ trait ConfigurationSupport {
   protected def optionalLong(path: String): Option[Long] = {
     if (configuration.hasPath(path)) {
       Some(configuration.getLong(path))
-    }
-    else {
+    } else {
       None
     }
   }
@@ -72,8 +65,7 @@ trait ConfigurationSupport {
   protected def longWithDefault(path: String, default: Long): Long = {
     if (configuration.hasPath(path)) {
       configuration.getLong(path)
-    }
-    else {
+    } else {
       default
     }
   }
@@ -81,8 +73,7 @@ trait ConfigurationSupport {
   protected def optionalDouble(path: String): Option[Double] = {
     if (configuration.hasPath(path)) {
       Some(configuration.getDouble(path))
-    }
-    else {
+    } else {
       None
     }
   }
@@ -90,8 +81,7 @@ trait ConfigurationSupport {
   protected def doubleWithDefault(path: String, default: Double): Double = {
     if (configuration.hasPath(path)) {
       configuration.getDouble(path)
-    }
-    else {
+    } else {
       default
     }
   }

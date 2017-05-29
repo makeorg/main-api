@@ -18,7 +18,6 @@ case class PutVoteCommand(voteId: VoteId,
                           status: VoteStatus)
     extends VoteCommand
 
-case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId)
-    extends VoteCommand
+case class ViewVoteCommand(voteId: VoteId, propositionId: PropositionId) extends VoteCommand
 
 case class GetVote(voteId: VoteId)

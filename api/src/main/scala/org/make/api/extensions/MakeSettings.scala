@@ -8,22 +8,18 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class MakeSettings(config: Config) extends Extension {
 
-  val passivateTimeout: Duration = Duration(
-    config.getString("passivate-timeout")
-  )
+  val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
   val useEmbeddedElasticSearch: Boolean =
     if (config.hasPath("dev.embedded-elasticsearch")) {
       config.getBoolean("dev.embedded-elasticsearch")
-    }
-    else {
+    } else {
       false
     }
 
   val sendTestData: Boolean =
     if (config.hasPath("dev.send-test-data")) {
       config.getBoolean("dev.send-test-data")
-    }
-    else {
+    } else {
       false
     }
 

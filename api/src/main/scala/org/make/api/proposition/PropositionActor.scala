@@ -3,7 +3,7 @@ package org.make.api.proposition
 import java.time.ZonedDateTime
 
 import akka.actor.{ActorLogging, PoisonPill, Props}
-import akka.pattern.{Patterns, ask}
+import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposition.PropositionActor.Snapshot
 import org.make.core.citizen.CitizenId
@@ -41,10 +41,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
     case v: ViewPropositionCommand =>
       persistAndPublishEvent(PropositionViewed(id = v.propositionId))
       Patterns
-        .pipe(
-          (self ? GetProposition(v.propositionId))(1.second),
-          Implicits.global
-        )
+        .pipe((self ? GetProposition(v.propositionId))(1.second), Implicits.global)
         .to(sender)
     case propose: ProposeCommand =>
       persistAndPublishEvent(
@@ -56,25 +53,15 @@ class PropositionActor extends PersistentActor with ActorLogging {
         )
       )
       Patterns
-        .pipe(
-          (self ? GetProposition(propose.propositionId))(1.second),
-          Implicits.global
-        )
+        .pipe((self ? GetProposition(propose.propositionId))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
     case update: UpdatePropositionCommand =>
       persistAndPublishEvent(
-        PropositionUpdated(
-          id = update.propositionId,
-          updatedAt = update.updatedAt,
-          content = update.content
-        )
+        PropositionUpdated(id = update.propositionId, updatedAt = update.updatedAt, content = update.content)
       )
       Patterns
-        .pipe(
-          (self ? GetProposition(update.propositionId))(1.second),
-          Implicits.global
-        )
+        .pipe((self ? GetProposition(update.propositionId))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
     case Snapshot => state.foreach(state => saveSnapshot(state.toProposition))
