@@ -11,6 +11,7 @@ case class Proposition(propositionId: PropositionId,
                        createdAt: ZonedDateTime,
                        updatedAt: ZonedDateTime,
                        content: String)
+    extends PropositionSerializable
 
 case class PropositionId(value: String) extends StringValue
 

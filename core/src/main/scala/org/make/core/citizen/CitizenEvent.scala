@@ -5,6 +5,12 @@ import java.time.{LocalDate, ZonedDateTime}
 import org.make.core.EventWrapper
 import shapeless.{:+:, CNil, Coproduct}
 
+sealed trait CitizenEvent extends CitizenSerializable {
+  def id: CitizenId
+}
+
+trait CitizenSerializable extends Serializable
+
 object CitizenEvent {
 
   type AnyCitizenEvent = CitizenRegistered :+: CitizenViewed :+: CNil
@@ -21,10 +27,6 @@ object CitizenEvent {
       case e: CitizenRegistered => Coproduct[AnyCitizenEvent](e)
       case e: CitizenViewed     => Coproduct[AnyCitizenEvent](e)
     }
-  }
-
-  sealed trait CitizenEvent {
-    def id: CitizenId
   }
 
   case class CitizenRegistered(id: CitizenId,

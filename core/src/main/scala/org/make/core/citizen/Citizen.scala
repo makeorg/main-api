@@ -10,6 +10,7 @@ import org.make.core.StringValue
 //
 
 case class Citizen(citizenId: CitizenId, email: String, dateOfBirth: LocalDate, firstName: String, lastName: String)
+    extends CitizenSerializable
 
 case class CitizenId(value: String) extends StringValue
 

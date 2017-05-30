@@ -6,6 +6,12 @@ import org.make.core.EventWrapper
 import org.make.core.citizen.CitizenId
 import shapeless.{:+:, CNil, Coproduct}
 
+sealed trait PropositionEvent extends PropositionSerializable {
+  def id: PropositionId
+}
+
+trait PropositionSerializable extends Serializable
+
 object PropositionEvent {
 
   type AnyPropositionEvent =
@@ -24,10 +30,6 @@ object PropositionEvent {
       case e: PropositionViewed   => Coproduct[AnyPropositionEvent](e)
       case e: PropositionUpdated  => Coproduct[AnyPropositionEvent](e)
     }
-  }
-
-  sealed trait PropositionEvent {
-    def id: PropositionId
   }
 
   case class PropositionProposed(id: PropositionId, citizenId: CitizenId, createdAt: ZonedDateTime, content: String)

@@ -8,6 +8,12 @@ import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import shapeless.{:+:, CNil, Coproduct}
 
+sealed trait VoteEvent extends VoteSerializable {
+  def id: VoteId
+}
+
+trait VoteSerializable extends Serializable
+
 object VoteEvent {
 
   type AnyVoteEvent = VotedAgree :+: VotedDisagree :+: VotedUnsure :+: CNil
@@ -22,10 +28,6 @@ object VoteEvent {
       case e: VotedUnsure   => Coproduct[AnyVoteEvent](e)
       case other            => throw new IllegalStateException(s"Unknown event: $other")
     }
-  }
-
-  sealed trait VoteEvent {
-    def id: VoteId
   }
 
   case class VotedAgree(id: VoteId,

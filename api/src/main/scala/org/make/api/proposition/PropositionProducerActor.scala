@@ -9,6 +9,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.api.technical.AvroSerializers
+import org.make.core.proposition.PropositionEvent
 import org.make.core.proposition.PropositionEvent._
 
 import scala.util.Try

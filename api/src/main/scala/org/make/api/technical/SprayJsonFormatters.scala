@@ -1,0 +1,79 @@
+package org.make.api.technical
+
+import java.time.{LocalDate, ZonedDateTime}
+import java.util.UUID
+
+import org.make.core.citizen.CitizenId
+import org.make.core.proposition.PropositionId
+import org.make.core.vote.VoteId
+import spray.json.{JsString, JsValue, JsonFormat}
+
+trait SprayJsonFormatters {
+
+  implicit val localDateFormatter: JsonFormat[LocalDate] = new JsonFormat[LocalDate] {
+    override def read(json: JsValue): LocalDate = json match {
+      case JsString(s) => LocalDate.parse(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: LocalDate): JsValue = {
+      JsString(obj.toString)
+    }
+  }
+
+  implicit val zonedDateTimeFormatter: JsonFormat[ZonedDateTime] = new JsonFormat[ZonedDateTime] {
+    override def read(json: JsValue): ZonedDateTime = json match {
+      case JsString(s) => ZonedDateTime.parse(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ZonedDateTime): JsValue = {
+      JsString(obj.toString)
+    }
+  }
+
+  implicit val uuidFormatter: JsonFormat[UUID] = new JsonFormat[UUID] {
+    override def read(json: JsValue): UUID = json match {
+      case JsString(s) => UUID.fromString(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: UUID): JsValue = {
+      JsString(obj.toString)
+    }
+  }
+
+  implicit val citizenIdFormatter: JsonFormat[CitizenId] = new JsonFormat[CitizenId] {
+    override def read(json: JsValue): CitizenId = json match {
+      case JsString(s) => CitizenId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: CitizenId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
+  implicit val propositionIdFormatter: JsonFormat[PropositionId] = new JsonFormat[PropositionId] {
+    override def read(json: JsValue): PropositionId = json match {
+      case JsString(s) => PropositionId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: PropositionId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
+  implicit val voteIdFormatter: JsonFormat[VoteId] = new JsonFormat[VoteId] {
+    override def read(json: JsValue): VoteId = json match {
+      case JsString(s) => VoteId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: VoteId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
+}

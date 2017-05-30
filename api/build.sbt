@@ -20,6 +20,7 @@ libraryDependencies ++= Seq(
   Dependencies.akkaClusterSharding,
   Dependencies.akkaPersistenceCassandra,
   Dependencies.akkaStreamKafka,
+  Dependencies.stamina,
   Dependencies.circeGeneric,
   Dependencies.swaggerUi,
   Dependencies.kafkaClients,

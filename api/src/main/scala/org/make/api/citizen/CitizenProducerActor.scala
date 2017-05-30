@@ -9,7 +9,8 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.api.technical.AvroSerializers
-import org.make.core.citizen.CitizenEvent.{CitizenEvent, CitizenEventWrapper, CitizenRegistered}
+import org.make.core.citizen.CitizenEvent
+import org.make.core.citizen.CitizenEvent.{CitizenEventWrapper, CitizenRegistered}
 
 import scala.util.Try
 

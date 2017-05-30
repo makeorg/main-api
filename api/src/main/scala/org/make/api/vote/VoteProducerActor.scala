@@ -9,7 +9,8 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.api.technical.AvroSerializers
-import org.make.core.vote.VoteEvent.{VoteEvent, VoteEventWrapper}
+import org.make.core.vote.VoteEvent.VoteEventWrapper
+import org.make.core.vote.VoteEvent
 
 import scala.util.Try
 

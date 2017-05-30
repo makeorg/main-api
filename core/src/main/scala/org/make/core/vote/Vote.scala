@@ -21,6 +21,7 @@ case class Vote(voteId: VoteId,
                 propositionId: PropositionId,
                 createdAt: ZonedDateTime,
                 status: VoteStatus)
+    extends VoteSerializable
 
 case class VoteId(value: String) extends StringValue
 
