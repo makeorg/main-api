@@ -1,5 +1,7 @@
 package org.make.api
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.testkit.{ImplicitSender, TestKit}
@@ -15,9 +17,13 @@ class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem
     with ImplicitSender
 
 object TestHelper {
-  val configuration: String =
-    """
+  val halfNumberOfPorts: Int = 32768
+  private val counter = new AtomicInteger(halfNumberOfPorts)
+  def configuration: String =
+    s"""
       |akka {
+      |
+      |  remote.netty.tcp.port = ${counter.getAndIncrement()}
       |
       |  actor {
       |    provider = "akka.cluster.ClusterActorRefProvider"

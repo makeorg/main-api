@@ -1,4 +1,5 @@
 import sbt.Keys.scalacOptions
+import Tasks.{testScalastyle, _}
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -18,11 +19,16 @@ lazy val commonSettings = Seq(
     }
   },
   resolvers += "Confluent Releases".at("http://packages.confluent.io/maven/"),
+  scalastyleFailOnError := true,
+  compileScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("").value,
+  testScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Test).toTask("").value,
+  (compile in Compile) := (compile in Compile).dependsOn(compileScalastyle).value,
+  (test in Test) := (test in Test).dependsOn(testScalastyle).value,
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint",
     "-deprecation",
-    // "-Xfatal-warnings",
+    "-Xfatal-warnings",
     "-feature",
     "-encoding",
     "UTF-8",
@@ -30,7 +36,7 @@ lazy val commonSettings = Seq(
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
     "-Xfuture",
-    "-Ywarn-unused",
+    // "-Ywarn-unused",
     "-Ywarn-unused-import",
     "-Ydelambdafy:method",
     "-language:_"

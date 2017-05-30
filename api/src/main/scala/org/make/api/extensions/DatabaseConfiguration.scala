@@ -67,7 +67,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
     val queries = Source
       .fromResource("create-schema.sql")
       .mkString
-      .replace("$dbname", dbname)
+      .replace("#dbname#", dbname)
 
     def createSchema: Boolean =
       writeDatasource.getConnection.createStatement.execute(queries)
