@@ -49,7 +49,7 @@ class PropositionSupervisor
       .run()
       .onComplete {
         case Success(result) => log.debug("Stream processed: {}", result)
-        case Failure(e) => log.warning("Failure in stream", e)
+        case Failure(e)      => log.warning("Failure in stream", e)
       }(ECGlobal)
 
   }

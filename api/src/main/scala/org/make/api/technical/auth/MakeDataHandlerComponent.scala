@@ -108,7 +108,7 @@ trait MakeDataHandlerComponent {
     private def findUser(maybeToken: Option[Token]): Future[Option[Citizen]] =
       maybeToken match {
         case Some(token) => persistentCitizenService.get(token.citizenId)
-        case None => Future.successful(None)
+        case None        => Future.successful(None)
       }
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {

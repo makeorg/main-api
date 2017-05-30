@@ -60,7 +60,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       Duration.Inf
     ) match {
       case Some(proposition) => proposition.propositionId
-      case None => PropositionId("Invalid PropositionId")
+      case None              => PropositionId("Invalid PropositionId")
     }
     propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
     logger.debug("Sent propositions...")

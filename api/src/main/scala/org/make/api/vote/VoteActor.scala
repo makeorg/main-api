@@ -30,12 +30,18 @@ class VoteActor extends PersistentActor with ActorLogging {
   }
 
   override def receiveCommand: Receive = {
-    case GetVote(voteId) => sender ! state.map(_.filter(_.voteId == voteId))
-    case e: ViewVoteCommand => persistAndPublishEvent(VoteViewed(id = e.voteId, propositionId = e.propositionId))
-    case agree: PutVoteCommand if agree.status == VoteStatus.AGREE => vote(agree, VotedUnsure.apply)
-    case disagree: PutVoteCommand if disagree.status == VoteStatus.DISAGREE => vote(disagree, VotedUnsure.apply)
-    case unsure: PutVoteCommand if unsure.status == VoteStatus.UNSURE => vote(unsure, VotedUnsure.apply)
-    case Snapshot => saveSnapshot(state.get.map(_.toVote))
+    case GetVote(voteId) =>
+      sender ! state.map(_.filter(_.voteId == voteId))
+    case e: ViewVoteCommand =>
+      persistAndPublishEvent(VoteViewed(id = e.voteId, propositionId = e.propositionId))
+    case event: PutVoteCommand =>
+      event.status match {
+        case VoteStatus.AGREE    => vote(event, VotedAgree.apply)
+        case VoteStatus.DISAGREE => vote(event, VotedDisagree.apply)
+        case VoteStatus.UNSURE   => vote(event, VotedUnsure.apply)
+      }
+    case Snapshot =>
+      saveSnapshot(state.get.map(_.toVote))
   }
 
   def vote(vote: PutVoteCommand,

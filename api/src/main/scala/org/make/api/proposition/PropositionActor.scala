@@ -64,7 +64,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
         .pipe((self ? GetProposition(update.propositionId))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
-    case Snapshot => state.foreach(state => saveSnapshot(state.toProposition))
+    case Snapshot                => state.foreach(state => saveSnapshot(state.toProposition))
     case KillPropositionShard(_) => self ! PoisonPill
   }
 

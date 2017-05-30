@@ -43,7 +43,7 @@ trait VoteApi
         traceName("GetVote") {
           onSuccess(voteService.getVote(voteId, propositionId)) {
             case Some(vote) => complete(vote)
-            case None => complete(NotFound)
+            case None       => complete(NotFound)
           }
         }
       }

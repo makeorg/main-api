@@ -45,9 +45,9 @@ class PropositionProducerActor extends Actor with KafkaConfigurationExtension wi
 
   override def receive: Receive = {
     case event: PropositionProposed => onPropose(event)
-    case event: PropositionUpdated => onUpdateProposition(event)
-    case event: PropositionViewed => onViewProposition(event)
-    case other => log.warning(s"Unknown event $other")
+    case event: PropositionUpdated  => onUpdateProposition(event)
+    case event: PropositionViewed   => onViewProposition(event)
+    case other                      => log.warning(s"Unknown event $other")
   }
 
   private def onViewProposition(event: PropositionViewed) = {

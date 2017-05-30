@@ -43,7 +43,7 @@ trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSu
       case Credentials.Provided(token) =>
         oauth2DataHandler.findAccessToken(token).flatMap {
           case Some(t) => oauth2DataHandler.findAuthInfoByAccessToken(t)
-          case None => Future.successful(None)
+          case None    => Future.successful(None)
         }
       case _ => Future.successful(None)
     }

@@ -52,14 +52,14 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
   }
 
   override def receive: Receive = {
-    case Init => InitOperations.onInit
-    case CreateSessionResponse(id) => InitOperations.onSessionCreated(id)
-    case GetSessionFailed(cause) => InitOperations.onCreateSessionFailed(cause)
-    case WriteSeedSucceeded(_) => InitOperations.onNewSeed()
-    case WriteSeedFailed(_) => InitOperations.onSeedAlreadyLocked()
-    case SeedRetrieved(node) => InitOperations.onSeedRetrieved(node)
+    case Init                        => InitOperations.onInit
+    case CreateSessionResponse(id)   => InitOperations.onSessionCreated(id)
+    case GetSessionFailed(cause)     => InitOperations.onCreateSessionFailed(cause)
+    case WriteSeedSucceeded(_)       => InitOperations.onNewSeed()
+    case WriteSeedFailed(_)          => InitOperations.onSeedAlreadyLocked()
+    case SeedRetrieved(node)         => InitOperations.onSeedRetrieved(node)
     case ConsulFailure(operation, e) => InitOperations.onConsuleFailure(operation, e)
-    case x => InitOperations.onOtherInitMessage(x)
+    case x                           => InitOperations.onOtherInitMessage(x)
 
   }
 
@@ -85,7 +85,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
 
       pipe(seedInTheFuture.map {
         case ReadResponse(_, Some(value)) => SeedRetrieved(parseNode(value))
-        case _ => Init
+        case _                            => Init
       }).to(self)
     }
 
@@ -112,9 +112,9 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       )
 
       pipe(writingSeedInTheFuture.map {
-        case r @ WriteResponse(true, _, _) => WriteSeedSucceeded(r)
+        case r @ WriteResponse(true, _, _)  => WriteSeedSucceeded(r)
         case r @ WriteResponse(false, _, _) => WriteSeedFailed(r)
-        case other => log.error(s"Unexpected message: $other")
+        case other                          => log.error(s"Unexpected message: $other")
       }).to(self)
     }
 
@@ -132,12 +132,12 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
   def parseNode(json: String): Node = {
     val asJson = parse(json) match {
       case Right(value) => value
-      case Left(e) => throw e
+      case Left(e)      => throw e
     }
 
     asJson.as[Node] match {
       case Right(value) => value
-      case Left(e) => throw e
+      case Left(e)      => throw e
     }
   }
 

@@ -21,8 +21,8 @@ object PropositionEvent {
   object PropositionEventWrapper {
     def wrapEvent(event: PropositionEvent): AnyPropositionEvent = event match {
       case e: PropositionProposed => Coproduct[AnyPropositionEvent](e)
-      case e: PropositionViewed => Coproduct[AnyPropositionEvent](e)
-      case e: PropositionUpdated => Coproduct[AnyPropositionEvent](e)
+      case e: PropositionViewed   => Coproduct[AnyPropositionEvent](e)
+      case e: PropositionUpdated  => Coproduct[AnyPropositionEvent](e)
     }
   }
 

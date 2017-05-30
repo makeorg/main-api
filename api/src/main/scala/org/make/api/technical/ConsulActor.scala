@@ -35,12 +35,12 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
 
   override def receive: Receive = {
 
-    case GetKey(key) => retrieveKey(key)
-    case CreateSession(ttl) => createSession(ttl)
-    case WriteKey(key, value) => writeKey(key, value)
+    case GetKey(key)                            => retrieveKey(key)
+    case CreateSession(ttl)                     => createSession(ttl)
+    case WriteKey(key, value)                   => writeKey(key, value)
     case WriteExclusiveKey(key, session, value) => writeExclusively(key, value, session)
-    case RenewSession(id) => renewSession(id)
-    case x => log.warning(s"Unknown message received: ${x.toString}")
+    case RenewSession(id)                       => renewSession(id)
+    case x                                      => log.warning(s"Unknown message received: ${x.toString}")
   }
 
   private def renewSession(id: String) = {
@@ -193,11 +193,11 @@ object ConsulEntities extends StrictLogging {
   object RenewSessionResponse {
     def arrayFromJson(json: String): Seq[RenewSessionResponse] = {
       val parsed: Json = parse(json) match {
-        case Left(e) => throw e
+        case Left(e)       => throw e
         case Right(result) => result
       }
       parsed.as[Seq[RenewSessionResponse]] match {
-        case Left(e) => throw e
+        case Left(e)       => throw e
         case Right(result) => result
       }
     }
@@ -208,11 +208,11 @@ object ConsulEntities extends StrictLogging {
   object CreateSessionResponse {
     def fromJson(json: String): CreateSessionResponse = {
       val parsed: Json = parse(json) match {
-        case Left(e) => throw e
+        case Left(e)       => throw e
         case Right(result) => result
       }
       parsed.as[CreateSessionResponse] match {
-        case Left(e) => throw e
+        case Left(e)       => throw e
         case Right(result) => result
       }
     }

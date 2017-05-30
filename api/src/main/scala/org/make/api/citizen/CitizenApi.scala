@@ -51,7 +51,7 @@ trait CitizenApi
             if (citizenId == user.user.citizenId) {
               onSuccess(citizenService.getCitizen(citizenId)) {
                 case Some(citizen) => complete(citizen)
-                case None => complete(NotFound)
+                case None          => complete(NotFound)
               }
             } else {
               complete(Forbidden)

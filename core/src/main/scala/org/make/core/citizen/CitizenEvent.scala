@@ -19,7 +19,7 @@ object CitizenEvent {
   object CitizenEventWrapper {
     def wrapEvent(event: CitizenEvent): AnyCitizenEvent = event match {
       case e: CitizenRegistered => Coproduct[AnyCitizenEvent](e)
-      case e: CitizenViewed => Coproduct[AnyCitizenEvent](e)
+      case e: CitizenViewed     => Coproduct[AnyCitizenEvent](e)
     }
   }
 

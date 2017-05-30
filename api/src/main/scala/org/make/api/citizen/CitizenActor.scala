@@ -57,9 +57,9 @@ class CitizenActor extends PersistentActor with ActorLogging {
       self ! Snapshot
 
     case _: UpdateProfileCommand =>
-    case GetCitizen(_) => sender() ! state.map(_.toCitizen)
-    case Snapshot => state.foreach(state => saveSnapshot(state.toCitizen))
-    case KillCitizenShard(_) => self ! PoisonPill
+    case GetCitizen(_)           => sender() ! state.map(_.toCitizen)
+    case Snapshot                => state.foreach(state => saveSnapshot(state.toCitizen))
+    case KillCitizenShard(_)     => self ! PoisonPill
   }
 
   override def persistenceId: String = citizenId.value

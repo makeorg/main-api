@@ -38,7 +38,7 @@ trait PropositionApi
         traceName("GetProposition") {
           onSuccess(propositionService.getProposition(propositionId)) {
             case Some(proposition) => complete(proposition)
-            case None => complete(NotFound)
+            case None              => complete(NotFound)
           }
         }
       }
@@ -132,7 +132,7 @@ trait PropositionApi
                         )
                       ) {
                         case Some(prop) => complete(prop)
-                        case None => complete(Forbidden)
+                        case None       => complete(Forbidden)
                       }
                     } else {
                       complete(Forbidden)
