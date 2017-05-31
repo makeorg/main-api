@@ -23,9 +23,9 @@ object ShardedProposition {
 
   def extractShardId: ShardRegion.ExtractShardId = {
     case cmd: PropositionCommand =>
-      Math.abs(cmd.propositionId.value.hashCode % 12).toString
+      Math.abs(cmd.propositionId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) =>
-      Math.abs(id.hashCode % 12).toString
+      Math.abs(id.hashCode % 100).toString
   }
 }
 

@@ -23,7 +23,9 @@ object ShardedCitizen {
 
   def extractShardId: ShardRegion.ExtractShardId = {
     case cmd: CitizenCommand =>
-      Math.abs(cmd.citizenId.value.hashCode % 12).toString
+      Math.abs(cmd.citizenId.value.hashCode % 100).toString
+    case ShardRegion.StartEntity(id) =>
+      Math.abs(id.hashCode % 100).toString
   }
 
 }
