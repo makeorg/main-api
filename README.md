@@ -1,4 +1,5 @@
 [![build status](https://gitlab.com/makeorg-scala/make-api/badges/master/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
+[![coverage report](https://gitlab.com/makeorg-scala/make-api/badges/master/coverage.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
 
 ## Setting up the dev environment
 
