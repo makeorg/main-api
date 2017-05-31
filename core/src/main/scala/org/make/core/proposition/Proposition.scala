@@ -3,15 +3,15 @@ package org.make.core.proposition
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
 import org.make.core.citizen.CitizenId
+import org.make.core.{MakeSerializable, StringValue}
 
 case class Proposition(propositionId: PropositionId,
                        citizenId: CitizenId,
                        createdAt: ZonedDateTime,
                        updatedAt: ZonedDateTime,
                        content: String)
-    extends PropositionSerializable
+    extends MakeSerializable
 
 case class PropositionId(value: String) extends StringValue
 

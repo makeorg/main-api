@@ -2,15 +2,14 @@ package org.make.core.proposition
 
 import java.time.ZonedDateTime
 
-import org.make.core.EventWrapper
+import org.make.core.{EventWrapper, MakeSerializable}
 import org.make.core.citizen.CitizenId
 import shapeless.{:+:, CNil, Coproduct}
 
-sealed trait PropositionEvent extends PropositionSerializable {
+sealed trait PropositionEvent extends MakeSerializable {
   def id: PropositionId
 }
 
-trait PropositionSerializable extends Serializable
 
 object PropositionEvent {
 

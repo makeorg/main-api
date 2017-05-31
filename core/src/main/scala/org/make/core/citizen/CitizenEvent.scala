@@ -2,14 +2,12 @@ package org.make.core.citizen
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.EventWrapper
+import org.make.core.{EventWrapper, MakeSerializable}
 import shapeless.{:+:, CNil, Coproduct}
 
-sealed trait CitizenEvent extends CitizenSerializable {
+sealed trait CitizenEvent extends MakeSerializable {
   def id: CitizenId
 }
-
-trait CitizenSerializable extends Serializable
 
 object CitizenEvent {
 

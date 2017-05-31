@@ -2,17 +2,15 @@ package org.make.core.vote
 
 import java.time.ZonedDateTime
 
-import org.make.core.EventWrapper
+import org.make.core.{EventWrapper, MakeSerializable}
 import org.make.core.citizen.CitizenId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import shapeless.{:+:, CNil, Coproduct}
 
-sealed trait VoteEvent extends VoteSerializable {
+sealed trait VoteEvent extends MakeSerializable {
   def id: VoteId
 }
-
-trait VoteSerializable extends Serializable
 
 object VoteEvent {
 

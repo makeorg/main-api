@@ -24,31 +24,32 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
   */
 class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorLogging with CirceFormatters {
 
-  private var consulClient: ActorRef = _
+  private val consulClient: ActorRef = context.actorOf(ConsulActor.props, ConsulActor.name)
   private var sessionId: String = _
 
   implicit val dispatch: ExecutionContextExecutor = context.dispatcher
   implicit val defaultTimeout: Timeout = Timeout(5.seconds)
 
+  private val scheduler = context.system.scheduler
+  private val clusterSettings = settings.Cluster
+
+  private val timers =
+    Seq(
+      scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Heartbeat),
+      scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Connect),
+      scheduler
+        .schedule(clusterSettings.sessionRenewInterval, clusterSettings.sessionRenewInterval, self, RenewMySession),
+      scheduler.schedule(clusterSettings.cleanupInterval, clusterSettings.cleanupInterval, self, Cleanup)
+    )
+
   // Schedule administrative tasks
   override def preStart(): Unit = {
-    val scheduler = context.system.scheduler
-    val clusterSettings = settings.Cluster
-
-    consulClient = context.actorOf(ConsulActor.props, ConsulActor.name)
-
     self ! Init
+  }
 
-    scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Heartbeat)
-    scheduler.schedule(Duration.Zero, clusterSettings.heartbeatInterval, self, Connect)
-    scheduler.schedule(
-      clusterSettings.sessionRenewInterval,
-      clusterSettings.sessionRenewInterval,
-      self,
-      RenewMySession
-    )
-    scheduler.schedule(clusterSettings.cleanupInterval, clusterSettings.cleanupInterval, self, Cleanup)
 
+  override def postStop(): Unit = {
+    timers.foreach(_.cancel())
   }
 
   override def receive: Receive = {

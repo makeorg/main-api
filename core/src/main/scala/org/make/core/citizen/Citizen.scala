@@ -3,14 +3,14 @@ package org.make.core.citizen
 import java.time.LocalDate
 
 import io.circe._
-import org.make.core.StringValue
+import org.make.core.{MakeSerializable, StringValue}
 
 //
 // file containing classes and services of the citizen domain
 //
 
 case class Citizen(citizenId: CitizenId, email: String, dateOfBirth: LocalDate, firstName: String, lastName: String)
-    extends CitizenSerializable
+    extends MakeSerializable
 
 case class CitizenId(value: String) extends StringValue
 

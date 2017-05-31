@@ -2,20 +2,11 @@ package org.make.api.vote
 
 import org.make.api.technical.SprayJsonFormatters
 import org.make.core.vote.VoteEvent.{VoteViewed, VotedAgree, VotedDisagree, VotedUnsure}
-import org.make.core.vote.{Vote, VoteStatus}
 import org.make.core.vote.VoteStatus.VoteStatus
+import org.make.core.vote.{Vote, VoteStatus}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import stamina.V1
 import stamina.json._
-import stamina.{StaminaAkkaSerializer, V1}
-
-class VoteSerializers
-    extends StaminaAkkaSerializer(
-      VoteSerializers.votedAgreeSerializer,
-      VoteSerializers.votedDisagreeSerializer,
-      VoteSerializers.votedUnsureSerializer,
-      VoteSerializers.votedViewedSerializer,
-      VoteSerializers.voteSerializer
-    )
 
 object VoteSerializers extends SprayJsonFormatters {
 
@@ -28,34 +19,37 @@ object VoteSerializers extends SprayJsonFormatters {
     override def write(obj: VoteStatus): JsValue = JsString(obj.toString)
   }
 
-  implicit val votedAgreeFormatter: RootJsonFormat[VotedAgree] =
+  implicit private val votedAgreeFormatter: RootJsonFormat[VotedAgree] =
     DefaultJsonProtocol.jsonFormat5(VotedAgree)
 
-  implicit val votedDisagreeFormatter: RootJsonFormat[VotedDisagree] =
+  implicit private val votedDisagreeFormatter: RootJsonFormat[VotedDisagree] =
     DefaultJsonProtocol.jsonFormat5(VotedDisagree)
 
-  implicit val votedUnsureFormatter: RootJsonFormat[VotedUnsure] =
+  implicit private val votedUnsureFormatter: RootJsonFormat[VotedUnsure] =
     DefaultJsonProtocol.jsonFormat5(VotedUnsure)
 
-  implicit val viewedVoteFormatter: RootJsonFormat[VoteViewed] =
+  implicit private val viewedVoteFormatter: RootJsonFormat[VoteViewed] =
     DefaultJsonProtocol.jsonFormat2(VoteViewed)
 
-  implicit val voteFormatter: RootJsonFormat[Vote] =
+  implicit private val voteFormatter: RootJsonFormat[Vote] =
     DefaultJsonProtocol.jsonFormat5(Vote)
 
-  val votedAgreeSerializer: JsonPersister[VotedAgree, V1] =
+  private val votedAgreeSerializer: JsonPersister[VotedAgree, V1] =
     persister[VotedAgree]("vote-agree")
 
-  val votedDisagreeSerializer: JsonPersister[VotedDisagree, V1] =
+  private val votedDisagreeSerializer: JsonPersister[VotedDisagree, V1] =
     persister[VotedDisagree]("vote-disagree")
 
-  val votedUnsureSerializer: JsonPersister[VotedUnsure, V1] =
+  private val votedUnsureSerializer: JsonPersister[VotedUnsure, V1] =
     persister[VotedUnsure]("vote-unsure")
 
-  val votedViewedSerializer: JsonPersister[VoteViewed, V1] =
+  private val votedViewedSerializer: JsonPersister[VoteViewed, V1] =
     persister[VoteViewed]("vote-viewed")
 
-  val voteSerializer: JsonPersister[Vote, V1] =
+  private val voteSerializer: JsonPersister[Vote, V1] =
     persister[Vote]("vote")
+
+  val serializers: Seq[JsonPersister[_, _]] =
+    Seq(votedAgreeSerializer, votedDisagreeSerializer, votedUnsureSerializer, votedViewedSerializer, voteSerializer)
 
 }

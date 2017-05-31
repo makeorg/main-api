@@ -5,33 +5,29 @@ import org.make.core.citizen.Citizen
 import org.make.core.citizen.CitizenEvent.{CitizenRegistered, CitizenViewed}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import stamina.V1
 import stamina.json._
-import stamina.{StaminaAkkaSerializer, V1}
-
-class CitizenSerializers
-    extends StaminaAkkaSerializer(
-      CitizenSerializers.citizenRegisteredSerializer,
-      CitizenSerializers.citizenViewedSerializer
-    )
 
 object CitizenSerializers extends SprayJsonFormatters {
 
-  implicit val citizenRegisteredFormatter: RootJsonFormat[CitizenRegistered] =
+  implicit private val citizenRegisteredFormatter: RootJsonFormat[CitizenRegistered] =
     DefaultJsonProtocol.jsonFormat5(CitizenRegistered)
 
-  implicit val citizenViewedFormatter: RootJsonFormat[CitizenViewed] =
+  implicit private val citizenViewedFormatter: RootJsonFormat[CitizenViewed] =
     DefaultJsonProtocol.jsonFormat1(CitizenViewed)
 
-  implicit val citizenFormatter: RootJsonFormat[Citizen] =
+  implicit private val citizenFormatter: RootJsonFormat[Citizen] =
     DefaultJsonProtocol.jsonFormat5(Citizen)
 
-  val citizenRegisteredSerializer: JsonPersister[CitizenRegistered, V1] =
+  private val citizenRegisteredSerializer: JsonPersister[CitizenRegistered, V1] =
     persister[CitizenRegistered]("citizen-registered")
 
-  val citizenViewedSerializer: JsonPersister[CitizenViewed, V1] =
+  private val citizenViewedSerializer: JsonPersister[CitizenViewed, V1] =
     persister[CitizenViewed]("citizen-viewed")
 
-  val citizenSerializer: JsonPersister[Citizen, V1] =
+  private val citizenSerializer: JsonPersister[Citizen, V1] =
     persister[Citizen]("citizen")
 
+  val serializers: Seq[JsonPersister[_, _]] =
+    Seq(citizenRegisteredSerializer, citizenViewedSerializer, citizenSerializer)
 }
