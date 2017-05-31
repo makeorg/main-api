@@ -9,7 +9,7 @@ build:
     - docker
   before_script:
     - if [ ! -e /var/run/docker.sock ]; then dockerd --storage-driver=vfs & fi
-#    - docker login --username $NEXUS_USERNAME --password $NEXUS_PASSWORD
+    - docker login https://nexus.prod.makeorg.tech --username $NEXUS_USERNAME --password $NEXUS_PASSWORD
   script:
     - sbt clean coverage test
     - sbt coverageReport coverageAggregate
