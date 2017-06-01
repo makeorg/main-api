@@ -64,7 +64,7 @@ credentials ++= {
   if (System.getenv().containsKey("CI_BUILD")) {
     Seq(
       Credentials(
-        "Some Nexus Repository Manager",
+        "Sonatype Nexus Repository Manager",
         System.getenv("NEXUS_URL"),
         System.getenv("NEXUS_USER"),
         System.getenv("NEXUS_PASSWORD")
