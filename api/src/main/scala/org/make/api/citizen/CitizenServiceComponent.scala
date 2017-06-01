@@ -37,30 +37,4 @@ trait CitizenServiceComponent { this: IdGeneratorComponent with PersistentCitize
 
   }
 
-  /*class CitizenService(actor: ActorRef) {
-
-    implicit private val defaultTimeout = Timeout(2.seconds)
-
-    def getCitizen(citizenId: CitizenId): Future[Option[Citizen]] = {
-      (actor ? GetCitizen(citizenId)).mapTo[Option[Citizen]]
-    }
-
-    def register(email: String,
-                 dateOfBirth: LocalDate,
-                 firstName: String,
-                 lastName: String): Future[Option[Citizen]] = {
-      (
-        actor ?
-          RegisterCommand(
-            citizenId = idGenerator.nextCitizenId(),
-            email = email,
-            dateOfBirth = dateOfBirth,
-            firstName = firstName,
-            lastName = lastName
-          )
-        ).mapTo[Option[Citizen]]
-    }
-
-  }*/
-
 }
