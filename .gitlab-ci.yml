@@ -1,7 +1,7 @@
 image: makeorg/docker-sbt-coursier
 
 variables:
-  CI_BUILD: true
+  CI_BUILD: "true"
 
 stages:
   - build
