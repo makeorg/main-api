@@ -1,5 +1,8 @@
 image: makeorg/docker-sbt-coursier
 
+variables:
+  CI_BUILD: true
+
 stages:
   - build
 
@@ -14,7 +17,7 @@ build:
   script:
     - sbt clean coverage test
     - sbt coverageReport coverageAggregate
-    - sbt clean publishLocal
+    - sbt clean publish
   cache:
     paths:
       - /root/.coursier

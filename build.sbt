@@ -59,3 +59,18 @@ lazy val api = project
   .in(file("api"))
   .settings(commonSettings: _*)
   .dependsOn(core)
+
+credentials ++= {
+  if (System.getenv().containsKey("CI_BUILD")) {
+    Seq(
+      Credentials(
+        "Some Nexus Repository Manager",
+        System.getenv("NEXUS_URL"),
+        System.getenv("NEXUS_USER"),
+        System.getenv("NEXUS_PASSWORD")
+      )
+    )
+  } else {
+    Nil
+  }
+}
