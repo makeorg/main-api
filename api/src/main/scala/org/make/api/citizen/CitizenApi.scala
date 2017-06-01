@@ -1,6 +1,7 @@
 package org.make.api.citizen
 
 import java.time.LocalDate
+import java.util.UUID
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
@@ -46,7 +47,7 @@ trait CitizenApi
   def getCitizen: Route = {
     get {
       path("citizen" / citizenId) { citizenId =>
-        traceName("GetCitizen") {
+        traceName("GetCitizen", Map("id" -> UUID.randomUUID().toString)) {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             if (citizenId == user.user.citizenId) {
               onSuccess(citizenService.getCitizen(citizenId)) {
@@ -75,7 +76,7 @@ trait CitizenApi
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
   def register: Route = post {
     path("citizen") {
-      traceName("RegisterCitizen") {
+      traceName("RegisterCitizen", Map("id" -> UUID.randomUUID().toString)) {
         decodeRequest {
           entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
             onSuccess(

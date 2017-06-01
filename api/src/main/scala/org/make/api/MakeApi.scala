@@ -7,6 +7,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.syntax._
+import kamon.trace.Tracer
 import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
 import org.make.api.extensions.DatabaseConfiguration
 import org.make.api.proposition._
@@ -82,11 +83,11 @@ trait MakeApi
         )
       )
     case e =>
-      logger.error("", e)
+      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
       complete(
         HttpResponse(
           status = StatusCodes.InternalServerError,
-          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError)
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
         )
       )
 
@@ -117,10 +118,18 @@ trait MakeApi
 }
 
 object MakeApi {
-  val defaultError: String =
-    """
+  def defaultError(id: String): String =
+    s"""
       |{
-      |  "error": "an error occurred, please try again later."
+      |  "error": "an error occurred, it has been logged with id $id"
       |}
     """.stripMargin
+
+  def requestId: String = {
+    Tracer.currentContext.tags.getOrElse("id", "<unknown>")
+  }
+
+  def routeId: String = {
+    Tracer.currentContext.name
+  }
 }
