@@ -9,12 +9,11 @@ build:
     - docker
   before_script:
     - if [ ! -e /var/run/docker.sock ]; then dockerd --storage-driver=vfs & fi
-#    - docker login https://nexus.prod.makeorg.tech --username $NEXUS_USERNAME --password $NEXUS_PASSWORD
+    - docker login https://$NEXUS_URL --username $NEXUS_USERNAME --password $NEXUS_PASSWORD
   script:
     - sbt clean coverage test
     - sbt coverageReport coverageAggregate
-#    - sbt publishLocal
-    - sbt package
+    - sbt clean publishLocal
   cache:
     paths:
       - /root/.coursier
