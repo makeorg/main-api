@@ -58,6 +58,12 @@ lazy val core = project
 lazy val api = project
   .in(file("api"))
   .settings(commonSettings: _*)
+  .settings(
+    imageName := {
+      val alias = dockerAlias.value
+      s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
+    }
+  )
   .dependsOn(core)
 
 credentials ++= {
@@ -74,3 +80,4 @@ credentials ++= {
     Nil
   }
 }
+
