@@ -5,12 +5,11 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
-import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.{CirceFormatters, HttpCodes}
+import org.make.api.technical.MakeDirectives
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.core.HttpCodes
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.{Proposition, PropositionId}
 
@@ -20,11 +19,7 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "Proposition")
 @Path(value = "/proposition")
 trait PropositionApi
-    extends CirceFormatters
-    with CirceHttpSupport
-    with KamonTraceDirectives
-    with Directives
-    with MakeAuthentication { this: PropositionServiceComponent with MakeDataHandlerComponent =>
+    extends MakeDirectives { this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(value = "get-proposition", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))
@@ -35,7 +30,7 @@ trait PropositionApi
   def getProposition: Route = {
     get {
       path("proposition" / propositionId) { propositionId =>
-        traceName("GetProposition") {
+        makeTrace("GetProposition") {
           onSuccess(propositionService.getProposition(propositionId)) {
             case Some(proposition) => complete(proposition)
             case None              => complete(NotFound)
@@ -72,7 +67,7 @@ trait PropositionApi
   def propose: Route =
     post {
       path("proposition") {
-        traceName("Propose") {
+        makeTrace("Propose") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             decodeRequest {
               entity(as[ProposePropositionRequest]) { request: ProposePropositionRequest =>
@@ -117,7 +112,7 @@ trait PropositionApi
   def update: Route =
     put {
       path("proposition" / propositionId) { propositionId =>
-        traceName("EditProposition") {
+        makeTrace("EditProposition") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             decodeRequest {
               entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>

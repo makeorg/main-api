@@ -5,12 +5,11 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.server._
-import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.{CirceFormatters, HttpCodes}
+import org.make.api.technical.MakeDirectives
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.core.HttpCodes
 import org.make.core.citizen.Citizen
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
@@ -21,12 +20,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Vote")
 @Path(value = "/vote")
-trait VoteApi
-    extends CirceFormatters
-    with CirceHttpSupport
-    with KamonTraceDirectives
-    with Directives
-    with MakeAuthentication { this: VoteServiceComponent with MakeDataHandlerComponent =>
+trait VoteApi extends MakeDirectives { this: VoteServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(value = "get-vote", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
@@ -40,7 +34,7 @@ trait VoteApi
   def getVote: Route = {
     get {
       path("proposition" / refPropositionId / "vote" / voteId) { (propositionId, voteId) =>
-        traceName("GetVote") {
+        makeTrace("GetVote") {
           onSuccess(voteService.getVote(voteId, propositionId)) {
             case Some(vote) => complete(vote)
             case None       => complete(NotFound)
@@ -73,7 +67,7 @@ trait VoteApi
     makeOAuth2 { user: AuthInfo[Citizen] =>
       post {
         path("vote" / refPropositionId) { propositionId =>
-          traceName("Vote") {
+          makeTrace("Vote") {
             decodeRequest {
               entity(as[VoteRequest]) { request: VoteRequest =>
                 onSuccess(

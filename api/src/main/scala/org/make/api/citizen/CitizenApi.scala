@@ -1,17 +1,15 @@
 package org.make.api.citizen
 
 import java.time.LocalDate
-import java.util.UUID
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
-import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.{CirceFormatters, HttpCodes}
+import org.make.api.technical.MakeDirectives
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.citizen.{Citizen, CitizenId}
 
@@ -20,12 +18,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Citizen")
 @Path(value = "/citizen")
-trait CitizenApi
-    extends CirceFormatters
-    with Directives
-    with KamonTraceDirectives
-    with CirceHttpSupport
-    with MakeAuthentication { this: CitizenServiceComponent with MakeDataHandlerComponent =>
+trait CitizenApi extends MakeDirectives { this: CitizenServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(
     value = "get-citizen",
@@ -47,7 +40,7 @@ trait CitizenApi
   def getCitizen: Route = {
     get {
       path("citizen" / citizenId) { citizenId =>
-        traceName("GetCitizen", Map("id" -> UUID.randomUUID().toString)) {
+        makeTrace("GetCitizen") {
           makeOAuth2 { user: AuthInfo[Citizen] =>
             if (citizenId == user.user.citizenId) {
               onSuccess(citizenService.getCitizen(citizenId)) {
@@ -76,7 +69,7 @@ trait CitizenApi
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
   def register: Route = post {
     path("citizen") {
-      traceName("RegisterCitizen", Map("id" -> UUID.randomUUID().toString)) {
+      makeTrace("RegisterCitizen") {
         decodeRequest {
           entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
             onSuccess(

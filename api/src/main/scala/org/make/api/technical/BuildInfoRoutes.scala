@@ -1,19 +1,18 @@
 package org.make.api.technical
 
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Route
 import buildinfo.BuildInfo
-import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
-import kamon.akka.http.KamonTraceDirectives
-import org.make.core.CirceFormatters
+import org.make.api.technical.auth.MakeDataHandlerComponent
 
-trait BuildInfoRoutes extends Directives with CirceHttpSupport with CirceFormatters with KamonTraceDirectives {
+trait BuildInfoRoutes extends MakeDirectives {
+  this: MakeDataHandlerComponent =>
 
   val buildRoutes: Route = buildInfo
 
   def buildInfo: Route = get {
     path("version") {
-      traceName("version") {
+      makeTrace("version") {
         complete(BuildInformation())
       }
     }
