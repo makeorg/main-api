@@ -3,7 +3,10 @@
 
 ## Setting up the dev environment
 
-- Install the _scalafmt_ plugin
+
+- Install coursier (sbt plugin) https://github.com/coursier/coursier
+- Install the _scalafmt_ IntelliJ plugin
+- Install the _scala_ IntelliJ plugin
 
 ## Running the app :
 
