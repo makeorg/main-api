@@ -19,6 +19,7 @@ services:
       - 18081:8081
     networks:
       - makeapi
+    restart: on-failure:2
   schema_registry:
     image: cgswong/confluent-schema-registry:2.0.1
     depends_on:
