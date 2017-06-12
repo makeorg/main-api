@@ -67,14 +67,14 @@ class DatabaseConfiguration(override protected val configuration: Config)
       .fromResource("create-schema.sql")
       .mkString
       .replace("#dbname#", dbname)
+      .split(";")
 
-    def createSchema: Boolean =
-      writeDatasource.getConnection.createStatement.execute(queries)
+    val conn = writeDatasource.getConnection
+    val results = queries.map(query => Try(conn.createStatement.execute(query)))
 
-    Try(createSchema) match {
-      case Success(_) => logger.debug("Database schema created.")
-      case Failure(e) =>
-        logger.error(s"Cannot create schema: ${e.getStackTrace.mkString("\n")}")
+    results.foreach {
+      case Success(_) =>
+      case Failure(e) => logger.warn("Error in creation script:", e)
     }
   }
 }
