@@ -57,5 +57,6 @@ fork in Test := true
 aspectjSettings
 
 javaOptions ++= (AspectjKeys.weaverOptions in Aspectj).value
+javaOptions in run += "-Dconfig.resource=default-application.conf"
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
