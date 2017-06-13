@@ -11,7 +11,7 @@
 ## Running the app :
 
 ```
-sbt api/run -Dconfig.resource=default-application.conf
+sbt api/run
 ```
 
 It is possible to start this sbt task from idea, allowing to start in debug mode
