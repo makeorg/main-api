@@ -37,7 +37,7 @@ trait MakeDataHandlerComponent {
                           request: AuthorizationRequest): Future[Option[User]] = {
       maybeCredential match {
         case Some(ClientCredential(clientId, Some(secret))) =>
-          persistentUserService.find(clientId, secret)
+          persistentUserService.findByEmailAndHashedPassword(clientId, secret)
         case _ => Future.successful(None)
       }
     }

@@ -8,6 +8,7 @@ import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.{MakeSerializable, StringValue}
 
+//TODO: refactor Enum to sealed trait & case objects
 object VoteStatus extends Enumeration {
   type VoteStatus = Value
   val AGREE, DISAGREE, UNSURE = Value

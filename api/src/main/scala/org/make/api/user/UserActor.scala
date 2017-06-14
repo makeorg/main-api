@@ -30,7 +30,7 @@ class UserActor extends PersistentActor with ActorLogging {
         UserState(
           userId = userId,
           email = Option(user.email),
-          dateOfBirth = Option(user.dateOfBirth),
+          dateOfBirth = user.profile.get.birthdate,
           firstName = Option(user.firstName),
           lastName = Option(user.lastName)
         )
@@ -86,13 +86,17 @@ class UserActor extends PersistentActor with ActorLogging {
                        lastName: Option[String] = None) {
 
     def toUser: User = {
+      ???
+      // TODO: implement new user model
+      /**
       User(
         userId = this.userId,
         email = this.email.orNull,
-        dateOfBirth = this.dateOfBirth.orNull,
+        dateOfBirth = this.profile.birthdate.orNull,
         firstName = this.firstName.orNull,
         lastName = this.lastName.orNull
       )
+      **/
     }
   }
 
