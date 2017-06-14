@@ -11,7 +11,7 @@
 ## Running the app :
 
 ```
-sbt api/run
+make run
 ```
 
 It is possible to start this sbt task from idea, allowing to start in debug mode
@@ -21,7 +21,7 @@ In order for the app to start correctly, you need to provide the infrastructure.
 To start it, got to your project directory and type:
 
 ```
-docker-compose up -d
+make infra-up
 ```
 
 ## package the application as a docker image locally
@@ -29,7 +29,7 @@ docker-compose up -d
 in order to build locally the docker image, type from your base directory:
 
 ```
-sbt publishLocal
+make package-docker-image
 ```
 
 ## releasing the application
@@ -48,7 +48,7 @@ credentials ++= Seq(
 Then type 
 
 ```
-sbt release
+make release
 ```
 
 and set versions accordingly
