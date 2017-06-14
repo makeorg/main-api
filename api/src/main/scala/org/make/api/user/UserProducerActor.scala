@@ -1,4 +1,4 @@
-package org.make.api.citizen
+package org.make.api.user
 
 import java.time.ZonedDateTime
 import java.util.Properties
@@ -9,23 +9,23 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.api.technical.AvroSerializers
-import org.make.core.citizen.CitizenEvent
-import org.make.core.citizen.CitizenEvent.{CitizenEventWrapper, CitizenRegistered}
+import org.make.core.user.UserEvent
+import org.make.core.user.UserEvent.{UserEventWrapper, UserRegistered}
 
 import scala.util.Try
 
-class CitizenProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
+class UserProducerActor extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
 
   val kafkaTopic: String =
-    kafkaConfiguration.topics(CitizenProducerActor.topicKey)
+    kafkaConfiguration.topics(UserProducerActor.topicKey)
 
-  private val format: RecordFormat[CitizenEventWrapper] =
-    RecordFormat[CitizenEventWrapper]
+  private val format: RecordFormat[UserEventWrapper] =
+    RecordFormat[UserEventWrapper]
 
   private var producer: KafkaProducer[String, GenericRecord] = _
 
   override def preStart(): Unit = {
-    context.system.eventStream.subscribe(self, classOf[CitizenEvent])
+    context.system.eventStream.subscribe(self, classOf[UserEvent])
     producer = createProducer()
   }
 
@@ -38,7 +38,7 @@ class CitizenProducerActor extends Actor with KafkaConfigurationExtension with A
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
     props.put("schema.registry.url", kafkaConfiguration.schemaRegistry)
-    props.put("value.schema", SchemaFor[CitizenEventWrapper].toString)
+    props.put("value.schema", SchemaFor[UserEventWrapper].toString)
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer")
     new KafkaProducer[A, B](props)
@@ -46,16 +46,16 @@ class CitizenProducerActor extends Actor with KafkaConfigurationExtension with A
 
   override def receive: Receive = {
 
-    case event: CitizenRegistered =>
+    case event: UserRegistered =>
       log.debug(s"Received event $event")
 
       val record = format.to(
-        CitizenEventWrapper(
+        UserEventWrapper(
           version = 1,
           id = event.id.value,
           date = ZonedDateTime.now(),
           eventType = event.getClass.getSimpleName,
-          event = CitizenEventWrapper.wrapEvent(event)
+          event = UserEventWrapper.wrapEvent(event)
         )
       )
 
@@ -68,10 +68,10 @@ class CitizenProducerActor extends Actor with KafkaConfigurationExtension with A
   }
 }
 
-object CitizenProducerActor {
-  val props: Props = Props(new CitizenProducerActor)
-  val name: String = "kafka-citizens-event-writer"
-  val topicKey = "citizens"
+object UserProducerActor {
+  val props: Props = Props(new UserProducerActor)
+  val name: String = "kafka-users-event-writer"
+  val topicKey = "users"
   def kafkaTopic(actorSystem: ActorSystem): String =
     KafkaConfiguration(actorSystem).topics(topicKey)
 }

@@ -1,6 +1,6 @@
 package org.make.api.technical
 
-import org.make.api.citizen.CitizenSerializers
+import org.make.api.user.UserSerializers
 import org.make.api.proposition.PropositionSerializers
 import org.make.api.technical.MakeEventSerializer.allSerializers
 import org.make.api.vote.VoteSerializers
@@ -14,7 +14,7 @@ class MakeEventSerializer
 
 object MakeEventSerializer {
   val allSerializers: Seq[Persister[_, _]] =
-    CitizenSerializers.serializers ++
+    UserSerializers.serializers ++
       PropositionSerializers.serializers ++
       VoteSerializers.serializers
 }

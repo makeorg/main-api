@@ -1,7 +1,7 @@
 {
   "proposition" : {
     "properties" : {
-      "citizenId" : {
+      "userId" : {
         "type" : "text",
         "fields" : {
           "keyword" : {

@@ -3,7 +3,7 @@ package org.make.api.technical
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteId
 import spray.json.{JsString, JsValue, JsonFormat}
@@ -43,13 +43,13 @@ trait SprayJsonFormatters {
     }
   }
 
-  implicit val citizenIdFormatter: JsonFormat[CitizenId] = new JsonFormat[CitizenId] {
-    override def read(json: JsValue): CitizenId = json match {
-      case JsString(s) => CitizenId(s)
+  implicit val userIdFormatter: JsonFormat[UserId] = new JsonFormat[UserId] {
+    override def read(json: JsValue): UserId = json match {
+      case JsString(s) => UserId(s)
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
-    override def write(obj: CitizenId): JsValue = {
+    override def write(obj: UserId): JsValue = {
       JsString(obj.value)
     }
   }

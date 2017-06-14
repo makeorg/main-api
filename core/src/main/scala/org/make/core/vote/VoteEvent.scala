@@ -3,7 +3,7 @@ package org.make.core.vote
 import java.time.ZonedDateTime
 
 import org.make.core.{EventWrapper, MakeSerializable}
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import shapeless.{:+:, CNil, Coproduct}
@@ -30,21 +30,21 @@ object VoteEvent {
 
   case class VotedAgree(id: VoteId,
                         propositionId: PropositionId,
-                        citizenId: CitizenId,
+                        userId: UserId,
                         createdAt: ZonedDateTime,
                         status: VoteStatus)
       extends VoteEvent
 
   case class VotedDisagree(id: VoteId,
                            propositionId: PropositionId,
-                           citizenId: CitizenId,
+                           userId: UserId,
                            createdAt: ZonedDateTime,
                            status: VoteStatus)
       extends VoteEvent
 
   case class VotedUnsure(id: VoteId,
                          propositionId: PropositionId,
-                         citizenId: CitizenId,
+                         userId: UserId,
                          createdAt: ZonedDateTime,
                          status: VoteStatus)
       extends VoteEvent

@@ -1,4 +1,4 @@
-package org.make.api.citizen
+package org.make.api.user
 
 import java.time.LocalDate
 import javax.ws.rs.Path
@@ -11,17 +11,17 @@ import org.make.api.technical.MakeDirectives
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
-import org.make.core.citizen.{Citizen, CitizenId}
+import org.make.core.user.{User, UserId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Citizen")
-@Path(value = "/citizen")
-trait CitizenApi extends MakeDirectives { this: CitizenServiceComponent with MakeDataHandlerComponent =>
+@Api(value = "User")
+@Path(value = "/user")
+trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(
-    value = "get-citizen",
+    value = "get-user",
     httpMethod = "GET",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -34,17 +34,17 @@ trait CitizenApi extends MakeDirectives { this: CitizenServiceComponent with Mak
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "citizenId", paramType = "path", dataType = "string")))
-  @Path(value = "/{citizenId}")
-  def getCitizen: Route = {
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @Path(value = "/{userId}")
+  def getUser: Route = {
     get {
-      path("citizen" / citizenId) { citizenId =>
-        makeTrace("GetCitizen") {
-          makeOAuth2 { user: AuthInfo[Citizen] =>
-            if (citizenId == user.user.citizenId) {
-              onSuccess(citizenService.getCitizen(citizenId)) {
-                case Some(citizen) => complete(citizen)
+      path("user" / userId) { userId =>
+        makeTrace("GetUser") {
+          makeOAuth2 { userAuth: AuthInfo[User] =>
+            if (userId == userAuth.user.userId) {
+              onSuccess(userService.getUser(userId)) {
+                case Some(user) => complete(user)
                 case None          => complete(NotFound)
               }
             } else {
@@ -56,24 +56,24 @@ trait CitizenApi extends MakeDirectives { this: CitizenServiceComponent with Mak
     }
   }
 
-  @ApiOperation(value = "register-citizen", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
-        dataType = "org.make.api.citizen.RegisterCitizenRequest"
+        dataType = "org.make.api.user.RegisterUserRequest"
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Citizen])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
   def register: Route = post {
-    path("citizen") {
-      makeTrace("RegisterCitizen") {
+    path("user") {
+      makeTrace("RegisterUser") {
         decodeRequest {
-          entity(as[RegisterCitizenRequest]) { request: RegisterCitizenRequest =>
+          entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
             onSuccess(
-              citizenService.register(
+              userService.register(
                 email = request.email,
                 dateOfBirth = request.dateOfBirth,
                 firstName = request.firstName,
@@ -89,18 +89,18 @@ trait CitizenApi extends MakeDirectives { this: CitizenServiceComponent with Mak
     }
   }
 
-  val citizenRoutes: Route = register ~ getCitizen
+  val userRoutes: Route = register ~ getUser
 
-  val citizenId: PathMatcher1[CitizenId] =
-    Segment.flatMap(id => Try(CitizenId(id)).toOption)
+  val userId: PathMatcher1[UserId] =
+    Segment.flatMap(id => Try(UserId(id)).toOption)
 
 }
 
-case class RegisterCitizenRequest(email: String,
-                                  password: String,
-                                  dateOfBirth: LocalDate,
-                                  firstName: String,
-                                  lastName: String) {
+case class RegisterUserRequest(email: String,
+                               password: String,
+                               dateOfBirth: LocalDate,
+                               firstName: String,
+                               lastName: String) {
 
   validate(
     mandatoryField("dateOfBirth", dateOfBirth),

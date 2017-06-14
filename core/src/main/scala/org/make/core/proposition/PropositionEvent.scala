@@ -3,7 +3,7 @@ package org.make.core.proposition
 import java.time.ZonedDateTime
 
 import org.make.core.{EventWrapper, MakeSerializable}
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait PropositionEvent extends MakeSerializable {
@@ -31,7 +31,7 @@ object PropositionEvent {
     }
   }
 
-  case class PropositionProposed(id: PropositionId, citizenId: CitizenId, createdAt: ZonedDateTime, content: String)
+  case class PropositionProposed(id: PropositionId, userId: UserId, createdAt: ZonedDateTime, content: String)
       extends PropositionEvent
 
   case class PropositionViewed(id: PropositionId) extends PropositionEvent

@@ -6,7 +6,7 @@ import akka.actor.{ActorLogging, Props}
 import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.vote.VoteActor.Snapshot
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteEvent._
 import org.make.core.vote.VoteStatus._
@@ -45,9 +45,9 @@ class VoteActor extends PersistentActor with ActorLogging {
   }
 
   def vote(vote: PutVoteCommand,
-           createEvent: (VoteId, PropositionId, CitizenId, ZonedDateTime, VoteStatus) => VoteEvent): Unit = {
-    if (citizenCanVote(vote.citizenId)) {
-      persistAndPublishEvent(createEvent(vote.voteId, vote.propositionId, vote.citizenId, vote.createdAt, vote.status))
+           createEvent: (VoteId, PropositionId, UserId, ZonedDateTime, VoteStatus) => VoteEvent): Unit = {
+    if (userCanVote(vote.userId)) {
+      persistAndPublishEvent(createEvent(vote.voteId, vote.propositionId, vote.userId, vote.createdAt, vote.status))
     }
     Patterns
       .pipe((self ? GetVote(vote.voteId))(1.second), Implicits.global)
@@ -63,7 +63,7 @@ class VoteActor extends PersistentActor with ActorLogging {
       state = Option(
         state.getOrElse(Nil) :+ VoteState(
           voteId = e.id,
-          citizenId = Option(e.citizenId),
+          userId = Option(e.userId),
           propositionId = Option(e.propositionId),
           createdAt = Option(e.createdAt),
           voteStatus = Option(VoteStatus.AGREE)
@@ -73,7 +73,7 @@ class VoteActor extends PersistentActor with ActorLogging {
       state = Option(
         state.getOrElse(Nil) :+ VoteState(
           voteId = e.id,
-          citizenId = Option(e.citizenId),
+          userId = Option(e.userId),
           propositionId = Option(e.propositionId),
           createdAt = Option(e.createdAt),
           voteStatus = Option(VoteStatus.DISAGREE)
@@ -83,7 +83,7 @@ class VoteActor extends PersistentActor with ActorLogging {
       state = Option(
         state.getOrElse(Nil) :+ VoteState(
           voteId = e.id,
-          citizenId = Option(e.citizenId),
+          userId = Option(e.userId),
           propositionId = Option(e.propositionId),
           createdAt = Option(e.createdAt),
           voteStatus = Option(VoteStatus.UNSURE)
@@ -97,17 +97,17 @@ class VoteActor extends PersistentActor with ActorLogging {
     context.system.eventStream.publish(event)
   }
 
-  private def citizenCanVote(citizenId: CitizenId): Boolean = {
-    state.flatMap(_.find(_.citizenId.contains(citizenId))).isEmpty
+  private def userCanVote(userId: UserId): Boolean = {
+    state.flatMap(_.find(_.userId.contains(userId))).isEmpty
   }
 
   case class VoteState(voteId: VoteId,
-                       citizenId: Option[CitizenId],
+                       userId: Option[UserId],
                        propositionId: Option[PropositionId],
                        createdAt: Option[ZonedDateTime],
                        voteStatus: Option[VoteStatus]) {
     def toVote: Vote = {
-      Vote(voteId, citizenId.orNull, propositionId.orNull, createdAt.orNull, voteStatus.orNull)
+      Vote(voteId, userId.orNull, propositionId.orNull, createdAt.orNull, voteStatus.orNull)
     }
   }
 }

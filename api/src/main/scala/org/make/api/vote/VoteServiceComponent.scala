@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.vote.{VoteId, _}
@@ -27,7 +27,7 @@ trait VoteServiceComponent { this: IdGeneratorComponent with VoteServiceComponen
     }
 
     def vote(propositionId: PropositionId,
-             citizenId: CitizenId,
+             userId: UserId,
              createdAt: ZonedDateTime,
              status: VoteStatus): Future[Option[Vote]] = {
       (
@@ -35,7 +35,7 @@ trait VoteServiceComponent { this: IdGeneratorComponent with VoteServiceComponen
           PutVoteCommand(
             voteId = idGenerator.nextVoteId(),
             propositionId = propositionId,
-            citizenId = citizenId,
+            userId = userId,
             createdAt = createdAt,
             status = status
           )

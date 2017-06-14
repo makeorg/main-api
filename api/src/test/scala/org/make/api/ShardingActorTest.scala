@@ -56,7 +56,7 @@ object TestHelper {
       |    poll-timeout = 10000
       |    schema-registry = "http://nowhere:-1"
       |    topics {
-      |      citizens = "citizens"
+      |      users = "users"
       |      propositions = "propositions"
       |      votes = "votes"
       |    }

@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition._
 import org.scalatest.GivenWhenThen
 
@@ -15,7 +15,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
   val coordinator: ActorRef =
     system.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
 
-  val mainCitizenId: CitizenId = CitizenId("1234")
+  val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: ZonedDateTime = ZonedDateTime.now.minusSeconds(10)
   val mainUpdatedAt: ZonedDateTime = ZonedDateTime.now
 
@@ -32,7 +32,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       And("a newly proposed Proposition")
       coordinator ! ProposeCommand(
         propositionId = propositionId,
-        citizenId = mainCitizenId,
+        userId = mainUserId,
         createdAt = mainCreatedAt,
         content = "Ceci est une proposition"
       )
@@ -41,7 +41,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
@@ -57,7 +57,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
@@ -76,7 +76,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
@@ -112,7 +112,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       And("a newly proposed Proposition")
       coordinator ! ProposeCommand(
         propositionId = propositionId,
-        citizenId = mainCitizenId,
+        userId = mainUserId,
         createdAt = mainCreatedAt,
         content = "Ceci est une proposition"
       )
@@ -121,7 +121,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
@@ -140,7 +140,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
             updatedAt = mainUpdatedAt
@@ -155,7 +155,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
             updatedAt = mainUpdatedAt
@@ -174,7 +174,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
             updatedAt = mainUpdatedAt
@@ -206,7 +206,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       When("a new Proposition is proposed")
       coordinator ! ProposeCommand(
         propositionId = propositionId,
-        citizenId = mainCitizenId,
+        userId = mainUserId,
         createdAt = mainCreatedAt,
         content = "Ceci est une proposition"
       )
@@ -215,7 +215,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
@@ -229,7 +229,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
         Some(
           Proposition(
             propositionId = propositionId,
-            citizenId = mainCitizenId,
+            userId = mainUserId,
             content = "Ceci est une proposition",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt

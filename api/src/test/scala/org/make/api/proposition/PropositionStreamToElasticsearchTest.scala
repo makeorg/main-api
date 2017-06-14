@@ -21,7 +21,7 @@ import org.make.api.proposition.PropositionStreamToElasticsearchTest.{
 import org.make.api.technical.AvroSerializers
 import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, PropositionElasticsearch}
 import org.make.core.CirceFormatters
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionEvent.{PropositionEventWrapper, PropositionProposed, PropositionUpdated}
 import org.make.core.proposition.PropositionId
 import org.mockito.ArgumentMatchers.any
@@ -84,7 +84,7 @@ class PropositionStreamToElasticsearchTest
 object PropositionStreamToElasticsearchTest extends MockitoSugar with AvroSerializers with CirceFormatters {
 
   val propositionId: PropositionId = PropositionId(UUID.randomUUID.toString)
-  val citizenId: CitizenId = CitizenId(UUID.randomUUID.toString)
+  val userId: UserId = UserId(UUID.randomUUID.toString)
 
   private val now = ZonedDateTime.now
   private val before = now.minusSeconds(10)
@@ -95,7 +95,7 @@ object PropositionStreamToElasticsearchTest extends MockitoSugar with AvroSerial
         id = propositionId.value,
         date = before,
         eventType = PropositionProposed.getClass.getName,
-        event = PropositionEventWrapper.wrapEvent(PropositionProposed(propositionId, citizenId, before, "The answer"))
+        event = PropositionEventWrapper.wrapEvent(PropositionProposed(propositionId, userId, before, "The answer"))
       )
     )
   private val valueUpdate: GenericRecord =
@@ -122,7 +122,7 @@ object PropositionStreamToElasticsearchTest extends MockitoSugar with AvroSerial
   val propositionElasticsearch: PropositionElasticsearch =
     PropositionElasticsearch(
       UUID.fromString(propositionId.value),
-      UUID.fromString(citizenId.value),
+      UUID.fromString(userId.value),
       before,
       now,
       "The answer",

@@ -50,13 +50,13 @@ object MakeMain extends App with StrictLogging with MakeApi {
     Thread.sleep(10.seconds.toMillis)
     logger.debug("Proposing...")
     propositionService.propose(
-      idGenerator.nextCitizenId(),
+      idGenerator.nextUserId(),
       ZonedDateTime.now,
       "Il faut que la demo soit fonctionnelle."
     )
     val propId: PropositionId = Await.result(
       propositionService
-        .propose(idGenerator.nextCitizenId(), ZonedDateTime.now, "Il faut faire une proposition"),
+        .propose(idGenerator.nextUserId(), ZonedDateTime.now, "Il faut faire une proposition"),
       Duration.Inf
     ) match {
       case Some(proposition) => proposition.propositionId
