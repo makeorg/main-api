@@ -210,5 +210,4 @@ trait PersistentUserServiceComponent {
       }).map(_ => user)
     }
   }
-
 }
