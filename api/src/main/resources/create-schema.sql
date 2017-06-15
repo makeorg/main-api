@@ -1,12 +1,35 @@
 CREATE DATABASE IF NOT EXISTS #dbname#;
 
-CREATE TABLE IF NOT EXISTS user (
-  id VARCHAR(256) NOT NULL PRIMARY KEY,
-  email VARCHAR(512) NOT NULL,
+CREATE TABLE IF NOT EXISTS make_user (
+  id SERIAL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  email VARCHAR(255) NOT NULL,
   first_name VARCHAR(512) NOT NULL,
   last_name VARCHAR(512) NOT NULL,
-  hashed_password VARCHAR(2048) NOT NULL,
-  date_of_birth TIMESTAMP WITH TIME ZONE
+  last_ip VARCHAR(50) NOT NULL,
+  hashed_password VARCHAR(512) NOT NULL,
+  salt VARCHAR(512) NOT NULL,
+  enabled BOOLEAN NOT NULL,
+  verified BOOLEAN NOT NULL,
+  last_connection TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  verification_token VARCHAR(255) DEFAULT NULL,
+  roles TEXT NOT NULL,
+
+  date_of_birth DATE DEFAULT NULL,
+  avatar_url VARCHAR(512) DEFAULT NULL,
+  profession VARCHAR(512) DEFAULT NULL,
+  phone_number VARCHAR(50) DEFAULT NULL,
+  twitter_id VARCHAR(255) DEFAULT NULL,
+  facebook_id VARCHAR(255) DEFAULT NULL,
+  google_id VARCHAR(255) DEFAULT NULL,
+  gender VARCHAR(1) DEFAULT NULL,
+  gender_name VARCHAR(20) DEFAULT NULL,
+  department_number VARCHAR(3) DEFAULT NULL,
+  karma_level INT DEFAULT 0,
+  locale VARCHAR(8) DEFAULT NULL,
+  opt_in_newsletter BOOLEAN DEFAULT FALSE,
+  PRIMARY KEY(id)
 );
 
 
