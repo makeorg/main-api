@@ -10,12 +10,6 @@
 
 ## Running the app :
 
-```
-make run
-```
-
-It is possible to start this sbt task from idea, allowing to start in debug mode
-
 
 In order for the app to start correctly, you need to provide the infrastructure.
 To start it, got to your project directory and type:
@@ -23,6 +17,18 @@ To start it, got to your project directory and type:
 ```
 make infra-up
 ```
+
+when infrastructure is up you can run your app
+
+```
+make run
+```
+
+It is possible to start this sbt task from idea, allowing to start in debug mode
+
+### Access To Api documentation
+
+When application is running you can access to the swagger interface from the adress: [http://localhost:9000/swagger](http://localhost:9000/swagger)
 
 ## package the application as a docker image locally
 
