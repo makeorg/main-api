@@ -3,6 +3,7 @@ package org.make.api
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
+import akka.http.scaladsl.model.Uri
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -95,7 +96,10 @@ trait MakeApi
 
   private lazy val swagger: Route =
     path("swagger") {
-      getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
+      parameters('url?) {
+          case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
+          case _ => getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
+      }
     } ~ getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.2.8")
 
   private lazy val login: Route = path("login.html") {
