@@ -47,17 +47,23 @@ addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 lazy val elastic = project
   .in(file("."))
+  .configs(IntegrationTest)
+  .settings(Defaults.itSettings: _*)
   .settings(commonSettings: _*)
   .settings(moduleName := "make-elastic": _*)
   .aggregate(core, api)
 
 lazy val core = project
   .in(file("core"))
+  .configs(IntegrationTest)
   .settings(commonSettings: _*)
+  .settings(Defaults.itSettings: _*)
 
 lazy val api = project
   .in(file("api"))
+  .configs(IntegrationTest)
   .settings(commonSettings: _*)
+  .settings(Defaults.itSettings: _*)
   .settings(
     imageName := {
       val alias = dockerAlias.value
