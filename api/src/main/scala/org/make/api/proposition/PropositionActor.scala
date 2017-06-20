@@ -6,7 +6,7 @@ import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposition.PropositionActor.Snapshot
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionEvent._
 import org.make.core.proposition._
 
@@ -27,7 +27,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
       state = Some(
         PropositionState(
           propositionId = snapshot.propositionId,
-          citizenId = Option(snapshot.citizenId),
+          userId = Option(snapshot.userId),
           createdAt = Option(snapshot.createdAt),
           updatedAt = Option(snapshot.updatedAt),
           content = Option(snapshot.content)
@@ -47,7 +47,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
       persistAndPublishEvent(
         PropositionProposed(
           id = propose.propositionId,
-          citizenId = propose.citizenId,
+          userId = propose.userId,
           createdAt = propose.createdAt,
           content = propose.content
         )
@@ -75,7 +75,7 @@ class PropositionActor extends PersistentActor with ActorLogging {
       state = Some(
         PropositionState(
           propositionId = e.id,
-          citizenId = Option(e.citizenId),
+          userId = Option(e.userId),
           createdAt = Option(e.createdAt),
           updatedAt = Option(e.createdAt),
           content = Option(e.content)
@@ -97,14 +97,14 @@ class PropositionActor extends PersistentActor with ActorLogging {
   }
 
   case class PropositionState(propositionId: PropositionId,
-                              citizenId: Option[CitizenId],
+                              userId: Option[UserId],
                               createdAt: Option[ZonedDateTime],
                               var updatedAt: Option[ZonedDateTime],
                               var content: Option[String]) {
     def toProposition: Proposition = {
       Proposition(
         this.propositionId,
-        this.citizenId.orNull,
+        this.userId.orNull,
         this.createdAt.orNull,
         this.updatedAt.orNull,
         this.content.orNull

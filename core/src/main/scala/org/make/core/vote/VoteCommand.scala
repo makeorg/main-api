@@ -2,7 +2,7 @@ package org.make.core.vote
 
 import java.time.ZonedDateTime
 
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 
@@ -13,7 +13,7 @@ trait VoteCommand {
 
 case class PutVoteCommand(voteId: VoteId,
                           propositionId: PropositionId,
-                          citizenId: CitizenId,
+                          userId: UserId,
                           createdAt: ZonedDateTime,
                           status: VoteStatus)
     extends VoteCommand

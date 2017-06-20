@@ -10,7 +10,7 @@ import io.swagger.annotations._
 import org.make.api.technical.MakeDirectives
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
-import org.make.core.citizen.Citizen
+import org.make.core.user.User
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.vote.{Vote, VoteId}
@@ -64,7 +64,7 @@ trait VoteApi extends MakeDirectives { this: VoteServiceComponent with MakeDataH
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @Path(value = "/{propositionId}")
   def vote: Route =
-    makeOAuth2 { user: AuthInfo[Citizen] =>
+    makeOAuth2 { user: AuthInfo[User] =>
       post {
         path("vote" / refPropositionId) { propositionId =>
           makeTrace("Vote") {
@@ -73,7 +73,7 @@ trait VoteApi extends MakeDirectives { this: VoteServiceComponent with MakeDataH
                 onSuccess(
                   voteService.vote(
                     propositionId = propositionId,
-                    citizenId = user.user.citizenId,
+                    userId = user.user.userId,
                     createdAt = ZonedDateTime.now,
                     status = request.status
                   )

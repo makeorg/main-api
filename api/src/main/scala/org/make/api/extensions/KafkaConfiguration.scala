@@ -7,7 +7,7 @@ class KafkaConfiguration(override protected val configuration: Config) extends E
 
   val connectionString: String = configuration.getString("connection-string")
   val topics: Map[String, String] = Map(
-    "citizens" -> configuration.getString("topics.citizens"),
+    "users" -> configuration.getString("topics.users"),
     "propositions" -> configuration.getString("topics.propositions"),
     "votes" -> configuration.getString("topics.votes")
   )

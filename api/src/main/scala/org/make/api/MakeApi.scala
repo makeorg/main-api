@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
-import org.make.api.citizen.{CitizenApi, CitizenServiceComponent, PersistentCitizenServiceComponent}
+import org.make.api.user.{UserApi, UserServiceComponent, PersistentUserServiceComponent}
 import org.make.api.extensions.DatabaseConfiguration
 import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
@@ -23,10 +23,10 @@ import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 trait MakeApi
-    extends CitizenServiceComponent
+    extends UserServiceComponent
     with IdGeneratorComponent
-    with PersistentCitizenServiceComponent
-    with CitizenApi
+    with PersistentUserServiceComponent
+    with UserApi
     with PropositionServiceComponent
     with PropositionApi
     with VoteServiceComponent
@@ -40,7 +40,7 @@ trait MakeApi
   def actorSystem: ActorSystem
 
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
-  override lazy val citizenService: CitizenService = new CitizenService()
+  override lazy val userService: UserService = new UserService()
   override lazy val propositionService: PropositionService =
     new PropositionService(
       Await.result(
@@ -58,8 +58,8 @@ trait MakeApi
       atMost = 2.seconds
     )
   )
-  override lazy val persistentCitizenService: PersistentCitizenService =
-    new PersistentCitizenService()
+  override lazy val persistentUserService: PersistentUserService =
+    new PersistentUserService()
   override lazy val oauth2DataHandler: MakeDataHandler =
     new MakeDataHandler()(ECGlobal)
   override lazy val tokenService: TokenService = new TokenService()
@@ -107,13 +107,13 @@ trait MakeApi
   }
 
   private lazy val apiTypes: Seq[ru.Type] =
-    Seq(ru.typeOf[CitizenApi], ru.typeOf[PropositionApi])
+    Seq(ru.typeOf[UserApi], ru.typeOf[PropositionApi])
 
   lazy val makeRoutes: Route = handleExceptions(exceptionHandler)(
     new MakeDocumentation(actorSystem, apiTypes).routes ~
       swagger ~
       login ~
-      citizenRoutes ~
+      userRoutes ~
       propositionRoutes ~
 //    voteRoutes ~
       accessTokenRoute ~

@@ -2,14 +2,14 @@ package org.make.core.proposition
 
 import java.time.ZonedDateTime
 
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 
 sealed trait PropositionCommand {
   def propositionId: PropositionId
 }
 
 case class ProposeCommand(propositionId: PropositionId,
-                          citizenId: CitizenId,
+                          userId: UserId,
                           createdAt: ZonedDateTime,
                           content: String)
     extends PropositionCommand

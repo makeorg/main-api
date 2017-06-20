@@ -3,11 +3,12 @@ package org.make.core.vote
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition.PropositionId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.{MakeSerializable, StringValue}
 
+//TODO: refactor Enum to sealed trait & case objects
 object VoteStatus extends Enumeration {
   type VoteStatus = Value
   val AGREE, DISAGREE, UNSURE = Value
@@ -17,7 +18,7 @@ object VoteStatus extends Enumeration {
 }
 
 case class Vote(voteId: VoteId,
-                citizenId: CitizenId,
+                userId: UserId,
                 propositionId: PropositionId,
                 createdAt: ZonedDateTime,
                 status: VoteStatus)

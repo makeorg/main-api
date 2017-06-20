@@ -8,7 +8,7 @@ import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.OAuth2Provider.TokenResponse
-import org.make.core.citizen.Citizen
+import org.make.core.user.User
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -20,17 +20,17 @@ import scalaoauth2.provider._
 trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSupport {
   self: MakeDataHandlerComponent =>
 
-  def makeOAuth2(f: (AuthInfo[Citizen]) => server.Route)(implicit ctx: EC = ECGlobal): Route = {
-    authenticateOAuth2Async[AuthInfo[Citizen]]("make.org API", oauth2Authenticator).tapply { (u) =>
+  def makeOAuth2(f: (AuthInfo[User]) => server.Route)(implicit ctx: EC = ECGlobal): Route = {
+    authenticateOAuth2Async[AuthInfo[User]]("make.org API", oauth2Authenticator).tapply { (u) =>
       f(u._1)
     }
   }
 
-  val oauth2DataHandler: DataHandler[Citizen]
+  val oauth2DataHandler: DataHandler[User]
 
   val tokenEndpoint: TokenEndpoint
 
-  def grantResultToTokenResponse(grantResult: GrantHandlerResult[Citizen]): TokenResponse =
+  def grantResultToTokenResponse(grantResult: GrantHandlerResult[User]): TokenResponse =
     TokenResponse(
       grantResult.tokenType,
       grantResult.accessToken,
@@ -38,7 +38,7 @@ trait MakeAuthentication extends ShortenedNames with Directives with CirceHttpSu
       grantResult.refreshToken.getOrElse("")
     )
 
-  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[Citizen]]] =
+  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[User]]] =
     credentials match {
       case Credentials.Provided(token) =>
         oauth2DataHandler.findAccessToken(token).flatMap {

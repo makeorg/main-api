@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.proposition._
 
 import scala.concurrent.Future
@@ -25,12 +25,12 @@ trait PropositionServiceComponent { this: IdGeneratorComponent with PropositionS
         .mapTo[Option[Proposition]]
     }
 
-    def propose(citizenId: CitizenId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
+    def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
       (
         actor ?
           ProposeCommand(
             propositionId = idGenerator.nextPropositionId(),
-            citizenId = citizenId,
+            userId = userId,
             createdAt = createdAt,
             content = content
           )

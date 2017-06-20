@@ -52,7 +52,7 @@ object Dependencies {
 
   val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.0-RC4"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.1"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.1.0"
 
   // Kafka + AVRO

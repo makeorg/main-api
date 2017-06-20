@@ -10,7 +10,7 @@ import io.swagger.annotations._
 import org.make.api.technical.MakeDirectives
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
-import org.make.core.citizen.Citizen
+import org.make.core.user.User
 import org.make.core.proposition.{Proposition, PropositionId}
 
 import scala.util.Try
@@ -68,12 +68,12 @@ trait PropositionApi
     post {
       path("proposition") {
         makeTrace("Propose") {
-          makeOAuth2 { user: AuthInfo[Citizen] =>
+          makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposePropositionRequest]) { request: ProposePropositionRequest =>
                 onSuccess(
                   propositionService
-                    .propose(citizenId = user.user.citizenId, createdAt = ZonedDateTime.now, content = request.content)
+                    .propose(userId = user.user.userId, createdAt = ZonedDateTime.now, content = request.content)
                 ) {
                   complete(_)
                 }
@@ -113,12 +113,12 @@ trait PropositionApi
     put {
       path("proposition" / propositionId) { propositionId =>
         makeTrace("EditProposition") {
-          makeOAuth2 { user: AuthInfo[Citizen] =>
+          makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
                 onSuccess(propositionService.getProposition(propositionId)) {
                   case Some(proposition) =>
-                    if (proposition.citizenId == user.user.citizenId) {
+                    if (proposition.userId == user.user.userId) {
                       onSuccess(
                         propositionService.update(
                           propositionId = propositionId,

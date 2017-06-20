@@ -9,7 +9,7 @@ import org.make.api.Predef._
 import org.make.core.proposition.PropositionEvent.PropositionProposed
 
 case class PropositionElasticsearch(id: UUID,
-                                    citizenId: UUID,
+                                    userId: UUID,
                                     createdAt: ZonedDateTime,
                                     updatedAt: ZonedDateTime,
                                     content: String,
@@ -24,7 +24,7 @@ object PropositionElasticsearch extends StrictLogging {
       Some(
         PropositionElasticsearch(
           id = UUID.fromString(p.id.value),
-          citizenId = UUID.fromString(p.citizenId.value),
+          userId = UUID.fromString(p.userId.value),
           createdAt = p.createdAt.toUTC,
           updatedAt = p.createdAt.toUTC,
           content = p.content,
@@ -44,7 +44,7 @@ object PropositionElasticsearch extends StrictLogging {
           Some(
             PropositionElasticsearch(
               id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
-              citizenId = UUID.fromString(source.getOrElse("citizenId", "NotFound").toString),
+              userId = UUID.fromString(source.getOrElse("userId", "NotFound").toString),
               createdAt = ZonedDateTime
                 .parse(source.getOrElse("createdAt", ZonedDateTime.now).toString)
                 .toUTC,

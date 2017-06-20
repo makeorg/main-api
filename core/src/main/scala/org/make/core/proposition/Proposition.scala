@@ -3,11 +3,11 @@ package org.make.core.proposition
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, StringValue}
 
 case class Proposition(propositionId: PropositionId,
-                       citizenId: CitizenId,
+                       userId: UserId,
                        createdAt: ZonedDateTime,
                        updatedAt: ZonedDateTime,
                        content: String)
@@ -16,7 +16,7 @@ case class Proposition(propositionId: PropositionId,
 case class PropositionId(value: String) extends StringValue
 
 object PropositionId {
-  CitizenId
+  UserId
   implicit lazy val propositionIdEncoder: Encoder[PropositionId] =
     (a: PropositionId) => Json.fromString(a.value)
   implicit lazy val propositionIdDecoder: Decoder[PropositionId] =

@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.Predef._
 import org.make.api.technical.ShortenedNames
-import org.make.core.citizen.CitizenId
+import org.make.core.user.UserId
 import scalikejdbc._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,13 +44,13 @@ trait TokenServiceComponent {
       })
     }
 
-    def latestTokenForUser(citizenId: CitizenId): Future[Option[Token]] = {
+    def latestTokenForUser(userId: UserId): Future[Option[Token]] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(t.*)
             .from(PersistentToken.as(t))
-            .where(sqls.eq(t.citizenId, citizenId.value))
+            .where(sqls.eq(t.userId, userId.value))
             .orderBy(t.creationDate.desc)
             .limit(1)
         }.map(PersistentToken.toToken).single().apply()
@@ -65,7 +65,7 @@ trait TokenServiceComponent {
             .namedValues(
               column.id -> token.id,
               column.refreshToken -> token.refreshToken,
-              column.citizenId -> token.citizenId.value,
+              column.userId -> token.userId.value,
               column.scope -> token.scope,
               column.creationDate -> token.creationDate,
               column.validityDurationSeconds -> token.validityDurationSeconds,
@@ -78,7 +78,7 @@ trait TokenServiceComponent {
 
   case class Token(id: String,
                    refreshToken: String,
-                   citizenId: CitizenId,
+                   userId: UserId,
                    scope: String,
                    creationDate: ZonedDateTime,
                    validityDurationSeconds: Int,
@@ -88,14 +88,14 @@ trait TokenServiceComponent {
     override def tableName: String = "token"
 
     override def columnNames: Seq[String] =
-      Seq("id", "refresh_token", "citizen_id", "scope", "creation_date", "validity_duration_seconds", "parameters")
+      Seq("id", "refresh_token", "user_id", "scope", "creation_date", "validity_duration_seconds", "parameters")
 
     lazy val t: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[Token], Token] = syntax("t")
 
     def toToken(rs: WrappedResultSet): Token = {
       Token(
         id = rs.string(column.id),
-        citizenId = CitizenId(rs.string(column.citizenId)),
+        userId = UserId(rs.string(column.userId)),
         refreshToken = rs.string(column.refreshToken),
         scope = rs.string(column.scope),
         creationDate = rs.jodaDateTime(column.creationDate).toJavaTime,
