@@ -1,0 +1,45 @@
+#!/bin/bash
+# Regex commit-msg hook for git 
+# 
+# (c) Make.org
+# 
+# see the README
+#
+LINE_READ=0
+COMMIT_HEADER_REGEXP="((feat|fix|docs|style|refactor|test|chore)(user|proposition|sequence|vote|transverse): (.*))"
+COMMIT_BLANK_LINE_REGEXP="^$"
+COMMIT_BODY_REGEXP="^[A-Za-z0-9].*$"
+
+while read line;
+do
+	LINE_READ=$((LINE_READ+1))
+
+	if [[ "$LINE_READ" == "1" ]]; then
+		if ! [[ $line =~ $COMMIT_HEADER_REGEXP ]]; then
+			echo -e "\x1B[31mFirst Line of your commit message should be in this format <type>(<scope>): <subject>. with type equal to (feat|fix|docs|style|refactor|test|chore) and scope equal to (user|proposition|sequence|vote|transverse) :)"
+			echo -e "\x1B[31mLine:  $line"
+			exit 1;
+		fi
+		if [[ ${#line} > 72 || ${#line} < 50 ]]; then
+		    echo -e "\x1B[31mYour commit message length should be between 50 and 72 :)"
+		    echo -e "\x1B[31mYou used:  ${#line} chars"
+		    exit 1;
+        fi
+	fi
+
+	if [[ "$LINE_READ" == "2" ]]; then
+        if ! [[ $line =~ $COMMIT_BLANK_LINE_REGEXP ]]; then
+            echo -e "\x1B[31Second line if your commit message should be blank. :)"
+            echo -e "\x1B[31mLigne: $line"
+            exit 1;
+        fi
+    fi
+	
+	if [[ "$LINE_READ" == "3" ]]; then
+        if ! [[ $line =~ $COMMIT_BODY_REGEXP ]]; then
+            echo -e "\x1B[31mYour commit message should contain a body. :)"
+            echo "\x1B[31mLigne: $line"
+            exit 1
+        fi
+    fi
+done < $1	
