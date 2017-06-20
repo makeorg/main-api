@@ -1,0 +1,52 @@
+Configuration:
+  status: info
+  name: make-api
+  appenders:
+    Console:
+      - name: console
+        PatternLayout:
+          Pattern: "%highlight{%d %p %C:%L %X %replace{%m %throwable}{\n}{\\\\n}}%n"
+          charset: "UTF-8"
+          alwaysWriteExceptions: true
+  Loggers:
+    logger:
+      - name: org.make
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: akka.event.slf4j
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: scalikejdbc
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: io.netty
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: com.datastax
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: org.apache.kafka
+        level: warn
+        additivity: false
+        AppenderRef:
+          - ref: console
+      - name: io.confluent
+        level: warn
+        additivity: false
+        AppenderRef:
+          - ref: console
+    Root:
+      level: info
+      AppenderRef:
+        - ref: console
+
