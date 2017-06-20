@@ -1,35 +1,5 @@
 version: '3'
 services:
-  seed1:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
-    hostname: seed1
-    networks:
-      - makeapi
-    environment:
-      - TCP_HOST=seed1
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
-  seed2:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
-    hostname: seed2
-    networks:
-      - makeapi
-    environment:
-      - TCP_HOST=seed2
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
-  seed3:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-seed:0.0.1-SNAPSHOT
-    hostname: seed3
-    networks:
-      - makeapi
-    environment:
-      - TCP_HOST=seed3
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
   api1:
     image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
     hostname: api1
@@ -37,24 +7,20 @@ services:
       - 9000:9000
     environment:
       - TCP_HOST=api1
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
       - KAFKA_URI=kafka:9092
       - AVRO_REGISTRY_URL=http://schema_registry:8081
       - ES_HOST=elasticsearch
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - CASSANDRA_0=cassandra
+      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
-      - seed1
-      - seed2
-      - seed3
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
+      - consul
   api2:
     image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
     hostname: api2
@@ -62,25 +28,21 @@ services:
       - 19000:9000
     environment:
       - TCP_HOST=api2
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
       - KAFKA_URI=kafka:9092
       - AVRO_REGISTRY_URL=http://schema_registry:8081
       - ES_HOST=elasticsearch
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - CASSANDRA_0=cassandra
+      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
-      - seed1
-      - seed2
-      - seed3
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
       - api1
+      - consul
   api3:
     image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
     hostname: api3
@@ -88,28 +50,34 @@ services:
       - 29000:9000
     environment:
       - TCP_HOST=api3
-      - SEED_0=akka.tcp://make-api@seed1:2551
-      - SEED_1=akka.tcp://make-api@seed2:2551
-      - SEED_2=akka.tcp://make-api@seed3:2551
       - KAFKA_URI=kafka:9092
       - AVRO_REGISTRY_URL=http://schema_registry:8081
       - ES_HOST=elasticsearch
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - CASSANDRA_0=cassandra
+      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
-      - seed1
-      - seed2
-      - seed3
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
+      - consul
       - api2
   elasticsearch:
-    image: elasticsearch:5.4.0
-    hostname: elasticsearch
+      image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+      hostname: elasticsearch
+      ports:
+        - 9200:9200
+        - 9300:9300
+      networks:
+        - makeapi
+      environment:
+        ES_JAVA_OPTS: '-Xms1G -Xmx1G'
+        xpack.security.enabled: "false"
+        http.host: elasticsearch
+        transport.host: localhost
   zookeeper:
     image: zookeeper:3.4.10
     hostname: zookeeper
@@ -155,6 +123,15 @@ services:
     ports:
       - 7000:7000
       - 9042:9042
+    environment:
+      JVM_OPTS: '-Xms1G -Xmx1G'
+    networks:
+      - makeapi
+  consul:
+    image: consul:0.8.3
+    hostname: consul
+    ports:
+      - 8500:8500
     networks:
       - makeapi
 networks:
