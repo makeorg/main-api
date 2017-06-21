@@ -2,18 +2,19 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import com.typesafe.scalalogging.StrictLogging
+import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
-import scala.concurrent.{ExecutionContext, Future}
-trait PersistentUserServiceComponent {
+import scala.concurrent.Future
+
+trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
   def persistentUserService: PersistentUserService
-  def readExecutionContext: ExecutionContext
-  def writeExecutionContext: ExecutionContext
 
   val ROLE_SEPARATOR = ","
 
@@ -46,7 +47,7 @@ trait PersistentUserServiceComponent {
                             locale: String,
                             optInNewsletter: Boolean)
 
-  object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames {
+  object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames with StrictLogging {
 
     private val profileColumnNames: Seq[String] = Seq(
       "date_of_birth",
@@ -129,7 +130,7 @@ trait PersistentUserServiceComponent {
     }
   }
 
-  class PersistentUserService extends ShortenedNames {
+  class PersistentUserService extends ShortenedNames with StrictLogging {
 
     private val userSql = PersistentUser.user
     private val column = PersistentUser.column

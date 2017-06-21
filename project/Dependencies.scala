@@ -4,7 +4,7 @@ object Dependencies {
 
   private val akkaVersion = "2.5.2"
   private val akkaHttpVersion = "10.0.7"
-  private val nettyVersion = "4.1.9.Final"
+  private val nettyVersion = "4.1.12.Final"
   private val kafkaVersion = "0.10.2.0"
   private val elastic4sVersion = "5.4.1"
   private val kamonVersion = "0.6.6"
@@ -16,6 +16,8 @@ object Dependencies {
   val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.8.2"
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
+  val nettyEpollMac: ModuleID =
+    ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("macos-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
   val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % "0.7.1"
@@ -26,7 +28,8 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka"        %% "akka-cluster-sharding" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"                   %% "akka-http"             % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.knutwalker"                  %% "akka-http-circe"       % "3.3.0"
-  val akkaHttpSwagger: ModuleID = "com.github.swagger-akka-http" %% "swagger-akka-http"     % "0.9.1"
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http"     % "0.9.1")
+    .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"            %% "akka-persistence"      % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50")
@@ -36,6 +39,7 @@ object Dependencies {
   val akkaStreamKafka: ModuleID =
     ("com.typesafe.akka" %% "akka-stream-kafka" % "0.16")
       .exclude("org.apache.kafka", "kafka-clients")
+  val jaxRsApi: ModuleID = "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
@@ -53,8 +57,8 @@ object Dependencies {
 
   val scalaOAuth: ModuleID = "com.nulab-inc" %% "scala-oauth2-core" % "1.3.0"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.1"
-  val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.1.0"
+  val scalike: ModuleID = "org.scalikejdbc"     %% "scalikejdbc"      % "3.0.1"
+  val postgresql: ModuleID = "org.postgresql"   % "postgresql"        % "42.1.0"
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
@@ -69,16 +73,22 @@ object Dependencies {
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"       %% "elastic4s-core"    % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"   %% "elastic4s-http"    % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-circe"   % elastic4sVersion
-  val elastic4sStream: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion
+  val elastic4sStream: ModuleID = ("com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion)
+    .exclude("io.netty", "netty-all")
 
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.3"
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"     %% "akka-testkit"      % akkaVersion     % "test"
-  val scalaTest: ModuleID = "org.scalatest"        %% "scalatest"         % "3.0.1"         % "test"
-  val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
-  val mockito: ModuleID = "org.mockito"            % "mockito-core"       % "2.7.22"        % "test"
-
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "test"
-
+  val akkaTest: ModuleID = "com.typesafe.akka"     %% "akka-testkit"             % akkaVersion     % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"        %% "scalatest"                % "3.0.1"         % "it,test"
+  val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
+  val mockito: ModuleID = "org.mockito"            % "mockito-core"              % "2.7.22"        % "it,test"
+  val scalikeTest: ModuleID = "org.scalikejdbc" %% "scalikejdbc-test" % "3.0.1" % "it,test"
+  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.3"         % "it"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.3" % "it")
+    .exclude("io.netty", "netty-handler")
+    .exclude("io.netty", "netty-transport-native-epoll")
+  // Needed to use the client....
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core" % "jersey-server" % "2.23.1" % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "it,test"
 }

@@ -28,23 +28,28 @@ libraryDependencies ++= Seq(
   Dependencies.avro4s,
   Dependencies.scalaOAuth,
   Dependencies.scalike,
+  Dependencies.scalikeTest,
   Dependencies.postgresql,
   Dependencies.nettyAll,
-  Dependencies.nettyEpoll,
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
   Dependencies.elastic4sCirce,
   Dependencies.elastic4sStream,
   Dependencies.akkaHttpTest,
   Dependencies.akkaPersistenceInMemory,
-  Dependencies.akkaTest
+  Dependencies.akkaTest,
+  Dependencies.dockerClient,
+  Dependencies.dockerScalatest,
+  Dependencies.jerseyServer,
+  Dependencies.jaxRsApi
 )
 
-lazy val buildTime: SettingKey[ZonedDateTime] =
-  SettingKey[ZonedDateTime]("buildTime", "time of build")
-
-buildTime := {
-  ZonedDateTime.now(ZoneOffset.UTC)
+libraryDependencies += {
+  if (System.getProperty("os.name").toLowerCase.contains("mac")) {
+    Dependencies.nettyEpollMac
+  } else {
+    Dependencies.nettyEpoll
+  }
 }
 
 lazy val swaggerUiVersion: SettingKey[String] =
@@ -54,12 +59,17 @@ swaggerUiVersion := {
   Dependencies.swaggerUiVersion
 }
 
+lazy val buildTime: SettingKey[String] = SettingKey[String]("buildTime", "time of build")
+
+buildTime := ZonedDateTime.now(ZoneOffset.UTC).toString
+
 enablePlugins(BuildInfoPlugin)
 
 buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime, swaggerUiVersion)
 
 fork in run := true
 fork in Test := true
+fork in IntegrationTest := true
 
 aspectjSettings
 

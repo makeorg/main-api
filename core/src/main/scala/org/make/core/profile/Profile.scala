@@ -92,9 +92,10 @@ object Profile {
       locale = locale,
       optInNewsletter = optInNewsletter
     )
-    if (isEmpty(profile))
+    if (isEmpty(profile)) {
       None
-    else
+    } else {
       Some(profile)
+    }
   }
 }

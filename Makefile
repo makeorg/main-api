@@ -1,11 +1,14 @@
-.PHONY: package-docker-image release run test infra-clean infra-rebuild infra-show-containers infra-show-images infra-show-logs infra-stop infra-up
+.PHONY: package-docker-image release run test-all test-all-with-coverage test-int test-unit infra-clean infra-rebuild infra-show-containers infra-show-images infra-show-logs infra-stop infra-up
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
 	@echo "   package-docker-image           to build locally the docker image"
 	@echo "   release                        to release the application"
 	@echo "   run                            to run app"
-	@echo "   test                           to test the application"
+	@echo "   test-all                       to test the application"
+	@echo "   test-all-with-coverage         to test the application with code coverage"
+	@echo "   test-int                       to test the application (integration tests)"
+	@echo "   test-unit                      to test the application (unit tests)"
 	@echo "   infra-clean                    to stop and remove containers, networks, images, and volumes"
 	@echo "   infra-rebuild                  to clean and up all"
 	@echo "   infra-show-containers          to show all the containers"
@@ -25,8 +28,18 @@ release:
 run:
 	sbt api/run
 
-test:
+test-all: test-unit test-int
+
+test-all-with-coverage:
+	sbt clean coverage test it:test
+	sbt coverageReport coverageAggregate
+
+test-int:
+	sbt it:test
+
+test-unit:
 	sbt test
+
 
 ########################################
 #              INFRA                   #
