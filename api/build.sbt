@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
   Dependencies.avroSerializer,
   Dependencies.avro4s,
   Dependencies.scalaOAuth,
+  Dependencies.scalaBcrypt,
   Dependencies.scalike,
   Dependencies.scalikeTest,
   Dependencies.postgresql,

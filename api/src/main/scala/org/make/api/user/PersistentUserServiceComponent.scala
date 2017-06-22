@@ -18,7 +18,7 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
   val ROLE_SEPARATOR = ","
 
-  case class PersistentUser(id: UserId,
+  case class PersistentUser(uuid: UserId,
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime,
                             email: String,
@@ -66,7 +66,7 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
     )
 
     private val userColumnNames: Seq[String] = Seq(
-      "id",
+      "uuid",
       "created_at",
       "updated_at",
       "email",
@@ -111,7 +111,7 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
     def toUser(resultSet: WrappedResultSet): User = {
       User(
-        userId = UserId(resultSet.string(column.id)),
+        userId = UserId(resultSet.string(column.uuid)),
         email = resultSet.string(column.email),
         firstName = resultSet.string(column.firstName),
         lastName = resultSet.string(column.lastName),
@@ -135,13 +135,13 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
     private val userSql = PersistentUser.user
     private val column = PersistentUser.column
 
-    def get(id: UserId): Future[Option[User]] = {
+    def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(userSql.*)
             .from(PersistentUser.as(userSql))
-            .where(sqls.eq(userSql.id, id.value))
+            .where(sqls.eq(userSql.uuid, uuid.value))
         }.map(PersistentUser.toUser).single.apply
       })
     }
@@ -179,7 +179,7 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
           insert
             .into(PersistentUser)
             .namedValues(
-              column.id -> user.userId.value,
+              column.uuid -> user.userId.value,
               column.createdAt -> user.createdAt,
               column.updatedAt -> user.updatedAt,
               column.email -> user.email,

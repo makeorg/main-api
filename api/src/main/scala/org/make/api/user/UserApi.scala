@@ -3,7 +3,6 @@ package org.make.api.user
 import java.time.LocalDate
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
@@ -72,8 +71,22 @@ trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataH
     path("user") {
       makeTrace("RegisterUser") {
         decodeRequest {
-          entity(as[RegisterUserRequest]) { _: RegisterUserRequest =>
-            complete(StatusCodes.NotImplemented)
+          entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
+            extractClientIP { ip =>
+              onSuccess(
+                  userService
+                    .register(
+                      email = request.email,
+                      firstName = request.firstName,
+                      lastName = request.lastName,
+                      password = request.password,
+                      lastIp = ip.toOption.map(_.getHostAddress).getOrElse("unknown"),
+                      dateOfBirth = request.dateOfBirth
+                    )
+              ) {
+                complete(_)
+              }
+            }
           }
         }
       }
