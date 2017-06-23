@@ -47,9 +47,16 @@ buildTime := {
   ZonedDateTime.now(ZoneOffset.UTC)
 }
 
+lazy val swaggerUiVersion: SettingKey[String] =
+  SettingKey[String]("swaggerUiVersion", "version of swagger ui")
+
+swaggerUiVersion := {
+  Dependencies.swaggerUiVersion
+}
+
 enablePlugins(BuildInfoPlugin)
 
-buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime)
+buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime, swaggerUiVersion)
 
 fork in run := true
 fork in Test := true

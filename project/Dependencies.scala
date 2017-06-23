@@ -9,6 +9,7 @@ object Dependencies {
   private val elastic4sVersion = "5.4.1"
   private val kamonVersion = "0.6.6"
   val aspectJVersion: String = "1.8.10"
+  val swaggerUiVersion: String = "3.0.14"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.5.0"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.8.2"
@@ -36,7 +37,7 @@ object Dependencies {
     ("com.typesafe.akka" %% "akka-stream-kafka" % "0.16")
       .exclude("org.apache.kafka", "kafka-clients")
 
-  val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % "2.2.8"
+  val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
   val kamonAkka: ModuleID = "io.kamon" %% "kamon-akka-2.4" % kamonVersion
   val kamonAkkaHttp: ModuleID =
