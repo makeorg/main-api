@@ -45,12 +45,12 @@ class MailJetApiTest extends FlatSpec with Matchers {
 
     val parseResult = maybeJson match {
       case Right(json) => json.as[Seq[MailJetEvent]]
-      case Left(e) => fail("unable to parse json", e)
+      case Left(e)     => fail("unable to parse json", e)
     }
 
     val events = parseResult match {
       case Right(seq) => seq
-      case Left(e) => fail("unable to decode json", e)
+      case Left(e)    => fail("unable to decode json", e)
     }
 
     events.size should be(2)
@@ -63,15 +63,13 @@ class MailJetApiTest extends FlatSpec with Matchers {
         email = "api@mailjet.com",
         campaignId = Some(7257),
         contactId = Some(4),
-        customcampaign = Some(""),
+        customCampaign = Some(""),
         stringMessageId = Some("19421777835146490"),
         smtpReply = Some("sent (250 2.0.0 OK 1433333948 fa5si855896wjc.199 - gsmtp)"),
         customId = Some("helloworld"),
         payload = Some("")
       )
     )
-
-
 
   }
 

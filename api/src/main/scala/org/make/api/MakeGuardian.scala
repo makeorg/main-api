@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.proposition.PropositionSupervisor
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
+import org.make.api.technical.mailjet.MailJetProducerActor
 import org.make.api.vote.VoteSupervisor
 
 class MakeGuardian extends Actor with ActorLogging {
@@ -16,6 +17,7 @@ class MakeGuardian extends Actor with ActorLogging {
         .actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name)
     )
     context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
+    context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
   }
 
   override def receive: Receive = {
