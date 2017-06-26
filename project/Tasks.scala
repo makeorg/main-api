@@ -1,4 +1,4 @@
-import sbt.{SettingKey, TaskKey, settingKey, taskKey}
+import sbt.{settingKey, taskKey, SettingKey, TaskKey}
 
 object Tasks {
 

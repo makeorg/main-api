@@ -50,14 +50,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
     ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(configuration.getInt("pools.write.max-total")))
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
-
   ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
 
   GlobalSettings.loggingSQLErrors = true
   GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
     enabled = true,
     warningEnabled = false,
-    printUnprocessedStackTrace = false,
+    printUnprocessedStackTrace = true,
     logLevel = 'info
   )
 

@@ -15,5 +15,4 @@ trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServi
       persistentUserService.get(id)
     }
   }
-
 }

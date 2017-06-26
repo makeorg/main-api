@@ -2,18 +2,19 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import com.typesafe.scalalogging.StrictLogging
+import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
-import scala.concurrent.{ExecutionContext, Future}
-trait PersistentUserServiceComponent {
+import scala.concurrent.Future
+
+trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
   def persistentUserService: PersistentUserService
-  def readExecutionContext: ExecutionContext
-  def writeExecutionContext: ExecutionContext
 
   val ROLE_SEPARATOR = ","
 
@@ -46,7 +47,7 @@ trait PersistentUserServiceComponent {
                             locale: String,
                             optInNewsletter: Boolean)
 
-  object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames {
+  object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames with StrictLogging {
 
     private val profileColumnNames: Seq[String] = Seq(
       "date_of_birth",
@@ -83,9 +84,9 @@ trait PersistentUserServiceComponent {
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
 
-    override val tableName: String = "user"
+    override val tableName: String = "make_user"
 
-    lazy val user: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentUser], PersistentUser] = syntax("user")
+    lazy val user: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentUser], PersistentUser] = syntax("u")
 
     def toRole: (String)   => Option[Role] = Role.matchRole
     def toGender: (String) => Option[Gender] = Gender.matchGender
@@ -129,7 +130,7 @@ trait PersistentUserServiceComponent {
     }
   }
 
-  class PersistentUserService extends ShortenedNames {
+  class PersistentUserService extends ShortenedNames with StrictLogging {
 
     private val userSql = PersistentUser.user
     private val column = PersistentUser.column
@@ -171,7 +172,7 @@ trait PersistentUserServiceComponent {
       }).map(_.getOrElse(false))
     }
 
-    def persist(user: User, hashedPassword: String): Future[User] = {
+    def persist(user: User): Future[User] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
@@ -185,31 +186,29 @@ trait PersistentUserServiceComponent {
               column.firstName -> user.firstName,
               column.lastName -> user.lastName,
               column.lastIp -> user.lastIp,
-              column.hashedPassword -> hashedPassword,
+              column.hashedPassword -> user.hashedPassword,
               column.salt -> user.salt,
               column.enabled -> user.enabled,
               column.verified -> user.verified,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
-              column.roles -> user.roles.mkString(ROLE_SEPARATOR),
-              column.dateOfBirth -> user.profile.map(_.dateOfBirth),
+              column.roles -> user.roles.map(_.shortName).mkString(ROLE_SEPARATOR),
               column.avatarUrl -> user.profile.map(_.avatarUrl),
               column.profession -> user.profile.map(_.profession),
               column.phoneNumber -> user.profile.map(_.phoneNumber),
               column.twitterId -> user.profile.map(_.twitterId),
               column.facebookId -> user.profile.map(_.facebookId),
               column.googleId -> user.profile.map(_.googleId),
-              column.gender -> user.profile.map(_.gender.toString),
+              column.gender -> user.profile.map(_.gender.map(_.shortName)),
               column.genderName -> user.profile.map(_.genderName),
               column.departmentNumber -> user.profile.map(_.departmentNumber),
               column.karmaLevel -> user.profile.map(_.karmaLevel),
               column.locale -> user.profile.map(_.locale),
               column.dateOfBirth -> user.profile.map(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
-              column.optInNewsletter -> user.profile.map(_.optInNewsletter)
+              column.optInNewsletter -> user.profile.map(_.optInNewsletter).getOrElse(false)
             )
         }.execute().apply()
       }).map(_ => user)
     }
   }
-
 }
