@@ -8,6 +8,7 @@ object Dependencies {
   private val kafkaVersion = "0.10.2.0"
   private val elastic4sVersion = "5.4.1"
   private val kamonVersion = "0.6.6"
+  private val circeVersion = "0.8.0"
   val aspectJVersion: String = "1.8.10"
   val swaggerUiVersion: String = "3.0.14"
 
@@ -20,7 +21,7 @@ object Dependencies {
     ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("macos-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
-  val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % "0.7.1"
+  val circeGeneric: ModuleID = "io.circe" %% "circe-generic"        % circeVersion
 
   val akka: ModuleID = "com.typesafe.akka"                       %% "akka-actor"            % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka"                %% "akka-cluster"          % akkaVersion
