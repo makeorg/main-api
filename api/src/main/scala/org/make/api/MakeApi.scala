@@ -5,11 +5,12 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusC
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.http.scaladsl.model.Uri
 import akka.util.Timeout
+import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
-import org.make.api.user.{UserApi, UserServiceComponent, PersistentUserServiceComponent}
+import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
 import org.make.api.extensions.DatabaseConfiguration
 import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
@@ -98,9 +99,9 @@ trait MakeApi
     path("swagger") {
       parameters('url?) {
           case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
-          case _ => getFromResource("META-INF/resources/webjars/swagger-ui/2.2.8/index.html")
+          case _ => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
       }
-    } ~ getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.2.8")
+    } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val login: Route = path("login.html") {
     getFromResource("auth/login.html")
