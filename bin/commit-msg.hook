@@ -6,7 +6,7 @@
 # see the README
 #
 LINE_READ=0
-COMMIT_HEADER_REGEXP="((feat|fix|docs|style|refactor|test|chore)(user|proposition|sequence|vote|transverse): (.*))"
+COMMIT_HEADER_REGEXP="(feat|fix|docs|style|refactor|test|chore)\((user|proposition|sequence|vote|transverse)\): (.*)"
 COMMIT_BLANK_LINE_REGEXP="^$"
 COMMIT_BODY_REGEXP="^[A-Za-z0-9].*$"
 
@@ -20,8 +20,8 @@ do
 			echo -e "\x1B[31mLine:  $line"
 			exit 1;
 		fi
-		if [[ ${#line} > 72 || ${#line} < 50 ]]; then
-		    echo -e "\x1B[31mYour commit message length should be between 50 and 72 :)"
+		if [[ ${#line} > 72 ]]; then
+		    echo -e "\x1B[31mYour commit message length should be below 72 :)"
 		    echo -e "\x1B[31mYou used:  ${#line} chars"
 		    exit 1;
         fi

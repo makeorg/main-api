@@ -1,5 +1,6 @@
 import sbt.Keys.scalacOptions
 import Tasks.{testScalastyle, _}
+import org.make.GitHooks
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -87,3 +88,7 @@ credentials ++= {
   }
 }
 
+
+enablePlugins(GitHooks)
+
+gitCommitMessageHook := Some(baseDirectory.value / "bin" / "commit-msg.hook")
