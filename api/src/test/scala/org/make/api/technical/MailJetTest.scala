@@ -17,8 +17,8 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
 
   implicit val materializer = ActorMaterializer()
 
-  "transformResponse" should {
-    "unmarshall correct responses" in {
+  feature("transform response") {
+    scenario("unmarshall correct responses") {
       val responseString: String =
         """
           |{
@@ -42,8 +42,7 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
         result should be(Right(Map("ka" -> "va", "kb" -> "vb")))
       }
     }
-
-    "return a left if json is invalid" in {
+    scenario("return a left if json is invalid") {
       val responseString: String =
         """
           |{
@@ -66,8 +65,7 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
         result.isLeft should be(true)
       }
     }
-
-    "return a left if json is not of required type" in {
+    scenario("return a left if json is not of required type") {
       val responseString: String =
         """
           |{
@@ -93,8 +91,7 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
       }
     }
 
-    "return a left if http call failed" in {
-
+    scenario("return a left if http call failed") {
       whenReady(
         Source
           .single((Try(throw new IllegalStateException("fake")), "123456"))
@@ -107,7 +104,6 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
         result.isLeft should be(true)
       }
     }
-
   }
 
 }

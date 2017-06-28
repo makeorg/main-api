@@ -11,7 +11,7 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
-import org.make.api.extensions.DatabaseConfiguration
+import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.mailjet.MailJetApi
@@ -39,11 +39,14 @@ trait MakeApi
     with TokenServiceComponent
     with StrictLogging
     with MailJetApi
+    with MailJetConfigurationComponent
     with EventBusServiceComponent {
 
   def actorSystem: ActorSystem
 
   override def eventBusService: EventBusService = new EventBusService(actorSystem)
+
+  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
   override lazy val userService: UserService = new UserService()
   override lazy val propositionService: PropositionService =
