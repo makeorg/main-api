@@ -3,6 +3,7 @@ package org.make.api.user
 import java.time.LocalDate
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
@@ -45,7 +46,7 @@ trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataH
             if (userId == userAuth.user.userId) {
               onSuccess(userService.getUser(userId)) {
                 case Some(user) => complete(user)
-                case None          => complete(NotFound)
+                case None       => complete(NotFound)
               }
             } else {
               complete(Forbidden)
@@ -59,11 +60,7 @@ trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataH
   @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.user.RegisterUserRequest"
-      )
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
@@ -74,17 +71,17 @@ trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataH
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
             extractClientIP { ip =>
               onSuccess(
-                  userService
-                    .register(
-                      email = request.email,
-                      firstName = request.firstName,
-                      lastName = request.lastName,
-                      password = request.password,
-                      lastIp = ip.toOption.map(_.getHostAddress).getOrElse("unknown"),
-                      dateOfBirth = request.dateOfBirth
-                    )
-              ) {
-                complete(_)
+                userService
+                  .register(
+                    email = request.email,
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    password = request.password,
+                    lastIp = ip.toOption.map(_.getHostAddress).getOrElse("unknown"),
+                    dateOfBirth = request.dateOfBirth
+                  )
+              ) { result =>
+                complete(StatusCodes.Created -> result)
               }
             }
           }
@@ -102,9 +99,9 @@ trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataH
 
 case class RegisterUserRequest(email: String,
                                password: String,
-                               dateOfBirth: LocalDate,
-                               firstName: String,
-                               lastName: String) {
+                               dateOfBirth: Option[LocalDate],
+                               firstName: Option[String],
+                               lastName: Option[String]) {
 
   validate(
     mandatoryField("dateOfBirth", dateOfBirth),

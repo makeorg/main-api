@@ -8,8 +8,4 @@ object DateHelper {
   def now(): ZonedDateTime = {
     ZonedDateTime.now(utc)
   }
-
-  def toUtc(zonedDateTime: ZonedDateTime): ZonedDateTime = {
-    zonedDateTime.withZoneSameInstant(utc)
-  }
 }

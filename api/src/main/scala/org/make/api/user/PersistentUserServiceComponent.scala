@@ -113,8 +113,8 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
       User(
         userId = UserId(resultSet.string(column.uuid)),
         email = resultSet.string(column.email),
-        firstName = resultSet.string(column.firstName),
-        lastName = resultSet.string(column.lastName),
+        firstName = resultSet.stringOpt(column.firstName),
+        lastName = resultSet.stringOpt(column.lastName),
         createdAt = resultSet.zonedDateTime(column.updatedAt),
         updatedAt = resultSet.zonedDateTime(column.updatedAt),
         lastIp = resultSet.string(column.lastIp),

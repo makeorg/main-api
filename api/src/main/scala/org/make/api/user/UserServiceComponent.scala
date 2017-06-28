@@ -1,55 +1,63 @@
 package org.make.api.user
 
 import java.time.LocalDate
-import java.util.UUID
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.{DateHelper, IdGeneratorComponent}
+import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.profile.Profile
 import org.make.core.user._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServiceComponent =>
 
   def userService: UserService
 
-  class UserService() {
+  class UserService {
 
     def getUser(id: UserId): Future[Option[User]] = {
       persistentUserService.get(id)
     }
 
     def register(email: String,
-                 firstName: String,
-                 lastName: String,
+                 firstName: Option[String],
+                 lastName: Option[String],
                  password: String,
                  lastIp: String,
-                 dateOfBirth: LocalDate): Future[User] = {
+                 dateOfBirth: Option[LocalDate]): Future[User] = {
 
-      val profile = Profile.parseProfile(dateOfBirth = Option(dateOfBirth))
+      val lowerCasedEmail: String = email.toLowerCase()
 
-      val salt: String = generateSalt
+      persistentUserService.emailExists(lowerCasedEmail).flatMap { result =>
+        if (result) {
+          Future.failed(EmailAlreadyRegistredException(lowerCasedEmail))
+        } else {
+          val profile: Option[Profile] = Profile.parseProfile(dateOfBirth = dateOfBirth)
 
-      val user = User(
-        userId = idGenerator.nextUserId(),
-        createdAt = DateHelper.now(),
-        updatedAt = DateHelper.now(),
-        email = email,
-        firstName = firstName,
-        lastName = lastName,
-        lastIp = lastIp,
-        hashedPassword = password.bcrypt(salt),
-        salt = salt,
-        enabled = true,
-        verified = false,
-        lastConnection = DateHelper.now(),
-        verificationToken = UUID.randomUUID().toString(),
-        roles = Seq(Role.RoleCitizen),
-        profile = profile
-      )
+          val salt: String = generateSalt
 
-      persistentUserService.persist(user)
+          val user = User(
+            userId = idGenerator.nextUserId(),
+            createdAt = DateHelper.now(),
+            updatedAt = DateHelper.now(),
+            email = lowerCasedEmail,
+            firstName = firstName,
+            lastName = lastName,
+            lastIp = lastIp,
+            hashedPassword = password.bcrypt(salt),
+            salt = salt,
+            enabled = true,
+            verified = false,
+            lastConnection = DateHelper.now(),
+            verificationToken = idGenerator.nextId(),
+            roles = Seq(Role.RoleCitizen),
+            profile = profile
+          )
+          persistentUserService.persist(user)
+        }
+      }
     }
   }
 }
