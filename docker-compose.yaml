@@ -30,7 +30,7 @@ services:
         ZOOKEEPER_PORT_2181_TCP_PORT: 2181
     restart: on-failure:2
   cockroach:
-    image: cockroachdb/cockroach:alpha-18828-g1227734
+    image: cockroachdb/cockroach:v1.0.2
     command: start --insecure
     ports:
       - 26257:26257
