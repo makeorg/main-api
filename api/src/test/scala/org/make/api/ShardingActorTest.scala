@@ -6,11 +6,11 @@ import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest._
 
 class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem())
     extends TestKit(actorSystem)
-    with WordSpecLike
+    with FeatureSpecLike
     with Matchers
     with BeforeAndAfterAll
     with BeforeAndAfterEach
@@ -59,6 +59,7 @@ object TestHelper {
       |      users = "users"
       |      propositions = "propositions"
       |      votes = "votes"
+      |      mailjet-events = "mailjet-events"
       |    }
       |  }
       |}

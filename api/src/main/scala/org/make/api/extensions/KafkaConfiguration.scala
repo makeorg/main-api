@@ -9,7 +9,8 @@ class KafkaConfiguration(override protected val configuration: Config) extends E
   val topics: Map[String, String] = Map(
     "users" -> configuration.getString("topics.users"),
     "propositions" -> configuration.getString("topics.propositions"),
-    "votes" -> configuration.getString("topics.votes")
+    "votes" -> configuration.getString("topics.votes"),
+    "mailjet-events" -> configuration.getString("topics.mailjet-events")
   )
 
   val pollTimeout: Long = configuration.getLong("poll-timeout")

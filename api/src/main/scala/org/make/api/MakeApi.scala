@@ -11,10 +11,11 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
-import org.make.api.extensions.DatabaseConfiguration
+import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
-import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation}
+import org.make.api.technical.mailjet.MailJetApi
+import org.make.api.technical._
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.ValidationFailedError
 
@@ -36,10 +37,16 @@ trait MakeApi
     with AvroSerializers
     with MakeDataHandlerComponent
     with TokenServiceComponent
-    with StrictLogging {
+    with StrictLogging
+    with MailJetApi
+    with MailJetConfigurationComponent
+    with EventBusServiceComponent {
 
   def actorSystem: ActorSystem
 
+  override def eventBusService: EventBusService = new EventBusService(actorSystem)
+
+  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
   override lazy val userService: UserService = new UserService()
   override lazy val propositionService: PropositionService =
@@ -97,9 +104,9 @@ trait MakeApi
 
   private lazy val swagger: Route =
     path("swagger") {
-      parameters('url?) {
-          case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
-          case _ => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
+      parameters('url.?) {
+        case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
+        case _    => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
       }
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
@@ -118,7 +125,8 @@ trait MakeApi
       propositionRoutes ~
 //    voteRoutes ~
       accessTokenRoute ~
-      buildRoutes
+      buildRoutes ~
+      mailJetRoutes
   )
 }
 

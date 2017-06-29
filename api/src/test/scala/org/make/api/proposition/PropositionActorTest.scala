@@ -6,8 +6,8 @@ import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.core.user.UserId
 import org.make.core.proposition._
+import org.make.core.user.UserId
 import org.scalatest.GivenWhenThen
 
 class PropositionActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
@@ -21,10 +21,9 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  "Propose a proposition" should {
+  feature("Propose a proposition") {
     val propositionId: PropositionId = PropositionId("proposeCommand")
-    "Initialize the state if it was empty" in {
-
+    scenario("Initialize the state if it was empty") {
       Given("an empty state")
       coordinator ! GetProposition(propositionId)
       expectMsg(None)
@@ -86,9 +85,9 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  "Update a proposition" should {
+  feature("Update a proposition") {
     val propositionId: PropositionId = PropositionId("updateCommand")
-    "Fail if PropositionId doesn't exists" in {
+    scenario("Fail if PropositionId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposition(propositionId)
       expectMsg(None)
@@ -104,7 +103,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(None)
     }
 
-    "Change the state and create a snapshot if valid" in {
+    scenario("Change the state and create a snapshot if valid") {
       Given("an empty state")
       coordinator ! GetProposition(propositionId)
       expectMsg(None)
@@ -184,9 +183,9 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  "View a proposition" should {
+  feature("View a proposition") {
     val propositionId: PropositionId = PropositionId("viewCommand")
-    "Fail if PropositionId doesn't exists" in {
+    scenario("Fail if PropositionId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposition(propositionId)
       expectMsg(None)
@@ -198,7 +197,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(None)
     }
 
-    "Return the state if valid" in {
+    scenario("Return the state if valid") {
       Given("an empty state")
       coordinator ! GetProposition(propositionId)
       expectMsg(None)

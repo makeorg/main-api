@@ -45,8 +45,8 @@ class PropositionStreamToElasticsearchTest
   val msgsKo: immutable.Iterable[CommittableMessage[String, AnyRef]] =
     immutable.Seq(msgKo)
 
-  "Stream to Elasticsearch" should {
-    "shape the OK data" in {
+  feature("Stream to Elasticsearch") {
+    scenario("shape the OK data") {
       when(committableOffset.commitScaladsl())
         .thenReturn(Future.successful(Done))
 //      when(committableOffsetBatch.commitScaladsl()).thenReturn(Future.successful(Done))
@@ -64,7 +64,7 @@ class PropositionStreamToElasticsearchTest
       val result: Seq[Done] = Await.result(future, 3.seconds)
       assert(!result.exists(_ != Done))
     }
-    "fail the KO data" in {
+    scenario("fail the KO data") {
       assertThrows[ClassCastException] {
         Await.result(
           Source[CommittableMessage[String, AnyRef]](msgsKo)
