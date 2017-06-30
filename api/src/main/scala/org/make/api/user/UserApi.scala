@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import org.make.api.technical.MakeDirectives
+import org.make.api.technical.{IdGeneratorComponent, MakeDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
@@ -19,7 +19,8 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "User")
 @Path(value = "/user")
-trait UserApi extends MakeDirectives { this: UserServiceComponent with MakeDataHandlerComponent =>
+trait UserApi extends MakeDirectives {
+  this: UserServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
 
   @ApiOperation(
     value = "get-user",

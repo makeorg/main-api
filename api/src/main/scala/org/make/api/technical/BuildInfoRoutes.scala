@@ -5,7 +5,7 @@ import buildinfo.BuildInfo
 import io.circe.generic.auto._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 
-trait BuildInfoRoutes extends MakeDirectives { this: MakeDataHandlerComponent =>
+trait BuildInfoRoutes extends MakeDirectives { this: MakeDataHandlerComponent with IdGeneratorComponent =>
 
   val buildRoutes: Route = buildInfo
 
