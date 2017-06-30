@@ -12,9 +12,9 @@ sealed trait Role {
 
   implicit lazy val roleEncoder: Encoder[Role] = (role: Role) => Json.fromString(role.shortName)
   implicit lazy val roleDecoder: Decoder[Role] =
-    Decoder.decodeString.map(role => Role.matchRole(role).getOrElse(
-      throw new IllegalArgumentException(s"$role is not a Role")
-    ))
+    Decoder.decodeString.map(
+      role => Role.matchRole(role).getOrElse(throw new IllegalArgumentException(s"$role is not a Role"))
+    )
 }
 
 object Role extends StrictLogging {
@@ -53,8 +53,8 @@ case class User(userId: UserId,
                 createdAt: ZonedDateTime,
                 updatedAt: ZonedDateTime,
                 email: String,
-                firstName: String,
-                lastName: String,
+                firstName: Option[String],
+                lastName: Option[String],
                 lastIp: String,
                 hashedPassword: String,
                 salt: String,

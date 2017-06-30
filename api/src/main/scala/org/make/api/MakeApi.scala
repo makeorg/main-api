@@ -1,24 +1,27 @@
 package org.make.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.{ExceptionHandler, Route}
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`Content-Type`
+import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.auto._
+import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.syntax._
+import io.circe.generic.auto._
 import kamon.trace.Tracer
 import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
 import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
+import org.make.api.technical._
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
 import org.make.api.technical.mailjet.MailJetApi
-import org.make.api.technical._
+import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
-import org.make.core.ValidationFailedError
+import org.make.core.{ValidationError, ValidationFailedError}
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.runtime.{universe => ru}
@@ -83,25 +86,6 @@ trait MakeApi
     )
   }
 
-  val exceptionHandler = ExceptionHandler {
-    case ValidationFailedError(messages) =>
-      complete(
-        HttpResponse(
-          status = StatusCodes.BadRequest,
-          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
-        )
-      )
-    case e =>
-      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
-      complete(
-        HttpResponse(
-          status = StatusCodes.InternalServerError,
-          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
-        )
-      )
-
-  }
-
   private lazy val swagger: Route =
     path("swagger") {
       parameters('url.?) {
@@ -117,20 +101,22 @@ trait MakeApi
   private lazy val apiTypes: Seq[ru.Type] =
     Seq(ru.typeOf[UserApi], ru.typeOf[PropositionApi])
 
-  lazy val makeRoutes: Route = handleExceptions(exceptionHandler)(
-    new MakeDocumentation(actorSystem, apiTypes).routes ~
-      swagger ~
-      login ~
-      userRoutes ~
-      propositionRoutes ~
+  lazy val makeRoutes: Route = handleExceptions(MakeApi.exceptionHandler)(
+    handleRejections(MakeApi.rejectionHandler)(
+      new MakeDocumentation(actorSystem, apiTypes).routes ~
+        swagger ~
+        login ~
+        userRoutes ~
+        propositionRoutes ~
 //    voteRoutes ~
-      accessTokenRoute ~
-      buildRoutes ~
-      mailJetRoutes
+        accessTokenRoute ~
+        buildRoutes ~
+        mailJetRoutes
+    )
   )
 }
 
-object MakeApi {
+object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
   def defaultError(id: String): String =
     s"""
       |{
@@ -145,4 +131,33 @@ object MakeApi {
   def routeId: String = {
     Tracer.currentContext.name
   }
+
+  val exceptionHandler = ExceptionHandler {
+    case e: EmailAlreadyRegistredException =>
+      complete(StatusCodes.BadRequest -> Seq(ValidationError("email", e.getMessage)))
+    case e =>
+      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
+      complete(
+        HttpResponse(
+          status = StatusCodes.InternalServerError,
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
+        )
+      )
+  }
+
+  val rejectionHandler: RejectionHandler = RejectionHandler
+    .newBuilder()
+    .handle {
+      case MalformedRequestContentRejection(_, ValidationFailedError(messages)) =>
+        complete(
+          HttpResponse(
+            status = StatusCodes.BadRequest,
+            entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString),
+            headers = immutable.Seq[HttpHeader](`Content-Type`(ContentTypes.`application/json`))
+          )
+        )
+    }
+    .result()
+    .withFallback(RejectionHandler.default)
+
 }

@@ -26,9 +26,7 @@ class PersistentUserServiceComponentTest
     When("transformed to user")
     val user = PersistentUser.toUser(rs)
     Then("Role objects are returned")
-    user.roles should be (
-      Seq[Role](Role.RoleAdmin, Role.RoleModerator)
-    )
+    user.roles should be(Seq[Role](Role.RoleAdmin, Role.RoleModerator))
   }
 
   "toUser" should "not fail to return roles when invalid roles" in {
@@ -38,20 +36,20 @@ class PersistentUserServiceComponentTest
     When("transformed to user")
     val user = PersistentUser.toUser(rs)
     Then("Role must be empty")
-    user.roles should be (empty)
+    user.roles should be(empty)
   }
 
-  val exampleUrl = "http://example.com/"
   "toProfilel" should "return a consistent Profile" in {
     Given("a partially filled Profile")
     val rs = mock[WrappedResultSet]
+    val exampleUrl = "http://example.com/"
     Mockito.when(rs.stringOpt(ArgumentMatchers.eq("avatar_url"))).thenReturn(Some(exampleUrl))
     Mockito.when(rs.intOpt(ArgumentMatchers.eq("karma_level"))).thenReturn(None)
     When("initialized with toProfile")
     val maybeProfile = PersistentUser.toProfile(rs)
     Then("return a Profile with options")
     maybeProfile should not be empty
-    maybeProfile.get.avatarUrl should be (Some(exampleUrl))
-    maybeProfile.get.karmaLevel should be (None)
+    maybeProfile.get.avatarUrl should be(Some(exampleUrl))
+    maybeProfile.get.karmaLevel should be(None)
   }
 }
