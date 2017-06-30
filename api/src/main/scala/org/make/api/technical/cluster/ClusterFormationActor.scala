@@ -47,7 +47,6 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
     self ! Init
   }
 
-
   override def postStop(): Unit = {
     timers.foreach(_.cancel())
   }

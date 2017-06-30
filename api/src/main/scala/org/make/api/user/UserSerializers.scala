@@ -12,10 +12,9 @@ object UserSerializers extends SprayJsonFormatters {
 
   implicit val genderFormatter: JsonFormat[Gender] = new JsonFormat[Gender] {
     override def read(json: JsValue): Gender = json match {
-      case JsString(gender) => Gender.matchGender(gender).getOrElse(
-        throw new IllegalArgumentException(s"$gender is not a Gender")
-      )
-      case other            => throw new IllegalArgumentException(s"Unable to convert $other")
+      case JsString(gender) =>
+        Gender.matchGender(gender).getOrElse(throw new IllegalArgumentException(s"$gender is not a Gender"))
+      case other => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
     override def write(gender: Gender): JsValue = JsString(gender.toString)
@@ -26,9 +25,7 @@ object UserSerializers extends SprayJsonFormatters {
 
   implicit val roleFormatter: JsonFormat[Role] = new JsonFormat[Role] {
     override def read(json: JsValue): Role = json match {
-      case JsString(role) => Role.matchRole(role).getOrElse(
-        throw new IllegalArgumentException(s"$role is not a Role")
-      )
+      case JsString(role) => Role.matchRole(role).getOrElse(throw new IllegalArgumentException(s"$role is not a Role"))
       case other          => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 

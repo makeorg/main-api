@@ -54,8 +54,7 @@ object MailJet {
     * @tparam T the desired return type in the stream
     * @return a stream transforming the response in the given type
     */
-  def transformResponse[T](implicit
-                           materializer: ActorMaterializer,
+  def transformResponse[T](implicit materializer: ActorMaterializer,
                            executionContext: ExecutionContext,
                            decoder: Decoder[T]): Flow[(Try[HttpResponse], String), Either[Throwable, T], NotUsed] = {
     Flow[(Try[HttpResponse], String)]

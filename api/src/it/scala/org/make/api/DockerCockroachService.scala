@@ -7,7 +7,7 @@ import com.whisk.docker.{DockerContainer, DockerFactory, DockerKit, DockerReadyC
 
 trait DockerCockroachService extends DockerKit {
 
-  val defaultCockroachPort        = 26257
+  val defaultCockroachPort = 26257
   // toDo: use random port to avoid collisions with parallel execution test
   val defaultCockroachPortExposed = 36257
 

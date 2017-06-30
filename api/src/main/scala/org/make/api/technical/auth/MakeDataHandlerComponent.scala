@@ -97,7 +97,7 @@ trait MakeDataHandlerComponent {
     override def findAuthInfoByAccessToken(accessToken: AccessToken): Future[Option[AuthInfo[User]]] = {
       for {
         maybeToken <- tokenService.getToken(accessToken.token)
-        maybeUser <- findUser(maybeToken)
+        maybeUser  <- findUser(maybeToken)
       } yield
         maybeUser.map { user =>
           val token = maybeToken.get

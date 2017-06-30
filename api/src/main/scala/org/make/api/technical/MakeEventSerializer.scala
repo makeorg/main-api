@@ -6,11 +6,7 @@ import org.make.api.technical.MakeEventSerializer.allSerializers
 import org.make.api.vote.VoteSerializers
 import stamina.{Persister, StaminaAkkaSerializer}
 
-class MakeEventSerializer
-    extends StaminaAkkaSerializer(
-      allSerializers.head,
-      allSerializers.tail:_*
-    )
+class MakeEventSerializer extends StaminaAkkaSerializer(allSerializers.head, allSerializers.tail: _*)
 
 object MakeEventSerializer {
   val allSerializers: Seq[Persister[_, _]] =

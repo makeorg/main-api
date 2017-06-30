@@ -18,8 +18,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposition")
 @Path(value = "/proposition")
-trait PropositionApi
-    extends MakeDirectives { this: PropositionServiceComponent with MakeDataHandlerComponent =>
+trait PropositionApi extends MakeDirectives { this: PropositionServiceComponent with MakeDataHandlerComponent =>
 
   @ApiOperation(value = "get-proposition", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))

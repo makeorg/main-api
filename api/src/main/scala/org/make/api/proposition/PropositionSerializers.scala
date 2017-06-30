@@ -34,7 +34,7 @@ object PropositionSerializers extends SprayJsonFormatters {
   private val propositionSerializer: JsonPersister[Proposition, V1] =
     persister[Proposition]("proposition")
 
-  val serializers: Seq[JsonPersister[_ , _]] = Seq(
+  val serializers: Seq[JsonPersister[_, _]] = Seq(
     propositionProposedSerializer,
     propositionViewedSerializer,
     propositionUpdatedSerializer,

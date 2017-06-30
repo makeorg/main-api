@@ -21,7 +21,7 @@ object Dependencies {
     ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("macos-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
-  val circeGeneric: ModuleID = "io.circe" %% "circe-generic"        % circeVersion
+  val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % circeVersion
 
   val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor"            % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster"          % akkaVersion

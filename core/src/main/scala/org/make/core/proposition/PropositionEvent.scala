@@ -10,7 +10,6 @@ sealed trait PropositionEvent extends MakeSerializable {
   def id: PropositionId
 }
 
-
 object PropositionEvent {
 
   type AnyPropositionEvent =

@@ -101,8 +101,8 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
         val bcast =
           builder.add(Broadcast[CommittableMessage[String, AnyRef]](3))
         val merge = builder.add(Merge[Done](2))
-        bcast ~> proposeEvent ~> toPropositionEs ~> save ~> merge
-        bcast ~> updateEvent ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> update ~> merge
+        bcast ~> proposeEvent ~> toPropositionEs      ~> save                             ~> merge
+        bcast ~> updateEvent  ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> update ~> merge
 
         val zip = builder.add(Zip[CommittableMessage[String, AnyRef], Done]())
         bcast ~> zip.in0

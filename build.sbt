@@ -65,12 +65,10 @@ lazy val api = project
   .configs(IntegrationTest)
   .settings(commonSettings: _*)
   .settings(Defaults.itSettings: _*)
-  .settings(
-    imageName := {
-      val alias = dockerAlias.value
-      s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
-    }
-  )
+  .settings(imageName := {
+    val alias = dockerAlias.value
+    s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
+  })
   .dependsOn(core)
 
 credentials ++= {
@@ -87,7 +85,6 @@ credentials ++= {
     Nil
   }
 }
-
 
 enablePlugins(GitHooks)
 

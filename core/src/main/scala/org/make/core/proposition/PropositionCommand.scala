@@ -8,10 +8,7 @@ sealed trait PropositionCommand {
   def propositionId: PropositionId
 }
 
-case class ProposeCommand(propositionId: PropositionId,
-                          userId: UserId,
-                          createdAt: ZonedDateTime,
-                          content: String)
+case class ProposeCommand(propositionId: PropositionId, userId: UserId, createdAt: ZonedDateTime, content: String)
     extends PropositionCommand
 
 case class UpdatePropositionCommand(propositionId: PropositionId, updatedAt: ZonedDateTime, content: String)
