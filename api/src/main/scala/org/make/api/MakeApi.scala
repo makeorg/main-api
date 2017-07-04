@@ -14,7 +14,7 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
-import org.make.api.technical.auth._
+import org.make.api.technical.auth.{MakeAuthentication, PersistentTokenServiceComponent, _}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
@@ -36,9 +36,9 @@ trait MakeApi
     with PropositionApi
     with VoteServiceComponent
     with VoteApi
-    with BuildInfoRoutes
     with AvroSerializers
     with DefaultMakeDataHandlerComponent
+    with BuildInfoRoutes
     with MailJetApi
     with MailJetConfigurationComponent
     with EventBusServiceComponent
@@ -111,6 +111,8 @@ trait MakeApi
 
   }
 
+//  override val tokenGenerator: TokenGenerator = new DefaultTokenGenerator
+
   private lazy val swagger: Route =
     path("swagger") {
       parameters('url.?) {
@@ -161,6 +163,13 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
   val exceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegistredException =>
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", e.getMessage)))
+    case ValidationFailedError(messages) =>
+      complete(
+        HttpResponse(
+          status = StatusCodes.BadRequest,
+          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
+        )
+      )
     case e =>
       logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
       complete(
@@ -187,5 +196,4 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     }
     .result()
     .withFallback(RejectionHandler.default)
-
 }
