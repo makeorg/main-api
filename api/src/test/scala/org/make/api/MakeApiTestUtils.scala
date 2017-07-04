@@ -8,5 +8,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeDirectives}
 trait MakeApiTestUtils extends MakeUnitTest with ScalatestRouteTest with MakeDirectives { this: IdGeneratorComponent =>
 
   def sealRoute(route: Route): Route =
-    ExecutionDirectives.handleExceptions(MakeApi.exceptionHandler)(Route.seal(route))
+    ExecutionDirectives.handleExceptions(MakeApi.exceptionHandler)(
+      handleRejections(MakeApi.rejectionHandler)(Route.seal(route))
+    )
 }

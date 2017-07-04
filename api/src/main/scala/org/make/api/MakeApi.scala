@@ -2,7 +2,7 @@ package org.make.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{ExceptionHandler, Route, _}
+import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
@@ -14,9 +14,9 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
-import org.make.api.technical.auth.{MakeAuthentication, PersistentTokenServiceComponent, _}
+import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
-import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
+import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
@@ -110,8 +110,6 @@ trait MakeApi
       )
 
   }
-
-//  override val tokenGenerator: TokenGenerator = new DefaultTokenGenerator
 
   private lazy val swagger: Route =
     path("swagger") {

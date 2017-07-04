@@ -17,7 +17,10 @@ import scalaoauth2.provider._
 trait MakeDataHandlerComponent {
   def oauth2DataHandler: MakeDataHandler
 }
-trait MakeDataHandler extends DataHandler[User] {}
+
+trait MakeDataHandler extends DataHandler[User] {
+  def removeTokenByAccessToken(token: String): Future[Int]
+}
 
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
   this: PersistentTokenServiceComponent
@@ -168,6 +171,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
       persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
+    }
+
+    override def removeTokenByAccessToken(token: String): Future[Int] = {
+      persistentTokenService.deleteByAccessToken(token)
     }
   }
 }
