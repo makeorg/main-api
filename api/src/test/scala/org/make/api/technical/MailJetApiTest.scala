@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe._
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
-import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
 import org.make.api.user.PersistentUserServiceComponent
 import org.mockito.ArgumentMatchers.any
@@ -25,16 +25,20 @@ class MailJetApiTest
     with EventBusServiceComponent
     with MailJetConfigurationComponent
     with MakeDataHandlerComponent
-    with TokenServiceComponent
     with IdGeneratorComponent
-    with PersistentUserServiceComponent {
+    with PersistentUserServiceComponent
+    with PersistentTokenServiceComponent
+    with PersistentClientServiceComponent
+    with TokenGeneratorComponent {
 
   override val eventBusService: EventBusService = mock[EventBusService]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val tokenService: TokenService = mock[TokenService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
+  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
+  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
+  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
