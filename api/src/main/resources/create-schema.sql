@@ -28,17 +28,36 @@ CREATE TABLE IF NOT EXISTS make_user (
   department_number VARCHAR(3) DEFAULT NULL,
   karma_level INT DEFAULT 0,
   locale VARCHAR(8) DEFAULT NULL,
-  opt_in_newsletter BOOLEAN DEFAULT FALSE
+  opt_in_newsletter BOOLEAN DEFAULT FALSE NOT NULL
 );
 
-CREATE UNIQUE INDEX UNIQUE_USER_ID ON make_user (uuid);
+CREATE TABLE IF NOT EXISTS oauth_client (
+  uuid VARCHAR(256) PRIMARY KEY,
+  secret VARCHAR(256) NOT NULL,
+  allowed_grant_types VARCHAR(256),
+  scope VARCHAR(2048),
+  redirect_uri VARCHAR(2048),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-CREATE TABLE IF NOT EXISTS token (
-  id VARCHAR(256) NOT NULL PRIMARY KEY,
-  refresh_token VARCHAR(256) NOT NULL,
-  user_id VARCHAR(256) NOT NULL,
-  scope VARCHAR(256) NOT NULL,
-  creation_date TIMESTAMP WITH TIME ZONE,
-  validity_duration_seconds INT NOT NULL,
-  parameters TEXT
+CREATE TABLE IF NOT EXISTS auth_code (
+  authorization_code VARCHAR(256) PRIMARY KEY,
+  scope VARCHAR(2048),
+  redirect_uri VARCHAR(2048),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_in INT NOT NULL,
+  make_user_uuid VARCHAR(256) NOT NULL REFERENCES make_user,
+  client_uuid VARCHAR(256) NOT NULL REFERENCES oauth_client
+);
+
+CREATE TABLE IF NOT EXISTS access_token (
+  access_token VARCHAR(256) PRIMARY KEY,
+  refresh_token VARCHAR(256),
+  scope VARCHAR(2048),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_in INT NOT NULL,
+  make_user_uuid VARCHAR(256) NOT NULL REFERENCES make_user,
+  client_uuid VARCHAR(256) NOT NULL REFERENCES oauth_client
 );
