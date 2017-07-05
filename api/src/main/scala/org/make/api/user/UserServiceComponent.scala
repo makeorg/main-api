@@ -17,8 +17,8 @@ trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServi
 
   class UserService {
 
-    def getUser(id: UserId): Future[Option[User]] = {
-      persistentUserService.get(id)
+    def getUser(uuid: UserId): Future[Option[User]] = {
+      persistentUserService.get(uuid)
     }
 
     def register(email: String,
@@ -40,8 +40,6 @@ trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServi
 
           val user = User(
             userId = idGenerator.nextUserId(),
-            createdAt = DateHelper.now(),
-            updatedAt = DateHelper.now(),
             email = lowerCasedEmail,
             firstName = firstName,
             lastName = lastName,

@@ -1,12 +1,11 @@
+/*
+
 package org.make.api.technical.auth
 
-import java.time.ZonedDateTime
-
-import org.make.api.Predef._
+//import org.make.api.Predef._
 import org.make.api.technical.ShortenedNames
-import org.make.core.user.UserId
+import org.make.core.user.{User, UserId}
 import scalikejdbc._
-
 import scala.concurrent.{ExecutionContext, Future}
 
 trait TokenServiceComponent {
@@ -63,26 +62,18 @@ trait TokenServiceComponent {
         withSQL {
           insertInto(PersistentToken)
             .namedValues(
-              column.id -> token.id,
-              column.refreshToken -> token.refreshToken,
-              column.userId -> token.userId.value,
+              column.access_token -> token.accessToken,
+              column.refresh_token -> token.refreshToken,
               column.scope -> token.scope,
-              column.creationDate -> token.creationDate,
-              column.validityDurationSeconds -> token.validityDurationSeconds,
-              column.parameters -> token.parameters
+              column.created_at -> token.createdAt,
+              column.expires_in -> token.expiresIn,
+              column.make_user_uuid -> token.user.userId,
+              column.client_uuid -> token.client.clientId
             )
         }.execute().apply()
       }).map(_ => token)
     }
   }
-
-  case class Token(id: String,
-                   refreshToken: String,
-                   userId: UserId,
-                   scope: String,
-                   creationDate: ZonedDateTime,
-                   validityDurationSeconds: Int,
-                   parameters: String)
 
   object PersistentToken extends SQLSyntaxSupport[Token] with ShortenedNames {
     override def tableName: String = "token"
@@ -92,17 +83,18 @@ trait TokenServiceComponent {
 
     lazy val t: scalikejdbc.QuerySQLSyntaxProvider[scalikejdbc.SQLSyntaxSupport[Token], Token] = syntax("t")
 
-    def toToken(rs: WrappedResultSet): Token = {
-      Token(
-        id = rs.string(column.id),
-        userId = UserId(rs.string(column.userId)),
-        refreshToken = rs.string(column.refreshToken),
-        scope = rs.string(column.scope),
-        creationDate = rs.jodaDateTime(column.creationDate).toJavaTime,
-        validityDurationSeconds = rs.int(column.validityDurationSeconds),
-        parameters = rs.string(column.parameters)
+    def apply(resultSet: WrappedResultSet): PersistentToken = {
+      PersistentToken(
+        user = resultSet.string(column.make_user_uuid),
+        refreshToken = resultSet.string(column.refreshToken),
+        scope = resultSet.string(column.scope),
+        creationDate = resultSet.jodaDateTime(column.creationDate),
+        validityDurationSeconds = resultSet.int(column.validityDurationSeconds),
+        parameters = resultSet.string(column.parameters)
       )
     }
   }
 
 }
+
+*/

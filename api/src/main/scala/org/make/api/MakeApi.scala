@@ -3,21 +3,21 @@ package org.make.api
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Content-Type`
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.{ExceptionHandler, Route, _}
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
 import de.knutwalker.akka.http.support.CirceHttpSupport
-import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.syntax._
 import kamon.trace.Tracer
-import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
 import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
-import org.make.api.technical._
-import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.auth.{MakeDataHandlerComponent, PersistentTokenServiceComponent, TokenGeneratorComponent}
 import org.make.api.technical.mailjet.MailJetApi
+import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.{ValidationError, ValidationFailedError}
 
@@ -39,11 +39,12 @@ trait MakeApi
     with BuildInfoRoutes
     with AvroSerializers
     with MakeDataHandlerComponent
-    with TokenServiceComponent
-    with StrictLogging
     with MailJetApi
     with MailJetConfigurationComponent
-    with EventBusServiceComponent {
+    with EventBusServiceComponent
+    with TokenGeneratorComponent
+    with PersistentTokenServiceComponent
+    with StrictLogging {
 
   def actorSystem: ActorSystem
 
@@ -73,7 +74,11 @@ trait MakeApi
     new PersistentUserService()
   override lazy val oauth2DataHandler: MakeDataHandler =
     new MakeDataHandler()(ECGlobal)
-  override lazy val tokenService: TokenService = new TokenService()
+  override lazy val persistentTokenService: PersistentTokenService =
+    new PersistentTokenService()
+  override lazy val persistentClientService: PersistentClientService =
+    new PersistentClientService()
+  //  override lazy val tokenService: TokenService = new TokenService()
   override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
@@ -86,9 +91,30 @@ trait MakeApi
     )
   }
 
+  override val tokenGenerator: TokenGenerator = new DefaultTokenGenerator
+
+  val exceptionHandler = ExceptionHandler {
+    case ValidationFailedError(messages) =>
+      complete(
+        HttpResponse(
+          status = StatusCodes.BadRequest,
+          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
+        )
+      )
+    case e =>
+      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
+      complete(
+        HttpResponse(
+          status = StatusCodes.InternalServerError,
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
+        )
+      )
+
+  }
+
   private lazy val swagger: Route =
     path("swagger") {
-      parameters('url.?) {
+      parameters('url ?) {
         case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
         case _    => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
       }
