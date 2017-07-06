@@ -6,15 +6,16 @@ import org.make.api.user.social.models.UserInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait SocialServiceComponent {
+trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponent {
   def socialService: SocialService
 }
 
 trait SocialService {
+
   def login(provider: String, idToken: String): Future[UserInfo]
 }
 
-trait DefaultSocialServiceComponent extends SocialServiceComponent { self: GoogleApiComponent =>
+trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
   override lazy val socialService: social.SocialService = new SocialService {
 
@@ -24,16 +25,16 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent { self: Googl
     /**
       *
       * @param provider string
-      * @param idToken  string
+      * @param token  string
       *
       * @return Future[UserInfo]
       */
-    def login(provider: String, idToken: String): Future[UserInfo] = {
+    def login(provider: String, token: String): Future[UserInfo] = {
 
       val userInfo = provider match {
         case GOOGLE_PROVIDER =>
           for {
-            googleUserInfo <- googleApi.getUserInfo(idToken)
+            googleUserInfo <- googleApi.getUserInfo(token)
           } yield
             UserInfo(
               email = googleUserInfo.email,
@@ -44,14 +45,14 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent { self: Googl
             )
         case FACEBOOK_PROVIDER =>
           for {
-            facebookUserInfo <- googleApi.getUserInfo(idToken)
+            facebookUserInfo <- facebookApi.getUserInfo(token)
           } yield
             UserInfo(
               email = facebookUserInfo.email,
-              firstName = facebookUserInfo.givenName,
-              lastName = facebookUserInfo.familyName,
+              firstName = facebookUserInfo.firstName,
+              lastName = facebookUserInfo.lastName,
               googleId = None,
-              facebookId = facebookUserInfo.iat
+              facebookId = Some(facebookUserInfo.id)
             )
         case _ => Future.failed(new Exception("Social failed"))
       }
