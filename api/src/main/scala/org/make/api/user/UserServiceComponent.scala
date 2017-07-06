@@ -1,21 +1,25 @@
 package org.make.api.user
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
-import org.make.api.technical.{DateHelper, IdGeneratorComponent}
+import org.make.api.technical.auth.UserTokenGeneratorComponent
+import org.make.api.technical.{DateHelper, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.profile.Profile
 import org.make.core.user._
 
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
-trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServiceComponent =>
+trait UserServiceComponent extends ShortenedNames {
+  this: IdGeneratorComponent with UserTokenGeneratorComponent with PersistentUserServiceComponent =>
 
   def userService: UserService
 
   class UserService {
+
+    val validationTokenExpiresIn: Long = 30.days.toSeconds
 
     def getUser(uuid: UserId): Future[Option[User]] = {
       persistentUserService.get(uuid)
@@ -26,7 +30,7 @@ trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServi
                  lastName: Option[String],
                  password: String,
                  lastIp: String,
-                 dateOfBirth: Option[LocalDate]): Future[User] = {
+                 dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User] = {
 
       val lowerCasedEmail: String = email.toLowerCase()
 
@@ -38,22 +42,29 @@ trait UserServiceComponent { this: IdGeneratorComponent with PersistentUserServi
 
           val salt: String = generateSalt
 
-          val user = User(
-            userId = idGenerator.nextUserId(),
-            email = lowerCasedEmail,
-            firstName = firstName,
-            lastName = lastName,
-            lastIp = lastIp,
-            hashedPassword = password.bcrypt(salt),
-            salt = salt,
-            enabled = true,
-            verified = false,
-            lastConnection = DateHelper.now(),
-            verificationToken = idGenerator.nextId(),
-            roles = Seq(Role.RoleCitizen),
-            profile = profile
-          )
-          persistentUserService.persist(user)
+          val futureVerificationToken: Future[(String, String)] = userTokenGenerator.generateVerificationToken()
+          futureVerificationToken.flatMap { tokens =>
+            val (_, hashedVerificationToken) = tokens
+            val user = User(
+              userId = idGenerator.nextUserId(),
+              email = lowerCasedEmail,
+              firstName = firstName,
+              lastName = lastName,
+              lastIp = lastIp,
+              hashedPassword = password.bcrypt(salt),
+              salt = salt,
+              enabled = true,
+              verified = false,
+              lastConnection = DateHelper.now(),
+              verificationToken = Some(hashedVerificationToken),
+              verificationTokenExpiresAt = Some(ZonedDateTime.now().plusSeconds(validationTokenExpiresIn)),
+              resetToken = None,
+              resetTokenExpiresAt = None,
+              roles = Seq(Role.RoleCitizen),
+              profile = profile
+            )
+            persistentUserService.persist(user)
+          }
         }
       }
     }

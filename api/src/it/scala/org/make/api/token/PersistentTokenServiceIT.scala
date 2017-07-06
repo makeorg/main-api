@@ -32,7 +32,10 @@ class PersistentTokenServiceIT extends DatabaseTest with PersistentTokenServiceC
     enabled = true,
     verified = true,
     lastConnection = before,
-    verificationToken = "VERIFTOKEN",
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     profile = None
   )

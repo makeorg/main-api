@@ -13,7 +13,7 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.proposition._
-import org.make.api.technical.auth.{MakeDataHandlerComponent, PersistentTokenServiceComponent, TokenGeneratorComponent}
+import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
@@ -42,7 +42,9 @@ trait MakeApi
     with MailJetApi
     with MailJetConfigurationComponent
     with EventBusServiceComponent
-    with TokenGeneratorComponent
+    with DefaultTokenGeneratorComponent
+    with DefaultUserTokenGeneratorComponent
+    with DefaultOauthTokenGeneratorComponent
     with PersistentTokenServiceComponent
     with StrictLogging {
 
@@ -91,8 +93,6 @@ trait MakeApi
     )
   }
 
-  override val tokenGenerator: TokenGenerator = new DefaultTokenGenerator
-
   val exceptionHandler = ExceptionHandler {
     case ValidationFailedError(messages) =>
       complete(
@@ -114,7 +114,7 @@ trait MakeApi
 
   private lazy val swagger: Route =
     path("swagger") {
-      parameters('url ?) {
+      parameters('url.?) {
         case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
         case _    => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
       }

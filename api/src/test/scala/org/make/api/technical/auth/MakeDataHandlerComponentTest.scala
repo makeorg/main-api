@@ -25,7 +25,7 @@ class MakeDataHandlerComponentTest
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
-    with TokenGeneratorComponent
+    with OauthTokenGeneratorComponent
     with ShortenedNames {
 
   override val readExecutionContext: EC = ECGlobal
@@ -33,7 +33,7 @@ class MakeDataHandlerComponentTest
   implicit val someExecutionContext: EC = readExecutionContext
   override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler
   override val idGenerator: IdGenerator = new UUIDIdGenerator
-  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
+  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   val clientId = "apiclient"
   val secret = Some("secret")
@@ -150,10 +150,11 @@ class MakeDataHandlerComponentTest
       val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
-      when(tokenGenerator.generateAccessToken()).thenReturn(Future.successful(("access_token", "access_token_hashed")))
+      when(oauthTokenGenerator.generateAccessToken())
+        .thenReturn(Future.successful(("access_token", "access_token_hashed")))
 
       And("a generated refresh token 'refresh_token' with a hashed value 'refresh_token_hashed")
-      when(tokenGenerator.generateRefreshToken())
+      when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")

@@ -33,7 +33,7 @@ object UserSerializers extends SprayJsonFormatters {
   }
 
   implicit private val userFormatter: RootJsonFormat[User] =
-    DefaultJsonProtocol.jsonFormat15(User)
+    DefaultJsonProtocol.jsonFormat18(User)
 
   private val userSerializer: JsonPersister[User, V1] =
     persister[User]("user")

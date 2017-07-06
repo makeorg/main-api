@@ -9,23 +9,19 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe.generic.auto._
 import org.make.api.MakeApi
+import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{
-  MakeDataHandlerComponent,
-  PersistentClientServiceComponent,
-  PersistentTokenServiceComponent,
-  TokenGeneratorComponent
-}
+import org.make.api.technical.auth._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.ValidationError
 import org.make.core.user.{User, UserId}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito
+import org.mockito.ArgumentMatchers.{any, eq => matches, nullable}
+import org.mockito.{Mockito}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider.TokenEndpoint
 
 class UserApiTest
@@ -40,7 +36,9 @@ class UserApiTest
     with MakeDataHandlerComponent
     with PersistentTokenServiceComponent
     with PersistentClientServiceComponent
-    with TokenGeneratorComponent {
+    with UserTokenGeneratorComponent
+    with OauthTokenGeneratorComponent
+    with MakeDBExecutionContextComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -48,10 +46,11 @@ class UserApiTest
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
+  override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
+  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   when(idGenerator.nextId()).thenReturn("some-id")
 
@@ -73,7 +72,7 @@ class UserApiTest
               any[String],
               any[String],
               any[Option[LocalDate]]
-            )
+            )(any[ExecutionContext])
         )
         .thenReturn(
           Future.successful(
@@ -88,7 +87,10 @@ class UserApiTest
               enabled = true,
               verified = false,
               lastConnection = ZonedDateTime.now(),
-              verificationToken = "token",
+              verificationToken = Some("token"),
+              verificationTokenExpiresAt = Some(ZonedDateTime.now()),
+              resetToken = None,
+              resetTokenExpiresAt = None,
               roles = Seq.empty,
               profile = None
             )
@@ -116,7 +118,7 @@ class UserApiTest
           matches("mypass"),
           matches("192.0.0.1"),
           matches(Some(LocalDate.parse("1997-12-02")))
-        )
+        )(nullable(classOf[ExecutionContext]))
       }
     }
 
@@ -131,7 +133,7 @@ class UserApiTest
               any[String],
               any[String],
               any[Option[LocalDate]]
-            )
+            )((any[ExecutionContext]))
         )
         .thenReturn(Future.failed(EmailAlreadyRegistredException("foo@bar.com")))
 

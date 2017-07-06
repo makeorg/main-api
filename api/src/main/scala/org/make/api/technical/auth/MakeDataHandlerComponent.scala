@@ -8,7 +8,7 @@ import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.User
-
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider._
 
@@ -17,11 +17,11 @@ trait MakeDataHandlerComponent extends StrictLogging with ShortenedNames {
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
-    with TokenGeneratorComponent =>
+    with OauthTokenGeneratorComponent =>
 
   def oauth2DataHandler: MakeDataHandler
-  val validityDurationAccessTokenSeconds: Int = 30 * 60
-  val validityDurationRefreshTokenSeconds: Int = 4 * 60 * 60
+  val validityDurationAccessTokenSeconds: Int = 30.minutes.toSeconds.toInt
+  val validityDurationRefreshTokenSeconds: Int = 4.hours.toSeconds.toInt
 
   class MakeDataHandler(implicit val ctx: ExecutionContext) extends DataHandler[User] {
 
@@ -66,8 +66,8 @@ trait MakeDataHandlerComponent extends StrictLogging with ShortenedNames {
     }
 
     override def createAccessToken(authInfo: AuthInfo[User]): Future[AccessToken] = {
-      val futureAccessTokens = tokenGenerator.generateAccessToken()
-      val futureRefreshTokens = tokenGenerator.generateRefreshToken()
+      val futureAccessTokens = oauthTokenGenerator.generateAccessToken()
+      val futureRefreshTokens = oauthTokenGenerator.generateRefreshToken()
 
       val clientId: String = authInfo.clientId.getOrElse(throw new IllegalArgumentException("clientId is required"))
 

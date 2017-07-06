@@ -29,7 +29,7 @@ class MailJetApiTest
     with PersistentUserServiceComponent
     with PersistentTokenServiceComponent
     with PersistentClientServiceComponent
-    with TokenGeneratorComponent {
+    with OauthTokenGeneratorComponent {
 
   override val eventBusService: EventBusService = mock[EventBusService]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
@@ -38,10 +38,10 @@ class MailJetApiTest
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
+  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
