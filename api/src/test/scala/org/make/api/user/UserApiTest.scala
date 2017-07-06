@@ -131,7 +131,7 @@ class UserApiTest
               any[String],
               any[String],
               any[Option[LocalDate]]
-            )((any[ExecutionContext]))
+            )(any[ExecutionContext])
         )
         .thenReturn(Future.failed(EmailAlreadyRegistredException("foo@bar.com")))
 

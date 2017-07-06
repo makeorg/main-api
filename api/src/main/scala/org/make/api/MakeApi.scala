@@ -18,6 +18,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.social.{DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.{ValidationError, ValidationFailedError}
@@ -32,6 +33,8 @@ trait MakeApi
     with IdGeneratorComponent
     with PersistentUserServiceComponent
     with UserApi
+    with DefaultSocialServiceComponent
+    with DefaultGoogleApiComponent
     with PropositionServiceComponent
     with PropositionApi
     with VoteServiceComponent
