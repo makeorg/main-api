@@ -1,10 +1,13 @@
 package org.make.api.user.social
 
-import org.make.api.user.social
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.OAuth2Provider.TokenResponse
 import org.make.api.user.social.models.UserInfo
+import org.make.api.user.{social, UserServiceComponent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponent {
   def socialService: SocialService
@@ -12,10 +15,11 @@ trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponen
 
 trait SocialService {
 
-  def login(provider: String, idToken: String): Future[UserInfo]
+  def login(provider: String, token: String, clientIp: Option[String]): Future[TokenResponse]
 }
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
+  self: UserServiceComponent with MakeDataHandlerComponent =>
 
   override lazy val socialService: social.SocialService = new SocialService {
 
@@ -29,9 +33,9 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       *
       * @return Future[UserInfo]
       */
-    def login(provider: String, token: String): Future[UserInfo] = {
+    def login(provider: String, token: String, clientIp: Option[String]): Future[TokenResponse] = {
 
-      val userInfo = provider match {
+      val futureUserInfo: Future[UserInfo] = provider match {
         case GOOGLE_PROVIDER =>
           for {
             googleUserInfo <- googleApi.getUserInfo(token)
@@ -54,10 +58,21 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               googleId = None,
               facebookId = Some(facebookUserInfo.id)
             )
-        case _ => Future.failed(new Exception("Social failed"))
+        case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }
 
-      userInfo
+      val accessToken: Future[AccessToken] = for {
+        userInfo <- futureUserInfo
+        user     <- userService.getOrCreateUserFromSocial(userInfo, clientIp)
+        accessToken <- oauth2DataHandler.createAccessToken(
+          authInfo = AuthInfo(user = user, clientId = None, scope = None, redirectUri = None)
+        )
+      } yield accessToken
+
+      accessToken.map { token =>
+        TokenResponse("Bearer", token.token, token.expiresIn.getOrElse(1L), token.refreshToken.getOrElse(""))
+      }
     }
+
   }
 }

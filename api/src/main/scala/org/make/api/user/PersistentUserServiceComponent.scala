@@ -22,9 +22,9 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime,
                             email: String,
-                            firstName: Option[String],
-                            lastName: Option[String],
-                            lastIp: String,
+                            firstName: String,
+                            lastName: String,
+                            lastIp: Option[String],
                             hashedPassword: String,
                             salt: String,
                             enabled: Boolean,
@@ -52,11 +52,11 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       User(
         userId = UserId(uuid),
         email = email,
-        firstName = firstName,
-        lastName = lastName,
+        firstName = Some(firstName),
+        lastName = Some(lastName),
         lastIp = lastIp,
-        hashedPassword = hashedPassword,
-        salt = salt,
+        hashedPassword = Some(hashedPassword),
+        salt = Some(salt),
         enabled = enabled,
         verified = verified,
         lastConnection = lastConnection,
@@ -141,11 +141,11 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       PersistentUser(
         uuid = resultSet.string(userResultName.uuid),
         email = resultSet.string(userResultName.email),
-        firstName = resultSet.stringOpt(userResultName.firstName),
-        lastName = resultSet.stringOpt(userResultName.lastName),
+        firstName = resultSet.string(userResultName.firstName),
+        lastName = resultSet.string(userResultName.lastName),
         createdAt = resultSet.zonedDateTime(userResultName.updatedAt),
         updatedAt = resultSet.zonedDateTime(userResultName.updatedAt),
-        lastIp = resultSet.string(userResultName.lastIp),
+        lastIp = resultSet.stringOpt(userResultName.lastIp),
         hashedPassword = resultSet.string(userResultName.hashedPassword),
         salt = resultSet.string(userResultName.salt),
         enabled = resultSet.boolean(userResultName.enabled),
@@ -202,6 +202,19 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
                 .eq(userAlias.email, email)
                 .and(sqls.eq(userAlias.hashedPassword, hashedPassword))
             )
+        }.map(PersistentUser.apply()).single.apply
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    def findByEmail(email: String): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
       })
 

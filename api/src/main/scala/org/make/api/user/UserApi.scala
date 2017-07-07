@@ -71,11 +71,15 @@ trait UserApi extends MakeAuthenticationDirectives {
       makeTrace("SocialLogin") {
         decodeRequest {
           entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
-            onSuccess(
-              socialService
-                .login(request.provider, request.idToken)
-            ) { result =>
-              complete(StatusCodes.OK -> result)
+            extractClientIP { clientIp =>
+              val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
+              println(s"client ip: $ip")
+              onSuccess(
+                socialService
+                  .login(request.provider, request.token, Some(ip))
+              ) { accessToken =>
+                complete(StatusCodes.Created -> accessToken)
+              }
             }
           }
         }
@@ -95,15 +99,15 @@ trait UserApi extends MakeAuthenticationDirectives {
       makeTrace("RegisterUser") {
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
-            extractClientIP { ip =>
+            extractClientIP { clientIp =>
               onSuccess(
                 userService
                   .register(
                     email = request.email,
                     firstName = request.firstName,
                     lastName = request.lastName,
-                    password = request.password,
-                    lastIp = ip.toOption.map(_.getHostAddress).getOrElse("unknown"),
+                    password = Some(request.password),
+                    lastIp = clientIp.toOption.map(_.getHostAddress),
                     dateOfBirth = request.dateOfBirth
                   )
               ) { result =>
@@ -140,4 +144,4 @@ case class RegisterUserRequest(email: String,
   )
 }
 
-case class SocialLoginRequest(provider: String, idToken: String)
+case class SocialLoginRequest(provider: String, token: String)

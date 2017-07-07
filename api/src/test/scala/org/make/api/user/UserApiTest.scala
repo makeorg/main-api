@@ -13,6 +13,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.social.SocialServiceComponent
 import org.make.core.ValidationError
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
@@ -31,6 +32,7 @@ class UserApiTest
     with UserApi
     with UserServiceComponent
     with PersistentUserServiceComponent
+    with SocialServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with PersistentTokenServiceComponent
@@ -67,7 +69,7 @@ class UserApiTest
               any[String],
               any[Option[String]],
               any[Option[String]],
-              any[String],
+              any[Option[String]],
               any[String],
               any[Option[LocalDate]]
             )(any[ExecutionContext])
@@ -79,9 +81,9 @@ class UserApiTest
               email = "foo@bar.com",
               firstName = Some("olive"),
               lastName = Some("tom"),
-              lastIp = "127.0.0.1",
-              hashedPassword = "passpass",
-              salt = "salto",
+              lastIp = Some("127.0.0.1"),
+              hashedPassword = Some("passpass"),
+              salt = Some("salto"),
               enabled = true,
               verified = false,
               lastConnection = ZonedDateTime.now(),
@@ -113,7 +115,7 @@ class UserApiTest
           matches("foo@bar.com"),
           matches(Some("olive")),
           matches(Some("tom")),
-          matches("mypass"),
+          matches(Some("mypass")),
           matches("192.0.0.1"),
           matches(Some(LocalDate.parse("1997-12-02")))
         )(nullable(classOf[ExecutionContext]))
@@ -128,7 +130,7 @@ class UserApiTest
               any[String],
               any[Option[String]],
               any[Option[String]],
-              any[String],
+              any[Option[String]],
               any[String],
               any[Option[LocalDate]]
             )(any[ExecutionContext])

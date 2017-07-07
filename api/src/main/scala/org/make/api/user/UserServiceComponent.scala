@@ -6,6 +6,7 @@ import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.{DateHelper, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.social.models.UserInfo
 import org.make.core.profile.Profile
 import org.make.core.user._
 
@@ -21,7 +22,7 @@ trait UserService extends ShortenedNames {
   def register(email: String,
                firstName: Option[String],
                lastName: Option[String],
-               password: String,
+               password: Option[String],
                lastIp: String,
                dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User]
 }
@@ -40,8 +41,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def register(email: String,
                           firstName: Option[String],
                           lastName: Option[String],
-                          password: String,
-                          lastIp: String,
+                          password: Option[String],
+                          lastIp: Option[String],
                           dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User] = {
 
       val lowerCasedEmail: String = email.toLowerCase()
@@ -63,8 +64,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               firstName = firstName,
               lastName = lastName,
               lastIp = lastIp,
-              hashedPassword = password.bcrypt(salt),
-              salt = salt,
+              hashedPassword = password.map(_.bcrypt(salt)),
+              salt = Some(salt),
               enabled = true,
               verified = false,
               lastConnection = DateHelper.now(),
@@ -78,6 +79,37 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             persistentUserService.persist(user)
           }
         }
+      }
+    }
+
+    def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
+      val lowerCasedEmail: String = userInfo.email.toLowerCase()
+
+      persistentUserService.findByEmail(lowerCasedEmail).flatMap {
+        case Some(user) => Future.successful(user)
+        case None =>
+          val profile: Option[Profile] =
+            Profile.parseProfile(facebookId = userInfo.facebookId, googleId = userInfo.googleId)
+          val user = User(
+            userId = idGenerator.nextUserId(),
+            email = lowerCasedEmail,
+            firstName = Some(userInfo.firstName),
+            lastName = Some(userInfo.lastName),
+            lastIp = clientIp,
+            hashedPassword = None,
+            salt = None,
+            enabled = true,
+            verified = true,
+            lastConnection = DateHelper.now(),
+            verificationToken = None,
+            verificationTokenExpiresAt = None,
+            resetToken = None,
+            resetTokenExpiresAt = None,
+            roles = Seq(Role.RoleCitizen),
+            profile = profile
+          )
+
+          persistentUserService.persist(user)
       }
     }
   }
