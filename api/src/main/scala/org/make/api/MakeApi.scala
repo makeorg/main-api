@@ -2,12 +2,13 @@ package org.make.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`Content-Type`
 import akka.http.scaladsl.server.{ExceptionHandler, Route, _}
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
 import de.knutwalker.akka.http.support.CirceHttpSupport
+import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
+import io.circe.CursorOp.DownField
 import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
@@ -21,7 +22,6 @@ import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceCo
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.{ValidationError, ValidationFailedError}
 
-import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.runtime.{universe => ru}
@@ -175,13 +175,15 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     .newBuilder()
     .handle {
       case MalformedRequestContentRejection(_, ValidationFailedError(messages)) =>
-        complete(
-          HttpResponse(
-            status = StatusCodes.BadRequest,
-            entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString),
-            headers = immutable.Seq[HttpHeader](`Content-Type`(ContentTypes.`application/json`))
-          )
-        )
+        complete(StatusCodes.BadRequest -> messages)
+      case MalformedRequestContentRejection(_, JsonParsingException(failure, _)) =>
+        val errors = failure.history.flatMap {
+          case DownField(f) => Seq(ValidationError(f, failure.message))
+          case _            => Nil
+        }
+        complete(StatusCodes.BadRequest -> errors)
+      case MalformedRequestContentRejection(_, e) =>
+        complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", e.getMessage)))
     }
     .result()
     .withFallback(RejectionHandler.default)
