@@ -53,8 +53,6 @@ class UserServiceTest
 
       val returnedUser = User(
         userId = UserId("AAA-BBB-CCC"),
-        createdAt = ZonedDateTime.now(),
-        updatedAt = ZonedDateTime.now(),
         email = "any@mail.com",
         firstName = Some("olive"),
         lastName = Some("tom"),

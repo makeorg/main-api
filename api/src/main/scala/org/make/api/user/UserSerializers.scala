@@ -17,7 +17,7 @@ object UserSerializers extends SprayJsonFormatters {
       case other => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
-    override def write(gender: Gender): JsValue = JsString(gender.toString)
+    override def write(gender: Gender): JsValue = JsString(gender.shortName)
   }
 
   implicit private val profileFormatter: RootJsonFormat[Profile] =
@@ -29,7 +29,7 @@ object UserSerializers extends SprayJsonFormatters {
       case other          => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
-    override def write(role: Role): JsValue = JsString(role.toString)
+    override def write(role: Role): JsValue = JsString(role.shortName)
   }
 
   implicit private val userFormatter: RootJsonFormat[User] =

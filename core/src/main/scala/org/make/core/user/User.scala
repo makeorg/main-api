@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import org.make.core.profile.Profile
-import org.make.core.{MakeSerializable, StringValue}
+import org.make.core.{MakeSerializable, StringValue, Timestamped}
 
 sealed trait Role {
   def shortName: String
@@ -50,8 +50,6 @@ object Role extends StrictLogging {
   }
 }
 case class User(userId: UserId,
-                createdAt: ZonedDateTime,
-                updatedAt: ZonedDateTime,
                 email: String,
                 firstName: Option[String],
                 lastName: Option[String],
@@ -63,8 +61,11 @@ case class User(userId: UserId,
                 lastConnection: ZonedDateTime,
                 verificationToken: String,
                 roles: Seq[Role],
-                profile: Option[Profile])
+                profile: Option[Profile],
+                override val createdAt: Option[ZonedDateTime] = None,
+                override val updatedAt: Option[ZonedDateTime] = None)
     extends MakeSerializable
+    with Timestamped
 
 case class UserId(value: String) extends StringValue
 

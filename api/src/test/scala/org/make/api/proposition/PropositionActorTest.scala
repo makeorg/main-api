@@ -16,8 +16,8 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
     system.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
-  val mainCreatedAt: ZonedDateTime = ZonedDateTime.now.minusSeconds(10)
-  val mainUpdatedAt: ZonedDateTime = ZonedDateTime.now
+  val mainCreatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.now.minusSeconds(10))
+  val mainUpdatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.now)
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
@@ -32,7 +32,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       coordinator ! ProposeCommand(
         propositionId = propositionId,
         userId = mainUserId,
-        createdAt = mainCreatedAt,
+        createdAt = mainCreatedAt.get,
         content = "Ceci est une proposition"
       )
 
@@ -95,7 +95,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       When("a asking for a fake PropositionId")
       coordinator ! UpdatePropositionCommand(
         propositionId = PropositionId("fake"),
-        updatedAt = mainUpdatedAt,
+        updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
 
@@ -112,7 +112,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       coordinator ! ProposeCommand(
         propositionId = propositionId,
         userId = mainUserId,
-        createdAt = mainCreatedAt,
+        createdAt = mainCreatedAt.get,
         content = "Ceci est une proposition"
       )
 
@@ -131,7 +131,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       When("updating this Proposition")
       coordinator ! UpdatePropositionCommand(
         propositionId = propositionId,
-        updatedAt = mainUpdatedAt,
+        updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
 
@@ -206,7 +206,7 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       coordinator ! ProposeCommand(
         propositionId = propositionId,
         userId = mainUserId,
-        createdAt = mainCreatedAt,
+        createdAt = mainCreatedAt.get,
         content = "Ceci est une proposition"
       )
 

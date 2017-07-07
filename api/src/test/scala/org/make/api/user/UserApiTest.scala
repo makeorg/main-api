@@ -7,19 +7,23 @@ import akka.http.scaladsl.model.headers.`Remote-Address`
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import io.circe.generic.auto._
+import org.make.api.MakeApi
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenServiceComponent}
+import org.make.api.technical.auth.{
+  MakeDataHandlerComponent,
+  PersistentClientServiceComponent,
+  PersistentTokenServiceComponent,
+  TokenGeneratorComponent
+}
+import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.ValidationError
 import org.make.core.user.{User, UserId}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.{eq => matches}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
-import io.circe.generic.auto._
-import org.make.api.MakeApi
-import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 
 import scala.concurrent.Future
 import scalaoauth2.provider.TokenEndpoint
@@ -34,13 +38,17 @@ class UserApiTest
     with PersistentUserServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
-    with TokenServiceComponent {
+    with PersistentTokenServiceComponent
+    with PersistentClientServiceComponent
+    with TokenGeneratorComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val tokenService: TokenService = mock[TokenService]
+  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
+  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
+  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
@@ -69,8 +77,6 @@ class UserApiTest
           Future.successful(
             User(
               userId = UserId("ABCD"),
-              createdAt = ZonedDateTime.now(),
-              updatedAt = ZonedDateTime.now(),
               email = "foo@bar.com",
               firstName = Some("olive"),
               lastName = Some("tom"),

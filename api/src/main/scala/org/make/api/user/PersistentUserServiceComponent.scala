@@ -18,12 +18,12 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
   val ROLE_SEPARATOR = ","
 
-  case class PersistentUser(uuid: UserId,
+  case class PersistentUser(uuid: String,
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime,
                             email: String,
-                            firstName: String,
-                            lastName: String,
+                            firstName: Option[String],
+                            lastName: Option[String],
                             lastIp: String,
                             hashedPassword: String,
                             salt: String,
@@ -31,21 +31,60 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
                             verified: Boolean,
                             lastConnection: ZonedDateTime,
                             verificationToken: String,
-                            roles: Seq[Role],
-                            profile: Profile,
-                            dateOfBirth: LocalDate,
-                            avatarUrl: String,
-                            profession: String,
-                            phoneNumber: String,
-                            twitterId: String,
-                            facebookId: String,
-                            googleId: String,
-                            gender: Gender,
-                            genderName: String,
-                            departmentNumber: String,
-                            karmaLevel: Int,
-                            locale: String,
-                            optInNewsletter: Boolean)
+                            roles: String,
+                            dateOfBirth: Option[LocalDate],
+                            avatarUrl: Option[String],
+                            profession: Option[String],
+                            phoneNumber: Option[String],
+                            twitterId: Option[String],
+                            facebookId: Option[String],
+                            googleId: Option[String],
+                            gender: String,
+                            genderName: Option[String],
+                            departmentNumber: Option[String],
+                            karmaLevel: Option[Int],
+                            locale: Option[String],
+                            optInNewsletter: Boolean) {
+    def toUser: User = {
+      User(
+        userId = UserId(uuid),
+        email = email,
+        firstName = firstName,
+        lastName = lastName,
+        lastIp = lastIp,
+        hashedPassword = hashedPassword,
+        salt = salt,
+        enabled = enabled,
+        verified = verified,
+        lastConnection = lastConnection,
+        verificationToken = verificationToken,
+        roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
+        profile = toProfile
+      )
+    }
+
+    private def toRole: (String)   => Option[Role] = Role.matchRole
+    private def toGender: (String) => Option[Gender] = Gender.matchGender
+
+    private def toProfile: Option[Profile] = {
+      Profile.parseProfile(
+        dateOfBirth = dateOfBirth,
+        avatarUrl = avatarUrl,
+        profession = profession,
+        phoneNumber = phoneNumber,
+        twitterId = twitterId,
+        facebookId = facebookId,
+        googleId = googleId,
+        gender = toGender(gender),
+        genderName = genderName,
+        departmentNumber = departmentNumber,
+        karmaLevel = karmaLevel,
+        locale = locale,
+        optInNewsletter = optInNewsletter
+      )
+    }
+
+  }
 
   object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames with StrictLogging {
 
@@ -86,89 +125,86 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
 
     override val tableName: String = "make_user"
 
-    lazy val user: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentUser], PersistentUser] = syntax("u")
+    lazy val userAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentUser], PersistentUser] = syntax("u")
 
-    def toRole: (String)   => Option[Role] = Role.matchRole
-    def toGender: (String) => Option[Gender] = Gender.matchGender
-
-    def toProfile(resultSet: WrappedResultSet): Option[Profile] = {
-      Profile.parseProfile(
-        dateOfBirth = resultSet.localDateOpt(column.dateOfBirth),
-        avatarUrl = resultSet.stringOpt(column.avatarUrl),
-        profession = resultSet.stringOpt(column.profession),
-        phoneNumber = resultSet.stringOpt(column.phoneNumber),
-        twitterId = resultSet.stringOpt(column.twitterId),
-        facebookId = resultSet.stringOpt(column.facebookId),
-        googleId = resultSet.stringOpt(column.googleId),
-        gender = toGender(resultSet.string(column.gender)),
-        genderName = resultSet.stringOpt(column.genderName),
-        departmentNumber = resultSet.stringOpt(column.departmentNumber),
-        karmaLevel = resultSet.intOpt(column.karmaLevel),
-        locale = resultSet.stringOpt(column.locale),
-        optInNewsletter = resultSet.boolean(column.optInNewsletter)
-      )
-    }
-
-    def toUser(resultSet: WrappedResultSet): User = {
-      User(
-        userId = UserId(resultSet.string(column.uuid)),
-        email = resultSet.string(column.email),
-        firstName = resultSet.stringOpt(column.firstName),
-        lastName = resultSet.stringOpt(column.lastName),
-        createdAt = resultSet.zonedDateTime(column.updatedAt),
-        updatedAt = resultSet.zonedDateTime(column.updatedAt),
-        lastIp = resultSet.string(column.lastIp),
-        hashedPassword = resultSet.string(column.hashedPassword),
-        salt = resultSet.string(column.salt),
-        enabled = resultSet.boolean(column.enabled),
-        verified = resultSet.boolean(column.verified),
-        lastConnection = resultSet.zonedDateTime(column.lastConnection),
-        verificationToken = resultSet.string(column.verificationToken),
-        roles = resultSet.string(column.roles).split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
-        profile = toProfile(resultSet)
+    def apply(
+      userResultName: ResultName[PersistentUser] = userAlias.resultName
+    )(resultSet: WrappedResultSet): PersistentUser = {
+      PersistentUser(
+        uuid = resultSet.string(userResultName.uuid),
+        email = resultSet.string(userResultName.email),
+        firstName = resultSet.stringOpt(userResultName.firstName),
+        lastName = resultSet.stringOpt(userResultName.lastName),
+        createdAt = resultSet.zonedDateTime(userResultName.updatedAt),
+        updatedAt = resultSet.zonedDateTime(userResultName.updatedAt),
+        lastIp = resultSet.string(userResultName.lastIp),
+        hashedPassword = resultSet.string(userResultName.hashedPassword),
+        salt = resultSet.string(userResultName.salt),
+        enabled = resultSet.boolean(userResultName.enabled),
+        verified = resultSet.boolean(userResultName.verified),
+        lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
+        verificationToken = resultSet.string(userResultName.verificationToken),
+        roles = resultSet.string(userResultName.roles),
+        dateOfBirth = resultSet.localDateOpt(userResultName.dateOfBirth),
+        avatarUrl = resultSet.stringOpt(userResultName.avatarUrl),
+        profession = resultSet.stringOpt(userResultName.profession),
+        phoneNumber = resultSet.stringOpt(userResultName.phoneNumber),
+        twitterId = resultSet.stringOpt(userResultName.twitterId),
+        facebookId = resultSet.stringOpt(userResultName.facebookId),
+        googleId = resultSet.stringOpt(userResultName.googleId),
+        gender = resultSet.string(userResultName.gender),
+        genderName = resultSet.stringOpt(userResultName.genderName),
+        departmentNumber = resultSet.stringOpt(userResultName.departmentNumber),
+        karmaLevel = resultSet.intOpt(userResultName.karmaLevel),
+        locale = resultSet.stringOpt(userResultName.locale),
+        optInNewsletter = resultSet.boolean(userResultName.optInNewsletter)
       )
     }
   }
 
   class PersistentUserService extends ShortenedNames with StrictLogging {
 
-    private val userSql = PersistentUser.user
+    private val userAlias = PersistentUser.userAlias
     private val column = PersistentUser.column
 
     def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(userSql.*)
-            .from(PersistentUser.as(userSql))
-            .where(sqls.eq(userSql.uuid, uuid.value))
-        }.map(PersistentUser.toUser).single.apply
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.uuid, uuid.value))
+        }.map(PersistentUser.apply()).single.apply
       })
+
+      futurePersistentUser.map(_.map(_.toUser))
     }
 
     def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(userSql.*)
-            .from(PersistentUser.as(userSql))
+          select
+            .from(PersistentUser.as(userAlias))
             .where(
               sqls
-                .eq(userSql.email, email)
-                .and(sqls.eq(userSql.hashedPassword, hashedPassword))
+                .eq(userAlias.email, email)
+                .and(sqls.eq(userAlias.hashedPassword, hashedPassword))
             )
-        }.map(PersistentUser.toUser).single().apply()
+        }.map(PersistentUser.apply()).single.apply
       })
+
+      futurePersistentUser.map(_.map(_.toUser))
     }
 
     def emailExists(email: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(count(userSql.asterisk))
-            .from(PersistentUser.as(userSql))
-            .where(sqls.eq(userSql.email, email))
-        }.map(resultSet => resultSet.int(1) > 0).single().apply()
+          select(count(userAlias.result.email))
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.email, email))
+        }.map(_.int(1) > 0).single.apply
       }).map(_.getOrElse(false))
     }
 
@@ -180,8 +216,8 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
             .into(PersistentUser)
             .namedValues(
               column.uuid -> user.userId.value,
-              column.createdAt -> user.createdAt,
-              column.updatedAt -> user.updatedAt,
+              column.createdAt -> ZonedDateTime.now,
+              column.updatedAt -> ZonedDateTime.now,
               column.email -> user.email,
               column.firstName -> user.firstName,
               column.lastName -> user.lastName,
@@ -205,7 +241,7 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
               column.karmaLevel -> user.profile.map(_.karmaLevel),
               column.locale -> user.profile.map(_.locale),
               column.dateOfBirth -> user.profile.map(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
-              column.optInNewsletter -> user.profile.map(_.optInNewsletter).getOrElse(false)
+              column.optInNewsletter -> user.profile.exists(_.optInNewsletter == true)
             )
         }.execute().apply()
       }).map(_ => user)

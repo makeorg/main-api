@@ -28,8 +28,8 @@ class PropositionActor extends PersistentActor with ActorLogging {
         PropositionState(
           propositionId = snapshot.propositionId,
           userId = Option(snapshot.userId),
-          createdAt = Option(snapshot.createdAt),
-          updatedAt = Option(snapshot.updatedAt),
+          createdAt = snapshot.createdAt,
+          updatedAt = snapshot.updatedAt,
           content = Option(snapshot.content)
         )
       )
@@ -105,9 +105,9 @@ class PropositionActor extends PersistentActor with ActorLogging {
       Proposition(
         this.propositionId,
         this.userId.orNull,
-        this.createdAt.orNull,
-        this.updatedAt.orNull,
-        this.content.orNull
+        this.content.orNull,
+        this.createdAt,
+        this.updatedAt
       )
     }
   }
