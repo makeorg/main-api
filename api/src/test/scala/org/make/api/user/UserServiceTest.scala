@@ -104,7 +104,7 @@ class UserServiceTest
         Some(LocalDate.parse("1984-10-11"))
       )
 
-      whenReady(futureUser.failed) { exception =>
+      whenReady(futureUser.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[EmailAlreadyRegistredException]
         exception.asInstanceOf[EmailAlreadyRegistredException].email should be("exist@mail.com")
       }

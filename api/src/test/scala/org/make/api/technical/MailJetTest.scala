@@ -7,10 +7,12 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.make.api.ShardingActorTest
 import org.make.api.technical.mailjet.MailJet
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.util.Try
 
 class MailJetTest extends ShardingActorTest with MockitoSugar {
@@ -36,7 +38,8 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
           .runFold(List[Either[Throwable, Map[String, String]]]()) { (acc, result) =>
             result :: acc
           }
-          .map(_.head)
+          .map(_.head),
+        Timeout(3.seconds)
       ) { result =>
         result.isRight should be(true)
         result should be(Right(Map("ka" -> "va", "kb" -> "vb")))
@@ -60,7 +63,8 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
           .runFold(List[Either[Throwable, Map[String, String]]]()) { (acc, result) =>
             result :: acc
           }
-          .map(_.head)
+          .map(_.head),
+        Timeout(3.seconds)
       ) { result =>
         result.isLeft should be(true)
       }
@@ -85,7 +89,8 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
           .runFold(List[Either[Throwable, Map[String, String]]]()) { (acc, result) =>
             result :: acc
           }
-          .map(_.head)
+          .map(_.head),
+        Timeout(3.seconds)
       ) { result =>
         result.isLeft should be(true)
       }
@@ -99,7 +104,8 @@ class MailJetTest extends ShardingActorTest with MockitoSugar {
           .runFold(List[Either[Throwable, Map[String, String]]]()) { (acc, result) =>
             result :: acc
           }
-          .map(_.head)
+          .map(_.head),
+        Timeout(3.seconds)
       ) { result =>
         result.isLeft should be(true)
       }
