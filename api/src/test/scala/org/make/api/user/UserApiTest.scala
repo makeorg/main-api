@@ -53,6 +53,8 @@ class UserApiTest
   override val writeExecutionContext: EC = ECGlobal
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
 
+  when(idGenerator.nextId()).thenReturn("some-id")
+
   val routes: Route = Route.seal(handleRejections(MakeApi.rejectionHandler) {
     handleExceptions(MakeApi.exceptionHandler) {
       userRoutes

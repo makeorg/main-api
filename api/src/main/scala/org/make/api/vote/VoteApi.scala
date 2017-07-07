@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import org.make.api.technical.MakeDirectives
+import org.make.api.technical.{IdGeneratorComponent, MakeDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
 import org.make.core.user.User
@@ -20,7 +20,8 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Vote")
 @Path(value = "/vote")
-trait VoteApi extends MakeDirectives { this: VoteServiceComponent with MakeDataHandlerComponent =>
+trait VoteApi extends MakeDirectives {
+  this: VoteServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
 
   @ApiOperation(value = "get-vote", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
