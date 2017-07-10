@@ -14,8 +14,6 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
 
-import scalaoauth2.provider.TokenEndpoint
-
 class MailJetApiTest
     extends FeatureSpec
     with Matchers
@@ -29,7 +27,8 @@ class MailJetApiTest
     with PersistentUserServiceComponent
     with PersistentTokenServiceComponent
     with PersistentClientServiceComponent
-    with OauthTokenGeneratorComponent {
+    with OauthTokenGeneratorComponent
+    with ShortenedNames {
 
   override val eventBusService: EventBusService = mock[EventBusService]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
@@ -38,7 +37,6 @@ class MailJetApiTest
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]

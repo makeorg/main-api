@@ -12,25 +12,37 @@ import org.make.core.user._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait UserServiceComponent extends ShortenedNames {
+trait UserServiceComponent {
+  def userService: UserService
+}
+
+trait UserService extends ShortenedNames {
+  def getUser(uuid: UserId): Future[Option[User]]
+  def register(email: String,
+               firstName: Option[String],
+               lastName: Option[String],
+               password: String,
+               lastIp: String,
+               dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User]
+}
+
+trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames {
   this: IdGeneratorComponent with UserTokenGeneratorComponent with PersistentUserServiceComponent =>
 
-  def userService: UserService
-
-  class UserService {
+  val userService = new UserService {
 
     val validationTokenExpiresIn: Long = 30.days.toSeconds
 
-    def getUser(uuid: UserId): Future[Option[User]] = {
+    override def getUser(uuid: UserId): Future[Option[User]] = {
       persistentUserService.get(uuid)
     }
 
-    def register(email: String,
-                 firstName: Option[String],
-                 lastName: Option[String],
-                 password: String,
-                 lastIp: String,
-                 dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User] = {
+    override def register(email: String,
+                          firstName: Option[String],
+                          lastName: Option[String],
+                          password: String,
+                          lastIp: String,
+                          dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User] = {
 
       val lowerCasedEmail: String = email.toLowerCase()
 

@@ -8,22 +8,30 @@ import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.User
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider._
 
-trait MakeDataHandlerComponent extends StrictLogging with ShortenedNames {
+trait MakeDataHandlerComponent {
+  def oauth2DataHandler: MakeDataHandler
+}
+trait MakeDataHandler extends DataHandler[User] {}
+
+trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
   this: PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent =>
 
-  def oauth2DataHandler: MakeDataHandler
-  val validityDurationAccessTokenSeconds: Int = 30.minutes.toSeconds.toInt
-  val validityDurationRefreshTokenSeconds: Int = 4.hours.toSeconds.toInt
+  val oauth2DataHandler = new DefaultMakeDataHandler
 
-  class MakeDataHandler(implicit val ctx: ExecutionContext) extends DataHandler[User] {
+  class DefaultMakeDataHandler extends MakeDataHandler {
+
+    val validityDurationAccessTokenSeconds: Int = 30.minutes.toSeconds.toInt
+    val validityDurationRefreshTokenSeconds: Int = 4.hours.toSeconds.toInt
 
     private def toAccessToken(token: Token): AccessToken = {
       AccessToken(

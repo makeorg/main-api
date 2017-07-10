@@ -18,13 +18,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UserServiceTest
     extends MakeUnitTest
-    with UserServiceComponent
+    with DefaultUserServiceComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
     with PersistentTokenServiceComponent {
 
-  override val userService: UserService = new UserService
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]

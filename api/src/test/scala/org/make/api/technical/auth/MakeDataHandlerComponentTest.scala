@@ -20,7 +20,7 @@ import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, Client
 
 class MakeDataHandlerComponentTest
     extends MakeUnitTest
-    with MakeDataHandlerComponent
+    with DefaultMakeDataHandlerComponent
     with PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
@@ -31,7 +31,6 @@ class MakeDataHandlerComponentTest
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
   implicit val someExecutionContext: EC = readExecutionContext
-  override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
@@ -259,7 +258,7 @@ class MakeDataHandlerComponentTest
       When("I call method refreshAccessToken")
       when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
         .thenReturn(Future.successful(1))
-      val oauth2DataHandlerWithMockedMethods = new MakeDataHandler
+      val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
         .when(spyOndataHandler)
@@ -293,7 +292,7 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(0))
 
       When("I call method refreshAccessToken")
-      val oauth2DataHandlerWithMockedMethods = new MakeDataHandler
+      val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
         .when(spyOndataHandler)

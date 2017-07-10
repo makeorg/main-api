@@ -17,7 +17,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
-import org.make.api.user.{PersistentUserServiceComponent, UserApi, UserServiceComponent}
+import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.{ValidationError, ValidationFailedError}
 
@@ -28,7 +28,7 @@ import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 trait MakeApi
-    extends UserServiceComponent
+    extends DefaultUserServiceComponent
     with IdGeneratorComponent
     with PersistentUserServiceComponent
     with UserApi
@@ -38,7 +38,7 @@ trait MakeApi
     with VoteApi
     with BuildInfoRoutes
     with AvroSerializers
-    with MakeDataHandlerComponent
+    with DefaultMakeDataHandlerComponent
     with MailJetApi
     with MailJetConfigurationComponent
     with EventBusServiceComponent
@@ -46,7 +46,9 @@ trait MakeApi
     with DefaultUserTokenGeneratorComponent
     with DefaultOauthTokenGeneratorComponent
     with PersistentTokenServiceComponent
-    with StrictLogging {
+    with StrictLogging
+    with AuthenticationApi
+    with MakeAuthentication {
 
   def actorSystem: ActorSystem
 
@@ -54,7 +56,6 @@ trait MakeApi
 
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
   override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
-  override lazy val userService: UserService = new UserService()
   override lazy val propositionService: PropositionService =
     new PropositionService(
       Await.result(
@@ -74,8 +75,6 @@ trait MakeApi
   )
   override lazy val persistentUserService: PersistentUserService =
     new PersistentUserService()
-  override lazy val oauth2DataHandler: MakeDataHandler =
-    new MakeDataHandler()(ECGlobal)
   override lazy val persistentTokenService: PersistentTokenService =
     new PersistentTokenService()
   override lazy val persistentClientService: PersistentClientService =
@@ -137,7 +136,8 @@ trait MakeApi
 //    voteRoutes ~
         accessTokenRoute ~
         buildRoutes ~
-        mailJetRoutes
+        mailJetRoutes ~
+        authenticationRoutes
     )
   )
 }

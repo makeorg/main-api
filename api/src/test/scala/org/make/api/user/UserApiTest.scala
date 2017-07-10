@@ -15,14 +15,13 @@ import org.make.api.technical.auth._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.ValidationError
 import org.make.core.user.{User, UserId}
-import org.mockito.ArgumentMatchers.{any, eq => matches, nullable}
-import org.mockito.{Mockito}
+import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
+import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scalaoauth2.provider.TokenEndpoint
 
 class UserApiTest
     extends FeatureSpec
@@ -48,7 +47,6 @@ class UserApiTest
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
-  override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 

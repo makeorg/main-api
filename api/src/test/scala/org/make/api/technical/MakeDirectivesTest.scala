@@ -10,8 +10,6 @@ import org.mockito.Mockito
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
 
-import scalaoauth2.provider.TokenEndpoint
-
 class MakeDirectivesTest
     extends FeatureSpec
     with Matchers
@@ -23,7 +21,8 @@ class MakeDirectivesTest
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
-    with OauthTokenGeneratorComponent {
+    with OauthTokenGeneratorComponent
+    with ShortenedNames {
 
   override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
@@ -35,8 +34,6 @@ class MakeDirectivesTest
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   Mockito.when(idGenerator.nextId()).thenReturn("some-id")
-
-  override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
 
   val route: Route = Route.seal(get {
     path("test") {

@@ -8,7 +8,7 @@ import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives}
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.HttpCodes
 import org.make.core.user.User
 import org.make.core.proposition.{Proposition, PropositionId}
@@ -19,7 +19,7 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "Proposition")
 @Path(value = "/proposition")
 trait PropositionApi extends MakeDirectives {
-  this: PropositionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
+  this: PropositionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeAuthentication =>
 
   @ApiOperation(value = "get-proposition", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposition])))
