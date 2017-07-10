@@ -7,6 +7,7 @@
 - Install coursier (sbt plugin) https://github.com/coursier/coursier
 - Install the _scalafmt_ IntelliJ plugin
 - Install the _scala_ IntelliJ plugin
+- Run `sbt attach-hooks`
 
 ## Running the app :
 
@@ -24,9 +25,22 @@ when infrastructure is up you can run your app
 make run
 ```
 
-It is possible to start this sbt task from idea, allowing to start in debug mode
 
-### Access To Api documentation
+#### Running the app in Debug Mode:
+
+There are two methods here:
+
+- Create a **sbt task** from idea (intellij).
+    - 'Edit configurations' -> 'Add new configuration' -> 'SBT Task'
+    - Define the task as `api/run`
+- Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
+    - Set the config resource: `-Dconfig.resource=default-application.conf`
+    - Set the javaagent: `-javaagent:/path/to/aspectjweaver-1.6.2.jar`.
+
+        Usually aspectjweaver is downloaded in coursier's cache for example at `/Users/user/.coursier/cache/v1/https/repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.8.10/aspectjweaver-1.8.10.jar`
+
+
+### Access the Api documentation
 
 When application is running you can access to the swagger interface from the adress: [http://localhost:9000/swagger](http://localhost:9000/swagger)
 
