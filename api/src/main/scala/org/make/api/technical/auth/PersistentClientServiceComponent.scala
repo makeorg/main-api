@@ -68,7 +68,7 @@ trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
       implicit val cxt: EC = readExecutionContext
       val futureClient = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(clientAlias.*)
+          select
             .from(PersistentClient.as(clientAlias))
             .where(sqls.eq(clientAlias.uuid, clientId.value))
         }.map(PersistentClient.apply()).single.apply

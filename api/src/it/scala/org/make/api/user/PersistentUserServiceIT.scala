@@ -54,9 +54,9 @@ class PersistentUserServiceIT extends DatabaseTest with PersistentUserServiceCom
         email = "doe@example.com",
         firstName = Some("John"),
         lastName = Some("Doe"),
-        lastIp = "0.0.0.0",
-        hashedPassword = "ZAEAZE232323SFSSDF",
-        salt = "MYSALT",
+        lastIp = Some("0.0.0.0"),
+        hashedPassword = Some("ZAEAZE232323SFSSDF"),
+        salt = Some("MYSALT"),
         enabled = true,
         verified = true,
         lastConnection = before,
@@ -99,7 +99,7 @@ class PersistentUserServiceIT extends DatabaseTest with PersistentUserServiceCom
         And("the user gender must be Male")
         user.profile.get.gender.get shouldBe Gender.Male
 
-        And("the user twitter id must be Male")
+        And("the user gender must be Male")
         user.profile.get.gender.get shouldBe Gender.Male
 
         And("the user twitter id must be @twitterid")

@@ -1,5 +1,5 @@
 CREATE DATABASE IF NOT EXISTS #dbname#;
-
+%
 CREATE TABLE IF NOT EXISTS make_user (
   uuid STRING PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS make_user (
   locale VARCHAR(8) DEFAULT NULL,
   opt_in_newsletter BOOLEAN DEFAULT FALSE NOT NULL
 );
-
+%
 CREATE TABLE IF NOT EXISTS oauth_client (
   uuid VARCHAR(256) PRIMARY KEY,
   secret VARCHAR(256) NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS oauth_client (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
+%
 CREATE TABLE IF NOT EXISTS auth_code (
   authorization_code VARCHAR(256) PRIMARY KEY,
   scope VARCHAR(2048),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS auth_code (
   make_user_uuid VARCHAR(256) NOT NULL REFERENCES make_user,
   client_uuid VARCHAR(256) NOT NULL REFERENCES oauth_client
 );
-
+%
 CREATE TABLE IF NOT EXISTS access_token (
   access_token VARCHAR(256) PRIMARY KEY,
   refresh_token VARCHAR(256),
@@ -64,3 +64,9 @@ CREATE TABLE IF NOT EXISTS access_token (
   make_user_uuid VARCHAR(256) NOT NULL REFERENCES make_user,
   client_uuid VARCHAR(256) NOT NULL REFERENCES oauth_client
 );
+%
+INSERT into oauth_client
+    (uuid, secret, allowed_grant_types)
+    VALUES
+    ('#clientid#', '#clientsecret#', '{"password", "refresh_token", "client_credentials"}');
+%

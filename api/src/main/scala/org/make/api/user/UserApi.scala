@@ -73,7 +73,6 @@ trait UserApi extends MakeAuthenticationDirectives {
           entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
             extractClientIP { clientIp =>
               val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
-              println(s"client ip: $ip")
               onSuccess(
                 socialService
                   .login(request.provider, request.token, Some(ip))

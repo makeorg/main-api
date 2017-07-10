@@ -80,7 +80,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       val futureAccessTokens = oauthTokenGenerator.generateAccessToken()
       val futureRefreshTokens = oauthTokenGenerator.generateRefreshToken()
 
-      val clientId: String = authInfo.clientId.getOrElse(throw new IllegalArgumentException("clientId is required"))
+      //@TODO: handle multiple clientIDs
+      val clientId: String = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
 
       val futureClient = persistentClientService.get(ClientId(clientId))
       val futureResult: Future[(Token, String, String)] = for {

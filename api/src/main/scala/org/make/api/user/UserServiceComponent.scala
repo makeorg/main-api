@@ -23,8 +23,9 @@ trait UserService extends ShortenedNames {
                firstName: Option[String],
                lastName: Option[String],
                password: Option[String],
-               lastIp: String,
+               lastIp: Option[String],
                dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User]
+  def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String])(implicit ctx: EC = ECGlobal): Future[User]
 }
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames {
@@ -82,7 +83,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
+    override def getOrCreateUserFromSocial(userInfo: UserInfo,
+                                           clientIp: Option[String])(implicit ctx: EC = ECGlobal): Future[User] = {
       val lowerCasedEmail: String = userInfo.email.toLowerCase()
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {

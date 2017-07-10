@@ -58,9 +58,9 @@ class UserServiceTest
         email = "any@mail.com",
         firstName = Some("olive"),
         lastName = Some("tom"),
-        lastIp = "127.0.0.1",
-        hashedPassword = "passpass",
-        salt = "salto",
+        lastIp = Some("127.0.0.1"),
+        hashedPassword = Some("passpass"),
+        salt = Some("salto"),
         enabled = true,
         verified = false,
         lastConnection = ZonedDateTime.now(),
@@ -83,8 +83,8 @@ class UserServiceTest
         "any@mail.com",
         Some("tom"),
         Some("olive"),
-        "passopasso",
-        "127.0.0.1",
+        Some("passopasso"),
+        Some("127.0.0.1"),
         Some(LocalDate.parse("1984-10-11"))
       )()
 
@@ -104,8 +104,8 @@ class UserServiceTest
         "exist@mail.com",
         Some("tom"),
         Some("olive"),
-        "passopasso",
-        "127.0.0.1",
+        Some("passopasso"),
+        Some("127.0.0.1"),
         Some(LocalDate.parse("1984-10-11"))
       )
 

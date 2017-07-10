@@ -35,15 +35,21 @@ trait DatabaseTest extends MakeTest with DockerCockroachService with MakeDBExecu
     ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
     ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = writeDatasource))
 
-    val sqlSource = Source
+    val queries = Source
       .fromString("DROP DATABASE IF EXISTS makeapitest;")
       .mkString
-      .concat(Source.fromResource("create-schema.sql").mkString.replace("#dbname#", "makeapitest"))
+      .concat(
+        Source
+          .fromResource("create-schema.sql")
+          .mkString
+          .replace("#dbname#", "makeapitest")
+          .replace("#clientid#", "clientId")
+          .replace("#clientsecret#", "clientSecret")
+      )
+      .split("%")
 
-    logger.info(sqlSource)
-
-    def createSchema: Boolean =
-      writeDatasource.getConnection.createStatement.execute(sqlSource)
+    val conn = writeDatasource.getConnection
+    def createSchema = queries.map(query => Try(conn.createStatement.execute(query)))
 
     Try(createSchema) match {
       case Success(_) => logger.debug("Database schema created.")

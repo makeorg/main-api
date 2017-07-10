@@ -34,7 +34,7 @@ class MakeDataHandlerComponentTest
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
-  val clientId = "apiclient"
+  val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
   val secret = Some("secret")
   val invalidClientId = "invalidClientId"
 
@@ -146,7 +146,7 @@ class MakeDataHandlerComponentTest
 
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
-      val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
+      val authInfo = AuthInfo(exampleUser, None, None, None)
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
@@ -161,8 +161,8 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
-      Then("persistentClientService must be called with a 'apiclient' as ClientId")
-      verify(persistentClientService).get(ClientId("apiclient"))
+      Then("persistentClientService must be called with a '0cdd82cb-5cc0-4875-bb54-5c3709449429' as ClientId")
+      verify(persistentClientService).get(ClientId("0cdd82cb-5cc0-4875-bb54-5c3709449429"))
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
         And("I should get an AccessToken")
