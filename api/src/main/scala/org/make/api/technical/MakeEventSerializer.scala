@@ -1,6 +1,5 @@
 package org.make.api.technical
 
-import org.make.api.user.UserSerializers
 import org.make.api.proposition.PropositionSerializers
 import org.make.api.technical.MakeEventSerializer.allSerializers
 import org.make.api.vote.VoteSerializers
@@ -10,7 +9,6 @@ class MakeEventSerializer extends StaminaAkkaSerializer(allSerializers.head, all
 
 object MakeEventSerializer {
   val allSerializers: Seq[Persister[_, _]] =
-    UserSerializers.serializers ++
-      PropositionSerializers.serializers ++
+    PropositionSerializers.serializers ++
       VoteSerializers.serializers
 }
