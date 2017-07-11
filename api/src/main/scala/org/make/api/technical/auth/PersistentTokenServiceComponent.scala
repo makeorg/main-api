@@ -189,5 +189,17 @@ trait PersistentTokenServiceComponent
         }.update().apply()
       })
     }
+
+    def deleteByAccessToken(accessToken: String): Future[Int] = {
+      implicit val ctx = writeExecutionContext
+      Future(NamedDB('WRITE).localTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentToken)
+            .where
+            .eq(tokenAlias.accessToken, accessToken)
+        }.update().apply()
+      })
+    }
   }
 }

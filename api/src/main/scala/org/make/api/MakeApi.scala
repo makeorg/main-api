@@ -2,7 +2,7 @@ package org.make.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{ExceptionHandler, Route, _}
+import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
@@ -16,7 +16,7 @@ import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, Mai
 import org.make.api.proposition._
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
-import org.make.api.technical.{AvroSerializers, BuildInfoRoutes, IdGeneratorComponent, MakeDocumentation, _}
+import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
@@ -36,9 +36,9 @@ trait MakeApi
     with PropositionApi
     with VoteServiceComponent
     with VoteApi
-    with BuildInfoRoutes
     with AvroSerializers
     with DefaultMakeDataHandlerComponent
+    with BuildInfoRoutes
     with MailJetApi
     with MailJetConfigurationComponent
     with EventBusServiceComponent
@@ -161,6 +161,13 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
   val exceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegistredException =>
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", e.getMessage)))
+    case ValidationFailedError(messages) =>
+      complete(
+        HttpResponse(
+          status = StatusCodes.BadRequest,
+          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
+        )
+      )
     case e =>
       logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
       complete(
@@ -187,5 +194,4 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     }
     .result()
     .withFallback(RejectionHandler.default)
-
 }

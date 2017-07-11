@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server.{Directive, Directive0, Directive1, Directives}
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 
 import scala.collection.immutable
@@ -124,4 +125,8 @@ final case class ExternalIdHeader(override val value: String) extends ModeledCus
 object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
   override val name: String = "x-make-external-id"
   override def parse(value: String): Try[ExternalIdHeader] = Success(new ExternalIdHeader(value))
+}
+
+trait MakeAuthenticationDirectives extends MakeDirectives with MakeAuthentication {
+  this: MakeDataHandlerComponent with IdGeneratorComponent =>
 }
