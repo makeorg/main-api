@@ -59,13 +59,23 @@ case class User(userId: UserId,
                 enabled: Boolean,
                 verified: Boolean,
                 lastConnection: ZonedDateTime,
-                verificationToken: String,
+                verificationToken: Option[String],
+                verificationTokenExpiresAt: Option[ZonedDateTime],
+                resetToken: Option[String],
+                resetTokenExpiresAt: Option[ZonedDateTime],
                 roles: Seq[Role],
                 profile: Option[Profile],
                 override val createdAt: Option[ZonedDateTime] = None,
                 override val updatedAt: Option[ZonedDateTime] = None)
     extends MakeSerializable
-    with Timestamped
+    with Timestamped {
+
+  def verificationTokenIsExpired: Boolean =
+    verificationTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+
+  def resetTokenIsExpired: Boolean =
+    resetTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+}
 
 case class UserId(value: String) extends StringValue
 

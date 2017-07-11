@@ -2,7 +2,9 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import org.make.api.MakeUnitTest
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.auth.{PersistentTokenServiceComponent, UserTokenGenerator, UserTokenGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
@@ -10,27 +12,27 @@ import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, Matchers}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserServiceTest
-    extends FeatureSpec
-    with Matchers
-    with MockitoSugar
-    with ScalaFutures
-    with UserServiceComponent
+    extends MakeUnitTest
+    with DefaultUserServiceComponent
     with IdGeneratorComponent
-    with PersistentUserServiceComponent {
+    with UserTokenGeneratorComponent
+    with PersistentUserServiceComponent
+    with PersistentTokenServiceComponent {
 
-  override val userService: UserService = new UserService
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
+  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
+  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
   override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
+  override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
+
+  Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
   feature("register user") {
     scenario("successful register user") {
@@ -62,7 +64,10 @@ class UserServiceTest
         enabled = true,
         verified = false,
         lastConnection = ZonedDateTime.now(),
-        verificationToken = "Token",
+        verificationToken = Some("Token"),
+        verificationTokenExpiresAt = Some(ZonedDateTime.now),
+        resetToken = None,
+        resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
         profile = Some(returnedProfile)
       )
@@ -81,7 +86,7 @@ class UserServiceTest
         "passopasso",
         "127.0.0.1",
         Some(LocalDate.parse("1984-10-11"))
-      )
+      )()
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]

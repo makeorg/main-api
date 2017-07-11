@@ -12,7 +12,7 @@ import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.Future
 
-trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
+trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
 
   def persistentUserService: PersistentUserService
 
@@ -30,7 +30,10 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
                             enabled: Boolean,
                             verified: Boolean,
                             lastConnection: ZonedDateTime,
-                            verificationToken: String,
+                            verificationToken: Option[String],
+                            verificationTokenExpiresAt: Option[ZonedDateTime],
+                            resetToken: Option[String],
+                            resetTokenExpiresAt: Option[ZonedDateTime],
                             roles: String,
                             dateOfBirth: Option[LocalDate],
                             avatarUrl: Option[String],
@@ -58,6 +61,9 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
         verified = verified,
         lastConnection = lastConnection,
         verificationToken = verificationToken,
+        verificationTokenExpiresAt = verificationTokenExpiresAt,
+        resetToken = resetToken,
+        resetTokenExpiresAt = resetTokenExpiresAt,
         roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
         profile = toProfile
       )
@@ -83,7 +89,6 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
         optInNewsletter = optInNewsletter
       )
     }
-
   }
 
   object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames with StrictLogging {
@@ -118,6 +123,9 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
       "verified",
       "last_connection",
       "verification_token",
+      "verification_token_expires_at",
+      "reset_token",
+      "reset_token_expires_at",
       "roles"
     )
 
@@ -143,7 +151,10 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
         enabled = resultSet.boolean(userResultName.enabled),
         verified = resultSet.boolean(userResultName.verified),
         lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
-        verificationToken = resultSet.string(userResultName.verificationToken),
+        verificationToken = resultSet.stringOpt(userResultName.verificationToken),
+        verificationTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.verificationTokenExpiresAt),
+        resetToken = resultSet.stringOpt(userResultName.resetToken),
+        resetTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.resetTokenExpiresAt),
         roles = resultSet.string(userResultName.roles),
         dateOfBirth = resultSet.localDateOpt(userResultName.dateOfBirth),
         avatarUrl = resultSet.stringOpt(userResultName.avatarUrl),
@@ -208,6 +219,28 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
       }).map(_.getOrElse(false))
     }
 
+    def verificationTokenExists(verificationToken: String): Future[Boolean] = {
+      implicit val ctx = readExecutionContext
+      Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(count(userAlias.result.verificationToken))
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.verificationToken, verificationToken))
+        }.map(_.int(1) > 0).single.apply
+      }).map(_.getOrElse(false))
+    }
+
+    def resetTokenExists(resetToken: String): Future[Boolean] = {
+      implicit val ctx = readExecutionContext
+      Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(count(userAlias.result.resetToken))
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.resetToken, resetToken))
+        }.map(_.int(1) > 0).single.apply
+      }).map(_.getOrElse(false))
+    }
+
     def persist(user: User): Future[User] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
@@ -228,6 +261,9 @@ trait PersistentUserServiceComponent extends MakeDBExecutionContextComponent {
               column.verified -> user.verified,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
+              column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
+              column.resetToken -> user.resetToken,
+              column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
               column.roles -> user.roles.map(_.shortName).mkString(ROLE_SEPARATOR),
               column.avatarUrl -> user.profile.map(_.avatarUrl),
               column.profession -> user.profile.map(_.profession),

@@ -6,19 +6,14 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server.{Directive, Directive0, Directive1, Directives}
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-trait MakeDirectives
-    extends Directives
-    with KamonTraceDirectives
-    with CirceHttpSupport
-    with CirceFormatters
-    with MakeAuthentication { this: MakeDataHandlerComponent with IdGeneratorComponent =>
+trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
+  this: IdGeneratorComponent =>
 
   val sessionIdKey: String = "make-session-id"
 

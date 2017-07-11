@@ -20,20 +20,19 @@ import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, Client
 
 class MakeDataHandlerComponentTest
     extends MakeUnitTest
-    with MakeDataHandlerComponent
+    with DefaultMakeDataHandlerComponent
     with PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
-    with TokenGeneratorComponent
+    with OauthTokenGeneratorComponent
     with ShortenedNames {
 
   override val readExecutionContext: EC = ECGlobal
   override val writeExecutionContext: EC = ECGlobal
   implicit val someExecutionContext: EC = readExecutionContext
-  override val oauth2DataHandler: MakeDataHandler = new MakeDataHandler
   override val idGenerator: IdGenerator = new UUIDIdGenerator
-  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
+  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   val clientId = "apiclient"
   val secret = Some("secret")
@@ -150,10 +149,11 @@ class MakeDataHandlerComponentTest
       val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
-      when(tokenGenerator.generateAccessToken()).thenReturn(Future.successful(("access_token", "access_token_hashed")))
+      when(oauthTokenGenerator.generateAccessToken())
+        .thenReturn(Future.successful(("access_token", "access_token_hashed")))
 
       And("a generated refresh token 'refresh_token' with a hashed value 'refresh_token_hashed")
-      when(tokenGenerator.generateRefreshToken())
+      when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")
@@ -258,7 +258,7 @@ class MakeDataHandlerComponentTest
       When("I call method refreshAccessToken")
       when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
         .thenReturn(Future.successful(1))
-      val oauth2DataHandlerWithMockedMethods = new MakeDataHandler
+      val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
         .when(spyOndataHandler)
@@ -292,7 +292,7 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(0))
 
       When("I call method refreshAccessToken")
-      val oauth2DataHandlerWithMockedMethods = new MakeDataHandler
+      val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
         .when(spyOndataHandler)

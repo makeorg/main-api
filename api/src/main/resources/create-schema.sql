@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS make_user (
   verified BOOLEAN NOT NULL,
   last_connection TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   verification_token VARCHAR(255) DEFAULT NULL,
+  verification_token_expires_at TIMESTAMP WITH TIME ZONE,
+  reset_token VARCHAR(255) DEFAULT NULL,
+  reset_token_expires_at TIMESTAMP WITH TIME ZONE,
   roles TEXT NOT NULL,
 
   date_of_birth DATE DEFAULT NULL,
