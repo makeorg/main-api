@@ -14,7 +14,8 @@ import org.make.api.user.UserApi.ResetPasswordRequest
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
-import org.make.core.user.UserEvent.ResetPasswordEvent
+import org.make.core.user.Role.RoleAdmin
+import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.user.{User, UserId}
 
 import scala.util.Try
@@ -159,6 +160,25 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
+  @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
+  @Path(value = "/user/:userId/resend-validation-email")
+  @ApiImplicitParams(value = Array())
+  def resendValidationEmail: Route = post {
+    path("user" / userId / "resend-validation-email") { userId =>
+      makeTrace("ResendValidateEmail") {
+        makeOAuth2 { userAuth =>
+          if (userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
+            eventBusService.publish(ResendValidationEmailEvent(userId = userId, connectedUserId = userAuth.user.userId))
+            complete(StatusCodes.NoContent)
+          } else {
+            complete(Forbidden)
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = resetPasswordRoute ~ register ~ socialLogin ~ getUser
 
   val userId: PathMatcher1[UserId] =
@@ -186,7 +206,9 @@ case class RegisterUserRequest(email: String,
 case class SocialLoginRequest(provider: String, token: String)
 
 object UserApi {
+
   final case class ResetPasswordRequest(email: String) {
     validate(mandatoryField("email", email), validateEmail("email", email))
   }
+
 }

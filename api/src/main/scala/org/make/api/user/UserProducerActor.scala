@@ -6,7 +6,7 @@ import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.user.UserEvent
-import org.make.core.user.UserEvent.{ResetPasswordEvent, UserEventWrapper}
+import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserEventWrapper}
 
 class UserProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
@@ -17,11 +17,26 @@ class UserProducerActor extends ProducerActor {
     kafkaConfiguration.topics(UserProducerActor.topicKey)
 
   override def receive: Receive = {
-    case event: ResetPasswordEvent => onResetPassword(event)
-    case other                     => log.warning(s"Unknown event $other")
+    case event: ResetPasswordEvent         => onResetPassword(event)
+    case event: ResendValidationEmailEvent => onResendValidationEmail(event)
+    case other                             => log.warning(s"Unknown event $other")
   }
 
   def onResetPassword(event: ResetPasswordEvent): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      UserEventWrapper(
+        version = event.version,
+        id = event.userId.value,
+        date = ZonedDateTime.now(),
+        eventType = event.getClass.getSimpleName,
+        event = UserEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.userId.value, record)
+  }
+
+  def onResendValidationEmail(event: ResendValidationEmailEvent): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       UserEventWrapper(

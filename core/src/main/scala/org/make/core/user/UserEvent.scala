@@ -42,4 +42,17 @@ object UserEvent {
     }
   }
 
+  final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
+                                              override val eventDate: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC),
+                                              override val userId: UserId)
+      extends UserEvent {
+    val version: Int = 1
+  }
+
+  object ResendValidationEmailEvent {
+    def apply(connectedUserId: UserId, userId: UserId): ResendValidationEmailEvent = {
+      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId)
+    }
+  }
+
 }
