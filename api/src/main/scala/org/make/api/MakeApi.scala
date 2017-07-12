@@ -12,12 +12,13 @@ import io.circe.CursorOp.DownField
 import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
-import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.extensions._
 import org.make.api.proposition._
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
 import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
 import org.make.core.{ValidationError, ValidationFailedError}
@@ -32,12 +33,16 @@ trait MakeApi
     with IdGeneratorComponent
     with PersistentUserServiceComponent
     with UserApi
+    with DefaultSocialServiceComponent
+    with DefaultGoogleApiComponent
+    with DefaultFacebookApiComponent
     with PropositionServiceComponent
     with PropositionApi
     with VoteServiceComponent
     with VoteApi
     with AvroSerializers
     with DefaultMakeDataHandlerComponent
+    with DefaultMakeSettingsComponent
     with BuildInfoRoutes
     with MailJetApi
     with MailJetConfigurationComponent

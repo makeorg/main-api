@@ -24,7 +24,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
                             email: String,
                             firstName: Option[String],
                             lastName: Option[String],
-                            lastIp: String,
+                            lastIp: Option[String],
                             hashedPassword: String,
                             salt: String,
                             enabled: Boolean,
@@ -55,8 +55,8 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
         firstName = firstName,
         lastName = lastName,
         lastIp = lastIp,
-        hashedPassword = hashedPassword,
-        salt = salt,
+        hashedPassword = Some(hashedPassword),
+        salt = Some(salt),
         enabled = enabled,
         verified = verified,
         lastConnection = lastConnection,
@@ -145,7 +145,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
         lastName = resultSet.stringOpt(userResultName.lastName),
         createdAt = resultSet.zonedDateTime(userResultName.updatedAt),
         updatedAt = resultSet.zonedDateTime(userResultName.updatedAt),
-        lastIp = resultSet.string(userResultName.lastIp),
+        lastIp = resultSet.stringOpt(userResultName.lastIp),
         hashedPassword = resultSet.string(userResultName.hashedPassword),
         salt = resultSet.string(userResultName.salt),
         enabled = resultSet.boolean(userResultName.enabled),
@@ -202,6 +202,19 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
                 .eq(userAlias.email, email)
                 .and(sqls.eq(userAlias.hashedPassword, hashedPassword))
             )
+        }.map(PersistentUser.apply()).single.apply
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    def findByEmail(email: String): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
       })
 

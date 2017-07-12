@@ -17,37 +17,41 @@ class DatabaseConfiguration(override protected val configuration: Config)
     with ConfigurationSupport
     with StrictLogging {
 
-  private val user: String = configuration.getString("user")
-  private val password: String = configuration.getString("password")
+  private val user: String = configuration.getString("database.user")
+  private val password: String = configuration.getString("database.password")
 
-  private val jdbcUrl: String = configuration.getString("jdbc-url")
+  private val jdbcUrl: String = configuration.getString("database.jdbc-url")
 
   private val autoCreateSchemas: Boolean =
-    configuration.getBoolean("auto-create-db-schemas")
+    configuration.getBoolean("database.auto-create-db-schemas")
 
   private val readDatasource = new BasicDataSource()
   readDatasource.setDriverClassName("org.postgresql.Driver")
   readDatasource.setUrl(jdbcUrl)
   readDatasource.setUsername(user)
   readDatasource.setPassword(password)
-  readDatasource.setInitialSize(configuration.getInt("pools.read.initial-size"))
-  readDatasource.setMaxTotal(configuration.getInt("pools.read.max-total"))
-  readDatasource.setMaxIdle(configuration.getInt("pools.read.max-idle"))
+  readDatasource.setInitialSize(configuration.getInt("database.pools.read.initial-size"))
+  readDatasource.setMaxTotal(configuration.getInt("database.pools.read.max-total"))
+  readDatasource.setMaxIdle(configuration.getInt("database.pools.read.max-idle"))
 
   val readThreadPool: ExecutionContextExecutorService =
-    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(configuration.getInt("pools.read.max-total")))
+    ExecutionContext.fromExecutorService(
+      Executors.newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
+    )
 
   private val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
   writeDatasource.setUrl(jdbcUrl)
   writeDatasource.setUsername(user)
   writeDatasource.setPassword(password)
-  writeDatasource.setInitialSize(configuration.getInt("pools.write.initial-size"))
-  writeDatasource.setMaxTotal(configuration.getInt("pools.write.max-total"))
-  writeDatasource.setMaxIdle(configuration.getInt("pools.write.max-idle"))
+  writeDatasource.setInitialSize(configuration.getInt("database.pools.write.initial-size"))
+  writeDatasource.setMaxTotal(configuration.getInt("database.pools.write.max-total"))
+  writeDatasource.setMaxIdle(configuration.getInt("database.pools.write.max-idle"))
 
   val writeThreadPool: ExecutionContextExecutorService =
-    ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(configuration.getInt("pools.write.max-total")))
+    ExecutionContext.fromExecutorService(
+      Executors.newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
+    )
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
   ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
@@ -62,12 +66,16 @@ class DatabaseConfiguration(override protected val configuration: Config)
 
   if (autoCreateSchemas) {
     val dbname = writeDatasource.getConnection.getCatalog
+    val defaultClientId: String = configuration.getString("authentication.default-client-id")
+    val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
     logger.debug(s"Creating database with name: $dbname")
     val queries = Source
       .fromResource("create-schema.sql")
       .mkString
       .replace("#dbname#", dbname)
-      .split(";")
+      .replace("#clientid#", defaultClientId)
+      .replace("#clientsecret#", defaultClientSecret)
+      .split("%")
 
     val conn = writeDatasource.getConnection
     val results = queries.map(query => Try(conn.createStatement.execute(query)))
@@ -81,7 +89,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
 
 object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): DatabaseConfiguration =
-    new DatabaseConfiguration(system.settings.config.getConfig("make-api.database"))
+    new DatabaseConfiguration(system.settings.config.getConfig("make-api"))
 
   override def lookup(): ExtensionId[DatabaseConfiguration] =
     DatabaseConfiguration

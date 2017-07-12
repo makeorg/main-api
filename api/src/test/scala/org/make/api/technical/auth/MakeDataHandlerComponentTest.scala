@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 
 import org.make.api.MakeUnitTest
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
@@ -21,6 +22,7 @@ import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, Client
 class MakeDataHandlerComponentTest
     extends MakeUnitTest
     with DefaultMakeDataHandlerComponent
+    with MakeSettingsComponent
     with PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
@@ -29,13 +31,20 @@ class MakeDataHandlerComponentTest
     with ShortenedNames {
 
   override val readExecutionContext: EC = ECGlobal
+
   override val writeExecutionContext: EC = ECGlobal
   implicit val someExecutionContext: EC = readExecutionContext
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
-  val clientId = "apiclient"
+  val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
   val secret = Some("secret")
+
+  val authenticationConfiguration = mock[makeSettings.Authentication.type]
+  when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
+  when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
+
   val invalidClientId = "invalidClientId"
 
   val exampleClient = Client(
@@ -77,9 +86,8 @@ class MakeDataHandlerComponentTest
   when(persistentClientService.get(ClientId(clientId))).thenReturn(Future(Some(exampleClient)))
 
   //A invalid client
-  when(
-    persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None))
-  ).thenReturn(Future.successful(None))
+  when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None)))
+    .thenReturn(Future.successful(None))
 
   //A valid request
   when(mockMap.apply(ArgumentMatchers.eq("username"))).thenReturn(Seq(validUsername))
@@ -146,7 +154,7 @@ class MakeDataHandlerComponentTest
 
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
-      val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
+      val authInfo = AuthInfo(exampleUser, None, None, None)
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
@@ -161,8 +169,8 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
-      Then("persistentClientService must be called with a 'apiclient' as ClientId")
-      verify(persistentClientService).get(ClientId("apiclient"))
+      Then("persistentClientService must be called with a '0cdd82cb-5cc0-4875-bb54-5c3709449429' as ClientId")
+      verify(persistentClientService).get(ClientId("0cdd82cb-5cc0-4875-bb54-5c3709449429"))
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
         And("I should get an AccessToken")
