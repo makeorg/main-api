@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 
 import org.make.api.MakeUnitTest
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
@@ -21,6 +22,7 @@ import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, Client
 class MakeDataHandlerComponentTest
     extends MakeUnitTest
     with DefaultMakeDataHandlerComponent
+    with MakeSettingsComponent
     with PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
@@ -29,13 +31,20 @@ class MakeDataHandlerComponentTest
     with ShortenedNames {
 
   override val readExecutionContext: EC = ECGlobal
+
   override val writeExecutionContext: EC = ECGlobal
   implicit val someExecutionContext: EC = readExecutionContext
   override val idGenerator: IdGenerator = new UUIDIdGenerator
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
   val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
   val secret = Some("secret")
+
+  val authenticationConfiguration = mock[makeSettings.Authentication.type]
+  when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
+  when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
+
   val invalidClientId = "invalidClientId"
 
   val exampleClient = Client(
@@ -77,9 +86,8 @@ class MakeDataHandlerComponentTest
   when(persistentClientService.get(ClientId(clientId))).thenReturn(Future(Some(exampleClient)))
 
   //A invalid client
-  when(
-    persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None))
-  ).thenReturn(Future.successful(None))
+  when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None)))
+    .thenReturn(Future.successful(None))
 
   //A valid request
   when(mockMap.apply(ArgumentMatchers.eq("username"))).thenReturn(Seq(validUsername))

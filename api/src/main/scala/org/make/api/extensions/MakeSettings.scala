@@ -1,6 +1,6 @@
 package org.make.api.extensions
 
-import akka.actor.{Actor, ActorSystem, Extension}
+import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.make.api.Predef._
 
@@ -56,14 +56,32 @@ class MakeSettings(config: Config) extends Extension {
 
   }
 
-}
+  object Authentication {
+    val defaultClientId: String = config.getString("authentication.default-client-id")
 
-object MakeSettings {
-  def apply(system: ActorSystem): MakeSettings =
+    val defaultClientSecret: String = config.getString("authentication.default-client-secret")
+  }
+
+}
+object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
+  override def createExtension(system: ExtendedActorSystem): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
+
+  override def lookup(): ExtensionId[MakeSettings] = MakeSettings
+  override def get(system: ActorSystem): MakeSettings = super.get(system)
 }
 
 trait MakeSettingsExtension { self: Actor =>
 
   val settings = MakeSettings(context.system)
+}
+
+trait MakeSettingsComponent {
+  def makeSettings: MakeSettings
+}
+
+trait DefaultMakeSettingsComponent extends MakeSettingsComponent {
+  def actorSystem: ActorSystem
+
+  override lazy val makeSettings: MakeSettings = MakeSettings(actorSystem)
 }

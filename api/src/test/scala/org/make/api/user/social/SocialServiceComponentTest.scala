@@ -74,11 +74,11 @@ class SocialServiceComponentTest
       )
 
       Mockito
-        .when(googleApi.getUserInfo(any[String]))
+        .when(googleApi.getUserInfo(matches("googleToken")))
         .thenReturn(Future.successful(googleData))
 
       When("login google user")
-      val tokenResposnse = socialService.login("google", "token", None)
+      val tokenResposnse = socialService.login("google", "googleToken", None)
 
       Then("my program call getOrCreateUserFromSocial with google data")
       val userInfoFromGoogle =
@@ -198,11 +198,11 @@ class SocialServiceComponentTest
       )
 
       Mockito
-        .when(facebookApi.getUserInfo(any[String]))
+        .when(facebookApi.getUserInfo(matches("facebookToken")))
         .thenReturn(Future.successful(facebookData))
 
       When("login google user")
-      val tokenResposnse = socialService.login("facebook", "token", None)
+      val tokenResposnse = socialService.login("facebook", "facebookToken", None)
 
       Then("my program call getOrCreateUserFromSocial with google data")
       val userInfoFromFacebook =
@@ -258,11 +258,11 @@ class SocialServiceComponentTest
       )
 
       Mockito
-        .when(facebookApi.getUserInfo(any[String]))
+        .when(facebookApi.getUserInfo(matches("facebookToken2")))
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], matches(None)))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
@@ -270,7 +270,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(accessToken))
 
       When("login user from facebook")
-      val futureTokenResposnse = socialService.login("facebook", "token", None)
+      val futureTokenResposnse = socialService.login("facebook", "facebookToken2", None)
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
@@ -285,11 +285,11 @@ class SocialServiceComponentTest
       Given("a user logged via facebook")
 
       Mockito
-        .when(facebookApi.getUserInfo(any[String]))
+        .when(facebookApi.getUserInfo(matches("facebookToken3")))
         .thenReturn(Future.failed(new Exception("invalid token from facebook")))
 
       When("login user from google")
-      val futureTokenResposnse = socialService.login("facebook", "token", None)
+      val futureTokenResposnse = socialService.login("facebook", "facebookToken3", None)
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]

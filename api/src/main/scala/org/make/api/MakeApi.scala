@@ -12,7 +12,7 @@ import io.circe.CursorOp.DownField
 import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
-import org.make.api.extensions.{DatabaseConfiguration, MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.extensions._
 import org.make.api.proposition._
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
@@ -42,6 +42,7 @@ trait MakeApi
     with VoteApi
     with AvroSerializers
     with DefaultMakeDataHandlerComponent
+    with DefaultMakeSettingsComponent
     with BuildInfoRoutes
     with MailJetApi
     with MailJetConfigurationComponent

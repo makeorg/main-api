@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 import java.util.{Date, NoSuchElementException}
 
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
@@ -27,7 +28,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with IdGeneratorComponent
-    with OauthTokenGeneratorComponent =>
+    with OauthTokenGeneratorComponent
+    with MakeSettingsComponent =>
 
   val oauth2DataHandler = new DefaultMakeDataHandler
 
@@ -80,8 +82,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       val futureAccessTokens = oauthTokenGenerator.generateAccessToken()
       val futureRefreshTokens = oauthTokenGenerator.generateRefreshToken()
 
-      //@TODO: handle multiple clientIDs
-      val clientId: String = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
+      val clientId: String = authInfo.clientId.getOrElse(makeSettings.Authentication.defaultClientId)
 
       val futureClient = persistentClientService.get(ClientId(clientId))
       val futureResult: Future[(Token, String, String)] = for {
