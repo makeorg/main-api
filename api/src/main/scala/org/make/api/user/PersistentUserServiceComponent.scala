@@ -221,6 +221,19 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       futurePersistentUser.map(_.map(_.toUser))
     }
 
+    def findUserIdByEmail(email: String): Future[Option[UserId]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUserId = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select(userAlias.result.uuid)
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.email, email))
+        }.map(_.string(userAlias.resultName.uuid)).single.apply
+      })
+
+      futurePersistentUserId.map(_.map(UserId(_)))
+    }
+
     def emailExists(email: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
