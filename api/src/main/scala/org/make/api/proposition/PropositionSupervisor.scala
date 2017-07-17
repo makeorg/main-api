@@ -2,11 +2,8 @@ package org.make.api.proposition
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
-import com.sksamuel.avro4s.RecordFormat
-import org.make.api.technical.ConsumerActor.Consume
 import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ElasticsearchConfigurationExtension}
-import org.make.api.technical.{AvroSerializers, ConsumerActor, ShortenedNames}
-import org.make.core.proposition.PropositionEvent.PropositionEventWrapper
+import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
 import scala.util.{Failure, Success}
 
@@ -36,15 +33,6 @@ class PropositionSupervisor
       context
         .actorOf(PropositionProducerActor.props, PropositionProducerActor.name)
     )
-
-    val propositionConsumer = context.actorOf(
-      ConsumerActor
-        .props(RecordFormat[PropositionEventWrapper], "propositions"),
-      ConsumerActor.name("propositions")
-    )
-    context.watch(propositionConsumer)
-    propositionConsumer ! Consume
-
     propositionStreamToElasticsearch
       .run()
       .onComplete {

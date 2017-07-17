@@ -257,7 +257,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(count(userAlias.result.email))
+          select(count(userAlias.email))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
         }.map(_.int(1) > 0).single.apply
@@ -268,7 +268,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(count(userAlias.result.verificationToken))
+          select(count(userAlias.verificationToken))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.verificationToken, verificationToken))
         }.map(_.int(1) > 0).single.apply
@@ -279,7 +279,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
-          select(count(userAlias.result.resetToken))
+          select(count(userAlias.resetToken))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.resetToken, resetToken))
         }.map(_.int(1) > 0).single.apply

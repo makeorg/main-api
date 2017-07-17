@@ -14,7 +14,8 @@ import org.make.api.user.UserApi.ResetPasswordRequest
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
-import org.make.core.user.{ResetPasswordEvent, User, UserId}
+import org.make.core.user.UserEvent.ResetPasswordEvent
+import org.make.core.user.{User, UserId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -128,10 +129,18 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "/reset-password")
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "email", paramType = "body", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.user.UserApi.ResetPasswordRequest"
+      )
+    )
+  )
   def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
-      path("reset-password") {
+      path("user" / "reset-password") {
         makeTrace("ResetPassword") {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>

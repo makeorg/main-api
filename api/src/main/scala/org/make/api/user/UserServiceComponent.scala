@@ -19,6 +19,7 @@ trait UserServiceComponent {
 
 trait UserService extends ShortenedNames {
   def getUser(uuid: UserId): Future[Option[User]]
+  def getUser(uuid: String): Future[Option[User]]
   def register(email: String,
                firstName: Option[String],
                lastName: Option[String],
@@ -37,6 +38,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getUser(uuid: UserId): Future[Option[User]] = {
       persistentUserService.get(uuid)
+    }
+
+    override def getUser(uuid: String): Future[Option[User]] = {
+      persistentUserService.get(UserId(uuid))
     }
 
     override def register(email: String,

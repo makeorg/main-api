@@ -14,7 +14,8 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
 import org.make.api.{MakeApi, MakeApiTestUtils}
 import org.make.core.ValidationError
-import org.make.core.user.{ResetPasswordEvent, User, UserId}
+import org.make.core.user.UserEvent.ResetPasswordEvent
+import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -297,7 +298,7 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+      val resetPasswordRoute = Post("/user/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
 
       Then("The existence of email is checked")
       And("I get a valid response")
@@ -317,7 +318,7 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+      val resetPasswordRoute = Post("/user/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
 
       Then("The existence of email is checked")
       And("I get a not found response")
@@ -337,7 +338,7 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+      val resetPasswordRoute = Post("/user/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
 
       Then("The existence of email is not checked")
       And("I get a bad request response")

@@ -35,3 +35,5 @@ trait AvroSerializers {
   }
 
 }
+
+object AvroSerializers extends AvroSerializers
