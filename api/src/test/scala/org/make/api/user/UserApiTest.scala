@@ -8,38 +8,35 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, Status
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe.generic.auto._
-import org.make.api.MakeApi
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
+import org.make.api.{MakeApi, MakeTest}
 import org.make.core.ValidationError
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{ResetPasswordEvent, User, UserId}
 import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
-import org.mockito.Mockito
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, Matchers}
+import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserApiTest
-    extends FeatureSpec
-    with Matchers
+    extends MakeTest
     with ScalatestRouteTest
-    with MockitoSugar
     with UserApi
-    with UserServiceComponent
-    with PersistentUserServiceComponent
     with SocialServiceComponent
     with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with PersistentTokenServiceComponent
-    with PersistentClientServiceComponent
+    with EventBusServiceComponent
     with UserTokenGeneratorComponent
     with OauthTokenGeneratorComponent
+    with PersistentTokenServiceComponent
+    with PersistentClientServiceComponent
+    with PersistentUserServiceComponent
+    with UserServiceComponent
+    with MakeDataHandlerComponent
     with MakeDBExecutionContextComponent {
 
   override val userService: UserService = mock[UserService]
@@ -55,6 +52,7 @@ class UserApiTest
   override val writeExecutionContext: EC = ECGlobal
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
+  override val eventBusService: EventBusService = mock[EventBusService]
 
   when(idGenerator.nextId()).thenReturn("some-id")
 
@@ -126,7 +124,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for existant email") {
+    scenario("validation failed for existing email") {
       Mockito
         .when(
           userService
@@ -160,7 +158,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for malformatted email") {
+    scenario("validation failed for malformed email") {
       val request =
         """
           |{
@@ -180,7 +178,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for malformatted date of birth") {
+    scenario("validation failed for malformed date of birth") {
       pending
       val request =
         """
@@ -277,6 +275,94 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
+    }
+  }
+
+  feature("reset password") {
+    info("In order to reset a password")
+    info("As a user with an email")
+    info("I want to use api to reset my password")
+
+    val johnDoeId = UserId("JOHNDOE")
+    Mockito
+      .when(persistentUserService.findUserIdByEmail("john.doe@example.com"))
+      .thenReturn(Future.successful(Some(johnDoeId)))
+    Mockito
+      .when(persistentUserService.findUserIdByEmail("invalidexample.com"))
+      .thenAnswer(_ => throw new IllegalArgumentException("findUserIdByEmail should be called with valid email"))
+    when(eventBusService.publish(ArgumentMatchers.any[ResetPasswordEvent]))
+      .thenAnswer(
+        invocation =>
+          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeId)) {
+            throw new IllegalArgumentException("UserId not match")
+        }
+      )
+    Mockito
+      .when(persistentUserService.findUserIdByEmail("fake@example.com"))
+      .thenReturn(Future.successful(None))
+
+    scenario("Reset a password from an existing email") {
+      Given("a registered user with an email john.doe@example.com")
+      When("I reset password with john.doe@example.com")
+      val request =
+        """
+          |{
+          | "email": "john.doe@example.com"
+          |}
+        """.stripMargin
+
+      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+
+      Then("The existence of email is checked")
+      And("I get a valid response")
+      resetPasswordRoute ~> check {
+        status should be(StatusCodes.OK)
+      }
+      And("a user Event ResetPasswordEvent is emitted")
+    }
+
+    scenario("Reset a password from an nonexistent email") {
+      Given("an nonexistent email fake@example.com")
+      When("I reset password with fake@example.com")
+      val request =
+        """
+          |{
+          | "email": "fake@example.com"
+          |}
+        """.stripMargin
+
+      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+
+      Then("The existence of email is checked")
+      And("I get a not found response")
+      resetPasswordRoute ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+      And("any user Event ResetPasswordEvent is emitted")
+    }
+
+    scenario("Reset a password from an invalid email") {
+      Given("an invalid email invalidexample.com")
+      When("I reset password with invalidexample.com")
+      val request =
+        """
+          |{
+          | "email": "invalidexample.com"
+          |}
+        """.stripMargin
+
+      val resetPasswordRoute = Post("/reset-password", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+
+      Then("The existence of email is not checked")
+      And("I get a bad request response")
+      resetPasswordRoute ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val emailError = errors.find(_.field == "email")
+        emailError should be(Some(ValidationError("email", "email is not a valid email")))
+      }
+      And("any user Event ResetPasswordEvent is emitted")
+
     }
   }
 }

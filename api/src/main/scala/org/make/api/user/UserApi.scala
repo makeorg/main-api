@@ -8,12 +8,13 @@ import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.user.UserApi.ResetPasswordRequest
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{ResetPasswordEvent, User, UserId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -21,7 +22,12 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "User")
 @Path(value = "/user")
 trait UserApi extends MakeAuthenticationDirectives {
-  this: UserServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with SocialServiceComponent =>
+  this: UserServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with SocialServiceComponent
+    with EventBusServiceComponent
+    with PersistentUserServiceComponent =>
 
   @Path(value = "/{userId}")
   @ApiOperation(
@@ -119,7 +125,32 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes: Route = register ~ socialLogin ~ getUser
+  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/reset-password")
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "email", paramType = "body", dataType = "string")))
+  def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
+    post {
+      path("reset-password") {
+        makeTrace("ResetPassword") {
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
+            decodeRequest(entity(as[ResetPasswordRequest]) { request =>
+              onSuccess(persistentUserService.findUserIdByEmail(request.email)) {
+                case Some(id) =>
+                  eventBusService.publish(
+                    ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId))
+                  )
+                  complete(StatusCodes.OK)
+                case _ => complete(StatusCodes.NotFound)
+              }
+            })
+          }
+        }
+      }
+    }
+  }
+
+  val userRoutes: Route = resetPasswordRoute ~ register ~ socialLogin ~ getUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -144,3 +175,9 @@ case class RegisterUserRequest(email: String,
 }
 
 case class SocialLoginRequest(provider: String, token: String)
+
+object UserApi {
+  final case class ResetPasswordRequest(email: String) {
+    validate(mandatoryField("email", email), validateEmail("email", email))
+  }
+}

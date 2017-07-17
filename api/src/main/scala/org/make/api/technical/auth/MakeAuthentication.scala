@@ -1,8 +1,7 @@
 package org.make.api.technical.auth
 
-import akka.http.scaladsl._
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.Credentials
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credentials}
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
 import org.make.core.user.User
 
@@ -15,10 +14,15 @@ import scalaoauth2.provider._
 trait MakeAuthentication extends ShortenedNames with MakeDirectives {
   self: MakeDataHandlerComponent with IdGeneratorComponent =>
 
-  def makeOAuth2(f: (AuthInfo[User]) => server.Route)(implicit ctx: EC = ECGlobal): Route = {
-    authenticateOAuth2Async[AuthInfo[User]]("make.org API", oauth2Authenticator).tapply { (u) =>
-      f(u._1)
-    }
+  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[User]] =
+    authenticateOAuth2Async[AuthInfo[User]]("make.org API", oauth2Authenticator)
+
+  def makeOAuth2: Directive1[AuthInfo[User]] = {
+    defaultMakeOAuth2
+  }
+
+  def optionalMakeOAuth2: Directive1[Option[AuthInfo[User]]] = {
+    defaultMakeOAuth2.optional
   }
 
   def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[User]]] =
