@@ -1,6 +1,6 @@
 package org.make.api
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -14,13 +14,13 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._
 import org.make.api.proposition._
+import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
-import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{DefaultUserServiceComponent, PersistentUserServiceComponent, UserApi}
-import org.make.api.vote.{VoteApi, VoteCoordinator, VoteServiceComponent, VoteSupervisor}
+import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
+import org.make.api.vote._
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
@@ -29,64 +29,55 @@ import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 trait MakeApi
-    extends DefaultUserServiceComponent
-    with IdGeneratorComponent
-    with PersistentUserServiceComponent
-    with UserApi
+    extends DefaultIdGeneratorComponent
+    with DefaultPersistentUserServiceComponent
+    with DefaultPersistentClientServiceComponent
+    with DefaultPersistentTokenServiceComponent
     with DefaultSocialServiceComponent
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
-    with PropositionServiceComponent
-    with PropositionApi
-    with VoteServiceComponent
-    with VoteApi
-    with AvroSerializers
+    with DefaultUserServiceComponent
+    with DefaultPropositionServiceComponent
+    with DefaultVoteServiceComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
-    with BuildInfoRoutes
-    with MailJetApi
-    with MailJetConfigurationComponent
-    with EventBusServiceComponent
+    with DefaultEventBusServiceComponent
     with DefaultTokenGeneratorComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultOauthTokenGeneratorComponent
-    with PersistentTokenServiceComponent
-    with StrictLogging
+    with PropositionCoordinatorComponent
+    with VoteCoordinatorComponent
+    with PropositionApi
+    with VoteApi
+    with MailJetApi
     with AuthenticationApi
-    with MakeAuthentication {
-
-  def actorSystem: ActorSystem
-
-  override def eventBusService: EventBusService = new EventBusService(actorSystem)
+    with UserApi
+    with BuildInfoRoutes
+    with MailJetConfigurationComponent
+    with StrictLogging
+    with AvroSerializers
+    with MakeAuthentication
+    with ActorSystemComponent {
 
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
-  override lazy val idGenerator: IdGenerator = new UUIDIdGenerator
-  override lazy val propositionService: PropositionService =
-    new PropositionService(
-      Await.result(
-        actorSystem
-          .actorSelection(actorSystem / MakeGuardian.name / PropositionSupervisor.name / PropositionCoordinator.name)
-          .resolveOne()(Timeout(2.seconds)),
-        atMost = 2.seconds
-      )
-    )
-  override lazy val voteService: VoteService = new VoteService(
-    Await.result(
-      actorSystem
-        .actorSelection(actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name)
-        .resolveOne()(Timeout(2.seconds)),
-      atMost = 2.seconds
-    )
+
+  override lazy val propositionCoordinator: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / PropositionSupervisor.name / PropositionCoordinator.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
   )
-  override lazy val persistentUserService: PersistentUserService =
-    new PersistentUserService()
-  override lazy val persistentTokenService: PersistentTokenService =
-    new PersistentTokenService()
-  override lazy val persistentClientService: PersistentClientService =
-    new PersistentClientService()
-  //  override lazy val tokenService: TokenService = new TokenService()
+
+  override lazy val voteCoordinator: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
+  )
+
   override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
+
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
     override val handlers = Map(
       OAuthGrantType.IMPLICIT -> new Implicit,
@@ -199,4 +190,8 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     }
     .result()
     .withFallback(RejectionHandler.default)
+}
+
+trait ActorSystemComponent {
+  def actorSystem: ActorSystem
 }

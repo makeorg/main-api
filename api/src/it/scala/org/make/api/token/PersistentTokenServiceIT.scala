@@ -4,7 +4,8 @@ import java.sql.SQLException
 import java.time.ZonedDateTime
 
 import org.make.api.DatabaseTest
-import org.make.api.technical.auth.PersistentTokenServiceComponent
+import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, DefaultPersistentTokenServiceComponent}
+import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -12,11 +13,11 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class PersistentTokenServiceIT extends DatabaseTest with PersistentTokenServiceComponent {
-
-  override val persistentTokenService: PersistentTokenService = new PersistentTokenService
-  override val persistentClientService: PersistentClientService = new PersistentClientService
-  override val persistentUserService: PersistentUserService = new PersistentUserService
+class PersistentTokenServiceIT
+    extends DatabaseTest
+    with DefaultPersistentTokenServiceComponent
+    with DefaultPersistentUserServiceComponent
+    with DefaultPersistentClientServiceComponent {
 
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val now: ZonedDateTime = ZonedDateTime.now

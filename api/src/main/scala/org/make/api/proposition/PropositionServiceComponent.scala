@@ -12,22 +12,31 @@ import org.make.core.proposition._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait PropositionServiceComponent { this: IdGeneratorComponent with PropositionServiceComponent =>
-
+trait PropositionServiceComponent {
   def propositionService: PropositionService
+}
 
-  class PropositionService(actor: ActorRef) {
+trait PropositionService {
+  def getProposition(propositionId: PropositionId): Future[Option[Proposition]]
+  def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]]
+  def update(propositionId: PropositionId, updatedAt: ZonedDateTime, content: String): Future[Option[Proposition]]
+}
+
+trait DefaultPropositionServiceComponent extends PropositionServiceComponent {
+  this: IdGeneratorComponent with PropositionServiceComponent with PropositionCoordinatorComponent =>
+
+  override lazy val propositionService = new PropositionService {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    def getProposition(propositionId: PropositionId): Future[Option[Proposition]] = {
-      (actor ? ViewPropositionCommand(propositionId))
+    override def getProposition(propositionId: PropositionId): Future[Option[Proposition]] = {
+      (propositionCoordinator ? ViewPropositionCommand(propositionId))
         .mapTo[Option[Proposition]]
     }
 
-    def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
+    override def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
       (
-        actor ?
+        propositionCoordinator ?
           ProposeCommand(
             propositionId = idGenerator.nextPropositionId(),
             userId = userId,
@@ -37,13 +46,19 @@ trait PropositionServiceComponent { this: IdGeneratorComponent with PropositionS
       ).mapTo[Option[Proposition]]
     }
 
-    def update(propositionId: PropositionId, updatedAt: ZonedDateTime, content: String): Future[Option[Proposition]] = {
+    override def update(propositionId: PropositionId,
+                        updatedAt: ZonedDateTime,
+                        content: String): Future[Option[Proposition]] = {
       (
-        actor ?
+        propositionCoordinator ?
           UpdatePropositionCommand(propositionId = propositionId, updatedAt = updatedAt, content = content)
       ).mapTo[Option[Proposition]]
     }
 
   }
 
+}
+
+trait PropositionCoordinatorComponent {
+  def propositionCoordinator: ActorRef
 }

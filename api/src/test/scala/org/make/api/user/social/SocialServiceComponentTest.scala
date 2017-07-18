@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.user.social.models.UserInfo
@@ -14,7 +13,7 @@ import org.make.api.user.social.models.facebook.{
   UserInfo => FacebookUserInfos
 }
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfos}
-import org.make.api.user.{PersistentUserServiceComponent, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
@@ -29,26 +28,12 @@ class SocialServiceComponentTest
     extends MakeUnitTest
     with DefaultSocialServiceComponent
     with UserServiceComponent
-    with MakeDataHandlerComponent
-    with PersistentUserServiceComponent
-    with PersistentTokenServiceComponent
-    with PersistentClientServiceComponent
-    with IdGeneratorComponent
-    with TokenGeneratorComponent
-    with GoogleApiComponent
-    with FacebookApiComponent {
+    with MakeDataHandlerComponent {
 
   override val userService: UserService = mock[UserService]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val facebookApi: FacebookApi = mock[FacebookApi]
-  override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
-  override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   feature("login user from google provider") {
     scenario("successful create UserInfo Object") {

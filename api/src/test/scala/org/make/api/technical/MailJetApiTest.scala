@@ -3,49 +3,33 @@ package org.make.api.technical
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe._
+import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
-import org.make.api.user.PersistentUserServiceComponent
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, Matchers}
 
 class MailJetApiTest
-    extends FeatureSpec
-    with Matchers
-    with ScalatestRouteTest
-    with MockitoSugar
+    extends MakeApiTestUtils
     with MailJetApi
+    with MakeDataHandlerComponent
     with EventBusServiceComponent
     with MailJetConfigurationComponent
-    with MakeDataHandlerComponent
     with IdGeneratorComponent
-    with PersistentUserServiceComponent
-    with PersistentTokenServiceComponent
-    with PersistentClientServiceComponent
-    with OauthTokenGeneratorComponent
     with ShortenedNames {
 
-  override val eventBusService: EventBusService = mock[EventBusService]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val readExecutionContext: EC = ECGlobal
-  override val writeExecutionContext: EC = ECGlobal
-  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
+  override val eventBusService: EventBusService = mock[EventBusService]
+  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
   when(idGenerator.nextId()).thenReturn("some-id")
 
-  val routes: Route = Route.seal(mailJetRoutes)
+  val routes: Route = sealRoute(mailJetRoutes)
 
   val request: String =
     """

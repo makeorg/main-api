@@ -3,8 +3,8 @@ package org.make.api.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.{PersistentTokenServiceComponent, UserTokenGenerator, UserTokenGeneratorComponent}
+import org.make.api.technical.auth._
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
@@ -13,23 +13,18 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 
 class UserServiceTest
     extends MakeUnitTest
     with DefaultUserServiceComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
-    with PersistentUserServiceComponent
-    with PersistentTokenServiceComponent {
+    with PersistentUserServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
-  override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
 
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))

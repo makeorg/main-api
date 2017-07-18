@@ -7,8 +7,8 @@ import java.util.Date
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.PersistentUserServiceComponent
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames}
+import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.User
 import org.mockito.ArgumentMatchers
@@ -30,18 +30,15 @@ class MakeDataHandlerComponentTest
     with OauthTokenGeneratorComponent
     with ShortenedNames {
 
-  override val readExecutionContext: EC = ECGlobal
-
-  override val writeExecutionContext: EC = ECGlobal
-  implicit val someExecutionContext: EC = readExecutionContext
-  override val idGenerator: IdGenerator = new UUIDIdGenerator
+  implicit val someExecutionContext: EC = ECGlobal
+  override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
   val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
   val secret = Some("secret")
 
-  val authenticationConfiguration = mock[makeSettings.Authentication.type]
+  private val authenticationConfiguration = mock[makeSettings.Authentication.type]
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
 

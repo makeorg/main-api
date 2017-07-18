@@ -6,15 +6,13 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.headers.`Remote-Address`
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.circe.generic.auto._
-import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
-import org.make.api.{MakeApi, MakeTest}
+import org.make.api.{MakeApi, MakeApiTestUtils}
 import org.make.core.ValidationError
 import org.make.core.user.{ResetPasswordEvent, User, UserId}
 import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
@@ -24,20 +22,14 @@ import org.mockito.{ArgumentMatchers, Mockito}
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserApiTest
-    extends MakeTest
-    with ScalatestRouteTest
+    extends MakeApiTestUtils
     with UserApi
-    with SocialServiceComponent
-    with IdGeneratorComponent
-    with EventBusServiceComponent
-    with UserTokenGeneratorComponent
-    with OauthTokenGeneratorComponent
-    with PersistentTokenServiceComponent
-    with PersistentClientServiceComponent
-    with PersistentUserServiceComponent
     with UserServiceComponent
     with MakeDataHandlerComponent
-    with MakeDBExecutionContextComponent {
+    with IdGeneratorComponent
+    with SocialServiceComponent
+    with EventBusServiceComponent
+    with PersistentUserServiceComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -46,17 +38,11 @@ class UserApiTest
   override val socialService: SocialService = mock[SocialService]
   override val facebookApi: FacebookApi = mock[FacebookApi]
   override val googleApi: GoogleApi = mock[GoogleApi]
-  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  override val readExecutionContext: EC = ECGlobal
-  override val writeExecutionContext: EC = ECGlobal
-  override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
-  override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
   override val eventBusService: EventBusService = mock[EventBusService]
 
   when(idGenerator.nextId()).thenReturn("some-id")
 
-  val routes: Route = Route.seal(handleRejections(MakeApi.rejectionHandler) {
+  val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     handleExceptions(MakeApi.exceptionHandler) {
       userRoutes
     }

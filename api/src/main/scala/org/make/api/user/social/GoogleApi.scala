@@ -2,13 +2,14 @@ package org.make.api.user.social
 
 import java.nio.charset.Charset
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import io.circe.parser._
+import org.make.api.ActorSystemComponent
+import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -22,14 +23,14 @@ trait GoogleApi {
 }
 
 trait DefaultGoogleApiComponent extends GoogleApiComponent {
-  def actorSystem: ActorSystem
+  self: ActorSystemComponent =>
 
   override lazy val googleApi: GoogleApi = new GoogleApi with StrictLogging {
     private implicit val system = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private val http: HttpExt = Http()
 
-    def getUserInfo(idToken: String) = {
+    def getUserInfo(idToken: String): Future[GoogleUserInfo] = {
       val url =
         s"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=$idToken"
 
