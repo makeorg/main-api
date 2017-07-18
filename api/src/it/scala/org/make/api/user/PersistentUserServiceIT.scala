@@ -6,13 +6,11 @@ import org.make.api.DatabaseTest
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import scala.concurrent.duration._
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
-class PersistentUserServiceIT extends DatabaseTest with PersistentUserServiceComponent {
-
-  override val persistentUserService: PersistentUserService = new PersistentUserService
+class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserServiceComponent {
 
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
 

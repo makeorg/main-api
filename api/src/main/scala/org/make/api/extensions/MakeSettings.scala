@@ -2,6 +2,7 @@ package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
+import org.make.api.ActorSystemComponent
 import org.make.api.Predef._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -81,7 +82,7 @@ trait MakeSettingsComponent {
 }
 
 trait DefaultMakeSettingsComponent extends MakeSettingsComponent {
-  def actorSystem: ActorSystem
+  self: ActorSystemComponent =>
 
   override lazy val makeSettings: MakeSettings = MakeSettings(actorSystem)
 }

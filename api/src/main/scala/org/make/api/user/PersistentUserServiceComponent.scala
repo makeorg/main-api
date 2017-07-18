@@ -5,6 +5,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
+import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
@@ -12,9 +13,11 @@ import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.Future
 
-trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
-
+trait PersistentUserServiceComponent {
   def persistentUserService: PersistentUserService
+}
+
+object PersistentUserServiceComponent {
 
   val ROLE_SEPARATOR = ","
 
@@ -138,7 +141,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
     def apply(
       userResultName: ResultName[PersistentUser] = userAlias.resultName
     )(resultSet: WrappedResultSet): PersistentUser = {
-      PersistentUser(
+      PersistentUser.apply(
         uuid = resultSet.string(userResultName.uuid),
         email = resultSet.string(userResultName.email),
         firstName = resultSet.stringOpt(userResultName.firstName),
@@ -173,12 +176,28 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
     }
   }
 
-  class PersistentUserService extends ShortenedNames with StrictLogging {
+}
+
+trait PersistentUserService {
+  def get(uuid: UserId): Future[Option[User]]
+  def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]]
+  def findByEmail(email: String): Future[Option[User]]
+  def findUserIdByEmail(email: String): Future[Option[UserId]]
+  def emailExists(email: String): Future[Boolean]
+  def verificationTokenExists(verificationToken: String): Future[Boolean]
+  def resetTokenExists(resetToken: String): Future[Boolean]
+  def persist(user: User): Future[User]
+}
+
+trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
+  this: MakeDBExecutionContextComponent =>
+
+  override lazy val persistentUserService = new PersistentUserService with ShortenedNames with StrictLogging {
 
     private val userAlias = PersistentUser.userAlias
     private val column = PersistentUser.column
 
-    def get(uuid: UserId): Future[Option[User]] = {
+    override def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -191,7 +210,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]] = {
+    override def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -208,7 +227,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    def findByEmail(email: String): Future[Option[User]] = {
+    override def findByEmail(email: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -221,7 +240,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    def findUserIdByEmail(email: String): Future[Option[UserId]] = {
+    override def findUserIdByEmail(email: String): Future[Option[UserId]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUserId = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -234,7 +253,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       futurePersistentUserId.map(_.map(UserId(_)))
     }
 
-    def emailExists(email: String): Future[Boolean] = {
+    override def emailExists(email: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -245,7 +264,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       }).map(_.getOrElse(false))
     }
 
-    def verificationTokenExists(verificationToken: String): Future[Boolean] = {
+    override def verificationTokenExists(verificationToken: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -256,7 +275,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       }).map(_.getOrElse(false))
     }
 
-    def resetTokenExists(resetToken: String): Future[Boolean] = {
+    override def resetTokenExists(resetToken: String): Future[Boolean] = {
       implicit val ctx = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -267,7 +286,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
       }).map(_.getOrElse(false))
     }
 
-    def persist(user: User): Future[User] = {
+    override def persist(user: User): Future[User] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
@@ -290,7 +309,7 @@ trait PersistentUserServiceComponent { this: MakeDBExecutionContextComponent =>
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
-              column.roles -> user.roles.map(_.shortName).mkString(ROLE_SEPARATOR),
+              column.roles -> user.roles.map(_.shortName).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
               column.avatarUrl -> user.profile.map(_.avatarUrl),
               column.profession -> user.profile.map(_.profession),
               column.phoneNumber -> user.profile.map(_.phoneNumber),

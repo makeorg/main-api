@@ -14,24 +14,35 @@ import org.make.core.vote.{VoteId, _}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait VoteServiceComponent { this: IdGeneratorComponent with VoteServiceComponent =>
+trait VoteServiceComponent {
+  val voteService: VoteService
+}
 
-  def voteService: VoteService
+trait VoteService {
+  def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]]
+  def vote(propositionId: PropositionId,
+           userId: UserId,
+           createdAt: ZonedDateTime,
+           status: VoteStatus): Future[Option[Vote]]
+}
 
-  class VoteService(actor: ActorRef) {
+trait DefaultVoteServiceComponent extends VoteServiceComponent {
+  this: IdGeneratorComponent with VoteServiceComponent with VoteCoordinatorComponent =>
+
+  override lazy val voteService = new VoteService {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]] = {
-      (actor ? ViewVoteCommand(voteId, propositionId)).mapTo[Option[Vote]]
+    override def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]] = {
+      (voteCoordinator ? ViewVoteCommand(voteId, propositionId)).mapTo[Option[Vote]]
     }
 
-    def vote(propositionId: PropositionId,
-             userId: UserId,
-             createdAt: ZonedDateTime,
-             status: VoteStatus): Future[Option[Vote]] = {
+    override def vote(propositionId: PropositionId,
+                      userId: UserId,
+                      createdAt: ZonedDateTime,
+                      status: VoteStatus): Future[Option[Vote]] = {
       (
-        actor ?
+        voteCoordinator ?
           PutVoteCommand(
             voteId = idGenerator.nextVoteId(),
             propositionId = propositionId,
@@ -42,4 +53,8 @@ trait VoteServiceComponent { this: IdGeneratorComponent with VoteServiceComponen
       ).mapTo[Option[Vote]]
     }
   }
+}
+
+trait VoteCoordinatorComponent {
+  def voteCoordinator: ActorRef
 }

@@ -9,8 +9,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class PersistentClientServiceIT extends DatabaseTest with PersistentClientServiceComponent {
-  override val persistentClientService: PersistentClientService = new PersistentClientService
+class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClientServiceComponent {
 
   feature("Persist a oauth client") {
     info("As a programmer")

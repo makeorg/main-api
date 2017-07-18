@@ -5,19 +5,37 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
+import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.api.user.PersistentUserServiceComponent
+import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.auth.Token
 import org.make.core.user.User
 import scalikejdbc._
 
 import scala.concurrent.Future
 
-trait PersistentTokenServiceComponent
-    extends MakeDBExecutionContextComponent
+trait PersistentTokenServiceComponent {
+  def persistentTokenService: PersistentTokenService
+}
+
+trait PersistentTokenService {
+  def get(token: Token): Future[Option[Token]]
+  def accessTokenExists(token: String): Future[Boolean]
+  def refreshTokenExists(token: String): Future[Boolean]
+  def findByRefreshToken(token: String): Future[Option[Token]]
+  def findByAccessToken(token: String): Future[Option[Token]]
+  def get(accessToken: String): Future[Option[Token]]
+  def findByUser(user: User): Future[Option[Token]]
+  def persist(token: Token): Future[Token]
+  def deleteByRefreshToken(refreshToken: String): Future[Int]
+  def deleteByAccessToken(accessToken: String): Future[Int]
+}
+
+trait DefaultPersistentTokenServiceComponent
+    extends PersistentTokenServiceComponent
+    with MakeDBExecutionContextComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent {
-
-  def persistentTokenService: PersistentTokenService
 
   case class PersistentToken(accessToken: String,
                              refreshToken: Option[String],
@@ -80,24 +98,24 @@ trait PersistentTokenServiceComponent
     }
   }
 
-  class PersistentTokenService extends ShortenedNames with StrictLogging {
+  override lazy val persistentTokenService = new PersistentTokenService with ShortenedNames with StrictLogging {
 
     private val tokenAlias = PersistentToken.tokenAlias
     private val column = PersistentToken.column
 
-    def get(token: Token): Future[Option[Token]] = {
+    override def get(token: Token): Future[Option[Token]] = {
       get(token.accessToken)
     }
 
-    def accessTokenExists(token: String): Future[Boolean] = {
+    override def accessTokenExists(token: String): Future[Boolean] = {
       get(token).map(_.isDefined)(ECGlobal)
     }
 
-    def refreshTokenExists(token: String): Future[Boolean] = {
+    override def refreshTokenExists(token: String): Future[Boolean] = {
       findByRefreshToken(token).map(_.isDefined)(ECGlobal)
     }
 
-    def findByRefreshToken(token: String): Future[Option[Token]] = {
+    override def findByRefreshToken(token: String): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB('READ).localTx { implicit session =>
         val userAlias = PersistentUser.userAlias
@@ -117,11 +135,11 @@ trait PersistentTokenServiceComponent
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    def findByAccessToken(token: String): Future[Option[Token]] = {
+    override def findByAccessToken(token: String): Future[Option[Token]] = {
       get(token)
     }
 
-    def get(accessToken: String): Future[Option[Token]] = {
+    override def get(accessToken: String): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB('READ).localTx { implicit session =>
         val userAlias = PersistentUser.userAlias
@@ -141,7 +159,7 @@ trait PersistentTokenServiceComponent
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    def findByUser(user: User): Future[Option[Token]] = {
+    override def findByUser(user: User): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -158,7 +176,7 @@ trait PersistentTokenServiceComponent
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    def persist(token: Token): Future[Token] = {
+    override def persist(token: Token): Future[Token] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
@@ -178,7 +196,7 @@ trait PersistentTokenServiceComponent
       }).map(_ => token)
     }
 
-    def deleteByRefreshToken(refreshToken: String): Future[Int] = {
+    override def deleteByRefreshToken(refreshToken: String): Future[Int] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
@@ -190,7 +208,7 @@ trait PersistentTokenServiceComponent
       })
     }
 
-    def deleteByAccessToken(accessToken: String): Future[Int] = {
+    override def deleteByAccessToken(accessToken: String): Future[Int] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {

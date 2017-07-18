@@ -2,6 +2,7 @@ package org.make.api.user
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.user.Role
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalikejdbc.WrappedResultSet
@@ -10,10 +11,9 @@ import scala.concurrent.ExecutionContext
 
 class PersistentUserServiceComponentTest
     extends MakeUnitTest
-    with PersistentUserServiceComponent
+    with DefaultPersistentUserServiceComponent
     with MakeDBExecutionContextComponent {
 
-  override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 

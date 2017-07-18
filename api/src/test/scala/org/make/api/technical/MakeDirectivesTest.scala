@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.headers.{`Set-Cookie`, Cookie}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.technical.auth._
-import org.make.api.user.PersistentUserServiceComponent
 import org.mockito.Mockito
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
@@ -17,20 +16,12 @@ class MakeDirectivesTest
     with MockitoSugar
     with MakeDirectives
     with MakeDataHandlerComponent
-    with PersistentTokenServiceComponent
-    with PersistentUserServiceComponent
-    with PersistentClientServiceComponent
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent
     with ShortenedNames {
 
-  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  override val persistentClientService: PersistentClientService = mock[PersistentClientService]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val readExecutionContext: EC = ECGlobal
-  override val writeExecutionContext: EC = ECGlobal
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
   Mockito.when(idGenerator.nextId()).thenReturn("some-id")

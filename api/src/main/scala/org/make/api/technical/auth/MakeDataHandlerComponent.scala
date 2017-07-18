@@ -5,7 +5,7 @@ import java.util.{Date, NoSuchElementException}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.User
@@ -27,7 +27,6 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
   this: PersistentTokenServiceComponent
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
-    with IdGeneratorComponent
     with OauthTokenGeneratorComponent
     with MakeSettingsComponent =>
 

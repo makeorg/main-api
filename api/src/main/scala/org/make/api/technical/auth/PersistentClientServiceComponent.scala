@@ -5,14 +5,17 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
+import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.core.auth.{Client, ClientId}
 import scalikejdbc._
 
 import scala.concurrent.Future
 
-trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
-
+trait PersistentClientServiceComponent {
   def persistentClientService: PersistentClientService
+}
+
+object PersistentClientServiceComponent {
 
   val GRANT_TYPE_SEPARATOR = ","
 
@@ -59,12 +62,23 @@ trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
     }
   }
 
-  class PersistentClientService extends ShortenedNames with StrictLogging {
+}
+
+trait PersistentClientService {
+  def get(clientId: ClientId): Future[Option[Client]]
+  def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]]
+  def persist(client: Client): Future[Client]
+}
+
+trait DefaultPersistentClientServiceComponent extends PersistentClientServiceComponent {
+  self: MakeDBExecutionContextComponent =>
+
+  override lazy val persistentClientService = new PersistentClientService with ShortenedNames with StrictLogging {
 
     private val clientAlias = PersistentClient.clientAlias
     private val column = PersistentClient.column
 
-    def get(clientId: ClientId): Future[Option[Client]] = {
+    override def get(clientId: ClientId): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
       val futureClient = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -77,7 +91,7 @@ trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
       futureClient.map(_.map(_.toClient))
     }
 
-    def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]] = {
+    override def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentClient = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
@@ -95,7 +109,7 @@ trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
       futurePersistentClient.map(_.map(_.toClient))
     }
 
-    def persist(client: Client): Future[Client] = {
+    override def persist(client: Client): Future[Client] = {
       implicit val ctx = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
@@ -103,7 +117,9 @@ trait PersistentClientServiceComponent extends MakeDBExecutionContextComponent {
             .into(PersistentClient)
             .namedValues(
               column.uuid -> client.clientId.value,
-              column.allowedGrantTypes -> client.allowedGrantTypes.mkString(GRANT_TYPE_SEPARATOR),
+              column.allowedGrantTypes -> client.allowedGrantTypes.mkString(
+                PersistentClientServiceComponent.GRANT_TYPE_SEPARATOR
+              ),
               column.secret -> client.secret,
               column.scope -> client.scope,
               column.createdAt -> ZonedDateTime.now,

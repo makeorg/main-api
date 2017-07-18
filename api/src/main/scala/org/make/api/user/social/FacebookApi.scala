@@ -2,13 +2,14 @@ package org.make.api.user.social
 
 import java.nio.charset.Charset
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfo}
 import io.circe.parser._
+import org.make.api.ActorSystemComponent
+import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfo}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -22,14 +23,14 @@ trait FacebookApi {
 }
 
 trait DefaultFacebookApiComponent extends FacebookApiComponent {
-  def actorSystem: ActorSystem
+  self: ActorSystemComponent =>
 
   override lazy val facebookApi: FacebookApi = new FacebookApi with StrictLogging {
     private implicit val system = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private val http: HttpExt = Http()
 
-    def getUserInfo(accessToken: String) = {
+    def getUserInfo(accessToken: String): Future[FacebookUserInfo] = {
       val url =
         s"https://graph.facebook.com/v2.1/me?access_token=$accessToken&fields=email,first_name,last_name,picture"
 

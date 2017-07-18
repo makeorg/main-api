@@ -2,7 +2,7 @@ package org.make.api.technical.auth
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.{MakeApiTestUtils, MakeUnitTest}
 import org.mockito.{ArgumentMatchers, Mockito}
 
@@ -17,10 +17,10 @@ class AuthenticationApiTest
     with AuthenticationApi
     with IdGeneratorComponent {
 
-  override def idGenerator: IdGenerator = mock[IdGenerator]
-
+  override val idGenerator: IdGenerator = mock[IdGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override lazy val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
+
   Mockito
     .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))
