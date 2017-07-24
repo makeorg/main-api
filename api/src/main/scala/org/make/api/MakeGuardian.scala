@@ -5,9 +5,10 @@ import org.make.api.proposition.PropositionSupervisor
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.MailJetProducerActor
+import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.vote.VoteSupervisor
 
-class MakeGuardian extends Actor with ActorLogging {
+class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(PropositionSupervisor.props, PropositionSupervisor.name))
@@ -18,6 +19,7 @@ class MakeGuardian extends Actor with ActorLogging {
     )
     context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
+    context.watch(context.actorOf(UserSupervisor.props, UserSupervisor.name))
   }
 
   override def receive: Receive = {
@@ -27,5 +29,5 @@ class MakeGuardian extends Actor with ActorLogging {
 
 object MakeGuardian {
   val name: String = "make-api"
-  val props: Props = Props[MakeGuardian]
+  def props(userService: UserService): Props = Props(new MakeGuardian(userService))
 }

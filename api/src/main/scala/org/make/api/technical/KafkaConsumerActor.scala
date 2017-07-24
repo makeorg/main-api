@@ -3,29 +3,37 @@ package org.make.api.technical
 import java.util
 import java.util.Properties
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging}
 import com.sksamuel.avro4s.RecordFormat
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.technical.ConsumerActor.Consume
+import org.make.api.technical.KafkaConsumerActor.Consume
 import org.make.core.EventWrapper
 
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import scala.util.Try
 
 /**
   * TODO: This actor should not use default execution context
   */
-class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], private val kafkaTopic: String)
+abstract class KafkaConsumerActor[T <: EventWrapper](private val kafkaTopic: String)
     extends Actor
     with KafkaConfigurationExtension
     with AvroSerializers
     with ActorLogging {
 
+  protected val format: RecordFormat[T]
+
+  def handleMessage(message: T): Future[Unit]
+
   private var consumer: KafkaConsumer[String, GenericRecord] = _
 
   override def preStart(): Unit = {
     consumer = createConsumer()
+    self ! Consume
   }
 
   override def postStop(): Unit = {
@@ -49,24 +57,18 @@ class ConsumerActor[T <: EventWrapper](private val format: RecordFormat[T], priv
     case Consume =>
       self ! Consume
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
-      records.forEach { record =>
-        val event = format.from(record.value())
-        log.info(s"Got event: $event")
+      val futures = records.asScala.map { record =>
+        val eventWrapper = format.from(record.value())
+        handleMessage(eventWrapper)
       }
-      // TODO: handle record
+      futures.foreach(Await.ready(_, 3.seconds))
+      // toDo: manage failures
       consumer.commitSync()
 
   }
-
 }
 
-object ConsumerActor {
-
-  def props[T <: EventWrapper](format: RecordFormat[T], kafkaTopic: String): Props =
-    Props(new ConsumerActor(format, kafkaTopic))
-  def name(model: String): String = s"read-model-consumer-$model"
-
+object KafkaConsumerActor {
   case object Consume
   case class Reset(offset: Long)
-
 }

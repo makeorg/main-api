@@ -42,7 +42,7 @@ There are two methods here:
 
 ### Access the Api documentation
 
-When application is running you can access to the swagger interface from the adress: [http://localhost:9000/swagger](http://localhost:9000/swagger)
+When application is running you can access to the swagger interface from the address: [http://localhost:9000/swagger](http://localhost:9000/swagger)
 
 ## package the application as a docker image locally
 
