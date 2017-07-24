@@ -5,6 +5,7 @@ variables:
 
 stages:
   - build
+  - deploy
 
 build:
   stage: build
@@ -22,3 +23,16 @@ build:
     paths:
       - /root/.coursier
       - /root/.ivy2
+
+deploy:
+  stage: deploy
+  only:
+    - master
+  script:
+    - >
+      curl -D - -X "POST"
+      -H "Accept: application/json"
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
+      --data-urlencode "argString=-tag 0.0.1-SNAPSHOT"
+      http://rundeck.prod.makeorg.tech:4440/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
