@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-trait DatabaseTest extends MakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
+trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
 
   override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global

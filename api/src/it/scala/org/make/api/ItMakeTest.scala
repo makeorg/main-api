@@ -6,7 +6,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 
 // toDo: this trait must be shared between test and it
-trait MakeTest
+trait ItMakeTest
     extends FeatureSpec
     with GivenWhenThen
     with MockitoSugar
