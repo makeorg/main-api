@@ -3,7 +3,7 @@ package org.make.api.proposition
 import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
+import akka.http.scaladsl.model.StatusCodes.Forbidden
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
@@ -31,9 +31,8 @@ trait PropositionApi extends MakeAuthenticationDirectives {
     get {
       path("proposition" / propositionId) { propositionId =>
         makeTrace("GetProposition") {
-          onSuccess(propositionService.getProposition(propositionId)) {
-            case Some(proposition) => complete(proposition)
-            case None              => complete(NotFound)
+          provideAsyncOrNotFound(propositionService.getProposition(propositionId)) { proposition =>
+            complete(proposition)
           }
         }
       }
@@ -71,7 +70,7 @@ trait PropositionApi extends MakeAuthenticationDirectives {
           makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposePropositionRequest]) { request: ProposePropositionRequest =>
-                onSuccess(
+                provideAsync(
                   propositionService
                     .propose(userId = user.user.userId, createdAt = ZonedDateTime.now, content = request.content)
                 ) {
@@ -116,23 +115,16 @@ trait PropositionApi extends MakeAuthenticationDirectives {
           makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdatePropositionRequest]) { request: UpdatePropositionRequest =>
-                onSuccess(propositionService.getProposition(propositionId)) {
-                  case Some(proposition) =>
-                    if (proposition.userId == user.user.userId) {
-                      onSuccess(
-                        propositionService.update(
-                          propositionId = propositionId,
-                          updatedAt = ZonedDateTime.now,
-                          content = request.content
-                        )
-                      ) {
-                        case Some(prop) => complete(prop)
-                        case None       => complete(Forbidden)
-                      }
-                    } else {
-                      complete(Forbidden)
+                provideAsyncOrNotFound(propositionService.getProposition(propositionId)) { proposition =>
+                  authorize(proposition.userId == user.user.userId) {
+                    onSuccess(
+                      propositionService
+                        .update(propositionId = propositionId, updatedAt = ZonedDateTime.now, content = request.content)
+                    ) {
+                      case Some(prop) => complete(prop)
+                      case None       => complete(Forbidden)
                     }
-                  case None => complete(NotFound)
+                  }
                 }
               }
             }

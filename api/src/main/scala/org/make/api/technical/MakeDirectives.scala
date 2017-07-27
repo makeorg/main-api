@@ -1,15 +1,16 @@
 package org.make.api.technical
 
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
-import akka.http.scaladsl.server.{Directive, Directive0, Directive1, Directives}
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.CirceFormatters
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -77,6 +78,26 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     }
   }
 
+  def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =
+    extractExecutionContext.flatMap { implicit ec ⇒
+      extract(_ => provider).flatMap { fa ⇒
+        onComplete(fa).flatMap {
+          case Success(value) ⇒ provide(value)
+          case Failure(e) ⇒ throw e
+        }
+      }
+    }
+
+  def provideAsyncOrNotFound[T](provider: ⇒ Future[Option[T]]): Directive1[T] =
+    extractExecutionContext.flatMap { implicit ec ⇒
+      extract(_ => provider).flatMap { fa ⇒
+        onComplete(fa).flatMap {
+          case Success(Some(value)) ⇒ provide(value)
+          case Success(None) ⇒ complete(StatusCodes.NotFound)
+          case Failure(e) ⇒ throw e
+        }
+      }
+    }
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
