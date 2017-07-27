@@ -8,19 +8,19 @@ import scala.util.Try
 
 class MailJetProducerActor extends ProducerActor {
 
-  override protected lazy val eventClass: Class[MailJetEvent] = classOf[MailJetEvent]
-  override protected lazy val format: RecordFormat[MailJetEvent] = RecordFormat[MailJetEvent]
-  override protected lazy val schema: SchemaFor[MailJetEvent] = SchemaFor[MailJetEvent]
+  override protected lazy val eventClass: Class[SendEmail] = classOf[SendEmail]
+  override protected lazy val format: RecordFormat[SendEmail] = RecordFormat[SendEmail]
+  override protected lazy val schema: SchemaFor[SendEmail] = SchemaFor[SendEmail]
 
   val kafkaTopic: String =
     kafkaConfiguration.topics(MailJetProducerActor.topicKey)
 
   override def receive: Receive = {
-    case event: MailJetEvent => onEvent(event)
-    case other               => log.warning(s"Unknown event $other")
+    case event: SendEmail => onEvent(event)
+    case other            => log.warning(s"Unknown event $other")
   }
 
-  private def onEvent(event: MailJetEvent) = {
+  private def onEvent(event: SendEmail) = {
     log.debug(s"Received event $event")
     val record = format.to(event)
     sendRecord(kafkaTopic, record)
@@ -32,8 +32,7 @@ class MailJetProducerActor extends ProducerActor {
 }
 
 object MailJetProducerActor {
-  val name: String = "mailjet-callback-event-producer"
+  val name: String = "mailjet-email-producer"
   val props: Props = Props[MailJetProducerActor]
-
-  val topicKey: String = "mailjet-events"
+  val topicKey: String = "emails"
 }

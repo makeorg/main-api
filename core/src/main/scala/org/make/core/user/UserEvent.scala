@@ -14,7 +14,7 @@ sealed trait UserEvent {
 
 object UserEvent {
 
-  type AnyUserEvent = ResetPasswordEvent :+: CNil
+  type AnyUserEvent = ResetPasswordEvent :+: ResendValidationEmailEvent :+: CNil
 
   final case class UserEventWrapper(version: Int,
                                     id: String,
@@ -24,9 +24,11 @@ object UserEvent {
       extends EventWrapper
 
   object UserEventWrapper {
-    def wrapEvent(event: UserEvent): AnyUserEvent = event match {
-      case e: ResetPasswordEvent => Coproduct[AnyUserEvent](e)
-    }
+    def wrapEvent(event: UserEvent): AnyUserEvent =
+      event match {
+        case e: ResetPasswordEvent         => Coproduct[AnyUserEvent](e)
+        case e: ResendValidationEmailEvent => Coproduct[AnyUserEvent](e)
+      }
   }
 
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,

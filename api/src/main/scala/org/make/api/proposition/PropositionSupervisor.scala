@@ -38,6 +38,7 @@ class PropositionSupervisor
       .onComplete {
         case Success(result) => log.debug("Stream processed: {}", result)
         case Failure(e)      => log.warning("Failure in stream", e)
+        // TODO: restart stream on failure
       }(ECGlobal)
 
   }

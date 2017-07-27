@@ -1,9 +1,12 @@
 package org.make.api.extensions
 
+import java.net.URL
+
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 
 class MailJetConfiguration(config: Config) extends Extension {
+  val url: URL = new URL(config.getString("url"))
   val apiKey: String = config.getString("api-key")
   val secretKey: String = config.getString("secret-key")
   val basicAuthLogin: String = config.getString("basic-auth-login")
