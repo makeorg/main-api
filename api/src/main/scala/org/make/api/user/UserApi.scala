@@ -69,8 +69,9 @@ trait UserApi extends MakeAuthenticationDirectives {
   @Path(value = "/login/social")
   @ApiOperation(value = "Login Social", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
-    value =
-      Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest")
+    )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   def socialLogin: Route = post {
@@ -96,7 +97,13 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest")
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest"),
+      new ApiImplicitParam(
+        value = "X-Forwarded-For",
+        paramType = "header",
+        dataType = "string",
+        name = "X-Forwarded-For"
+      )
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
