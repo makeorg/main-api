@@ -140,7 +140,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", "Email foo@bar.com already exist")))
+        emailError should be(Some(ValidationError("email", Some("Email foo@bar.com already exist"))))
       }
     }
 
@@ -160,7 +160,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", "email is not a valid email")))
+        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
       }
     }
 
@@ -181,7 +181,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val dateOfBirthError = errors.find(_.field == "dateOfBirth")
-        dateOfBirthError should be(Some(ValidationError("dateOfBirth", "date of birth is not valid")))
+        dateOfBirthError should be(Some(ValidationError("dateOfBirth", Some("date of birth is not valid"))))
       }
     }
 
@@ -345,7 +345,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", "email is not a valid email")))
+        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
       }
       And("any user Event ResetPasswordEvent is emitted")
 

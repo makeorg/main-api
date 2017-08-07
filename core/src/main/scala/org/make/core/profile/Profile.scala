@@ -8,14 +8,15 @@ import org.make.core.MakeSerializable
 
 sealed trait Gender {
   def shortName: String
+}
+
+object Gender extends StrictLogging {
   implicit lazy val genderEncoder: Encoder[Gender] = (gender: Gender) => Json.fromString(gender.shortName)
   implicit lazy val genderDecoder: Decoder[Gender] =
     Decoder.decodeString.map(
       gender => Gender.matchGender(gender).getOrElse(throw new IllegalArgumentException(s"$gender is not a Gender"))
     )
-}
 
-object Gender extends StrictLogging {
   val genders: Map[String, Gender] = Map(Male.shortName -> Male, Female.shortName -> Female, Other.shortName -> Other)
 
   def matchGender(gender: String): Option[Gender] = {

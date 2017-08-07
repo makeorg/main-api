@@ -2,6 +2,11 @@ package org.make.api
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{
+  `Access-Control-Allow-Headers`,
+  `Access-Control-Allow-Methods`,
+  `Access-Control-Allow-Origin`
+}
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
@@ -23,6 +28,7 @@ import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServ
 import org.make.api.vote._
 import org.make.core.{ValidationError, ValidationFailedError}
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scalaoauth2.provider._
@@ -81,25 +87,6 @@ trait MakeApi
     override val handlers = Map(OAuthGrantType.PASSWORD -> new Password)
   }
 
-  val exceptionHandler = ExceptionHandler {
-    case ValidationFailedError(messages) =>
-      complete(
-        HttpResponse(
-          status = StatusCodes.BadRequest,
-          entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
-        )
-      )
-    case e =>
-      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
-      complete(
-        HttpResponse(
-          status = StatusCodes.InternalServerError,
-          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
-        )
-      )
-
-  }
-
   private lazy val swagger: Route =
     path("swagger") {
       parameters('url.?) {
@@ -111,18 +98,31 @@ trait MakeApi
   private lazy val apiClasses: Set[Class[_]] =
     Set(classOf[UserApi], classOf[ProposalApi])
 
-  lazy val makeRoutes: Route = handleExceptions(MakeApi.exceptionHandler)(
-    handleRejections(MakeApi.rejectionHandler)(
+  private lazy val optionsCors: Route = options {
+    MakeApi.corsHeaders() {
+      complete(StatusCodes.OK)
+    }
+  }
+  private lazy val optionsAuthorized: Route =
+    options {
+      MakeApi.corsHeaders() {
+        complete(StatusCodes.OK)
+      }
+    }
+
+  lazy val makeRoutes: Route =
+    MakeApi.makeDefaultHeadersAndHandlers() {
       new MakeDocumentation(actorSystem, apiClasses).routes ~
         swagger ~
+        optionsCors ~
         userRoutes ~
         proposalRoutes ~
+        optionsAuthorized ~
         accessTokenRoute ~
         buildRoutes ~
         mailJetRoutes ~
         authenticationRoutes
-    )
-  )
+    }
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
@@ -133,17 +133,55 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
       |}
     """.stripMargin
 
-  def requestId: String = {
-    Tracer.currentContext.tags.getOrElse("id", "<unknown>")
-  }
+  private def getFromTrace(key: String, default: String = "<unknown>"): String =
+    Tracer.currentContext.tags.getOrElse(key, default)
 
-  def routeId: String = {
-    Tracer.currentContext.name
-  }
+  def requestIdFromTrace: String = getFromTrace("id")
+  def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
+  def routeNameFromTrace: String = getFromTrace("route-name")
+  def externalIdFromTrace: String = getFromTrace("external-id")
+  def routeIdFromTrace: String = Tracer.currentContext.name
+
+  def defaultHeadersFromTrace: immutable.Seq[HttpHeader] = immutable.Seq(
+    RequestIdHeader(requestIdFromTrace),
+    RequestTimeHeader(startTimeFromTrace),
+    RouteNameHeader(routeNameFromTrace),
+    ExternalIdHeader(externalIdFromTrace)
+  )
+
+  def defaultCorsHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
+    `Access-Control-Allow-Methods`(
+      HttpMethods.POST,
+      HttpMethods.GET,
+      HttpMethods.PUT,
+      HttpMethods.PATCH,
+      HttpMethods.DELETE
+    ),
+    `Access-Control-Allow-Origin`.*,
+    `Access-Control-Allow-Headers`("X-Forwarded-For", "Content-Type")
+  )
+
+  def makeDefaultHeadersAndHandlers(): Directive0 =
+    mapInnerRoute { route =>
+      respondWithDefaultHeaders(MakeApi.defaultHeadersFromTrace ++ MakeApi.defaultCorsHeaders) {
+        handleExceptions(MakeApi.exceptionHandler) {
+          handleRejections(MakeApi.rejectionHandler) {
+            route
+          }
+        }
+      }
+    }
+
+  def corsHeaders(): Directive0 =
+    mapInnerRoute { route =>
+      respondWithDefaultHeaders(MakeApi.defaultCorsHeaders) {
+        route
+      }
+    }
 
   val exceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegistredException =>
-      complete(StatusCodes.BadRequest -> Seq(ValidationError("email", e.getMessage)))
+      complete(StatusCodes.BadRequest -> Seq(ValidationError("email", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
       complete(
         HttpResponse(
@@ -152,11 +190,11 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
         )
       )
     case e =>
-      logger.error(s"Error on request ${MakeApi.routeId} with id ${MakeApi.requestId}", e)
+      logger.error(s"Error on request ${MakeApi.routeIdFromTrace} with id ${MakeApi.requestIdFromTrace}", e)
       complete(
         HttpResponse(
           status = StatusCodes.InternalServerError,
-          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestId))
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestIdFromTrace))
         )
       )
   }
@@ -168,15 +206,20 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
         complete(StatusCodes.BadRequest -> messages)
       case MalformedRequestContentRejection(_, JsonParsingException(failure, _)) =>
         val errors = failure.history.flatMap {
-          case DownField(f) => Seq(ValidationError(f, failure.message))
+          case DownField(f) => Seq(ValidationError(f, Option(failure.message)))
           case _            => Nil
         }
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>
-        complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", e.getMessage)))
+        complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", Option(e.getMessage))))
     }
     .result()
     .withFallback(RejectionHandler.default)
+    .mapRejectionResponse { res =>
+      //TODO: change Content-Type to `application/json`
+      res
+    }
+
 }
 
 trait ActorSystemComponent {
