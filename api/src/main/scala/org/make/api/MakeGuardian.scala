@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import org.make.api.extensions.MailJetConfigurationExtension
-import org.make.api.proposition.PropositionSupervisor
+import org.make.api.proposal.ProposalSupervisor
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJet, MailJetCallbackProducerActor}
@@ -17,10 +17,9 @@ import scala.concurrent.ExecutionContext
 class MakeGuardian extends Actor with ActorLogging with MailJetConfigurationExtension {
 
   override def preStart(): Unit = {
-//    implicit val actorSystem: ActorSystem = context.system
     val materializer: ActorMaterializer = ActorMaterializer()
 
-    context.watch(context.actorOf(PropositionSupervisor.props, PropositionSupervisor.name))
+    context.watch(context.actorOf(ProposalSupervisor.props, ProposalSupervisor.name))
     context.watch(context.actorOf(VoteSupervisor.props, VoteSupervisor.name))
     context.watch(
       context

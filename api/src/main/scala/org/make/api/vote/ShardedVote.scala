@@ -18,12 +18,12 @@ object ShardedVote {
   case object StopVote
 
   def extractEntityId: ShardRegion.ExtractEntityId = {
-    case cmd: VoteCommand => (cmd.propositionId.value, cmd)
+    case cmd: VoteCommand => (cmd.proposalId.value, cmd)
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
     case cmd: VoteCommand =>
-      Math.abs(cmd.propositionId.value.hashCode % 100).toString
+      Math.abs(cmd.proposalId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) =>
       Math.abs(id.hashCode % 100).toString
   }

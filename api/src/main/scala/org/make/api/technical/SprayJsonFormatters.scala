@@ -4,7 +4,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import org.make.core.user.UserId
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 import org.make.core.vote.VoteId
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -54,13 +54,13 @@ trait SprayJsonFormatters {
     }
   }
 
-  implicit val propositionIdFormatter: JsonFormat[PropositionId] = new JsonFormat[PropositionId] {
-    override def read(json: JsValue): PropositionId = json match {
-      case JsString(s) => PropositionId(s)
+  implicit val proposalIdFormatter: JsonFormat[ProposalId] = new JsonFormat[ProposalId] {
+    override def read(json: JsValue): ProposalId = json match {
+      case JsString(s) => ProposalId(s)
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
-    override def write(obj: PropositionId): JsValue = {
+    override def write(obj: ProposalId): JsValue = {
       JsString(obj.value)
     }
   }

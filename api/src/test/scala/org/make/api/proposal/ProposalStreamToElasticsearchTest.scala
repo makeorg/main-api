@@ -1,4 +1,4 @@
-package org.make.api.proposition
+package org.make.api.proposal
 
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -11,19 +11,19 @@ import com.sksamuel.avro4s.RecordFormat
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.make.api.ShardingActorTest
-import org.make.api.proposition.PropositionStreamToElasticsearchTest.{
+import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
   committableOffset,
   msgCreateOk,
   msgKo,
   msgUpdateOk,
-  propositionElasticsearch
+  proposalElasticsearch
 }
 import org.make.api.technical.AvroSerializers
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, PropositionElasticsearch}
+import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
 import org.make.core.CirceFormatters
 import org.make.core.user.UserId
-import org.make.core.proposition.PropositionEvent.{PropositionEventWrapper, PropositionProposed, PropositionUpdated}
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalEvent.{ProposalEventWrapper, ProposalProposed, ProposalUpdated}
+import org.make.core.proposal.ProposalId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
@@ -32,10 +32,10 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class PropositionStreamToElasticsearchTest
+class ProposalStreamToElasticsearchTest
     extends ShardingActorTest
     with MockitoSugar
-    with PropositionStreamToElasticsearchComponent
+    with ProposalStreamToElasticsearchComponent
     with ElasticsearchAPIComponent {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
@@ -51,15 +51,15 @@ class PropositionStreamToElasticsearchTest
         .thenReturn(Future.successful(Done))
 //      when(committableOffsetBatch.commitScaladsl()).thenReturn(Future.successful(Done))
 //      when(committableOffsetBatch.updated(any[CommittableOffset])).thenReturn(committableOffsetBatch)
-      when(elasticsearchAPI.getPropositionById(any[PropositionId]))
-        .thenReturn(Future.successful(Some(propositionElasticsearch)))
-      when(elasticsearchAPI.save(any[PropositionElasticsearch]))
+      when(elasticsearchAPI.getProposalById(any[ProposalId]))
+        .thenReturn(Future.successful(Some(proposalElasticsearch)))
+      when(elasticsearchAPI.save(any[ProposalElasticsearch]))
         .thenReturn(Future.successful(Done))
-      when(elasticsearchAPI.updateProposition(any[PropositionElasticsearch]))
+      when(elasticsearchAPI.updateProposal(any[ProposalElasticsearch]))
         .thenReturn(Future.successful(Done))
 
       val future = Source[CommittableMessage[String, AnyRef]](msgsOk)
-        .via(propositionStreamToElasticsearch.esPush)
+        .via(proposalStreamToElasticsearch.esPush)
         .runWith(Sink.fold(Seq.empty[Done])(_ :+ _))
       val result: Seq[Done] = Await.result(future, 3.seconds)
       assert(!result.exists(_ != Done))
@@ -68,7 +68,7 @@ class PropositionStreamToElasticsearchTest
       assertThrows[ClassCastException] {
         Await.result(
           Source[CommittableMessage[String, AnyRef]](msgsKo)
-            .via(propositionStreamToElasticsearch.esPush)
+            .via(proposalStreamToElasticsearch.esPush)
             .runWith(Sink.fold(Seq.empty[Done])(_ :+ _)),
           3.seconds
         )
@@ -77,36 +77,36 @@ class PropositionStreamToElasticsearchTest
   }
 
   override val elasticsearchAPI: ElasticsearchAPI = mock[ElasticsearchAPI]
-  override val propositionStreamToElasticsearch: PropositionStreamToElasticsearch =
-    new PropositionStreamToElasticsearch(system, materializer)
+  override val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
+    new ProposalStreamToElasticsearch(system, materializer)
 }
 
-object PropositionStreamToElasticsearchTest extends MockitoSugar with AvroSerializers with CirceFormatters {
+object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerializers with CirceFormatters {
 
-  val propositionId: PropositionId = PropositionId(UUID.randomUUID.toString)
+  val proposalId: ProposalId = ProposalId(UUID.randomUUID.toString)
   val userId: UserId = UserId(UUID.randomUUID.toString)
 
   private val now = ZonedDateTime.now
   private val before = now.minusSeconds(10)
   private val valueCreate: GenericRecord =
-    RecordFormat[PropositionEventWrapper].to(
-      PropositionEventWrapper(
+    RecordFormat[ProposalEventWrapper].to(
+      ProposalEventWrapper(
         version = 1,
-        id = propositionId.value,
+        id = proposalId.value,
         date = before,
-        eventType = PropositionProposed.getClass.getName,
-        event = PropositionEventWrapper.wrapEvent(PropositionProposed(propositionId, userId, before, "The answer"))
+        eventType = ProposalProposed.getClass.getName,
+        event = ProposalEventWrapper.wrapEvent(ProposalProposed(proposalId, userId, before, "The answer"))
       )
     )
   private val valueUpdate: GenericRecord =
-    RecordFormat[PropositionEventWrapper].to(
-      PropositionEventWrapper(
+    RecordFormat[ProposalEventWrapper].to(
+      ProposalEventWrapper(
         version = 1,
-        id = propositionId.value,
+        id = proposalId.value,
         date = now,
-        eventType = PropositionUpdated.getClass.getName,
-        event = PropositionEventWrapper
-          .wrapEvent(PropositionUpdated(propositionId, now, "42 is the answer to Life, the Universe, and Everything"))
+        eventType = ProposalUpdated.getClass.getName,
+        event = ProposalEventWrapper
+          .wrapEvent(ProposalUpdated(proposalId, now, "42 is the answer to Life, the Universe, and Everything"))
       )
     )
   private val consumerRecordCreateOk =
@@ -119,9 +119,9 @@ object PropositionStreamToElasticsearchTest extends MockitoSugar with AvroSerial
   val committableOffset: CommittableOffset = mock[CommittableOffset]
 //  val committableOffsetBatch: CommittableOffsetBatch = mock[CommittableOffsetBatch]
 
-  val propositionElasticsearch: PropositionElasticsearch =
-    PropositionElasticsearch(
-      UUID.fromString(propositionId.value),
+  val proposalElasticsearch: ProposalElasticsearch =
+    ProposalElasticsearch(
+      UUID.fromString(proposalId.value),
       UUID.fromString(userId.value),
       before,
       now,

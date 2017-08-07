@@ -7,7 +7,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.user.UserId
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.vote.{VoteId, _}
 
@@ -19,11 +19,8 @@ trait VoteServiceComponent {
 }
 
 trait VoteService {
-  def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]]
-  def vote(propositionId: PropositionId,
-           userId: UserId,
-           createdAt: ZonedDateTime,
-           status: VoteStatus): Future[Option[Vote]]
+  def getVote(voteId: VoteId, proposalId: ProposalId): Future[Option[Vote]]
+  def vote(proposalId: ProposalId, userId: UserId, createdAt: ZonedDateTime, status: VoteStatus): Future[Option[Vote]]
 }
 
 trait DefaultVoteServiceComponent extends VoteServiceComponent {
@@ -33,11 +30,11 @@ trait DefaultVoteServiceComponent extends VoteServiceComponent {
 
     implicit private val defaultTimeout = new Timeout(5.seconds)
 
-    override def getVote(voteId: VoteId, propositionId: PropositionId): Future[Option[Vote]] = {
-      (voteCoordinator ? ViewVoteCommand(voteId, propositionId)).mapTo[Option[Vote]]
+    override def getVote(voteId: VoteId, proposalId: ProposalId): Future[Option[Vote]] = {
+      (voteCoordinator ? ViewVoteCommand(voteId, proposalId)).mapTo[Option[Vote]]
     }
 
-    override def vote(propositionId: PropositionId,
+    override def vote(proposalId: ProposalId,
                       userId: UserId,
                       createdAt: ZonedDateTime,
                       status: VoteStatus): Future[Option[Vote]] = {
@@ -45,7 +42,7 @@ trait DefaultVoteServiceComponent extends VoteServiceComponent {
         voteCoordinator ?
           PutVoteCommand(
             voteId = idGenerator.nextVoteId(),
-            propositionId = propositionId,
+            proposalId = proposalId,
             userId = userId,
             createdAt = createdAt,
             status = status

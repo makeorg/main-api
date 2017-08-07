@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder, Json}
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,33 +35,33 @@ trait ElasticsearchAPIComponent {
   class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
     private val client = HttpClient(ElasticsearchClientUri(host, port))
 
-    val propositionIndex: IndexAndType = "propositions" / "proposition"
+    val proposalIndex: IndexAndType = "proposals" / "proposal"
 
-    def getPropositionById(propositionId: PropositionId): Future[Option[PropositionElasticsearch]] = {
+    def getProposalById(proposalId: ProposalId): Future[Option[ProposalElasticsearch]] = {
       client.execute {
-        get(id = propositionId.value).from(propositionIndex)
+        get(id = proposalId.value).from(proposalIndex)
       }.flatMap { response =>
         logger.debug("Received response from Elasticsearch: " + response.toString)
         Future.successful(
-          PropositionElasticsearch.shape
-            .applyOrElse[AnyRef, Option[PropositionElasticsearch]](response, _ => None)
+          ProposalElasticsearch.shape
+            .applyOrElse[AnyRef, Option[ProposalElasticsearch]](response, _ => None)
         )
       }
     }
 
-    def save(record: PropositionElasticsearch): Future[Done] = {
+    def save(record: ProposalElasticsearch): Future[Done] = {
       logger.info(s"Saving in Elasticsearch: $record")
       client.execute {
-        indexInto(propositionIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.toString)
+        indexInto(proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.toString)
       }.map { _ =>
         Done
       }
     }
 
-    def updateProposition(record: PropositionElasticsearch): Future[Done] = {
+    def updateProposal(record: ProposalElasticsearch): Future[Done] = {
       logger.info(s"Updating in Elasticsearch: $record")
       client.execute {
-        (update(id = record.id.toString) in propositionIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE)
+        (update(id = record.id.toString) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE)
       }.map { _ =>
         Done
       }

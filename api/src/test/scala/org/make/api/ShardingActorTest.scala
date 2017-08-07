@@ -57,7 +57,7 @@ object TestHelper {
       |    schema-registry = "http://nowhere:-1"
       |    topics {
       |      users = "users"
-      |      propositions = "propositions"
+      |      proposals = "proposals"
       |      votes = "votes"
       |      mailjet-events = "mailjet-events"
       |    }

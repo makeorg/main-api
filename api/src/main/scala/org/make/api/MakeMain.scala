@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -49,17 +49,17 @@ object MakeMain extends App with StrictLogging with MakeApi {
     }
     Thread.sleep(10.seconds.toMillis)
     logger.debug("Proposing...")
-    propositionService.propose(idGenerator.nextUserId(), ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
-    val propId: PropositionId = Await.result(
-      propositionService
-        .propose(idGenerator.nextUserId(), ZonedDateTime.now, "Il faut faire une proposition"),
+    proposalService.propose(idGenerator.nextUserId(), ZonedDateTime.now, "Il faut que la demo soit fonctionnelle.")
+    val propId: ProposalId = Await.result(
+      proposalService
+        .propose(idGenerator.nextUserId(), ZonedDateTime.now, "we must propose"),
       Duration.Inf
     ) match {
-      case Some(proposition) => proposition.propositionId
-      case None              => PropositionId("Invalid PropositionId")
+      case Some(proposal) => proposal.proposalId
+      case None           => ProposalId("Invalid ProposalId")
     }
-    propositionService.update(propId, ZonedDateTime.now, "Il faut mettre a jour une proposition")
-    logger.debug("Sent propositions...")
+    proposalService.update(propId, ZonedDateTime.now, "we must update a proposal")
+    logger.debug("Sent proposals...")
   }
 
 }

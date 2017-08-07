@@ -121,7 +121,7 @@ object MailJet extends StrictLogging {
     prepareSendEmailRequest(url, login, password).via(httpPool(url)).via(transformResponse[SendResult])
   }
 
-  // TODO duplicated from org.make.api.proposition.PropositionStreamToElasticsearchComponent
+  // TODO duplicated from org.make.api.proposal.ProposalStreamToElasticsearchComponent
   val commitOffset: Flow[(CommittableMessage[String, AnyRef], Either[Throwable, _]), Done, NotUsed] =
     Flow[(CommittableMessage[String, AnyRef], Either[Throwable, _])]
       .map[CommittableOffset] {
