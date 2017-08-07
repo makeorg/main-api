@@ -50,14 +50,10 @@ class UserKafkaConsumerActor(userService: UserService)
       mayBeConnectedUser <- futureConnectedUser
       mayBeUser          <- futureUser
     } yield {
-      Map("connectedUser" -> mayBeConnectedUser.flatMap(_.fullName), "user" -> mayBeUser.flatMap(_.fullName))
-        .filter({ case (k, v) => v.isDefined })
-        .toList
-        .flatMap {
-          case (k, Some(v)) => List(k -> v)
-          case (_, None)    => List()
-        }
-        .toMap
+      List("connectedUser" -> mayBeConnectedUser.flatMap(_.fullName), "user" -> mayBeUser.flatMap(_.fullName)).flatMap {
+        case (k, Some(v)) => List(k -> v)
+        case (_, None)    => List()
+      }.toMap
     }
 
     variables.map { variablesMap =>
