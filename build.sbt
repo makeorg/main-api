@@ -46,12 +46,12 @@ lazy val commonSettings = Seq(
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
-lazy val elastic = project
+lazy val phantom = project
   .in(file("."))
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)
   .settings(commonSettings: _*)
-  .settings(moduleName := "make-elastic": _*)
+  .settings(moduleName := "make-phantom": _*)
   .aggregate(core, api)
 
 lazy val core = project
