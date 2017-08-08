@@ -42,7 +42,8 @@ libraryDependencies ++= Seq(
   Dependencies.dockerClient,
   Dependencies.dockerScalatest,
   Dependencies.jerseyServer,
-  Dependencies.jaxRsApi
+  Dependencies.jaxRsApi,
+  Dependencies.wireMock
 )
 
 libraryDependencies += {

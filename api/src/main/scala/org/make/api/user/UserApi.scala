@@ -4,7 +4,7 @@ import java.time.LocalDate
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound}
+import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
@@ -14,7 +14,8 @@ import org.make.api.user.UserApi.ResetPasswordRequest
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
-import org.make.core.user.UserEvent.ResetPasswordEvent
+import org.make.core.user.Role.RoleAdmin
+import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.user.{User, UserId}
 
 import scala.util.Try
@@ -52,13 +53,11 @@ trait UserApi extends MakeAuthenticationDirectives {
       path("user" / userId) { userId =>
         makeTrace("GetUser") {
           makeOAuth2 { userAuth: AuthInfo[User] =>
-            if (userId == userAuth.user.userId) {
+            authorize(userId == userAuth.user.userId) {
               onSuccess(userService.getUser(userId)) {
                 case Some(user) => complete(user)
                 case None       => complete(NotFound)
               }
-            } else {
-              complete(Forbidden)
             }
           }
         }
@@ -151,15 +150,28 @@ trait UserApi extends MakeAuthenticationDirectives {
         makeTrace("ResetPassword") {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
-              onSuccess(persistentUserService.findUserIdByEmail(request.email)) {
-                case Some(id) =>
-                  eventBusService.publish(
-                    ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId))
-                  )
-                  complete(StatusCodes.OK)
-                case _ => complete(StatusCodes.NotFound)
+              provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
+                eventBusService.publish(ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId)))
+                complete(StatusCodes.OK)
               }
             })
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
+  @Path(value = "/user/:userId/resend-validation-email")
+  @ApiImplicitParams(value = Array())
+  def resendValidationEmail: Route = post {
+    path("user" / userId / "resend-validation-email") { userId =>
+      makeTrace("ResendValidateEmail") {
+        makeOAuth2 { userAuth =>
+          authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
+            eventBusService.publish(ResendValidationEmailEvent(userId = userId, connectedUserId = userAuth.user.userId))
+            complete(StatusCodes.NoContent)
           }
         }
       }
@@ -193,7 +205,9 @@ case class RegisterUserRequest(email: String,
 case class SocialLoginRequest(provider: String, token: String)
 
 object UserApi {
+
   final case class ResetPasswordRequest(email: String) {
     validate(mandatoryField("email", email), validateEmail("email", email))
   }
+
 }

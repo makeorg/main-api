@@ -59,11 +59,11 @@ class SocialServiceComponentTest
       )
 
       Mockito
-        .when(googleApi.getUserInfo(matches("googleToken")))
+        .when(googleApi.getUserInfo(matches("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
       When("login google user")
-      val tokenResposnse = socialService.login("google", "googleToken", None)
+      val tokenResposnse = socialService.login("google", "googleToken-a user logged via google", None)
 
       Then("my program call getOrCreateUserFromSocial with google data")
       val userInfoFromGoogle =
@@ -183,13 +183,13 @@ class SocialServiceComponentTest
       )
 
       Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken")))
+        .when(facebookApi.getUserInfo(matches("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      When("login google user")
-      val tokenResposnse = socialService.login("facebook", "facebookToken", None)
+      When("login facebook user")
+      val tokenResposnse = socialService.login("facebook", "facebookToken-444444", None)
 
-      Then("my program call getOrCreateUserFromSocial with google data")
+      Then("my program call getOrCreateUserFromSocial with facebook data")
       val userInfoFromFacebook =
         UserInfo(
           email = facebookData.email,

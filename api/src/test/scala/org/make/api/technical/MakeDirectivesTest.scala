@@ -4,15 +4,19 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, Cookie}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.make.api.MakeApiTestUtils
 import org.make.api.technical.auth._
-import org.mockito.Mockito
+import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
+
+import scala.concurrent.Future
 
 class MakeDirectivesTest
     extends FeatureSpec
     with Matchers
     with ScalatestRouteTest
+    with MakeApiTestUtils
     with MockitoSugar
     with MakeDirectives
     with MakeDataHandlerComponent
@@ -24,7 +28,7 @@ class MakeDirectivesTest
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
-  Mockito.when(idGenerator.nextId()).thenReturn("some-id")
+  when(idGenerator.nextId()).thenReturn("some-id")
 
   val route: Route = Route.seal(get {
     path("test") {
@@ -101,4 +105,73 @@ class MakeDirectivesTest
     }
   }
 
+  feature("value providers") {
+    trait StringProvider {
+      def provide: Future[String]
+    }
+    val provider: StringProvider = mock[StringProvider]
+
+    val route = sealRoute(get {
+      pathEndOrSingleSlash {
+        provideAsync(provider.provide)(complete(_))
+      }
+    })
+
+    scenario("normal providing") {
+      when(provider.provide).thenReturn(Future.successful("oki doki"))
+
+      Get("/") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("oki doki")
+      }
+    }
+
+    scenario("failed providers") {
+      when(provider.provide).thenReturn(Future.failed(new IllegalArgumentException("fake")))
+
+      Get("/") ~> route ~> check {
+        status should be(StatusCodes.InternalServerError)
+      }
+    }
+
+  }
+
+  feature("not found value providers") {
+    trait StringProvider {
+      def provide: Future[Option[String]]
+    }
+    val provider: StringProvider = mock[StringProvider]
+
+    val route = sealRoute(get {
+      pathEndOrSingleSlash {
+        provideAsyncOrNotFound(provider.provide)(complete(_))
+      }
+    })
+
+    scenario("some providing") {
+      when(provider.provide).thenReturn(Future.successful(Some("oki doki")))
+
+      Get("/") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("oki doki")
+      }
+    }
+
+    scenario("none providing") {
+      when(provider.provide).thenReturn(Future.successful(None))
+
+      Get("/") ~> route ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("failed providers") {
+      when(provider.provide).thenReturn(Future.failed(new IllegalArgumentException("fake")))
+
+      Get("/") ~> route ~> check {
+        status should be(StatusCodes.InternalServerError)
+      }
+    }
+
+  }
 }

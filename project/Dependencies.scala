@@ -90,6 +90,8 @@ object Dependencies {
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.3" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
+  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.6.0"
+
   // Needed to use the client....
   val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.23.1"  % "it"
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "it,test"
