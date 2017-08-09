@@ -59,8 +59,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         } else {
           val profile: Option[Profile] = Profile.parseProfile(dateOfBirth = dateOfBirth)
 
-          val salt: String = generateSalt
-
           val futureVerificationToken: Future[(String, String)] = userTokenGenerator.generateVerificationToken()
           futureVerificationToken.flatMap { tokens =>
             val (_, hashedVerificationToken) = tokens
@@ -70,8 +68,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               firstName = firstName,
               lastName = lastName,
               lastIp = lastIp,
-              hashedPassword = password.map(_.bcrypt(salt)),
-              salt = Some(salt),
+              hashedPassword = password.map(_.bcrypt),
               enabled = true,
               verified = false,
               lastConnection = DateHelper.now(),
@@ -104,7 +101,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             lastName = Some(userInfo.lastName),
             lastIp = clientIp,
             hashedPassword = None,
-            salt = None,
             enabled = true,
             verified = true,
             lastConnection = DateHelper.now(),

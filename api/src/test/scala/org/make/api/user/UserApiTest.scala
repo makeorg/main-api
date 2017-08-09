@@ -72,7 +72,6 @@ class UserApiTest
               lastName = Some("tom"),
               lastIp = Some("127.0.0.1"),
               hashedPassword = Some("passpass"),
-              salt = Some("salto"),
               enabled = true,
               verified = false,
               lastConnection = ZonedDateTime.now(),

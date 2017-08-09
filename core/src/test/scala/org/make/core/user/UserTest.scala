@@ -15,7 +15,6 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    salt = Some("MYSALT"),
     enabled = true,
     verified = true,
     lastConnection = before,
