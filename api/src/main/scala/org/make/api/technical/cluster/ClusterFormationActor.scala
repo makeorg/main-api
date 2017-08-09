@@ -143,14 +143,12 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
 
   def ready: Receive = {
     case Connect =>
-      log.debug("Received CONNECT message")
       val cluster = Cluster(context.system)
       if (cluster.state.members.isEmpty) {
         self ! Init
         context.become(receive)
       }
     case Heartbeat =>
-      log.debug("Received Heartbeat message")
       val cluster = Cluster(context.system)
       consulClient ! WriteExclusiveKey(
         s"${settings.Cluster.name}/seed",
@@ -166,10 +164,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       )
 
     case Cleanup =>
-      log.debug("Received Cleanup message")
-
     case RenewMySession =>
-      log.debug("Received RenewSession message")
       consulClient ! RenewSession(this.sessionId)
 
   }

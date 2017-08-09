@@ -9,7 +9,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.parser._
@@ -44,7 +43,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def renewSession(id: String) = {
-    log.debug(s"Renewing session $id")
     pipe(
       http
         .singleRequest(HttpRequest(method = HttpMethods.PUT, uri = s"$consulUrl/v1/session/renew/$id"))
@@ -57,7 +55,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def writeExclusively(key: String, value: String, session: String) = {
-    log.debug(s"writing $value in $key")
     pipe(
       http
         .singleRequest(
@@ -76,7 +73,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def writeKey(key: String, value: String) = {
-    log.debug(s"writing $value in $key")
     pipe(
       http
         .singleRequest(
@@ -95,7 +91,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def createSession(ttl: FiniteDuration): Unit = {
-    log.debug(s"Creating session with ttl $ttl")
     val address = Cluster(context.system).selfAddress.toString
     val request =
       s"""
@@ -122,7 +117,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def retrieveKey(key: String): Unit = {
-    log.debug(s"reading $key")
     pipe(
       http
         .singleRequest(HttpRequest(uri = s"$consulUrl/v1/kv/$key?raw"))
@@ -139,7 +133,6 @@ class ConsulActor extends Actor with ActorLogging with MakeSettingsExtension {
   }
 
   private def strictToString(response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK): Future[String] = {
-    log.debug(s"Server answered $response")
     response match {
       case HttpResponse(`expectedCode`, _, entity, _) =>
         entity
@@ -178,7 +171,7 @@ object ConsulActor {
 
 }
 
-object ConsulEntities extends StrictLogging {
+object ConsulEntities {
 
   case class WriteResponse(result: Boolean, key: String, value: String)
   case class ReadResponse(key: String, value: Option[String])
