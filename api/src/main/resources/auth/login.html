@@ -5,7 +5,12 @@
     <script language="JavaScript">
 
         function populateRedirect() {
-            document.forms[0].redirect_uri.value = findGetParameter('redirect_uri');
+            var redirectUri = findGetParameter('redirect_uri');
+            if(redirectUri.indexOf(":3200") > 0) {
+                redirectUri = redirectUri.substring(redirectUri.indexOf(":3200") + 5);
+            }
+            document.forms[0].redirect_uri.value = redirectUri;
+            document.forms[0].state.value = findGetParameter('state');
         }
 
         function findGetParameter(parameterName) {
@@ -27,17 +32,20 @@
     <table>
         <tr>
             <td>Login</td>
-            <td><input type="text" name="client_id" /></td>
+            <td><input type="text" name="username" /></td>
         </tr>
         <tr>
             <td>Password</td>
-            <td><input type="password" name="client_secret" /></td>
+            <td><input type="password" name="password" /></td>
         </tr>
         <tr>
             <td colspan="2">
                 <input type="hidden" name="redirect_uri" />
-                <input type="hidden" name="grant_type" value="client_credentials" />
+                <input type="hidden" name="state" />
+                <input type="hidden" name="grant_type" value="implicit" />
                 <input type="hidden" name="response_type" value="token" />
+                <input type="hidden" name="client_id" value="0cdd82cb-5cc0-4875-bb54-5c3709449429" />
+                <input type="hidden" name="client_secret" value="f4f7076e-6337-41d5-b000-3726ead0ae41" />
                 <input type="submit">
             </td>
         </tr>

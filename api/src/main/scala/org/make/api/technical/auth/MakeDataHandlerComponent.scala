@@ -65,7 +65,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         case Some(ClientCredential(clientId, secret)) =>
           val futureClient: Future[Option[Client]] = persistentClientService.findByClientIdAndSecret(clientId, secret)
           def futureFoundUser: Future[Option[User]] =
-            persistentUserService.findByEmailAndHashedPassword(
+            persistentUserService.findByEmailAndPassword(
               request.requireParam("username"),
               request.requireParam("password")
             )

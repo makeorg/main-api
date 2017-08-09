@@ -10,7 +10,7 @@ import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
-
+import com.github.t3hnar.bcrypt._
 import scala.concurrent.Future
 
 trait PersistentUserServiceComponent {
@@ -180,7 +180,7 @@ object PersistentUserServiceComponent {
 
 trait PersistentUserService {
   def get(uuid: UserId): Future[Option[User]]
-  def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]]
+  def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def emailExists(email: String): Future[Boolean]
@@ -210,18 +210,16 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]] = {
+    override def findByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(
-              sqls
-                .eq(userAlias.email, email)
-                .and(sqls.eq(userAlias.hashedPassword, hashedPassword))
-            )
+            .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
+      }).map(_.filter { persistenUser =>
+        password.isBcrypted(persistenUser.hashedPassword)
       })
 
       futurePersistentUser.map(_.map(_.toUser))

@@ -201,7 +201,7 @@ trait DefaultPersistentTokenServiceComponent
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           delete
-            .from(PersistentToken)
+            .from(PersistentToken.as(tokenAlias))
             .where
             .eq(tokenAlias.refreshToken, refreshToken)
         }.update().apply()

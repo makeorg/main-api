@@ -31,17 +31,26 @@ trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLo
           formFieldMap { fields =>
             onComplete(
               tokenEndpoint
-                .handleRequest(new AuthorizationRequest(Map(), fields.map(m => m._1 -> Seq(m._2))), oauth2DataHandler)
+                .handleRequest(
+                  new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
+                  oauth2DataHandler
+                )
             ) {
               case Success(maybeGrantResponse) =>
-                maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                  val redirectUri = fields.getOrElse("redirect_uri", "")
-                  if (redirectUri != "") {
-                    redirect(redirectUri + "#access_token=" + grantResult.accessToken, Found)
-                  } else {
-                    complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                maybeGrantResponse.fold(
+                  _ => complete(Unauthorized),
+                  grantResult => {
+                    val redirectUri = fields.getOrElse("redirect_uri", "")
+                    if (redirectUri != "") {
+                      redirect(
+                        s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}",
+                        Found
+                      )
+                    } else {
+                      complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                    }
                   }
-                })
+                )
               case Failure(ex) => throw ex
             }
           }
