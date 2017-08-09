@@ -145,14 +145,22 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
 
   val proposalElasticsearch: ProposalElasticsearch =
     ProposalElasticsearch(
-      UUID.fromString(proposalId.value),
-      UUID.fromString(userId.value),
-      before,
-      now,
-      "The answer",
-      0,
-      0,
-      0
+      id = UUID.fromString(proposalId.value),
+      userId = UUID.fromString(userId.value),
+      content = "DummyContent",
+      slug = "DummyContent",
+      createdAt = before,
+      updatedAt = now,
+      countVotesAgree = 0,
+      countVotesDisagree = 0,
+      countVotesUnsure = 0,
+      support = "DummyContent",
+      context = "DummyContent",
+      authorFirstName = "DummyContent",
+      authorPostalCode = "DummyContent",
+      authorAge = 0,
+      themes = Seq(),
+      tags = Seq()
     )
 
   val msgCreateOk: CommittableMessage[String, AnyRef] =

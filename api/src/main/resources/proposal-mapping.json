@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD:api/src/main/resources/proposal-mapping.json
   "proposal" : {
     "properties" : {
       "userId" : {
@@ -7,41 +8,97 @@
           "keyword" : {
             "type" : "keyword",
             "ignore_above" : 36
+=======
+  "proposition": {
+    "properties": {
+      "id": {
+        "type": "keyword",
+        "index": true
+      },
+      "userId": {
+        "type": "keyword",
+        "index": true
+      },
+      "authorAge": {
+        "type": "integer"
+      },
+      "authorFirstName": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+>>>>>>> refactor(proposition): update proposition elasticsearch mapping:api/src/main/resources/proposition-mapping.json
           }
         }
       },
-      "content" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 140
+      "authorPostalCode": {
+        "type": "keyword",
+        "index": true
+      },
+      "content": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "french": {
+            "type": "text",
+            "analyzer": "french"
           }
         }
       },
-      "createdAt" : {
-        "type" : "date"
+      "context": {
+        "type": "keyword",
+        "index": true
       },
-      "id" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 36
+      "createdAt": {
+        "type": "date"
+      },
+      "slug": {
+        "type": "keyword",
+        "index": true
+      },
+      "support": {
+        "type": "keyword",
+        "index": true
+      },
+      "tags": {
+        "properties": {
+          "label": {
+            "type": "keyword",
+            "index": true
+          },
+          "id": {
+            "type": "keyword",
+            "index": true
           }
         }
       },
-      "nbVotesAgree" : {
-        "type" : "long"
+      "themes": {
+        "properties": {
+          "label": {
+            "type": "keyword",
+            "index": true
+          },
+          "id": {
+            "type": "keyword",
+            "index": true
+          }
+        }
       },
-      "nbVotesDisagree" : {
-        "type" : "long"
+      "updatedAt": {
+        "type": "date"
       },
-      "nbVotesUnsure" : {
-        "type" : "long"
+      "countVotesAgree": {
+        "type": "integer"
       },
-      "updatedAt" : {
-        "type" : "date"
+      "countVotesDisagree": {
+        "type": "integer"
+      },
+      "countVotesUnsure": {
+        "type": "integer"
       }
     }
   }
