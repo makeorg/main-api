@@ -10,7 +10,6 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.user.UserApi.ResetPasswordRequest
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
@@ -68,9 +67,8 @@ trait UserApi extends MakeAuthenticationDirectives {
   @Path(value = "/login/social")
   @ApiOperation(value = "Login Social", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest")
-    )
+    value =
+      Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   def socialLogin: Route = post {
@@ -137,11 +135,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @Path(value = "/reset-password")
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.user.UserApi.ResetPasswordRequest"
-      )
+      new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPasswordRequest")
     )
   )
   def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
@@ -204,10 +198,7 @@ case class RegisterUserRequest(email: String,
 
 case class SocialLoginRequest(provider: String, token: String)
 
-object UserApi {
-
-  final case class ResetPasswordRequest(email: String) {
-    validate(mandatoryField("email", email), validateEmail("email", email))
-  }
+final case class ResetPasswordRequest(email: String) {
+  validate(mandatoryField("email", email), validateEmail("email", email))
 
 }

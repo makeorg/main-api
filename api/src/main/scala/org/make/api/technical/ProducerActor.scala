@@ -16,7 +16,7 @@ abstract class ProducerActor extends Actor with KafkaConfigurationExtension with
 
   val sendCallBack: Callback = (r: RecordMetadata, e: Exception) => {
     Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
-    Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.checksum())))
+    Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.offset())))
   }
 
   protected val format: RecordFormat[_]

@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.2"
-  private val akkaHttpVersion = "10.0.7"
+  private val akkaVersion = "2.5.3"
+  private val akkaHttpVersion = "10.0.9"
   private val nettyVersion = "4.1.12.Final"
-  private val kafkaVersion = "0.10.2.0"
+  private val kafkaVersion = "0.11.0.0"
   private val elastic4sVersion = "5.4.1"
   private val kamonVersion = "0.6.6"
   private val circeVersion = "0.8.0"
   val aspectJVersion: String = "1.8.10"
-  val swaggerUiVersion: String = "3.0.14"
+  val swaggerUiVersion: String = "3.1.4"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.5.0"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.8.2"
@@ -29,11 +29,11 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.3.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1")
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.10.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.50")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.54")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka"   %% "akka-slf4j"        % akkaVersion
   val akkaStreamCirce: ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"

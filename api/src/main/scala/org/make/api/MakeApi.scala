@@ -25,7 +25,6 @@ import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.reflect.runtime.{universe => ru}
 import scalaoauth2.provider._
 
 trait MakeApi
@@ -119,12 +118,12 @@ trait MakeApi
     getFromResource("auth/login.html")
   }
 
-  private lazy val apiTypes: Seq[ru.Type] =
-    Seq(ru.typeOf[UserApi], ru.typeOf[ProposalApi])
+  private lazy val apiClasses: Set[Class[_]] =
+    Set(classOf[UserApi], classOf[ProposalApi])
 
   lazy val makeRoutes: Route = handleExceptions(MakeApi.exceptionHandler)(
     handleRejections(MakeApi.rejectionHandler)(
-      new MakeDocumentation(actorSystem, apiTypes).routes ~
+      new MakeDocumentation(actorSystem, apiClasses).routes ~
         swagger ~
         login ~
         userRoutes ~
