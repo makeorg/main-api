@@ -29,8 +29,10 @@ trait ProposalApi extends MakeAuthenticationDirectives {
     get {
       path("proposal" / proposalId) { proposalId =>
         makeTrace("GetProposal") {
-          provideAsyncOrNotFound(proposalService.getProposal(proposalId)) { proposal =>
-            complete(proposal)
+          extractMakeRequestContext() { requestContext =>
+            provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
+              complete(proposal)
+            }
           }
         }
       }
@@ -68,11 +70,18 @@ trait ProposalApi extends MakeAuthenticationDirectives {
           makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
-                provideAsync(
-                  proposalService
-                    .propose(userId = user.user.userId, createdAt = ZonedDateTime.now, content = request.content)
-                ) {
-                  complete(_)
+                extractMakeRequestContext() { context =>
+                  provideAsync(
+                    proposalService
+                      .propose(
+                        userId = user.user.userId,
+                        context = context,
+                        createdAt = ZonedDateTime.now,
+                        content = request.content
+                      )
+                  ) {
+                    complete(_)
+                  }
                 }
               }
             }
@@ -109,14 +118,21 @@ trait ProposalApi extends MakeAuthenticationDirectives {
           makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
-                provideAsyncOrNotFound(proposalService.getProposal(proposalId)) { proposal =>
-                  authorize(proposal.userId == user.user.userId) {
-                    onSuccess(
-                      proposalService
-                        .update(proposalId = proposalId, updatedAt = ZonedDateTime.now, content = request.content)
-                    ) {
-                      case Some(prop) => complete(prop)
-                      case None       => complete(Forbidden)
+                extractMakeRequestContext() { requestContext =>
+                  provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
+                    authorize(proposal.userId == user.user.userId) {
+                      onSuccess(
+                        proposalService
+                          .update(
+                            proposalId = proposalId,
+                            context = requestContext,
+                            updatedAt = ZonedDateTime.now,
+                            content = request.content
+                          )
+                      ) {
+                        case Some(prop) => complete(prop)
+                        case None       => complete(Forbidden)
+                      }
                     }
                   }
                 }

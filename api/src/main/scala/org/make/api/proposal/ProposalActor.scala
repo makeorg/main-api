@@ -37,35 +37,28 @@ class ProposalActor extends PersistentActor with ActorLogging {
   }
 
   override def receiveCommand: Receive = {
-    case GetProposal(_) => sender ! state.map(_.toProposal)
-    case v: ViewProposalCommand =>
-      persistAndPublishEvent(ProposalViewed(id = v.proposalId))
+    case GetProposal(proposalId, requestContext) => sender ! state.map(_.toProposal)
+    case ViewProposalCommand(proposalId, requestContext) =>
+      persistAndPublishEvent(ProposalViewed(id = proposalId))
       Patterns
-        .pipe((self ? GetProposal(v.proposalId))(1.second), Implicits.global)
+        .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
         .to(sender)
-    case propose: ProposeCommand =>
+    case ProposeCommand(proposalId, requestContext, userId, createdAt, content) =>
       persistAndPublishEvent(
-        ProposalProposed(
-          id = propose.proposalId,
-          userId = propose.userId,
-          createdAt = propose.createdAt,
-          content = propose.content
-        )
+        ProposalProposed(id = proposalId, userId = userId, createdAt = createdAt, content = content)
       )
       Patterns
-        .pipe((self ? GetProposal(propose.proposalId))(1.second), Implicits.global)
+        .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
-    case update: UpdateProposalCommand =>
-      persistAndPublishEvent(
-        ProposalUpdated(id = update.proposalId, updatedAt = update.updatedAt, content = update.content)
-      )
+    case UpdateProposalCommand(proposalId, requestContext, updatedAt, content) =>
+      persistAndPublishEvent(ProposalUpdated(id = proposalId, updatedAt = updatedAt, content = content))
       Patterns
-        .pipe((self ? GetProposal(update.proposalId))(1.second), Implicits.global)
+        .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
         .to(sender)
       self ! Snapshot
     case Snapshot             => state.foreach(state => saveSnapshot(state.toProposal))
-    case KillProposalShard(_) => self ! PoisonPill
+    case _: KillProposalShard => self ! PoisonPill
   }
 
   override def persistenceId: String = proposalId.value

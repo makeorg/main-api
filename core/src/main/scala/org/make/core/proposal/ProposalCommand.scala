@@ -2,20 +2,29 @@ package org.make.core.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.core.RequestContext
 import org.make.core.user.UserId
 
 sealed trait ProposalCommand {
   def proposalId: ProposalId
+  def context: RequestContext
 }
 
-case class ProposeCommand(proposalId: ProposalId, userId: UserId, createdAt: ZonedDateTime, content: String)
+final case class ProposeCommand(proposalId: ProposalId,
+                                context: RequestContext,
+                                userId: UserId,
+                                createdAt: ZonedDateTime,
+                                content: String)
     extends ProposalCommand
 
-case class UpdateProposalCommand(proposalId: ProposalId, updatedAt: ZonedDateTime, content: String)
+final case class UpdateProposalCommand(proposalId: ProposalId,
+                                       context: RequestContext,
+                                       updatedAt: ZonedDateTime,
+                                       content: String)
     extends ProposalCommand
 
-case class ViewProposalCommand(proposalId: ProposalId) extends ProposalCommand
+final case class ViewProposalCommand(proposalId: ProposalId, context: RequestContext) extends ProposalCommand
 
-case class GetProposal(proposalId: ProposalId) extends ProposalCommand
+final case class GetProposal(proposalId: ProposalId, context: RequestContext) extends ProposalCommand
 
-case class KillProposalShard(proposalId: ProposalId) extends ProposalCommand
+final case class KillProposalShard(proposalId: ProposalId, context: RequestContext) extends ProposalCommand
