@@ -6,23 +6,23 @@ import java.util.UUID
 import com.sksamuel.elastic4s.http.get.GetResponse
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.Predef._
-import org.make.core.proposition.PropositionEvent.PropositionProposed
+import org.make.core.proposal.ProposalEvent.ProposalProposed
 
-case class PropositionElasticsearch(id: UUID,
-                                    userId: UUID,
-                                    createdAt: ZonedDateTime,
-                                    updatedAt: ZonedDateTime,
-                                    content: String,
-                                    nbVotesAgree: Int,
-                                    nbVotesDisagree: Int,
-                                    nbVotesUnsure: Int)
+case class ProposalElasticsearch(id: UUID,
+                                 userId: UUID,
+                                 createdAt: ZonedDateTime,
+                                 updatedAt: ZonedDateTime,
+                                 content: String,
+                                 nbVotesAgree: Int,
+                                 nbVotesDisagree: Int,
+                                 nbVotesUnsure: Int)
 
-object PropositionElasticsearch extends StrictLogging {
+object ProposalElasticsearch extends StrictLogging {
 
-  def shape: PartialFunction[AnyRef, Option[PropositionElasticsearch]] = {
-    case p: PropositionProposed =>
+  def shape: PartialFunction[AnyRef, Option[ProposalElasticsearch]] = {
+    case p: ProposalProposed =>
       Some(
-        PropositionElasticsearch(
+        ProposalElasticsearch(
           id = UUID.fromString(p.id.value),
           userId = UUID.fromString(p.userId.value),
           createdAt = p.createdAt.toUTC,
@@ -42,7 +42,7 @@ object PropositionElasticsearch extends StrictLogging {
         case source: Map[String, AnyRef] =>
           logger.debug("In shape as GetResponse: source: " + source.toString)
           Some(
-            PropositionElasticsearch(
+            ProposalElasticsearch(
               id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
               userId = UUID.fromString(source.getOrElse("userId", "NotFound").toString),
               createdAt = ZonedDateTime

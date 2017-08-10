@@ -10,7 +10,7 @@ import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 import org.make.core.user.User
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.vote.{Vote, VoteId}
@@ -27,16 +27,16 @@ trait VoteApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "propositionId", paramType = "path", dataType = "String"),
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "String"),
       new ApiImplicitParam(name = "voteId", paramType = "path", dataType = "string")
     )
   )
-  @Path(value = "/{propopsitionId}/{voteId}")
+  @Path(value = "/{propopsalId}/{voteId}")
   def getVote: Route = {
     get {
-      path("proposition" / refPropositionId / "vote" / voteId) { (propositionId, voteId) =>
+      path("proposal" / refProposalId / "vote" / voteId) { (proposalId, voteId) =>
         makeTrace("GetVote") {
-          onSuccess(voteService.getVote(voteId, propositionId)) {
+          onSuccess(voteService.getVote(voteId, proposalId)) {
             case Some(vote) => complete(vote)
             case None       => complete(NotFound)
           }
@@ -63,17 +63,17 @@ trait VoteApi extends MakeAuthenticationDirectives {
     value = Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.vote.VoteRequest"))
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
-  @Path(value = "/{propositionId}")
+  @Path(value = "/{proposalId}")
   def vote: Route =
     makeOAuth2 { user: AuthInfo[User] =>
       post {
-        path("vote" / refPropositionId) { propositionId =>
+        path("vote" / refProposalId) { proposalId =>
           makeTrace("Vote") {
             decodeRequest {
               entity(as[VoteRequest]) { request: VoteRequest =>
                 onSuccess(
                   voteService.vote(
-                    propositionId = propositionId,
+                    proposalId = proposalId,
                     userId = user.user.userId,
                     createdAt = ZonedDateTime.now,
                     status = request.status
@@ -91,8 +91,8 @@ trait VoteApi extends MakeAuthenticationDirectives {
   val voteRoutes: Route = vote ~ getVote
   val voteId: PathMatcher1[VoteId] =
     Segment.flatMap(id => Try(VoteId(id)).toOption)
-  val refPropositionId: PathMatcher1[PropositionId] =
-    Segment.flatMap(id => Try(PropositionId(id)).toOption)
+  val refProposalId: PathMatcher1[ProposalId] =
+    Segment.flatMap(id => Try(ProposalId(id)).toOption)
 }
 
 case class VoteRequest(status: VoteStatus)

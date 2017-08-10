@@ -1,4 +1,4 @@
-package org.make.api.proposition
+package org.make.api.proposal
 
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.CommittableMessage
@@ -18,26 +18,26 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.Predef._
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, PropositionElasticsearch}
-import org.make.core.proposition.PropositionEvent._
+import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
+import org.make.core.proposal.ProposalEvent._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponent =>
+trait ProposalStreamToElasticsearchComponent { self: ElasticsearchAPIComponent =>
 
-  def propositionStreamToElasticsearch: PropositionStreamToElasticsearch
+  def proposalStreamToElasticsearch: ProposalStreamToElasticsearch
 
-  class PropositionStreamToElasticsearch(val actorSystem: ActorSystem, implicit val materializer: Materializer)
+  class ProposalStreamToElasticsearch(val actorSystem: ActorSystem, implicit val materializer: Materializer)
       extends StrictLogging
       with AvroSerializers {
 
     type FlowGraph =
       Graph[FlowShape[CommittableMessage[String, AnyRef], Done], NotUsed]
-    type ElasticFlow = Flow[PropositionElasticsearch, Done, NotUsed]
+    type ElasticFlow = Flow[ProposalElasticsearch, Done, NotUsed]
 
     private val identityMapCapacity = 1000
-    private val propositionConsumerSettings =
+    private val proposalConsumerSettings =
       ConsumerSettings(
         actorSystem,
         new StringDeserializer,
@@ -45,31 +45,31 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
           new CachedSchemaRegistryClient(KafkaConfiguration(actorSystem).schemaRegistry, identityMapCapacity)
         )
       ).withBootstrapServers(KafkaConfiguration(actorSystem).connectionString)
-        .withGroupId("stream-proposition-to-es")
+        .withGroupId("stream-proposal-to-es")
         .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
 
-    val proposeEvent: Flow[CommittableMessage[String, AnyRef], PropositionProposed, NotUsed] =
+    val proposeEvent: Flow[CommittableMessage[String, AnyRef], ProposalProposed, NotUsed] =
       Flow[CommittableMessage[String, AnyRef]].map { msg =>
-        val event: PropositionEventWrapper =
-          RecordFormat[PropositionEventWrapper].from(msg.record.value.asInstanceOf[GenericRecord])
-        event.event.select[PropositionProposed]
+        val event: ProposalEventWrapper =
+          RecordFormat[ProposalEventWrapper].from(msg.record.value.asInstanceOf[GenericRecord])
+        event.event.select[ProposalProposed]
       }.filter(_.isDefined)
         .map(_.get)
 
-    val updateEvent: Flow[CommittableMessage[String, AnyRef], PropositionUpdated, NotUsed] =
+    val updateEvent: Flow[CommittableMessage[String, AnyRef], ProposalUpdated, NotUsed] =
       Flow[CommittableMessage[String, AnyRef]].map { msg =>
-        val event: PropositionEventWrapper =
-          RecordFormat[PropositionEventWrapper].from(msg.record.value.asInstanceOf[GenericRecord])
-        event.event.select[PropositionUpdated]
+        val event: ProposalEventWrapper =
+          RecordFormat[ProposalEventWrapper].from(msg.record.value.asInstanceOf[GenericRecord])
+        event.event.select[ProposalUpdated]
       }.filter(_.isDefined)
         .map(_.get)
 
-    val toPropositionEs: Flow[PropositionProposed, PropositionElasticsearch, NotUsed] =
-      Flow[PropositionProposed].map(PropositionElasticsearch.shape(_).get)
+    val toProposalEs: Flow[ProposalProposed, ProposalElasticsearch, NotUsed] =
+      Flow[ProposalProposed].map(ProposalElasticsearch.shape(_).get)
 
-    val getPropositionFromES: Flow[PropositionUpdated, Option[PropositionElasticsearch], NotUsed] =
-      Flow[PropositionUpdated].mapAsync(1) { update =>
-        elasticsearchAPI.getPropositionById(update.id).map {
+    val getProposalFromES: Flow[ProposalUpdated, Option[ProposalElasticsearch], NotUsed] =
+      Flow[ProposalUpdated].mapAsync(1) { update =>
+        elasticsearchAPI.getProposalById(update.id).map {
           _.map(_.copy(updatedAt = update.updatedAt.toUTC, content = update.content))
         }
       }
@@ -78,9 +78,9 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
       Flow[Option[T]].filter(_.isDefined).map(_.get)
 
     val save: ElasticFlow =
-      Flow[PropositionElasticsearch].mapAsync(1)(elasticsearchAPI.save)
+      Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.save)
 
-    val update: ElasticFlow = Flow[PropositionElasticsearch].mapAsync(1)(elasticsearchAPI.updateProposition)
+    val update: ElasticFlow = Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.updateProposal)
 
     val commitOffset: Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
       Flow[(CommittableMessage[String, AnyRef], Done)]
@@ -101,8 +101,8 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
         val bcast =
           builder.add(Broadcast[CommittableMessage[String, AnyRef]](3))
         val merge = builder.add(Merge[Done](2))
-        bcast ~> proposeEvent ~> toPropositionEs      ~> save                             ~> merge
-        bcast ~> updateEvent  ~> getPropositionFromES ~> filter[PropositionElasticsearch] ~> update ~> merge
+        bcast ~> proposeEvent ~> toProposalEs      ~> save                          ~> merge
+        bcast ~> updateEvent  ~> getProposalFromES ~> filter[ProposalElasticsearch] ~> update ~> merge
 
         val zip = builder.add(Zip[CommittableMessage[String, AnyRef], Done]())
         bcast ~> zip.in0
@@ -115,8 +115,8 @@ trait PropositionStreamToElasticsearchComponent { self: ElasticsearchAPIComponen
     def run(): Future[Done] =
       Consumer
         .committableSource(
-          propositionConsumerSettings,
-          Subscriptions.topics(PropositionProducerActor.kafkaTopic(actorSystem))
+          proposalConsumerSettings,
+          Subscriptions.topics(ProposalProducerActor.kafkaTopic(actorSystem))
         )
         .via(esPush)
         .runWith(Sink.foreach(msg => logger.info("Streaming of one message: " + msg.toString)))

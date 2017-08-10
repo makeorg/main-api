@@ -1,4 +1,4 @@
-package org.make.api.proposition
+package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
@@ -6,14 +6,14 @@ import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.core.proposition._
+import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.scalatest.GivenWhenThen
 
-class PropositionActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
   val coordinator: ActorRef =
-    system.actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
+    system.actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.now.minusSeconds(10))
@@ -21,43 +21,43 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  feature("Propose a proposition") {
-    val propositionId: PropositionId = PropositionId("proposeCommand")
+  feature("Propose a proposal") {
+    val proposalId: ProposalId = ProposalId("proposeCommand")
     scenario("Initialize the state if it was empty") {
       Given("an empty state")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
       expectMsg(None)
 
-      And("a newly proposed Proposition")
+      And("a newly proposed Proposal")
       coordinator ! ProposeCommand(
-        propositionId = propositionId,
+        proposalId = proposalId,
         userId = mainUserId,
         createdAt = mainCreatedAt.get,
-        content = "Ceci est une proposition"
+        content = "This is a proposal"
       )
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )
         )
       )
 
-      Then("have the proposition state after proposal")
+      Then("have the proposal state after proposal")
 
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )
@@ -65,18 +65,18 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
 
       And("recover its state after having been kill")
-      coordinator ! KillPropositionShard(propositionId)
+      coordinator ! KillProposalShard(proposalId)
 
       Thread.sleep(100)
 
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )
@@ -85,16 +85,16 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  feature("Update a proposition") {
-    val propositionId: PropositionId = PropositionId("updateCommand")
-    scenario("Fail if PropositionId doesn't exists") {
+  feature("Update a proposal") {
+    val proposalId: ProposalId = ProposalId("updateCommand")
+    scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
       expectMsg(None)
 
-      When("a asking for a fake PropositionId")
-      coordinator ! UpdatePropositionCommand(
-        propositionId = PropositionId("fake"),
+      When("a asking for a fake ProposalId")
+      coordinator ! UpdateProposalCommand(
+        proposalId = ProposalId("fake"),
         updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
@@ -105,40 +105,40 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
 
     scenario("Change the state and create a snapshot if valid") {
       Given("an empty state")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
       expectMsg(None)
 
-      And("a newly proposed Proposition")
+      And("a newly proposed Proposal")
       coordinator ! ProposeCommand(
-        propositionId = propositionId,
+        proposalId = proposalId,
         userId = mainUserId,
         createdAt = mainCreatedAt.get,
-        content = "Ceci est une proposition"
+        content = "This is a proposal"
       )
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )
         )
       )
 
-      When("updating this Proposition")
-      coordinator ! UpdatePropositionCommand(
-        propositionId = propositionId,
+      When("updating this Proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = proposalId,
         updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
@@ -148,12 +148,12 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
 
       Then("getting its updated state after update")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
@@ -163,16 +163,16 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
 
       And("recover its updated state after having been kill")
-      coordinator ! KillPropositionShard(propositionId)
+      coordinator ! KillProposalShard(proposalId)
 
       Thread.sleep(100)
 
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
             content = "An updated content",
             createdAt = mainCreatedAt,
@@ -183,15 +183,15 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  feature("View a proposition") {
-    val propositionId: PropositionId = PropositionId("viewCommand")
-    scenario("Fail if PropositionId doesn't exists") {
+  feature("View a proposal") {
+    val proposalId: ProposalId = ProposalId("viewCommand")
+    scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
       expectMsg(None)
 
-      When("a asking for a fake PropositionId")
-      coordinator ! ViewPropositionCommand(PropositionId("fake"))
+      When("a asking for a fake ProposalId")
+      coordinator ! ViewProposalCommand(ProposalId("fake"))
 
       Then("returns None")
       expectMsg(None)
@@ -199,23 +199,23 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
 
     scenario("Return the state if valid") {
       Given("an empty state")
-      coordinator ! GetProposition(propositionId)
+      coordinator ! GetProposal(proposalId)
       expectMsg(None)
 
-      When("a new Proposition is proposed")
+      When("a new Proposal is proposed")
       coordinator ! ProposeCommand(
-        propositionId = propositionId,
+        proposalId = proposalId,
         userId = mainUserId,
         createdAt = mainCreatedAt.get,
-        content = "Ceci est une proposition"
+        content = "This is a proposal"
       )
 
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )
@@ -223,13 +223,13 @@ class PropositionActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
 
       Then("returns the state")
-      coordinator ! ViewPropositionCommand(propositionId)
+      coordinator ! ViewProposalCommand(proposalId)
       expectMsg(
         Some(
-          Proposition(
-            propositionId = propositionId,
+          Proposal(
+            proposalId = proposalId,
             userId = mainUserId,
-            content = "Ceci est une proposition",
+            content = "This is a proposal",
             createdAt = mainCreatedAt,
             updatedAt = mainCreatedAt
           )

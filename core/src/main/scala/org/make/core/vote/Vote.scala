@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.user.UserId
-import org.make.core.proposition.PropositionId
+import org.make.core.proposal.ProposalId
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.{MakeSerializable, StringValue}
 
@@ -17,11 +17,7 @@ object VoteStatus extends Enumeration {
     Decoder.decodeString.map(VoteStatus.withName)
 }
 
-case class Vote(voteId: VoteId,
-                userId: UserId,
-                propositionId: PropositionId,
-                createdAt: ZonedDateTime,
-                status: VoteStatus)
+case class Vote(voteId: VoteId, userId: UserId, proposalId: ProposalId, createdAt: ZonedDateTime, status: VoteStatus)
     extends MakeSerializable
 
 case class VoteId(value: String) extends StringValue

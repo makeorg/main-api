@@ -1,4 +1,4 @@
-package org.make.api.proposition
+package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
@@ -7,12 +7,12 @@ import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
 import scala.util.{Failure, Success}
 
-class PropositionSupervisor
+class ProposalSupervisor
     extends Actor
     with ActorLogging
     with ElasticsearchConfigurationExtension
     with ElasticsearchAPIComponent
-    with PropositionStreamToElasticsearchComponent
+    with ProposalStreamToElasticsearchComponent
     with AvroSerializers
     with ShortenedNames {
 
@@ -20,20 +20,20 @@ class PropositionSupervisor
     new ElasticsearchAPI(elasticsearchConfiguration.host, elasticsearchConfiguration.port)
 
   implicit private val materializer = ActorMaterializer()(context.system)
-  val propositionStreamToElasticsearch: PropositionStreamToElasticsearch =
-    new PropositionStreamToElasticsearch(context.system, materializer)
+  val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
+    new ProposalStreamToElasticsearch(context.system, materializer)
 
   override def preStart(): Unit = {
 
     context.watch(
       context
-        .actorOf(PropositionCoordinator.props, PropositionCoordinator.name)
+        .actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
     )
     context.watch(
       context
-        .actorOf(PropositionProducerActor.props, PropositionProducerActor.name)
+        .actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
     )
-    propositionStreamToElasticsearch
+    proposalStreamToElasticsearch
       .run()
       .onComplete {
         case Success(result) => log.debug("Stream processed: {}", result)
@@ -48,8 +48,8 @@ class PropositionSupervisor
   }
 }
 
-object PropositionSupervisor {
+object ProposalSupervisor {
 
-  val name: String = "proposition"
-  val props: Props = Props[PropositionSupervisor]
+  val name: String = "proposal"
+  val props: Props = Props[ProposalSupervisor]
 }

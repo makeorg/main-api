@@ -13,7 +13,7 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._
-import org.make.api.proposition._
+import org.make.api.proposal._
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.MailJetApi
@@ -37,7 +37,7 @@ trait MakeApi
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
     with DefaultUserServiceComponent
-    with DefaultPropositionServiceComponent
+    with DefaultProposalServiceComponent
     with DefaultVoteServiceComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
@@ -45,9 +45,9 @@ trait MakeApi
     with DefaultTokenGeneratorComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultOauthTokenGeneratorComponent
-    with PropositionCoordinatorComponent
+    with ProposalCoordinatorComponent
     with VoteCoordinatorComponent
-    with PropositionApi
+    with ProposalApi
     with VoteApi
     with MailJetApi
     with AuthenticationApi
@@ -61,9 +61,9 @@ trait MakeApi
 
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
 
-  override lazy val propositionCoordinator: ActorRef = Await.result(
+  override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / PropositionSupervisor.name / PropositionCoordinator.name)
+      .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )
@@ -120,7 +120,7 @@ trait MakeApi
   }
 
   private lazy val apiTypes: Seq[ru.Type] =
-    Seq(ru.typeOf[UserApi], ru.typeOf[PropositionApi])
+    Seq(ru.typeOf[UserApi], ru.typeOf[ProposalApi])
 
   lazy val makeRoutes: Route = handleExceptions(MakeApi.exceptionHandler)(
     handleRejections(MakeApi.rejectionHandler)(
@@ -128,7 +128,7 @@ trait MakeApi
         swagger ~
         login ~
         userRoutes ~
-        propositionRoutes ~
+        proposalRoutes ~
 //    voteRoutes ~
         accessTokenRoute ~
         buildRoutes ~

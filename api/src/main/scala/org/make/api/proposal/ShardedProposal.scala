@@ -1,44 +1,44 @@
-package org.make.api.proposition
+package org.make.api.proposal
 
 import akka.actor.{Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import org.make.core.proposition.{PropositionCommand, PropositionId}
+import org.make.core.proposal.{ProposalCommand, ProposalId}
 
 import scala.concurrent.duration._
 
-object ShardedProposition {
-  def props: Props = Props(new ShardedProposition)
+object ShardedProposal {
+  def props: Props = Props(new ShardedProposal)
 
-  def name(propositionId: PropositionId): String = propositionId.value
+  def name(proposalId: ProposalId): String = proposalId.value
 
-  val shardName: String = "proposition"
+  val shardName: String = "proposal"
 
-  case object StopProposition
+  case object StopProposal
 
   def extractEntityId: ShardRegion.ExtractEntityId = {
-    case cmd: PropositionCommand => (cmd.propositionId.value, cmd)
+    case cmd: ProposalCommand => (cmd.proposalId.value, cmd)
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: PropositionCommand =>
-      Math.abs(cmd.propositionId.value.hashCode % 100).toString
+    case cmd: ProposalCommand =>
+      Math.abs(cmd.proposalId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) =>
       Math.abs(id.hashCode % 100).toString
   }
 }
 
-class ShardedProposition extends PropositionActor {
+class ShardedProposal extends ProposalActor {
 
-  import ShardedProposition._
+  import ShardedProposal._
 
   context.setReceiveTimeout(2.minutes)
 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout =>
-      context.parent ! Passivate(stopMessage = StopProposition)
-    case StopProposition        => context.stop(self)
+      context.parent ! Passivate(stopMessage = StopProposal)
+    case StopProposal           => context.stop(self)
     case SaveSnapshotSuccess(_) => log.info("Snapshot saved")
     case SaveSnapshotFailure(_, cause) =>
       log.error("Error while saving snapshot", cause)

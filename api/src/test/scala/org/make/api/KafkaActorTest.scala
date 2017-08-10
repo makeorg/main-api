@@ -30,7 +30,7 @@ object KafkaActorTest {
        |    schema-registry = "$schemaRegistry"
        |    topics {
        |      users = "users"
-       |      propositions = "propositions"
+       |      proposals = "proposals"
        |      votes = "votes"
        |      mailjet-events = "mailjet-events"
        |    }
