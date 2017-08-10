@@ -1,15 +1,5 @@
 {
-<<<<<<< HEAD:api/src/main/resources/proposal-mapping.json
-  "proposal" : {
-    "properties" : {
-      "userId" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 36
-=======
-  "proposition": {
+  "proposal": {
     "properties": {
       "id": {
         "type": "keyword",
@@ -28,7 +18,6 @@
           "keyword": {
             "type": "keyword",
             "ignore_above": 256
->>>>>>> refactor(proposition): update proposition elasticsearch mapping:api/src/main/resources/proposition-mapping.json
           }
         }
       },

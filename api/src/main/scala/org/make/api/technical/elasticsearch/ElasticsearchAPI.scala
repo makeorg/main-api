@@ -7,6 +7,7 @@ import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -32,10 +33,14 @@ trait ElasticsearchAPIComponent {
 
   def elasticsearchAPI: ElasticsearchAPI
 
-  class ElasticsearchAPI(host: String, port: Int) extends CustomFormatters with StrictLogging {
-    private val client = HttpClient(ElasticsearchClientUri(host, port))
+  class ElasticsearchAPI(host: String, port: Int)
+      extends SearchQueryBuilderComponent
+      with CustomFormatters
+      with StrictLogging {
 
-    val proposalIndex: IndexAndType = "proposals" / "proposal"
+    private val client = HttpClient(ElasticsearchClientUri(host, port))
+    private val proposalIndex: IndexAndType = "proposals" / "proposal"
+    val searchQueryBuilder = new SearchQueryBuilder()
 
     def getProposalById(proposalId: ProposalId): Future[Option[ProposalElasticsearch]] = {
       client.execute {
@@ -45,6 +50,29 @@ trait ElasticsearchAPIComponent {
         Future.successful(
           ProposalElasticsearch.shape
             .applyOrElse[AnyRef, Option[ProposalElasticsearch]](response, _ => None)
+        )
+      }
+    }
+
+    def getProposals(queryJsonString: String): Future[Seq[Option[ProposalElasticsearch]]] = {
+      client.execute {
+        // parse json string to build search query
+        val searchQuery = searchQueryBuilder.buildSearchQueryFromJson(queryJsonString)
+        val searchFilters = searchQueryBuilder.getSearchFilters(searchQuery)
+        // build search query
+        search(proposalIndex)
+          .bool(BoolQueryDefinition(must = searchFilters))
+          .sortBy(searchQueryBuilder.getSortOption(searchQuery))
+          .from(searchQueryBuilder.getSkipSearchOption(searchQuery))
+          .size(searchQueryBuilder.getLimitSearchOption(searchQuery))
+
+      }.flatMap { response =>
+        logger.debug("Received response from Elasticsearch: " + response.toString)
+        Future.successful(
+          response.hits.hits.map(
+            searchHit =>
+              ProposalElasticsearch.shape.applyOrElse[AnyRef, Option[ProposalElasticsearch]](searchHit, _ => None)
+          )
         )
       }
     }

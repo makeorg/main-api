@@ -11,6 +11,27 @@ import org.make.core.proposal.ProposalEvent.ProposalProposed
 import org.make.core.tag.{Tag, TagId}
 import org.make.core.theme.{Theme, ThemeId}
 
+object ProposalElasticsearchFieldNames {
+  val id: String = "id"
+  val userId: String = "userId"
+  val content: String = "content"
+  val slug: String = "slug"
+  val createdAt: String = "createdAt"
+  val updatedAt: String = "updatedAt"
+  val countVotesAgree: String = "countVotesAgree"
+  val countVotesDisagree: String = "countVotesDisagree"
+  val countVotesUnsure: String = "countVotesUnsure"
+  val support: String = "support"
+  val context: String = "context"
+  val authorFirstName: String = "authorFirstName"
+  val authorPostalCode: String = "authorPostalCode"
+  val authorAge: String = "authorAge"
+  val themeList: String = "themes"
+  val themeId: String = "themes.id"
+  val tagList: String = "tags"
+  val tagId: String = "tags.id"
+}
+
 case class ProposalElasticsearch(id: UUID,
                                  userId: UUID,
                                  content: String,
