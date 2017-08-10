@@ -94,7 +94,7 @@ class MakeDataHandlerComponentTest
   //A valid user impl
   when(persistentUserService.persist(exampleUser))
     .thenReturn(Future.successful(exampleUser))
-  when(persistentUserService.findByEmailAndHashedPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
+  when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(Some(exampleUser)))
 
   feature("find User form client credentials and request") {
@@ -130,9 +130,8 @@ class MakeDataHandlerComponentTest
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientId, clientSecret = secret)
       And("a nonexistent user in a valid request")
-      when(
-        persistentUserService.findByEmailAndHashedPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String])
-      ).thenReturn(Future.successful(None))
+      when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
+        .thenReturn(Future.successful(None))
 
       When("findUser is called")
       val futureMaybeUser: Future[Option[User]] = oauth2DataHandler.findUser(Some(clientCredential), request)

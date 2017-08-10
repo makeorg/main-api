@@ -29,7 +29,6 @@ class PersistentTokenServiceIT
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    salt = Some("MYSALT"),
     enabled = true,
     verified = true,
     lastConnection = before,

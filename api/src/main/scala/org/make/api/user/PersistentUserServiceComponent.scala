@@ -10,7 +10,7 @@ import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
-
+import com.github.t3hnar.bcrypt._
 import scala.concurrent.Future
 
 trait PersistentUserServiceComponent {
@@ -29,7 +29,6 @@ object PersistentUserServiceComponent {
                             lastName: Option[String],
                             lastIp: Option[String],
                             hashedPassword: String,
-                            salt: String,
                             enabled: Boolean,
                             verified: Boolean,
                             lastConnection: ZonedDateTime,
@@ -59,7 +58,6 @@ object PersistentUserServiceComponent {
         lastName = lastName,
         lastIp = lastIp,
         hashedPassword = Some(hashedPassword),
-        salt = Some(salt),
         enabled = enabled,
         verified = verified,
         lastConnection = lastConnection,
@@ -121,7 +119,6 @@ object PersistentUserServiceComponent {
       "last_name",
       "last_ip",
       "hashed_password",
-      "salt",
       "enabled",
       "verified",
       "last_connection",
@@ -150,7 +147,6 @@ object PersistentUserServiceComponent {
         updatedAt = resultSet.zonedDateTime(userResultName.updatedAt),
         lastIp = resultSet.stringOpt(userResultName.lastIp),
         hashedPassword = resultSet.string(userResultName.hashedPassword),
-        salt = resultSet.string(userResultName.salt),
         enabled = resultSet.boolean(userResultName.enabled),
         verified = resultSet.boolean(userResultName.verified),
         lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
@@ -180,7 +176,7 @@ object PersistentUserServiceComponent {
 
 trait PersistentUserService {
   def get(uuid: UserId): Future[Option[User]]
-  def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]]
+  def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def emailExists(email: String): Future[Boolean]
@@ -210,18 +206,16 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findByEmailAndHashedPassword(email: String, hashedPassword: String): Future[Option[User]] = {
+    override def findByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(
-              sqls
-                .eq(userAlias.email, email)
-                .and(sqls.eq(userAlias.hashedPassword, hashedPassword))
-            )
+            .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
+      }).map(_.filter { persistenUser =>
+        password.isBcrypted(persistenUser.hashedPassword)
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -301,7 +295,6 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastName -> user.lastName,
               column.lastIp -> user.lastIp,
               column.hashedPassword -> user.hashedPassword,
-              column.salt -> user.salt,
               column.enabled -> user.enabled,
               column.verified -> user.verified,
               column.lastConnection -> user.lastConnection,
