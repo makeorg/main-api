@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -100,6 +100,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         }
       }
     }
+
+  // TODO: extract all required headers to supply a correct context
+  def extractMakeRequestContext(): Directive1[RequestContext] = provide(RequestContext())
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
