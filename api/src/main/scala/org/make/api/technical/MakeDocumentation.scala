@@ -14,9 +14,8 @@ class MakeDocumentation(system: ActorSystem, override val apiClasses: Set[Class[
 
   override val securitySchemeDefinitions: Map[String, SecuritySchemeDefinition] = Map("MakeApi" -> {
     val definition = new OAuth2Definition()
-    definition.setFlow(OAuthGrantType.IMPLICIT)
-    definition.setTokenUrl("/oauth/access_token")
-    definition.setAuthorizationUrl("/login.html")
+    definition.setFlow(OAuthGrantType.PASSWORD)
+    definition.setTokenUrl("/oauth/make_access_token")
     definition.setType("oauth2")
     definition.setScopes(Map("user" -> "application user", "admin" -> "application admin").asJava)
     definition

@@ -78,13 +78,7 @@ trait MakeApi
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
-    override val handlers = Map(
-      OAuthGrantType.IMPLICIT -> new Implicit,
-      OAuthGrantType.CLIENT_CREDENTIALS -> new ClientCredentials,
-      OAuthGrantType.AUTHORIZATION_CODE -> new AuthorizationCode,
-      OAuthGrantType.PASSWORD -> new Password,
-      OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
-    )
+    override val handlers = Map(OAuthGrantType.PASSWORD -> new Password)
   }
 
   val exceptionHandler = ExceptionHandler {
@@ -114,10 +108,6 @@ trait MakeApi
       }
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
-  private lazy val login: Route = path("login.html") {
-    getFromResource("auth/login.html")
-  }
-
   private lazy val apiClasses: Set[Class[_]] =
     Set(classOf[UserApi], classOf[ProposalApi])
 
@@ -125,10 +115,8 @@ trait MakeApi
     handleRejections(MakeApi.rejectionHandler)(
       new MakeDocumentation(actorSystem, apiClasses).routes ~
         swagger ~
-        login ~
         userRoutes ~
         proposalRoutes ~
-//    voteRoutes ~
         accessTokenRoute ~
         buildRoutes ~
         mailJetRoutes ~

@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.AuthenticationApi.{LogoutRequest, TokenResponse}
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
 import org.make.core.HttpCodes
@@ -17,7 +18,7 @@ import scala.util.{Failure, Success}
 import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, TokenEndpoint}
 
 trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLogging {
-  self: MakeDataHandlerComponent with IdGeneratorComponent =>
+  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   val tokenEndpoint: TokenEndpoint
 
@@ -33,6 +34,36 @@ trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLo
               tokenEndpoint
                 .handleRequest(
                   new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
+                  oauth2DataHandler
+                )
+            ) {
+              case Success(maybeGrantResponse) =>
+                maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                  complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                })
+              case Failure(ex) => throw ex
+            }
+          }
+        }
+      }
+    }
+
+  @ApiOperation(value = "make-oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @Path(value = "/oauth/make_access_token")
+  def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
+    pathPrefix("oauth") {
+      path("make_access_token") {
+        post {
+          formFieldMap { fields =>
+            val allFields = fields ++ Map(
+              "client_id" -> makeSettings.Authentication.defaultClientId,
+              "client_secret" -> makeSettings.Authentication.defaultClientSecret
+            )
+            onComplete(
+              tokenEndpoint
+                .handleRequest(
+                  new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
                   oauth2DataHandler
                 )
             ) {
@@ -92,7 +123,7 @@ trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLo
       }
     }
 
-  val authenticationRoutes: Route = accessTokenRoute ~ logoutRoute
+  val authenticationRoutes: Route = accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
 }
 
 object AuthenticationApi {
