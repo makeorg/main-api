@@ -9,15 +9,15 @@ import org.make.core.{MakeSerializable, StringValue, Timestamped}
 
 sealed trait Role {
   def shortName: String
+}
 
+object Role extends StrictLogging {
   implicit lazy val roleEncoder: Encoder[Role] = (role: Role) => Json.fromString(role.shortName)
   implicit lazy val roleDecoder: Decoder[Role] =
     Decoder.decodeString.map(
       role => Role.matchRole(role).getOrElse(throw new IllegalArgumentException(s"$role is not a Role"))
     )
-}
 
-object Role extends StrictLogging {
   val roles: Map[String, Role] = Map(
     RoleAdmin.shortName -> RoleAdmin,
     RoleModerator.shortName -> RoleModerator,

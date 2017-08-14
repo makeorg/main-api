@@ -70,7 +70,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         val resolvedTags: Map[String, String] = tags ++ Map(
           "id" -> requestId,
           sessionIdKey -> sessionId,
-          "external-id" -> externalId
+          "external-id" -> externalId,
+          "start-time" -> startTime.toString,
+          "route-name" -> name
         )
         traceName(name, resolvedTags).tflatMap { _ =>
           addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)

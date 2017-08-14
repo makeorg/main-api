@@ -20,9 +20,9 @@ object Validation {
     val messages: Seq[ValidationError] = require.flatMap { requirement =>
       Try(requirement.condition()) match {
         case Failure(e) =>
-          Seq(ValidationError(requirement.field, e.getMessage))
+          Seq(ValidationError(requirement.field, Option(e.getMessage)))
         case Success(false) =>
-          Seq(ValidationError(requirement.field, requirement.message()))
+          Seq(ValidationError(requirement.field, Option(requirement.message())))
         case _ => Nil
       }
     }
@@ -62,4 +62,4 @@ case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception
   override def getMessage: String = { errors.asJson.toString }
 }
 
-case class ValidationError(field: String, message: String)
+case class ValidationError(field: String, message: Option[String])

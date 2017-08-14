@@ -1,8 +1,8 @@
 package org.make.api.technical
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Set-Cookie`, Cookie}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Origin`, `Set-Cookie`, Cookie}
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestUtils
 import org.make.api.technical.auth._
@@ -16,13 +16,13 @@ class MakeDirectivesTest
     extends FeatureSpec
     with Matchers
     with ScalatestRouteTest
-    with MakeApiTestUtils
     with MockitoSugar
     with MakeDirectives
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent
-    with ShortenedNames {
+    with ShortenedNames
+    with MakeApiTestUtils {
 
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -30,10 +30,26 @@ class MakeDirectivesTest
 
   when(idGenerator.nextId()).thenReturn("some-id")
 
-  val route: Route = Route.seal(get {
+  val route: Route = sealRoute(get {
     path("test") {
       makeTrace("test") {
         complete(StatusCodes.OK)
+      }
+    }
+  })
+
+  val routeRejection: Route = sealRoute(get {
+    path("test") {
+      makeTrace("test") {
+        reject(MalformedRequestContentRejection("http", new Exception("fake exception")))
+      }
+    }
+  })
+
+  val routeException: Route = sealRoute(get {
+    path("test") {
+      makeTrace("test") {
+        throw new Exception("fake exception")
       }
     }
   })
@@ -174,4 +190,32 @@ class MakeDirectivesTest
     }
 
   }
+  feature("access control header") {
+    scenario("return header allow all origins") {
+      Get("/test") ~> route ~> check {
+        status should be(StatusCodes.OK)
+        info(headers.mkString("\n"))
+        header[`Access-Control-Allow-Origin`] shouldBe defined
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+      }
+    }
+
+    scenario("rejection returns header allow all origins") {
+      Get("/test") ~> routeRejection ~> check {
+        status should be(StatusCodes.BadRequest)
+        header[`Access-Control-Allow-Origin`] shouldBe defined
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+      }
+    }
+
+    scenario("exception returns header allow all origins") {
+      Get("/test") ~> routeException ~> check {
+        status should be(StatusCodes.InternalServerError)
+        info(headers.mkString("\n"))
+        header[`Access-Control-Allow-Origin`] shouldBe defined
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+      }
+    }
+  }
+
 }

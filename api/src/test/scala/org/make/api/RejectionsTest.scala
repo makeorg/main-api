@@ -6,23 +6,26 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.knutwalker.akka.http.support.CirceHttpSupport
-import org.make.core.{CirceFormatters, ValidationError}
 import io.circe.generic.auto._
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.{CirceFormatters, ValidationError}
 
 class RejectionsTest
     extends MakeUnitTest
     with ScalatestRouteTest
     with Directives
     with CirceHttpSupport
+    with MakeApiTestUtils
+    with IdGeneratorComponent
     with CirceFormatters {
 
-  val route: Route = Route.seal(handleRejections(MakeApi.rejectionHandler) {
-    post {
-      path("test") {
-        decodeRequest {
-          entity(as[TestRequest]) { _ =>
-            complete(StatusCodes.OK)
-          }
+  override val idGenerator: IdGenerator = mock[IdGenerator]
+
+  val route: Route = sealRoute(post {
+    path("test") {
+      decodeRequest {
+        entity(as[TestRequest]) { _ =>
+          complete(StatusCodes.OK)
         }
       }
     }
