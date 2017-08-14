@@ -155,10 +155,14 @@ class MakeDataHandlerComponentTest
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
         .thenReturn(Future.successful(("access_token", "access_token_hashed")))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.eq("access_token")))
+        .thenReturn("access_token_hashed")
 
       And("a generated refresh token 'refresh_token' with a hashed value 'refresh_token_hashed")
       when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.eq("refresh_token")))
+        .thenReturn("refresh_token_hashed")
 
       When("I create a new AccessToken")
       when(persistentTokenService.persist(ArgumentMatchers.eq(exampleToken)))
@@ -239,6 +243,7 @@ class MakeDataHandlerComponentTest
 
     val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
     val refreshToken: String = "MYREFRESHTOKEN"
+    val refreshTokenHashed: String = "REFRESH_TOKEN_HASHED"
     val createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
     val accessTokenExample = AccessToken(
       token = "DFG",
@@ -260,8 +265,11 @@ class MakeDataHandlerComponentTest
         """.stripMargin)
 
       When("I call method refreshAccessToken")
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(refreshToken)))
+        .thenReturn(refreshTokenHashed)
+      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshTokenHashed)))
         .thenReturn(Future.successful(1))
+
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
@@ -292,7 +300,9 @@ class MakeDataHandlerComponentTest
       Given("a valid AuthInfo")
       And("a refreshToken: \"MYREFRESHTOKEN\"")
       And("no rows affected by method deleteByRefreshToken")
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(refreshToken)))
+        .thenReturn(refreshTokenHashed)
+      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshTokenHashed)))
         .thenReturn(Future.successful(0))
 
       When("I call method refreshAccessToken")
@@ -384,9 +394,12 @@ class MakeDataHandlerComponentTest
     scenario("Get an AccessToken from a token") {
       Given("an access token: \"TOKENTOKEN\"")
       val accessToken = "TOKENTOKEN"
+      val accessTokenHashed = "TOKENTOKEN_HASHED"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
+        .thenReturn(accessTokenHashed)
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenHashed)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -399,9 +412,12 @@ class MakeDataHandlerComponentTest
     scenario("Get an AccessToken from a nonexistent token") {
       Given("an nonexistent AccessToken")
       val accessToken = "NONEXISTENT"
+      val accessTokenHashed = "NONEXISTENT_HASHED"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
+        .thenReturn(accessTokenHashed)
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenHashed)))
         .thenReturn(Future.successful(None))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
