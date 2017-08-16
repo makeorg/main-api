@@ -2,7 +2,7 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ElasticsearchConfigurationExtension}
+import org.make.api.technical.elasticsearch.{DefaultElasticsearchAPIComponent, ElasticsearchConfigurationExtension}
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
 import scala.util.{Failure, Success}
@@ -10,14 +10,11 @@ import scala.util.{Failure, Success}
 class ProposalSupervisor
     extends Actor
     with ActorLogging
+    with DefaultElasticsearchAPIComponent
     with ElasticsearchConfigurationExtension
-    with ElasticsearchAPIComponent
     with ProposalStreamToElasticsearchComponent
     with AvroSerializers
     with ShortenedNames {
-
-  override val elasticsearchAPI =
-    new ElasticsearchAPI(elasticsearchConfiguration.host, elasticsearchConfiguration.port)
 
   implicit private val materializer = ActorMaterializer()(context.system)
   val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
@@ -46,6 +43,7 @@ class ProposalSupervisor
   override def receive: Receive = {
     case x => log.info(s"received $x")
   }
+
 }
 
 object ProposalSupervisor {

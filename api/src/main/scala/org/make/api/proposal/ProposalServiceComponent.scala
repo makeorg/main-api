@@ -6,9 +6,10 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
 import org.make.core.RequestContext
 import org.make.core.proposal._
-import org.make.core.user.User
+import org.make.core.user.{SearchProposalsHistoryCommand, User, UserId}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,6 +20,7 @@ trait ProposalServiceComponent {
 
 trait ProposalService {
   def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
+  def search(userId: Option[UserId], query: String, context: RequestContext): Future[Seq[Option[ProposalElasticsearch]]]
   def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
              context: RequestContext,
@@ -27,7 +29,10 @@ trait ProposalService {
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
-  this: IdGeneratorComponent with ProposalServiceComponent with ProposalCoordinatorComponent =>
+  this: IdGeneratorComponent
+    with ProposalServiceComponent
+    with ProposalCoordinatorComponent
+    with ElasticsearchAPIComponent =>
 
   override lazy val proposalService = new ProposalService {
 
@@ -36,6 +41,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     override def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
       (proposalCoordinator ? ViewProposalCommand(proposalId, context))
         .mapTo[Option[Proposal]]
+    }
+
+    override def search(userId: Option[UserId],
+                        queryString: String,
+                        context: RequestContext): Future[Seq[Option[ProposalElasticsearch]]] = {
+      proposalCoordinator ? SearchProposalsHistoryCommand(userId, queryString, context)
+      elasticsearchAPI.searchProposals(queryString)
     }
 
     override def propose(user: User,

@@ -30,19 +30,29 @@ trait CustomFormatters {
 }
 
 trait ElasticsearchAPIComponent {
-
   def elasticsearchAPI: ElasticsearchAPI
+}
 
-  class ElasticsearchAPI(host: String, port: Int)
-      extends SearchQueryBuilderComponent
-      with CustomFormatters
-      with StrictLogging {
+trait ElasticsearchAPI {
+  def getProposalById(proposalId: ProposalId): Future[Option[ProposalElasticsearch]]
+  def searchProposals(queryJsonString: String): Future[Seq[Option[ProposalElasticsearch]]]
+  def save(record: ProposalElasticsearch): Future[Done]
+  def updateProposal(record: ProposalElasticsearch): Future[Done]
+}
 
-    private val client = HttpClient(ElasticsearchClientUri(host, port))
+trait DefaultElasticsearchAPIComponent extends ElasticsearchAPIComponent {
+  self: ElasticsearchConfigurationComponent =>
+
+  override lazy val elasticsearchAPI = new ElasticsearchAPI with SearchQueryBuilderComponent with CustomFormatters
+  with StrictLogging {
+
+    private val client = HttpClient(
+      ElasticsearchClientUri(elasticsearchConfiguration.host, elasticsearchConfiguration.port)
+    )
     private val proposalIndex: IndexAndType = "proposals" / "proposal"
     val searchQueryBuilder = new SearchQueryBuilder()
 
-    def getProposalById(proposalId: ProposalId): Future[Option[ProposalElasticsearch]] = {
+    override def getProposalById(proposalId: ProposalId): Future[Option[ProposalElasticsearch]] = {
       client.execute {
         get(id = proposalId.value).from(proposalIndex)
       }.flatMap { response =>
@@ -54,7 +64,7 @@ trait ElasticsearchAPIComponent {
       }
     }
 
-    def getProposals(queryJsonString: String): Future[Seq[Option[ProposalElasticsearch]]] = {
+    override def searchProposals(queryJsonString: String): Future[Seq[Option[ProposalElasticsearch]]] = {
       client.execute {
         // parse json string to build search query
         val searchQuery = searchQueryBuilder.buildSearchQueryFromJson(queryJsonString)
@@ -77,7 +87,7 @@ trait ElasticsearchAPIComponent {
       }
     }
 
-    def save(record: ProposalElasticsearch): Future[Done] = {
+    override def save(record: ProposalElasticsearch): Future[Done] = {
       logger.info(s"Saving in Elasticsearch: $record")
       client.execute {
         indexInto(proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.toString)
@@ -86,7 +96,7 @@ trait ElasticsearchAPIComponent {
       }
     }
 
-    def updateProposal(record: ProposalElasticsearch): Future[Done] = {
+    override def updateProposal(record: ProposalElasticsearch): Future[Done] = {
       logger.info(s"Updating in Elasticsearch: $record")
       client.execute {
         (update(id = record.id.toString) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE)

@@ -19,7 +19,8 @@ import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
   proposalElasticsearch
 }
 import org.make.api.technical.{AvroSerializers, DateHelper}
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
+import org.make.api.technical.elasticsearch.{ElasticsearchAPI, ElasticsearchAPIComponent, ProposalElasticsearch}
+import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.proposal.ProposalEvent.{
   ProposalAuthorInfo,
   ProposalEventWrapper,
@@ -28,7 +29,6 @@ import org.make.core.proposal.ProposalEvent.{
 }
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
-import org.make.core.{CirceFormatters, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
