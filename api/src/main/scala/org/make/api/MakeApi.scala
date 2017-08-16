@@ -5,7 +5,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{
   `Access-Control-Allow-Headers`,
   `Access-Control-Allow-Methods`,
-  `Access-Control-Allow-Origin`
+  `Access-Control-Allow-Origin`,
+  `Access-Control-Request-Headers`
 }
 import akka.http.scaladsl.server._
 import akka.util.Timeout
@@ -157,8 +158,7 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
       HttpMethods.PATCH,
       HttpMethods.DELETE
     ),
-    `Access-Control-Allow-Origin`.*,
-    `Access-Control-Allow-Headers`("X-Forwarded-For", "Content-Type")
+    `Access-Control-Allow-Origin`.*
   )
 
   def makeDefaultHeadersAndHandlers(): Directive0 =
@@ -175,7 +175,11 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
   def corsHeaders(): Directive0 =
     mapInnerRoute { route =>
       respondWithDefaultHeaders(MakeApi.defaultCorsHeaders) {
-        route
+        optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
+          case Some(requestHeader) =>
+            respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) { route }
+          case None => route
+        }
       }
     }
 

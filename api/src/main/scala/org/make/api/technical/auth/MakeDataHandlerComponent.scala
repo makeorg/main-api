@@ -116,7 +116,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def refreshAccessToken(authInfo: AuthInfo[User], refreshToken: String): Future[AccessToken] = {
       val futureAccessToken = for {
-        affectedRows <- persistentTokenService.deleteByRefreshToken(refreshToken)
+        affectedRows <- persistentTokenService.deleteByRefreshToken(oauthTokenGenerator.getHashFromToken(refreshToken))
         accessToken  <- createAccessToken(authInfo) if affectedRows == 1
       } yield accessToken
 
@@ -171,11 +171,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
-      persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
+      persistentTokenService.findByAccessToken(oauthTokenGenerator.getHashFromToken(token)).map(_.map(toAccessToken))
     }
 
     override def removeTokenByAccessToken(token: String): Future[Int] = {
-      persistentTokenService.deleteByAccessToken(token)
+      persistentTokenService.deleteByAccessToken(oauthTokenGenerator.getHashFromToken(token))
     }
   }
 }
