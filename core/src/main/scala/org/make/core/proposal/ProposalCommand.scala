@@ -3,7 +3,7 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.user.UserId
+import org.make.core.user.User
 
 sealed trait ProposalCommand {
   def proposalId: ProposalId
@@ -12,7 +12,7 @@ sealed trait ProposalCommand {
 
 final case class ProposeCommand(proposalId: ProposalId,
                                 context: RequestContext,
-                                userId: UserId,
+                                user: User,
                                 createdAt: ZonedDateTime,
                                 content: String)
     extends ProposalCommand

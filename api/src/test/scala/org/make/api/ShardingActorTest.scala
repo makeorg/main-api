@@ -27,6 +27,13 @@ object TestHelper {
       |
       |  actor {
       |    provider = "akka.cluster.ClusterActorRefProvider"
+      |
+      |    serializers {
+      |      make-serializer = "org.make.api.technical.MakeEventSerializer"
+      |    }
+      |    serialization-bindings {
+      |      "org.make.core.MakeSerializable" = make-serializer
+      |    }
       |  }
       |
       |  persistence {
@@ -35,12 +42,10 @@ object TestHelper {
       |  }
       |
       |  cluster {
-      |
       |     sharding {
       |      guardian-name = sharding
       |      remember-entities = on
       |      state-store-mode = persistence
-      |
       |      snapshot-plugin-id = "inmemory-snapshot-store"
       |      journal-plugin-id = "inmemory-journal"
       |    }

@@ -34,6 +34,28 @@ object Validation {
   def validateField(field: String, condition: => Boolean, message: => String): Requirement =
     Requirement(field, () => condition, () => message)
 
+  def maxLength(field: String,
+                maxLength: Int,
+                fieldValue: => String,
+                message: Option[Int => String] = None): Requirement = {
+
+    def computeLength: Int = {
+      Option(fieldValue).map(_.length).getOrElse(0)
+    }
+    def isValid = {
+      computeLength <= maxLength
+    }
+
+    Requirement(field, () => isValid, () => {
+      if (isValid) {
+        ""
+      } else {
+        message.map(_(computeLength)).getOrElse(s"$field should not be longer than $maxLength")
+      }
+    })
+
+  }
+
   def mandatoryField(fieldName: String, fieldValue: => Any, message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value = fieldValue

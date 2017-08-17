@@ -3,6 +3,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Forbidden
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
@@ -10,6 +11,7 @@ import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
+import org.make.core.Validation.{maxLength, validate}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.user.User
 
@@ -67,20 +69,20 @@ trait ProposalApi extends MakeAuthenticationDirectives {
     post {
       path("proposal") {
         makeTrace("Propose") {
-          makeOAuth2 { user: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                 extractMakeRequestContext() { context =>
-                  provideAsync(
+                  onSuccess(
                     proposalService
                       .propose(
-                        userId = user.user.userId,
+                        user = auth.user,
                         context = context,
                         createdAt = ZonedDateTime.now,
                         content = request.content
                       )
-                  ) {
-                    complete(_)
+                  ) { proposalId =>
+                    complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
                   }
                 }
               }
@@ -120,7 +122,7 @@ trait ProposalApi extends MakeAuthenticationDirectives {
               entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
                 extractMakeRequestContext() { requestContext =>
                   provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
-                    authorize(proposal.userId == user.user.userId) {
+                    authorize(proposal.author == user.user.userId) {
                       onSuccess(
                         proposalService
                           .update(
@@ -150,5 +152,9 @@ trait ProposalApi extends MakeAuthenticationDirectives {
 
 }
 
-case class ProposeProposalRequest(content: String)
+case class ProposeProposalRequest(content: String) {
+  private val maxProposalLength = 140
+  validate(maxLength("content", maxProposalLength, content))
+}
+case class ProposeProposalResponse(proposalId: ProposalId)
 case class UpdateProposalRequest(content: String)

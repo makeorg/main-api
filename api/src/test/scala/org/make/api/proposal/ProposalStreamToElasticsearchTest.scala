@@ -20,10 +20,15 @@ import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
 }
 import org.make.api.technical.AvroSerializers
 import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
-import org.make.core.CirceFormatters
-import org.make.core.user.UserId
-import org.make.core.proposal.ProposalEvent.{ProposalEventWrapper, ProposalProposed, ProposalUpdated}
+import org.make.core.proposal.ProposalEvent.{
+  ProposalAuthorInfo,
+  ProposalEventWrapper,
+  ProposalProposed,
+  ProposalUpdated
+}
 import org.make.core.proposal.ProposalId
+import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
@@ -95,7 +100,18 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
         id = proposalId.value,
         date = before,
         eventType = ProposalProposed.getClass.getName,
-        event = ProposalEventWrapper.wrapEvent(ProposalProposed(proposalId, userId, before, "The answer"))
+        event = ProposalEventWrapper
+          .wrapEvent(
+            ProposalProposed(
+              proposalId,
+              "the-answer",
+              RequestContext.empty,
+              ProposalAuthorInfo(userId = userId, firstName = Some("John"), postalCode = None, age = Some(21)),
+              userId,
+              before,
+              "The answer"
+            )
+          )
       )
     )
   private val valueUpdate: GenericRecord =
@@ -106,7 +122,14 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
         date = now,
         eventType = ProposalUpdated.getClass.getName,
         event = ProposalEventWrapper
-          .wrapEvent(ProposalUpdated(proposalId, now, "42 is the answer to Life, the Universe, and Everything"))
+          .wrapEvent(
+            ProposalUpdated(
+              proposalId,
+              RequestContext.empty,
+              now,
+              "42 is the answer to Life, the Universe, and Everything"
+            )
+          )
       )
     )
   private val consumerRecordCreateOk =

@@ -8,7 +8,7 @@ import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.RequestContext
 import org.make.core.proposal._
-import org.make.core.user.UserId
+import org.make.core.user.User
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,10 +19,7 @@ trait ProposalServiceComponent {
 
 trait ProposalService {
   def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
-  def propose(userId: UserId,
-              context: RequestContext,
-              createdAt: ZonedDateTime,
-              content: String): Future[Option[Proposal]]
+  def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
              context: RequestContext,
              updatedAt: ZonedDateTime,
@@ -34,27 +31,27 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
   override lazy val proposalService = new ProposalService {
 
-    implicit private val defaultTimeout = new Timeout(5.seconds)
+    implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
     override def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
       (proposalCoordinator ? ViewProposalCommand(proposalId, context))
         .mapTo[Option[Proposal]]
     }
 
-    override def propose(userId: UserId,
+    override def propose(user: User,
                          context: RequestContext,
                          createdAt: ZonedDateTime,
-                         content: String): Future[Option[Proposal]] = {
+                         content: String): Future[ProposalId] = {
       (
         proposalCoordinator ?
           ProposeCommand(
             proposalId = idGenerator.nextProposalId(),
             context = context,
-            userId = userId,
+            user = user,
             createdAt = createdAt,
             content = content
           )
-      ).mapTo[Option[Proposal]]
+      ).mapTo[ProposalId]
     }
 
     override def update(proposalId: ProposalId,

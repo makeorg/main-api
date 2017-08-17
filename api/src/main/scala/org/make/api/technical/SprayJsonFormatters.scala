@@ -4,7 +4,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import org.make.core.user.UserId
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, ProposalStatus, TagId, ThemeId}
 import org.make.core.vote.VoteId
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -65,6 +65,28 @@ trait SprayJsonFormatters {
     }
   }
 
+  implicit val themeIdFormatter: JsonFormat[ThemeId] = new JsonFormat[ThemeId] {
+    override def read(json: JsValue): ThemeId = json match {
+      case JsString(s) => ThemeId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ThemeId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
+  implicit val tagIdFormatter: JsonFormat[TagId] = new JsonFormat[TagId] {
+    override def read(json: JsValue): TagId = json match {
+      case JsString(s) => TagId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: TagId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
   implicit val voteIdFormatter: JsonFormat[VoteId] = new JsonFormat[VoteId] {
     override def read(json: JsValue): VoteId = json match {
       case JsString(s) => VoteId(s)
@@ -73,6 +95,18 @@ trait SprayJsonFormatters {
 
     override def write(obj: VoteId): JsValue = {
       JsString(obj.value)
+    }
+  }
+
+  implicit val proposalStatusFormatter: JsonFormat[ProposalStatus] = new JsonFormat[ProposalStatus] {
+    override def read(json: JsValue): ProposalStatus = json match {
+      case JsString(s) =>
+        ProposalStatus.statusMap.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
+      case other => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ProposalStatus): JsValue = {
+      JsString(obj.shortName)
     }
   }
 
