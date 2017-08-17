@@ -1,32 +1,26 @@
 package org.make.api
 
-import java.time.ZonedDateTime
-
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
-import org.make.core.RequestContext
-import org.make.core.proposal.ProposalId
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
   Kamon.start()
 
-  override implicit val actorSystem = ActorSystem("make-api")
+  override implicit val actorSystem: ActorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.actorOf(MakeGuardian.props, MakeGuardian.name)
 
   private val settings = MakeSettings(actorSystem)
-  implicit val ec = actorSystem.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val host = settings.Http.host
   val port = settings.Http.port
@@ -41,31 +35,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
       logger.error(s"Failed to bind to $host:$port!", ex)
       actorSystem.terminate()
     case _ =>
-  }
-
-  if (settings.sendTestData) {
-    // Wait until cluster is ready to send test data
-    while (Cluster(actorSystem).state.members.isEmpty) {
-      Thread.sleep(10.seconds.toMillis)
-    }
-    Thread.sleep(10.seconds.toMillis)
-    logger.debug("Proposing...")
-    proposalService.propose(
-      idGenerator.nextUserId(),
-      RequestContext(),
-      ZonedDateTime.now,
-      "Il faut que la demo soit fonctionnelle."
-    )
-    val propId: ProposalId = Await.result(
-      proposalService
-        .propose(idGenerator.nextUserId(), RequestContext(), ZonedDateTime.now, "we must propose"),
-      Duration.Inf
-    ) match {
-      case Some(proposal) => proposal.proposalId
-      case None           => ProposalId("Invalid ProposalId")
-    }
-    proposalService.update(propId, RequestContext(), ZonedDateTime.now, "we must update a proposal")
-    logger.debug("Sent proposals...")
   }
 
 }
