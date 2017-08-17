@@ -1,9 +1,10 @@
 package org.make.api.user
 
 import java.net.InetAddress
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.{Instant, LocalDate, ZonedDateTime}
+import java.util.Date
 
-import akka.http.scaladsl.model.headers.`Remote-Address`
+import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
@@ -21,6 +22,7 @@ import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class UserApiTest
     extends MakeApiTestUtils
@@ -49,6 +51,24 @@ class UserApiTest
     }
   })
 
+  val fakeUser = User(
+    userId = UserId("ABCD"),
+    email = "foo@bar.com",
+    firstName = Some("olive"),
+    lastName = Some("tom"),
+    lastIp = Some("127.0.0.1"),
+    hashedPassword = Some("passpass"),
+    enabled = true,
+    verified = false,
+    lastConnection = ZonedDateTime.now(),
+    verificationToken = Some("token"),
+    verificationTokenExpiresAt = Some(ZonedDateTime.now()),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq.empty,
+    profile = None
+  )
+
   feature("register user") {
     scenario("successful register user") {
       Mockito
@@ -63,27 +83,7 @@ class UserApiTest
               any[Option[LocalDate]]
             )(any[ExecutionContext])
         )
-        .thenReturn(
-          Future.successful(
-            User(
-              userId = UserId("ABCD"),
-              email = "foo@bar.com",
-              firstName = Some("olive"),
-              lastName = Some("tom"),
-              lastIp = Some("127.0.0.1"),
-              hashedPassword = Some("passpass"),
-              enabled = true,
-              verified = false,
-              lastConnection = ZonedDateTime.now(),
-              verificationToken = Some("token"),
-              verificationTokenExpiresAt = Some(ZonedDateTime.now()),
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq.empty,
-              profile = None
-            )
-          )
-        )
+        .thenReturn(Future.successful(fakeUser))
       val request =
         """
           |{
@@ -165,7 +165,6 @@ class UserApiTest
     }
 
     scenario("validation failed for malformed date of birth") {
-      pending
       val request =
         """
           |{
@@ -181,7 +180,9 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val dateOfBirthError = errors.find(_.field == "dateOfBirth")
-        dateOfBirthError should be(Some(ValidationError("dateOfBirth", Some("date of birth is not valid"))))
+        dateOfBirthError should be(
+          Some(ValidationError("dateOfBirth", Some("foo-12-02 is not a valid date, it should match yyyy-MM-dd")))
+        )
       }
     }
 
@@ -349,6 +350,31 @@ class UserApiTest
       }
       And("any user Event ResetPasswordEvent is emitted")
 
+    }
+  }
+
+  feature("get the connected user") {
+    scenario("no auth token") {
+      Get("/user/me") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("valid token") {
+      val token: String = "TOKEN"
+      val accessToken: AccessToken =
+        AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
+      val fakeAuthInfo: AuthInfo[User] = AuthInfo(fakeUser, None, None, None)
+
+      Mockito
+        .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+        .thenReturn(Future.successful(Some(accessToken)))
+      Mockito
+        .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+        .thenReturn(Future.successful(Some(fakeAuthInfo)))
+      Get("/user/me").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
     }
   }
 }

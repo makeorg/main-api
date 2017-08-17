@@ -1,6 +1,6 @@
 package org.make.api.user
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
@@ -13,9 +13,10 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, M
 import org.make.api.user.social.SocialServiceComponent
 import org.make.core.HttpCodes
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
+import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{Role, User, UserId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -45,7 +46,7 @@ trait UserApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def getUser: Route = {
     get {
@@ -54,10 +55,38 @@ trait UserApi extends MakeAuthenticationDirectives {
           makeOAuth2 { userAuth: AuthInfo[User] =>
             authorize(userId == userAuth.user.userId) {
               onSuccess(userService.getUser(userId)) {
-                case Some(user) => complete(user)
+                case Some(user) => complete(UserResponse(user))
                 case None       => complete(NotFound)
               }
             }
+          }
+        }
+      }
+    }
+  }
+
+  @Path(value = "/me")
+  @ApiOperation(
+    value = "get-me",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
+  def getMe: Route = {
+    get {
+      path("user" / "me") {
+        makeTrace("GetMe") {
+          makeOAuth2 { userAuth: AuthInfo[User] =>
+            complete(UserResponse(userAuth.user))
           }
         }
       }
@@ -103,7 +132,7 @@ trait UserApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[User])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   def register: Route = post {
     path("user") {
       makeTrace("RegisterUser") {
@@ -121,7 +150,7 @@ trait UserApi extends MakeAuthenticationDirectives {
                     dateOfBirth = request.dateOfBirth
                   )
               ) { result =>
-                complete(StatusCodes.Created -> result)
+                complete(StatusCodes.Created -> UserResponse(result))
               }
             }
           }
@@ -172,7 +201,7 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes: Route = resetPasswordRoute ~ register ~ socialLogin ~ getUser
+  val userRoutes: Route = resetPasswordRoute ~ register ~ socialLogin ~ getUser ~ getMe
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -201,4 +230,28 @@ case class SocialLoginRequest(provider: String, token: String)
 final case class ResetPasswordRequest(email: String) {
   validate(mandatoryField("email", email), validateEmail("email", email))
 
+}
+
+case class UserResponse(userId: UserId,
+                        email: String,
+                        firstName: Option[String],
+                        lastName: Option[String],
+                        enabled: Boolean,
+                        verified: Boolean,
+                        lastConnection: ZonedDateTime,
+                        roles: Seq[Role],
+                        profile: Option[Profile])
+
+object UserResponse {
+  def apply(user: User): UserResponse = UserResponse(
+    userId = user.userId,
+    email = user.email,
+    firstName = user.firstName,
+    lastName = user.lastName,
+    enabled = user.enabled,
+    verified = user.verified,
+    lastConnection = user.lastConnection,
+    roles = user.roles,
+    profile = user.profile
+  )
 }
