@@ -58,24 +58,63 @@ class SocialServiceComponentTest
         kid = None
       )
 
+      val userFromGoogle = User(
+        userId = UserId("boo"),
+        email = "google@make.org",
+        firstName = None,
+        lastName = None,
+        lastIp = None,
+        hashedPassword = None,
+        enabled = true,
+        verified = true,
+        lastConnection = ZonedDateTime.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq.empty,
+        profile = None,
+        createdAt = None,
+        updatedAt = None
+      )
+
+      val accessToken = AccessToken(
+        "my_access_token",
+        Some("my_refresh_token"),
+        None,
+        Some(123000),
+        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
+        Map.empty
+      )
+
       Mockito
         .when(googleApi.getUserInfo(matches("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
+      Mockito
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .thenReturn(Future.successful(userFromGoogle))
+
+      Mockito
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .thenReturn(Future.successful(accessToken))
+
       When("login google user")
       val tokenResposnse = socialService.login("google", "googleToken-a user logged via google", None)
 
-      Then("my program call getOrCreateUserFromSocial with google data")
-      val userInfoFromGoogle =
-        UserInfo(
-          email = googleData.email,
-          firstName = googleData.givenName,
-          lastName = googleData.familyName,
-          googleId = googleData.iat,
-          facebookId = None
-        )
+      whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
+        Then("my program call getOrCreateUserFromSocial with google data")
+        val userInfoFromGoogle =
+          UserInfo(
+            email = googleData.email,
+            firstName = googleData.givenName,
+            lastName = googleData.familyName,
+            googleId = googleData.iat,
+            facebookId = None
+          )
 
-      verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))(any[ExecutionContext])
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))(any[ExecutionContext])
+      }
     }
 
     scenario("successfully create access token for persistent user") {
@@ -189,16 +228,22 @@ class SocialServiceComponentTest
       val tokenResposnse = socialService.login("facebook", "facebookToken-444444", None)
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
-      val userInfoFromFacebook =
-        UserInfo(
-          email = facebookData.email,
-          firstName = facebookData.firstName,
-          lastName = facebookData.lastName,
-          googleId = None,
-          facebookId = Some(facebookData.id)
-        )
 
-      verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))(any[ExecutionContext])
+      whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
+        val userInfoFromFacebook =
+          UserInfo(
+            email = facebookData.email,
+            firstName = facebookData.firstName,
+            lastName = facebookData.lastName,
+            googleId = None,
+            facebookId = Some(facebookData.id)
+          )
+
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))(
+          any[ExecutionContext]
+        )
+      }
+
     }
 
     scenario("successfully create access token for persistent user") {
