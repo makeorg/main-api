@@ -18,7 +18,7 @@ import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
   msgUpdateOk,
   proposalElasticsearch
 }
-import org.make.api.technical.AvroSerializers
+import org.make.api.technical.{AvroSerializers, DateHelper}
 import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
 import org.make.core.proposal.ProposalEvent.{
   ProposalAuthorInfo,
@@ -125,6 +125,7 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
           .wrapEvent(
             ProposalUpdated(
               proposalId,
+              DateHelper.now(),
               RequestContext.empty,
               now,
               "42 is the answer to Life, the Universe, and Everything"
