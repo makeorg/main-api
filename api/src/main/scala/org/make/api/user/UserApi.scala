@@ -84,7 +84,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   def getMe: Route = {
     get {
       path("user" / "me") {
-        makeTrace("GetMe") {
+        makeTrace("GetMe") { _ =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
             complete(UserResponse(userAuth.user))
           }
