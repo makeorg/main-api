@@ -9,6 +9,7 @@ import shapeless.{:+:, CNil, Coproduct}
 sealed trait ProposalEvent extends MakeSerializable {
   def id: ProposalId
   def context: RequestContext
+  def eventDate: ZonedDateTime
 }
 
 object ProposalEvent {
@@ -36,14 +37,18 @@ object ProposalEvent {
                               context: RequestContext,
                               author: ProposalAuthorInfo,
                               userId: UserId,
-                              createdAt: ZonedDateTime,
+                              eventDate: ZonedDateTime,
                               content: String)
       extends ProposalEvent
 
   case class ProposalAuthorInfo(userId: UserId, firstName: Option[String], postalCode: Option[String], age: Option[Int])
 
-  case class ProposalViewed(id: ProposalId, context: RequestContext) extends ProposalEvent
+  case class ProposalViewed(id: ProposalId, eventDate: ZonedDateTime, context: RequestContext) extends ProposalEvent
 
-  case class ProposalUpdated(id: ProposalId, context: RequestContext, updatedAt: ZonedDateTime, content: String)
+  case class ProposalUpdated(id: ProposalId,
+                             eventDate: ZonedDateTime,
+                             context: RequestContext,
+                             updatedAt: ZonedDateTime,
+                             content: String)
       extends ProposalEvent
 }

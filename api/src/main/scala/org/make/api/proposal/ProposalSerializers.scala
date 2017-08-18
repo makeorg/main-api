@@ -21,10 +21,10 @@ object ProposalSerializers extends SprayJsonFormatters {
     DefaultJsonProtocol.jsonFormat7(ProposalProposed.apply)
 
   implicit private val proposalViewedFormatter: RootJsonFormat[ProposalViewed] =
-    DefaultJsonProtocol.jsonFormat2(ProposalViewed.apply)
+    DefaultJsonProtocol.jsonFormat3(ProposalViewed.apply)
 
   implicit private val proposalUpdatedFormatter: RootJsonFormat[ProposalUpdated] =
-    DefaultJsonProtocol.jsonFormat4(ProposalUpdated.apply)
+    DefaultJsonProtocol.jsonFormat5(ProposalUpdated.apply)
 
   implicit private val proposalFormatter: RootJsonFormat[Proposal] =
     DefaultJsonProtocol.jsonFormat10(Proposal.apply)

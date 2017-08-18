@@ -8,6 +8,7 @@ import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposal.ProposalActor.Snapshot
+import org.make.api.technical.DateHelper
 import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal._
 
@@ -32,7 +33,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case GetProposal(_, _) => sender() ! state
     case ViewProposalCommand(proposalId, requestContext) =>
-      persistAndPublishEvent(ProposalViewed(id = proposalId, context = requestContext))
+      persistAndPublishEvent(ProposalViewed(id = proposalId, eventDate = DateHelper.now(), context = requestContext))
       Patterns
         .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
         .to(sender())
@@ -51,7 +52,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           slug = ProposalActor.createSlug(content),
           context = requestContext,
           userId = user.userId,
-          createdAt = createdAt,
+          eventDate = createdAt,
           content = content
         )
       )
@@ -59,7 +60,13 @@ class ProposalActor extends PersistentActor with ActorLogging {
       self ! Snapshot
     case UpdateProposalCommand(proposalId, requestContext, updatedAt, content) =>
       persistAndPublishEvent(
-        ProposalUpdated(id = proposalId, context = requestContext, updatedAt = updatedAt, content = content)
+        ProposalUpdated(
+          id = proposalId,
+          eventDate = DateHelper.now(),
+          context = requestContext,
+          updatedAt = updatedAt,
+          content = content
+        )
       )
       Patterns
         .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
@@ -78,7 +85,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           proposalId = e.id,
           slug = e.slug,
           author = e.userId,
-          createdAt = Some(e.createdAt),
+          createdAt = Some(e.eventDate),
           updatedAt = None,
           content = e.content,
           theme = e.context.currentTheme,
