@@ -9,7 +9,7 @@ import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentCl
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.auth.Token
-import org.make.core.user.User
+import org.make.core.user.{User, UserId}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -29,6 +29,7 @@ trait PersistentTokenService {
   def persist(token: Token): Future[Token]
   def deleteByRefreshToken(refreshToken: String): Future[Int]
   def deleteByAccessToken(accessToken: String): Future[Int]
+  def deleteByUserId(userId: UserId): Future[Int]
 }
 
 trait DefaultPersistentTokenServiceComponent
@@ -213,11 +214,24 @@ trait DefaultPersistentTokenServiceComponent
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           delete
-            .from(PersistentToken)
+            .from(PersistentToken.as(tokenAlias))
             .where
             .eq(tokenAlias.accessToken, accessToken)
         }.update().apply()
       })
     }
+
+    override def deleteByUserId(userId: UserId): Future[Int] = {
+      implicit val ctx = writeExecutionContext
+      Future(NamedDB('WRITE).localTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentToken.as(tokenAlias))
+            .where
+            .eq(tokenAlias.makeUserUuid, userId.value)
+        }.update().apply()
+      })
+    }
+
   }
 }

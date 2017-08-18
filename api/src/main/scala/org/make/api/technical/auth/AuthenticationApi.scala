@@ -114,15 +114,7 @@ trait AuthenticationApi
     post {
       path("logout") {
         makeOAuth2 { userAuth =>
-          val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.getStoredAccessToken(userAuth).flatMap {
-            case Some(accessToken) => oauth2DataHandler.removeTokenByAccessToken(accessToken.token)
-            case _ =>
-              Future.failed(
-                new NoSuchElementException(
-                  s"Logout: accessToken for user id ${userAuth.user.userId.value} does not exists."
-                )
-              )
-          }
+          val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
           onComplete(futureRowsDeletedCount) {
             case Success(_)  => complete(StatusCodes.NoContent)
             case Failure(ex) => throw ex

@@ -8,7 +8,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.auth.{Client, ClientId, Token}
-import org.make.core.user.User
+import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,6 +21,7 @@ trait MakeDataHandlerComponent {
 
 trait MakeDataHandler extends DataHandler[User] {
   def removeTokenByAccessToken(token: String): Future[Int]
+  def removeTokenByUserId(userId: UserId): Future[Int]
 }
 
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
@@ -176,6 +177,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def removeTokenByAccessToken(token: String): Future[Int] = {
       persistentTokenService.deleteByAccessToken(oauthTokenGenerator.getHashFromToken(token))
+    }
+
+    override def removeTokenByUserId(userId: UserId): Future[Int] = {
+      persistentTokenService.deleteByUserId(userId)
     }
   }
 }
