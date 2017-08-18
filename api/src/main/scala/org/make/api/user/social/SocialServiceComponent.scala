@@ -45,7 +45,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               firstName = googleUserInfo.givenName,
               lastName = googleUserInfo.familyName,
               googleId = googleUserInfo.iat,
-              facebookId = None
+              picture = Option(googleUserInfo.picture)
             )
         case FACEBOOK_PROVIDER =>
           for {
@@ -55,8 +55,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               email = facebookUserInfo.email,
               firstName = facebookUserInfo.firstName,
               lastName = facebookUserInfo.lastName,
-              googleId = None,
-              facebookId = Some(facebookUserInfo.id)
+              facebookId = Some(facebookUserInfo.id),
+              picture = Option(facebookUserInfo.picture.data.url)
             )
         case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }

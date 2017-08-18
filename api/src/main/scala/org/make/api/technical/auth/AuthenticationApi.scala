@@ -2,22 +2,27 @@ package org.make.api.technical.auth
 
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.auth.AuthenticationApi.{LogoutRequest, TokenResponse}
-import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
 import org.make.core.HttpCodes
 import org.make.core.user.User
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, TokenEndpoint}
 
-trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLogging {
+trait AuthenticationApi
+    extends MakeDirectives
+    with MakeAuthenticationDirectives
+    with ShortenedNames
+    with StrictLogging {
   self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   val tokenEndpoint: TokenEndpoint
@@ -103,21 +108,24 @@ trait AuthenticationApi extends MakeDirectives with ShortenedNames with StrictLo
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/logout")
   def logoutRoute(implicit ctx: EC = ECGlobal): Route =
     post {
       path("logout") {
-        decodeRequest {
-          entity(as[LogoutRequest]) { accessToken =>
-            onComplete(oauth2DataHandler.removeTokenByAccessToken(accessToken.accessToken)) {
-              case Success(nbRowsDeleted) =>
-                if (nbRowsDeleted == 0) {
-                  logger.warn(s"Access token provided in the logout request was not found or invalid: $accessToken")
-                }
-                complete(HttpCodes.OK)
-              case Failure(ex) => throw ex
-            }
+        makeOAuth2 { userAuth =>
+          val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.getStoredAccessToken(userAuth).flatMap {
+            case Some(accessToken) => oauth2DataHandler.removeTokenByAccessToken(accessToken.token)
+            case _ =>
+              Future.failed(
+                new NoSuchElementException(
+                  s"Logout: accessToken for user id ${userAuth.user.userId.value} does not exists."
+                )
+              )
+          }
+          onComplete(futureRowsDeletedCount) {
+            case Success(_)  => complete(StatusCodes.NoContent)
+            case Failure(ex) => throw ex
           }
         }
       }
@@ -136,11 +144,4 @@ object AuthenticationApi {
     )
 
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
-
-  case class LogoutRequest(accessToken: String)
-
-  object LogoutRequest {
-    implicit val logoutRequestDecoder: Decoder[LogoutRequest] =
-      Decoder.forProduct1("access_token")(LogoutRequest.apply)
-  }
 }

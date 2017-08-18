@@ -93,7 +93,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         case Some(user) => Future.successful(user)
         case None =>
           val profile: Option[Profile] =
-            Profile.parseProfile(facebookId = userInfo.facebookId, googleId = userInfo.googleId)
+            Profile.parseProfile(
+              facebookId = userInfo.facebookId,
+              googleId = userInfo.googleId,
+              avatarUrl = userInfo.picture
+            )
           val user = User(
             userId = idGenerator.nextUserId(),
             email = lowerCasedEmail,
