@@ -7,12 +7,14 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.CirceFormatters
+import org.make.core.proposal.ThemeId
+import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
+import org.make.api.Predef._
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent =>
@@ -56,28 +58,40 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     }
   }
 
-  def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive0 = {
-    val extract: Directive[(Option[HttpCookiePair], String, Long, String, String)] = for {
-      maybeCookie <- optionalCookie(sessionIdKey)
-      requestId   <- requestId
-      startTime   <- startTime
-      sessionId   <- sessionId
-      externalId  <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-    } yield (maybeCookie, requestId, startTime, sessionId, externalId)
-
-    extract.tflatMap {
-      case (maybeCookie, requestId, startTime, sessionId, externalId) =>
-        val resolvedTags: Map[String, String] = tags ++ Map(
+  def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive1[RequestContext] = {
+    for {
+      maybeCookie    <- optionalCookie(sessionIdKey)
+      requestId      <- requestId
+      startTime      <- startTime
+      sessionId      <- sessionId
+      externalId     <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      maybeTheme     <- optionalHeaderValueByName(ThemeIdHeader.name)
+      maybeOperation <- optionalHeaderValueByName(OperationHeader.name)
+      maybeSource    <- optionalHeaderValueByName(SourceHeader.name)
+      maybeLocation  <- optionalHeaderValueByName(LocationHeader.name)
+      maybeQuestion  <- optionalHeaderValueByName(QuestionHeader.name)
+      _ <- traceName(
+        name,
+        tags ++ Map(
           "id" -> requestId,
           sessionIdKey -> sessionId,
           "external-id" -> externalId,
           "start-time" -> startTime.toString,
           "route-name" -> name
         )
-        traceName(name, resolvedTags).tflatMap { _ =>
-          addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
-        }
-    }
+      )
+      _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
+    } yield
+      RequestContext(
+        currentTheme = maybeTheme.map(ThemeId.apply),
+        requestId = requestId,
+        sessionId = sessionId,
+        externalId = externalId,
+        operation = maybeOperation,
+        source = maybeSource,
+        location = maybeLocation,
+        question = maybeQuestion
+      )
   }
 
   def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =
@@ -152,4 +166,59 @@ object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
 
 trait MakeAuthenticationDirectives extends MakeDirectives with MakeAuthentication {
   this: MakeDataHandlerComponent with IdGeneratorComponent =>
+}
+
+final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {
+  override def companion: ModeledCustomHeaderCompanion[ThemeIdHeader] = ThemeIdHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object ThemeIdHeader extends ModeledCustomHeaderCompanion[ThemeIdHeader] {
+  override val name: String = "x-make-theme-id"
+  override def parse(value: String): Try[ThemeIdHeader] = Success(new ThemeIdHeader(value))
+}
+
+final case class OperationHeader(override val value: String) extends ModeledCustomHeader[OperationHeader] {
+  override def companion: ModeledCustomHeaderCompanion[OperationHeader] = OperationHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object OperationHeader extends ModeledCustomHeaderCompanion[OperationHeader] {
+  override val name: String = "x-make-operation"
+  override def parse(value: String): Try[OperationHeader] = Success(new OperationHeader(value))
+}
+
+final case class SourceHeader(override val value: String) extends ModeledCustomHeader[SourceHeader] {
+  override def companion: ModeledCustomHeaderCompanion[SourceHeader] = SourceHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object SourceHeader extends ModeledCustomHeaderCompanion[SourceHeader] {
+  override val name: String = "x-make-source"
+  override def parse(value: String): Try[SourceHeader] = Success(new SourceHeader(value))
+}
+
+final case class LocationHeader(override val value: String) extends ModeledCustomHeader[LocationHeader] {
+  override def companion: ModeledCustomHeaderCompanion[LocationHeader] = LocationHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object LocationHeader extends ModeledCustomHeaderCompanion[LocationHeader] {
+  override val name: String = "x-make-location"
+  override def parse(value: String): Try[LocationHeader] = Success(new LocationHeader(value))
+}
+
+final case class QuestionHeader(override val value: String) extends ModeledCustomHeader[QuestionHeader] {
+  override def companion: ModeledCustomHeaderCompanion[QuestionHeader] = QuestionHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object QuestionHeader extends ModeledCustomHeaderCompanion[QuestionHeader] {
+  override val name: String = "x-make-question"
+  override def parse(value: String): Try[QuestionHeader] = Success(new QuestionHeader(value))
 }

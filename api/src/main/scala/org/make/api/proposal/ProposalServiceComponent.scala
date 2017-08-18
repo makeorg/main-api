@@ -6,8 +6,9 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.user.UserId
+import org.make.core.RequestContext
 import org.make.core.proposal._
+import org.make.core.user.User
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -17,9 +18,12 @@ trait ProposalServiceComponent {
 }
 
 trait ProposalService {
-  def getProposal(proposalId: ProposalId): Future[Option[Proposal]]
-  def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposal]]
-  def update(proposalId: ProposalId, updatedAt: ZonedDateTime, content: String): Future[Option[Proposal]]
+  def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
+  def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
+  def update(proposalId: ProposalId,
+             context: RequestContext,
+             updatedAt: ZonedDateTime,
+             content: String): Future[Option[Proposal]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
@@ -27,29 +31,36 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
   override lazy val proposalService = new ProposalService {
 
-    implicit private val defaultTimeout = new Timeout(5.seconds)
+    implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
-    override def getProposal(proposalId: ProposalId): Future[Option[Proposal]] = {
-      (proposalCoordinator ? ViewProposalCommand(proposalId))
+    override def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
+      (proposalCoordinator ? ViewProposalCommand(proposalId, context))
         .mapTo[Option[Proposal]]
     }
 
-    override def propose(userId: UserId, createdAt: ZonedDateTime, content: String): Future[Option[Proposal]] = {
+    override def propose(user: User,
+                         context: RequestContext,
+                         createdAt: ZonedDateTime,
+                         content: String): Future[ProposalId] = {
       (
         proposalCoordinator ?
           ProposeCommand(
             proposalId = idGenerator.nextProposalId(),
-            userId = userId,
+            context = context,
+            user = user,
             createdAt = createdAt,
             content = content
           )
-      ).mapTo[Option[Proposal]]
+      ).mapTo[ProposalId]
     }
 
-    override def update(proposalId: ProposalId, updatedAt: ZonedDateTime, content: String): Future[Option[Proposal]] = {
+    override def update(proposalId: ProposalId,
+                        context: RequestContext,
+                        updatedAt: ZonedDateTime,
+                        content: String): Future[Option[Proposal]] = {
       (
         proposalCoordinator ?
-          UpdateProposalCommand(proposalId = proposalId, updatedAt = updatedAt, content = content)
+          UpdateProposalCommand(proposalId = proposalId, context = context, updatedAt = updatedAt, content = content)
       ).mapTo[Option[Proposal]]
     }
 

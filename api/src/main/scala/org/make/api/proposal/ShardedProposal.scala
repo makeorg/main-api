@@ -4,14 +4,12 @@ import akka.actor.{Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import org.make.core.proposal.{ProposalCommand, ProposalId}
+import org.make.core.proposal.ProposalCommand
 
 import scala.concurrent.duration._
 
 object ShardedProposal {
   def props: Props = Props(new ShardedProposal)
-
-  def name(proposalId: ProposalId): String = proposalId.value
 
   val shardName: String = "proposal"
 

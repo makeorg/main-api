@@ -1,12 +1,14 @@
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
+import java.net.URLEncoder
+import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, ZoneOffset}
 
 import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposal.ProposalActor.Snapshot
-import org.make.core.user.UserId
+import org.make.api.technical.DateHelper
 import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal._
 
@@ -16,7 +18,7 @@ import scala.concurrent.duration._
 class ProposalActor extends PersistentActor with ActorLogging {
   def proposalId: ProposalId = ProposalId(self.path.name)
 
-  private[this] var state: Option[ProposalState] = None
+  private[this] var state: Option[Proposal] = None
 
   override def receiveRecover: Receive = {
     case e: ProposalEvent =>
@@ -24,48 +26,54 @@ class ProposalActor extends PersistentActor with ActorLogging {
       applyEvent(e)
     case SnapshotOffer(_, snapshot: Proposal) =>
       log.info(s"Recovering from snapshot $snapshot")
-      state = Some(
-        ProposalState(
-          proposalId = snapshot.proposalId,
-          userId = Option(snapshot.userId),
-          createdAt = snapshot.createdAt,
-          updatedAt = snapshot.updatedAt,
-          content = Option(snapshot.content)
-        )
-      )
+      state = Some(snapshot)
     case _: RecoveryCompleted =>
   }
 
   override def receiveCommand: Receive = {
-    case GetProposal(_) => sender ! state.map(_.toProposal)
-    case v: ViewProposalCommand =>
-      persistAndPublishEvent(ProposalViewed(id = v.proposalId))
+    case GetProposal(_, _) => sender() ! state
+    case ViewProposalCommand(proposalId, requestContext) =>
+      persistAndPublishEvent(ProposalViewed(id = proposalId, eventDate = DateHelper.now(), context = requestContext))
       Patterns
-        .pipe((self ? GetProposal(v.proposalId))(1.second), Implicits.global)
-        .to(sender)
-    case propose: ProposeCommand =>
+        .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
+        .to(sender())
+    case ProposeCommand(proposalId, requestContext, user, createdAt, content) =>
       persistAndPublishEvent(
         ProposalProposed(
-          id = propose.proposalId,
-          userId = propose.userId,
-          createdAt = propose.createdAt,
-          content = propose.content
+          id = proposalId,
+          author = ProposalAuthorInfo(
+            user.userId,
+            user.firstName,
+            user.profile.flatMap(_.departmentNumber),
+            user.profile.flatMap(_.dateOfBirth).map { date =>
+              ChronoUnit.YEARS.between(date, LocalDate.now(ZoneOffset.UTC)).toInt
+            }
+          ),
+          slug = ProposalActor.createSlug(content),
+          context = requestContext,
+          userId = user.userId,
+          eventDate = createdAt,
+          content = content
+        )
+      )
+      sender() ! proposalId
+      self ! Snapshot
+    case UpdateProposalCommand(proposalId, requestContext, updatedAt, content) =>
+      persistAndPublishEvent(
+        ProposalUpdated(
+          id = proposalId,
+          eventDate = DateHelper.now(),
+          context = requestContext,
+          updatedAt = updatedAt,
+          content = content
         )
       )
       Patterns
-        .pipe((self ? GetProposal(propose.proposalId))(1.second), Implicits.global)
-        .to(sender)
+        .pipe((self ? GetProposal(proposalId, requestContext))(1.second), Implicits.global)
+        .to(sender())
       self ! Snapshot
-    case update: UpdateProposalCommand =>
-      persistAndPublishEvent(
-        ProposalUpdated(id = update.proposalId, updatedAt = update.updatedAt, content = update.content)
-      )
-      Patterns
-        .pipe((self ? GetProposal(update.proposalId))(1.second), Implicits.global)
-        .to(sender)
-      self ! Snapshot
-    case Snapshot             => state.foreach(state => saveSnapshot(state.toProposal))
-    case KillProposalShard(_) => self ! PoisonPill
+    case Snapshot             => state.foreach(saveSnapshot)
+    case _: KillProposalShard => self ! PoisonPill
   }
 
   override def persistenceId: String = proposalId.value
@@ -73,19 +81,21 @@ class ProposalActor extends PersistentActor with ActorLogging {
   private val applyEvent: PartialFunction[ProposalEvent, Unit] = {
     case e: ProposalProposed =>
       state = Some(
-        ProposalState(
+        Proposal(
           proposalId = e.id,
-          userId = Option(e.userId),
-          createdAt = Option(e.createdAt),
-          updatedAt = Option(e.createdAt),
-          content = Option(e.content)
+          slug = e.slug,
+          author = e.userId,
+          createdAt = Some(e.eventDate),
+          updatedAt = None,
+          content = e.content,
+          theme = e.context.currentTheme,
+          creationContext = e.context
         )
       )
     case e: ProposalUpdated =>
-      state.foreach(p => {
-        p.content = Option(e.content)
-        p.updatedAt = Option(e.updatedAt)
-      })
+      state = state.map(
+        _.copy(content = e.content, slug = ProposalActor.createSlug(e.content), updatedAt = Option(e.updatedAt))
+      )
     case _ =>
   }
 
@@ -96,19 +106,15 @@ class ProposalActor extends PersistentActor with ActorLogging {
     }
   }
 
-  case class ProposalState(proposalId: ProposalId,
-                           userId: Option[UserId],
-                           createdAt: Option[ZonedDateTime],
-                           var updatedAt: Option[ZonedDateTime],
-                           var content: Option[String]) {
-    def toProposal: Proposal = {
-      Proposal(this.proposalId, this.userId.orNull, this.content.orNull, this.createdAt, this.updatedAt)
-    }
-  }
 }
 
 object ProposalActor {
   val props: Props = Props[ProposalActor]
+
+  def createSlug(content: String): String = {
+    URLEncoder.encode(content.toLowerCase().replaceAll("\\s", "-"), "UTF-8")
+
+  }
 
   case object Snapshot
 }

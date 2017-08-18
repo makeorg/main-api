@@ -51,7 +51,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   def getUser: Route = {
     get {
       path("user" / userId) { userId =>
-        makeTrace("GetUser") {
+        makeTrace("GetUser") { _ =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
             authorize(userId == userAuth.user.userId) {
               onSuccess(userService.getUser(userId)) {
@@ -102,7 +102,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   def socialLogin: Route = post {
     path("user" / "login" / "social") {
-      makeTrace("SocialLogin") {
+      makeTrace("SocialLogin") { _ =>
         decodeRequest {
           entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
             extractClientIP { clientIp =>
@@ -135,7 +135,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   def register: Route = post {
     path("user") {
-      makeTrace("RegisterUser") {
+      makeTrace("RegisterUser") { _ =>
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
             extractClientIP { clientIp =>
@@ -170,7 +170,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
       path("user" / "reset-password") {
-        makeTrace("ResetPassword") {
+        makeTrace("ResetPassword") { _ =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
@@ -190,7 +190,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiImplicitParams(value = Array())
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
-      makeTrace("ResendValidateEmail") {
+      makeTrace("ResendValidateEmail") { _ =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
             eventBusService.publish(ResendValidationEmailEvent(userId = userId, connectedUserId = userAuth.user.userId))

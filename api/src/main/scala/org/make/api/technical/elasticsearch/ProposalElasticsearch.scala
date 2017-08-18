@@ -25,8 +25,8 @@ object ProposalElasticsearch extends StrictLogging {
         ProposalElasticsearch(
           id = UUID.fromString(p.id.value),
           userId = UUID.fromString(p.userId.value),
-          createdAt = p.createdAt.toUTC,
-          updatedAt = p.createdAt.toUTC,
+          createdAt = p.eventDate.toUTC,
+          updatedAt = p.eventDate.toUTC,
           content = p.content,
           nbVotesAgree = 0,
           nbVotesDisagree = 0,

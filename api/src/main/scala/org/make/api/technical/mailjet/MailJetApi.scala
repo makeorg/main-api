@@ -30,7 +30,7 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
   def webHook: Route = {
     post {
       path("mailjet") {
-        makeTrace("mailjet-webhook") {
+        makeTrace("mailjet-webhook") { _ =>
           authenticateBasic[String]("make-mailjet", authenticate).apply { _ =>
             decodeRequest {
               entity(as[Seq[MailJetEvent]]) { events: Seq[MailJetEvent] =>
