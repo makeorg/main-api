@@ -30,11 +30,9 @@ trait ProposalApi extends MakeAuthenticationDirectives {
   def getProposal: Route = {
     get {
       path("proposal" / proposalId) { proposalId =>
-        makeTrace("GetProposal") {
-          extractMakeRequestContext() { requestContext =>
-            provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
-              complete(proposal)
-            }
+        makeTrace("GetProposal") { requestContext =>
+          provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
+            complete(proposal)
           }
         }
       }
@@ -68,22 +66,20 @@ trait ProposalApi extends MakeAuthenticationDirectives {
   def propose: Route =
     post {
       path("proposal") {
-        makeTrace("Propose") {
+        makeTrace("Propose") { context =>
           makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
-                extractMakeRequestContext() { context =>
-                  onSuccess(
-                    proposalService
-                      .propose(
-                        user = auth.user,
-                        context = context,
-                        createdAt = ZonedDateTime.now,
-                        content = request.content
-                      )
-                  ) { proposalId =>
-                    complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
-                  }
+                onSuccess(
+                  proposalService
+                    .propose(
+                      user = auth.user,
+                      context = context,
+                      createdAt = ZonedDateTime.now,
+                      content = request.content
+                    )
+                ) { proposalId =>
+                  complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
                 }
               }
             }
@@ -116,25 +112,23 @@ trait ProposalApi extends MakeAuthenticationDirectives {
   def update: Route =
     put {
       path("proposal" / proposalId) { proposalId =>
-        makeTrace("EditProposal") {
+        makeTrace("EditProposal") { requestContext =>
           makeOAuth2 { user: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
-                extractMakeRequestContext() { requestContext =>
-                  provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
-                    authorize(proposal.author == user.user.userId) {
-                      onSuccess(
-                        proposalService
-                          .update(
-                            proposalId = proposalId,
-                            context = requestContext,
-                            updatedAt = ZonedDateTime.now,
-                            content = request.content
-                          )
-                      ) {
-                        case Some(prop) => complete(prop)
-                        case None       => complete(Forbidden)
-                      }
+                provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
+                  authorize(proposal.author == user.user.userId) {
+                    onSuccess(
+                      proposalService
+                        .update(
+                          proposalId = proposalId,
+                          context = requestContext,
+                          updatedAt = ZonedDateTime.now,
+                          content = request.content
+                        )
+                    ) {
+                      case Some(prop) => complete(prop)
+                      case None       => complete(Forbidden)
                     }
                   }
                 }

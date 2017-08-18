@@ -14,6 +14,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
+import org.make.api.Predef._
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent =>
@@ -57,28 +58,40 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     }
   }
 
-  def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive0 = {
-    val extract: Directive[(Option[HttpCookiePair], String, Long, String, String)] = for {
-      maybeCookie <- optionalCookie(sessionIdKey)
-      requestId   <- requestId
-      startTime   <- startTime
-      sessionId   <- sessionId
-      externalId  <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-    } yield (maybeCookie, requestId, startTime, sessionId, externalId)
-
-    extract.tflatMap {
-      case (maybeCookie, requestId, startTime, sessionId, externalId) =>
-        val resolvedTags: Map[String, String] = tags ++ Map(
+  def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive1[RequestContext] = {
+    for {
+      maybeCookie    <- optionalCookie(sessionIdKey)
+      requestId      <- requestId
+      startTime      <- startTime
+      sessionId      <- sessionId
+      externalId     <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      maybeTheme     <- optionalHeaderValueByName(ThemeIdHeader.name)
+      maybeOperation <- optionalHeaderValueByName(OperationHeader.name)
+      maybeSource    <- optionalHeaderValueByName(SourceHeader.name)
+      maybeLocation  <- optionalHeaderValueByName(LocationHeader.name)
+      maybeQuestion  <- optionalHeaderValueByName(QuestionHeader.name)
+      _ <- traceName(
+        name,
+        tags ++ Map(
           "id" -> requestId,
           sessionIdKey -> sessionId,
           "external-id" -> externalId,
           "start-time" -> startTime.toString,
           "route-name" -> name
         )
-        traceName(name, resolvedTags).tflatMap { _ =>
-          addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
-        }
-    }
+      )
+      _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
+    } yield
+      RequestContext(
+        currentTheme = maybeTheme.map(ThemeId.apply),
+        requestId = requestId,
+        sessionId = sessionId,
+        externalId = externalId,
+        operation = maybeOperation,
+        source = maybeSource,
+        location = maybeLocation,
+        question = maybeQuestion
+      )
   }
 
   def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =
@@ -101,24 +114,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         }
       }
     }
-
-  // TODO: extract all required headers to supply a correct context
-  def extractMakeRequestContext(): Directive1[RequestContext] = {
-    for {
-      maybeTheme     <- optionalHeaderValueByName(ThemeIdHeader.name)
-      maybeOperation <- optionalHeaderValueByName(OperationHeader.name)
-      maybeSource    <- optionalHeaderValueByName(SourceHeader.name)
-      maybeLocation  <- optionalHeaderValueByName(LocationHeader.name)
-      maybeQuestion  <- optionalHeaderValueByName(QuestionHeader.name)
-    } yield
-      RequestContext(
-        currentTheme = maybeTheme.map(ThemeId.apply),
-        operation = maybeOperation,
-        source = maybeSource,
-        location = maybeLocation,
-        question = maybeQuestion
-      )
-  }
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
