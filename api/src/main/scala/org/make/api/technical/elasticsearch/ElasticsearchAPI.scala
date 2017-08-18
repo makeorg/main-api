@@ -1,6 +1,7 @@
 package org.make.api.technical.elasticsearch
 
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import akka.Done
@@ -20,10 +21,11 @@ import scala.concurrent.Future
 
 trait CustomFormatters {
   implicit val zonedDateTimeDecoder: Decoder[ZonedDateTime] =
-    Decoder.decodeString.map(ZonedDateTime.parse)
+    Decoder.decodeString.map(
+      dateString => ZonedDateTime.parse(dateString, DateTimeFormatter.ofPattern(ProposalElasticsearchDate.format))
+    )
   implicit val zonedDateTimeEncoder: Encoder[ZonedDateTime] =
-    (a: ZonedDateTime) => Json.fromString(a.toString)
-
+    (date: ZonedDateTime) => Json.fromString(DateTimeFormatter.ofPattern(ProposalElasticsearchDate.format).format(date))
   implicit val uuidDecoder: Decoder[UUID] =
     Decoder.decodeString.map(UUID.fromString)
   implicit val uuidEncoder: Encoder[UUID] = (a: UUID) => Json.fromString(a.toString)

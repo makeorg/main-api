@@ -53,14 +53,15 @@ trait ProposalApi extends MakeAuthenticationDirectives {
   def search: Route = {
     post {
       path("proposal" / "search") {
-        makeTrace("Search") {
+        makeTrace("Search") { requestContext =>
           // TODO if user not logged in and authorized, response should not contain non-validated propositions
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest {
               entity(as[SearchProposalsRequest]) { request: SearchProposalsRequest =>
-                provideAsync(proposalService.search(userAuth.map(_.user.userId), request.queryString)) { proposals =>
-                  complete(proposals)
+                provideAsync(proposalService.search(userAuth.map(_.user.userId), request.queryString, requestContext)) {
+                  proposals =>
+                    complete(proposals)
                 }
               }
             }
@@ -183,6 +184,5 @@ case class ProposeProposalRequest(content: String) {
 }
 case class ProposeProposalResponse(proposalId: ProposalId)
 
-final case class ProposeProposalRequest(content: String)
 final case class UpdateProposalRequest(content: String)
 final case class SearchProposalsRequest(queryString: String)

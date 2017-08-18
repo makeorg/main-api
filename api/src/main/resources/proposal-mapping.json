@@ -1,93 +1,97 @@
 {
-  "proposal": {
-    "properties": {
-      "id": {
-        "type": "keyword",
-        "index": true
-      },
-      "userId": {
-        "type": "keyword",
-        "index": true
-      },
-      "authorAge": {
-        "type": "integer"
-      },
-      "authorFirstName": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
+  "mappings": {
+    "proposal": {
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "userId": {
+          "type": "keyword",
+          "index": true
+        },
+        "authorAge": {
+          "type": "integer"
+        },
+        "authorFirstName": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
           }
-        }
-      },
-      "authorPostalCode": {
-        "type": "keyword",
-        "index": true
-      },
-      "content": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          },
-          "french": {
-            "type": "text",
-            "analyzer": "french"
+        },
+        "authorPostalCode": {
+          "type": "keyword",
+          "index": true
+        },
+        "content": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "french": {
+              "type":     "text",
+              "analyzer": "french"
+            }
           }
-        }
-      },
-      "context": {
-        "type": "keyword",
-        "index": true
-      },
-      "createdAt": {
-        "type": "date"
-      },
-      "slug": {
-        "type": "keyword",
-        "index": true
-      },
-      "support": {
-        "type": "keyword",
-        "index": true
-      },
-      "tags": {
-        "properties": {
-          "label": {
-            "type": "keyword",
-            "index": true
-          },
-          "id": {
-            "type": "keyword",
-            "index": true
+        },
+        "context": {
+          "type": "keyword",
+          "index": true
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "yyyy-MM-dd"
+        },
+        "slug": {
+          "type": "keyword",
+          "index": true
+        },
+        "support": {
+          "type": "keyword",
+          "index": true
+        },
+        "tags": {
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "id": {
+              "type": "keyword",
+              "index": true
+            }
           }
-        }
-      },
-      "themes": {
-        "properties": {
-          "label": {
-            "type": "keyword",
-            "index": true
-          },
-          "id": {
-            "type": "keyword",
-            "index": true
+        },
+        "themes": {
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "id": {
+              "type": "keyword",
+              "index": true
+            }
           }
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "yyyy-MM-dd"
+        },
+        "countVotesAgree": {
+          "type": "integer"
+        },
+        "countVotesDisagree": {
+          "type": "integer"
+        },
+        "countVotesUnsure": {
+          "type": "integer"
         }
-      },
-      "updatedAt": {
-        "type": "date"
-      },
-      "countVotesAgree": {
-        "type": "integer"
-      },
-      "countVotesDisagree": {
-        "type": "integer"
-      },
-      "countVotesUnsure": {
-        "type": "integer"
       }
     }
   }

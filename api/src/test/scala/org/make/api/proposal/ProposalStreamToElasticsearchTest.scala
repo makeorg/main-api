@@ -146,7 +146,7 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
   val proposalElasticsearch: ProposalElasticsearch =
     ProposalElasticsearch(
       id = UUID.fromString(proposalId.value),
-      userId = UUID.fromString(userId.value),
+      userId = Some(UUID.fromString(userId.value)),
       content = "DummyContent",
       slug = "DummyContent",
       createdAt = before,

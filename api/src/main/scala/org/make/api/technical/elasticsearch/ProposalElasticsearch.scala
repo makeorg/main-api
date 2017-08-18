@@ -1,6 +1,8 @@
 package org.make.api.technical.elasticsearch
 
-import java.time.ZonedDateTime
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.temporal.ChronoField
+import java.time.{ZoneId, ZonedDateTime}
 import java.util.UUID
 
 import com.sksamuel.elastic4s.http.get.GetResponse
@@ -32,8 +34,18 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.id"
 }
 
+object ProposalElasticsearchDate {
+  // TODO add hour and zone in format
+  val format: String = "yyyy-MM-dd"
+  val formatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+    .appendPattern(format)
+    .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
+    .toFormatter
+    .withZone(ZoneId.of("Europe/Berlin"))
+}
+
 case class ProposalElasticsearch(id: UUID,
-                                 userId: UUID,
+                                 userId: Option[UUID],
                                  content: String,
                                  slug: String,
                                  createdAt: ZonedDateTime,
@@ -64,11 +76,11 @@ object ProposalElasticsearch extends StrictLogging {
     Some(
       ProposalElasticsearch(
         id = UUID.fromString(p.id.value),
-        userId = UUID.fromString(p.userId.value),
+        userId = Some(UUID.fromString(p.userId.value)),
         content = p.content,
         slug = "",
-        createdAt = p.createdAt.toUTC,
-        updatedAt = p.createdAt.toUTC,
+        createdAt = p.eventDate.toUTC,
+        updatedAt = p.eventDate.toUTC,
         countVotesAgree = 0,
         countVotesDisagree = 0,
         countVotesUnsure = 0,
@@ -99,14 +111,14 @@ object ProposalElasticsearch extends StrictLogging {
     Some(
       ProposalElasticsearch(
         id = UUID.fromString(source.getOrElse("id", "NotFound").toString),
-        userId = UUID.fromString(source.getOrElse("userId", "NotFound").toString),
+        userId = Some(UUID.fromString(source.getOrElse("userId", "NotFound").toString)),
         content = source.getOrElse("content", "NotFound").toString,
         slug = source.getOrElse("slug", "NotFound").toString,
         createdAt = ZonedDateTime
-          .parse(source.getOrElse("createdAt", ZonedDateTime.now).toString)
+          .parse(source.getOrElse("createdAt", ZonedDateTime.now).toString, ProposalElasticsearchDate.formatter)
           .toUTC,
         updatedAt = ZonedDateTime
-          .parse(source.getOrElse("updatedAt", ZonedDateTime.now).toString)
+          .parse(source.getOrElse("updatedAt", ZonedDateTime.now).toString, ProposalElasticsearchDate.formatter)
           .toUTC,
         countVotesAgree = source.getOrElse("countVotesAgree", 0).asInstanceOf[Int],
         countVotesDisagree = source.getOrElse("countVotesDisagree", 0).asInstanceOf[Int],
@@ -115,7 +127,7 @@ object ProposalElasticsearch extends StrictLogging {
         context = source.getOrElse("context", "NotFound").toString,
         authorFirstName = source.getOrElse("authorFirstName", "NotFound").toString,
         authorPostalCode = source.getOrElse("authorPostalCode", "NotFound").toString,
-        authorAge = source.getOrElse("authorAge", "NotFound").asInstanceOf[Int],
+        authorAge = source.getOrElse("authorAge", 0).asInstanceOf[Int],
         themes = source
           .getOrElse("themes", Seq())
           .asInstanceOf[Seq[Map[String, String]]]
