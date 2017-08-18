@@ -35,7 +35,7 @@ trait VoteApi extends MakeAuthenticationDirectives {
   def getVote: Route = {
     get {
       path("proposal" / refProposalId / "vote" / voteId) { (proposalId, voteId) =>
-        makeTrace("GetVote") {
+        makeTrace("GetVote") { _ =>
           onSuccess(voteService.getVote(voteId, proposalId)) {
             case Some(vote) => complete(vote)
             case None       => complete(NotFound)
@@ -68,7 +68,7 @@ trait VoteApi extends MakeAuthenticationDirectives {
     makeOAuth2 { user: AuthInfo[User] =>
       post {
         path("vote" / refProposalId) { proposalId =>
-          makeTrace("Vote") {
+          makeTrace("Vote") { _ =>
             decodeRequest {
               entity(as[VoteRequest]) { request: VoteRequest =>
                 onSuccess(

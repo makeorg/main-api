@@ -32,7 +32,7 @@ class MakeDirectivesTest
 
   val route: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") {
+      makeTrace("test") { _ =>
         complete(StatusCodes.OK)
       }
     }
@@ -40,7 +40,7 @@ class MakeDirectivesTest
 
   val routeRejection: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") {
+      makeTrace("test") { _ =>
         reject(MalformedRequestContentRejection("http", new Exception("fake exception")))
       }
     }
@@ -48,7 +48,7 @@ class MakeDirectivesTest
 
   val routeException: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") {
+      makeTrace("test") { _ =>
         throw new Exception("fake exception")
       }
     }

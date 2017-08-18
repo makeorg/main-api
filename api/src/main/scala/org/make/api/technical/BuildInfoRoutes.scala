@@ -11,7 +11,7 @@ trait BuildInfoRoutes extends MakeDirectives { this: MakeDataHandlerComponent wi
 
   def buildInfo: Route = get {
     path("version") {
-      makeTrace("version") {
+      makeTrace("version") { _ =>
         complete(BuildInformation())
       }
     }
