@@ -8,7 +8,7 @@ import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.pattern.{ask, Patterns}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposal.ProposalActor.Snapshot
-import org.make.api.technical.DateHelper
+import org.make.core.DateHelper
 import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal._
 

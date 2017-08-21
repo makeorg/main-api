@@ -10,22 +10,7 @@
           "type": "keyword",
           "index": true
         },
-        "authorAge": {
-          "type": "integer"
-        },
-        "authorFirstName": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
-        "authorPostalCode": {
-          "type": "keyword",
-          "index": true
-        },
+
         "content": {
           "type": "text",
           "fields": {
@@ -39,60 +24,127 @@
             }
           }
         },
-        "context": {
+        "slug": {
           "type": "keyword",
           "index": true
         },
         "createdAt": {
           "type": "date",
-          "format": "yyyy-MM-dd"
-        },
-        "slug": {
-          "type": "keyword",
-          "index": true
-        },
-        "support": {
-          "type": "keyword",
-          "index": true
-        },
-        "tags": {
-          "properties": {
-            "label": {
-              "type": "keyword",
-              "index": true
-            },
-            "id": {
-              "type": "keyword",
-              "index": true
-            }
-          }
-        },
-        "themes": {
-          "properties": {
-            "label": {
-              "type": "keyword",
-              "index": true
-            },
-            "id": {
-              "type": "keyword",
-              "index": true
-            }
-          }
+          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         },
         "updatedAt": {
           "type": "date",
-          "format": "yyyy-MM-dd"
+          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         },
-        "countVotesAgree": {
+        "votesAgree": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "keyword" },
+            "count": { "type": "integer" },
+            "selected": { "type": "boolean" },
+            "qualifications": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "keyword" },
+                "count": { "type": "integer" },
+                "selected": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "votesDisagree": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "keyword" },
+            "count": { "type": "integer" },
+            "selected": { "type": "boolean" },
+            "qualifications": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "keyword" },
+                "count": { "type": "integer" },
+                "selected": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "votesNeutral": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "keyword" },
+            "count": { "type": "integer" },
+            "selected": { "type": "boolean" },
+            "qualifications": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "keyword" },
+                "count": { "type": "integer" },
+                "selected": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "operation": {
+          "type": "keyword",
+          "index": true
+        },
+        "source": {
+          "type": "keyword",
+          "index": true
+        },
+        "location": {
+          "type": "keyword",
+          "index": true
+        },
+        "question": {
+          "type": "keyword",
+          "index": true
+        },
+        "trending": {
+          "type": "keyword",
+          "index": true
+        },
+        "labels": {
+          "type": "keyword",
+          "index": true
+        },
+        "authorFirstName": {
+          "type": "text",
+        },
+        "authorPostalCode": {
+          "type": "keyword",
+          "index": true
+        },
+        "authorAge": {
           "type": "integer"
         },
-        "countVotesDisagree": {
-          "type": "integer"
+        "tags": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "id": {
+              "type": "keyword",
+              "index": true
+            }
+          }
         },
-        "countVotesUnsure": {
-          "type": "integer"
+        "themeId": {
+          "type": "keyword",
+          "index": true
+        },
+        "country": {
+          "type": "keyword",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": true
         }
       }
     }
   }
 }
+

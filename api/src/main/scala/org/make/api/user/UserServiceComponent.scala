@@ -4,9 +4,10 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
-import org.make.api.technical.{DateHelper, IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.models.UserInfo
+import org.make.core.DateHelper
 import org.make.core.profile.Profile
 import org.make.core.user._
 

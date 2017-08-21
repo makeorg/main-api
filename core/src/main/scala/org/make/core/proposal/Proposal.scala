@@ -3,6 +3,8 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
+import org.make.core.tag.TagId
+import org.make.core.theme.ThemeId
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 
@@ -26,24 +28,6 @@ object ProposalId {
     (a: ProposalId) => Json.fromString(a.value)
   implicit lazy val proposalIdDecoder: Decoder[ProposalId] =
     Decoder.decodeString.map(ProposalId(_))
-}
-
-case class TagId(value: String) extends StringValue
-
-object TagId {
-  implicit lazy val tagIdEncoder: Encoder[TagId] =
-    (a: TagId) => Json.fromString(a.value)
-  implicit lazy val tagIdDecoder: Decoder[TagId] =
-    Decoder.decodeString.map(TagId(_))
-}
-
-case class ThemeId(value: String) extends StringValue
-
-object ThemeId {
-  implicit lazy val themeIdEncoder: Encoder[ThemeId] =
-    (a: ThemeId) => Json.fromString(a.value)
-  implicit lazy val themeIdDecoder: Decoder[ThemeId] =
-    Decoder.decodeString.map(ThemeId(_))
 }
 
 case class AuthorInfo(userId: UserId, firstName: Option[String], postalCode: Option[String], age: Option[Int])

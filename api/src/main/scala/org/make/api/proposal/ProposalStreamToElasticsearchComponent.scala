@@ -15,16 +15,16 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializer
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.make.api.Predef._
+import org.make.core.DateHelper._
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
+import org.make.core.proposal.ProposalElasticsearch
 import org.make.core.proposal.ProposalEvent._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait ProposalStreamToElasticsearchComponent { self: ElasticsearchAPIComponent =>
+trait ProposalStreamToElasticsearchComponent { self: ProposalSearchEngineComponent =>
 
   def proposalStreamToElasticsearch: ProposalStreamToElasticsearch
 
@@ -65,12 +65,12 @@ trait ProposalStreamToElasticsearchComponent { self: ElasticsearchAPIComponent =
         .map(_.get)
 
     val toProposalEs: Flow[ProposalProposed, ProposalElasticsearch, NotUsed] =
-      Flow[ProposalProposed].map(ProposalElasticsearch.shape(_).get)
+      Flow[ProposalProposed].map(ProposalElasticsearch.apply)
 
     val getProposalFromES: Flow[ProposalUpdated, Option[ProposalElasticsearch], NotUsed] =
       Flow[ProposalUpdated].mapAsync(1) { update =>
-        elasticsearchAPI.getProposalById(update.id).map {
-          _.map(_.copy(updatedAt = update.updatedAt.toUTC, content = update.content))
+        elasticsearchAPI.findProposalById(update.id).map {
+          _.map(_.copy(updatedAt = Some(update.updatedAt.toUTC), content = update.content))
         }
       }
 
@@ -78,7 +78,7 @@ trait ProposalStreamToElasticsearchComponent { self: ElasticsearchAPIComponent =
       Flow[Option[T]].filter(_.isDefined).map(_.get)
 
     val save: ElasticFlow =
-      Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.save)
+      Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.indexProposal)
 
     val update: ElasticFlow = Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.updateProposal)
 

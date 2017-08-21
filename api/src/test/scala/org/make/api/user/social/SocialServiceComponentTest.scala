@@ -35,6 +35,11 @@ class SocialServiceComponentTest
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val facebookApi: FacebookApi = mock[FacebookApi]
 
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    Mockito.reset(userService, oauth2DataHandler, googleApi, facebookApi)
+  }
+
   feature("login user from google provider") {
     scenario("successful create UserInfo Object") {
       Given("a user logged via google")
@@ -110,7 +115,8 @@ class SocialServiceComponentTest
             firstName = googleData.givenName,
             lastName = googleData.familyName,
             googleId = googleData.iat,
-            facebookId = None
+            facebookId = None,
+            picture = Some("picture_url")
           )
 
         verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))(any[ExecutionContext])
@@ -220,27 +226,74 @@ class SocialServiceComponentTest
         picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture"))
       )
 
+      val userFromFacebook = User(
+        userId = UserId("boo"),
+        email = "facebook@make.org",
+        firstName = None,
+        lastName = None,
+        lastIp = None,
+        hashedPassword = None,
+        enabled = true,
+        verified = true,
+        lastConnection = ZonedDateTime.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq.empty,
+        profile = None,
+        createdAt = None,
+        updatedAt = None
+      )
+
+      val accessToken = AccessToken(
+        "my_access_token",
+        Some("my_refresh_token"),
+        None,
+        Some(99000),
+        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-08-13 12:00:00"),
+        Map.empty
+      )
+
+      val info = UserInfo(
+        email = "facebook@make.org",
+        firstName = "facebook",
+        lastName = "user",
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture")
+      )
+
       Mockito
         .when(facebookApi.getUserInfo(matches("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
+      Mockito
+        .when(userService.getOrCreateUserFromSocial(matches(info), matches(None))(any[ExecutionContext]))
+        .thenReturn(Future.successful(userFromFacebook))
+
+      Mockito
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .thenReturn(Future.successful(accessToken))
+
       When("login facebook user")
-      val tokenResposnse = socialService.login("facebook", "facebookToken-444444", None)
+      val tokenResponse = socialService.login("facebook", "facebookToken-444444", None)
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
 
-      whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
+      whenReady(tokenResponse, Timeout(3.seconds)) { _ =>
         val userInfoFromFacebook =
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
             lastName = facebookData.lastName,
             googleId = None,
-            facebookId = Some(facebookData.id)
+            facebookId = Some(facebookData.id),
+            picture = Some("facebook.com/picture")
           )
 
         verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))(
-          any[ExecutionContext]
+          any[ExecutionContext]()
         )
       }
 
@@ -290,7 +343,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], matches(None)))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
@@ -339,4 +392,5 @@ class SocialServiceComponentTest
       }
     }
   }
+
 }

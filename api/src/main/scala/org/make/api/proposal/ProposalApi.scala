@@ -9,11 +9,10 @@ import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.elasticsearch.ProposalElasticsearch
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, validate}
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.{Proposal, ProposalElasticsearch, ProposalId, SearchQuery}
 import org.make.core.user.User
 
 import scala.util.Try
@@ -58,8 +57,8 @@ trait ProposalApi extends MakeAuthenticationDirectives {
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest {
-              entity(as[SearchProposalsRequest]) { request: SearchProposalsRequest =>
-                provideAsync(proposalService.search(userAuth.map(_.user.userId), request.queryString, requestContext)) {
+              entity(as[SearchQuery]) { request: SearchQuery =>
+                provideAsync(proposalService.search(userAuth.map(_.user.userId), request, requestContext)) {
                   proposals =>
                     complete(proposals)
                 }

@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 
 trait DockerElasticsearchService extends DockerKit {
 
-  val defaultElasticsearchHttpHost = "0.0.0.0"
   val defaultElasticsearchHttpPort = 9200
   val defaultElasticsearchClientPort = 9300
   val defaultElasticsearchPortExposed = 9700
@@ -18,12 +17,17 @@ trait DockerElasticsearchService extends DockerKit {
 
   private val elasticSearchContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:5.4.0")
     .withPorts(defaultElasticsearchHttpPort -> Some(defaultElasticsearchPortExposed))
-    .withEnv("xpack.security.enabled=false")
+    .withEnv(
+      "xpack.security.enabled=false",
+      "transport.host=localhost",
+      "ES_JVM_OPTIONS=-Xmx256M -Xms256M",
+      "ES_JAVA_OPTS=-Xmx256M -Xms256M"
+    )
     .withReadyChecker(
       DockerReadyChecker
         .HttpResponseCode(defaultElasticsearchHttpPort, "/")
         .within(100.millis)
-        .looped(20, 1250.millis)
+        .looped(300, 1.second)
     )
 
   abstract override def dockerContainers: List[DockerContainer] =

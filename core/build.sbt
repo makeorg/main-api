@@ -3,6 +3,8 @@ name := "make-core"
 libraryDependencies ++= Seq(
   Dependencies.akkaPersistence,
   Dependencies.akkaClusterSharding,
+  Dependencies.elastic4s,
+  Dependencies.elastic4sHttp,
   Dependencies.avro4s,
   Dependencies.circeGeneric
 )
