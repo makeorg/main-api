@@ -53,7 +53,7 @@ trait UserApi extends MakeAuthenticationDirectives {
       path("user" / userId) { userId =>
         makeTrace("GetUser") { _ =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
-            authorize(userId == userAuth.user.userId) {
+            authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
               onSuccess(userService.getUser(userId)) {
                 case Some(user) => complete(UserResponse(user))
                 case None       => complete(NotFound)

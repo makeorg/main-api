@@ -70,8 +70,8 @@ class AuthenticationApiTest
         .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
       Mockito
-        .when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.same(fakeAuthInfo)))
-        .thenReturn(Future.successful(Some(accessToken)))
+        .when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.same(fakeUser.userId)))
+        .thenReturn(Future.successful(1))
       When("logout is called")
       val logoutRoute: RouteTestResult = Post("/logout").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes
 
