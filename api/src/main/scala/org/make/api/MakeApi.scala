@@ -22,6 +22,7 @@ import org.make.api.extensions._
 import org.make.api.proposal._
 import org.make.api.technical._
 import org.make.api.technical.auth._
+import org.make.api.technical.businessconfig.BusinessConfigApi
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -57,6 +58,7 @@ trait MakeApi
     with VoteApi
     with MailJetApi
     with AuthenticationApi
+    with BusinessConfigApi
     with UserApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
@@ -97,7 +99,7 @@ trait MakeApi
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val apiClasses: Set[Class[_]] =
-    Set(classOf[UserApi], classOf[ProposalApi])
+    Set(classOf[UserApi], classOf[ProposalApi], classOf[BusinessConfigApi])
 
   private lazy val optionsCors: Route = options {
     MakeApi.corsHeaders() {
@@ -122,7 +124,8 @@ trait MakeApi
         accessTokenRoute ~
         buildRoutes ~
         mailJetRoutes ~
-        authenticationRoutes
+        authenticationRoutes ~
+        businessConfigRoutes
     }
 }
 
