@@ -61,10 +61,10 @@ object SearchFilter extends ElasticDsl {
     }
 
   def buildTagSearchFilter(filter: SearchFilter): Option[QueryDefinition] =
-    filter.theme match {
-      case Some(ThemeSearchFilter(Seq(themeId))) =>
+    filter.tag match {
+      case Some(TagSearchFilter(Seq(themeId))) =>
         Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, themeId))
-      case Some(ThemeSearchFilter(themes)) =>
+      case Some(TagSearchFilter(themes)) =>
         Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, themes))
       case _ => None
     }
@@ -72,7 +72,7 @@ object SearchFilter extends ElasticDsl {
   def buildContentSearchFilter(filter: SearchFilter): Option[QueryDefinition] =
     // TODO complete fuzzy search
     filter.content match {
-      case Some(ContentSearchFilter(text, _)) =>
+      case Some(ContentSearchFilter(text, fuzziness)) =>
         Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text))
       case _ => None
     }
@@ -86,7 +86,7 @@ case class TagSearchFilter(id: Seq[String]) {
   validate(validateField("id", id.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
-case class ContentSearchFilter(text: String, fuzzy: Option[Boolean] = None)
+case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
 
 /**
   * Search option that allows modifying the search response

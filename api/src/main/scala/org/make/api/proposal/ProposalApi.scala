@@ -41,19 +41,18 @@ trait ProposalApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(
-      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Option[ProposalElasticsearch]]])
-    )
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ProposalElasticsearch]]))
   )
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "query", paramType = "json string", dataType = "string"))
+    value =
+      Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.core.proposal.SearchQuery"))
   )
   @Path(value = "/search")
   def search: Route = {
     post {
       path("proposal" / "search") {
         makeTrace("Search") { requestContext =>
-          // TODO if user not logged in and authorized, response should not contain non-validated propositions
+          // TODO if user not logged in and authorized, response should not contain non-validated proposals
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest {
