@@ -9,13 +9,21 @@ final case class BusinessConfig(proposalMinLength: Int,
                                 newVisitorCookieDefinition: String)
 
 object BusinessConfig {
-  def default(proposalMinLength: Int = 7,
-              proposalMaxLength: Int = 140,
-              nVotesTriggerConnexion: Int = 5,
-              nPendingProposalsTriggerEmailModerator: Int = 50,
-              minProposalsPerSequence: Int = 3,
-              maxProposalsPerSequence: Int = 10,
-              newVisitorCookieDefinition: String = "New user"): BusinessConfig =
+  val defaultProposalMinLength: Int = 7
+  val defaultProposalMaxLength: Int = 140
+  val defaultNumberVotesTriggerConnexion: Int = 5
+  val defaultNumberPendingProposalsTriggerEmailModerator: Int = 50
+  val defaultMinProposalsPerSequence: Int = 3
+  val defaultMaxProposalsPerSequence: Int = 10
+  val defaultNewVisitorCookieDefinition: String = "New user"
+
+  def default(proposalMinLength: Int = defaultProposalMinLength,
+              proposalMaxLength: Int = defaultProposalMaxLength,
+              nVotesTriggerConnexion: Int = defaultNumberVotesTriggerConnexion,
+              nPendingProposalsTriggerEmailModerator: Int = defaultNumberPendingProposalsTriggerEmailModerator,
+              minProposalsPerSequence: Int = defaultMinProposalsPerSequence,
+              maxProposalsPerSequence: Int = defaultMaxProposalsPerSequence,
+              newVisitorCookieDefinition: String = defaultNewVisitorCookieDefinition): BusinessConfig =
     BusinessConfig(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
