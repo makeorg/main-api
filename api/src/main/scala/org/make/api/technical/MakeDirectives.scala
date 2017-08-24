@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.proposal.ThemeId
+import org.make.core.theme.ThemeId
 import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
@@ -70,6 +70,8 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
       maybeSource    <- optionalHeaderValueByName(SourceHeader.name)
       maybeLocation  <- optionalHeaderValueByName(LocationHeader.name)
       maybeQuestion  <- optionalHeaderValueByName(QuestionHeader.name)
+      maybeCountry   <- optionalHeaderValueByName(CountryHeader.name)
+      maybeLanguage  <- optionalHeaderValueByName(LanguageHeader.name)
       _ <- traceName(
         name,
         tags ++ Map(
@@ -90,7 +92,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         operation = maybeOperation,
         source = maybeSource,
         location = maybeLocation,
-        question = maybeQuestion
+        question = maybeQuestion,
+        language = maybeLanguage,
+        country = maybeCountry
       )
   }
 
@@ -221,4 +225,26 @@ final case class QuestionHeader(override val value: String) extends ModeledCusto
 object QuestionHeader extends ModeledCustomHeaderCompanion[QuestionHeader] {
   override val name: String = "x-make-question"
   override def parse(value: String): Try[QuestionHeader] = Success(new QuestionHeader(value))
+}
+
+final case class LanguageHeader(override val value: String) extends ModeledCustomHeader[LanguageHeader] {
+  override def companion: ModeledCustomHeaderCompanion[LanguageHeader] = LanguageHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object LanguageHeader extends ModeledCustomHeaderCompanion[LanguageHeader] {
+  override val name: String = "x-make-language"
+  override def parse(value: String): Try[LanguageHeader] = Success(new LanguageHeader(value))
+}
+
+final case class CountryHeader(override val value: String) extends ModeledCustomHeader[CountryHeader] {
+  override def companion: ModeledCustomHeaderCompanion[CountryHeader] = CountryHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object CountryHeader extends ModeledCustomHeaderCompanion[CountryHeader] {
+  override val name: String = "x-make-country"
+  override def parse(value: String): Try[CountryHeader] = Success(new CountryHeader(value))
 }

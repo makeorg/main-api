@@ -1,6 +1,6 @@
 package org.make.api
 
-import java.time.{ZoneId, ZoneOffset, ZonedDateTime}
+import java.time.{ZoneId, ZonedDateTime}
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.server.{Directive0, Directive1}
@@ -23,13 +23,6 @@ object Predef {
         self.getMillisOfSecond * 1000000,
         ZoneId.of(self.getZone.getID, ZoneId.SHORT_IDS)
       )
-    }
-  }
-
-  implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
-
-    def toUTC: ZonedDateTime = {
-      self.withZoneSameInstant(ZoneOffset.UTC)
     }
   }
 

@@ -12,7 +12,7 @@ import stamina.json._
 object ProposalSerializers extends SprayJsonFormatters {
 
   implicit private val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat8(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat10(RequestContext.apply)
 
   implicit private val proposalAuthorInfoFormatter: RootJsonFormat[ProposalAuthorInfo] =
     DefaultJsonProtocol.jsonFormat4(ProposalAuthorInfo.apply)

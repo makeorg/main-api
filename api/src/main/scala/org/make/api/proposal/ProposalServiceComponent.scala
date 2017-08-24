@@ -7,8 +7,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.RequestContext
-import org.make.core.proposal._
-import org.make.core.user.User
+import org.make.core.proposal.{SearchQuery, _}
+import org.make.core.user.{SearchProposalsHistoryCommand, User, UserId}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,6 +19,7 @@ trait ProposalServiceComponent {
 
 trait ProposalService {
   def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
+  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[ProposalElasticsearch]]
   def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
              context: RequestContext,
@@ -27,7 +28,10 @@ trait ProposalService {
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
-  this: IdGeneratorComponent with ProposalServiceComponent with ProposalCoordinatorComponent =>
+  this: IdGeneratorComponent
+    with ProposalServiceComponent
+    with ProposalCoordinatorComponent
+    with ProposalSearchEngineComponent =>
 
   override lazy val proposalService = new ProposalService {
 
@@ -36,6 +40,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     override def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
       (proposalCoordinator ? ViewProposalCommand(proposalId, context))
         .mapTo[Option[Proposal]]
+    }
+
+    override def search(userId: Option[UserId],
+                        query: SearchQuery,
+                        context: RequestContext): Future[Seq[ProposalElasticsearch]] = {
+      proposalCoordinator ! SearchProposalsHistoryCommand(userId, query, context)
+      elasticsearchAPI.searchProposals(query)
     }
 
     override def propose(user: User,

@@ -4,7 +4,9 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import org.make.core.user.UserId
-import org.make.core.proposal.{ProposalId, ProposalStatus, TagId, ThemeId}
+import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.tag.TagId
+import org.make.core.theme.ThemeId
 import org.make.core.vote.VoteId
 import spray.json.{JsString, JsValue, JsonFormat}
 

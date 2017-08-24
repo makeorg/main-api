@@ -21,7 +21,11 @@ object ElasticsearchConfiguration extends ExtensionId[ElasticsearchConfiguration
     super.get(system)
 }
 
-trait ElasticsearchConfigurationExtension { this: Actor =>
-  val elasticsearchConfiguration: ElasticsearchConfiguration =
+trait ElasticsearchConfigurationExtension extends ElasticsearchConfigurationComponent { this: Actor =>
+  override val elasticsearchConfiguration: ElasticsearchConfiguration =
     ElasticsearchConfiguration(context.system)
+}
+
+trait ElasticsearchConfigurationComponent {
+  def elasticsearchConfiguration: ElasticsearchConfiguration
 }

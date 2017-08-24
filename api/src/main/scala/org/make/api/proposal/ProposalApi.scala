@@ -12,7 +12,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, validate}
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.{Proposal, ProposalElasticsearch, ProposalId, SearchQuery}
 import org.make.core.user.User
 
 import scala.util.Try
@@ -33,6 +33,36 @@ trait ProposalApi extends MakeAuthenticationDirectives {
         makeTrace("GetProposal") { requestContext =>
           provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
             complete(proposal)
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ProposalElasticsearch]]))
+  )
+  @ApiImplicitParams(
+    value =
+      Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.core.proposal.SearchQuery"))
+  )
+  @Path(value = "/search")
+  def search: Route = {
+    post {
+      path("proposal" / "search") {
+        makeTrace("Search") { requestContext =>
+          // TODO if user not logged in and authorized, response should not contain non-validated proposals
+          // TODO if user logged in, must return additional information for propositions that belong to user
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
+            decodeRequest {
+              entity(as[SearchQuery]) { request: SearchQuery =>
+                provideAsync(proposalService.search(userAuth.map(_.user.userId), request, requestContext)) {
+                  proposals =>
+                    complete(proposals)
+                }
+              }
+            }
           }
         }
       }
@@ -151,4 +181,6 @@ case class ProposeProposalRequest(content: String) {
   validate(maxLength("content", maxProposalLength, content))
 }
 case class ProposeProposalResponse(proposalId: ProposalId)
-case class UpdateProposalRequest(content: String)
+
+final case class UpdateProposalRequest(content: String)
+final case class SearchProposalsRequest(queryString: String)

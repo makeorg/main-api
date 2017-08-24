@@ -71,10 +71,10 @@ case class User(userId: UserId,
 
   def fullName: Option[String] = {
     (firstName, lastName) match {
-      case (None, None)                      => None
-      case (Some(firstName), None)           => Some(firstName)
-      case (None, Some(lastName))            => Some(lastName)
-      case (Some(firstName), Some(lastName)) => Some(s"$firstName $lastName")
+      case (None, None)                                    => None
+      case (Some(definedFirstName), None)                  => Some(definedFirstName)
+      case (None, Some(definedLastName))                   => Some(definedLastName)
+      case (Some(definedFirstName), Some(definedLastName)) => Some(s"$definedFirstName $definedLastName")
     }
   }
 

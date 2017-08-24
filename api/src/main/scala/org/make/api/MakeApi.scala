@@ -23,6 +23,7 @@ import org.make.api.proposal._
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.BusinessConfigApi
+import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -52,6 +53,8 @@ trait MakeApi
     with DefaultTokenGeneratorComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultOauthTokenGeneratorComponent
+    with DefaultProposalSearchEngineComponent
+    with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with VoteCoordinatorComponent
     with ProposalApi
@@ -68,6 +71,8 @@ trait MakeApi
     with ActorSystemComponent {
 
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
+
+  override lazy val elasticsearchConfiguration: ElasticsearchConfiguration = ElasticsearchConfiguration(actorSystem)
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem

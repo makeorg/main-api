@@ -18,17 +18,16 @@ import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
   msgUpdateOk,
   proposalElasticsearch
 }
-import org.make.api.technical.{AvroSerializers, DateHelper}
-import org.make.api.technical.elasticsearch.{ElasticsearchAPIComponent, ProposalElasticsearch}
+import org.make.api.technical.AvroSerializers
+import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.make.core.proposal.ProposalEvent.{
   ProposalAuthorInfo,
   ProposalEventWrapper,
   ProposalProposed,
   ProposalUpdated
 }
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{Pending, ProposalElasticsearch, ProposalId, Vote}
 import org.make.core.user.UserId
-import org.make.core.{CirceFormatters, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
@@ -41,7 +40,7 @@ class ProposalStreamToElasticsearchTest
     extends ShardingActorTest
     with MockitoSugar
     with ProposalStreamToElasticsearchComponent
-    with ElasticsearchAPIComponent {
+    with ProposalSearchEngineComponent {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
@@ -56,9 +55,9 @@ class ProposalStreamToElasticsearchTest
         .thenReturn(Future.successful(Done))
 //      when(committableOffsetBatch.commitScaladsl()).thenReturn(Future.successful(Done))
 //      when(committableOffsetBatch.updated(any[CommittableOffset])).thenReturn(committableOffsetBatch)
-      when(elasticsearchAPI.getProposalById(any[ProposalId]))
+      when(elasticsearchAPI.findProposalById(any[ProposalId]))
         .thenReturn(Future.successful(Some(proposalElasticsearch)))
-      when(elasticsearchAPI.save(any[ProposalElasticsearch]))
+      when(elasticsearchAPI.indexProposal(any[ProposalElasticsearch]))
         .thenReturn(Future.successful(Done))
       when(elasticsearchAPI.updateProposal(any[ProposalElasticsearch]))
         .thenReturn(Future.successful(Done))
@@ -81,7 +80,7 @@ class ProposalStreamToElasticsearchTest
     }
   }
 
-  override val elasticsearchAPI: ElasticsearchAPI = mock[ElasticsearchAPI]
+  override val elasticsearchAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
     new ProposalStreamToElasticsearch(system, materializer)
 }
@@ -145,14 +144,29 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
 
   val proposalElasticsearch: ProposalElasticsearch =
     ProposalElasticsearch(
-      UUID.fromString(proposalId.value),
-      UUID.fromString(userId.value),
-      before,
-      now,
-      "The answer",
-      0,
-      0,
-      0
+      id = proposalId,
+      userId = userId,
+      content = "DummyContent",
+      slug = "DummyContent",
+      createdAt = before,
+      updatedAt = None,
+      votesAgree = Vote(key = "agree", qualifications = Seq()),
+      votesDisagree = Vote(key = "disagree", qualifications = Seq()),
+      votesNeutral = Vote(key = "neutral", qualifications = Seq()),
+      operation = None,
+      location = None,
+      authorFirstName = None,
+      authorPostalCode = None,
+      authorAge = None,
+      themeId = None,
+      tags = Seq(),
+      source = None,
+      question = None,
+      trending = None,
+      labels = Seq(),
+      country = "FR",
+      language = "fr",
+      status = Pending.shortName
     )
 
   val msgCreateOk: CommittableMessage[String, AnyRef] =
