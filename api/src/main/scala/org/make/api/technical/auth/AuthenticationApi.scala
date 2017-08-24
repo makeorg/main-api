@@ -18,6 +18,8 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, TokenEndpoint}
 
+@Api(value = "Authentication")
+@Path(value = "/oauth")
 trait AuthenticationApi
     extends MakeDirectives
     with MakeAuthenticationDirectives
@@ -29,7 +31,7 @@ trait AuthenticationApi
 
   @ApiOperation(value = "oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @Path(value = "/oauth/access_token")
+  @Path(value = "/access_token")
   def accessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("access_token") {
@@ -55,7 +57,7 @@ trait AuthenticationApi
 
   @ApiOperation(value = "make-oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @Path(value = "/oauth/make_access_token")
+  @Path(value = "/make_access_token")
   def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("make_access_token") {

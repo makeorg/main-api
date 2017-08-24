@@ -104,7 +104,7 @@ trait MakeApi
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val apiClasses: Set[Class[_]] =
-    Set(classOf[UserApi], classOf[ProposalApi], classOf[BusinessConfigApi])
+    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[ProposalApi], classOf[BusinessConfigApi])
 
   private lazy val optionsCors: Route = options {
     MakeApi.corsHeaders() {
