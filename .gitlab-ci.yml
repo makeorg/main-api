@@ -19,10 +19,6 @@ build:
     - sbt clean coverage test it:test
     - sbt coverageReport coverageAggregate
     - sbt clean publish
-  cache:
-    paths:
-      - /root/.coursier
-      - /root/.ivy2
 
 deploy:
   stage: deploy
