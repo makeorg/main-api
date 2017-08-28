@@ -13,7 +13,7 @@ import org.make.core.Validation.{validate, validateField}
   * @param filter  sequence of search filters
   * @param options sequence of search options
   */
-case class SearchQuery(filter: SearchFilter, options: Option[SearchOptions])
+case class SearchQuery(filter: Option[SearchFilter] = None, options: Option[SearchOptions] = None)
 
 case class SearchFilter(theme: Option[ThemeSearchFilter] = None,
                         tag: Option[TagSearchFilter] = None,
@@ -30,7 +30,7 @@ object SearchFilter extends ElasticDsl {
     Seq(
       buildThemeSearchFilter(searchQuery.filter),
       buildTagSearchFilter(searchQuery.filter),
-      buildContentSearchFilter(searchQuery.filter)
+      Some(buildContentSearchFilter(searchQuery.filter))
     ).flatten
 
   def getSortOption(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
@@ -51,31 +51,34 @@ object SearchFilter extends ElasticDsl {
       .map(_.value)
       .getOrElse(10) // TODO get default value from configurations
 
-  def buildThemeSearchFilter(filter: SearchFilter): Option[QueryDefinition] =
-    filter.theme match {
+  def buildThemeSearchFilter(maybeFilter: Option[SearchFilter]): Option[QueryDefinition] = maybeFilter.flatMap {
+    _.theme match {
       case Some(ThemeSearchFilter(Seq(themeId))) =>
         Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId))
       case Some(ThemeSearchFilter(themes)) =>
         Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themes))
       case _ => None
     }
+  }
 
-  def buildTagSearchFilter(filter: SearchFilter): Option[QueryDefinition] =
-    filter.tag match {
+  def buildTagSearchFilter(maybeFilter: Option[SearchFilter]): Option[QueryDefinition] = maybeFilter.flatMap {
+    _.tag match {
       case Some(TagSearchFilter(Seq(themeId))) =>
         Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, themeId))
       case Some(TagSearchFilter(themes)) =>
         Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, themes))
       case _ => None
     }
+  }
 
-  def buildContentSearchFilter(filter: SearchFilter): Option[QueryDefinition] =
+  def buildContentSearchFilter(maybeFilter: Option[SearchFilter]): QueryDefinition = {
     // TODO complete fuzzy search
-    filter.content match {
-      case Some(ContentSearchFilter(text, fuzziness)) =>
-        Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text))
-      case _ => None
-    }
+    val query: Option[QueryDefinition] = for {
+      filter                               <- maybeFilter
+      ContentSearchFilter(text, fuzziness) <- filter.content
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
+    query.getOrElse(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, Accepted.shortName))
+  }
 }
 
 case class ThemeSearchFilter(id: Seq[String]) {

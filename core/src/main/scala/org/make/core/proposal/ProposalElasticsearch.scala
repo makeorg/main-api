@@ -73,7 +73,7 @@ object ProposalElasticsearch {
       userId = p.userId,
       content = p.content,
       slug = p.slug,
-      status = "",
+      status = Pending.shortName,
       createdAt = p.eventDate.toUTC,
       updatedAt = None,
       country = p.context.country.getOrElse(defaultCountry),

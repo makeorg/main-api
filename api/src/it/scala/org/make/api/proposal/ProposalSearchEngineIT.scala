@@ -115,7 +115,7 @@ class ProposalSearchEngineIT
     }
   }
 
-  private val proposals: Seq[ProposalElasticsearch] = Seq(
+  private val acceptedProposals: Seq[ProposalElasticsearch] = Seq(
     ProposalElasticsearch(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       country = "FR",
@@ -319,7 +319,10 @@ class ProposalSearchEngineIT
       themeId = None,
       tags = Seq(),
       status = Accepted.shortName
-    ),
+    )
+  )
+
+  private val pendingProposals: Seq[ProposalElasticsearch] = Seq(
     ProposalElasticsearch(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
       country = "FR",
@@ -345,7 +348,7 @@ class ProposalSearchEngineIT
       authorAge = Some(26),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
@@ -372,7 +375,7 @@ class ProposalSearchEngineIT
       authorAge = Some(21),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
@@ -399,7 +402,7 @@ class ProposalSearchEngineIT
       authorAge = Some(23),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
@@ -426,7 +429,7 @@ class ProposalSearchEngineIT
       authorAge = Some(21),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
@@ -451,7 +454,7 @@ class ProposalSearchEngineIT
       authorAge = Some(23),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
@@ -476,7 +479,7 @@ class ProposalSearchEngineIT
       authorAge = Some(25),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     ),
     ProposalElasticsearch(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
@@ -501,9 +504,11 @@ class ProposalSearchEngineIT
       authorAge = Some(26),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = Pending.shortName
     )
   )
+
+  private val proposals: Seq[ProposalElasticsearch] = acceptedProposals ++ pendingProposals
 
   feature("get proposal by id") {
     val proposalId = proposals.head.id
@@ -519,10 +524,20 @@ class ProposalSearchEngineIT
   feature("search proposals by content") {
     Given("searching by keywords")
     val query =
-      SearchQuery(filter = SearchFilter(content = Some(ContentSearchFilter(text = "Il faut que"))), options = None)
+      SearchQuery(filter = Some(SearchFilter(content = Some(ContentSearchFilter(text = "Il faut que")))))
     scenario("should return a list of proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.length should be > 0
+      }
+    }
+  }
+
+  feature("empty query returns accepted proposals only") {
+    Given("searching without query")
+    val query = SearchQuery()
+    scenario("should return a list of proposals") {
+      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.length should be(acceptedProposals.size)
       }
     }
   }
