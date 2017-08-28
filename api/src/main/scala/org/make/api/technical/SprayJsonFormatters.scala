@@ -5,8 +5,7 @@ import java.util.UUID
 
 import org.make.core.user.UserId
 import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.tag.TagId
-import org.make.core.theme.ThemeId
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.vote.VoteId
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -85,6 +84,17 @@ trait SprayJsonFormatters {
     }
 
     override def write(obj: TagId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
+  implicit val labelIdFormatter: JsonFormat[LabelId] = new JsonFormat[LabelId] {
+    override def read(json: JsValue): LabelId = json match {
+      case JsString(s) => LabelId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: LabelId): JsValue = {
       JsString(obj.value)
     }
   }

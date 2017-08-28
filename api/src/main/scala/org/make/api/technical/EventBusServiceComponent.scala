@@ -1,5 +1,6 @@
 package org.make.api.technical
 
+import akka.actor.Actor
 import org.make.api.ActorSystemComponent
 
 trait EventBusServiceComponent {
@@ -19,4 +20,14 @@ trait DefaultEventBusServiceComponent extends EventBusServiceComponent {
     }
   }
 
+}
+
+trait ActorEventBusServiceComponent extends EventBusServiceComponent {
+  actor: Actor =>
+
+  override lazy val eventBusService = new EventBusService {
+    def publish(event: AnyRef): Unit = {
+      actor.context.system.eventStream.publish(event)
+    }
+  }
 }

@@ -28,6 +28,11 @@ trait ProposalService {
              context: RequestContext,
              updatedAt: ZonedDateTime,
              content: String): Future[Option[Proposal]]
+
+  def validateProposal(proposalId: ProposalId,
+                       moderator: UserId,
+                       context: RequestContext,
+                       request: ValidateProposalRequest): Future[Proposal]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
@@ -83,6 +88,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
       ).mapTo[Option[Proposal]]
     }
 
+    override def validateProposal(proposalId: ProposalId,
+                                  moderator: UserId,
+                                  context: RequestContext,
+                                  request: ValidateProposalRequest): Future[Proposal] = {
+
+      (proposalCoordinator ? AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = moderator,
+        context = context,
+        sendNotificationEmail = request.sendNotificationEmail,
+        newContent = request.newContent,
+        theme = request.theme,
+        labels = request.labels,
+        tags = request.tags,
+        similarProposals = request.similarProposals
+      )).mapTo[Option[Proposal]]
+
+    }
   }
 
 }

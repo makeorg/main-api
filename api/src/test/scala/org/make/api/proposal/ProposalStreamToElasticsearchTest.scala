@@ -19,16 +19,16 @@ import org.make.api.proposal.ProposalStreamToElasticsearchTest.{
   proposalElasticsearch
 }
 import org.make.api.technical.AvroSerializers
-import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.make.core.proposal.ProposalEvent.{
   ProposalAuthorInfo,
   ProposalEventWrapper,
   ProposalProposed,
   ProposalUpdated
 }
-import org.make.core.proposal._
+import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.proposal.indexed._
 import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar

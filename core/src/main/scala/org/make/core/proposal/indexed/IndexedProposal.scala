@@ -5,8 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.DateHelper._
 import org.make.core.proposal.ProposalEvent.ProposalProposed
 import org.make.core.proposal._
-import org.make.core.tag.Tag
-import org.make.core.theme.ThemeId
+import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
 
 object ProposalElasticsearchFieldNames {

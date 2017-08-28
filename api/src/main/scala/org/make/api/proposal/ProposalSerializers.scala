@@ -2,8 +2,8 @@ package org.make.api.proposal
 
 import org.make.api.technical.SprayJsonFormatters
 import org.make.core.RequestContext
-import org.make.core.proposal.Proposal
-import org.make.core.proposal.ProposalEvent.{ProposalAuthorInfo, ProposalProposed, ProposalUpdated, ProposalViewed}
+import org.make.core.proposal.{Proposal, ProposalAction}
+import org.make.core.proposal.ProposalEvent._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import stamina.V1
@@ -26,8 +26,17 @@ object ProposalSerializers extends SprayJsonFormatters {
   implicit private val proposalUpdatedFormatter: RootJsonFormat[ProposalUpdated] =
     DefaultJsonProtocol.jsonFormat5(ProposalUpdated.apply)
 
+  implicit private val proposalEditionFormatter: RootJsonFormat[ProposalEdition] =
+    DefaultJsonProtocol.jsonFormat2(ProposalEdition.apply)
+
+  implicit private val proposalAcceptedFormatter: RootJsonFormat[ProposalAccepted] =
+    DefaultJsonProtocol.jsonFormat10(ProposalAccepted.apply)
+
+  implicit private val proposalActionFormatter: RootJsonFormat[ProposalAction] =
+    DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
+
   implicit private val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat10(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat12(Proposal.apply)
 
   private val proposalProposedSerializer: JsonPersister[ProposalProposed, V1] =
     persister[ProposalProposed]("proposal-proposed")
@@ -38,9 +47,18 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalUpdatedSerializer: JsonPersister[ProposalUpdated, V1] =
     persister[ProposalUpdated]("proposal-updated")
 
+  private val proposalAcceptedSerializer: JsonPersister[ProposalAccepted, V1] =
+    persister[ProposalAccepted]("proposal-accepted")
+
   private val proposalSerializer: JsonPersister[Proposal, V1] =
     persister[Proposal]("proposal")
 
   val serializers: Seq[JsonPersister[_, _]] =
-    Seq(proposalProposedSerializer, proposalViewedSerializer, proposalUpdatedSerializer, proposalSerializer)
+    Seq(
+      proposalProposedSerializer,
+      proposalViewedSerializer,
+      proposalUpdatedSerializer,
+      proposalAcceptedSerializer,
+      proposalSerializer
+    )
 }

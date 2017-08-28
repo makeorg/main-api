@@ -20,7 +20,7 @@ class MailJetProducerActor extends ProducerActor {
     case other            => log.warning(s"Unknown event $other")
   }
 
-  private def onEvent(event: SendEmail) = {
+  private def onEvent(event: SendEmail): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(event)
     sendRecord(kafkaTopic, record)

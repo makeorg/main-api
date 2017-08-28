@@ -3,8 +3,10 @@ package org.make.api.proposal
 import io.circe.{Decoder, Encoder, Json}
 import org.elasticsearch.search.sort.SortOrder
 import org.make.api.technical.businessconfig.BusinessConfig
+import org.make.core.Validation
 import org.make.core.Validation.{maxLength, validate}
 import org.make.core.proposal._
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 
 final case class ProposeProposalRequest(content: String) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
@@ -14,6 +16,16 @@ final case class ProposeProposalRequest(content: String) {
 final case class ProposeProposalResponse(proposalId: ProposalId)
 
 final case class UpdateProposalRequest(content: String)
+
+final case class ValidateProposalRequest(newContent: Option[String],
+                                         sendNotificationEmail: Boolean,
+                                         theme: Option[ThemeId],
+                                         labels: Seq[LabelId],
+                                         tags: Seq[TagId],
+                                         similarProposals: Seq[ProposalId]) {
+
+  validate(Validation.requireNonEmpty("tags", tags))
+}
 
 sealed trait Order { val shortName: String }
 

@@ -3,7 +3,8 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.user.User
+import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.user.{User, UserId}
 
 sealed trait ProposalCommand {
   def proposalId: ProposalId
@@ -28,3 +29,14 @@ final case class ViewProposalCommand(proposalId: ProposalId, context: RequestCon
 final case class GetProposal(proposalId: ProposalId, context: RequestContext) extends ProposalCommand
 
 final case class KillProposalShard(proposalId: ProposalId, context: RequestContext) extends ProposalCommand
+
+final case class AcceptProposalCommand(moderator: UserId,
+                                       proposalId: ProposalId,
+                                       context: RequestContext,
+                                       sendNotificationEmail: Boolean,
+                                       newContent: Option[String],
+                                       theme: Option[ThemeId],
+                                       labels: Seq[LabelId],
+                                       tags: Seq[TagId],
+                                       similarProposals: Seq[ProposalId])
+    extends ProposalCommand

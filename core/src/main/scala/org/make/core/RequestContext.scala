@@ -1,6 +1,6 @@
 package org.make.core
 
-import org.make.core.theme.ThemeId
+import org.make.core.reference.ThemeId
 
 // TODO: add request context (theme, debate, and so on)
 final case class RequestContext(currentTheme: Option[ThemeId],

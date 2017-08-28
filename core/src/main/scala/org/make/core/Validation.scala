@@ -72,6 +72,10 @@ object Validation {
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
   }
 
+  def requireNonEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
+    validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+  }
+
   private def exists(value: Any): Boolean = {
     Option(value).isDefined
   }

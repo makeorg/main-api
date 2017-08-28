@@ -7,6 +7,7 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
   val from: String = config.getString("from")
   val resetPasswordTemplate: String = config.getString("reset-password-template-id")
   val resendValidationEmailTemplate: String = config.getString("resend-validation-email-template-id")
+  val proposalValidatedTemplate: String = config.getString("proposal-validated-template-id")
 }
 
 object MailJetTemplateConfiguration extends ExtensionId[MailJetTemplateConfiguration] with ExtensionIdProvider {

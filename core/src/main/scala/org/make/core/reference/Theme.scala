@@ -1,4 +1,4 @@
-package org.make.core.theme
+package org.make.core.reference
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.{MakeSerializable, StringValue}
