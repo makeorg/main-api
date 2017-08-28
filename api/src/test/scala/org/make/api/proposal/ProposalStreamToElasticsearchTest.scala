@@ -26,7 +26,7 @@ import org.make.core.proposal.ProposalEvent.{
   ProposalProposed,
   ProposalUpdated
 }
-import org.make.core.proposal.{Pending, ProposalElasticsearch, ProposalId, Vote}
+import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -57,9 +57,9 @@ class ProposalStreamToElasticsearchTest
 //      when(committableOffsetBatch.updated(any[CommittableOffset])).thenReturn(committableOffsetBatch)
       when(elasticsearchAPI.findProposalById(any[ProposalId]))
         .thenReturn(Future.successful(Some(proposalElasticsearch)))
-      when(elasticsearchAPI.indexProposal(any[ProposalElasticsearch]))
+      when(elasticsearchAPI.indexProposal(any[IndexedProposal]))
         .thenReturn(Future.successful(Done))
-      when(elasticsearchAPI.updateProposal(any[ProposalElasticsearch]))
+      when(elasticsearchAPI.updateProposal(any[IndexedProposal]))
         .thenReturn(Future.successful(Done))
 
       val future = Source[CommittableMessage[String, AnyRef]](msgsOk)
@@ -142,8 +142,8 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
   val committableOffset: CommittableOffset = mock[CommittableOffset]
 //  val committableOffsetBatch: CommittableOffsetBatch = mock[CommittableOffsetBatch]
 
-  val proposalElasticsearch: ProposalElasticsearch =
-    ProposalElasticsearch(
+  val proposalElasticsearch: IndexedProposal =
+    IndexedProposal(
       id = proposalId,
       userId = userId,
       content = "DummyContent",
@@ -153,15 +153,10 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
       votesAgree = Vote(key = "agree", qualifications = Seq()),
       votesDisagree = Vote(key = "disagree", qualifications = Seq()),
       votesNeutral = Vote(key = "neutral", qualifications = Seq()),
-      operation = None,
-      location = None,
-      authorFirstName = None,
-      authorPostalCode = None,
-      authorAge = None,
+      proposalContext = ProposalContext(operation = None, location = None, source = None, question = None),
+      author = Author(firstName = None, postalCode = None, age = None),
       themeId = None,
       tags = Seq(),
-      source = None,
-      question = None,
       trending = None,
       labels = Seq(),
       country = "FR",

@@ -77,7 +77,7 @@ object SearchFilter extends ElasticDsl {
       filter                               <- maybeFilter
       ContentSearchFilter(text, fuzziness) <- filter.content
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
-    query.getOrElse(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, Accepted.shortName))
+    query.getOrElse(ElasticApi.matchAllQuery)
   }
 }
 

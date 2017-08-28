@@ -19,7 +19,7 @@ trait ProposalServiceComponent {
 
 trait ProposalService {
   def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
-  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[ProposalElasticsearch]]
+  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[IndexedProposal]]
   def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
              context: RequestContext,
@@ -44,7 +44,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
     override def search(userId: Option[UserId],
                         query: SearchQuery,
-                        context: RequestContext): Future[Seq[ProposalElasticsearch]] = {
+                        context: RequestContext): Future[Seq[IndexedProposal]] = {
       proposalCoordinator ! SearchProposalsHistoryCommand(userId, query, context)
       elasticsearchAPI.searchProposals(query)
     }

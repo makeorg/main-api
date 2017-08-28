@@ -6,13 +6,14 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Forbidden
 import akka.http.scaladsl.server._
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, validate}
-import org.make.core.proposal.{Proposal, ProposalElasticsearch, ProposalId, SearchQuery}
+import org.make.core.proposal.{IndexedProposal, Proposal, ProposalId, SearchQuery}
 import org.make.core.user.User
 
 import scala.util.Try
@@ -20,7 +21,7 @@ import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposal")
 @Path(value = "/proposal")
-trait ProposalApi extends MakeAuthenticationDirectives {
+trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   this: ProposalServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
@@ -41,7 +42,7 @@ trait ProposalApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ProposalElasticsearch]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
   )
   @ApiImplicitParams(
     value =
@@ -55,8 +56,10 @@ trait ProposalApi extends MakeAuthenticationDirectives {
           // TODO if user not logged in and authorized, response should not contain non-validated proposals
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
+            logger.debug("endpoint search")
             decodeRequest {
               entity(as[SearchQuery]) { request: SearchQuery =>
+                logger.debug(s"endpoint search with params $request")
                 provideAsync(proposalService.search(userAuth.map(_.user.userId), request, requestContext)) {
                   proposals =>
                     complete(proposals)
@@ -169,7 +172,7 @@ trait ProposalApi extends MakeAuthenticationDirectives {
       }
     }
 
-  val proposalRoutes: Route = propose ~ getProposal ~ update
+  val proposalRoutes: Route = propose ~ getProposal ~ update ~ search
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

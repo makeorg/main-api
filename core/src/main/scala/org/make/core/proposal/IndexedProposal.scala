@@ -19,15 +19,15 @@ object ProposalElasticsearchFieldNames {
   val countVotesAgree: String = "votesAgree.count"
   val countVotesDisagree: String = "votesDisagree.count"
   val countVotesUnsure: String = "votesUnsure.count"
-  val operation: String = "operation"
-  val source: String = "source"
-  val location: String = "location"
-  val question: String = "question"
+  val proposalContextOperation: String = "proposalContext.operation"
+  val proposalContextSource: String = "proposalContext.source"
+  val proposalContextLocation: String = "proposalContext.location"
+  val proposalContextQuestion: String = "proposalContext.question"
   val trending: String = "trending"
   val label: String = "labels"
-  val authorFirstName: String = "authorFirstName"
-  val authorPostalCode: String = "authorPostalCode"
-  val authorAge: String = "authorAge"
+  val authorFirstName: String = "author.firstName"
+  val authorPostalCode: String = "author.postalCode"
+  val authorAge: String = "author.age"
   val themeId: String = "themesId"
   val country: String = "country"
   val language: String = "language"
@@ -35,40 +35,41 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.id"
 }
 
-case class ProposalElasticsearch(id: ProposalId,
-                                 userId: UserId,
-                                 content: String,
-                                 slug: String,
-                                 status: String,
-                                 createdAt: ZonedDateTime,
-                                 updatedAt: Option[ZonedDateTime],
-                                 votesAgree: Vote,
-                                 votesDisagree: Vote,
-                                 votesNeutral: Vote,
-                                 operation: Option[String],
-                                 source: Option[String],
-                                 location: Option[String],
-                                 question: Option[String],
-                                 trending: Option[String],
-                                 labels: Seq[String],
-                                 authorFirstName: Option[String],
-                                 authorPostalCode: Option[String],
-                                 authorAge: Option[Int],
-                                 country: String,
-                                 language: String,
-                                 themeId: Option[ThemeId],
-                                 tags: Seq[Tag])
+case class IndexedProposal(id: ProposalId,
+                           userId: UserId,
+                           content: String,
+                           slug: String,
+                           status: String,
+                           createdAt: ZonedDateTime,
+                           updatedAt: Option[ZonedDateTime],
+                           votesAgree: Vote,
+                           votesDisagree: Vote,
+                           votesNeutral: Vote,
+                           proposalContext: ProposalContext,
+                           trending: Option[String],
+                           labels: Seq[String],
+                           author: Author,
+                           country: String,
+                           language: String,
+                           themeId: Option[ThemeId],
+                           tags: Seq[Tag])
 
 final case class Qualification(key: String, count: Int = 0, selected: Boolean = false)
 final case class Vote(key: String, selected: Boolean = false, count: Int = 0, qualifications: Seq[Qualification])
+final case class ProposalContext(operation: Option[String],
+                                 source: Option[String],
+                                 location: Option[String],
+                                 question: Option[String])
+final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
 
-object ProposalElasticsearch {
+//TODO: use enums instead of strings for vote / qualifs
+object IndexedProposal {
 
   val defaultCountry = "FR"
   val defaultLanguage = "fr"
 
-  def apply(p: ProposalProposed): ProposalElasticsearch = {
-    ProposalElasticsearch(
+  def apply(p: ProposalProposed): IndexedProposal = {
+    IndexedProposal(
       id = p.id,
       userId = p.userId,
       content = p.content,
@@ -96,15 +97,15 @@ object ProposalElasticsearch {
           Qualification(key = "do-not-care")
         )
       ),
-      operation = p.context.operation,
-      source = p.context.source,
-      location = p.context.location,
-      question = p.context.question,
+      proposalContext = ProposalContext(
+        operation = p.context.operation,
+        source = p.context.source,
+        location = p.context.location,
+        question = p.context.question
+      ),
       trending = None,
       labels = Seq(),
-      authorFirstName = p.author.firstName,
-      authorPostalCode = p.author.postalCode,
-      authorAge = p.author.age,
+      author = Author(firstName = p.author.firstName, postalCode = p.author.postalCode, age = p.author.age),
       themeId = p.context.currentTheme,
       tags = Seq()
     )
