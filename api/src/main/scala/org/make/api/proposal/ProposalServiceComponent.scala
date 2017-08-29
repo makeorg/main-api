@@ -7,6 +7,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.RequestContext
+import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.user.{SearchProposalsHistoryCommand, User, UserId}
 

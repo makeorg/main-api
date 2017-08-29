@@ -27,6 +27,7 @@ import org.make.core.proposal.ProposalEvent.{
   ProposalUpdated
 }
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -150,9 +151,9 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
       slug = "DummyContent",
       createdAt = before,
       updatedAt = None,
-      votesAgree = Vote(key = "agree", qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", qualifications = Seq()),
+      votesAgree = Vote(key = VoteKey.Agree, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, qualifications = Seq()),
       proposalContext = ProposalContext(operation = None, location = None, source = None, question = None),
       author = Author(firstName = None, postalCode = None, age = None),
       themeId = None,
@@ -161,7 +162,7 @@ object ProposalStreamToElasticsearchTest extends MockitoSugar with AvroSerialize
       labels = Seq(),
       country = "FR",
       language = "fr",
-      status = Pending.shortName
+      status = ProposalStatus.Pending
     )
 
   val msgCreateOk: CommittableMessage[String, AnyRef] =

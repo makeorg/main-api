@@ -12,6 +12,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.IndexedProposal
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -12,8 +12,9 @@ import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
-import org.make.core.Validation.{maxLength, validate}
-import org.make.core.proposal.{IndexedProposal, Proposal, ProposalId, SearchQuery}
+import org.make.core.proposal._
+import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
 
 import scala.util.Try
@@ -46,23 +47,71 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @ApiImplicitParams(
     value =
-      Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.core.proposal.SearchQuery"))
+      Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.proposal.SearchRequest"))
   )
   @Path(value = "/search")
   def search: Route = {
     post {
       path("proposal" / "search") {
         makeTrace("Search") { requestContext =>
-          // TODO if user not logged in and authorized, response should not contain non-validated proposals
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
-            logger.debug("endpoint search")
             decodeRequest {
-              entity(as[SearchQuery]) { request: SearchQuery =>
-                logger.debug(s"endpoint search with params $request")
-                provideAsync(proposalService.search(userAuth.map(_.user.userId), request, requestContext)) {
-                  proposals =>
+              entity(as[SearchRequest]) { request: SearchRequest =>
+                provideAsync(
+                  proposalService
+                    .search(userAuth.map(_.user.userId), request.toSearchQuery, requestContext)
+                ) { proposals =>
+                  complete(proposals)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "search-all-proposals",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.ExhaustiveSearchRequest"
+      )
+    )
+  )
+  @Path(value = "/search/all")
+  def searchAll: Route = {
+    post {
+      path("proposal" / "search" / "all") {
+        makeTrace("SearchAll") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[User] =>
+            authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+              decodeRequest {
+                entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
+                  provideAsync(
+                    proposalService.search(Some(userAuth.user.userId), request.toSearchQuery, requestContext)
+                  ) { proposals =>
                     complete(proposals)
+                  }
                 }
               }
             }
@@ -146,11 +195,11 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     put {
       path("proposal" / proposalId) { proposalId =>
         makeTrace("EditProposal") { requestContext =>
-          makeOAuth2 { user: AuthInfo[User] =>
+          makeOAuth2 { userAuth: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
                 provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
-                  authorize(proposal.author == user.user.userId) {
+                  authorize(proposal.author == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
                     onSuccess(
                       proposalService
                         .update(
@@ -172,18 +221,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       }
     }
 
-  val proposalRoutes: Route = propose ~ getProposal ~ update ~ search
+  val proposalRoutes: Route = propose ~ getProposal ~ update ~ search ~ searchAll
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
 
 }
-
-case class ProposeProposalRequest(content: String) {
-  private val maxProposalLength = 140
-  validate(maxLength("content", maxProposalLength, content))
-}
-case class ProposeProposalResponse(proposalId: ProposalId)
-
-final case class UpdateProposalRequest(content: String)
-final case class SearchProposalsRequest(queryString: String)

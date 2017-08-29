@@ -1,9 +1,10 @@
-package org.make.core.proposal
+package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
 import org.make.core.DateHelper._
 import org.make.core.proposal.ProposalEvent.ProposalProposed
+import org.make.core.proposal._
 import org.make.core.tag.Tag
 import org.make.core.theme.ThemeId
 import org.make.core.user.UserId
@@ -39,7 +40,7 @@ case class IndexedProposal(id: ProposalId,
                            userId: UserId,
                            content: String,
                            slug: String,
-                           status: String,
+                           status: ProposalStatus,
                            createdAt: ZonedDateTime,
                            updatedAt: Option[ZonedDateTime],
                            votesAgree: Vote,
@@ -54,17 +55,15 @@ case class IndexedProposal(id: ProposalId,
                            themeId: Option[ThemeId],
                            tags: Seq[Tag])
 
-final case class Qualification(key: String, count: Int = 0, selected: Boolean = false)
-final case class Vote(key: String, selected: Boolean = false, count: Int = 0, qualifications: Seq[Qualification])
 final case class ProposalContext(operation: Option[String],
                                  source: Option[String],
                                  location: Option[String],
                                  question: Option[String])
 final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
 
-//TODO: use enums instead of strings for vote / qualifs
 object IndexedProposal {
 
+  //TODO: load from config
   val defaultCountry = "FR"
   val defaultLanguage = "fr"
 
@@ -74,27 +73,33 @@ object IndexedProposal {
       userId = p.userId,
       content = p.content,
       slug = p.slug,
-      status = Pending.shortName,
+      status = ProposalStatus.Pending,
       createdAt = p.eventDate.toUTC,
       updatedAt = None,
       country = p.context.country.getOrElse(defaultCountry),
       language = p.context.language.getOrElse(defaultLanguage),
       votesAgree = Vote(
-        key = "agree",
-        qualifications =
-          Seq(Qualification(key = "like-it"), Qualification(key = "doable"), Qualification(key = "platitude"))
+        key = VoteKey.Agree,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.LikeIt),
+          Qualification(key = QualificationKey.Doable),
+          Qualification(key = QualificationKey.PlatitudeAgree)
+        )
       ),
       votesDisagree = Vote(
-        key = "disagree",
-        qualifications =
-          Seq(Qualification(key = "no-way"), Qualification(key = "impossible"), Qualification(key = "platitude"))
+        key = VoteKey.Disagree,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.NoWay),
+          Qualification(key = QualificationKey.Impossible),
+          Qualification(key = QualificationKey.PlatitudeDisagree)
+        )
       ),
       votesNeutral = Vote(
-        key = "neutral",
+        key = VoteKey.Neutral,
         qualifications = Seq(
-          Qualification(key = "doesnt-make-sense"),
-          Qualification(key = "no-opinion"),
-          Qualification(key = "do-not-care")
+          Qualification(key = QualificationKey.DoNotUnderstand),
+          Qualification(key = QualificationKey.NoOpinion),
+          Qualification(key = QualificationKey.DoNotCare)
         )
       ),
       proposalContext = ProposalContext(

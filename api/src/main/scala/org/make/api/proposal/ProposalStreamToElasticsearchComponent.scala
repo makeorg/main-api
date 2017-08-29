@@ -18,8 +18,8 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.core.DateHelper._
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
-import org.make.core.proposal.IndexedProposal
 import org.make.core.proposal.ProposalEvent._
+import org.make.core.proposal.indexed.IndexedProposal
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
