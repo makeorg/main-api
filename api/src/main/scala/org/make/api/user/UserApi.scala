@@ -160,7 +160,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   }
 
   @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/reset-password")
   @ApiImplicitParams(
     value = Array(
@@ -175,7 +175,7 @@ trait UserApi extends MakeAuthenticationDirectives {
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
                 eventBusService.publish(ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId)))
-                complete(StatusCodes.OK)
+                complete(StatusCodes.NoContent)
               }
             })
           }
