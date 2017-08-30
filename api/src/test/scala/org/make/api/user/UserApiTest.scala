@@ -303,7 +303,7 @@ class UserApiTest
       Then("The existence of email is checked")
       And("I get a valid response")
       resetPasswordRoute ~> check {
-        status should be(StatusCodes.OK)
+        status should be(StatusCodes.NoContent)
       }
       And("a user Event ResetPasswordEvent is emitted")
     }
