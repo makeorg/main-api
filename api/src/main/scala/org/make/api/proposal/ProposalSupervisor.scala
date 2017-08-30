@@ -1,24 +1,9 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.stream.ActorMaterializer
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
-import org.make.api.technical.{AvroSerializers, ShortenedNames}
+import org.make.api.technical.ShortenedNames
 
-import scala.util.{Failure, Success}
-
-class ProposalSupervisor
-    extends Actor
-    with ActorLogging
-    with DefaultProposalSearchEngineComponent
-    with ElasticsearchConfigurationExtension
-    with ProposalStreamToElasticsearchComponent
-    with AvroSerializers
-    with ShortenedNames {
-
-  implicit private val materializer: ActorMaterializer = ActorMaterializer()(context.system)
-  val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
-    new ProposalStreamToElasticsearch(context.system, materializer)
+class ProposalSupervisor extends Actor with ActorLogging with ShortenedNames {
 
   override def preStart(): Unit = {
 
@@ -30,14 +15,10 @@ class ProposalSupervisor
       context
         .actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
     )
-    proposalStreamToElasticsearch
-      .run()
-      .onComplete {
-        case Success(result) => log.debug("Stream processed: {}", result)
-        case Failure(e)      => log.warning("Failure in stream", e)
-        // TODO: restart stream on failure
-      }(ECGlobal)
-
+    context.watch(
+      context
+        .actorOf(ProposalEventStreamingActor.backoffPros, ProposalEventStreamingActor.backoffName)
+    )
   }
 
   override def receive: Receive = {

@@ -17,12 +17,13 @@ class ProposalProducerActor extends ProducerActor {
 
   override def receive: Receive = {
     case event: ProposalProposed => onPropose(event)
+    case event: ProposalAccepted => onProposalAccepted(event)
     case event: ProposalUpdated  => onUpdateProposal(event)
     case event: ProposalViewed   => onViewProposal(event)
     case other                   => log.warning(s"Unknown event $other")
   }
 
-  private def onViewProposal(event: ProposalViewed) = {
+  private def onProposalAccepted(event: ProposalAccepted): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       ProposalEventWrapper(
@@ -36,7 +37,7 @@ class ProposalProducerActor extends ProducerActor {
     sendRecord(kafkaTopic, event.id.value, record)
   }
 
-  private def onUpdateProposal(event: ProposalUpdated) = {
+  private def onViewProposal(event: ProposalViewed): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       ProposalEventWrapper(
