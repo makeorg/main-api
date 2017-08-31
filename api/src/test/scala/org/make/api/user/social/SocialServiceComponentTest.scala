@@ -20,8 +20,8 @@ import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationDouble
-import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class SocialServiceComponentTest
@@ -97,7 +97,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(googleData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
@@ -119,7 +119,7 @@ class SocialServiceComponentTest
             picture = Some("picture_url")
           )
 
-        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))(any[ExecutionContext])
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))
       }
     }
 
@@ -179,7 +179,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(googleData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
@@ -269,7 +269,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(matches(info), matches(None))(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(matches(info), matches(None)))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
@@ -292,9 +292,7 @@ class SocialServiceComponentTest
             picture = Some("facebook.com/picture")
           )
 
-        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))(
-          any[ExecutionContext]()
-        )
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))
       }
 
     }
@@ -343,7 +341,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito

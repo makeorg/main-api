@@ -27,7 +27,12 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
+import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi, UserSupervisor}
+import org.make.api.userhistory.{
+  DefaultUserHistoryServiceComponent,
+  UserHistoryCoordinator,
+  UserHistoryCoordinatorComponent
+}
 import org.make.api.vote._
 import org.make.core.{ValidationError, ValidationFailedError}
 
@@ -54,8 +59,11 @@ trait MakeApi
     with DefaultUserTokenGeneratorComponent
     with DefaultOauthTokenGeneratorComponent
     with DefaultProposalSearchEngineComponent
+    with DefaultUserHistoryServiceComponent
+    with DefaultProposalCoordinatorServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
+    with UserHistoryCoordinatorComponent
     with VoteCoordinatorComponent
     with ProposalApi
     with VoteApi
@@ -77,6 +85,13 @@ trait MakeApi
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
+  )
+
+  override lazy val userHistoryCoordinator: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / UserSupervisor.name / UserHistoryCoordinator.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )

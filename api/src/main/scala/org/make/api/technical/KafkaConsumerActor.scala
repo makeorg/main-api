@@ -28,6 +28,7 @@ abstract class KafkaConsumerActor[T <: EventWrapper](private val kafkaTopic: Str
   protected val format: RecordFormat[T]
 
   def handleMessage(message: T): Future[Unit]
+  def groupId: String
 
   private var consumer: KafkaConsumer[String, GenericRecord] = _
 
@@ -43,7 +44,7 @@ abstract class KafkaConsumerActor[T <: EventWrapper](private val kafkaTopic: Str
   private def createConsumer[A, B](): KafkaConsumer[A, B] = {
     val props = new Properties()
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "read-model-update")
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
     props.put("schema.registry.url", kafkaConfiguration.schemaRegistry)
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
@@ -59,9 +60,10 @@ abstract class KafkaConsumerActor[T <: EventWrapper](private val kafkaTopic: Str
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
       val futures = records.asScala.map { record =>
         val eventWrapper = format.from(record.value())
+        log.info(s"handling message $eventWrapper")
         handleMessage(eventWrapper)
       }
-      futures.foreach(Await.ready(_, 3.seconds))
+      futures.foreach(Await.ready(_, 1.minute))
       // toDo: manage failures
       consumer.commitSync()
 

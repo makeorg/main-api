@@ -5,9 +5,12 @@ import com.typesafe.config.Config
 
 class MailJetTemplateConfiguration(config: Config) extends Extension {
   val from: String = config.getString("from")
-  val resetPasswordTemplate: String = config.getString("reset-password-template-id")
-  val resendValidationEmailTemplate: String = config.getString("resend-validation-email-template-id")
-  val proposalValidatedTemplate: String = config.getString("proposal-validated-template-id")
+
+  val userRegisteredTemplate: Int = config.getInt("registration-template-id")
+  val resetPasswordTemplate: Int = config.getInt("reset-password-template-id")
+  val resendValidationEmailTemplate: Int = config.getInt("resend-validation-email-template-id")
+  val proposalValidatedTemplate: Int = config.getInt("proposal-validated-template-id")
+  val proposalSentTemplate: Int = config.getInt("proposal-sent-template-id")
 }
 
 object MailJetTemplateConfiguration extends ExtensionId[MailJetTemplateConfiguration] with ExtensionIdProvider {

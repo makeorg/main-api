@@ -88,6 +88,7 @@ object ProposalEvent {
 
   object ProposalAccepted {
     val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-accepted"
   }
 
   final case class ProposalEdition(oldVersion: String, newVersion: String)

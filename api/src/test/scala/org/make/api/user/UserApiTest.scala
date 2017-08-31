@@ -14,14 +14,14 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
 import org.make.api.{MakeApi, MakeApiTestUtils}
-import org.make.core.{DateHelper, ValidationError}
 import org.make.core.user.UserEvent.ResetPasswordEvent
 import org.make.core.user.{Role, User, UserId}
-import org.mockito.ArgumentMatchers.{any, nullable, eq => matches}
+import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class UserApiTest
@@ -74,7 +74,7 @@ class UserApiTest
       Mockito
         .when(
           userService
-            .register(any[UserRegisterData])(any[ExecutionContext])
+            .register(any[UserRegisterData], any[RequestContext])
         )
         .thenReturn(Future.successful(fakeUser))
       val request =
@@ -102,8 +102,9 @@ class UserApiTest
               lastIp = Some("192.0.0.1"),
               Some(LocalDate.parse("1997-12-02"))
             )
-          )
-        )(nullable(classOf[ExecutionContext]))
+          ),
+          any[RequestContext]
+        )
       }
     }
 
@@ -111,7 +112,7 @@ class UserApiTest
       Mockito
         .when(
           userService
-            .register(any[UserRegisterData])(any[ExecutionContext])
+            .register(any[UserRegisterData], any[RequestContext])
         )
         .thenReturn(Future.failed(EmailAlreadyRegistredException("foo@bar.com")))
 

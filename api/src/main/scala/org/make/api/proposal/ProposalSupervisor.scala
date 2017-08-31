@@ -1,24 +1,33 @@
 package org.make.api.proposal
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.technical.ShortenedNames
+import org.make.api.user.UserService
 
-class ProposalSupervisor extends Actor with ActorLogging with ShortenedNames {
+class ProposalSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
+    extends Actor
+    with ActorLogging
+    with ShortenedNames
+    with DefaultProposalCoordinatorServiceComponent
+    with ProposalCoordinatorComponent {
+
+  override val proposalCoordinator: ActorRef =
+    context.watch(context.actorOf(ProposalCoordinator.props, ProposalCoordinator.name))
 
   override def preStart(): Unit = {
-
+    context.watch(context.actorOf(ProposalProducerActor.props, ProposalProducerActor.name))
     context.watch(
       context
-        .actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
+        .actorOf(ProposalUserHistoryConsumerActor.props(userHistoryCoordinator), ProposalUserHistoryConsumerActor.name)
     )
     context.watch(
       context
-        .actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
+        .actorOf(
+          ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService),
+          ProposalEmailConsumerActor.name
+        )
     )
-    context.watch(
-      context
-        .actorOf(ProposalEventStreamingActor.backoffPros, ProposalEventStreamingActor.backoffName)
-    )
+    context.watch(context.actorOf(ProposalEventStreamingActor.backoffPros, ProposalEventStreamingActor.backoffName))
   }
 
   override def receive: Receive = {
@@ -30,5 +39,6 @@ class ProposalSupervisor extends Actor with ActorLogging with ShortenedNames {
 object ProposalSupervisor {
 
   val name: String = "proposal"
-  val props: Props = Props[ProposalSupervisor]
+  def props(userService: UserService, userHistoryCoordinator: ActorRef): Props =
+    Props(new ProposalSupervisor(userService, userHistoryCoordinator))
 }

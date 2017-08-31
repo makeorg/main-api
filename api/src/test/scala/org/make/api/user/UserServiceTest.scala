@@ -4,8 +4,10 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.userhistory.{UserHistoryService, UserHistoryServiceComponent}
+import org.make.core.RequestContext
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -21,11 +23,15 @@ class UserServiceTest
     with DefaultUserServiceComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
-    with PersistentUserServiceComponent {
+    with UserHistoryServiceComponent
+    with PersistentUserServiceComponent
+    with EventBusServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
+  override val userHistoryService: UserHistoryService = mock[UserHistoryService]
+  override val eventBusService: EventBusService = mock[EventBusService]
 
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
@@ -81,8 +87,9 @@ class UserServiceTest
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11"))
-        )
-      )()
+        ),
+        RequestContext.empty
+      )
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
@@ -104,7 +111,8 @@ class UserServiceTest
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11"))
-        )
+        ),
+        RequestContext.empty
       )
 
       whenReady(futureUser.failed, Timeout(3.seconds)) { exception =>
@@ -113,4 +121,5 @@ class UserServiceTest
       }
     }
   }
+
 }

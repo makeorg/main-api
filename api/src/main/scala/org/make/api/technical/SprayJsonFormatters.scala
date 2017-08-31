@@ -3,11 +3,13 @@ package org.make.api.technical
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
+import org.make.core.RequestContext
 import org.make.core.user.UserId
 import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.vote.VoteId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 trait SprayJsonFormatters {
 
@@ -121,5 +123,8 @@ trait SprayJsonFormatters {
       JsString(obj.shortName)
     }
   }
+
+  implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
+    DefaultJsonProtocol.jsonFormat10(RequestContext.apply)
 
 }

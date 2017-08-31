@@ -11,7 +11,7 @@ import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.scalatest.GivenWhenThen
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
@@ -218,7 +218,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(None)
+      expectMsgType[ValidationFailedError]
 
     }
 
@@ -358,9 +358,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive the accepted proposal")
-      val response2: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
-
-      response2 should be(response)
+      expectMsgType[ValidationFailedError]
     }
 
   }
