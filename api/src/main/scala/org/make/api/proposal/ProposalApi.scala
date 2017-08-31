@@ -144,7 +144,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposeProposalResponse]))
+  )
   def propose: Route =
     post {
       path("proposal") {
