@@ -184,6 +184,7 @@ trait PersistentUserService {
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
+  def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -235,15 +236,13 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-
     override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.uuid, userId.value))
-            .append(and(sqls.eq(userAlias.resetToken, resetToken)))
+            .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.resetToken, resetToken)))
         }.map(PersistentUser.apply()).single.apply
       })
 
@@ -335,6 +334,21 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             )
         }.execute().apply()
       }).map(_ => user)
+    }
+
+    override def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean] = {
+      implicit val ctx = writeExecutionContext
+      Future(NamedDB('WRITE).localTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.hashedPassword -> hashedPassword, column.resetToken -> None, column.resetTokenExpiresAt -> None)
+            .where(
+              sqls
+                .eq(column.uuid, userId.value)
+                .and(sqls.eq(column.resetToken, resetToken))
+            )
+        }.execute().apply()
+      })
     }
   }
 }

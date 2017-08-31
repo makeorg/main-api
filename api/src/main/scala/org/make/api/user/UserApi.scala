@@ -165,7 +165,7 @@ trait UserApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/reset-password-request")
+  @Path(value = "/reset-password/request-reset")
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPasswordRequest")
@@ -173,7 +173,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   )
   def resetPasswordRequestRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
-      path("user" / "reset-password-request") {
+      path("user" / "reset-password" / "request-reset") {
         makeTrace("ResetPasswordRequest") { _ =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
@@ -190,17 +190,49 @@ trait UserApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/reset-password-check/:userId/:resetToken")
+  @Path(value = "/reset-password/check-validity/:userId/:resetToken")
   @ApiImplicitParams(value = Array())
   def resetPasswordCheckRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
-      path("user" / "reset-password-check" / userId / Segment) { (userId: UserId, resetToken: String) =>
-        makeTrace("ResetPassword") { _ =>
+      path("user" / "reset-password" / "check-validity" / userId / Segment) { (userId: UserId, resetToken: String) =>
+        makeTrace("ResetPasswordCheck") { _ =>
           provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, resetToken)) { user =>
-            if (!user.resetTokenExpiresAt.exists(_.isAfter(DateHelper.now()))) {
-              complete(StatusCodes.BadRequest)
-            } else {
+            if (user.resetTokenExpiresAt.exists(_.isAfter(DateHelper.now()))) {
               complete(StatusCodes.NoContent)
+            } else {
+              complete(StatusCodes.BadRequest)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @Path(value = "/reset-password/change-password/:userId")
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPassword"))
+  )
+  def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
+    post {
+      path("user" / "reset-password" / "change-password" / userId) { userId =>
+        makeTrace("ResetPassword") { _ =>
+          decodeRequest {
+            entity(as[ResetPassword]) { request: ResetPassword =>
+              provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, request.resetToken)) {
+                user =>
+                  if (user.resetTokenExpiresAt.forall(_.isBefore(DateHelper.now()))) {
+                    complete(StatusCodes.BadRequest)
+                  } else {
+                    onSuccess(
+                      userService
+                        .updatePassword(userId = userId, resetToken = request.resetToken, password = request.password)
+                    ) { _ =>
+                      complete(StatusCodes.NoContent)
+                    }
+                  }
+              }
             }
           }
         }
@@ -225,7 +257,8 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes: Route = resetPasswordRequestRoute ~ resetPasswordCheckRoute ~ register ~ socialLogin ~ getUser ~ getMe
+  val userRoutes
+    : Route = resetPasswordRequestRoute ~ resetPasswordCheckRoute ~ resetPasswordRoute ~ register ~ socialLogin ~ getUser ~ getMe
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -252,7 +285,11 @@ case class SocialLoginRequest(provider: String, token: String)
 
 final case class ResetPasswordRequest(email: String) {
   validate(mandatoryField("email", email), validateEmail("email", email))
+}
 
+final case class ResetPassword(resetToken: String, password: String) {
+  validate(mandatoryField("resetToken", resetToken))
+  validate(mandatoryField("password", password))
 }
 
 case class UserResponse(userId: UserId,

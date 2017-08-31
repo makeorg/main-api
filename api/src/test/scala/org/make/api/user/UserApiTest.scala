@@ -4,7 +4,7 @@ import java.net.InetAddress
 import java.time.{Instant, LocalDate, ZonedDateTime}
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken, `Remote-Address`}
+import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
@@ -297,7 +297,8 @@ class UserApiTest
       profile = None
     )
 
-    val notExpiredResetTokenUserId = UserId("not-expired-reset-token-user-id")
+    val notExpiredResetTokenUserId: UserId = UserId("not-expired-reset-token-user-id")
+    val validResetToken: String = "valid-reset-token"
     val notExpiredResetTokenUser = User(
       userId = notExpiredResetTokenUserId,
       email = "foo@exemple.com",
@@ -310,23 +311,23 @@ class UserApiTest
       lastConnection = DateHelper.now(),
       verificationToken = None,
       verificationTokenExpiresAt = None,
-      resetToken = Some("valid"),
-      resetTokenExpiresAt = Some(DateHelper.now().plusYears(1)),
+      resetToken = Some("valid-reset-token"),
+      resetTokenExpiresAt = Some(DateHelper.now().plusDays(1)),
       roles = Seq(Role.RoleCitizen),
       profile = None
     )
 
     Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(UserId("foo-bar"), "baz-bar"))
+      .when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "baz-bar"))
       .thenReturn(Future.successful(Some(fooBarUser)))
     Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(UserId("foo-bar"), "bad-bad"))
+      .when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "bad-bad"))
       .thenReturn(Future.successful(None))
     Mockito
       .when(persistentUserService.findUserByUserIdAndResetToken(UserId("bad-foo"), "baz-bar"))
       .thenReturn(Future.successful(None))
     Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(UserId("not-expired-reset-token-user-id"), "valid"))
+      .when(persistentUserService.findUserByUserIdAndResetToken(notExpiredResetTokenUserId, validResetToken))
       .thenReturn(Future.successful(Some(notExpiredResetTokenUser)))
 
     scenario("Reset a password from an existing email") {
@@ -339,14 +340,14 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post(
-        "/user/reset-password-request",
+      val resetPasswordRequestRoute = Post(
+        "/user/reset-password/request-reset",
         HttpEntity(ContentTypes.`application/json`, request)
       ) ~> routes
 
       Then("The existence of email is checked")
       And("I get a valid response")
-      resetPasswordRoute ~> check {
+      resetPasswordRequestRoute ~> check {
         status should be(StatusCodes.NoContent)
       }
       And("a user Event ResetPasswordEvent is emitted")
@@ -362,11 +363,14 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post("/user/reset-password-request", HttpEntity(ContentTypes.`application/json`, request)) ~> routes
+      val resetPasswordRequestRoute = Post(
+        "/user/reset-password/request-reset",
+        HttpEntity(ContentTypes.`application/json`, request)
+      ) ~> routes
 
       Then("The existence of email is checked")
       And("I get a not found response")
-      resetPasswordRoute ~> check {
+      resetPasswordRequestRoute ~> check {
         status should be(StatusCodes.NotFound)
       }
       And("any user Event ResetPasswordEvent is emitted")
@@ -382,14 +386,14 @@ class UserApiTest
           |}
         """.stripMargin
 
-      val resetPasswordRoute = Post(
-        "/user/reset-password-request",
+      val resetPasswordRequestRoute = Post(
+        "/user/reset-password/request-reset",
         HttpEntity(ContentTypes.`application/json`, request)
       ) ~> routes
 
       Then("The existence of email is not checked")
       And("I get a bad request response")
-      resetPasswordRoute ~> check {
+      resetPasswordRequestRoute ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -400,36 +404,35 @@ class UserApiTest
     }
 
     scenario("Check a reset token from an existing user") {
-      Given("a registered user with an uuid not-expired-reset-token-user-id and a reset token valid")
+      Given("a registered user with an uuid not-expired-reset-token-user-id and a reset token valid-reset-token")
       When("I check that reset token is for the right user")
 
-      val resetPasswordRoute = Post(
-        "/user/reset-password-check/not-expired-reset-token-user-id/valid",
+      val resetPasswordCheckRoute = Post(
+        "/user/reset-password/check-validity/not-expired-reset-token-user-id/valid-reset-token",
         HttpEntity(ContentTypes.`application/json`, "")
       ) ~> routes
 
       Then("The reset Token is for the right passed user and the reset token is not expired")
       And("I get a valid response")
-      resetPasswordRoute ~> check {
+      resetPasswordCheckRoute ~> check {
         status should be(StatusCodes.NoContent)
       }
 
       And("an empty result is returned")
     }
 
-
     scenario("Check an expired reset token from an existing user") {
       Given("a registered user with an uuid foo-bar and a reset token baz-bar")
       When("I check that reset token is for the right user and is not expired")
 
-      val resetPasswordRoute = Post(
-        "/user/reset-password-check/foo-bar/baz-bar",
+      val resetPasswordCheckRoute = Post(
+        "/user/reset-password/check-validity/foo-bar/baz-bar",
         HttpEntity(ContentTypes.`application/json`, "")
       ) ~> routes
 
       Then("The reset Token is for the right passed user but is expired")
       And("I get a valid response")
-      resetPasswordRoute ~> check {
+      resetPasswordCheckRoute ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
@@ -440,34 +443,66 @@ class UserApiTest
       Given("a registered user with an uuid foo-bar and a reset token baz-bar")
       When("I check that reset token is for the right user")
 
-      val resetPasswordRoute = Post(
+      val resetPasswordCheckRoute = Post(
         "/user/reset-password-check/foo-bar/bad-bad",
         HttpEntity(ContentTypes.`application/json`, "")
       ) ~> routes
 
       Then("The user with this reset Token and userId is not found")
       And("I get a not found response")
-      resetPasswordRoute ~> check {
+      resetPasswordCheckRoute ~> check {
         status should be(StatusCodes.NotFound)
       }
-      And("an not found result is returned")
+      And("a not found result is returned")
     }
 
     scenario("Check a reset token with a bad user") {
-      Given("a registered user with an uuid foo-bar and a reset token baz-bar")
+      Given("a registered user with an uuid bad-foo and a reset token baz-bar")
       When("I check that reset token is for the right user")
 
-      val resetPasswordRoute = Post(
-        "/user/reset-password-check/bad-foo/baz-bar",
+      val resetPasswordCheckRoute = Post(
+        "/user/reset-password/check-validity/bad-foo/baz-bar",
         HttpEntity(ContentTypes.`application/json`, "")
       ) ~> routes
 
       Then("The user with this reset Token and userId")
       And("I get a not found response")
-      resetPasswordRoute ~> check {
+      resetPasswordCheckRoute ~> check {
         status should be(StatusCodes.NotFound)
       }
-      And("an not found result is returned")
+      And("a not found result is returned")
+    }
+
+    scenario("reset the password of a valid user with valid token") {
+      Mockito
+        .when(
+          userService
+            .updatePassword(notExpiredResetTokenUserId, validResetToken, "mynewpassword")
+        )
+        .thenReturn(Future.successful(true))
+
+      Given("a registered user with an uuid not-expired-reset-token-user-id and a reset token valid-reset-token")
+      When("I check that reset token is for the right user")
+
+      val data =
+        """
+          |{
+          | "resetToken": "valid-reset-token",
+          | "password": "mynewpassword"
+          |}
+        """.stripMargin
+
+      val resetPasswordRoute = Post(
+        "/user/reset-password/change-password/not-expired-reset-token-user-id",
+        HttpEntity(ContentTypes.`application/json`, data)
+      ) ~> routes
+
+      Then("The user with this reset Token and userId update his password")
+      And("I get a successful response")
+      resetPasswordRoute ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+      And("a success result is returned")
     }
   }
 
