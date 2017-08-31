@@ -18,8 +18,8 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.core.DateHelper._
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.AvroSerializers
-import org.make.core.proposal.ProposalElasticsearch
 import org.make.core.proposal.ProposalEvent._
+import org.make.core.proposal.indexed.IndexedProposal
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -34,7 +34,7 @@ trait ProposalStreamToElasticsearchComponent { self: ProposalSearchEngineCompone
 
     type FlowGraph =
       Graph[FlowShape[CommittableMessage[String, AnyRef], Done], NotUsed]
-    type ElasticFlow = Flow[ProposalElasticsearch, Done, NotUsed]
+    type ElasticFlow = Flow[IndexedProposal, Done, NotUsed]
 
     private val identityMapCapacity = 1000
     private val proposalConsumerSettings =
@@ -64,10 +64,10 @@ trait ProposalStreamToElasticsearchComponent { self: ProposalSearchEngineCompone
       }.filter(_.isDefined)
         .map(_.get)
 
-    val toProposalEs: Flow[ProposalProposed, ProposalElasticsearch, NotUsed] =
-      Flow[ProposalProposed].map(ProposalElasticsearch.apply)
+    val toProposalEs: Flow[ProposalProposed, IndexedProposal, NotUsed] =
+      Flow[ProposalProposed].map(IndexedProposal.apply)
 
-    val getProposalFromES: Flow[ProposalUpdated, Option[ProposalElasticsearch], NotUsed] =
+    val getProposalFromES: Flow[ProposalUpdated, Option[IndexedProposal], NotUsed] =
       Flow[ProposalUpdated].mapAsync(1) { update =>
         elasticsearchAPI.findProposalById(update.id).map {
           _.map(_.copy(updatedAt = Some(update.updatedAt.toUTC), content = update.content))
@@ -78,9 +78,9 @@ trait ProposalStreamToElasticsearchComponent { self: ProposalSearchEngineCompone
       Flow[Option[T]].filter(_.isDefined).map(_.get)
 
     val save: ElasticFlow =
-      Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.indexProposal)
+      Flow[IndexedProposal].mapAsync(1)(elasticsearchAPI.indexProposal)
 
-    val update: ElasticFlow = Flow[ProposalElasticsearch].mapAsync(1)(elasticsearchAPI.updateProposal)
+    val update: ElasticFlow = Flow[IndexedProposal].mapAsync(1)(elasticsearchAPI.updateProposal)
 
     val commitOffset: Flow[(CommittableMessage[String, AnyRef], Done), Done, NotUsed] =
       Flow[(CommittableMessage[String, AnyRef], Done)]
@@ -101,8 +101,8 @@ trait ProposalStreamToElasticsearchComponent { self: ProposalSearchEngineCompone
         val bcast =
           builder.add(Broadcast[CommittableMessage[String, AnyRef]](3))
         val merge = builder.add(Merge[Done](2))
-        bcast ~> proposeEvent ~> toProposalEs      ~> save                          ~> merge
-        bcast ~> updateEvent  ~> getProposalFromES ~> filter[ProposalElasticsearch] ~> update ~> merge
+        bcast ~> proposeEvent ~> toProposalEs      ~> save                    ~> merge
+        bcast ~> updateEvent  ~> getProposalFromES ~> filter[IndexedProposal] ~> update ~> merge
 
         val zip = builder.add(Zip[CommittableMessage[String, AnyRef], Done]())
         bcast ~> zip.in0

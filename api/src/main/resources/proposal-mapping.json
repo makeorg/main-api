@@ -84,21 +84,26 @@
             }
           }
         },
-        "operation": {
-          "type": "keyword",
-          "index": true
-        },
-        "source": {
-          "type": "keyword",
-          "index": true
-        },
-        "location": {
-          "type": "keyword",
-          "index": true
-        },
-        "question": {
-          "type": "keyword",
-          "index": true
+        "proposalContext": {
+          "type": "object",
+          "properties": {
+            "operation": {
+              "type": "keyword",
+              "index": true
+            },
+            "source": {
+              "type": "keyword",
+              "index": true
+            },
+            "location": {
+              "type": "keyword",
+              "index": true
+            },
+            "question": {
+              "type": "keyword",
+              "index": true
+            }
+          }
         },
         "trending": {
           "type": "keyword",
@@ -108,15 +113,20 @@
           "type": "keyword",
           "index": true
         },
-        "authorFirstName": {
-          "type": "text",
-        },
-        "authorPostalCode": {
-          "type": "keyword",
-          "index": true
-        },
-        "authorAge": {
-          "type": "integer"
+        "author": {
+         "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "text"
+            },
+            "postalCode": {
+              "type": "keyword",
+              "index": true
+            },
+            "age": {
+              "type": "integer"
+            }
+          }
         },
         "tags": {
           "type": "object",

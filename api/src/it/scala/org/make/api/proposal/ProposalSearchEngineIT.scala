@@ -22,6 +22,7 @@ import scala.util.Failure
 import io.circe.syntax._
 import io.circe.generic.auto._
 import org.make.core.CirceFormatters
+import org.make.core.proposal.indexed._
 
 class ProposalSearchEngineIT
     extends ItMakeTest
@@ -61,7 +62,7 @@ class ProposalSearchEngineIT
     Await.result(responseFuture, 5.seconds)
 
     // inserting data
-    val insertFutures: Future[Seq[HttpResponse]] = Future.sequence(proposals.map { proposal: ProposalElasticsearch =>
+    val insertFutures: Future[Seq[HttpResponse]] = Future.sequence(proposals.map { proposal: IndexedProposal =>
       val indexAndDocTypeEndpoint = s"$defaultElasticsearchIndex/$defaultElasticsearchDocType"
 
       Http().singleRequest(
@@ -81,42 +82,29 @@ class ProposalSearchEngineIT
   }
 
   private val now = ZonedDateTime.now()
-  private val newProposal = ProposalElasticsearch(
+  private val newProposal = IndexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
     userId = UserId("user-id"),
     content = "This is a test proposal",
     slug = "this-is-a-test-proposal",
     createdAt = now,
     updatedAt = None,
-    votesAgree = Vote(key = "agree", qualifications = Seq()),
-    votesDisagree = Vote(key = "disagress", qualifications = Seq()),
-    votesNeutral = Vote(key = "neutral", qualifications = Seq()),
-    operation = None,
-    location = None,
-    authorFirstName = None,
-    authorPostalCode = None,
-    authorAge = None,
+    votesAgree = Vote(key = VoteKey.Agree, qualifications = Seq()),
+    votesDisagree = Vote(key = VoteKey.Disagree, qualifications = Seq()),
+    votesNeutral = Vote(key = VoteKey.Neutral, qualifications = Seq()),
+    proposalContext = ProposalContext(operation = None, location = None, question = None, source = None),
+    author = Author(firstName = None, postalCode = None, age = None),
     themeId = None,
     tags = Seq.empty,
-    source = None,
-    question = None,
     trending = None,
     labels = Seq(),
     country = "FR",
     language = "fr",
-    status = Pending.shortName
+    status = ProposalStatus.Accepted
   )
 
-  feature("saving new proposal") {
-    scenario("should return done") {
-      whenReady(elasticsearchAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
-        result should be(Done)
-      }
-    }
-  }
-
-  private val proposals: Seq[ProposalElasticsearch] = Seq(
-    ProposalElasticsearch(
+  private val acceptedProposals: Seq[IndexedProposal] = Seq(
+    IndexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       country = "FR",
       language = "fr",
@@ -125,23 +113,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 123, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 105, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 59, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 123, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 105, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 59, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Craig"),
-      authorPostalCode = Some("92876"),
-      authorAge = Some(25),
+      author = Author(firstName = Some("Craig"), postalCode = Some("92876"), age = Some(25)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("9c468c22-1d1a-474b-9081-d79f1079f5e5"),
       country = "FR",
       language = "fr",
@@ -150,23 +133,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 79, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 104, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 127, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 79, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 104, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 127, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Valerie"),
-      authorPostalCode = Some("41556"),
-      authorAge = Some(26),
+      author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
       country = "FR",
       language = "fr",
@@ -175,23 +153,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 56, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 18, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 53, qualifications = Seq()),
-      status = Accepted.shortName,
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 56, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 18, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 53, qualifications = Seq()),
+      status = ProposalStatus.Accepted,
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Valerie"),
-      authorPostalCode = Some("41556"),
-      authorAge = Some(26),
+      author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq()
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("c700b4c0-1b49-4373-a993-23c2437e857a"),
       country = "FR",
       language = "fr",
@@ -202,23 +175,18 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-protege-notre-agriculture-locale-et-donne-les-moyens-aux-agriculteurs-de-vivre-de-leur-metier-de-production",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 152, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 78, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 123, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 152, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 78, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 123, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Jennifer"),
-      authorPostalCode = Some("40734"),
-      authorAge = Some(23),
+      author = Author(firstName = Some("Jennifer"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("eac55aab-021e-495e-9664-bea941b8c51c"),
       country = "FR",
       language = "fr",
@@ -227,23 +195,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-favorise-l-acces-a-l-alimentation-issue-de-l-agriculture-biologique",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 175, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 70, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 123, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 175, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 70, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 123, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Laura"),
-      authorPostalCode = Some("43324"),
-      authorAge = Some(31),
+      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("5725e8fc-54a1-4b77-9246-d1de60a245c5"),
       country = "FR",
       language = "fr",
@@ -254,23 +217,18 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-dissolve-la-SAFER-et-ainsi-laisser-les-petits-paysans-s-installer-avec-des-petites-exploitations",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 48, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 70, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 187, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 48, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 70, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 187, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Laura"),
-      authorPostalCode = Some("43324"),
-      authorAge = Some(31),
+      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
       country = "FR",
       language = "fr",
@@ -279,23 +237,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-soutienne-et-defende-l-agriculture-dans-mon-departement",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 60, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 56, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 170, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 60, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 56, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 170, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Laura"),
-      authorPostalCode = Some("43324"),
-      authorAge = Some(31),
+      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Accepted
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
       country = "FR",
       language = "fr",
@@ -304,23 +257,21 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 95, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 32, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 35, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 95, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 32, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 35, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Laura"),
-      authorPostalCode = Some("43324"),
-      authorAge = Some(31),
+      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
-    ),
-    ProposalElasticsearch(
+      status = ProposalStatus.Accepted
+    )
+  )
+
+  private val pendingProposals: Seq[IndexedProposal] = Seq(
+    IndexedProposal(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
       country = "FR",
       language = "fr",
@@ -331,23 +282,18 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-favorise-l-agriculture-qualitative-plutot-que-l-agriculture-intensive-plus-de-pesticides-pour-plus-de-rendements",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 37, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 66, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 75, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 37, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 66, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 75, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Ronald"),
-      authorPostalCode = Some("41556"),
-      authorAge = Some(26),
+      author = Author(firstName = Some("Ronald"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
       country = "FR",
       language = "fr",
@@ -358,23 +304,18 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-vote-une-loi-pour-obliger-l-industrie-pharmaceutique-d-investir-dans-la-recherche-sur-les-maladies-rares",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 67, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 42, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 22, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 67, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 42, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 22, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Jennifer"),
-      authorPostalCode = Some("81966"),
-      authorAge = Some(21),
+      author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
       country = "FR",
       language = "fr",
@@ -385,23 +326,18 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-propose-d-interdire-aux-politiques-l-utilisation-du-big-data-menant-a-faire-des-projets-demagogiques",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 116, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 167, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 73, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 116, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 167, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 73, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Ronald"),
-      authorPostalCode = Some("40734"),
-      authorAge = Some(23),
+      author = Author(firstName = Some("Ronald"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
       country = "FR",
       language = "fr",
@@ -412,23 +348,18 @@ class ProposalSearchEngineIT
         "Il-faut-qu-il-elle-mette-en-avant-la-creation-de-lieux-de-culture-et-d-echange-avec-quelques-petites-subventions",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 86, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 165, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 96, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 86, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 165, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 96, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Jennifer"),
-      authorPostalCode = Some("81966"),
-      authorAge = Some(21),
+      author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
       country = "FR",
       language = "fr",
@@ -437,23 +368,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-defende-un-meilleur-acces-a-la-culture-et-a-l-education-pour-tous",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 170, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 33, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 64, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 170, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 33, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 64, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Craig"),
-      authorPostalCode = Some("40734"),
-      authorAge = Some(23),
+      author = Author(firstName = Some("Craig"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
       country = "FR",
       language = "fr",
@@ -462,23 +388,18 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-pratique-le-mecennat-et-cree-des-aides-pour-les-artistes-surtout-les-jeunes",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 17, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 119, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 68, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 17, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 119, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 68, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Valerie"),
-      authorPostalCode = Some("92876"),
-      authorAge = Some(25),
+      author = Author(firstName = Some("Valerie"), postalCode = Some("92876"), age = Some(25)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     ),
-    ProposalElasticsearch(
+    IndexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
       country = "FR",
       language = "fr",
@@ -487,23 +408,20 @@ class ProposalSearchEngineIT
       slug = "il-elle-defende-la-francophonie-dans-le-monde-en-luttant-contre-l-hegemonie-de-l-anglais",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = "agree", count = 124, qualifications = Seq()),
-      votesDisagree = Vote(key = "disagree", count = 74, qualifications = Seq()),
-      votesNeutral = Vote(key = "neutral", count = 56, qualifications = Seq()),
-      source = None,
-      operation = None,
-      location = None,
-      question = None,
+      votesAgree = Vote(key = VoteKey.Agree, count = 124, qualifications = Seq()),
+      votesDisagree = Vote(key = VoteKey.Disagree, count = 74, qualifications = Seq()),
+      votesNeutral = Vote(key = VoteKey.Neutral, count = 56, qualifications = Seq()),
+      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
-      authorFirstName = Some("Craig"),
-      authorPostalCode = Some("41556"),
-      authorAge = Some(26),
+      author = Author(firstName = Some("Craig"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = Accepted.shortName
+      status = ProposalStatus.Pending
     )
   )
+
+  private val proposals: Seq[IndexedProposal] = acceptedProposals ++ pendingProposals
 
   feature("get proposal by id") {
     val proposalId = proposals.head.id
@@ -519,10 +437,39 @@ class ProposalSearchEngineIT
   feature("search proposals by content") {
     Given("searching by keywords")
     val query =
-      SearchQuery(filter = SearchFilter(content = Some(ContentSearchFilter(text = "Il faut que"))), options = None)
+      SearchQuery(filter = Some(SearchFilter(content = Some(ContentSearchFilter(text = "Il faut que")))))
     scenario("should return a list of proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.length should be > 0
+      }
+    }
+  }
+
+  feature("empty query returns accepted proposals only") {
+    Given("searching without query")
+    val query = SearchQuery()
+    scenario("should return a list of accepted proposals") {
+      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.length should be(acceptedProposals.size)
+      }
+    }
+  }
+
+  feature("search proposals by status") {
+    Given("searching pending proposals")
+    val query = SearchQuery(Some(SearchFilter(status = Some(StatusSearchFilter(ProposalStatus.Pending)))))
+    scenario("should return a list of pending proposals") {
+      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        info(result.map(_.status).mkString)
+        result.length should be(pendingProposals.size)
+      }
+    }
+  }
+
+  feature("saving new proposal") {
+    scenario("should return done") {
+      whenReady(elasticsearchAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
+        result should be(Done)
       }
     }
   }

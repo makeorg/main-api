@@ -7,6 +7,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.RequestContext
+import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.user.{SearchProposalsHistoryCommand, User, UserId}
 
@@ -19,7 +20,7 @@ trait ProposalServiceComponent {
 
 trait ProposalService {
   def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
-  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[ProposalElasticsearch]]
+  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[IndexedProposal]]
   def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
              context: RequestContext,
@@ -44,7 +45,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
     override def search(userId: Option[UserId],
                         query: SearchQuery,
-                        context: RequestContext): Future[Seq[ProposalElasticsearch]] = {
+                        context: RequestContext): Future[Seq[IndexedProposal]] = {
       proposalCoordinator ! SearchProposalsHistoryCommand(userId, query, context)
       elasticsearchAPI.searchProposals(query)
     }

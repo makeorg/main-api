@@ -13,7 +13,7 @@ case class Proposal(proposalId: ProposalId,
                     content: String,
                     author: UserId,
                     theme: Option[ThemeId] = None,
-                    status: ProposalStatus = Pending,
+                    status: ProposalStatus = ProposalStatus.Pending,
                     tags: Seq[TagId] = Seq(),
                     creationContext: RequestContext,
                     override val createdAt: Option[ZonedDateTime],
@@ -54,17 +54,13 @@ object ProposalStatus {
         case None          => Left(s"$value is not a proposal status")
       }
     }
-}
 
-case object Pending extends ProposalStatus {
-  override val shortName = "Pending"
-}
-case object Accepted extends ProposalStatus {
-  override val shortName = "Accepted"
-}
-case object Refused extends ProposalStatus {
-  override val shortName = "Refused"
-}
-case object Archived extends ProposalStatus {
-  override val shortName = "Archived"
+  case object Pending extends ProposalStatus { override val shortName = "Pending" }
+
+  case object Accepted extends ProposalStatus { override val shortName = "Accepted" }
+
+  case object Refused extends ProposalStatus { override val shortName = "Refused" }
+
+  case object Archived extends ProposalStatus { override val shortName = "Archived" }
+
 }
