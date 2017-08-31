@@ -120,7 +120,7 @@ trait MakeApi
 
   lazy val makeRoutes: Route =
     MakeApi.makeDefaultHeadersAndHandlers() {
-      new MakeDocumentation(actorSystem, apiClasses).routes ~
+      new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes ~
         swagger ~
         optionsCors ~
         userRoutes ~

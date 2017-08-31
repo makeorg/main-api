@@ -27,6 +27,7 @@ class MakeSettings(config: Config) extends Extension {
   object Http {
     val host: String = config.getString("http.host")
     val port: Int = config.getInt("http.port")
+    val ssl: Boolean = config.getBoolean("http.ssl")
   }
 
   object Cluster {
