@@ -24,7 +24,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     googleId = Some("googleId"),
     gender = Some(Gender.Male),
     genderName = Some("other"),
-    departmentNumber = Some("93"),
+    postalCode = Some("93"),
     karmaLevel = Some(2),
     locale = Some("FR_FR")
   )

@@ -142,12 +142,16 @@ trait UserApi extends MakeAuthenticationDirectives {
               onSuccess(
                 userService
                   .register(
-                    email = request.email,
-                    firstName = request.firstName,
-                    lastName = request.lastName,
-                    password = Some(request.password),
-                    lastIp = clientIp.toOption.map(_.getHostAddress),
-                    dateOfBirth = request.dateOfBirth
+                    UserRegisterData(
+                      email = request.email,
+                      firstName = request.firstName,
+                      lastName = request.lastName,
+                      password = Some(request.password),
+                      lastIp = clientIp.toOption.map(_.getHostAddress),
+                      dateOfBirth = request.dateOfBirth,
+                      profession = request.profession,
+                      postalCode = request.postalCode
+                    )
                   )
               ) { result =>
                 complete(StatusCodes.Created -> UserResponse(result))
@@ -212,12 +216,12 @@ case class RegisterUserRequest(email: String,
                                password: String,
                                dateOfBirth: Option[LocalDate],
                                firstName: Option[String],
-                               lastName: Option[String]) {
+                               lastName: Option[String],
+                               profession: Option[String],
+                               postalCode: Option[String]) {
 
   validate(
-    mandatoryField("dateOfBirth", dateOfBirth),
     mandatoryField("firstName", firstName),
-    mandatoryField("lastName", lastName),
     mandatoryField("email", email),
     validateEmail("email", email),
     mandatoryField("password", password),

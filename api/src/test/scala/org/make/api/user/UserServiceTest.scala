@@ -43,7 +43,7 @@ class UserServiceTest
         googleId = None,
         gender = None,
         genderName = None,
-        departmentNumber = None,
+        postalCode = None,
         karmaLevel = None,
         locale = None
       )
@@ -74,12 +74,14 @@ class UserServiceTest
         .thenReturn(Future.successful(returnedUser))
 
       val futureUser = userService.register(
-        "any@mail.com",
-        Some("tom"),
-        Some("olive"),
-        Some("passopasso"),
-        Some("127.0.0.1"),
-        Some(LocalDate.parse("1984-10-11"))
+        UserRegisterData(
+          email = "any@mail.com",
+          firstName = Some("tom"),
+          lastName = Some("olive"),
+          password = Some("passopasso"),
+          lastIp = Some("127.0.0.1"),
+          dateOfBirth = Some(LocalDate.parse("1984-10-11"))
+        )
       )()
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
@@ -95,12 +97,14 @@ class UserServiceTest
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
       val futureUser = userService.register(
-        "exist@mail.com",
-        Some("tom"),
-        Some("olive"),
-        Some("passopasso"),
-        Some("127.0.0.1"),
-        Some(LocalDate.parse("1984-10-11"))
+        UserRegisterData(
+          email = "exist@mail.com",
+          firstName = Some("tom"),
+          lastName = Some("olive"),
+          password = Some("passopasso"),
+          lastIp = Some("127.0.0.1"),
+          dateOfBirth = Some(LocalDate.parse("1984-10-11"))
+        )
       )
 
       whenReady(futureUser.failed, Timeout(3.seconds)) { exception =>

@@ -74,14 +74,7 @@ class UserApiTest
       Mockito
         .when(
           userService
-            .register(
-              any[String],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[LocalDate]]
-            )(any[ExecutionContext])
+            .register(any[UserRegisterData])(any[ExecutionContext])
         )
         .thenReturn(Future.successful(fakeUser))
       val request =
@@ -100,12 +93,16 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
-          matches("foo@bar.com"),
-          matches(Some("olive")),
-          matches(Some("tom")),
-          matches(Some("mypass")),
-          matches(Some("192.0.0.1")),
-          matches(Some(LocalDate.parse("1997-12-02")))
+          matches(
+            UserRegisterData(
+              email = "foo@bar.com",
+              firstName = Some("olive"),
+              lastName = Some("tom"),
+              password = Some("mypass"),
+              lastIp = Some("192.0.0.1"),
+              Some(LocalDate.parse("1997-12-02"))
+            )
+          )
         )(nullable(classOf[ExecutionContext]))
       }
     }
@@ -114,14 +111,7 @@ class UserApiTest
       Mockito
         .when(
           userService
-            .register(
-              any[String],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[String]],
-              any[Option[LocalDate]]
-            )(any[ExecutionContext])
+            .register(any[UserRegisterData])(any[ExecutionContext])
         )
         .thenReturn(Future.failed(EmailAlreadyRegistredException("foo@bar.com")))
 
