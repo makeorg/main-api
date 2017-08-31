@@ -179,6 +179,7 @@ trait PersistentUserService {
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
+  def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def emailExists(email: String): Future[Boolean]
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
@@ -228,6 +229,21 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
+        }.map(PersistentUser.apply()).single.apply
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+
+    override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.uuid, userId.value))
+            .append(and(sqls.eq(userAlias.resetToken, resetToken)))
         }.map(PersistentUser.apply()).single.apply
       })
 

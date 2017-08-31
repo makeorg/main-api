@@ -11,7 +11,7 @@ import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.social.SocialServiceComponent
-import org.make.core.HttpCodes
+import org.make.core.{DateHelper, HttpCodes}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
@@ -163,18 +163,18 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/reset-password")
+  @Path(value = "/reset-password-request")
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPasswordRequest")
     )
   )
-  def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
+  def resetPasswordRequestRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
-      path("user" / "reset-password") {
-        makeTrace("ResetPassword") { _ =>
+      path("user" / "reset-password-request") {
+        makeTrace("ResetPasswordRequest") { _ =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
@@ -182,6 +182,26 @@ trait UserApi extends MakeAuthenticationDirectives {
                 complete(StatusCodes.NoContent)
               }
             })
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @Path(value = "/reset-password-check/:userId/:resetToken")
+  @ApiImplicitParams(value = Array())
+  def resetPasswordCheckRoute(implicit ctx: EC = ECGlobal): Route = {
+    post {
+      path("user" / "reset-password-check" / userId / Segment) { (userId: UserId, resetToken: String) =>
+        makeTrace("ResetPassword") { _ =>
+          provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, resetToken)) { user =>
+            if (!user.resetTokenExpiresAt.exists(_.isAfter(DateHelper.now()))) {
+              complete(StatusCodes.BadRequest)
+            } else {
+              complete(StatusCodes.NoContent)
+            }
           }
         }
       }
@@ -205,11 +225,10 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes: Route = resetPasswordRoute ~ register ~ socialLogin ~ getUser ~ getMe
+  val userRoutes: Route = resetPasswordRequestRoute ~ resetPasswordCheckRoute ~ register ~ socialLogin ~ getUser ~ getMe
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
-
 }
 
 case class RegisterUserRequest(email: String,
