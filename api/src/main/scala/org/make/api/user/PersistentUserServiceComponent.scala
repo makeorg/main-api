@@ -46,7 +46,7 @@ object PersistentUserServiceComponent {
                             googleId: Option[String],
                             gender: String,
                             genderName: Option[String],
-                            departmentNumber: Option[String],
+                            postalCode: Option[String],
                             karmaLevel: Option[Int],
                             locale: Option[String],
                             optInNewsletter: Boolean) {
@@ -84,7 +84,7 @@ object PersistentUserServiceComponent {
         googleId = googleId,
         gender = toGender(gender),
         genderName = genderName,
-        departmentNumber = departmentNumber,
+        postalCode = postalCode,
         karmaLevel = karmaLevel,
         locale = locale,
         optInNewsletter = optInNewsletter
@@ -104,7 +104,7 @@ object PersistentUserServiceComponent {
       "google_id",
       "gender",
       "gender_name",
-      "department_number",
+      "postal_code",
       "karma_level",
       "locale",
       "opt_in_newsletter"
@@ -164,7 +164,7 @@ object PersistentUserServiceComponent {
         googleId = resultSet.stringOpt(userResultName.googleId),
         gender = resultSet.string(userResultName.gender),
         genderName = resultSet.stringOpt(userResultName.genderName),
-        departmentNumber = resultSet.stringOpt(userResultName.departmentNumber),
+        postalCode = resultSet.stringOpt(userResultName.postalCode),
         karmaLevel = resultSet.intOpt(userResultName.karmaLevel),
         locale = resultSet.stringOpt(userResultName.locale),
         optInNewsletter = resultSet.boolean(userResultName.optInNewsletter)
@@ -311,7 +311,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.googleId -> user.profile.map(_.googleId),
               column.gender -> user.profile.map(_.gender.map(_.shortName)),
               column.genderName -> user.profile.map(_.genderName),
-              column.departmentNumber -> user.profile.map(_.departmentNumber),
+              column.postalCode -> user.profile.map(_.postalCode),
               column.karmaLevel -> user.profile.map(_.karmaLevel),
               column.locale -> user.profile.map(_.locale),
               column.dateOfBirth -> user.profile.map(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),

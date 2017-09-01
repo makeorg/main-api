@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS make_user (
   google_id VARCHAR(255) DEFAULT NULL,
   gender VARCHAR(1) DEFAULT NULL,
   gender_name VARCHAR(20) DEFAULT NULL,
-  department_number VARCHAR(3) DEFAULT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
   karma_level INT DEFAULT 0,
   locale VARCHAR(8) DEFAULT NULL,
   opt_in_newsletter BOOLEAN DEFAULT FALSE NOT NULL

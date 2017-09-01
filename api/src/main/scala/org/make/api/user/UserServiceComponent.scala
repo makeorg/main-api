@@ -21,14 +21,18 @@ trait UserServiceComponent {
 trait UserService extends ShortenedNames {
   def getUser(uuid: UserId): Future[Option[User]]
   def getUser(uuid: String): Future[Option[User]]
-  def register(email: String,
-               firstName: Option[String],
-               lastName: Option[String],
-               password: Option[String],
-               lastIp: Option[String],
-               dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User]
+  def register(userRegisterData: UserRegisterData)(implicit ctx: EC = ECGlobal): Future[User]
   def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String])(implicit ctx: EC = ECGlobal): Future[User]
 }
+
+case class UserRegisterData(email: String,
+                            firstName: Option[String],
+                            lastName: Option[String] = None,
+                            password: Option[String],
+                            lastIp: Option[String],
+                            dateOfBirth: Option[LocalDate] = None,
+                            profession: Option[String] = None,
+                            postalCode: Option[String] = None)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames {
   this: IdGeneratorComponent with UserTokenGeneratorComponent with PersistentUserServiceComponent =>
@@ -45,20 +49,20 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.get(UserId(uuid))
     }
 
-    override def register(email: String,
-                          firstName: Option[String],
-                          lastName: Option[String],
-                          password: Option[String],
-                          lastIp: Option[String],
-                          dateOfBirth: Option[LocalDate])(implicit ctx: EC = ECGlobal): Future[User] = {
+    override def register(userRegisterData: UserRegisterData)(implicit ctx: EC = ECGlobal): Future[User] = {
 
-      val lowerCasedEmail: String = email.toLowerCase()
+      val lowerCasedEmail: String = userRegisterData.email.toLowerCase()
 
       persistentUserService.emailExists(lowerCasedEmail).flatMap { result =>
         if (result) {
           Future.failed(EmailAlreadyRegistredException(lowerCasedEmail))
         } else {
-          val profile: Option[Profile] = Profile.parseProfile(dateOfBirth = dateOfBirth)
+          val profile: Option[Profile] =
+            Profile.parseProfile(
+              dateOfBirth = userRegisterData.dateOfBirth,
+              profession = userRegisterData.profession,
+              postalCode = userRegisterData.postalCode
+            )
 
           val futureVerificationToken: Future[(String, String)] = userTokenGenerator.generateVerificationToken()
           futureVerificationToken.flatMap { tokens =>
@@ -66,10 +70,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             val user = User(
               userId = idGenerator.nextUserId(),
               email = lowerCasedEmail,
-              firstName = firstName,
-              lastName = lastName,
-              lastIp = lastIp,
-              hashedPassword = password.map(_.bcrypt),
+              firstName = userRegisterData.firstName,
+              lastName = userRegisterData.lastName,
+              lastIp = userRegisterData.lastIp,
+              hashedPassword = userRegisterData.password.map(_.bcrypt),
               enabled = true,
               verified = false,
               lastConnection = DateHelper.now(),

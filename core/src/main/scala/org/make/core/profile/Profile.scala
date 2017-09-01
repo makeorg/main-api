@@ -49,7 +49,7 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    googleId: Option[String],
                    gender: Option[Gender],
                    genderName: Option[String],
-                   departmentNumber: Option[String],
+                   postalCode: Option[String],
                    karmaLevel: Option[Int],
                    locale: Option[String],
                    optInNewsletter: Boolean = false)
@@ -70,7 +70,7 @@ object Profile {
                    googleId: Option[String] = None,
                    gender: Option[Gender] = None,
                    genderName: Option[String] = None,
-                   departmentNumber: Option[String] = None,
+                   postalCode: Option[String] = None,
                    karmaLevel: Option[Int] = None,
                    locale: Option[String] = None,
                    optInNewsletter: Boolean = false): Option[Profile] = {
@@ -85,7 +85,7 @@ object Profile {
       googleId = googleId,
       gender = gender,
       genderName = genderName,
-      departmentNumber = departmentNumber,
+      postalCode = postalCode,
       karmaLevel = karmaLevel,
       locale = locale,
       optInNewsletter = optInNewsletter
