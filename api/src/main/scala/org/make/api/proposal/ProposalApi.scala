@@ -26,14 +26,16 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   this: ProposalServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IndexedProposal]))
+  )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
   def getProposal: Route = {
     get {
       path("proposal" / proposalId) { proposalId =>
         makeTrace("GetProposal") { requestContext =>
-          provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
+          provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
             complete(proposal)
           }
         }
@@ -200,21 +202,25 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
           makeOAuth2 { userAuth: AuthInfo[User] =>
             decodeRequest {
               entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
-                provideAsyncOrNotFound(proposalService.getProposal(proposalId, requestContext)) { proposal =>
-                  authorize(proposal.author == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-                    onSuccess(
-                      proposalService
-                        .update(
-                          proposalId = proposalId,
-                          context = requestContext,
-                          updatedAt = ZonedDateTime.now,
-                          content = request.content
-                        )
+                provideAsyncOrNotFound(proposalService.getEventSourcingProposal(proposalId, requestContext)) {
+                  proposal =>
+                    authorize(
+                      proposal.author == userAuth.user.userId || userAuth.user.roles
+                        .exists(role => role == RoleAdmin || role == RoleModerator)
                     ) {
-                      case Some(prop) => complete(prop)
-                      case None       => complete(Forbidden)
+                      onSuccess(
+                        proposalService
+                          .update(
+                            proposalId = proposalId,
+                            context = requestContext,
+                            updatedAt = ZonedDateTime.now,
+                            content = request.content
+                          )
+                      ) {
+                        case Some(prop) => complete(prop)
+                        case None       => complete(Forbidden)
+                      }
                     }
-                  }
                 }
               }
             }

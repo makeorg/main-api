@@ -19,7 +19,9 @@ trait ProposalServiceComponent {
 }
 
 trait ProposalService {
-  def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
+
+  def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
+  def getEventSourcingProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
   def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[IndexedProposal]]
   def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
@@ -38,7 +40,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
-    override def getProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
+    override def getProposalById(proposalId: ProposalId, context: RequestContext): Future[Option[IndexedProposal]] = {
+      proposalCoordinator ! ViewProposalCommand(proposalId, context)
+      elasticsearchAPI.findProposalById(proposalId)
+    }
+
+    override def getEventSourcingProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
       (proposalCoordinator ? ViewProposalCommand(proposalId, context))
         .mapTo[Option[Proposal]]
     }
