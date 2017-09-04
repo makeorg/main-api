@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
+import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
 import scalikejdbc._
 
@@ -110,7 +111,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
     }
 
     override def persist(client: Client): Future[Client] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           insert
@@ -122,8 +123,8 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               ),
               column.secret -> client.secret,
               column.scope -> client.scope,
-              column.createdAt -> ZonedDateTime.now,
-              column.updatedAt -> ZonedDateTime.now
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now()
             )
         }.execute().apply()
       }).map(_ => client)

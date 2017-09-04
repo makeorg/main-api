@@ -1,6 +1,5 @@
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import java.util.UUID
 
 import akka.Done
@@ -25,8 +24,8 @@ import org.make.core.proposal.ProposalEvent.{
   ProposalProposed,
   ProposalUpdated
 }
-import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
@@ -88,7 +87,7 @@ object ProposalEventStreamingTest extends MockitoSugar with AvroSerializers with
   val proposalId: ProposalId = ProposalId(UUID.randomUUID.toString)
   val userId: UserId = UserId(UUID.randomUUID.toString)
 
-  private val now = ZonedDateTime.now
+  private val now = DateHelper.now()
   private val before = now.minusSeconds(10)
   private val valueCreate: GenericRecord =
     RecordFormat[ProposalEventWrapper].to(

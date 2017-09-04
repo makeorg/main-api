@@ -1,7 +1,6 @@
 package org.make.api.user.social
 
 import java.text.SimpleDateFormat
-import java.time.ZonedDateTime
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
@@ -14,6 +13,7 @@ import org.make.api.user.social.models.facebook.{
 }
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.core.DateHelper
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
@@ -72,7 +72,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -154,7 +154,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -235,7 +235,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -316,7 +316,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,

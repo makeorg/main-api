@@ -42,7 +42,6 @@ object UserEvent {
     def apply(connectedUserId: Option[UserId], user: User, context: RequestContext): ResetPasswordEvent = {
       ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, context = context)
     }
-
     val version: Int = 1
   }
 

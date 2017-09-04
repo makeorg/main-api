@@ -1,6 +1,6 @@
 package org.make.api.user
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.LocalDate
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
@@ -72,7 +72,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         verified = false,
         lastConnection = DateHelper.now(),
         verificationToken = Some(hashedVerificationToken),
-        verificationTokenExpiresAt = Some(ZonedDateTime.now().plusSeconds(validationTokenExpiresIn)),
+        verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn)),
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),

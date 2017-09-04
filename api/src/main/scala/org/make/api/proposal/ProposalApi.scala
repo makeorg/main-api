@@ -1,6 +1,5 @@
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
@@ -11,11 +10,11 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
+import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -161,7 +160,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     .propose(
                       user = auth.user,
                       context = context,
-                      createdAt = ZonedDateTime.now,
+                      createdAt = DateHelper.now(),
                       content = request.content
                     )
                 ) { proposalId =>
@@ -213,7 +212,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                           .update(
                             proposalId = proposalId,
                             context = requestContext,
-                            updatedAt = ZonedDateTime.now,
+                            updatedAt = DateHelper.now(),
                             content = request.content
                           )
                       ) {

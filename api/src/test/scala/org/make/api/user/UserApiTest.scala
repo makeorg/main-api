@@ -1,7 +1,7 @@
 package org.make.api.user
 
 import java.net.InetAddress
-import java.time.{Instant, LocalDate, ZonedDateTime}
+import java.time.{Instant, LocalDate}
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
@@ -60,9 +60,9 @@ class UserApiTest
     hashedPassword = Some("passpass"),
     enabled = true,
     verified = false,
-    lastConnection = ZonedDateTime.now(),
+    lastConnection = DateHelper.now(),
     verificationToken = Some("token"),
-    verificationTokenExpiresAt = Some(ZonedDateTime.now()),
+    verificationTokenExpiresAt = Some(DateHelper.now()),
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq.empty,

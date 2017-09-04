@@ -1,6 +1,5 @@
 package org.make.api.vote
 
-import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.NotFound
@@ -9,11 +8,11 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
 import org.make.core.vote.VoteStatus.VoteStatus
 import org.make.core.vote.{Vote, VoteId}
+import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -75,7 +74,7 @@ trait VoteApi extends MakeAuthenticationDirectives {
                   voteService.vote(
                     proposalId = proposalId,
                     userId = user.user.userId,
-                    createdAt = ZonedDateTime.now,
+                    createdAt = DateHelper.now(),
                     status = request.status
                   )
                 ) {

@@ -1,16 +1,16 @@
 package org.make.api.user
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.LocalDate
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
 import org.make.api.userhistory.{UserHistoryService, UserHistoryServiceComponent}
-import org.make.core.RequestContext
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -63,9 +63,9 @@ class UserServiceTest
         hashedPassword = Some("passpass"),
         enabled = true,
         verified = false,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
-        verificationTokenExpiresAt = Some(ZonedDateTime.now),
+        verificationTokenExpiresAt = Some(DateHelper.now()),
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),

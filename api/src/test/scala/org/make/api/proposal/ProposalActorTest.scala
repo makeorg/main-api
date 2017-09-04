@@ -20,8 +20,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     system.actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
-  val mainCreatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.now.minusSeconds(10))
-  val mainUpdatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.now)
+  val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(10))
+  val mainUpdatedAt: Option[ZonedDateTime] = Some(DateHelper.now())
 
   val user: User = User(
     userId = mainUserId,
@@ -342,7 +342,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         similarProposals = Seq()
       )
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       When("I re-validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -357,7 +357,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         similarProposals = Seq()
       )
 
-      Then("I should receive the accepted proposal")
+      Then("I should receive an error")
       expectMsgType[ValidationFailedError]
     }
 

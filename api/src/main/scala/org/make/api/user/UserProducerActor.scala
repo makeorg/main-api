@@ -1,7 +1,5 @@
 package org.make.api.user
 
-import java.time.ZonedDateTime
-
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
@@ -48,7 +46,7 @@ class UserProducerActor extends ProducerActor {
       UserEventWrapper(
         version = ResetPasswordEvent.version,
         id = event.userId.value,
-        date = ZonedDateTime.now(),
+        date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
@@ -62,7 +60,7 @@ class UserProducerActor extends ProducerActor {
       UserEventWrapper(
         version = ResendValidationEmailEvent.version,
         id = event.userId.value,
-        date = ZonedDateTime.now(),
+        date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )

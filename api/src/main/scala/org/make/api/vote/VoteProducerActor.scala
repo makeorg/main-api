@@ -1,10 +1,9 @@
 package org.make.api.vote
 
-import java.time.ZonedDateTime
-
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
+import org.make.core.DateHelper
 import org.make.core.vote.VoteEvent
 import org.make.core.vote.VoteEvent.VoteEventWrapper
 
@@ -25,7 +24,7 @@ class VoteProducerActor extends ProducerActor {
         VoteEventWrapper(
           version = 1,
           id = event.id.value,
-          date = ZonedDateTime.now(),
+          date = DateHelper.now(),
           eventType = event.getClass.getSimpleName,
           event = VoteEventWrapper.wrapEvent(event)
         )

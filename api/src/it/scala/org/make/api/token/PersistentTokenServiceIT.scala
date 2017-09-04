@@ -6,6 +6,7 @@ import java.time.ZonedDateTime
 import org.make.api.DatabaseTest
 import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, DefaultPersistentTokenServiceComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent
+import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -20,7 +21,7 @@ class PersistentTokenServiceIT
     with DefaultPersistentClientServiceComponent {
 
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
-  val now: ZonedDateTime = ZonedDateTime.now
+  val now: ZonedDateTime = DateHelper.now()
 
   val exampleUser = User(
     userId = UserId("1"),

@@ -11,6 +11,8 @@ import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 import com.github.t3hnar.bcrypt._
+import org.make.core.DateHelper
+
 import scala.concurrent.Future
 
 trait PersistentUserServiceComponent {
@@ -278,7 +280,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def emailExists(email: String): Future[Boolean] = {
-      implicit val ctx = readExecutionContext
+      implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(count(userAlias.email))
@@ -289,7 +291,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def verificationTokenExists(verificationToken: String): Future[Boolean] = {
-      implicit val ctx = readExecutionContext
+      implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(count(userAlias.verificationToken))
@@ -300,7 +302,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def resetTokenExists(resetToken: String): Future[Boolean] = {
-      implicit val ctx = readExecutionContext
+      implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select(count(userAlias.resetToken))
@@ -311,15 +313,15 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def persist(user: User): Future[User] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           insert
             .into(PersistentUser)
             .namedValues(
               column.uuid -> user.userId.value,
-              column.createdAt -> ZonedDateTime.now,
-              column.updatedAt -> ZonedDateTime.now,
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now(),
               column.email -> user.email,
               column.firstName -> user.firstName,
               column.lastName -> user.lastName,
