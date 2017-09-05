@@ -180,11 +180,13 @@ trait PersistentUserService {
   def findByEmail(email: String): Future[Option[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
+  def findUserByVerificationToken(verificationToken: String): Future[Option[User]]
   def emailExists(email: String): Future[Boolean]
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
   def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean]
+  def validateEmail(verificationToken: String): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -243,6 +245,19 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.resetToken, resetToken)))
+        }.map(PersistentUser.apply()).single.apply
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    override def findUserByVerificationToken(verificationToken: String): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.verificationToken, verificationToken))
         }.map(PersistentUser.apply()).single.apply
       })
 
@@ -347,6 +362,17 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 .eq(column.uuid, userId.value)
                 .and(sqls.eq(column.resetToken, resetToken))
             )
+        }.execute().apply()
+      })
+    }
+
+    override def validateEmail(verificationToken: String): Future[Boolean] = {
+      implicit val ctx = writeExecutionContext
+      Future(NamedDB('WRITE).localTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.verified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
+            .where(sqls.eq(column.verificationToken, verificationToken))
         }.execute().apply()
       })
     }
