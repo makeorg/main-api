@@ -62,7 +62,7 @@ class MakeDataHandlerComponentTest
   val exampleUser: User = mock[User]
   val mockMap: Map[String, Seq[String]] = mock[Map[String, Seq[String]]]
   val exampleToken = Token(
-    accessToken = "access_token_hashed",
+    accessToken = "access_token",
     refreshToken = Some("refresh_token_hashed"),
     scope = None,
     expiresIn = 1800,
@@ -399,7 +399,7 @@ class MakeDataHandlerComponentTest
       When("I call method findAccessToken")
       when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
         .thenReturn(accessTokenHashed)
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenHashed)))
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -417,7 +417,7 @@ class MakeDataHandlerComponentTest
       When("I call method findAccessToken")
       when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
         .thenReturn(accessTokenHashed)
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenHashed)))
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(None))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
