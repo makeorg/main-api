@@ -2,6 +2,7 @@ package org.make.api.technical.auth
 
 import java.time.ZonedDateTime
 
+import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.ShortenedNames
@@ -171,6 +172,9 @@ trait DefaultPersistentTokenServiceComponent
             .innerJoin(PersistentClient.as(PersistentClient.clientAlias))
             .on(PersistentClient.clientAlias.uuid, tokenAlias.clientUuid)
             .where(sqls.eq(tokenAlias.makeUserUuid, user.userId.value))
+            .limit(1)
+            .orderBy(tokenAlias.updatedAt)
+            .desc
         }.map(PersistentToken.apply()).single.apply
       })
 
