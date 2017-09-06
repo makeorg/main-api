@@ -83,7 +83,7 @@ class UserApiTest
           | "email": "foo@bar.com",
           | "firstName": "olive",
           | "lastName": "tom",
-          | "password": "mypass",
+          | "password": "mypassss",
           | "dateOfBirth": "1997-12-02"
           |}
         """.stripMargin
@@ -98,7 +98,7 @@ class UserApiTest
               email = "foo@bar.com",
               firstName = Some("olive"),
               lastName = Some("tom"),
-              password = Some("mypass"),
+              password = Some("mypassss"),
               lastIp = Some("192.0.0.1"),
               Some(LocalDate.parse("1997-12-02"))
             )
@@ -121,7 +121,7 @@ class UserApiTest
           | "email": "foo@bar.com",
           | "firstName": "olive",
           | "lastName": "tom",
-          | "password": "mypass",
+          | "password": "mypassss",
           | "dateOfBirth": "1997-12-02"
           |}
         """.stripMargin
@@ -141,7 +141,7 @@ class UserApiTest
           | "email": "foo",
           | "firstName": "olive",
           | "lastName": "tom",
-          | "password": "mypass",
+          | "password": "mypassss",
           | "dateOfBirth": "1997-12-02"
           |}
         """.stripMargin
@@ -161,7 +161,7 @@ class UserApiTest
           | "email": "foo",
           | "firstName": "olive",
           | "lastName": "tom",
-          | "password": "mypass",
+          | "password": "mypassss",
           | "dateOfBirth": "foo-12-02"
           |}
         """.stripMargin
