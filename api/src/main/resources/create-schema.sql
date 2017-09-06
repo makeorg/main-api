@@ -64,6 +64,14 @@ CREATE TABLE IF NOT EXISTS access_token (
   client_uuid VARCHAR(256) NOT NULL REFERENCES oauth_client
 );
 %
+CREATE TABLE IF NOT EXISTS tag (
+  slug VARCHAR(256) PRIMARY KEY,
+  label VARCHAR(256),
+  enabled BOOLEAN NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+%
 INSERT into oauth_client
     (uuid, secret, allowed_grant_types)
     VALUES

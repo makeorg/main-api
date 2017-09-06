@@ -62,6 +62,8 @@ object Dependencies {
   val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.1"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.1.0"
 
+  val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.1.9"
+
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.6.4"

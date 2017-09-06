@@ -5,7 +5,7 @@ import java.time.LocalDate
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
-import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.{UserHistoryService, UserHistoryServiceComponent}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
@@ -116,8 +116,8 @@ class UserServiceTest
       )
 
       whenReady(futureUser.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[EmailAlreadyRegistredException]
-        exception.asInstanceOf[EmailAlreadyRegistredException].email should be("exist@mail.com")
+        exception shouldBe a[EmailAlreadyRegisteredException]
+        exception.asInstanceOf[EmailAlreadyRegisteredException].email should be("exist@mail.com")
       }
     }
   }

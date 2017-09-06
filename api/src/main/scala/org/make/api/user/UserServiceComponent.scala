@@ -5,7 +5,7 @@ import java.time.LocalDate
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.models.UserInfo
 import org.make.core.profile.Profile
 import org.make.core.user.UserEvent.UserRegisteredEvent
@@ -84,7 +84,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
 
       if (emailExists) {
-        Future.failed(EmailAlreadyRegistredException(lowerCasedEmail))
+        Future.failed(EmailAlreadyRegisteredException(lowerCasedEmail))
       } else {
         userTokenGenerator.generateVerificationToken().map {
           case (_, token) => token
