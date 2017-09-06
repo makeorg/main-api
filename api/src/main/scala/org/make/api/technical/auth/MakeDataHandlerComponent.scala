@@ -86,13 +86,13 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       val futureClient = persistentClientService.get(ClientId(clientId))
       val futureResult: Future[(Token, String, String)] = for {
-        (accessToken, hashedAccessToken)   <- futureAccessTokens
+        (accessToken, _)                   <- futureAccessTokens
         (refreshToken, hashedRefreshToken) <- futureRefreshTokens
         client                             <- futureClient
       } yield
         (
           Token(
-            accessToken = hashedAccessToken,
+            accessToken = accessToken,
             refreshToken = Some(hashedRefreshToken),
             scope = None,
             expiresIn = validityDurationAccessTokenSeconds,
@@ -172,11 +172,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
-      persistentTokenService.findByAccessToken(oauthTokenGenerator.getHashFromToken(token)).map(_.map(toAccessToken))
+      persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
     }
 
     override def removeTokenByAccessToken(token: String): Future[Int] = {
-      persistentTokenService.deleteByAccessToken(oauthTokenGenerator.getHashFromToken(token))
+      persistentTokenService.deleteByAccessToken(token)
     }
 
     override def removeTokenByUserId(userId: UserId): Future[Int] = {
