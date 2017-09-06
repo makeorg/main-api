@@ -23,6 +23,7 @@ trait UserService extends ShortenedNames {
   def getUser(uuid: String): Future[Option[User]]
   def register(userRegisterData: UserRegisterData)(implicit ctx: EC = ECGlobal): Future[User]
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
+  def validateEmail(verificationToken: String): Future[Boolean]
   def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String])(implicit ctx: EC = ECGlobal): Future[User]
 }
 
@@ -128,6 +129,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean] = {
       persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
+    }
+
+    override def validateEmail(verificationToken: String): Future[Boolean] = {
+      persistentUserService.validateEmail(verificationToken)
     }
   }
 }

@@ -163,6 +163,31 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
+  @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @Path(value = "/validation/:verificationToken")
+  @ApiImplicitParams(value = Array())
+  def validateAccountRoute(implicit ctx: EC = ECGlobal): Route = {
+    post {
+      path("user" / "validation" / Segment) { (verificationToken: String) =>
+        makeTrace("UserValidation") { _ =>
+          provideAsyncOrNotFound(persistentUserService.findUserByVerificationToken(verificationToken)) { user =>
+            if (user.verificationTokenExpiresAt.forall(_.isBefore(DateHelper.now()))) {
+              complete(StatusCodes.BadRequest)
+            } else {
+              onSuccess(
+                userService
+                  .validateEmail(verificationToken = verificationToken)
+              ) { _ =>
+                complete(StatusCodes.NoContent)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/reset-password/request-reset")
@@ -257,8 +282,14 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes
-    : Route = resetPasswordRequestRoute ~ resetPasswordCheckRoute ~ resetPasswordRoute ~ register ~ socialLogin ~ getUser ~ getMe
+  val userRoutes: Route = getUser ~
+    getMe ~
+    register ~
+    socialLogin ~
+    resetPasswordRequestRoute ~
+    resetPasswordCheckRoute ~
+    resetPasswordRoute ~
+    validateAccountRoute
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
