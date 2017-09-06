@@ -9,7 +9,7 @@ import org.apache.commons.dbcp2.BasicDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 class DatabaseConfiguration(override protected val configuration: Config)
@@ -70,7 +70,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
     val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
     logger.debug(s"Creating database with name: $dbname")
     val queries = Source
-      .fromResource("create-schema.sql")
+      .fromResource("create-schema.sql")(Codec.UTF8)
       .mkString
       .replace("#dbname#", dbname)
       .replace("#clientid#", defaultClientId)

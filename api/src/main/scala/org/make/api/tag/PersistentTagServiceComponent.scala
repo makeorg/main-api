@@ -19,6 +19,7 @@ trait PersistentTagServiceComponent {
 trait PersistentTagService {
   def get(slug: TagId): Future[Option[Tag]]
   def findAllEnabled(): Future[Seq[Tag]]
+  def findAllEnabledFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
 }
 
@@ -31,7 +32,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     private val column = PersistentTag.column
 
     override def get(slug: TagId): Future[Option[Tag]] = {
-      implicit val cxt: EC = readExecutionContext
+      implicit val context: EC = readExecutionContext
       val futurePersistentTag = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select
@@ -44,7 +45,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     }
 
     override def findAllEnabled(): Future[Seq[Tag]] = {
-      implicit val cxt: EC = readExecutionContext
+      implicit val context: EC = readExecutionContext
       val futurePersistentTags = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {
           select
@@ -56,8 +57,26 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       futurePersistentTags.map(_.map(_.toTag))
     }
 
+    override def findAllEnabledFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val uniqueTagsIds: Seq[String] = tagsIds.distinct.map(_.value)
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).localTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(
+              sqls
+                .eq(tagAlias.enabled, true)
+                .and(sqls.in(tagAlias.slug, uniqueTagsIds))
+            )
+        }.map(PersistentTag.apply()).list.apply
+      })
+
+      futurePersistentTags.map(_.map(_.toTag))
+    }
+
     override def persist(tag: Tag): Future[Tag] = {
-      implicit val ctx: EC = writeExecutionContext
+      implicit val context: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           insert
@@ -72,7 +91,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         }.execute().apply()
       }).map(_ => tag)
     }
-
   }
 }
 
@@ -93,7 +111,7 @@ object DefaultPersistentTagServiceComponent {
 
     override val tableName: String = "tag"
 
-    lazy val tagAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentTag], PersistentTag] = syntax("t")
+    lazy val tagAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentTag], PersistentTag] = syntax("ta")
 
     def apply(
       tagResultName: ResultName[PersistentTag] = tagAlias.resultName
