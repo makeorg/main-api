@@ -166,13 +166,16 @@ trait UserApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/validation/:verificationToken")
+  @Path(value = "/:userId/validate/:verificationToken")
   @ApiImplicitParams(value = Array())
   def validateAccountRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
-      path("user" / "validation" / Segment) { (verificationToken: String) =>
-        makeTrace("UserValidation") { requestContext =>
-          provideAsyncOrNotFound(persistentUserService.findUserByVerificationToken(verificationToken)) { user =>
+      path("user" / userId / "validate" / Segment) { (userId: UserId, verificationToken: String) =>
+        makeTrace("UserValidation") { _ =>
+          provideAsyncOrNotFound(
+            persistentUserService
+              .findUserByUserIdAndVerificationToken(userId, verificationToken)
+          ) { user =>
             if (user.verificationTokenExpiresAt.forall(_.isBefore(DateHelper.now()))) {
               complete(StatusCodes.BadRequest)
             } else {
