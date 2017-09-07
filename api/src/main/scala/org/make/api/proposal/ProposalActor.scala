@@ -1,6 +1,6 @@
 package org.make.api.proposal
 
-import java.net.URLEncoder
+import org.make.core.SlugHelper
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset}
 
@@ -54,7 +54,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
             ChronoUnit.YEARS.between(date, LocalDate.now(ZoneOffset.UTC)).toInt
           }
         ),
-        slug = ProposalActor.createSlug(command.content),
+        slug = SlugHelper(command.content),
         requestContext = command.requestContext,
         userId = user.userId,
         eventDate = command.createdAt,
@@ -168,9 +168,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
         )
       )
     case e: ProposalUpdated =>
-      state.map(
-        _.copy(content = e.content, slug = ProposalActor.createSlug(e.content), updatedAt = Option(e.updatedAt))
-      )
+      state.map(_.copy(content = e.content, slug = SlugHelper(e.content), updatedAt = Option(e.updatedAt)))
     case e: ProposalAccepted => state.map(proposal => applyProposalAccepted(proposal, e))
     case _                   => state
   }
@@ -188,10 +186,6 @@ class ProposalActor extends PersistentActor with ActorLogging {
 object ProposalActor {
   val props: Props = Props[ProposalActor]
 
-  def createSlug(content: String): String = {
-    URLEncoder.encode(content.toLowerCase().replaceAll("\\s", "-"), "UTF-8")
-  }
-
   def applyProposalAccepted(state: Proposal, event: ProposalAccepted): Proposal = {
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = Map())
@@ -206,7 +200,7 @@ object ProposalActor {
 
     result = event.edition match {
       case None                                 => result
-      case Some(ProposalEdition(_, newVersion)) => result.copy(content = newVersion, slug = createSlug(newVersion))
+      case Some(ProposalEdition(_, newVersion)) => result.copy(content = newVersion, slug = SlugHelper(newVersion))
     }
     result = event.theme match {
       case None  => result

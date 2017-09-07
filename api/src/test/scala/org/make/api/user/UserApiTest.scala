@@ -11,7 +11,7 @@ import io.circe.generic.auto._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
-import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
 import org.make.api.{MakeApi, MakeApiTestUtils}
 import org.make.core.user.UserEvent.ResetPasswordEvent
@@ -114,7 +114,7 @@ class UserApiTest
           userService
             .register(any[UserRegisterData], any[RequestContext])
         )
-        .thenReturn(Future.failed(EmailAlreadyRegistredException("foo@bar.com")))
+        .thenReturn(Future.failed(EmailAlreadyRegisteredException("foo@bar.com")))
 
       val request =
         """

@@ -145,7 +145,7 @@ object PersistentUserServiceComponent {
         email = resultSet.string(userResultName.email),
         firstName = resultSet.stringOpt(userResultName.firstName),
         lastName = resultSet.stringOpt(userResultName.lastName),
-        createdAt = resultSet.zonedDateTime(userResultName.updatedAt),
+        createdAt = resultSet.zonedDateTime(userResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(userResultName.updatedAt),
         lastIp = resultSet.stringOpt(userResultName.lastIp),
         hashedPassword = resultSet.string(userResultName.hashedPassword),
@@ -355,7 +355,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           update(PersistentUser)
@@ -370,7 +370,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           update(PersistentUser)

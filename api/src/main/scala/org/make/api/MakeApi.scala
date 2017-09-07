@@ -20,12 +20,13 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._
 import org.make.api.proposal._
+import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.BusinessConfigApi
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.technical.mailjet.MailJetApi
-import org.make.api.user.UserExceptions.EmailAlreadyRegistredException
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi, UserSupervisor}
 import org.make.api.userhistory.{
@@ -45,11 +46,13 @@ trait MakeApi
     extends DefaultIdGeneratorComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentClientServiceComponent
+    with DefaultPersistentTagServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultSocialServiceComponent
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
     with DefaultUserServiceComponent
+    with DefaultTagServiceComponent
     with DefaultProposalServiceComponent
     with DefaultVoteServiceComponent
     with DefaultMakeDataHandlerComponent
@@ -71,6 +74,7 @@ trait MakeApi
     with AuthenticationApi
     with BusinessConfigApi
     with UserApi
+    with TagApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -119,7 +123,7 @@ trait MakeApi
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val apiClasses: Set[Class[_]] =
-    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[ProposalApi], classOf[BusinessConfigApi])
+    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[TagApi], classOf[ProposalApi], classOf[BusinessConfigApi])
 
   private lazy val optionsCors: Route = options {
     MakeApi.corsHeaders() {
@@ -139,9 +143,9 @@ trait MakeApi
         swagger ~
         optionsCors ~
         userRoutes ~
+        tagRoutes ~
         proposalRoutes ~
         optionsAuthorized ~
-        accessTokenRoute ~
         buildRoutes ~
         mailJetRoutes ~
         authenticationRoutes ~
@@ -207,7 +211,7 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     }
 
   val exceptionHandler = ExceptionHandler {
-    case e: EmailAlreadyRegistredException =>
+    case e: EmailAlreadyRegisteredException =>
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
       complete(

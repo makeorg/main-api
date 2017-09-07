@@ -182,7 +182,7 @@ trait DefaultPersistentTokenServiceComponent
     }
 
     override def persist(token: Token): Future[Token] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           insert
@@ -202,7 +202,7 @@ trait DefaultPersistentTokenServiceComponent
     }
 
     override def deleteByRefreshToken(refreshToken: String): Future[Int] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           delete
@@ -214,7 +214,7 @@ trait DefaultPersistentTokenServiceComponent
     }
 
     override def deleteByAccessToken(accessToken: String): Future[Int] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           delete
@@ -226,7 +226,7 @@ trait DefaultPersistentTokenServiceComponent
     }
 
     override def deleteByUserId(userId: UserId): Future[Int] = {
-      implicit val ctx = writeExecutionContext
+      implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).localTx { implicit session =>
         withSQL {
           delete
