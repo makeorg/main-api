@@ -218,7 +218,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsgType[ValidationFailedError]
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("unknown")
+      error.errors.head.message should be(Some("Proposal nothing-there doesn't exist"))
 
     }
 
@@ -358,7 +360,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive an error")
-      expectMsgType[ValidationFailedError]
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("unknown")
+      error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already validated"))
+
     }
 
   }
