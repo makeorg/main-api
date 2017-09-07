@@ -9,7 +9,7 @@ sealed trait UserEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def userId: UserId
-  def context: RequestContext
+  def requestContext: RequestContext
 }
 
 object UserEvent {
@@ -35,12 +35,12 @@ object UserEvent {
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
-                                      override val context: RequestContext)
+                                      override val requestContext: RequestContext)
       extends UserEvent
 
   object ResetPasswordEvent {
-    def apply(connectedUserId: Option[UserId], user: User, context: RequestContext): ResetPasswordEvent = {
-      ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, context = context)
+    def apply(connectedUserId: Option[UserId], user: User, requestContext: RequestContext): ResetPasswordEvent = {
+      ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, requestContext = requestContext)
     }
     val version: Int = 1
   }
@@ -48,12 +48,12 @@ object UserEvent {
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
                                               override val eventDate: ZonedDateTime = DateHelper.now(),
                                               override val userId: UserId,
-                                              override val context: RequestContext)
+                                              override val requestContext: RequestContext)
       extends UserEvent
 
   object ResendValidationEmailEvent {
-    def apply(connectedUserId: UserId, userId: UserId, context: RequestContext): ResendValidationEmailEvent = {
-      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId, context = context)
+    def apply(connectedUserId: UserId, userId: UserId, requestContext: RequestContext): ResendValidationEmailEvent = {
+      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId, requestContext = requestContext)
     }
     val version: Int = 1
   }
@@ -61,7 +61,7 @@ object UserEvent {
   case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
                                  override val eventDate: ZonedDateTime = DateHelper.now(),
                                  override val userId: UserId,
-                                 override val context: RequestContext,
+                                 override val requestContext: RequestContext,
                                  email: String,
                                  firstName: Option[String],
                                  lastName: Option[String],

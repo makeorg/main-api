@@ -34,7 +34,9 @@ class ProposalActor extends PersistentActor with ActorLogging {
   }
 
   private def onViewProposalCommand(command: ViewProposalCommand): Unit = {
-    persistAndPublishEvent(ProposalViewed(id = proposalId, eventDate = DateHelper.now(), context = command.context)) {
+    persistAndPublishEvent(
+      ProposalViewed(id = proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
+    ) {
       sender() ! state
     }
   }
@@ -53,7 +55,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           }
         ),
         slug = ProposalActor.createSlug(command.content),
-        context = command.context,
+        requestContext = command.requestContext,
         userId = user.userId,
         eventDate = command.createdAt,
         content = command.content
@@ -70,7 +72,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
       ProposalUpdated(
         id = proposalId,
         eventDate = DateHelper.now(),
-        context = command.context,
+        requestContext = command.requestContext,
         updatedAt = command.updatedAt,
         content = command.content
       )
@@ -117,7 +119,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           ProposalAccepted(
             id = command.proposalId,
             eventDate = DateHelper.now(),
-            context = command.context,
+            requestContext = command.requestContext,
             moderator = command.moderator,
             edition = command.newContent.map { newContent =>
               ProposalEdition(proposal.content, newContent)
@@ -152,8 +154,8 @@ class ProposalActor extends PersistentActor with ActorLogging {
           updatedAt = None,
           content = e.content,
           status = ProposalStatus.Pending,
-          theme = e.context.currentTheme,
-          creationContext = e.context,
+          theme = e.requestContext.currentTheme,
+          creationContext = e.requestContext,
           labels = Seq(),
           events = List(
             ProposalAction(

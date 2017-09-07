@@ -57,7 +57,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
     (userHistoryCoordinator ? LogUserProposalEvent(
       userId = event.userId,
-      context = event.context,
+      requestContext = event.requestContext,
       action = UserAction(
         date = event.eventDate,
         actionType = LogUserProposalEvent.action,
@@ -71,7 +71,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
     (userHistoryCoordinator ? LogAcceptProposalEvent(
       userId = event.moderator,
-      context = event.context,
+      requestContext = event.requestContext,
       action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
     )).map { _ =>
       {}

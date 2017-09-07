@@ -151,7 +151,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def propose: Route =
     post {
       path("proposal") {
-        makeTrace("Propose") { context =>
+        makeTrace("Propose") { requestContext =>
           makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
@@ -159,7 +159,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   proposalService
                     .propose(
                       user = auth.user,
-                      context = context,
+                      requestContext = requestContext,
                       createdAt = DateHelper.now(),
                       content = request.content
                     )
@@ -211,7 +211,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                         proposalService
                           .update(
                             proposalId = proposalId,
-                            context = requestContext,
+                            requestContext = requestContext,
                             updatedAt = DateHelper.now(),
                             content = request.content
                           )
@@ -256,7 +256,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   proposalService.validateProposal(
                     proposalId = proposalId,
                     moderator = auth.user.userId,
-                    context = requestContext,
+                    requestContext = requestContext,
                     request = request
                   )
                 ) { proposal: Proposal =>

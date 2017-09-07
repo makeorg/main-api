@@ -51,7 +51,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
     (userHistoryCoordinator ? LogRegisterCitizenEvent(
       userId = event.userId,
-      context = event.context,
+      requestContext = event.requestContext,
       action = UserAction(
         date = event.eventDate,
         actionType = LogRegisterCitizenEvent.action,

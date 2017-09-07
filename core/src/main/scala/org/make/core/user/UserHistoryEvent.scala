@@ -15,7 +15,7 @@ case object Citizen extends Protagonist
 
 sealed trait UserHistoryEvent[T] extends MakeSerializable {
   def userId: UserId
-  def context: RequestContext
+  def requestContext: RequestContext
   def action: UserAction[T]
   def protagonist: Protagonist
 }
@@ -30,7 +30,9 @@ final case class UserRegistered(email: String,
 
 final case class UserProposal(content: String)
 
-final case class LogSearchProposalsEvent(userId: UserId, context: RequestContext, action: UserAction[SearchParameters])
+final case class LogSearchProposalsEvent(userId: UserId,
+                                         requestContext: RequestContext,
+                                         action: UserAction[SearchParameters])
     extends UserHistoryEvent[SearchParameters] {
   override val protagonist: Protagonist = Citizen
 }
@@ -40,7 +42,9 @@ object LogSearchProposalsEvent {
   val action: String = "search"
 }
 
-final case class LogAcceptProposalEvent(userId: UserId, context: RequestContext, action: UserAction[ProposalAccepted])
+final case class LogAcceptProposalEvent(userId: UserId,
+                                        requestContext: RequestContext,
+                                        action: UserAction[ProposalAccepted])
     extends UserHistoryEvent[ProposalAccepted] {
   override val protagonist: Protagonist = Moderator
 }
@@ -49,7 +53,7 @@ object LogRegisterCitizenEvent {
   val action = "register"
 }
 
-final case class LogUserProposalEvent(userId: UserId, context: RequestContext, action: UserAction[UserProposal])
+final case class LogUserProposalEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserProposal])
     extends UserHistoryEvent[UserProposal] {
   override val protagonist: Protagonist = Citizen
 }
@@ -63,7 +67,9 @@ object LogAcceptProposalEvent {
   val action: String = "accept-proposal"
 }
 
-final case class LogRegisterCitizenEvent(userId: UserId, context: RequestContext, action: UserAction[UserRegistered])
+final case class LogRegisterCitizenEvent(userId: UserId,
+                                         requestContext: RequestContext,
+                                         action: UserAction[UserRegistered])
     extends UserHistoryEvent[UserRegistered] {
   override val protagonist: Protagonist = Citizen
 }

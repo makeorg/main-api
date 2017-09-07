@@ -20,17 +20,17 @@ trait ProposalServiceComponent {
 trait ProposalService {
 
   def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
-  def getEventSourcingProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]]
-  def search(userId: Option[UserId], query: SearchQuery, context: RequestContext): Future[Seq[IndexedProposal]]
-  def propose(user: User, context: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
+  def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
+  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[Seq[IndexedProposal]]
+  def propose(user: User, requestContext: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
-             context: RequestContext,
+             requestContext: RequestContext,
              updatedAt: ZonedDateTime,
              content: String): Future[Option[Proposal]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
-                       context: RequestContext,
+                       requestContext: RequestContext,
                        request: ValidateProposalRequest): Future[Proposal]
 }
 
@@ -45,23 +45,25 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
-    override def getProposalById(proposalId: ProposalId, context: RequestContext): Future[Option[IndexedProposal]] = {
-      proposalCoordinatorService.viewProposal(proposalId, context)
+    override def getProposalById(proposalId: ProposalId,
+                                 requestContext: RequestContext): Future[Option[IndexedProposal]] = {
+      proposalCoordinatorService.viewProposal(proposalId, requestContext)
       elasticsearchAPI.findProposalById(proposalId)
     }
 
-    override def getEventSourcingProposal(proposalId: ProposalId, context: RequestContext): Future[Option[Proposal]] = {
-      proposalCoordinatorService.viewProposal(proposalId, context)
+    override def getEventSourcingProposal(proposalId: ProposalId,
+                                          requestContext: RequestContext): Future[Option[Proposal]] = {
+      proposalCoordinatorService.viewProposal(proposalId, requestContext)
     }
 
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
-                        context: RequestContext): Future[Seq[IndexedProposal]] = {
+                        requestContext: RequestContext): Future[Seq[IndexedProposal]] = {
       maybeUserId.foreach { userId =>
         userHistoryService.logHistory(
           LogSearchProposalsEvent(
             userId,
-            context,
+            requestContext,
             UserAction(DateHelper.now(), LogSearchProposalsEvent.action, SearchParameters(query))
           )
         )
@@ -70,14 +72,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     }
 
     override def propose(user: User,
-                         context: RequestContext,
+                         requestContext: RequestContext,
                          createdAt: ZonedDateTime,
                          content: String): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
           proposalId = idGenerator.nextProposalId(),
-          context = context,
+          requestContext = requestContext,
           user = user,
           createdAt = createdAt,
           content = content
@@ -86,25 +88,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     }
 
     override def update(proposalId: ProposalId,
-                        context: RequestContext,
+                        requestContext: RequestContext,
                         updatedAt: ZonedDateTime,
                         content: String): Future[Option[Proposal]] = {
 
       proposalCoordinatorService.update(
-        UpdateProposalCommand(proposalId = proposalId, context = context, updatedAt = updatedAt, content = content)
+        UpdateProposalCommand(
+          proposalId = proposalId,
+          requestContext = requestContext,
+          updatedAt = updatedAt,
+          content = content
+        )
       )
     }
 
     override def validateProposal(proposalId: ProposalId,
                                   moderator: UserId,
-                                  context: RequestContext,
+                                  requestContext: RequestContext,
                                   request: ValidateProposalRequest): Future[Proposal] = {
 
       proposalCoordinatorService.accept(
         AcceptProposalCommand(
           proposalId = proposalId,
           moderator = moderator,
-          context = context,
+          requestContext = requestContext,
           sendNotificationEmail = request.sendNotificationEmail,
           newContent = request.newContent,
           theme = request.theme,

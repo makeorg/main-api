@@ -115,7 +115,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             UserRegisteredEvent(
               connectedUserId = Some(user.userId),
               userId = user.userId,
-              context = requestContext,
+              requestContext = requestContext,
               email = user.email,
               firstName = user.firstName,
               lastName = user.lastName,

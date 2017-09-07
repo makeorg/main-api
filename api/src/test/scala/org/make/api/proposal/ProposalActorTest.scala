@@ -110,7 +110,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       When("a asking for a fake ProposalId")
       coordinator ! UpdateProposalCommand(
         proposalId = ProposalId("fake"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
@@ -127,7 +127,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       And("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal"
@@ -138,7 +138,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       When("updating this Proposal")
       coordinator ! UpdateProposalCommand(
         proposalId = proposalId,
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
         content = "An updated content"
       )
@@ -187,7 +187,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       When("a new Proposal is proposed")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal"
@@ -208,7 +208,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("nothing-there"),
         moderator = UserId("some user"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
         theme = Some(ThemeId("my theme")),
@@ -229,7 +229,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
         ProposalId("to-be-moderated-changing-text"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent
@@ -244,7 +244,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated-changing-text"),
         moderator = UserId("some user"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("This content must be changed"),
         theme = Some(ThemeId("my theme")),
@@ -275,7 +275,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
         ProposalId("to-be-moderated"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent
@@ -290,7 +290,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated"),
         moderator = UserId("some user"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
         theme = Some(ThemeId("my theme")),
@@ -321,7 +321,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
         ProposalId("to-be-moderated-2"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent
@@ -335,7 +335,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
         moderator = UserId("some user"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
         theme = Some(ThemeId("my theme")),
@@ -350,7 +350,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
         moderator = UserId("some other user"),
-        context = RequestContext.empty,
+        requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("something different"),
         theme = Some(ThemeId("my theme 2")),

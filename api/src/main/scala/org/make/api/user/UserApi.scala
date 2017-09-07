@@ -171,7 +171,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   def validateAccountRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
       path("user" / "validation" / Segment) { (verificationToken: String) =>
-        makeTrace("UserValidation") { context =>
+        makeTrace("UserValidation") { requestContext =>
           provideAsyncOrNotFound(persistentUserService.findUserByVerificationToken(verificationToken)) { user =>
             if (user.verificationTokenExpiresAt.forall(_.isBefore(DateHelper.now()))) {
               complete(StatusCodes.BadRequest)
@@ -200,12 +200,16 @@ trait UserApi extends MakeAuthenticationDirectives {
   def resetPasswordRequestRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
       path("user" / "reset-password" / "request-reset") {
-        makeTrace("ResetPasswordRequest") { context =>
+        makeTrace("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
                 eventBusService.publish(
-                  ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId), context = context)
+                  ResetPasswordEvent(
+                    userId = id,
+                    connectedUserId = userAuth.map(_.user.userId),
+                    requestContext = requestContext
+                  )
                 )
                 complete(StatusCodes.NoContent)
               }
@@ -274,11 +278,15 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiImplicitParams(value = Array())
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
-      makeTrace("ResendValidateEmail") { context =>
+      makeTrace("ResendValidateEmail") { requestContext =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
             eventBusService.publish(
-              ResendValidationEmailEvent(userId = userId, connectedUserId = userAuth.user.userId, context = context)
+              ResendValidationEmailEvent(
+                userId = userId,
+                connectedUserId = userAuth.user.userId,
+                requestContext = requestContext
+              )
             )
             complete(StatusCodes.NoContent)
           }
