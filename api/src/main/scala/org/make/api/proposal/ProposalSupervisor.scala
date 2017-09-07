@@ -1,43 +1,33 @@
 package org.make.api.proposal
 
-import akka.actor.{Actor, ActorLogging, Props}
-import akka.stream.ActorMaterializer
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
-import org.make.api.technical.{AvroSerializers, ShortenedNames}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.technical.ShortenedNames
+import org.make.api.user.UserService
 
-import scala.util.{Failure, Success}
-
-class ProposalSupervisor
+class ProposalSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
     extends Actor
     with ActorLogging
-    with DefaultProposalSearchEngineComponent
-    with ElasticsearchConfigurationExtension
-    with ProposalStreamToElasticsearchComponent
-    with AvroSerializers
-    with ShortenedNames {
+    with ShortenedNames
+    with DefaultProposalCoordinatorServiceComponent
+    with ProposalCoordinatorComponent {
 
-  implicit private val materializer: ActorMaterializer = ActorMaterializer()(context.system)
-  val proposalStreamToElasticsearch: ProposalStreamToElasticsearch =
-    new ProposalStreamToElasticsearch(context.system, materializer)
+  override val proposalCoordinator: ActorRef =
+    context.watch(context.actorOf(ProposalCoordinator.props, ProposalCoordinator.name))
 
   override def preStart(): Unit = {
-
+    context.watch(context.actorOf(ProposalProducerActor.props, ProposalProducerActor.name))
     context.watch(
       context
-        .actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
+        .actorOf(ProposalUserHistoryConsumerActor.props(userHistoryCoordinator), ProposalUserHistoryConsumerActor.name)
     )
     context.watch(
       context
-        .actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
+        .actorOf(
+          ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService),
+          ProposalEmailConsumerActor.name
+        )
     )
-    proposalStreamToElasticsearch
-      .run()
-      .onComplete {
-        case Success(result) => log.debug("Stream processed: {}", result)
-        case Failure(e)      => log.warning("Failure in stream", e)
-        // TODO: restart stream on failure
-      }(ECGlobal)
-
+    context.watch(context.actorOf(ProposalEventStreamingActor.backoffPros, ProposalEventStreamingActor.backoffName))
   }
 
   override def receive: Receive = {
@@ -49,5 +39,6 @@ class ProposalSupervisor
 object ProposalSupervisor {
 
   val name: String = "proposal"
-  val props: Props = Props[ProposalSupervisor]
+  def props(userService: UserService, userHistoryCoordinator: ActorRef): Props =
+    Props(new ProposalSupervisor(userService, userHistoryCoordinator))
 }

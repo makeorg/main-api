@@ -1,6 +1,6 @@
 package org.make.api.technical.cluster
 
-import java.time.{ZoneOffset, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import akka.actor.{Actor, ActorLogging, ActorRef, AddressFromURIString, Props}
 import akka.cluster.Cluster
@@ -14,7 +14,7 @@ import org.make.api.technical.ConsulActor
 import org.make.api.technical.ConsulActor.{RenewSession, _}
 import org.make.api.technical.ConsulEntities.{CreateSessionResponse, ReadResponse, WriteResponse}
 import org.make.api.technical.cluster.ClusterFormationActor._
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, DateHelper}
 
 import scala.concurrent.duration.{Duration, _}
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -74,7 +74,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       context.system.scheduler.scheduleOnce(2.seconds, self, Init)
     }
 
-    private[ClusterFormationActor] def onSeedRetrieved(node: Node) = {
+    private[ClusterFormationActor] def onSeedRetrieved(node: Node): Unit = {
       Cluster(context.system).join(AddressFromURIString(node.address))
       context.become(ready)
     }
@@ -89,7 +89,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       }).to(self)
     }
 
-    private[ClusterFormationActor] def onNewSeed() = {
+    private[ClusterFormationActor] def onNewSeed(): Unit = {
       // I became the master, so I need to connect to myself
       val cluster = Cluster(context.system)
       cluster.join(cluster.selfAddress)
@@ -108,7 +108,7 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       val writingSeedInTheFuture = consulClient ? WriteExclusiveKey(
         s"${settings.Cluster.name}/seed",
         id,
-        Node(Cluster(context.system).selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson.toString
+        Node(Cluster(context.system).selfAddress.toString, DateHelper.now()).asJson.toString
       )
 
       pipe(writingSeedInTheFuture.map {
@@ -123,7 +123,9 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
 
       val sessionInTheFuture =
         (consulClient ? CreateSession(settings.Cluster.sessionTimeout)).recoverWith {
-          case x => Future.failed(GetSessionFailed(x))
+          case x =>
+            self ! Init
+            Future.failed(GetSessionFailed(x))
         }
       pipe(sessionInTheFuture).to(self)
     }
@@ -153,13 +155,13 @@ class ClusterFormationActor extends Actor with MakeSettingsExtension with ActorL
       consulClient ! WriteExclusiveKey(
         s"${settings.Cluster.name}/seed",
         sessionId,
-        Node(cluster.selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson
+        Node(cluster.selfAddress.toString, DateHelper.now()).asJson
           .toString()
       )
       val address = cluster.selfAddress
       consulClient ! WriteKey(
         s"${settings.Cluster.name}/${address.host.get}-${address.port.get}",
-        Node(cluster.selfAddress.toString, ZonedDateTime.now(ZoneOffset.UTC)).asJson
+        Node(cluster.selfAddress.toString, DateHelper.now()).asJson
           .toString()
       )
 

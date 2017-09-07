@@ -21,8 +21,9 @@ import scala.io.Source
 import scala.util.Failure
 import io.circe.syntax._
 import io.circe.generic.auto._
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, DateHelper}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.ProposalStatus._
 
 class ProposalSearchEngineIT
     extends ItMakeTest
@@ -81,7 +82,7 @@ class ProposalSearchEngineIT
     }
   }
 
-  private val now = ZonedDateTime.now()
+  private val now = DateHelper.now()
   private val newProposal = IndexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
     userId = UserId("user-id"),
@@ -461,7 +462,7 @@ class ProposalSearchEngineIT
     scenario("should return a list of pending proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.map(_.status).mkString)
-        result.length should be(pendingProposals.size)
+        result.size should be(pendingProposals.size)
       }
     }
   }

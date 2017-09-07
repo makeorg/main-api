@@ -1,7 +1,6 @@
 package org.make.api.user.social
 
 import java.text.SimpleDateFormat
-import java.time.ZonedDateTime
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
@@ -14,14 +13,15 @@ import org.make.api.user.social.models.facebook.{
 }
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.core.DateHelper
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationDouble
-import scala.concurrent.{ExecutionContext, Future}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class SocialServiceComponentTest
@@ -72,7 +72,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -97,7 +97,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(googleData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
@@ -119,7 +119,7 @@ class SocialServiceComponentTest
             picture = Some("picture_url")
           )
 
-        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))(any[ExecutionContext])
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromGoogle), matches(None))
       }
     }
 
@@ -154,7 +154,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -179,7 +179,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(googleData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
@@ -235,7 +235,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -269,7 +269,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(matches(info), matches(None))(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(matches(info), matches(None)))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
@@ -292,9 +292,7 @@ class SocialServiceComponentTest
             picture = Some("facebook.com/picture")
           )
 
-        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))(
-          any[ExecutionContext]()
-        )
+        verify(userService).getOrCreateUserFromSocial(matches(userInfoFromFacebook), matches(None))
       }
 
     }
@@ -318,7 +316,7 @@ class SocialServiceComponentTest
         hashedPassword = None,
         enabled = true,
         verified = true,
-        lastConnection = ZonedDateTime.now(),
+        lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -343,7 +341,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(facebookData))
 
       Mockito
-        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]])(any[ExecutionContext]))
+        .when(userService.getOrCreateUserFromSocial(any[UserInfo], any[Option[String]]))
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito

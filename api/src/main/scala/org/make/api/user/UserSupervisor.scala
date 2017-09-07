@@ -1,15 +1,30 @@
 package org.make.api.user
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
-class UserSupervisor extends Actor with ActorLogging with AvroSerializers with ShortenedNames {
+class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
+    extends Actor
+    with ActorLogging
+    with AvroSerializers
+    with ShortenedNames {
 
   override def preStart(): Unit = {
     context.watch(
       context
         .actorOf(UserProducerActor.props, UserProducerActor.name)
     )
+
+    context.watch(
+      context
+        .actorOf(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
+    )
+
+    context.watch(
+      context
+        .actorOf(UserHistoryConsumerActor.props(userHistoryCoordinator), UserHistoryConsumerActor.name)
+    )
+
   }
 
   override def receive: Receive = {
@@ -20,5 +35,6 @@ class UserSupervisor extends Actor with ActorLogging with AvroSerializers with S
 object UserSupervisor {
 
   val name: String = "users"
-  val props: Props = Props[UserSupervisor]
+  def props(userService: UserService, userHistoryCoordinator: ActorRef): Props =
+    Props(new UserSupervisor(userService, userHistoryCoordinator))
 }

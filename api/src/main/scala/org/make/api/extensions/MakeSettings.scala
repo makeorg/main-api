@@ -30,6 +30,8 @@ class MakeSettings(config: Config) extends Extension {
     val ssl: Boolean = config.getBoolean("http.ssl")
   }
 
+  val frontUrl: String = config.getString("front-url")
+
   object Cluster {
     val name: String = config.getString("cluster.name")
 

@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.theme.ThemeId
 import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
@@ -15,6 +14,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import org.make.api.Predef._
+import org.make.core.reference.ThemeId
+import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.user.User
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent =>
@@ -170,6 +172,10 @@ object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
 
 trait MakeAuthenticationDirectives extends MakeDirectives with MakeAuthentication {
   this: MakeDataHandlerComponent with IdGeneratorComponent =>
+
+  def requireModerationRole(user: User): Directive0 = {
+    authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))
+  }
 }
 
 final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {

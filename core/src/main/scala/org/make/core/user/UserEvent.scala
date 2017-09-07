@@ -1,20 +1,20 @@
 package org.make.core.user
 
-import java.time.{ZoneOffset, ZonedDateTime}
+import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.EventWrapper
+import org.make.core.{DateHelper, EventWrapper, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait UserEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def userId: UserId
-  def version: Int
+  def requestContext: RequestContext
 }
 
 object UserEvent {
 
-  type AnyUserEvent = ResetPasswordEvent :+: ResendValidationEmailEvent :+: CNil
+  type AnyUserEvent = ResetPasswordEvent :+: ResendValidationEmailEvent :+: UserRegisteredEvent :+: CNil
 
   final case class UserEventWrapper(version: Int,
                                     id: String,
@@ -28,33 +28,50 @@ object UserEvent {
       event match {
         case e: ResetPasswordEvent         => Coproduct[AnyUserEvent](e)
         case e: ResendValidationEmailEvent => Coproduct[AnyUserEvent](e)
+        case e: UserRegisteredEvent        => Coproduct[AnyUserEvent](e)
       }
   }
 
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC),
-                                      override val userId: UserId)
-      extends UserEvent {
-    val version: Int = 1
-  }
+                                      override val eventDate: ZonedDateTime = DateHelper.now(),
+                                      override val userId: UserId,
+                                      override val requestContext: RequestContext)
+      extends UserEvent
 
   object ResetPasswordEvent {
-    def apply(connectedUserId: Option[UserId], user: User): ResetPasswordEvent = {
-      ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId)
+    def apply(connectedUserId: Option[UserId], user: User, requestContext: RequestContext): ResetPasswordEvent = {
+      ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, requestContext = requestContext)
     }
+    val version: Int = 1
   }
 
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
-                                              override val eventDate: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC),
-                                              override val userId: UserId)
-      extends UserEvent {
+                                              override val eventDate: ZonedDateTime = DateHelper.now(),
+                                              override val userId: UserId,
+                                              override val requestContext: RequestContext)
+      extends UserEvent
+
+  object ResendValidationEmailEvent {
+    def apply(connectedUserId: UserId, userId: UserId, requestContext: RequestContext): ResendValidationEmailEvent = {
+      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId, requestContext = requestContext)
+    }
     val version: Int = 1
   }
 
-  object ResendValidationEmailEvent {
-    def apply(connectedUserId: UserId, userId: UserId): ResendValidationEmailEvent = {
-      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId)
-    }
+  case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
+                                 override val eventDate: ZonedDateTime = DateHelper.now(),
+                                 override val userId: UserId,
+                                 override val requestContext: RequestContext,
+                                 email: String,
+                                 firstName: Option[String],
+                                 lastName: Option[String],
+                                 profession: Option[String],
+                                 dateOfBirth: Option[LocalDate],
+                                 postalCode: Option[String])
+      extends UserEvent
+
+  object UserRegisteredEvent {
+    val version: Int = 1
   }
 
 }

@@ -5,8 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.DateHelper._
 import org.make.core.proposal.ProposalEvent.ProposalProposed
 import org.make.core.proposal._
-import org.make.core.tag.Tag
-import org.make.core.theme.ThemeId
+import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
 
 object ProposalElasticsearchFieldNames {
@@ -76,8 +75,8 @@ object IndexedProposal {
       status = ProposalStatus.Pending,
       createdAt = p.eventDate.toUTC,
       updatedAt = None,
-      country = p.context.country.getOrElse(defaultCountry),
-      language = p.context.language.getOrElse(defaultLanguage),
+      country = p.requestContext.country.getOrElse(defaultCountry),
+      language = p.requestContext.language.getOrElse(defaultLanguage),
       votesAgree = Vote(
         key = VoteKey.Agree,
         qualifications = Seq(
@@ -103,15 +102,15 @@ object IndexedProposal {
         )
       ),
       proposalContext = ProposalContext(
-        operation = p.context.operation,
-        source = p.context.source,
-        location = p.context.location,
-        question = p.context.question
+        operation = p.requestContext.operation,
+        source = p.requestContext.source,
+        location = p.requestContext.location,
+        question = p.requestContext.question
       ),
       trending = None,
       labels = Seq(),
       author = Author(firstName = p.author.firstName, postalCode = p.author.postalCode, age = p.author.age),
-      themeId = p.context.currentTheme,
+      themeId = p.requestContext.currentTheme,
       tags = Seq()
     )
   }

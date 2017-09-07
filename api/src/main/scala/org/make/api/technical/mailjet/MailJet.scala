@@ -26,7 +26,6 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.extensions.KafkaConfiguration
-import org.make.api.technical.mailjet.SendEmail.SendResult
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -57,15 +56,14 @@ object MailJet extends StrictLogging {
                                       login: String,
                                       password: String): Flow[SendEmail, (HttpRequest, String), NotUsed] =
     Flow[SendEmail].map { sendEmailRequest =>
-      (
-        HttpRequest(
-          method = HttpMethods.POST,
-          uri = url.toExternalForm,
-          entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(sendEmailRequest.asJson)),
-          headers = immutable.Seq(Authorization(BasicHttpCredentials(login, password)))
-        ),
-        UUID.randomUUID().toString
+      val request = HttpRequest(
+        method = HttpMethods.POST,
+        uri = url.toExternalForm,
+        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(SendMessages(sendEmailRequest).asJson)),
+        headers = immutable.Seq(Authorization(BasicHttpCredentials(login, password)))
       )
+      logger.debug(s"sending mailjet request $request")
+      (request, UUID.randomUUID().toString)
     }
 
   private def httpPool(url: URL)(
@@ -95,6 +93,7 @@ object MailJet extends StrictLogging {
     Flow[(Try[HttpResponse], String)]
       .mapAsync[Either[Throwable, Strict]](1) {
         case (Success(response), _) =>
+          logger.debug(s"mailjet response is $response")
           response.entity
             .toStrict(2.seconds)
             .map(entity => Right(entity))
@@ -167,35 +166,32 @@ object MailJet extends StrictLogging {
 
 }
 
-case class SendEmail(fromEmail: Option[String] = None,
-                     fromName: Option[String] = None,
+case class SendEmail(from: Option[Recipient] = None,
                      subject: Option[String] = None,
                      textPart: Option[String] = None,
                      htmlPart: Option[String] = None,
                      useTemplateLanguage: Option[Boolean] = Some(true),
-                     templateId: Option[String] = None,
+                     templateId: Option[Int] = None,
                      variables: Option[Map[String, String]] = None,
                      recipients: Seq[Recipient],
                      headers: Option[Map[String, String]] = None,
                      emailId: Option[String] = None)
 
 object SendEmail {
-  implicit val encoder: Encoder[SendEmail] = Encoder.forProduct11(
-    "FromEmail",
-    "FromName",
+  implicit val encoder: Encoder[SendEmail] = Encoder.forProduct10(
+    "From",
     "Subject",
     "Text-part",
     "Html-part",
-    "MJ-TemplateLanguage",
-    "MJ-TemplateID",
-    "Vars",
-    "Recipients",
+    "TemplateLanguage",
+    "TemplateID",
+    "Variables",
+    "To",
     "Headers",
-    "Mj-CustomID"
+    "CustomID"
   ) { sendEmail =>
     (
-      sendEmail.fromEmail,
-      sendEmail.fromName,
+      sendEmail.from,
       sendEmail.subject,
       sendEmail.textPart,
       sendEmail.htmlPart,
@@ -207,25 +203,43 @@ object SendEmail {
       sendEmail.emailId
     )
   }
-
-  case class SendResult(sent: Seq[EmailDetail])
-
-  object SendResult {
-    implicit val decoder: Decoder[SendResult] = Decoder.forProduct1("Sent")(SendResult.apply)
-  }
-
-  case class EmailDetail(email: String, messageId: Long)
-
-  object EmailDetail {
-    implicit val decoder: Decoder[EmailDetail] = Decoder.forProduct2("Email", "MessageID")(EmailDetail.apply)
-  }
-
 }
 
-case class Recipient(email: String, name: Option[String] = None, variables: Map[String, String] = Map())
+case class SendMessages(messages: Seq[SendEmail])
+
+object SendMessages {
+  def apply(message: SendEmail): SendMessages = SendMessages(Seq(message))
+  implicit val encoder: Encoder[SendMessages] = Encoder.forProduct1("Messages")(sendMessages => sendMessages.messages)
+}
+
+case class TransactionDetail(status: String,
+                             customId: String,
+                             to: Seq[EmailDetail],
+                             cc: Seq[EmailDetail],
+                             bcc: Seq[EmailDetail])
+
+object TransactionDetail {
+  implicit val decoder: Decoder[TransactionDetail] =
+    Decoder.forProduct5("Status", "CustomID", "To", "Cc", "Bcc")(TransactionDetail.apply)
+}
+
+case class SendResult(sent: Seq[TransactionDetail])
+
+object SendResult {
+  implicit val decoder: Decoder[SendResult] = Decoder.forProduct1("Messages")(SendResult.apply)
+}
+
+case class EmailDetail(email: String, messageUUID: String, messageId: Long, messageHref: String)
+
+object EmailDetail {
+  implicit val decoder: Decoder[EmailDetail] =
+    Decoder.forProduct4("Email", "MessageUUID", "MessageID", "MessageHref")(EmailDetail.apply)
+}
+
+case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None)
 
 object Recipient {
-  implicit val encoder: Encoder[Recipient] = Encoder.forProduct3("Email", "Name", "Vars") { recipient =>
+  implicit val encoder: Encoder[Recipient] = Encoder.forProduct3("Email", "Name", "Variables") { recipient =>
     (recipient.email, recipient.name, recipient.variables)
   }
 }

@@ -135,7 +135,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   def register: Route = post {
     path("user") {
-      makeTrace("RegisterUser") { _ =>
+      makeTrace("RegisterUser") { requestContext =>
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
             extractClientIP { clientIp =>
@@ -151,7 +151,8 @@ trait UserApi extends MakeAuthenticationDirectives {
                       dateOfBirth = request.dateOfBirth,
                       profession = request.profession,
                       postalCode = request.postalCode
-                    )
+                    ),
+                    requestContext
                   )
               ) { result =>
                 complete(StatusCodes.Created -> UserResponse(result))
@@ -170,7 +171,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   def validateAccountRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
       path("user" / "validation" / Segment) { (verificationToken: String) =>
-        makeTrace("UserValidation") { _ =>
+        makeTrace("UserValidation") { requestContext =>
           provideAsyncOrNotFound(persistentUserService.findUserByVerificationToken(verificationToken)) { user =>
             if (user.verificationTokenExpiresAt.forall(_.isBefore(DateHelper.now()))) {
               complete(StatusCodes.BadRequest)
@@ -199,11 +200,17 @@ trait UserApi extends MakeAuthenticationDirectives {
   def resetPasswordRequestRoute(implicit ctx: EC = ECGlobal): Route = {
     post {
       path("user" / "reset-password" / "request-reset") {
-        makeTrace("ResetPasswordRequest") { _ =>
+        makeTrace("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
-                eventBusService.publish(ResetPasswordEvent(userId = id, connectedUserId = userAuth.map(_.user.userId)))
+                eventBusService.publish(
+                  ResetPasswordEvent(
+                    userId = id,
+                    connectedUserId = userAuth.map(_.user.userId),
+                    requestContext = requestContext
+                  )
+                )
                 complete(StatusCodes.NoContent)
               }
             })
@@ -271,10 +278,16 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiImplicitParams(value = Array())
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
-      makeTrace("ResendValidateEmail") { _ =>
+      makeTrace("ResendValidateEmail") { requestContext =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-            eventBusService.publish(ResendValidationEmailEvent(userId = userId, connectedUserId = userAuth.user.userId))
+            eventBusService.publish(
+              ResendValidationEmailEvent(
+                userId = userId,
+                connectedUserId = userAuth.user.userId,
+                requestContext = requestContext
+              )
+            )
             complete(StatusCodes.NoContent)
           }
         }

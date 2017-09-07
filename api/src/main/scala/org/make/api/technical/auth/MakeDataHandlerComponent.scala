@@ -1,12 +1,12 @@
 package org.make.api.technical.auth
 
-import java.time.ZonedDateTime
 import java.util.{Date, NoSuchElementException}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent
+import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token}
 import org.make.core.user.{User, UserId}
 
@@ -44,7 +44,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         refreshToken = token.refreshToken,
         scope = token.scope,
         lifeSeconds = Some(token.expiresIn.toLong),
-        createdAt = Date.from(token.createdAt.getOrElse(ZonedDateTime.now).toInstant)
+        createdAt = Date.from(token.createdAt.getOrElse(DateHelper.now()).toInstant)
       )
     }
 

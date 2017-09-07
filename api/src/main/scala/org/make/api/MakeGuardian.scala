@@ -1,39 +1,29 @@
 package org.make.api
 
-import java.util.concurrent.Executors
-
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
-import org.make.api.extensions.MailJetConfigurationExtension
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
-import org.make.api.technical.mailjet.{MailJet, MailJetCallbackProducerActor}
-import org.make.api.user.UserSupervisor
-import org.make.api.vote.VoteSupervisor
+import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetProducerActor, MailJetStreamingActor}
+import org.make.api.user.{UserService, UserSupervisor}
+import org.make.api.userhistory.UserHistoryCoordinator
 
-import scala.concurrent.ExecutionContext
-
-class MakeGuardian extends Actor with ActorLogging with MailJetConfigurationExtension {
+class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     val materializer: ActorMaterializer = ActorMaterializer()
-
-    context.watch(context.actorOf(ProposalSupervisor.props, ProposalSupervisor.name))
-    context.watch(context.actorOf(VoteSupervisor.props, VoteSupervisor.name))
-    context.watch(
-      context
-        .actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name)
-    )
+    context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
     context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
-    context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
-    context.watch(context.actorOf(UserSupervisor.props, UserSupervisor.name))
 
-    MailJet.run(mailJetConfiguration.url, mailJetConfiguration.apiKey, mailJetConfiguration.secretKey)(
-      context.system,
-      materializer,
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(3))
-    )
+    val historyCoordinator = context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
+
+    context.watch(context.actorOf(ProposalSupervisor.props(userService, historyCoordinator), ProposalSupervisor.name))
+    context.watch(context.actorOf(UserSupervisor.props(userService, historyCoordinator), UserSupervisor.name))
+
+    context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
+    context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
+    context.watch(context.actorOf(MailJetStreamingActor.props, MailJetStreamingActor.name))
   }
 
   override def receive: Receive = {
@@ -43,6 +33,5 @@ class MakeGuardian extends Actor with ActorLogging with MailJetConfigurationExte
 
 object MakeGuardian {
   val name: String = "make-api"
-
-  val props: Props = Props[MakeGuardian]
+  def props(userService: UserService): Props = Props(new MakeGuardian(userService))
 }

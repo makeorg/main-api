@@ -1,12 +1,16 @@
 package org.make.api.user
 
-import java.time.ZonedDateTime
-
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
+import org.make.core.DateHelper
 import org.make.core.user.UserEvent
-import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserEventWrapper}
+import org.make.core.user.UserEvent.{
+  ResendValidationEmailEvent,
+  ResetPasswordEvent,
+  UserEventWrapper,
+  UserRegisteredEvent
+}
 
 class UserProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
@@ -19,16 +23,30 @@ class UserProducerActor extends ProducerActor {
   override def receive: Receive = {
     case event: ResetPasswordEvent         => onResetPassword(event)
     case event: ResendValidationEmailEvent => onResendValidationEmail(event)
+    case event: UserRegisteredEvent        => onUserRegisteredEvent(event)
     case other                             => log.warning(s"Unknown event $other")
+  }
+
+  def onUserRegisteredEvent(event: UserRegisteredEvent): Unit = {
+    val record = format.to(
+      UserEventWrapper(
+        version = UserRegisteredEvent.version,
+        id = event.userId.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = UserEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onResetPassword(event: ResetPasswordEvent): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       UserEventWrapper(
-        version = event.version,
+        version = ResetPasswordEvent.version,
         id = event.userId.value,
-        date = ZonedDateTime.now(),
+        date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
@@ -40,9 +58,9 @@ class UserProducerActor extends ProducerActor {
     log.debug(s"Received event $event")
     val record = format.to(
       UserEventWrapper(
-        version = event.version,
+        version = ResendValidationEmailEvent.version,
         id = event.userId.value,
-        date = ZonedDateTime.now(),
+        date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )

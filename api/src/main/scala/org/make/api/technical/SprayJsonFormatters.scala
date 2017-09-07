@@ -3,12 +3,13 @@ package org.make.api.technical
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
+import org.make.core.RequestContext
 import org.make.core.user.UserId
 import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.tag.TagId
-import org.make.core.theme.ThemeId
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.vote.VoteId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 trait SprayJsonFormatters {
 
@@ -89,6 +90,17 @@ trait SprayJsonFormatters {
     }
   }
 
+  implicit val labelIdFormatter: JsonFormat[LabelId] = new JsonFormat[LabelId] {
+    override def read(json: JsValue): LabelId = json match {
+      case JsString(s) => LabelId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: LabelId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
   implicit val voteIdFormatter: JsonFormat[VoteId] = new JsonFormat[VoteId] {
     override def read(json: JsValue): VoteId = json match {
       case JsString(s) => VoteId(s)
@@ -111,5 +123,8 @@ trait SprayJsonFormatters {
       JsString(obj.shortName)
     }
   }
+
+  implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
+    DefaultJsonProtocol.jsonFormat10(RequestContext.apply)
 
 }

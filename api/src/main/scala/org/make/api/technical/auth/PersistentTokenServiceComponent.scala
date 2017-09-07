@@ -8,6 +8,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
+import org.make.core.DateHelper
 import org.make.core.auth.Token
 import org.make.core.user.{User, UserId}
 import scalikejdbc._
@@ -190,8 +191,8 @@ trait DefaultPersistentTokenServiceComponent
               column.accessToken -> token.accessToken,
               column.refreshToken -> token.refreshToken,
               column.scope -> token.scope,
-              column.createdAt -> ZonedDateTime.now,
-              column.updatedAt -> ZonedDateTime.now,
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now(),
               column.expiresIn -> token.expiresIn,
               column.makeUserUuid -> token.user.userId.value,
               column.clientUuid -> token.client.clientId.value

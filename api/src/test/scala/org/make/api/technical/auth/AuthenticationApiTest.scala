@@ -1,6 +1,6 @@
 package org.make.api.technical.auth
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.Instant
 import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.{MakeApiTestUtils, MakeUnitTest}
+import org.make.core.DateHelper
 import org.make.core.user.{User, UserId}
 import org.mockito.{ArgumentMatchers, Mockito}
 
@@ -47,9 +48,9 @@ class AuthenticationApiTest
     hashedPassword = Some("passpass"),
     enabled = true,
     verified = false,
-    lastConnection = ZonedDateTime.now(),
+    lastConnection = DateHelper.now(),
     verificationToken = Some("token"),
-    verificationTokenExpiresAt = Some(ZonedDateTime.now()),
+    verificationTokenExpiresAt = Some(DateHelper.now()),
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq.empty,

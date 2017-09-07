@@ -1,6 +1,5 @@
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
@@ -11,11 +10,11 @@ import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
+import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -152,7 +151,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def propose: Route =
     post {
       path("proposal") {
-        makeTrace("Propose") { context =>
+        makeTrace("Propose") { requestContext =>
           makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
@@ -160,8 +159,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   proposalService
                     .propose(
                       user = auth.user,
-                      context = context,
-                      createdAt = ZonedDateTime.now,
+                      requestContext = requestContext,
+                      createdAt = DateHelper.now(),
                       content = request.content
                     )
                 ) { proposalId =>
@@ -212,8 +211,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                         proposalService
                           .update(
                             proposalId = proposalId,
-                            context = requestContext,
-                            updatedAt = ZonedDateTime.now,
+                            requestContext = requestContext,
+                            updatedAt = DateHelper.now(),
                             content = request.content
                           )
                       ) {
@@ -229,7 +228,49 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       }
     }
 
-  val proposalRoutes: Route = propose ~ getProposal ~ update ~ search ~ searchAll
+  @ApiOperation(
+    value = "validate-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(new Authorization(value = "MakeApi"))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.ValidateProposalRequest"
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @Path(value = "/{proposalId}/accept")
+  def acceptProposal: Route = post {
+    path("proposal" / proposalId / "accept") { proposalId =>
+      makeTrace("ValidateProposal") { requestContext =>
+        makeOAuth2 { auth: AuthInfo[User] =>
+          requireModerationRole(auth.user) {
+            decodeRequest {
+              entity(as[ValidateProposalRequest]) { request =>
+                provideAsync(
+                  proposalService.validateProposal(
+                    proposalId = proposalId,
+                    moderator = auth.user.userId,
+                    requestContext = requestContext,
+                    request = request
+                  )
+                ) { proposal: Proposal =>
+                  complete(proposal)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  val proposalRoutes: Route = propose ~ getProposal ~ update ~ acceptProposal ~ search ~ searchAll
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
