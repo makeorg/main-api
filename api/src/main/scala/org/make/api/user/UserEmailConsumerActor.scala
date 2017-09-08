@@ -55,6 +55,9 @@ class UserEmailConsumerActor(userService: UserService)
           SendEmail(
             templateId = Some(mailJetTemplateConfiguration.userRegisteredTemplate),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
             variables = Some(
               Map(
                 "name" -> user.fullName.getOrElse(""),
@@ -74,6 +77,9 @@ class UserEmailConsumerActor(userService: UserService)
           SendEmail(
             templateId = Some(mailJetTemplateConfiguration.resetPasswordTemplate),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
             variables = Some(
               Map(
                 "name" -> user.fullName.getOrElse(""),
@@ -98,6 +104,9 @@ class UserEmailConsumerActor(userService: UserService)
           SendEmail(
             templateId = Some(mailJetTemplateConfiguration.resendValidationEmailTemplate),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
             variables = Some(
               Map(
                 "name" -> user.fullName.getOrElse(""),

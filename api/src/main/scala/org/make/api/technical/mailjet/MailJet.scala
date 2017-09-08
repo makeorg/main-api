@@ -181,8 +181,8 @@ object SendEmail {
   implicit val encoder: Encoder[SendEmail] = Encoder.forProduct10(
     "From",
     "Subject",
-    "Text-part",
-    "Html-part",
+    "TextPart",
+    "HTMLPart",
     "TemplateLanguage",
     "TemplateID",
     "Variables",

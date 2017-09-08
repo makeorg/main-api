@@ -5,6 +5,7 @@ import com.typesafe.config.Config
 
 class MailJetTemplateConfiguration(config: Config) extends Extension {
   val from: String = config.getString("from")
+  val fromName: String = config.getString("from-name")
 
   val userRegisteredTemplate: Int = config.getInt("registration-template-id")
   val resetPasswordTemplate: Int = config.getInt("reset-password-template-id")
