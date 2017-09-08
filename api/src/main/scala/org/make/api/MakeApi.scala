@@ -20,6 +20,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.BusinessConfigApi
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.technical.mailjet.MailJetApi
+import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi, UserSupervisor}
@@ -40,12 +41,14 @@ trait MakeApi
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentTagServiceComponent
+    with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultSocialServiceComponent
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
     with DefaultUserServiceComponent
     with DefaultTagServiceComponent
+    with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
     with DefaultVoteServiceComponent
     with DefaultMakeDataHandlerComponent
