@@ -65,6 +65,9 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
         SendEmail(
           templateId = Some(mailJetTemplateConfiguration.proposalSentTemplate),
           recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+          from = Some(
+            Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+          ),
           variables = Some(Map("content" -> event.content, "name" -> user.fullName.getOrElse("")))
         )
       )
@@ -85,6 +88,9 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
           SendEmail(
             templateId = Some(mailJetTemplateConfiguration.proposalValidatedTemplate),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
             variables = Some(
               Map(
                 "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
