@@ -47,4 +47,4 @@ object QualificationKey extends StrictLogging {
   case object DoNotCare extends QualificationKey { override val shortName: String = "doNotCare" }
 }
 
-final case class Qualification(key: QualificationKey, count: Int = 0, selected: Boolean = false)
+final case class Qualification(key: QualificationKey, count: Int = 0)
