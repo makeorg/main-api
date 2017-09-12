@@ -12,7 +12,7 @@ import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset}
 import akka.kafka.scaladsl.Consumer
 import akka.kafka.{ConsumerMessage, ConsumerSettings, Subscriptions}
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Sink, Zip}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Sink, Zip}
 import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import akka.{Done, NotUsed}
 import com.sksamuel.avro4s.RecordFormat
@@ -156,11 +156,20 @@ object MailJet extends StrictLogging {
                                                      materializer: ActorMaterializer,
                                                      executionContext: ExecutionContext): Future[Done] = {
     Consumer
-      .committableSource(
+      .committablePartitionedSource(
         consumerSettings(system),
         Subscriptions.topics(KafkaConfiguration(system).topics(MailJetProducerActor.topicKey))
       )
-      .via(push(url, login, password))
+      .map {
+        case (_, source) =>
+          source
+            .via(push(url, login, password))
+            .toMat(Sink.ignore)(Keep.both)
+            .run()
+      }
+      .mapAsyncUnordered(3) {
+        case (_, done) => done
+      }
       .runWith(Sink.foreach(msg => logger.info("Streaming of one message: {}", msg.toString)))
   }
 

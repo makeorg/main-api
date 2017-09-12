@@ -6,7 +6,7 @@ import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.kafka.scaladsl.Consumer
 import akka.pattern.{Backoff, BackoffSupervisor}
 import akka.stream._
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Keep, Sink}
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroDeserializer
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -15,6 +15,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.KafkaConfiguration
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
+
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -48,8 +49,20 @@ class ProposalEventStreamingActor
   override def preStart(): Unit = {
 
     val futureFlow: Future[Done] = Consumer
-      .committableSource(proposalConsumerSettings, Subscriptions.topics(ProposalProducerActor.kafkaTopic(actorSystem)))
-      .via(proposalEventStreaming.indexFlow)
+      .committablePartitionedSource(
+        proposalConsumerSettings,
+        Subscriptions.topics(ProposalProducerActor.kafkaTopic(actorSystem))
+      )
+      .map {
+        case (_, source) =>
+          source
+            .via(proposalEventStreaming.indexFlow)
+            .toMat(Sink.ignore)(Keep.both)
+            .run()
+      }
+      .mapAsyncUnordered(3) {
+        case (_, done) => done
+      }
       .runWith(Sink.foreach(msg => log.info("Streaming of one message: " + msg.toString)))
 
     futureFlow.onComplete {

@@ -88,8 +88,8 @@ object Dependencies {
   val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"            % "mockito-core"              % "2.7.22"        % "it,test"
   val scalikeTest: ModuleID = "org.scalikejdbc"    %% "scalikejdbc-test"         % "3.0.1"         % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.3"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.3" % "it")
+  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.5"         % "it"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.5" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
   val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.6.0"

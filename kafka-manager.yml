@@ -1,0 +1,14 @@
+version: '3'
+services:
+  zookeeper:
+    image: zookeeper:3.4.10
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=localhost:2888:3888
+    network_mode: host
+  kafka-manager:
+    image: sheepkiller/kafka-manager
+    environment:
+      ZK_HOSTS: localhost:2181
+      KM_VERSION: 1.3.3.13
+    network_mode: host
