@@ -28,14 +28,35 @@ class AuthenticationApiTest
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
   override lazy val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override def makeSettings: MakeSettings = mock[MakeSettings]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  Mockito
+    .when(makeSettings.SessionCookie)
+    .thenReturn(sessionCookieConfiguration)
+  Mockito
+    .when(makeSettings.Oauth)
+    .thenReturn(oauthConfiguration)
+  Mockito
+    .when(makeSettings.frontUrl)
+    .thenReturn("http:://localhost")
+  Mockito
+    .when(sessionCookieConfiguration.name)
+    .thenReturn("cookie-session")
+  Mockito
+    .when(sessionCookieConfiguration.isSecure)
+    .thenReturn(false)
   Mockito
     .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))
   Mockito
     .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
     .thenReturn(Future.successful(0))
+  Mockito
+    .when(idGenerator.nextId())
+    .thenReturn("some-id")
 
   val routes: Route = sealRoute(authenticationRoutes)
 

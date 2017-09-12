@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.proposal._
@@ -22,7 +23,7 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "Proposal")
 @Path(value = "/proposal")
 trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
-  this: ProposalServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
+  this: ProposalServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(

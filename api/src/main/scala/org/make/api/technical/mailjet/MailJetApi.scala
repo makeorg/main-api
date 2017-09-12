@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
-import org.make.api.extensions.MailJetConfigurationComponent
+import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 
@@ -14,7 +14,8 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
   this: MakeDataHandlerComponent
     with EventBusServiceComponent
     with MailJetConfigurationComponent
-    with IdGeneratorComponent =>
+    with IdGeneratorComponent
+    with MakeSettingsComponent =>
 
   private def authenticate(credentials: Credentials): Option[String] = {
     val login = mailJetConfiguration.basicAuthLogin

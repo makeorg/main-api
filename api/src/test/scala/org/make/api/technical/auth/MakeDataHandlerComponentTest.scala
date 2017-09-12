@@ -39,8 +39,19 @@ class MakeDataHandlerComponentTest
   val secret = Some("secret")
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+  private val tokenLifeTime = 1800
+  when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime)
+  when(oauthConfiguration.accessTokenLifetime).thenReturn(tokenLifeTime)
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
+  when(idGenerator.nextId()).thenReturn("some-id")
 
   val invalidClientId = "invalidClientId"
 
@@ -63,19 +74,25 @@ class MakeDataHandlerComponentTest
   val mockMap: Map[String, Seq[String]] = mock[Map[String, Seq[String]]]
   val exampleToken = Token(
     accessToken = "access_token",
-    refreshToken = Some("refresh_token_hashed"),
+    refreshToken = Some("refresh_token"),
     scope = None,
-    expiresIn = 1800,
+    expiresIn = tokenLifeTime,
     user = exampleUser,
     client = exampleClient
   )
+
+  private val lifeTimeBig = 213123L
   val accessTokenExample = AccessToken(
     token = "access_token",
     refreshToken = Some("refresh_token"),
     scope = None,
-    lifeSeconds = Some(213123L),
+    lifeSeconds = Some(lifeTimeBig),
     createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
   )
+
+  when(request.params).thenReturn(Map[String, Seq[String]]())
+  when(request.requireParam(ArgumentMatchers.eq("username"))).thenReturn("john")
+  when(request.requireParam(ArgumentMatchers.eq("password"))).thenReturn("passpass")
 
   //A valid client
   when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(clientId), ArgumentMatchers.eq(secret)))
@@ -96,6 +113,8 @@ class MakeDataHandlerComponentTest
     .thenReturn(Future.successful(exampleUser))
   when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(Some(exampleUser)))
+
+  when(persistentUserService.verificationTokenExists(ArgumentMatchers.any[String])).thenReturn(Future(false))
 
   feature("find User form client credentials and request") {
     scenario("best case") {
@@ -155,14 +174,10 @@ class MakeDataHandlerComponentTest
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
         .thenReturn(Future.successful(("access_token", "access_token_hashed")))
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.eq("access_token")))
-        .thenReturn("access_token_hashed")
 
       And("a generated refresh token 'refresh_token' with a hashed value 'refresh_token_hashed")
       when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.eq("refresh_token")))
-        .thenReturn("refresh_token_hashed")
 
       When("I create a new AccessToken")
       when(persistentTokenService.persist(ArgumentMatchers.eq(exampleToken)))
@@ -178,7 +193,7 @@ class MakeDataHandlerComponentTest
         And("I should get an AccessToken with a token value equal to \"access_token\"")
         maybeToken.token shouldBe "access_token"
         And("I should get an AccessToken with a expiresIn value equal to 1800")
-        maybeToken.lifeSeconds shouldBe Some(1800)
+        maybeToken.lifeSeconds shouldBe Some(tokenLifeTime)
         And("I should get an AccessToken with a refresh token value equal to \"refresh_token\"")
         maybeToken.refreshToken shouldBe Some("refresh_token")
         And("I should get an AccessToken with an empty scope")
@@ -203,11 +218,12 @@ class MakeDataHandlerComponentTest
           | createdAt
         """.stripMargin)
       val exampleDate = ZonedDateTime.parse("2017-08-16T10:15:30+08:00", DateTimeFormatter.ISO_DATE_TIME)
+      val expiresIn = 300
       val token = Token(
         accessToken = "AF8",
         refreshToken = Some("KKJ"),
         scope = None,
-        expiresIn = 300,
+        expiresIn = expiresIn,
         user = authInfo.user,
         client = exampleClient,
         createdAt = Some(exampleDate),
@@ -227,7 +243,7 @@ class MakeDataHandlerComponentTest
         And("I should get an AccessToken with a refresh token value equal to \"KKJ\"")
         maybeAccessToken.get.refreshToken.get shouldBe "KKJ"
         And("I should get an AccessToken with a expiresIn value equal to 1800")
-        maybeAccessToken.get.lifeSeconds shouldBe Some(300)
+        maybeAccessToken.get.lifeSeconds shouldBe Some(expiresIn)
         And("I should get an AccessToken with an empty scope")
         maybeAccessToken.get.scope shouldBe empty
         And("I should get an AccessToken with an createdAt equal to 2017-08-16")
@@ -243,13 +259,12 @@ class MakeDataHandlerComponentTest
 
     val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
     val refreshToken: String = "MYREFRESHTOKEN"
-    val refreshTokenHashed: String = "REFRESH_TOKEN_HASHED"
     val createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
     val accessTokenExample = AccessToken(
       token = "DFG",
       refreshToken = Some("ERT"),
       scope = None,
-      lifeSeconds = Some(213123L),
+      lifeSeconds = Some(lifeTimeBig),
       createdAt = createdAt
     )
 
@@ -265,9 +280,7 @@ class MakeDataHandlerComponentTest
         """.stripMargin)
 
       When("I call method refreshAccessToken")
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(refreshToken)))
-        .thenReturn(refreshTokenHashed)
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshTokenHashed)))
+      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
         .thenReturn(Future.successful(1))
 
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
@@ -288,7 +301,7 @@ class MakeDataHandlerComponentTest
         And("I should get an AccessToken with a refresh token value equal to \"ERT\"")
         maybeAccessToken.refreshToken.get shouldBe "ERT"
         And("I should get an AccessToken with a expiresIn value equal to 213123L")
-        maybeAccessToken.lifeSeconds shouldBe Some(213123L)
+        maybeAccessToken.lifeSeconds shouldBe Some(lifeTimeBig)
         And("I should get an AccessToken with an empty scope")
         maybeAccessToken.scope shouldBe empty
         And("I should get an AccessToken with a createdAt equal to 2017-01-01")
@@ -301,8 +314,8 @@ class MakeDataHandlerComponentTest
       And("a refreshToken: \"MYREFRESHTOKEN\"")
       And("no rows affected by method deleteByRefreshToken")
       when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(refreshToken)))
-        .thenReturn(refreshTokenHashed)
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshTokenHashed)))
+        .thenReturn(refreshToken)
+      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
         .thenReturn(Future.successful(0))
 
       When("I call method refreshAccessToken")
@@ -394,11 +407,8 @@ class MakeDataHandlerComponentTest
     scenario("Get an AccessToken from a token") {
       Given("an access token: \"TOKENTOKEN\"")
       val accessToken = "TOKENTOKEN"
-      val accessTokenHashed = "TOKENTOKEN_HASHED"
 
       When("I call method findAccessToken")
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
-        .thenReturn(accessTokenHashed)
       when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
@@ -412,11 +422,8 @@ class MakeDataHandlerComponentTest
     scenario("Get an AccessToken from a nonexistent token") {
       Given("an nonexistent AccessToken")
       val accessToken = "NONEXISTENT"
-      val accessTokenHashed = "NONEXISTENT_HASHED"
 
       When("I call method findAccessToken")
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(accessToken)))
-        .thenReturn(accessTokenHashed)
       when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(None))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)

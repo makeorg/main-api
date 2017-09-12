@@ -10,6 +10,18 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 class MakeSettings(config: Config) extends Extension {
 
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
+
+  object SessionCookie {
+    val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
+    val name: String = "make-secure"
+    val isSecure: Boolean = config.getBoolean("cookie-session.is-secure")
+  }
+
+  object Oauth {
+    val accessTokenLifetime: Int = config.getInt("oauth.access-token-lifetime")
+    val refreshTokenLifetime: Int = config.getInt("oauth.refresh-token-lifetime")
+  }
+
   val useEmbeddedElasticSearch: Boolean =
     if (config.hasPath("dev.embedded-elasticsearch")) {
       config.getBoolean("dev.embedded-elasticsearch")

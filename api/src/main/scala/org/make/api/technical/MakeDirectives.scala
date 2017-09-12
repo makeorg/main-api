@@ -1,32 +1,46 @@
 package org.make.api.technical
 
-import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
+import akka.http.javadsl.model.headers.HttpCredentials
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives
+import kamon.trace.Tracer
+import org.make.api.MakeApi
+import org.make.api.Predef._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.reference.ThemeId
+import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.user.User
 import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import org.make.api.Predef._
-import org.make.core.reference.ThemeId
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.User
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
-  this: IdGeneratorComponent =>
+  this: IdGeneratorComponent with MakeSettingsComponent =>
 
   val sessionIdKey: String = "make-session-id"
+  lazy val clientUri: Uri = Uri(makeSettings.frontUrl)
+  lazy val sessionCookieName: String = makeSettings.SessionCookie.name
+
+  def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
+  def routeNameFromTrace: String = getFromTrace("route-name")
+  def externalIdFromTrace: String = getFromTrace("external-id")
+  def requestIdFromTrace: String = getFromTrace("id")
 
   def requestId: Directive1[String] = BasicDirectives.provide(idGenerator.nextId())
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
   def sessionId: Directive1[String] =
     optionalCookie(sessionIdKey).map(_.map(_.value).getOrElse(idGenerator.nextId()))
+
+  private def getFromTrace(key: String, default: String = "<unknown>"): String =
+    Tracer.currentContext.tags.getOrElse(key, default)
 
   def addMakeHeaders(requestId: String,
                      routeName: String,
@@ -120,6 +134,65 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         }
       }
     }
+
+  def defaultHeadersFromTrace: immutable.Seq[HttpHeader] = immutable.Seq(
+    RequestIdHeader(requestIdFromTrace),
+    RequestTimeHeader(startTimeFromTrace),
+    RouteNameHeader(routeNameFromTrace),
+    ExternalIdHeader(externalIdFromTrace)
+  )
+
+  def defaultCorsHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
+    `Access-Control-Allow-Methods`(
+      HttpMethods.POST,
+      HttpMethods.GET,
+      HttpMethods.PUT,
+      HttpMethods.PATCH,
+      HttpMethods.DELETE
+    ),
+    `Access-Control-Allow-Origin`(
+      origin = HttpOrigin(clientUri.scheme, Host(clientUri.authority.host, clientUri.authority.port))
+    ),
+    `Access-Control-Allow-Credentials`(true)
+  )
+
+  def makeDefaultHeadersAndHandlers(): Directive0 =
+    mapInnerRoute { route =>
+      makeAuthCookieHandlers() {
+        respondWithDefaultHeaders(defaultHeadersFromTrace ++ defaultCorsHeaders) {
+          handleExceptions(MakeApi.exceptionHandler) {
+            handleRejections(MakeApi.rejectionHandler) {
+              route
+            }
+          }
+        }
+      }
+    }
+
+  def makeAuthCookieHandlers(): Directive0 =
+    mapInnerRoute { route =>
+      optionalCookie(sessionCookieName) {
+        case Some(secureCookie) =>
+          mapRequest(
+            (request: HttpRequest) =>
+              request.addCredentials(HttpCredentials.createOAuth2BearerToken(secureCookie.value))
+          ) {
+            route
+          }
+        case None => route
+      }
+    }
+
+  def corsHeaders(): Directive0 =
+    mapInnerRoute { route =>
+      respondWithDefaultHeaders(defaultCorsHeaders) {
+        optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
+          case Some(requestHeader) =>
+            respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) { route }
+          case None => route
+        }
+      }
+    }
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
@@ -170,8 +243,8 @@ object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
   override def parse(value: String): Try[ExternalIdHeader] = Success(new ExternalIdHeader(value))
 }
 
-trait MakeAuthenticationDirectives extends MakeDirectives with MakeAuthentication {
-  this: MakeDataHandlerComponent with IdGeneratorComponent =>
+trait MakeAuthenticationDirectives extends MakeAuthentication {
+  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   def requireModerationRole(user: User): Directive0 = {
     authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))

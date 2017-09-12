@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Origin`, `Set-Coo
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestUtils
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth._
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
@@ -22,12 +23,22 @@ class MakeDirectivesTest
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent
     with ShortenedNames
-    with MakeApiTestUtils {
+    with MakeApiTestUtils
+    with MakeSettingsComponent {
 
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val route: Route = sealRoute(get {
@@ -196,7 +207,7 @@ class MakeDirectivesTest
         status should be(StatusCodes.OK)
         info(headers.mkString("\n"))
         header[`Access-Control-Allow-Origin`] shouldBe defined
-        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
       }
     }
 
@@ -204,7 +215,7 @@ class MakeDirectivesTest
       Get("/test") ~> routeRejection ~> check {
         status should be(StatusCodes.BadRequest)
         header[`Access-Control-Allow-Origin`] shouldBe defined
-        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
       }
     }
 
@@ -213,7 +224,7 @@ class MakeDirectivesTest
         status should be(StatusCodes.InternalServerError)
         info(headers.mkString("\n"))
         header[`Access-Control-Allow-Origin`] shouldBe defined
-        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("*")
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
       }
     }
   }

@@ -4,6 +4,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -25,7 +26,7 @@ trait AuthenticationApi
     with MakeAuthenticationDirectives
     with ShortenedNames
     with StrictLogging {
-  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with MakeSettingsComponent =>
 
   val tokenEndpoint: TokenEndpoint
 
@@ -35,20 +36,22 @@ trait AuthenticationApi
   def accessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("access_token") {
-        post {
-          formFieldMap { fields =>
-            onComplete(
-              tokenEndpoint
-                .handleRequest(
-                  new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
-                  oauth2DataHandler
-                )
-            ) {
-              case Success(maybeGrantResponse) =>
-                maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                  complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
-                })
-              case Failure(ex) => throw ex
+        makeTrace("OauthAccessToken") { _ =>
+          post {
+            formFieldMap { fields =>
+              onComplete(
+                tokenEndpoint
+                  .handleRequest(
+                    new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
+                    oauth2DataHandler
+                  )
+              ) {
+                case Success(maybeGrantResponse) =>
+                  maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                    complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                  })
+                case Failure(ex) => throw ex
+              }
             }
           }
         }
@@ -61,40 +64,55 @@ trait AuthenticationApi
   def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("make_access_token") {
-        post {
-          formFieldMap { fields =>
-            val allFields = fields ++ Map(
-              "client_id" -> makeSettings.Authentication.defaultClientId,
-              "client_secret" -> makeSettings.Authentication.defaultClientSecret
-            )
-            onComplete(
-              tokenEndpoint
-                .handleRequest(
-                  new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
-                  oauth2DataHandler
-                )
-            ) {
-              case Success(maybeGrantResponse) =>
-                maybeGrantResponse.fold(
-                  _ => complete(Unauthorized),
-                  grantResult => {
-                    val redirectUri = fields.getOrElse("redirect_uri", "")
-                    if (redirectUri != "") {
-                      redirect(
-                        s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}",
-                        Found
-                      )
-                    } else {
-                      complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
-                    }
-                  }
-                )
-              case Failure(ex) => throw ex
+        makeTrace("OauthMakeAccessToken") { _ =>
+          post {
+            formFieldMap { fields =>
+              val allFields = fields ++ Map(
+                "client_id" -> makeSettings.Authentication.defaultClientId,
+                "client_secret" -> makeSettings.Authentication.defaultClientSecret
+              )
+              onComplete(
+                tokenEndpoint
+                  .handleRequest(
+                    new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
+                    oauth2DataHandler
+                  )
+              ) {
+                case Success(maybeGrantResponse) =>
+                  maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                    handleGrantResult(fields, grantResult)
+                  })
+                case Failure(ex) => throw ex
+              }
             }
           }
         }
       }
     }
+
+  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[User]) = {
+    val redirectUri = fields.getOrElse("redirect_uri", "")
+    if (redirectUri != "") {
+      redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)
+    } else {
+      mapResponseHeaders(
+        _ ++ Seq(
+          `Set-Cookie`(
+            HttpCookie(
+              name = makeSettings.SessionCookie.name,
+              value = grantResult.accessToken,
+              secure = makeSettings.SessionCookie.isSecure,
+              httpOnly = true,
+              maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+              path = Some("/")
+            )
+          )
+        )
+      ) {
+        complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+      }
+    }
+  }
 
   @ApiOperation(
     value = "logout",
@@ -115,11 +133,13 @@ trait AuthenticationApi
   def logoutRoute(implicit ctx: EC = ECGlobal): Route =
     post {
       path("logout") {
-        makeOAuth2 { userAuth =>
-          val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
-          onComplete(futureRowsDeletedCount) {
-            case Success(_)  => complete(StatusCodes.NoContent)
-            case Failure(ex) => throw ex
+        makeTrace("OauthLogout") { _ =>
+          makeOAuth2 { userAuth =>
+            val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
+            onComplete(futureRowsDeletedCount) {
+              case Success(_)  => complete(StatusCodes.NoContent)
+              case Failure(ex) => throw ex
+            }
           }
         }
       }

@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -32,8 +33,10 @@ class UserApiTest
     with IdGeneratorComponent
     with SocialServiceComponent
     with EventBusServiceComponent
-    with PersistentUserServiceComponent {
+    with PersistentUserServiceComponent
+    with MakeSettingsComponent {
 
+  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -43,6 +46,14 @@ class UserApiTest
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val eventBusService: EventBusService = mock[EventBusService]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {

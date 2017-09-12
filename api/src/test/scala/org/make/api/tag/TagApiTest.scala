@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
 import org.make.api.MakeApiTestUtils
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.reference.Tag
@@ -25,12 +26,22 @@ class TagApiTest
     with TagApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
-    with TagServiceComponent {
+    with TagServiceComponent
+    with MakeSettingsComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val tagService: TagService = mock[TagService]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"

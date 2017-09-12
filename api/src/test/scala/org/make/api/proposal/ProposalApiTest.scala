@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestUtils
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -28,12 +29,23 @@ class ProposalApiTest
     with ProposalApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
-    with ProposalServiceComponent {
+    with ProposalServiceComponent
+    with MakeSettingsComponent {
+
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val proposalService: ProposalService = mock[ProposalService]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
 
   val validAccessToken = "my-valid-access-token"

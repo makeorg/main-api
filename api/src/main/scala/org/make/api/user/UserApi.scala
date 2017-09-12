@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.social.SocialServiceComponent
@@ -29,7 +30,8 @@ trait UserApi extends MakeAuthenticationDirectives {
     with IdGeneratorComponent
     with SocialServiceComponent
     with EventBusServiceComponent
-    with PersistentUserServiceComponent =>
+    with PersistentUserServiceComponent
+    with MakeSettingsComponent =>
 
   @Path(value = "/{userId}")
   @ApiOperation(

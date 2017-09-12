@@ -7,8 +7,10 @@ import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.auto._
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.{CirceFormatters, ValidationError}
+import org.mockito.Mockito.when
 
 class RejectionsTest
     extends MakeUnitTest
@@ -17,9 +19,18 @@ class RejectionsTest
     with CirceHttpSupport
     with MakeApiTestUtils
     with IdGeneratorComponent
-    with CirceFormatters {
+    with CirceFormatters
+    with MakeSettingsComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
+
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  when(idGenerator.nextId()).thenReturn("some-id")
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
 
   val route: Route = sealRoute(post {
     path("test") {

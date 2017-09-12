@@ -2,6 +2,7 @@ package org.make.api.technical.auth
 
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credentials}
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
 import org.make.core.user.User
 
@@ -12,7 +13,7 @@ import scalaoauth2.provider._
   * Mostly taken from https://github.com/nulab/akka-http-oauth2-provider with added support for redirect
   */
 trait MakeAuthentication extends ShortenedNames with MakeDirectives {
-  self: MakeDataHandlerComponent with IdGeneratorComponent =>
+  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[User]] =
     authenticateOAuth2Async[AuthInfo[User]]("make.org API", oauth2Authenticator)

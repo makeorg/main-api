@@ -5,7 +5,12 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe._
 import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.extensions.{
+  MailJetConfiguration,
+  MailJetConfigurationComponent,
+  MakeSettings,
+  MakeSettingsComponent
+}
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
 import org.mockito.ArgumentMatchers.any
@@ -18,15 +23,26 @@ class MailJetApiTest
     with EventBusServiceComponent
     with MailJetConfigurationComponent
     with IdGeneratorComponent
-    with ShortenedNames {
+    with ShortenedNames
+    with MakeSettingsComponent {
 
+  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
 
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
+  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val routes: Route = sealRoute(mailJetRoutes)

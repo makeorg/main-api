@@ -3,9 +3,11 @@ package org.make.api.technical
 import akka.http.scaladsl.server.Route
 import buildinfo.BuildInfo
 import io.circe.generic.auto._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 
-trait BuildInfoRoutes extends MakeDirectives { this: MakeDataHandlerComponent with IdGeneratorComponent =>
+trait BuildInfoRoutes extends MakeDirectives {
+  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   val buildRoutes: Route = buildInfo
 

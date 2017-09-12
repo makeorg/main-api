@@ -52,7 +52,7 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    postalCode: Option[String],
                    karmaLevel: Option[Int],
                    locale: Option[String],
-                   optInNewsletter: Boolean = false)
+                   optInNewsletter: Boolean = true)
     extends MakeSerializable
 
 object Profile {

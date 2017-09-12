@@ -253,8 +253,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findUserByUserIdAndVerificationToken(userId: UserId,
-                                                      verificationToken: String): Future[Option[User]] = {
+    override def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
         withSQL {

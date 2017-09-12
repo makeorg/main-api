@@ -2,12 +2,6 @@ package org.make.api
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{
-  `Access-Control-Allow-Headers`,
-  `Access-Control-Allow-Methods`,
-  `Access-Control-Allow-Origin`,
-  `Access-Control-Request-Headers`
-}
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
@@ -37,7 +31,6 @@ import org.make.api.userhistory.{
 import org.make.api.vote._
 import org.make.core.{ValidationError, ValidationFailedError}
 
-import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scalaoauth2.provider._
@@ -126,19 +119,19 @@ trait MakeApi
     Set(classOf[AuthenticationApi], classOf[UserApi], classOf[TagApi], classOf[ProposalApi], classOf[BusinessConfigApi])
 
   private lazy val optionsCors: Route = options {
-    MakeApi.corsHeaders() {
+    corsHeaders() {
       complete(StatusCodes.OK)
     }
   }
   private lazy val optionsAuthorized: Route =
     options {
-      MakeApi.corsHeaders() {
+      corsHeaders() {
         complete(StatusCodes.OK)
       }
     }
 
   lazy val makeRoutes: Route =
-    MakeApi.makeDefaultHeadersAndHandlers() {
+    makeDefaultHeadersAndHandlers() {
       new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes ~
         swagger ~
         optionsCors ~
@@ -151,9 +144,11 @@ trait MakeApi
         authenticationRoutes ~
         businessConfigRoutes
     }
+
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
+
   def defaultError(id: String): String =
     s"""
       |{
@@ -163,52 +158,8 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
 
   private def getFromTrace(key: String, default: String = "<unknown>"): String =
     Tracer.currentContext.tags.getOrElse(key, default)
-
   def requestIdFromTrace: String = getFromTrace("id")
-  def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
-  def routeNameFromTrace: String = getFromTrace("route-name")
-  def externalIdFromTrace: String = getFromTrace("external-id")
   def routeIdFromTrace: String = Tracer.currentContext.name
-
-  def defaultHeadersFromTrace: immutable.Seq[HttpHeader] = immutable.Seq(
-    RequestIdHeader(requestIdFromTrace),
-    RequestTimeHeader(startTimeFromTrace),
-    RouteNameHeader(routeNameFromTrace),
-    ExternalIdHeader(externalIdFromTrace)
-  )
-
-  def defaultCorsHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
-    `Access-Control-Allow-Methods`(
-      HttpMethods.POST,
-      HttpMethods.GET,
-      HttpMethods.PUT,
-      HttpMethods.PATCH,
-      HttpMethods.DELETE
-    ),
-    `Access-Control-Allow-Origin`.*
-  )
-
-  def makeDefaultHeadersAndHandlers(): Directive0 =
-    mapInnerRoute { route =>
-      respondWithDefaultHeaders(MakeApi.defaultHeadersFromTrace ++ MakeApi.defaultCorsHeaders) {
-        handleExceptions(MakeApi.exceptionHandler) {
-          handleRejections(MakeApi.rejectionHandler) {
-            route
-          }
-        }
-      }
-    }
-
-  def corsHeaders(): Directive0 =
-    mapInnerRoute { route =>
-      respondWithDefaultHeaders(MakeApi.defaultCorsHeaders) {
-        optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
-          case Some(requestHeader) =>
-            respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) { route }
-          case None => route
-        }
-      }
-    }
 
   val exceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegisteredException =>

@@ -12,7 +12,6 @@ import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scalaoauth2.provider._
 
 trait MakeDataHandlerComponent {
@@ -35,8 +34,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
   class DefaultMakeDataHandler extends MakeDataHandler {
 
-    val validityDurationAccessTokenSeconds: Int = 30.minutes.toSeconds.toInt
-    val validityDurationRefreshTokenSeconds: Int = 4.hours.toSeconds.toInt
+    lazy val validityDurationAccessTokenSeconds: Int = makeSettings.Oauth.accessTokenLifetime
+    lazy val validityDurationRefreshTokenSeconds: Int = makeSettings.Oauth.refreshTokenLifetime
 
     private def toAccessToken(token: Token): AccessToken = {
       AccessToken(
@@ -67,7 +66,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
           val futureClient: Future[Option[Client]] = persistentClientService.findByClientIdAndSecret(clientId, secret)
           def futureFoundUser: Future[Option[User]] =
             persistentUserService.findByEmailAndPassword(
-              request.requireParam("username"),
+              request.requireParam("username").toLowerCase(),
               request.requireParam("password")
             )
           futureClient.flatMap {
@@ -86,14 +85,14 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       val futureClient = persistentClientService.get(ClientId(clientId))
       val futureResult: Future[(Token, String, String)] = for {
-        (accessToken, _)                   <- futureAccessTokens
-        (refreshToken, hashedRefreshToken) <- futureRefreshTokens
-        client                             <- futureClient
+        (accessToken, _)  <- futureAccessTokens
+        (refreshToken, _) <- futureRefreshTokens
+        client            <- futureClient
       } yield
         (
           Token(
             accessToken = accessToken,
-            refreshToken = Some(hashedRefreshToken),
+            refreshToken = Some(refreshToken),
             scope = None,
             expiresIn = validityDurationAccessTokenSeconds,
             user = authInfo.user,
@@ -117,7 +116,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def refreshAccessToken(authInfo: AuthInfo[User], refreshToken: String): Future[AccessToken] = {
       val futureAccessToken = for {
-        affectedRows <- persistentTokenService.deleteByRefreshToken(oauthTokenGenerator.getHashFromToken(refreshToken))
+        affectedRows <- persistentTokenService.deleteByRefreshToken(refreshToken)
         accessToken  <- createAccessToken(authInfo) if affectedRows == 1
       } yield accessToken
 
