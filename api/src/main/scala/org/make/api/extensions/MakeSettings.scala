@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, Extension
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 import org.make.api.Predef._
-
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class MakeSettings(config: Config) extends Extension {
@@ -43,6 +43,8 @@ class MakeSettings(config: Config) extends Extension {
   }
 
   val frontUrl: String = config.getString("front-url")
+  val authorizedCorsUri: Seq[String] =
+    config.getStringList("authorized-cors-uri").asScala
 
   object Cluster {
     val name: String = config.getString("cluster.name")

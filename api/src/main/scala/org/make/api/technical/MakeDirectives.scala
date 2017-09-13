@@ -1,6 +1,5 @@
 package org.make.api.technical
 
-import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
@@ -26,7 +25,7 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
   this: IdGeneratorComponent with MakeSettingsComponent =>
 
   val sessionIdKey: String = "make-session-id"
-  lazy val clientUri: Uri = Uri(makeSettings.frontUrl)
+  lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
   def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
@@ -142,30 +141,59 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     ExternalIdHeader(externalIdFromTrace)
   )
 
-  def defaultCorsHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
-    `Access-Control-Allow-Methods`(
-      HttpMethods.POST,
-      HttpMethods.GET,
-      HttpMethods.PUT,
-      HttpMethods.PATCH,
-      HttpMethods.DELETE
-    ),
-    `Access-Control-Allow-Origin`(
-      origin = HttpOrigin(clientUri.scheme, Host(clientUri.authority.host, clientUri.authority.port))
-    ),
-    `Access-Control-Allow-Credentials`(true)
-  )
+  def getMakeHttpOrigin(mayBeOriginValue: Option[String]): Option[HttpOrigin] = {
+    mayBeOriginValue.flatMap { origin =>
+      if (authorizedUris.contains(origin)) {
+        val originUri = Uri(origin)
+        Some(HttpOrigin(originUri.scheme, Host(originUri.authority.host, originUri.authority.port)))
+      } else {
+        None
+      }
+    }
+  }
+
+  def defaultCorsHeaders(originValue: Option[String]): immutable.Seq[HttpHeader] = {
+
+    val mayBeOriginValue: Option[HttpOrigin] = getMakeHttpOrigin(originValue)
+
+    immutable.Seq(
+      `Access-Control-Allow-Methods`(
+        HttpMethods.POST,
+        HttpMethods.GET,
+        HttpMethods.PUT,
+        HttpMethods.PATCH,
+        HttpMethods.DELETE
+      ),
+      `Access-Control-Allow-Credentials`(true)
+    ) ++ mayBeOriginValue.map { httpOrigin =>
+      immutable.Seq(`Access-Control-Allow-Origin`(origin = httpOrigin))
+    }.getOrElse(immutable.Seq())
+
+  }
+
+  private def getHeaderFromRequest(request: HttpRequest): Option[String] = {
+    request.header[Origin].map { header =>
+      header.value()
+    }
+  }
 
   def makeDefaultHeadersAndHandlers(): Directive0 =
     mapInnerRoute { route =>
       makeAuthCookieHandlers() {
-        respondWithDefaultHeaders(defaultHeadersFromTrace ++ defaultCorsHeaders) {
-          handleExceptions(MakeApi.exceptionHandler) {
-            handleRejections(MakeApi.rejectionHandler) {
-              route
+
+        extractRequest { request =>
+          val mayBeOriginHeaderValue: Option[String] = getHeaderFromRequest(request)
+          makeAuthCookieHandlers() {
+            respondWithDefaultHeaders(defaultHeadersFromTrace ++ defaultCorsHeaders(mayBeOriginHeaderValue)) {
+              handleExceptions(MakeApi.exceptionHandler) {
+                handleRejections(MakeApi.rejectionHandler) {
+                  route
+                }
+              }
             }
           }
         }
+
       }
     }
 
@@ -173,10 +201,7 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     mapInnerRoute { route =>
       optionalCookie(sessionCookieName) {
         case Some(secureCookie) =>
-          mapRequest(
-            (request: HttpRequest) =>
-              request.addCredentials(HttpCredentials.createOAuth2BearerToken(secureCookie.value))
-          ) {
+          mapRequest((request: HttpRequest) => request.addCredentials(OAuth2BearerToken(secureCookie.value))) {
             route
           }
         case None => route
@@ -185,11 +210,16 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
 
   def corsHeaders(): Directive0 =
     mapInnerRoute { route =>
-      respondWithDefaultHeaders(defaultCorsHeaders) {
-        optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
-          case Some(requestHeader) =>
-            respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) { route }
-          case None => route
+      extractRequest { request =>
+        val mayBeOriginHeaderValue: Option[String] = getHeaderFromRequest(request)
+        respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
+          optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
+            case Some(requestHeader) =>
+              respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) {
+                route
+              }
+            case None => route
+          }
         }
       }
     }

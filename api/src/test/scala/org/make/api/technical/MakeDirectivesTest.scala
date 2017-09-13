@@ -1,7 +1,8 @@
 package org.make.api.technical
 
+import akka.http.javadsl.model.headers.Origin
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Origin`, `Set-Cookie`, Cookie}
+import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Origin`, `Set-Cookie`, Cookie, HttpOrigin}
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestUtils
@@ -35,6 +36,7 @@ class MakeDirectivesTest
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
 
   when(makeSettings.frontUrl).thenReturn("http://make.org")
+  when(makeSettings.authorizedCorsUri).thenReturn(Seq("http://make.org"))
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
@@ -203,7 +205,7 @@ class MakeDirectivesTest
   }
   feature("access control header") {
     scenario("return header allow all origins") {
-      Get("/test") ~> route ~> check {
+      Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> route ~> check {
         status should be(StatusCodes.OK)
         info(headers.mkString("\n"))
         header[`Access-Control-Allow-Origin`] shouldBe defined
@@ -212,7 +214,7 @@ class MakeDirectivesTest
     }
 
     scenario("rejection returns header allow all origins") {
-      Get("/test") ~> routeRejection ~> check {
+      Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> routeRejection ~> check {
         status should be(StatusCodes.BadRequest)
         header[`Access-Control-Allow-Origin`] shouldBe defined
         header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
@@ -220,7 +222,7 @@ class MakeDirectivesTest
     }
 
     scenario("exception returns header allow all origins") {
-      Get("/test") ~> routeException ~> check {
+      Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> routeException ~> check {
         status should be(StatusCodes.InternalServerError)
         info(headers.mkString("\n"))
         header[`Access-Control-Allow-Origin`] shouldBe defined
