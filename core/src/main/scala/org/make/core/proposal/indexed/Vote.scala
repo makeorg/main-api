@@ -30,4 +30,4 @@ object VoteKey extends StrictLogging {
   case object Neutral extends VoteKey { override val shortName: String = "neutral" }
 }
 
-final case class Vote(key: VoteKey, selected: Boolean = false, count: Int = 0, qualifications: Seq[Qualification])
+final case class Vote(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification])
