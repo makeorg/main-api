@@ -19,12 +19,13 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService: ProposalCoordinatorService)
-    extends KafkaConsumerActor[ProposalEventWrapper](ProposalProducerActor.topicKey)
+    extends KafkaConsumerActor[ProposalEventWrapper]
     with MakeSettingsExtension
     with ActorEventBusServiceComponent
     with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
+  override protected lazy val kafkaTopic = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-email"
 

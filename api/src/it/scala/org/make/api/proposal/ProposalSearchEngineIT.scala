@@ -8,10 +8,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.{DockerElasticsearchService, ItMakeTest}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -19,11 +23,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.Failure
-import io.circe.syntax._
-import io.circe.generic.auto._
-import org.make.core.{CirceFormatters, DateHelper}
-import org.make.core.proposal.indexed._
-import org.make.core.proposal.ProposalStatus._
 
 class ProposalSearchEngineIT
     extends ItMakeTest
@@ -36,8 +35,7 @@ class ProposalSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.host).thenReturn("localhost")
-  Mockito.when(elasticsearchConfiguration.port).thenReturn(defaultElasticsearchPortExposed)
+  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$defaultElasticsearchPortExposed")
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

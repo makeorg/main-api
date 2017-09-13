@@ -2,8 +2,6 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
-import org.make.core.DateHelper._
-import org.make.core.proposal.ProposalEvent.ProposalProposed
 import org.make.core.proposal._
 import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
@@ -59,60 +57,3 @@ final case class ProposalContext(operation: Option[String],
                                  location: Option[String],
                                  question: Option[String])
 final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
-
-object IndexedProposal {
-
-  //TODO: load from config
-  val defaultCountry = "FR"
-  val defaultLanguage = "fr"
-
-  def apply(p: ProposalProposed): IndexedProposal = {
-    IndexedProposal(
-      id = p.id,
-      userId = p.userId,
-      content = p.content,
-      slug = p.slug,
-      status = ProposalStatus.Pending,
-      createdAt = p.eventDate.toUTC,
-      updatedAt = None,
-      country = p.requestContext.country.getOrElse(defaultCountry),
-      language = p.requestContext.language.getOrElse(defaultLanguage),
-      votesAgree = Vote(
-        key = VoteKey.Agree,
-        qualifications = Seq(
-          Qualification(key = QualificationKey.LikeIt),
-          Qualification(key = QualificationKey.Doable),
-          Qualification(key = QualificationKey.PlatitudeAgree)
-        )
-      ),
-      votesDisagree = Vote(
-        key = VoteKey.Disagree,
-        qualifications = Seq(
-          Qualification(key = QualificationKey.NoWay),
-          Qualification(key = QualificationKey.Impossible),
-          Qualification(key = QualificationKey.PlatitudeDisagree)
-        )
-      ),
-      votesNeutral = Vote(
-        key = VoteKey.Neutral,
-        qualifications = Seq(
-          Qualification(key = QualificationKey.DoNotUnderstand),
-          Qualification(key = QualificationKey.NoOpinion),
-          Qualification(key = QualificationKey.DoNotCare)
-        )
-      ),
-      proposalContext = ProposalContext(
-        operation = p.requestContext.operation,
-        source = p.requestContext.source,
-        location = p.requestContext.location,
-        question = p.requestContext.question
-      ),
-      trending = None,
-      labels = Seq(),
-      author = Author(firstName = p.author.firstName, postalCode = p.author.postalCode, age = p.author.age),
-      themeId = p.requestContext.currentTheme,
-      tags = Seq()
-    )
-  }
-
-}

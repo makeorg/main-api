@@ -5,7 +5,7 @@ import akka.stream.ActorMaterializer
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
-import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetProducerActor, MailJetStreamingActor}
+import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
 import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
@@ -23,7 +23,7 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
-    context.watch(context.actorOf(MailJetStreamingActor.props, MailJetStreamingActor.name))
+    context.watch(context.actorOf(MailJetConsumerActor.props, MailJetConsumerActor.name))
   }
 
   override def receive: Receive = {

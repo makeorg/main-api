@@ -35,12 +35,8 @@ object Dependencies {
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.54")
       .exclude("io.netty", "netty-handler")
-  val akkaSlf4j: ModuleID = "com.typesafe.akka"   %% "akka-slf4j"        % akkaVersion
-  val akkaStreamCirce: ModuleID = "de.knutwalker" %% "akka-stream-circe" % "3.3.0"
-  val akkaStreamKafka: ModuleID =
-    ("com.typesafe.akka" %% "akka-stream-kafka" % "0.16")
-      .exclude("org.apache.kafka", "kafka-clients")
-  val jaxRsApi: ModuleID = "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1"
+  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
+  val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
@@ -68,7 +64,7 @@ object Dependencies {
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.6.4"
   val avroSerializer: ModuleID =
-    ("io.confluent" % "kafka-avro-serializer" % "3.2.0")
+    ("io.confluent" % "kafka-avro-serializer" % "3.2.2")
       .exclude("org.slf4j", "slf4j-log4j12")
       .exclude("io.netty", "netty")
 
@@ -77,8 +73,6 @@ object Dependencies {
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
-  val elastic4sStream: ModuleID = ("com.sksamuel.elastic4s" %% "elastic4s-streams" % elastic4sVersion)
-    .exclude("io.netty", "netty-all")
 
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.3"
 
