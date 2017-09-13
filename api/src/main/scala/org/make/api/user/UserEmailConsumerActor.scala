@@ -19,12 +19,13 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class UserEmailConsumerActor(userService: UserService)
-    extends KafkaConsumerActor[UserEventWrapper](UserProducerActor.topicKey)
+    extends KafkaConsumerActor[UserEventWrapper]
     with MakeSettingsExtension
     with MailJetTemplateConfigurationExtension
     with ActorEventBusServiceComponent
     with AvroSerializers {
 
+  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override val groupId = "user-email"
 

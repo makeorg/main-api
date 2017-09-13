@@ -20,11 +20,12 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
-    extends KafkaConsumerActor[UserEventWrapper](UserProducerActor.topicKey)
+    extends KafkaConsumerActor[UserEventWrapper]
     with MailJetTemplateConfigurationExtension
     with ActorEventBusServiceComponent
     with AvroSerializers {
 
+  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override val groupId = "user-history"
 

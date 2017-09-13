@@ -1,13 +1,15 @@
 package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
 class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
     extends Actor
     with ActorLogging
     with AvroSerializers
-    with ShortenedNames {
+    with ShortenedNames
+    with KafkaConfigurationExtension {
 
   override def preStart(): Unit = {
     context.watch(
