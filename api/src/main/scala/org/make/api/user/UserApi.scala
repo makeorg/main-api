@@ -298,8 +298,8 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val userRoutes: Route = getUser ~
-    getMe ~
+  val userRoutes: Route = getMe ~
+    getUser ~
     register ~
     socialLogin ~
     resetPasswordRequestRoute ~

@@ -21,6 +21,9 @@ final case class UserInfo(azp: Option[String],
                           kid: Option[String])
 
 object UserInfo {
+
+  val MODERATOR_DOMAIN = "make.org"
+
   implicit val decoder: Decoder[UserInfo] =
     Decoder.forProduct17(
       "azp",

@@ -7,6 +7,7 @@ import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.models.UserInfo
+import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.core.profile.Profile
 import org.make.core.user.UserEvent.UserRegisteredEvent
 import org.make.core.user._
@@ -142,6 +143,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               googleId = userInfo.googleId,
               avatarUrl = userInfo.picture
             )
+
+          // @todo: Add a unit test to check role by domain
+          var roles: Seq[Role] = Seq(Role.RoleCitizen)
+          if (userInfo.domain.contains(GoogleUserInfo.MODERATOR_DOMAIN)) {
+            roles = roles ++ Seq(Role.RoleAdmin, Role.RoleModerator)
+          }
+
           val user = User(
             userId = idGenerator.nextUserId(),
             email = lowerCasedEmail,
@@ -156,7 +164,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             verificationTokenExpiresAt = None,
             resetToken = None,
             resetTokenExpiresAt = None,
-            roles = Seq(Role.RoleCitizen),
+            roles = roles,
             profile = profile
           )
 

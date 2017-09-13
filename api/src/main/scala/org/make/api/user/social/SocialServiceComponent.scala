@@ -45,7 +45,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               firstName = googleUserInfo.givenName,
               lastName = googleUserInfo.familyName,
               googleId = googleUserInfo.iat,
-              picture = Option(googleUserInfo.picture)
+              picture = Option(googleUserInfo.picture),
+              domain = googleUserInfo.hd
             )
         case FACEBOOK_PROVIDER =>
           for {
