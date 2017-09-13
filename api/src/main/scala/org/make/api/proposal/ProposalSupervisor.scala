@@ -27,7 +27,9 @@ class ProposalSupervisor(userService: UserService, userHistoryCoordinator: Actor
           ProposalEmailConsumerActor.name
         )
     )
-    context.watch(context.actorOf(ProposalEventStreamingActor.backoffPros, ProposalEventStreamingActor.backoffName))
+    context.watch(
+      context.actorOf(ProposalConsumerActor.props(proposalCoordinator, userService), ProposalConsumerActor.name)
+    )
   }
 
   override def receive: Receive = {
