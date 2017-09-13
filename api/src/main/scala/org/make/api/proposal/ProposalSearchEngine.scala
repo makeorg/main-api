@@ -34,7 +34,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
   override lazy val elasticsearchAPI = new ProposalSearchEngine with StrictLogging {
 
     private val client = HttpClient(
-      ElasticsearchClientUri(elasticsearchConfiguration.host, elasticsearchConfiguration.port)
+      ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
     private val proposalIndex: IndexAndType = "proposals" / "proposal"
 
