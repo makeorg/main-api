@@ -13,6 +13,8 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal.indexed.VoteKey
+import org.make.core.proposal.indexed.Vote
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -68,6 +70,12 @@ class ProposalApiTest
 
   val refuseProposalWithReasonEntity: String =
     RefuseProposalRequest(sendNotificationEmail = true, refusalReason = Some("not allowed word")).asJson.toString
+
+  val voteProposalEntity: String =
+    VoteProposalRequest(key = "agree").asJson.toString
+
+  val wrongVoteProposalEntity: String =
+    VoteProposalRequest(key = "wrong").asJson.toString
 
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
@@ -212,6 +220,11 @@ class ProposalApiTest
       theme = None,
       status = Accepted,
       tags = Seq(),
+      votes = Seq(
+        Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+        Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+        Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+      ),
       creationContext = RequestContext.empty,
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
@@ -297,39 +310,5 @@ class ProposalApiTest
 
     // Todo: implement this test
     scenario("validation of proposal without Tag: this test should be done") {}
-  }
-
-  feature("proposal refuse") {
-    scenario("unauthenticated refuse") {
-      Post("/proposal/123456/refuse") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("refuse with user role") {
-      Post("/proposal/123456/refuse")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("refusing with moderation role") {
-      Post("/proposal/123456/refuse")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-
-    scenario("refusing with admin role") {
-      Post("/proposal/987654/refuse")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-
-    // Todo: implement this test
-    scenario("refusing proposal without reason with admin role: this test should be done") {}
   }
 }

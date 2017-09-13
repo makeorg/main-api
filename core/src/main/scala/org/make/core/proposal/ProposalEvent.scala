@@ -2,9 +2,10 @@ package org.make.core.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.core.proposal.indexed.VoteKey
 import org.make.core.reference.{LabelId, TagId, ThemeId}
-import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import org.make.core.user.UserId
+import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait ProposalEvent extends MakeSerializable {
@@ -15,8 +16,8 @@ sealed trait ProposalEvent extends MakeSerializable {
 
 object ProposalEvent {
 
-  type AnyProposalEvent =
-    ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+: ProposalUpdated :+: CNil
+  type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
+    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -32,6 +33,8 @@ object ProposalEvent {
       case e: ProposalRefused  => Coproduct[AnyProposalEvent](e)
       case e: ProposalViewed   => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated  => Coproduct[AnyProposalEvent](e)
+      case e: ProposalVoted    => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnvoted  => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -103,6 +106,28 @@ object ProposalEvent {
   object ProposalRefused {
     val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-refused"
+  }
+
+  final case class ProposalVoted(id: ProposalId,
+                                 maybeUserId: Option[UserId],
+                                 eventDate: ZonedDateTime,
+                                 requestContext: RequestContext,
+                                 voteKey: VoteKey)
+      extends ProposalEvent
+
+  object ProposalVoted {
+    val version: Int = MakeSerializable.V1
+  }
+
+  final case class ProposalUnvoted(id: ProposalId,
+                                   maybeUserId: Option[UserId],
+                                   eventDate: ZonedDateTime,
+                                   requestContext: RequestContext,
+                                   voteKey: VoteKey)
+      extends ProposalEvent
+
+  object ProposalUnvoted {
+    val version: Int = MakeSerializable.V1
   }
 
   final case class ProposalEdition(oldVersion: String, newVersion: String)

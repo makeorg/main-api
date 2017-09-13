@@ -33,6 +33,8 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: ProposalProposed => handleProposalProposed(event)
       case event: ProposalAccepted => handleProposalAccepted(event)
       case event: ProposalRefused  => handleProposalRefused(event)
+      case event: ProposalVoted    => handleProposalVoted(event)
+      case event: ProposalUnvoted  => handleProposalUnvoted(event)
     }
 
   }
@@ -43,6 +45,8 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
+    implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
@@ -58,37 +62,77 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    (userHistoryCoordinator ? LogUserProposalEvent(
-      userId = event.userId,
-      requestContext = event.requestContext,
-      action = UserAction(
-        date = event.eventDate,
-        actionType = LogUserProposalEvent.action,
-        arguments = UserProposal(content = event.content)
+    Future(
+      userHistoryCoordinator ? LogUserProposalEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogUserProposalEvent.action,
+          arguments = UserProposal(content = event.content)
+        )
       )
-    )).map { _ =>
-      {}
+    )
+  }
+
+  def handleProposalVoted(event: ProposalVoted): Future[Unit] = {
+    if (event.maybeUserId.isDefined) {
+      Future(
+        userHistoryCoordinator ? LogUserVoteEvent(
+          userId = event.maybeUserId.get,
+          requestContext = event.requestContext,
+          action = UserAction(
+            date = event.eventDate,
+            actionType = LogUserVoteEvent.action,
+            arguments = UserVote(event.voteKey)
+          )
+        )
+      )
+    } else {
+      Future.successful[Unit] {
+        log.debug(s"receive $event")
+      }
+    }
+  }
+
+  def handleProposalUnvoted(event: ProposalUnvoted): Future[Unit] = {
+    if (event.maybeUserId.isDefined) {
+      Future(
+        userHistoryCoordinator ? LogUserUnvoteEvent(
+          userId = event.maybeUserId.get,
+          requestContext = event.requestContext,
+          action = UserAction(
+            date = event.eventDate,
+            actionType = LogUserUnvoteEvent.action,
+            arguments = UserVote(event.voteKey)
+          )
+        )
+      )
+    } else {
+      Future.successful[Unit] {
+        log.debug(s"receive $event")
+      }
     }
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
-    (userHistoryCoordinator ? LogAcceptProposalEvent(
-      userId = event.moderator,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
-    )).map { _ =>
-      {}
-    }
+    Future(
+      userHistoryCoordinator ? LogAcceptProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+      )
+    )
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
-    (userHistoryCoordinator ? LogRefuseProposalEvent(
-      userId = event.moderator,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
-    )).map { _ =>
-      {}
-    }
+    Future(
+      userHistoryCoordinator ? LogRefuseProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+      )
+    )
   }
 }
 

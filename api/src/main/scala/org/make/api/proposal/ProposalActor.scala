@@ -5,11 +5,14 @@ import java.time.{LocalDate, ZoneOffset}
 
 import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
-import org.make.api.proposal.ProposalActor.{applyProposalAccepted, applyProposalRefused, Snapshot}
+import org.make.api.proposal.ProposalActor._
 import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
-import org.make.core.{DateHelper, SlugHelper, ValidationError, ValidationFailedError}
+import org.make.core.proposal.indexed.Vote
+import org.make.core.proposal.indexed.VoteKey.{Agree, Disagree, Neutral}
+import org.make.core.user.UserId
+import org.make.core._
 
 class ProposalActor extends PersistentActor with ActorLogging {
   def proposalId: ProposalId = ProposalId(self.path.name)
@@ -29,8 +32,34 @@ class ProposalActor extends PersistentActor with ActorLogging {
     case command: UpdateProposalCommand => onUpdateProposalCommand(command)
     case command: AcceptProposalCommand => onAcceptProposalCommand(command)
     case command: RefuseProposalCommand => onRefuseProposalCommand(command)
+    case command: VoteProposalCommand   => onVoteProposalCommand(command)
+    case command: UnvoteProposalCommand => onUnvoteProposalCommand(command)
     case Snapshot                       => state.foreach(saveSnapshot)
     case _: KillProposalShard           => self ! PoisonPill
+  }
+
+  private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
+    val maybeEvent = validateVoteCommand(command)
+    maybeEvent match {
+      case Some(event) =>
+        persistAndPublishEvent(event) {
+          sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+          self ! Snapshot
+        }
+      case None => sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+    }
+  }
+
+  private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {
+    val maybeEvent = validateUnvoteCommand(command)
+    maybeEvent match {
+      case Some(event) =>
+        persistAndPublishEvent(event) {
+          sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+          self ! Snapshot
+        }
+      case None => sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+    }
   }
 
   private def onViewProposalCommand(command: ViewProposalCommand): Unit = {
@@ -102,6 +131,68 @@ class ProposalActor extends PersistentActor with ActorLogging {
         }
       case Left(error) => sender() ! error
     }
+  }
+
+  private def validateVoteCommand(command: VoteProposalCommand): Option[ProposalEvent] = {
+    val proposalVoted =
+      ProposalVoted(
+        id = proposalId,
+        maybeUserId = command.maybeUserId,
+        eventDate = DateHelper.now(),
+        requestContext = command.requestContext,
+        voteKey = command.voteKey
+      )
+    state.map { proposal =>
+      command.maybeUserId match {
+        case Some(userId) =>
+          proposal.votes.find(_.key == command.voteKey).flatMap { vote =>
+            if (vote.userIds.contains(userId)) {
+              None
+            } else {
+              Some(proposalVoted)
+            }
+          }
+        case None =>
+          proposal.votes.find(_.key == command.voteKey).flatMap { vote =>
+            if (vote.sessionIds.contains(command.requestContext.sessionId)) {
+              None
+            } else {
+              Some(proposalVoted)
+            }
+          }
+      }
+    }.getOrElse(None)
+  }
+
+  private def validateUnvoteCommand(command: UnvoteProposalCommand): Option[ProposalEvent] = {
+    val proposalUnvoted =
+      ProposalUnvoted(
+        id = proposalId,
+        maybeUserId = command.maybeUserId,
+        eventDate = DateHelper.now(),
+        requestContext = command.requestContext,
+        voteKey = command.voteKey
+      )
+    state.map { proposal =>
+      command.maybeUserId match {
+        case Some(userId) =>
+          proposal.votes.find(_.key == command.voteKey).flatMap { vote =>
+            if (vote.userIds.contains(userId)) {
+              Some(proposalUnvoted)
+            } else {
+              None
+            }
+          }
+        case None =>
+          proposal.votes.find(_.key == command.voteKey).flatMap { vote =>
+            if (vote.sessionIds.contains(command.requestContext.sessionId)) {
+              Some(proposalUnvoted)
+            } else {
+              None
+            }
+          }
+      }
+    }.getOrElse(None)
   }
 
   private def validateAcceptCommand(command: AcceptProposalCommand): Either[ValidationFailedError, ProposalEvent] = {
@@ -209,7 +300,12 @@ class ProposalActor extends PersistentActor with ActorLogging {
           status = ProposalStatus.Pending,
           theme = e.requestContext.currentTheme,
           creationContext = e.requestContext,
-          labels = Seq(),
+          labels = Seq.empty,
+          votes = Seq(
+            Vote(key = Agree, qualifications = Seq.empty),
+            Vote(key = Disagree, qualifications = Seq.empty),
+            Vote(key = Neutral, qualifications = Seq.empty)
+          ),
           events = List(
             ProposalAction(
               date = e.eventDate,
@@ -224,6 +320,8 @@ class ProposalActor extends PersistentActor with ActorLogging {
       state.map(_.copy(content = e.content, slug = SlugHelper(e.content), updatedAt = Option(e.updatedAt)))
     case e: ProposalAccepted => state.map(proposal => applyProposalAccepted(proposal, e))
     case e: ProposalRefused  => state.map(proposal => applyProposalRefused(proposal, e))
+    case e: ProposalVoted    => state.map(proposal => applyProposalVoted(proposal, e))
+    case e: ProposalUnvoted  => state.map(proposal => applyProposalUnvoted(proposal, e))
     case _                   => state
   }
 
@@ -266,15 +364,34 @@ object ProposalActor {
   def applyProposalRefused(state: Proposal, event: ProposalRefused): Proposal = {
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = Map())
-    var result =
-      state.copy(
-        events = action :: state.events,
-        status = Refused,
-        refusalReason = event.refusalReason,
-        updatedAt = Some(event.eventDate)
-      )
+    state.copy(
+      events = action :: state.events,
+      status = Refused,
+      refusalReason = event.refusalReason,
+      updatedAt = Some(event.eventDate)
+    )
+  }
 
-    result
+  def applyProposalVoted(state: Proposal, event: ProposalVoted): Proposal = {
+    state.copy(votes = state.votes.map {
+      case vote if vote.key == event.voteKey =>
+        vote.copy(count = vote.count + 1, userIds = vote.userIds ++: {
+          if (event.maybeUserId.isDefined) Seq(event.maybeUserId.get) else Seq.empty
+        }, sessionIds = vote.sessionIds :+ event.requestContext.sessionId)
+      case vote => vote
+    })
+  }
+
+  def applyProposalUnvoted(state: Proposal, event: ProposalUnvoted): Proposal = {
+    state.copy(votes = state.votes.map {
+      case vote if vote.key == event.voteKey =>
+        vote.copy(
+          count = vote.count - 1,
+          userIds = vote.userIds.filter(_ != event.maybeUserId.getOrElse(UserId(""))),
+          sessionIds = vote.sessionIds.filter(_ != event.requestContext.sessionId)
+        )
+      case vote => vote
+    })
   }
 
   case object Snapshot

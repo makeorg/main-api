@@ -22,11 +22,6 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
         .actorOf(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
     )
 
-    context.watch(
-      context
-        .actorOf(UserHistoryConsumerActor.props(userHistoryCoordinator), UserHistoryConsumerActor.name)
-    )
-
   }
 
   override def receive: Receive = {

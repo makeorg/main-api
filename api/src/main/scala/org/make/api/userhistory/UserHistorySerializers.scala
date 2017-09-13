@@ -72,6 +72,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
     DefaultJsonProtocol.jsonFormat6(UserRegistered.apply)
 
+  implicit val userVoteFormatted: RootJsonFormat[UserVote] =
+    DefaultJsonProtocol.jsonFormat1(UserVote.apply)
+
   implicit val searchParametersFormatted: RootJsonFormat[SearchParameters] =
     DefaultJsonProtocol.jsonFormat1(SearchParameters.apply)
 
@@ -97,6 +100,12 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val logRegisterCitizenEventFormatted: RootJsonFormat[LogRegisterCitizenEvent] =
     DefaultJsonProtocol.jsonFormat(LogRegisterCitizenEvent.apply, "userId", "context", "action")
 
+  implicit val logUserVoteEventFormatted: RootJsonFormat[LogUserVoteEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserVoteEvent.apply, "userId", "context", "action")
+
+  implicit val logUserUnvoteEventFormatted: RootJsonFormat[LogUserUnvoteEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUnvoteEvent.apply, "userId", "context", "action")
+
   private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V1] =
     json.persister[LogRegisterCitizenEvent]("user-history-registered")
 
@@ -112,12 +121,20 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserProposalEventSerializer: JsonPersister[LogUserProposalEvent, V1] =
     json.persister[LogUserProposalEvent]("user-history-sent-proposal")
 
+  private val logUserVoteEventSerializer: JsonPersister[LogUserVoteEvent, V1] =
+    json.persister[LogUserVoteEvent]("user-history-vote-proposal")
+
+  private val logUserUnvoteEventSerializer: JsonPersister[LogUserUnvoteEvent, V1] =
+    json.persister[LogUserUnvoteEvent]("user-history-unvote-proposal")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       logRegisterCitizenEventSerializer,
       logSearchProposalsEventSerializer,
       logAcceptProposalEventSerializer,
       logRefuseProposalEventSerializer,
-      logUserProposalEventSerializer
+      logUserProposalEventSerializer,
+      logUserVoteEventSerializer,
+      logUserUnvoteEventSerializer
     )
 }

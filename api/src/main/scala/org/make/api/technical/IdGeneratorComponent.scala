@@ -2,9 +2,8 @@ package org.make.api.technical
 
 import java.util.UUID
 
-import org.make.core.user.UserId
 import org.make.core.proposal.ProposalId
-import org.make.core.vote.VoteId
+import org.make.core.user.UserId
 
 trait IdGeneratorComponent {
   def idGenerator: IdGenerator
@@ -13,7 +12,6 @@ trait IdGeneratorComponent {
 trait IdGenerator {
   def nextUserId(): UserId = UserId(nextId())
   def nextProposalId(): ProposalId = ProposalId(nextId())
-  def nextVoteId(): VoteId = VoteId(nextId())
   def nextId(): String
 }
 

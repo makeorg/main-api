@@ -2,9 +2,10 @@ package org.make.core.user
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.{MakeSerializable, RequestContext}
 import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.proposal.SearchQuery
+import org.make.core.proposal.indexed.VoteKey
+import org.make.core.{MakeSerializable, RequestContext}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
@@ -29,6 +30,8 @@ final case class UserRegistered(email: String,
                                 postalCode: Option[String])
 
 final case class UserProposal(content: String)
+
+final case class UserVote(voteKey: VoteKey)
 
 final case class LogSearchProposalsEvent(userId: UserId,
                                          requestContext: RequestContext,
@@ -67,6 +70,24 @@ final case class LogUserProposalEvent(userId: UserId, requestContext: RequestCon
 
 object LogUserProposalEvent {
   val action: String = "propose"
+}
+
+final case class LogUserVoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
+    extends UserHistoryEvent[UserVote] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserVoteEvent {
+  val action: String = "vote"
+}
+
+final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
+    extends UserHistoryEvent[UserVote] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserUnvoteEvent {
+  val action: String = "unvote"
 }
 
 // Moderator actions

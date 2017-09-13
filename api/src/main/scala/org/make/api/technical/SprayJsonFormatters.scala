@@ -4,12 +4,12 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import org.make.core.RequestContext
-import org.make.core.user.UserId
+import org.make.core.proposal.indexed.{Qualification, QualificationKey, Vote, VoteKey}
 import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
-import org.make.core.vote.VoteId
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 trait SprayJsonFormatters {
 
@@ -101,17 +101,6 @@ trait SprayJsonFormatters {
     }
   }
 
-  implicit val voteIdFormatter: JsonFormat[VoteId] = new JsonFormat[VoteId] {
-    override def read(json: JsValue): VoteId = json match {
-      case JsString(s) => VoteId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: VoteId): JsValue = {
-      JsString(obj.value)
-    }
-  }
-
   implicit val proposalStatusFormatter: JsonFormat[ProposalStatus] = new JsonFormat[ProposalStatus] {
     override def read(json: JsValue): ProposalStatus = json match {
       case JsString(s) =>
@@ -124,7 +113,36 @@ trait SprayJsonFormatters {
     }
   }
 
+  implicit val voteKeyFormatter: JsonFormat[VoteKey] = new JsonFormat[VoteKey] {
+    override def read(json: JsValue): VoteKey = json match {
+      case JsString(s) => VoteKey.voteKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: VoteKey): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
+  implicit val qualificationKeyFormatter: JsonFormat[QualificationKey] = new JsonFormat[QualificationKey] {
+    override def read(json: JsValue): QualificationKey = json match {
+      case JsString(s) =>
+        QualificationKey.qualificationKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
+      case other => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: QualificationKey): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
     DefaultJsonProtocol.jsonFormat10(RequestContext.apply)
+
+  implicit val voteFormatter: RootJsonFormat[Vote] =
+    DefaultJsonProtocol.jsonFormat5(Vote.apply)
+
+  implicit val qualificationFormatter: RootJsonFormat[Qualification] =
+    DefaultJsonProtocol.jsonFormat2(Qualification.apply)
 
 }
