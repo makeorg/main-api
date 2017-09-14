@@ -9,7 +9,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.reference.{Tag, TagId}
 import scalikejdbc._
-
+import org.make.api.technical.DatabaseTransactions._
 import scala.concurrent.Future
 
 trait PersistentTagServiceComponent {
@@ -33,7 +33,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def get(slug: TagId): Future[Option[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -46,7 +46,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findAllEnabled(): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTags = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentTags = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -60,7 +60,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     override def findAllEnabledFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
       val uniqueTagsIds: Seq[String] = tagsIds.distinct.map(_.value)
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -77,7 +77,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def persist(tag: Tag): Future[Tag] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTag)

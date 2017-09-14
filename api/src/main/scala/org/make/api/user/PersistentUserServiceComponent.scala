@@ -12,7 +12,7 @@ import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 import com.github.t3hnar.bcrypt._
 import org.make.core.DateHelper
-
+import org.make.api.technical.DatabaseTransactions._
 import scala.concurrent.Future
 
 trait PersistentUserServiceComponent {
@@ -201,7 +201,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -214,7 +214,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def findByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -229,7 +229,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def findByEmail(email: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -242,7 +242,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -253,9 +253,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]] = {
+    override def findUserByUserIdAndVerificationToken(userId: UserId,
+                                                      verificationToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -268,7 +269,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def findUserIdByEmail(email: String): Future[Option[UserId]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUserId = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentUserId = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select(userAlias.result.uuid)
             .from(PersistentUser.as(userAlias))
@@ -281,7 +282,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def emailExists(email: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB('READ).localTx { implicit session =>
+      Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.email))
             .from(PersistentUser.as(userAlias))
@@ -292,7 +293,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def verificationTokenExists(verificationToken: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB('READ).localTx { implicit session =>
+      Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.verificationToken))
             .from(PersistentUser.as(userAlias))
@@ -303,7 +304,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def resetTokenExists(resetToken: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB('READ).localTx { implicit session =>
+      Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.resetToken))
             .from(PersistentUser.as(userAlias))
@@ -314,7 +315,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def persist(user: User): Future[User] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentUser)
@@ -355,7 +356,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.hashedPassword -> hashedPassword, column.resetToken -> None, column.resetTokenExpiresAt -> None)
@@ -370,7 +371,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.verified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
