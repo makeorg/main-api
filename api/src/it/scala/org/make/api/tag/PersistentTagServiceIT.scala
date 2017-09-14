@@ -10,10 +10,16 @@ import scala.concurrent.duration._
 class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServiceComponent {
 
   val stark: Tag = Tag("Stark")
+
   val targaryen: Tag = Tag("Targaryen")
   val lannister: Tag = Tag("Lannister")
   val bolton: Tag = Tag("Bolton")
   val greyjoy: Tag = Tag("Greyjoy")
+
+  val tully: Tag = Tag("Tully")
+  val baratheon: Tag = Tag("Baratheon")
+  val martell: Tag = Tag("Martell")
+  val tyrell: Tag = Tag("Tyrell")
 
   feature("One tag can be persisted and retrieved") {
     scenario("Get tag by tagId") {
@@ -50,7 +56,7 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
   }
 
   feature("A list of tags can be retrieved") {
-    scenario("Get a list of enabled tags") {
+    scenario("Get a list of all enabled tags") {
       Given(s"""a list of persisted tags:
                |label = ${targaryen.label}, tagId = ${targaryen.tagId.value}
                |label = ${lannister.label}, tagId = ${lannister.tagId.value}
@@ -74,6 +80,34 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
         case (persisted, found) =>
           Then("result should contain a list of tags of targaryen, lannister, bolton and greyjoy.")
           found.forall(persisted.contains) should be(true)
+      }
+    }
+
+    scenario("Get a list of enabled tags from a list of tagsIds") {
+      Given(s"""a list of persisted tags:
+               |label = ${tully.label}, tagId = ${tully.tagId.value}
+               |label = ${baratheon.label}, tagId = ${baratheon.tagId.value}
+               |label = ${martell.label}, tagId = ${martell.tagId.value}
+               |label = ${tyrell.label}, tagId = ${tyrell.tagId.value}
+        """.stripMargin)
+      val futurePersistedTagList: Future[Seq[Tag]] = for {
+        tagTully     <- persistentTagService.persist(tully)
+        tagBaratheon <- persistentTagService.persist(baratheon)
+        tagMartell   <- persistentTagService.persist(martell)
+        tagTyrell    <- persistentTagService.persist(tyrell)
+      } yield Seq(tagTully, tagBaratheon, tagMartell, tagTyrell)
+
+      When("""I retrieve the tags list from ids of tully and baratheon""")
+      val tagsToFind = Seq(tully, baratheon)
+      val futureTagsLists: Future[Seq[Tag]] = for {
+        _         <- futurePersistedTagList
+        foundTags <- persistentTagService.findAllEnabledFromIds(tagsToFind.map(_.tagId))
+      } yield foundTags
+
+      whenReady(futureTagsLists, Timeout(3.seconds)) { found =>
+        Then("result should contain a list of tags of tully and baratheon.")
+        found.size should be(tagsToFind.size)
+        found.forall(tagsToFind.contains) should be(true)
       }
     }
   }

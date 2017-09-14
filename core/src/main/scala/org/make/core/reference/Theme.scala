@@ -3,7 +3,19 @@ package org.make.core.reference
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.{MakeSerializable, StringValue}
 
-final case class Theme(themeId: ThemeId, label: String) extends MakeSerializable
+final case class GradientColor(from: String, to: String) extends MakeSerializable
+
+final case class ThemeTranslation(slug: String, title: String, language: String) extends MakeSerializable
+
+final case class Theme(themeId: ThemeId,
+                       translations: Seq[ThemeTranslation],
+                       actionsCount: Int,
+                       proposalsCount: Int,
+                       country: String,
+                       color: String,
+                       gradient: Option[GradientColor] = None,
+                       tags: Seq[Tag] = Seq.empty)
+    extends MakeSerializable
 
 final case class ThemeId(value: String) extends StringValue
 

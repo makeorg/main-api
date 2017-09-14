@@ -5,7 +5,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 import scala.concurrent.ExecutionContext
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
@@ -36,11 +36,11 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = writeDatasource))
 
     val queries = Source
-      .fromString("DROP DATABASE IF EXISTS makeapitest;")
+      .fromString("DROP DATABASE IF EXISTS makeapitest;%")
       .mkString
       .concat(
         Source
-          .fromResource("create-schema.sql")
+          .fromResource("create-schema.sql")(Codec.UTF8)
           .mkString
           .replace("#dbname#", "makeapitest")
           .replace("#clientid#", "clientId")
