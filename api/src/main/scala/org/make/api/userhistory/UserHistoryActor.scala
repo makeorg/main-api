@@ -21,6 +21,7 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     case GetUserHistory(_)                => sender() ! state
     case command: LogSearchProposalsEvent => persistAndPublishEvent(command)
     case command: LogAcceptProposalEvent  => persistAndPublishEvent(command)
+    case command: LogRefuseProposalEvent  => persistAndPublishEvent(command)
     case command: LogRegisterCitizenEvent => persistAndPublishEvent(command)
     case command: LogUserProposalEvent    => persistAndPublishEvent(command)
   }

@@ -32,6 +32,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: ProposalUpdated  => handleProposalUpdated(event)
       case event: ProposalProposed => handleProposalProposed(event)
       case event: ProposalAccepted => handleProposalAccepted(event)
+      case event: ProposalRefused  => handleProposalRefused(event)
     }
 
   }
@@ -41,6 +42,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
+    implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
@@ -74,6 +76,16 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       userId = event.moderator,
       requestContext = event.requestContext,
       action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+    )).map { _ =>
+      {}
+    }
+  }
+
+  def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
+    (userHistoryCoordinator ? LogRefuseProposalEvent(
+      userId = event.moderator,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
     )).map { _ =>
       {}
     }

@@ -37,6 +37,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       case event: ProposalUpdated  => handleProposalUpdated(event)
       case event: ProposalProposed => handleProposalProposed(event)
       case event: ProposalAccepted => handleProposalAccepted(event)
+      case event: ProposalRefused  => handleProposalRefused(event)
     }
 
   }
@@ -46,6 +47,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
     implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
+    implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
@@ -99,6 +101,36 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
                 "name" -> user.fullName.getOrElse("")
               )
             )
+          )
+        )
+
+      maybePublish.getOrElseF(
+        Future.failed(new IllegalStateException(s"proposal or user not found for proposal ${event.id.value}"))
+      )
+    } else {
+      Future.successful[Unit] {}
+    }
+
+  }
+
+  def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
+    if (event.sendRefuseEmail) {
+      // OptionT[Future, Unit] is some kind of monad wrapper to be able to unwrap options with no boilerplate
+      // it allows here to have a for-comprehension on methods returning Future[Option[_]]
+      // Do not use unless it really simplifies the code readability
+
+      val maybePublish: OptionT[Future, Unit] = for {
+        proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
+        user: User         <- OptionT(userService.getUser(proposal.author))
+      } yield
+        eventBusService.publish(
+          SendEmail(
+            templateId = Some(mailJetTemplateConfiguration.proposalRefusedTemplate),
+            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
+            variables = Some(Map("content" -> proposal.content, "name" -> user.fullName.getOrElse("")))
           )
         )
 

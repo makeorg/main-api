@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
@@ -368,4 +368,71 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   }
 
+  feature("refuse a proposal") {
+    scenario("refusing a non existing proposal") {
+      Given("no proposal corresponding to id 'nothing-there'")
+      When("I try to refuse the proposal")
+      coordinator ! RefuseProposalCommand(
+        proposalId = ProposalId("nothing-there"),
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        refusalReason = Some("nothing"),
+        theme = Some(ThemeId("my theme")),
+        labels = Seq(),
+        tags = Seq(TagId("some tag id")),
+        similarProposals = Seq()
+      )
+
+      Then("I should receive 'None' since nothing is found")
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("unknown")
+      error.errors.head.message should be(Some("Proposal nothing-there doesn't exist"))
+    }
+
+    scenario("refuse an existing proposal with a refuse reason") {
+      Given("a freshly created proposal")
+      val originalContent = "This is a proposal that will be refused"
+      coordinator ! ProposeCommand(
+        ProposalId("to-be-moderated"),
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I refuse the proposal")
+      coordinator ! RefuseProposalCommand(
+        proposalId = ProposalId("to-be-moderated"),
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        refusalReason = Some("this proposal is shit"),
+        theme = Some(ThemeId("my theme")),
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        similarProposals = Seq()
+      )
+
+      Then("I should receive the refused proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to refuse given proposal"))
+
+      response.proposalId should be(ProposalId("to-be-moderated"))
+      response.events.length should be(2)
+      response.content should be(originalContent)
+      response.status should be(Refused)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+      response.tags should be(Seq(TagId("some tag id")))
+      response.labels should be(Seq(LabelId("action")))
+      response.theme should be(Some(ThemeId("my theme")))
+    }
+  }
 }

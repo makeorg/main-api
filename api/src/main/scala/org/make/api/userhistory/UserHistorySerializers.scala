@@ -88,6 +88,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val logAcceptProposalEventFormatted: RootJsonFormat[LogAcceptProposalEvent] =
     DefaultJsonProtocol.jsonFormat(LogAcceptProposalEvent.apply, "userId", "context", "action")
 
+  implicit val logRefuseProposalEventFormatted: RootJsonFormat[LogRefuseProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogRefuseProposalEvent.apply, "userId", "context", "action")
+
   implicit val logUserProposalEventFormatted: RootJsonFormat[LogUserProposalEvent] =
     DefaultJsonProtocol.jsonFormat(LogUserProposalEvent.apply, "userId", "context", "action")
 
@@ -103,6 +106,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logAcceptProposalEventSerializer: JsonPersister[LogAcceptProposalEvent, V1] =
     json.persister[LogAcceptProposalEvent]("user-history-accepted-proposal")
 
+  private val logRefuseProposalEventSerializer: JsonPersister[LogRefuseProposalEvent, V1] =
+    json.persister[LogRefuseProposalEvent]("user-history-refused-proposal")
+
   private val logUserProposalEventSerializer: JsonPersister[LogUserProposalEvent, V1] =
     json.persister[LogUserProposalEvent]("user-history-sent-proposal")
 
@@ -111,6 +117,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logRegisterCitizenEventSerializer,
       logSearchProposalsEventSerializer,
       logAcceptProposalEventSerializer,
+      logRefuseProposalEventSerializer,
       logUserProposalEventSerializer
     )
 }

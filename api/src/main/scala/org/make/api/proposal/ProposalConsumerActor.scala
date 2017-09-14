@@ -41,6 +41,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
       case event: ProposalUpdated  => onCreateOrUpdate(event)
       case event: ProposalProposed => onCreateOrUpdate(event)
       case event: ProposalAccepted => onCreateOrUpdate(event)
+      case event: ProposalRefused  => onCreateOrUpdate(event)
     }
 
   }
@@ -50,6 +51,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
     implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
+    implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {

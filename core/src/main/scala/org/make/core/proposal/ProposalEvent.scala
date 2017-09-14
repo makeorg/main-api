@@ -16,7 +16,7 @@ sealed trait ProposalEvent extends MakeSerializable {
 object ProposalEvent {
 
   type AnyProposalEvent =
-    ProposalProposed :+: ProposalAccepted :+: ProposalViewed :+: ProposalUpdated :+: CNil
+    ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+: ProposalUpdated :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -29,6 +29,7 @@ object ProposalEvent {
     def wrapEvent(event: ProposalEvent): AnyProposalEvent = event match {
       case e: ProposalProposed => Coproduct[AnyProposalEvent](e)
       case e: ProposalAccepted => Coproduct[AnyProposalEvent](e)
+      case e: ProposalRefused  => Coproduct[AnyProposalEvent](e)
       case e: ProposalViewed   => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated  => Coproduct[AnyProposalEvent](e)
     }
@@ -89,6 +90,23 @@ object ProposalEvent {
   object ProposalAccepted {
     val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-accepted"
+  }
+
+  final case class ProposalRefused(id: ProposalId,
+                                   eventDate: ZonedDateTime,
+                                   requestContext: RequestContext,
+                                   moderator: UserId,
+                                   sendRefuseEmail: Boolean,
+                                   refusalReason: Option[String],
+                                   theme: Option[ThemeId],
+                                   labels: Seq[LabelId],
+                                   tags: Seq[TagId],
+                                   similarProposals: Seq[ProposalId])
+      extends ProposalEvent
+
+  object ProposalRefused {
+    val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-refused"
   }
 
   final case class ProposalEdition(oldVersion: String, newVersion: String)

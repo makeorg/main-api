@@ -271,7 +271,45 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  val proposalRoutes: Route = propose ~ getProposal ~ update ~ acceptProposal ~ search ~ searchAll
+  @ApiOperation(
+    value = "refuse-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(new Authorization(value = "MakeApi"))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.RefuseProposalRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @Path(value = "/{proposalId}/refuse")
+  def refuseProposal: Route = post {
+    path("proposal" / proposalId / "refuse") { proposalId =>
+      makeTrace("RefuseProposal") { requestContext =>
+        makeOAuth2 { auth: AuthInfo[User] =>
+          requireModerationRole(auth.user) {
+            decodeRequest {
+              entity(as[RefuseProposalRequest]) { request =>
+                provideAsync(
+                  proposalService.refuseProposal(
+                    proposalId = proposalId,
+                    moderator = auth.user.userId,
+                    requestContext = requestContext,
+                    request = request
+                  )
+                ) { proposal: Proposal =>
+                  complete(proposal)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  val proposalRoutes: Route = propose ~ getProposal ~ update ~ acceptProposal ~ refuseProposal ~ search ~ searchAll
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
