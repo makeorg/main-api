@@ -1,7 +1,7 @@
 package org.make.api.technical.auth
 
-import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credentials}
+import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
 import org.make.core.user.User
@@ -23,7 +23,10 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
   }
 
   def optionalMakeOAuth2: Directive1[Option[AuthInfo[User]]] = {
-    defaultMakeOAuth2.optional
+    defaultMakeOAuth2.map(Some(_): Option[AuthInfo[User]]).recover {
+      case AuthenticationFailedRejection(_, _) +: _ ⇒ provide(None)
+      case rejs ⇒ reject(rejs: _*)
+    }
   }
 
   def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[User]]] =

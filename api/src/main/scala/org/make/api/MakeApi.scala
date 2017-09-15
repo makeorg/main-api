@@ -23,7 +23,7 @@ import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi, UserSupervisor}
+import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
 import org.make.api.userhistory.{
   DefaultUserHistoryServiceComponent,
   UserHistoryCoordinator,
@@ -91,7 +91,7 @@ trait MakeApi
 
   override lazy val userHistoryCoordinator: ActorRef = Await.result(
     actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / UserSupervisor.name / UserHistoryCoordinator.name)
+      .actorSelection(actorSystem / MakeGuardian.name / UserHistoryCoordinator.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )

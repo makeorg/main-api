@@ -180,7 +180,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
   def makeDefaultHeadersAndHandlers(): Directive0 =
     mapInnerRoute { route =>
       makeAuthCookieHandlers() {
-
         extractRequest { request =>
           val mayBeOriginHeaderValue: Option[String] = getHeaderFromRequest(request)
           makeAuthCookieHandlers() {
@@ -193,7 +192,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
             }
           }
         }
-
       }
     }
 
