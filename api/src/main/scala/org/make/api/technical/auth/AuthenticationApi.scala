@@ -137,7 +137,23 @@ trait AuthenticationApi
           makeOAuth2 { userAuth =>
             val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
             onComplete(futureRowsDeletedCount) {
-              case Success(_)  => complete(StatusCodes.NoContent)
+              case Success(_) =>
+                mapResponseHeaders(
+                  _ ++ Seq(
+                    `Set-Cookie`(
+                      HttpCookie(
+                        name = makeSettings.SessionCookie.name,
+                        value = "",
+                        secure = makeSettings.SessionCookie.isSecure,
+                        httpOnly = true,
+                        maxAge = Some(0),
+                        path = Some("/")
+                      )
+                    )
+                  )
+                ) {
+                  complete(StatusCodes.NoContent)
+                }
               case Failure(ex) => throw ex
             }
           }
