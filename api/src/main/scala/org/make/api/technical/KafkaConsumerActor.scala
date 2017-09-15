@@ -16,7 +16,8 @@ import org.make.api.technical.KafkaConsumerActor.Consume
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * TODO: This actor should not use default execution context
@@ -68,6 +69,10 @@ abstract class KafkaConsumerActor[T]
         handleMessage(event)
       }
       futures.foreach(Await.ready(_, 1.minute))
+      futures.foreach(_.onComplete {
+        case Success(_) =>
+        case Failure(e) => log.error(e, "Error while consuming messages")
+      })
       // toDo: manage failures
       consumer.commitSync()
 
