@@ -47,7 +47,7 @@ class SocialServiceComponentTest
         azp = None,
         aud = None,
         sub = None,
-        hd = None,
+        hd = Some("make.org"),
         email = "google@make.org",
         emailVerified = "true",
         atHash = None,
@@ -115,6 +115,7 @@ class SocialServiceComponentTest
             firstName = googleData.givenName,
             lastName = googleData.familyName,
             googleId = googleData.iat,
+            domain = googleData.hd,
             facebookId = None,
             picture = Some("picture_url")
           )

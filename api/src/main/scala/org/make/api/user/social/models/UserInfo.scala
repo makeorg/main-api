@@ -5,4 +5,5 @@ final case class UserInfo(email: String,
                           lastName: String,
                           googleId: Option[String] = None,
                           facebookId: Option[String] = None,
-                          picture: Option[String] = None)
+                          picture: Option[String] = None,
+                          domain: Option[String] = None)
