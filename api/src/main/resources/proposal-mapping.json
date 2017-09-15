@@ -24,7 +24,7 @@
             }
           }
         },
-        "slug": {
+        "refusalReason": {
           "type": "keyword",
           "index": true
         },
@@ -83,6 +83,10 @@
               }
             }
           }
+        },
+        "slug": {
+          "type": "keyword",
+          "index": true
         },
         "proposalContext": {
           "type": "object",

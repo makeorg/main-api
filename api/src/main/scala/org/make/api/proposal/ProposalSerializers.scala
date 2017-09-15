@@ -35,7 +35,7 @@ object ProposalSerializers extends SprayJsonFormatters {
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
 
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat12(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat13(Proposal.apply)
 
   private val proposalProposedSerializer: JsonPersister[ProposalProposed, V1] =
     persister[ProposalProposed]("proposal-proposed")

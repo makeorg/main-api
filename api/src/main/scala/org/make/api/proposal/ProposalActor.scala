@@ -276,6 +276,7 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.events,
         status = Refused,
+        refusalReason = event.refusalReason,
         updatedAt = Some(event.eventDate)
       )
 
