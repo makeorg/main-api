@@ -290,13 +290,13 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOAuth2 { auth: AuthInfo[User] =>
           requireModerationRole(auth.user) {
             decodeRequest {
-              entity(as[RefuseProposalRequest]) { request =>
-                provideAsync(
+              entity(as[RefuseProposalRequest]) { refuseProposalRequest =>
+                provideAsyncOrNotFound(
                   proposalService.refuseProposal(
                     proposalId = proposalId,
                     moderator = auth.user.userId,
                     requestContext = requestContext,
-                    request = request
+                    request = refuseProposalRequest
                   )
                 ) { proposal: Proposal =>
                   complete(proposal)

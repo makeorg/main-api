@@ -97,11 +97,7 @@ object ProposalEvent {
                                    requestContext: RequestContext,
                                    moderator: UserId,
                                    sendRefuseEmail: Boolean,
-                                   refusalReason: Option[String],
-                                   theme: Option[ThemeId],
-                                   labels: Seq[LabelId],
-                                   tags: Seq[TagId],
-                                   similarProposals: Seq[ProposalId])
+                                   refusalReason: Option[String])
       extends ProposalEvent
 
   object ProposalRefused {

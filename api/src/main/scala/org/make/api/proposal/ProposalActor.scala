@@ -167,7 +167,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
         )
       } else if (proposal.status == ProposalStatus.Refused) {
         // possible double request, ignore.
-        // other modifications should use the proposal update method
+        // other modifications should use the proposal update command
         Left(
           ValidationFailedError(
             errors = Seq(ValidationError("unknown", Some(s"Proposal ${command.proposalId.value} is already refused")))
@@ -181,11 +181,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
             requestContext = command.requestContext,
             moderator = command.moderator,
             sendRefuseEmail = command.sendNotificationEmail,
-            refusalReason = command.refusalReason,
-            theme = command.theme,
-            labels = command.labels,
-            tags = command.tags,
-            similarProposals = command.similarProposals
+            refusalReason = command.refusalReason
           )
         )
       }
@@ -272,18 +268,12 @@ object ProposalActor {
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = Map())
     var result =
       state.copy(
-        tags = event.tags,
-        labels = event.labels,
         events = action :: state.events,
         status = Refused,
         refusalReason = event.refusalReason,
         updatedAt = Some(event.eventDate)
       )
 
-    result = event.theme match {
-      case None  => result
-      case theme => result.copy(theme = theme)
-    }
     result
   }
 

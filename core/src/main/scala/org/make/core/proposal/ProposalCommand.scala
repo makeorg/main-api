@@ -44,9 +44,5 @@ final case class RefuseProposalCommand(moderator: UserId,
                                        proposalId: ProposalId,
                                        requestContext: RequestContext,
                                        sendNotificationEmail: Boolean,
-                                       refusalReason: Option[String],
-                                       theme: Option[ThemeId],
-                                       labels: Seq[LabelId],
-                                       tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId])
+                                       refusalReason: Option[String])
     extends ProposalCommand

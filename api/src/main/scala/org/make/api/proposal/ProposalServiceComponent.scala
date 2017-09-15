@@ -36,7 +36,7 @@ trait ProposalService {
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
                      requestContext: RequestContext,
-                     request: RefuseProposalRequest): Future[Proposal]
+                     request: RefuseProposalRequest): Future[Option[Proposal]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
@@ -130,7 +130,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     override def refuseProposal(proposalId: ProposalId,
                                 moderator: UserId,
                                 requestContext: RequestContext,
-                                request: RefuseProposalRequest): Future[Proposal] = {
+                                request: RefuseProposalRequest): Future[Option[Proposal]] = {
 
       proposalCoordinatorService.refuse(
         RefuseProposalCommand(
@@ -138,11 +138,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
           moderator = moderator,
           requestContext = requestContext,
           sendNotificationEmail = request.sendNotificationEmail,
-          refusalReason = request.refusalReason,
-          theme = request.theme,
-          labels = request.labels,
-          tags = request.tags,
-          similarProposals = request.similarProposals
+          refusalReason = request.refusalReason
         )
       )
     }

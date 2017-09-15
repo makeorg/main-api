@@ -16,11 +16,14 @@ import org.scalatest.GivenWhenThen
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
+  val CREATED_DATE_SECOND_MINUS: Int = 10
+  val THREAD_SLEEP_MICROSECONDS: Int = 100
+
   val coordinator: ActorRef =
     system.actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
-  val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(10))
+  val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
   val mainUpdatedAt: Option[ZonedDateTime] = Some(DateHelper.now())
 
   val user: User = User(
@@ -92,7 +95,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       And("recover its state after having been kill")
       coordinator ! KillProposalShard(proposalId, RequestContext.empty)
 
-      Thread.sleep(100)
+      Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
@@ -157,7 +160,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       And("recover its updated state after having been kill")
       coordinator ! KillProposalShard(proposalId, RequestContext.empty)
 
-      Thread.sleep(100)
+      Thread.sleep(THREAD_SLEEP_MICROSECONDS)
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
@@ -377,11 +380,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("nothing"),
-        theme = Some(ThemeId("my theme")),
-        labels = Seq(),
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq()
+        refusalReason = Some("nothing")
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -412,11 +411,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("this proposal is bad"),
-        theme = Some(ThemeId("my theme")),
-        labels = Seq(LabelId("action")),
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq()
+        refusalReason = Some("this proposal is bad")
       )
 
       Then("I should receive the refused proposal")
@@ -431,9 +426,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.author should be(mainUserId)
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
-      response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.theme should be(Some(ThemeId("my theme")))
     }
 
     scenario("refuse an existing proposal without a refuse reason") {
@@ -458,11 +450,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = None,
-        theme = Some(ThemeId("my theme")),
-        labels = Seq(LabelId("action")),
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq()
+        refusalReason = None
       )
 
       Then("I should receive the refused proposal")
@@ -477,9 +465,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.author should be(mainUserId)
       response.createdAt.isDefined should be(true)
       response.updatedAt.isDefined should be(true)
-      response.tags should be(Seq(TagId("some tag id")))
-      response.labels should be(Seq(LabelId("action")))
-      response.theme should be(Some(ThemeId("my theme")))
     }
 
     scenario("refusing a refused proposal shouldn't do anything") {
@@ -503,11 +488,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderator = UserId("some user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("my reason"),
-        theme = Some(ThemeId("my theme")),
-        labels = Seq(LabelId("action")),
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq()
+        refusalReason = Some("my reason")
       )
 
       val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
@@ -518,11 +499,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderator = UserId("some other user"),
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
-        refusalReason = Some("another reason"),
-        theme = Some(ThemeId("my theme 2")),
-        labels = Seq(LabelId("action2")),
-        tags = Seq(TagId("some tag id 2")),
-        similarProposals = Seq()
+        refusalReason = Some("another reason")
       )
 
       Then("I should receive an error")
