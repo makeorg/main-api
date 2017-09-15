@@ -10,7 +10,7 @@ import org.make.api.theme.DefaultPersistentThemeServiceComponent.{PersistentThem
 import org.make.core.DateHelper
 import org.make.core.reference._
 import scalikejdbc._
-
+import org.make.api.technical.DatabaseTransactions._
 import scala.concurrent.Future
 
 trait PersistentThemeServiceComponent {
@@ -35,19 +35,20 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
     override def findAll(): Future[Seq[Theme]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentThemes: Future[List[PersistentTheme]] = Future(NamedDB('READ).localTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentTheme.as(themeAlias))
-            .leftJoin(PersistentThemeTranslation.as(themeTranslationAlias))
-            .on(themeAlias.id, themeTranslationAlias.themeId)
-        }.one(PersistentTheme.apply())
-          .toMany(PersistentThemeTranslation.opt(themeTranslationAlias))
-          .map { (theme, translations) =>
-            theme.copy(themeTranslations = translations)
-          }
-          .list
-          .apply()
+      val futurePersistentThemes: Future[List[PersistentTheme]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+            select
+              .from(PersistentTheme.as(themeAlias))
+              .leftJoin(PersistentThemeTranslation.as(themeTranslationAlias))
+              .on(themeAlias.id, themeTranslationAlias.themeId)
+          }.one(PersistentTheme.apply())
+            .toMany(PersistentThemeTranslation.opt(themeTranslationAlias))
+            .map { (theme, translations) =>
+              theme.copy(themeTranslations = translations)
+            }
+            .list
+            .apply()
       })
 
       for {
@@ -60,7 +61,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
     override def persist(theme: Theme): Future[Theme] = {
       implicit val context: EC = writeExecutionContext
       val tagsIds: String = theme.tags.map(_.tagId.value).mkString(DefaultPersistentThemeServiceComponent.TAG_SEPARATOR)
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTheme)
@@ -83,7 +84,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
     override def addTranslationToTheme(translation: ThemeTranslation, theme: Theme): Future[Theme] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentThemeTranslation)

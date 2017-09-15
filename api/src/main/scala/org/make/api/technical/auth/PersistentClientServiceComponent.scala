@@ -9,7 +9,7 @@ import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentCl
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
 import scalikejdbc._
-
+import org.make.api.technical.DatabaseTransactions._
 import scala.concurrent.Future
 
 trait PersistentClientServiceComponent {
@@ -81,7 +81,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def get(clientId: ClientId): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
-      val futureClient = Future(NamedDB('READ).localTx { implicit session =>
+      val futureClient = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentClient.as(clientAlias))
@@ -94,7 +94,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentClient = Future(NamedDB('READ).localTx { implicit session =>
+      val futurePersistentClient = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentClient.as(clientAlias))
@@ -112,7 +112,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def persist(client: Client): Future[Client] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).localTx { implicit session =>
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentClient)
