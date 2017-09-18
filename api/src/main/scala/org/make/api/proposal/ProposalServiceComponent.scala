@@ -31,7 +31,7 @@ trait ProposalService {
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
-                       request: ValidateProposalRequest): Future[Proposal]
+                       request: ValidateProposalRequest): Future[Option[Proposal]]
 
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
@@ -110,7 +110,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     override def validateProposal(proposalId: ProposalId,
                                   moderator: UserId,
                                   requestContext: RequestContext,
-                                  request: ValidateProposalRequest): Future[Proposal] = {
+                                  request: ValidateProposalRequest): Future[Option[Proposal]] = {
 
       proposalCoordinatorService.accept(
         AcceptProposalCommand(

@@ -180,12 +180,12 @@ class ProposalApiTest
   when(
     proposalService
       .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
-  ).thenReturn(Future.successful(proposal(ProposalId("123456"))))
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
 
   when(
     proposalService
       .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
-  ).thenReturn(Future.successful(proposal(ProposalId("987654"))))
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
   when(
     proposalService
