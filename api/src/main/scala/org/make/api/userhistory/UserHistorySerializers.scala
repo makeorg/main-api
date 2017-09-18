@@ -25,17 +25,14 @@ object UserHistorySerializers extends SprayJsonFormatters {
     }
   }
 
-  implicit val sortOptionFormatted: RootJsonFormat[SortOption] =
-    DefaultJsonProtocol.jsonFormat2(SortOption.apply)
+  implicit val sortOptionFormatted: RootJsonFormat[Sort] =
+    DefaultJsonProtocol.jsonFormat2(Sort.apply)
 
-  implicit val limitOptionFormatted: RootJsonFormat[LimitOption] =
-    DefaultJsonProtocol.jsonFormat1(LimitOption.apply)
+  implicit val limitOptionFormatted: RootJsonFormat[Limit] =
+    DefaultJsonProtocol.jsonFormat1(Limit.apply)
 
-  implicit val skipOptionFormatted: RootJsonFormat[SkipOption] =
-    DefaultJsonProtocol.jsonFormat1(SkipOption.apply)
-
-  implicit val searchOptionsFormatted: RootJsonFormat[SearchOptions] =
-    DefaultJsonProtocol.jsonFormat3(SearchOptions.apply)
+  implicit val skipOptionFormatted: RootJsonFormat[Skip] =
+    DefaultJsonProtocol.jsonFormat1(Skip.apply)
 
   implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
@@ -60,11 +57,11 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 
-  implicit val searchFilterFormatted: RootJsonFormat[SearchFilter] =
-    DefaultJsonProtocol.jsonFormat4(SearchFilter.apply)
+  implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
+    DefaultJsonProtocol.jsonFormat4(SearchFilters.apply)
 
   implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
-    DefaultJsonProtocol.jsonFormat2(SearchQuery.apply)
+    DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)
 
   implicit val userProposalFormatted: RootJsonFormat[UserProposal] =
     DefaultJsonProtocol.jsonFormat1(UserProposal.apply)

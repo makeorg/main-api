@@ -11,25 +11,33 @@ import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 /**
   * The class holding the entire search query
   *
-  * @param filter  sequence of search filters
-  * @param options sequence of search options
+  * @param filters sequence of search filters
+  * @param sorts   sequence of sorts options
+  * @param limit   number of items to fetch
+  * @param skip    number of items to skip
   */
-case class SearchQuery(filter: Option[SearchFilter] = None, options: Option[SearchOptions] = None)
+case class SearchQuery(filters: Option[SearchFilters] = None,
+                       sorts: Seq[Sort] = Seq.empty,
+                       limit: Option[Int] = None,
+                       skip: Option[Int] = None)
 
-case class SearchFilter(theme: Option[ThemeSearchFilter] = None,
-                        tag: Option[TagSearchFilter] = None,
-                        content: Option[ContentSearchFilter] = None,
-                        status: Option[StatusSearchFilter] = None)
+case class SearchFilters(theme: Option[ThemeSearchFilter] = None,
+                         tag: Option[TagSearchFilter] = None,
+                         content: Option[ContentSearchFilter] = None,
+                         status: Option[StatusSearchFilter] = None)
 
-object SearchFilter extends ElasticDsl {
+object SearchFilters extends ElasticDsl {
 
-  def parseSearchFilter(theme: Option[ThemeSearchFilter] = None,
-                        tag: Option[TagSearchFilter] = None,
-                        content: Option[ContentSearchFilter] = None,
-                        status: Option[StatusSearchFilter] = None): Option[SearchFilter] =
+  def parse(theme: Option[ThemeSearchFilter] = None,
+            tag: Option[TagSearchFilter] = None,
+            content: Option[ContentSearchFilter] = None,
+            status: Option[StatusSearchFilter] = None): Option[SearchFilters] = {
     if (Seq(theme, tag, content, status).exists(_.isDefined)) {
-      Some(SearchFilter(theme, tag, content, status))
-    } else { None }
+      Some(SearchFilters(theme, tag, content, status))
+    } else {
+      None
+    }
+  }
 
   /**
     * Build elasticsearch search filters from searchQuery
@@ -39,47 +47,45 @@ object SearchFilter extends ElasticDsl {
     */
   def getSearchFilters(searchQuery: SearchQuery): Seq[QueryDefinition] =
     Seq(
-      buildThemeSearchFilter(searchQuery.filter),
-      buildTagSearchFilter(searchQuery.filter),
-      Some(buildContentSearchFilter(searchQuery.filter)),
-      Some(buildStatusSearchFilter(searchQuery.filter))
+      buildThemeSearchFilter(searchQuery),
+      buildTagSearchFilter(searchQuery),
+      Some(buildContentSearchFilter(searchQuery)),
+      Some(buildStatusSearchFilter(searchQuery))
     ).flatten
 
-  def getSortOption(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
-    searchQuery.options
-      .map(_.sort)
-      .getOrElse(Seq.empty)
-      .map(sort => FieldSortDefinition(field = sort.field, order = sort.mode.getOrElse(SortOrder.ASC)))
+  def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
+    searchQuery.sorts
+      .map(sort => FieldSortDefinition(field = sort.field.get, order = sort.mode.getOrElse(SortOrder.ASC)))
 
-  def getSkipSearchOption(searchQuery: SearchQuery): Int =
-    searchQuery.options
-      .flatMap(_.skip)
-      .map(_.value)
+  def getSkipSearch(searchQuery: SearchQuery): Int =
+    searchQuery.skip
       .getOrElse(0)
 
-  def getLimitSearchOption(searchQuery: SearchQuery): Int =
-    searchQuery.options
-      .flatMap(_.limit)
-      .map(_.value)
+  def getLimitSearch(searchQuery: SearchQuery): Int =
+    searchQuery.limit
       .getOrElse(10) // TODO get default value from configurations
 
-  def buildThemeSearchFilter(maybeFilter: Option[SearchFilter]): Option[QueryDefinition] = maybeFilter.flatMap {
-    _.theme match {
-      case Some(ThemeSearchFilter(Seq(themeId))) =>
-        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId))
-      case Some(ThemeSearchFilter(themes)) =>
-        Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themes))
-      case _ => None
+  def buildThemeSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.theme match {
+        case Some(ThemeSearchFilter(Seq(themeId))) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId))
+        case Some(ThemeSearchFilter(themes)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themes))
+        case _ => None
+      }
     }
   }
 
-  def buildTagSearchFilter(maybeFilter: Option[SearchFilter]): Option[QueryDefinition] = maybeFilter.flatMap {
-    _.tag match {
-      case Some(TagSearchFilter(Seq(themeId))) =>
-        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, themeId))
-      case Some(TagSearchFilter(themes)) =>
-        Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, themes))
-      case _ => None
+  def buildTagSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.tag match {
+        case Some(TagSearchFilter(Seq(themeId))) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, themeId))
+        case Some(TagSearchFilter(themes)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, themes))
+        case _ => None
+      }
     }
   }
 
@@ -87,16 +93,17 @@ object SearchFilter extends ElasticDsl {
    * TODO complete fuzzy search. potential hint:
    * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_fuzziness
    */
-  def buildContentSearchFilter(maybeFilter: Option[SearchFilter]): QueryDefinition = {
+  def buildContentSearchFilter(searchQuery: SearchQuery): QueryDefinition = {
+
     val query: Option[QueryDefinition] = for {
-      filter                               <- maybeFilter
-      ContentSearchFilter(text, fuzziness) <- filter.content
+      filters                              <- searchQuery.filters
+      ContentSearchFilter(text, fuzziness) <- filters.content
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
     query.getOrElse(ElasticApi.matchAllQuery)
   }
 
-  def buildStatusSearchFilter(maybeFilter: Option[SearchFilter]): QueryDefinition = {
-    val query: Option[QueryDefinition] = maybeFilter.flatMap {
+  def buildStatusSearchFilter(searchQuery: SearchQuery): QueryDefinition = {
+    val query: Option[QueryDefinition] = searchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(ProposalStatus.Pending) =>
           ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
@@ -112,37 +119,20 @@ object SearchFilter extends ElasticDsl {
   }
 }
 
-case class ThemeSearchFilter(id: Seq[String]) {
-  validate(validateField("id", id.nonEmpty, "ids cannot be empty in theme search filters"))
+case class ThemeSearchFilter(themeIds: Seq[String]) {
+  validate(validateField("id", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
 }
 
-case class TagSearchFilter(id: Seq[String]) {
-  validate(validateField("id", id.nonEmpty, "ids cannot be empty in tag search filters"))
+case class TagSearchFilter(tagIds: Seq[String]) {
+  validate(validateField("id", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
 case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
 
 case class StatusSearchFilter(status: ProposalStatus)
 
-/**
-  * Search option that allows modifying the search response
-  * @param sort sorting results by a field and a mode
-  * @param limit limiting the number of search responses
-  * @param skip skipping a number of results, used for pagination
-  */
-case class SearchOptions(sort: Seq[SortOption], limit: Option[LimitOption], skip: Option[SkipOption])
+case class Sort(field: Option[String], mode: Option[SortOrder])
 
-object SearchOptions {
-  def parseSearchOptions(sort: Seq[SortOption],
-                         limit: Option[LimitOption],
-                         skip: Option[SkipOption]): Option[SearchOptions] =
-    if (Seq(sort.headOption, limit, skip).exists(_.isDefined)) {
-      Some(SearchOptions(sort, limit, skip))
-    } else { None }
-}
+case class Limit(value: Int)
 
-case class SortOption(field: String, mode: Option[SortOrder])
-
-case class LimitOption(value: Int)
-
-case class SkipOption(value: Int)
+case class Skip(value: Int)
