@@ -5,7 +5,7 @@ import java.time.LocalDate
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, ResetTokenRequestException}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.core.profile.Profile
@@ -27,6 +27,7 @@ trait UserService extends ShortenedNames {
   def getUser(uuid: String): Future[Option[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User]
+  def requestPasswordReset(userId: UserId): Unit
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
 }
@@ -49,6 +50,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
   val userService = new UserService {
 
     val validationTokenExpiresIn: Long = 30.days.toSeconds
+    val resetTokenExpiresIn: Long = 1.days.toSeconds
 
     override def getUser(uuid: UserId): Future[Option[User]] = {
       persistentUserService.get(uuid)
@@ -83,7 +85,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
-
       if (emailExists) {
         Future.failed(EmailAlreadyRegisteredException(lowerCasedEmail))
       } else {
@@ -91,7 +92,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           case (_, token) => token
         }
       }
+    }
 
+    private def generateResetToken(): Future[String] = {
+      userTokenGenerator.generateResetToken().map {
+        case (_, token) => token
+      }
     }
 
     override def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User] = {
@@ -169,6 +175,22 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           )
 
           persistentUserService.persist(user)
+      }
+    }
+
+    override def requestPasswordReset(userId: UserId): Unit = {
+      val result = for {
+        resetToken <- generateResetToken()
+        result <- persistentUserService.requestResetPassword(
+          userId,
+          resetToken,
+          Some(DateHelper.now().plusSeconds(resetTokenExpiresIn))
+        )
+      } yield result
+
+      result.onComplete {
+        case Success(result) => Future.successful(true)
+        case (_)             => Future.failed(ResetTokenRequestException())
       }
     }
 

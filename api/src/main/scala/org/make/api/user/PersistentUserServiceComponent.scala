@@ -187,6 +187,9 @@ trait PersistentUserService {
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
+  def requestResetPassword(userId: UserId,
+                           resetToken: String,
+                           resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
 }
@@ -352,6 +355,22 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             )
         }.execute().apply()
       }).map(_ => user)
+    }
+
+    override def requestResetPassword(userId: UserId,
+                                      resetToken: String,
+                                      resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.resetToken -> resetToken, column.resetTokenExpiresAt -> resetTokenExpiresAt)
+            .where(
+              sqls
+                .eq(column.uuid, userId.value)
+            )
+        }.execute().apply()
+      })
     }
 
     override def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean] = {
