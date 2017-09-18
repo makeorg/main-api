@@ -32,6 +32,11 @@ trait ProposalService {
                        moderator: UserId,
                        requestContext: RequestContext,
                        request: ValidateProposalRequest): Future[Proposal]
+
+  def refuseProposal(proposalId: ProposalId,
+                     moderator: UserId,
+                     requestContext: RequestContext,
+                     request: RefuseProposalRequest): Future[Option[Proposal]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
@@ -118,6 +123,22 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
           labels = request.labels,
           tags = request.tags,
           similarProposals = request.similarProposals
+        )
+      )
+    }
+
+    override def refuseProposal(proposalId: ProposalId,
+                                moderator: UserId,
+                                requestContext: RequestContext,
+                                request: RefuseProposalRequest): Future[Option[Proposal]] = {
+
+      proposalCoordinatorService.refuse(
+        RefuseProposalCommand(
+          proposalId = proposalId,
+          moderator = moderator,
+          requestContext = requestContext,
+          sendNotificationEmail = request.sendNotificationEmail,
+          refusalReason = request.refusalReason
         )
       )
     }

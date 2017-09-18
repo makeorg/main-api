@@ -28,11 +28,14 @@ object ProposalSerializers extends SprayJsonFormatters {
   implicit val proposalAcceptedFormatter: RootJsonFormat[ProposalAccepted] =
     DefaultJsonProtocol.jsonFormat10(ProposalAccepted.apply)
 
+  implicit val proposalRefuseedFormatter: RootJsonFormat[ProposalRefused] =
+    DefaultJsonProtocol.jsonFormat6(ProposalRefused.apply)
+
   implicit val proposalActionFormatter: RootJsonFormat[ProposalAction] =
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
 
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat12(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat13(Proposal.apply)
 
   private val proposalProposedSerializer: JsonPersister[ProposalProposed, V1] =
     persister[ProposalProposed]("proposal-proposed")
@@ -46,6 +49,9 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalAcceptedSerializer: JsonPersister[ProposalAccepted, V1] =
     persister[ProposalAccepted]("proposal-accepted")
 
+  private val proposalRefusedSerializer: JsonPersister[ProposalRefused, V1] =
+    persister[ProposalRefused]("proposal-refused")
+
   private val proposalSerializer: JsonPersister[Proposal, V1] =
     persister[Proposal]("proposal")
 
@@ -55,6 +61,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalViewedSerializer,
       proposalUpdatedSerializer,
       proposalAcceptedSerializer,
+      proposalRefusedSerializer,
       proposalSerializer
     )
 }

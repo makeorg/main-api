@@ -11,6 +11,7 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
   val resetPasswordTemplate: Int = config.getInt("reset-password-template-id")
   val resendValidationEmailTemplate: Int = config.getInt("resend-validation-email-template-id")
   val proposalValidatedTemplate: Int = config.getInt("proposal-validated-template-id")
+  val proposalRefusedTemplate: Int = config.getInt("proposal-refused-template-id")
   val proposalSentTemplate: Int = config.getInt("proposal-sent-template-id")
 }
 

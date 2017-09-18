@@ -3,7 +3,7 @@ package org.make.core.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.{MakeSerializable, RequestContext}
-import org.make.core.proposal.ProposalEvent.ProposalAccepted
+import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.proposal.SearchQuery
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
@@ -49,6 +49,13 @@ final case class LogAcceptProposalEvent(userId: UserId,
   override val protagonist: Protagonist = Moderator
 }
 
+final case class LogRefuseProposalEvent(userId: UserId,
+                                        requestContext: RequestContext,
+                                        action: UserAction[ProposalRefused])
+    extends UserHistoryEvent[ProposalRefused] {
+  override val protagonist: Protagonist = Moderator
+}
+
 object LogRegisterCitizenEvent {
   val action = "register"
 }
@@ -65,6 +72,9 @@ object LogUserProposalEvent {
 // Moderator actions
 object LogAcceptProposalEvent {
   val action: String = "accept-proposal"
+}
+object LogRefuseProposalEvent {
+  val action: String = "refuse-proposal"
 }
 
 final case class LogRegisterCitizenEvent(userId: UserId,

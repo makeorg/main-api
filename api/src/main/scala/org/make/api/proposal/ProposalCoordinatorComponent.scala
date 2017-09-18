@@ -35,6 +35,7 @@ trait ProposalCoordinatorService {
   def propose(command: ProposeCommand): Future[ProposalId]
   def update(command: UpdateProposalCommand): Future[Option[Proposal]]
   def accept(command: AcceptProposalCommand): Future[Proposal]
+  def refuse(command: RefuseProposalCommand): Future[Option[Proposal]]
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -69,6 +70,10 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         case proposal: Proposal           => Future.successful(proposal)
         case error: ValidationFailedError => Future.failed(error)
       }
+    }
+
+    override def refuse(command: RefuseProposalCommand): Future[Option[Proposal]] = {
+      (proposalCoordinator ? command).mapTo[Option[Proposal]]
     }
   }
 }

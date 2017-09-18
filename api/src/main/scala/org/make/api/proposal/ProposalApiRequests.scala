@@ -23,8 +23,11 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
                                          similarProposals: Seq[ProposalId]) {
-
   validate(Validation.requireNonEmpty("tags", tags))
+}
+
+final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {
+  validate(Validation.mandatoryField("refusalReason", refusalReason))
 }
 
 sealed trait Order { val shortName: String }
