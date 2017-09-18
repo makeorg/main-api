@@ -5,4 +5,5 @@ package org.make.api.user
   */
 object UserExceptions {
   final case class EmailAlreadyRegisteredException(email: String) extends Exception(s"Email $email already exist")
+  final case class ResetTokenRequestException() extends Exception("request reset token failed")
 }

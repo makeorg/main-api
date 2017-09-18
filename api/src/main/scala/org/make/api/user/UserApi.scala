@@ -208,10 +208,11 @@ trait UserApi extends MakeAuthenticationDirectives {
         makeTrace("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
-              provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { id =>
+              provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { userId =>
+                userService.requestPasswordReset(userId)
                 eventBusService.publish(
                   ResetPasswordEvent(
-                    userId = id,
+                    userId = userId,
                     connectedUserId = userAuth.map(_.user.userId),
                     requestContext = requestContext
                   )

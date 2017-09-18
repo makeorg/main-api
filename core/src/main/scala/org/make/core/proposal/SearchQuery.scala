@@ -83,7 +83,10 @@ object SearchFilter extends ElasticDsl {
     }
   }
 
-  // TODO complete fuzzy search. potential hint: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_fuzziness
+  /*
+   * TODO complete fuzzy search. potential hint:
+   * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_fuzziness
+   */
   def buildContentSearchFilter(maybeFilter: Option[SearchFilter]): QueryDefinition = {
     val query: Option[QueryDefinition] = for {
       filter                               <- maybeFilter
