@@ -25,6 +25,11 @@ when infrastructure is up you can run your app
 make run
 ```
 
+when app is running you can load fixtures data
+
+```
+make fixtures
+```
 
 #### Running the app in Debug Mode:
 

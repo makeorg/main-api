@@ -1,7 +1,8 @@
-.PHONY: package-docker-image release run test-all test-all-with-coverage test-int test-unit infra-clean infra-rebuild infra-show-containers infra-show-images infra-show-logs infra-stop infra-up
+.PHONY: fixtures package-docker-image release run test-all test-all-with-coverage test-int test-unit infra-clean infra-rebuild infra-show-containers infra-show-images infra-show-logs infra-stop infra-up
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
+	@echo "   fixtures                       to load fixtures data"
 	@echo "   package-docker-image           to build locally the docker image"
 	@echo "   release                        to release the application"
 	@echo "   run                            to run app"
@@ -18,6 +19,9 @@ help:
 	@echo "   infra-up                       to create and start all the containers"
 
 DOCKER_COMPOSE_FILE := docker-compose.yaml
+
+fixtures:
+	sbt fixtures/gatling:test
 
 package-docker-image:
 	sbt publishLocal

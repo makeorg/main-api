@@ -7,6 +7,7 @@ addSbtPlugin("org.scalastyle"    %% "scalastyle-sbt-plugin" % "0.8.0")
 addSbtPlugin("com.geirsson"      % "sbt-scalafmt"           % "0.6.8")
 addSbtPlugin("org.scoverage"     % "sbt-scoverage"          % "1.5.0")
 addSbtPlugin("org.make"          % "git-hooks-plugin"       % "1.0.0")
+addSbtPlugin("io.gatling"        % "gatling-sbt"            % "2.2.0")
 
 resolvers += Resolver.url("bintray-flaroche-sbt-plugins", url("http://dl.bintray.com/flaroche/make-sbt-plugins/"))(
   Resolver.ivyStylePatterns
