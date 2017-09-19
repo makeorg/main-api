@@ -25,24 +25,6 @@ object UserHistorySerializers extends SprayJsonFormatters {
     }
   }
 
-  implicit val sortOptionFormatted: RootJsonFormat[Sort] =
-    DefaultJsonProtocol.jsonFormat2(Sort.apply)
-
-  implicit val limitOptionFormatted: RootJsonFormat[Limit] =
-    DefaultJsonProtocol.jsonFormat1(Limit.apply)
-
-  implicit val skipOptionFormatted: RootJsonFormat[Skip] =
-    DefaultJsonProtocol.jsonFormat1(Skip.apply)
-
-  implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
-
-  implicit val tagSearchFilterFormatted: RootJsonFormat[TagSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(TagSearchFilter.apply)
-
-  implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
-    DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
-
   implicit val proposalStatusFormatted: JsonFormat[ProposalStatus] = new JsonFormat[ProposalStatus] {
     override def read(json: JsValue): ProposalStatus = json match {
       case JsString(s) => ProposalStatus.statusMap(s)
@@ -54,11 +36,35 @@ object UserHistorySerializers extends SprayJsonFormatters {
     }
   }
 
+  implicit val sortFormatted: RootJsonFormat[Sort] =
+    DefaultJsonProtocol.jsonFormat2(Sort.apply)
+
+  implicit val limitFormatted: RootJsonFormat[Limit] =
+    DefaultJsonProtocol.jsonFormat1(Limit.apply)
+
+  implicit val skipFormatted: RootJsonFormat[Skip] =
+    DefaultJsonProtocol.jsonFormat1(Skip.apply)
+
+  implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
+
+  implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
+
+  implicit val labelsSearchFilterFormatted: RootJsonFormat[LabelsSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(LabelsSearchFilter.apply)
+
+  implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
+    DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
+
+  implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
+    DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
+
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat4(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat6(SearchFilters.apply)
 
   implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
     DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)

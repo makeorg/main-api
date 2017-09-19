@@ -46,6 +46,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.execute {
         // parse json string to build search query
         val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
         // build search query
         search(proposalIndex)
           .bool(BoolQueryDefinition(must = searchFilters))

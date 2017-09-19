@@ -89,11 +89,13 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
         createdAt = proposal.createdAt.get,
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
-        proposalContext = ProposalContext(
-          operation = proposal.creationContext.operation,
-          source = proposal.creationContext.source,
-          location = proposal.creationContext.location,
-          question = proposal.creationContext.question
+        context = Some(
+          Context(
+            operation = proposal.creationContext.operation,
+            source = proposal.creationContext.source,
+            location = proposal.creationContext.location,
+            question = proposal.creationContext.question
+          )
         ),
         trending = None,
         labels = proposal.labels.map(_.value),

@@ -19,6 +19,11 @@ object Proposal extends SimulationConfig {
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
+    .header("x-make-theme-id", "1234-5678-abcd")
+    .header("x-make-operation", "")
+    .header("x-make-source", "core")
+    .header("x-make-location", "homepage")
+    .header("x-make-question", "")
     .disableCaching
 
   val proposalsByUsername: Map[String, IndexedSeq[Record[String]]] =

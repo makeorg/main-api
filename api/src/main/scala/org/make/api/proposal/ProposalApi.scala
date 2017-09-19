@@ -3,7 +3,6 @@ package org.make.api.proposal
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -152,7 +151,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def postProposal: Route =
     post {
       path("proposals") {
-        makeTrace("Propose") { requestContext =>
+        makeTrace("PostProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
@@ -218,7 +217,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                           )
                       ) {
                         case Some(prop) => complete(prop)
-                        case None       => complete(Forbidden)
+                        case None       => complete(StatusCodes.Forbidden)
                       }
                     }
                 }
@@ -326,7 +325,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
             entity(as[VoteProposalRequest]) { request =>
               val maybeVoteKey = VoteKey.matchVoteKey(request.key)
               maybeVoteKey match {
-                case None => complete(BadRequest)
+                case None => complete(StatusCodes.BadRequest)
                 case Some(voteKey) =>
                   provideAsync(
                     proposalService.voteProposal(
@@ -338,7 +337,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   ) {
                     case Some(vote) =>
                       complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(NotFound)
+                    case None => complete(StatusCodes.NotFound)
                   }
               }
             }
@@ -365,7 +364,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
             entity(as[VoteProposalRequest]) { request =>
               val maybeVoteKey = VoteKey.matchVoteKey(request.key)
               maybeVoteKey match {
-                case None => complete(BadRequest)
+                case None => complete(StatusCodes.BadRequest)
                 case Some(voteKey) =>
                   provideAsync(
                     proposalService.unvoteProposal(
@@ -377,7 +376,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   ) {
                     case Some(vote) =>
                       complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(NotFound)
+                    case None => complete(StatusCodes.NotFound)
                   }
               }
             }
