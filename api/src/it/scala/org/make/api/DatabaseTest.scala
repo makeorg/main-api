@@ -1,5 +1,6 @@
 package org.make.api
 
+import com.github.t3hnar.bcrypt._
 import org.apache.commons.dbcp2.BasicDataSource
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
@@ -45,6 +46,9 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
           .replace("#dbname#", "makeapitest")
           .replace("#clientid#", "clientId")
           .replace("#clientsecret#", "clientSecret")
+          .replace("#adminemail#", "admin@example.com")
+          .replace("#adminfirstname#", "admin")
+          .replace("#adminencryptedpassword#", "passpass".bcrypt)
       )
       .split("%")
 

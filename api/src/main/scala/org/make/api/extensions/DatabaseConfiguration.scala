@@ -3,6 +3,7 @@ package org.make.api.extensions
 import java.util.concurrent.Executors
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.dbcp2.BasicDataSource
@@ -68,6 +69,9 @@ class DatabaseConfiguration(override protected val configuration: Config)
     val dbname = writeDatasource.getConnection.getCatalog
     val defaultClientId: String = configuration.getString("authentication.default-client-id")
     val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
+    val adminFirstName: String = configuration.getString("default-admin.first-name")
+    val adminEmail: String = configuration.getString("default-admin.email")
+    val adminPassword: String = configuration.getString("default-admin.password")
     logger.debug(s"Creating database with name: $dbname")
     val queries = Source
       .fromResource("create-schema.sql")(Codec.UTF8)
@@ -75,6 +79,9 @@ class DatabaseConfiguration(override protected val configuration: Config)
       .replace("#dbname#", dbname)
       .replace("#clientid#", defaultClientId)
       .replace("#clientsecret#", defaultClientSecret)
+      .replace("#adminemail#", adminEmail)
+      .replace("#adminfirstname#", adminFirstName)
+      .replace("#adminencryptedpassword#", adminPassword.bcrypt)
       .split("%")
 
     val conn = writeDatasource.getConnection

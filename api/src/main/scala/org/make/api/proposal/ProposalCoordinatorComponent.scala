@@ -67,10 +67,12 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def accept(command: AcceptProposalCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command).flatMap[Option[Proposal]] {
-        case Some(proposal) if proposal.isInstanceOf[Proposal] =>
-          Future.successful(Some(proposal.asInstanceOf[Proposal]))
-        case None | Some(_)               => Future.successful(None)
         case error: ValidationFailedError => Future.failed(error)
+        case None                         => Future.successful(None)
+        case Some(proposal) =>
+          Future.successful(Some(proposal.asInstanceOf[Proposal]))
+        case _ => Future.successful(None)
+
       }
     }
 
