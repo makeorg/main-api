@@ -253,7 +253,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsync(
+                provideAsyncOrNotFound(
                   proposalService.validateProposal(
                     proposalId = proposalId,
                     moderator = auth.user.userId,

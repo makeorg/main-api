@@ -316,3 +316,7 @@ INSERT INTO theme_translation
     ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 'fr', 'transports-deplacement', 'transports / déplacement'),
     ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 'fr', 'numerique-culture', 'numérique / culture');
 %
+INSERT INTO make_user
+VALUES
+('11111111-1111-1111-1111-111111111111','2017-09-15 08:43:30','2017-09-15 08:43:30','#adminemail#','#adminfirstname#',NULL,NULL,'#adminencryptedpassword#',true,false,'2017-09-15 08:43:30',NULL,'2017-10-15 08:43:30',NULL,NULL,'ROLE_ADMIN,ROLE_CITIZEN',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,false)
+%

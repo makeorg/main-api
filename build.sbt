@@ -54,6 +54,12 @@ lazy val phantom = project
   .settings(moduleName := "make-phantom": _*)
   .aggregate(core, api)
 
+lazy val fixtures = project
+  .in(file("fixtures"))
+  .settings(commonSettings: _*)
+  .configs(Gatling)
+  .settings(moduleName := "make-fixtures": _*)
+
 lazy val core = project
   .in(file("core"))
   .configs(IntegrationTest)

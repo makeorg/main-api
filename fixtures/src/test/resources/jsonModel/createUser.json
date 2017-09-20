@@ -1,0 +1,9 @@
+{
+  "email": "${username}",
+  "dateOfBirth": null,
+  "firstName": "${firstName}",
+  "lastName": null,
+  "password": "${password}",
+  "postalCode": null,
+  "profession": null
+}
