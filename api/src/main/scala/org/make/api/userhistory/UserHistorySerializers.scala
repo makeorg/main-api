@@ -3,14 +3,14 @@ package org.make.api.userhistory
 import java.time.ZonedDateTime
 
 import org.elasticsearch.search.sort.SortOrder
+import org.make.api.proposal.ProposalSerializers._
 import org.make.api.technical.SprayJsonFormatters
+import org.make.core.proposal._
 import org.make.core.user._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 import stamina.json.JsonPersister
 import stamina.{json, V1}
-import org.make.api.proposal.ProposalSerializers._
-import org.make.core.proposal._
 
 object UserHistorySerializers extends SprayJsonFormatters {
 

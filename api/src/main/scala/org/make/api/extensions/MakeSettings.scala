@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, Extension
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 import org.make.api.Predef._
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 

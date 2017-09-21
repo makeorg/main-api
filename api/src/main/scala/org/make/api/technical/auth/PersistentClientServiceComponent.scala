@@ -4,12 +4,13 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
 import scalikejdbc._
-import org.make.api.technical.DatabaseTransactions._
+
 import scala.concurrent.Future
 
 trait PersistentClientServiceComponent {

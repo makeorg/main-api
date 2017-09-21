@@ -3,8 +3,8 @@ package org.make.core.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
-import org.make.core.proposal.SearchQuery
 import org.make.core.proposal.indexed.VoteKey
+import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.{MakeSerializable, RequestContext}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
@@ -43,6 +43,17 @@ final case class LogSearchProposalsEvent(userId: UserId,
 // User actions
 object LogSearchProposalsEvent {
   val action: String = "search"
+}
+
+final case class LogGetProposalDuplicatesEvent(userId: UserId,
+                                               requestContext: RequestContext,
+                                               action: UserAction[ProposalId])
+    extends UserHistoryEvent[ProposalId] {
+  override val protagonist: Protagonist = Moderator
+}
+
+object LogGetProposalDuplicatesEvent {
+  val action: String = "duplicates"
 }
 
 final case class LogAcceptProposalEvent(userId: UserId,

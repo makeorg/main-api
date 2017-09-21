@@ -95,4 +95,7 @@ object Dependencies {
   // Fixtures
   val gatlingHighcharts: ModuleID = "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.0" % "test"
   val gatling: ModuleID = "io.gatling"                      % "gatling-test-framework"    % "2.3.0" % "test"
+
+  // Semantic
+  val semantic: ModuleID = "org.make" %% "semantic" % "0.0.1-SNAPSHOT"
 }
