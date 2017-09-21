@@ -3,7 +3,7 @@ package org.make.api.proposal
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.Forbidden
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -12,7 +12,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey, VoteResponse}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
 import org.make.core.{DateHelper, HttpCodes}
@@ -309,7 +309,86 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  val proposalRoutes: Route = propose ~ getProposal ~ update ~ acceptProposal ~ refuseProposal ~ search ~ searchAll
+  @ApiOperation(value = "vote-proposal", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.VoteProposalRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
+  @Path(value = "/{proposalId}/vote")
+  def vote: Route = post {
+    path("proposal" / proposalId / "vote") { proposalId =>
+      makeTrace("VoteProposal") { requestContext =>
+        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
+          decodeRequest {
+            entity(as[VoteProposalRequest]) { request =>
+              val maybeVoteKey = VoteKey.matchVoteKey(request.key)
+              maybeVoteKey match {
+                case None => complete(BadRequest)
+                case Some(voteKey) =>
+                  provideAsync(
+                    proposalService.voteProposal(
+                      proposalId = proposalId,
+                      userId = maybeAuth.map(_.user.userId),
+                      requestContext = requestContext,
+                      voteKey = voteKey
+                    )
+                  ) {
+                    case Some(vote) =>
+                      complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                    case None => complete(NotFound)
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "unvote-proposal", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.VoteProposalRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
+  @Path(value = "/{proposalId}/unvote")
+  def unvote: Route = post {
+    path("proposal" / proposalId / "unvote") { proposalId =>
+      makeTrace("UnvoteProposal") { requestContext =>
+        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
+          decodeRequest {
+            entity(as[VoteProposalRequest]) { request =>
+              val maybeVoteKey = VoteKey.matchVoteKey(request.key)
+              maybeVoteKey match {
+                case None => complete(BadRequest)
+                case Some(voteKey) =>
+                  provideAsync(
+                    proposalService.unvoteProposal(
+                      proposalId = proposalId,
+                      userId = maybeAuth.map(_.user.userId),
+                      requestContext = requestContext,
+                      voteKey = voteKey
+                    )
+                  ) {
+                    case Some(vote) =>
+                      complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                    case None => complete(NotFound)
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  val proposalRoutes
+    : Route = propose ~ getProposal ~ update ~ acceptProposal ~ refuseProposal ~ search ~ searchAll ~ vote ~ unvote
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

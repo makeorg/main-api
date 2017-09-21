@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import akka.util.Timeout
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.userhistory.UserHistoryServiceComponent
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
@@ -27,16 +27,22 @@ trait ProposalService {
              requestContext: RequestContext,
              updatedAt: ZonedDateTime,
              content: String): Future[Option[Proposal]]
-
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
                        request: ValidateProposalRequest): Future[Option[Proposal]]
-
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
                      requestContext: RequestContext,
                      request: RefuseProposalRequest): Future[Option[Proposal]]
+  def voteProposal(proposalId: ProposalId,
+                   userId: Option[UserId],
+                   requestContext: RequestContext,
+                   voteKey: VoteKey): Future[Option[Vote]]
+  def unvoteProposal(proposalId: ProposalId,
+                     userId: Option[UserId],
+                     requestContext: RequestContext,
+                     voteKey: VoteKey): Future[Option[Vote]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent {
@@ -139,6 +145,52 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
           requestContext = requestContext,
           sendNotificationEmail = request.sendNotificationEmail,
           refusalReason = request.refusalReason
+        )
+      )
+    }
+
+    override def voteProposal(proposalId: ProposalId,
+                              maybeUserId: Option[UserId],
+                              requestContext: RequestContext,
+                              voteKey: VoteKey): Future[Option[Vote]] = {
+      maybeUserId.foreach { userId =>
+        userHistoryService.logHistory(
+          LogUserVoteEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(voteKey))
+          )
+        )
+      }
+      proposalCoordinatorService.vote(
+        VoteProposalCommand(
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey
+        )
+      )
+    }
+
+    override def unvoteProposal(proposalId: ProposalId,
+                                maybeUserId: Option[UserId],
+                                requestContext: RequestContext,
+                                voteKey: VoteKey): Future[Option[Vote]] = {
+      maybeUserId.foreach { userId =>
+        userHistoryService.logHistory(
+          LogUserUnvoteEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserUnvoteEvent.action, UserVote(voteKey))
+          )
+        )
+      }
+      proposalCoordinatorService.unvote(
+        UnvoteProposalCommand(
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey
         )
       )
     }

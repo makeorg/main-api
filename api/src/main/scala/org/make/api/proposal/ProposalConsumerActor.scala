@@ -19,9 +19,9 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import shapeless.Poly1
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserService)
     extends KafkaConsumerActor[ProposalEventWrapper]
@@ -42,6 +42,8 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
       case event: ProposalProposed => onCreateOrUpdate(event)
       case event: ProposalAccepted => onCreateOrUpdate(event)
       case event: ProposalRefused  => onCreateOrUpdate(event)
+      case event: ProposalVoted    => onCreateOrUpdate(event)
+      case event: ProposalUnvoted  => onCreateOrUpdate(event)
     }
 
   }
@@ -52,6 +54,8 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
+    implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
@@ -84,9 +88,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
         status = proposal.status,
         createdAt = proposal.createdAt.get,
         updatedAt = proposal.updatedAt,
-        votesAgree = Vote(key = VoteKey.Agree, qualifications = Seq()),
-        votesDisagree = Vote(key = VoteKey.Disagree, qualifications = Seq()),
-        votesNeutral = Vote(key = VoteKey.Neutral, qualifications = Seq()),
+        votes = proposal.votes.map(IndexedVote.apply),
         proposalContext = ProposalContext(
           operation = proposal.creationContext.operation,
           source = proposal.creationContext.source,
@@ -105,7 +107,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
         country = proposal.creationContext.country.getOrElse("FR"),
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = Seq()
+        tags = Seq.empty
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))

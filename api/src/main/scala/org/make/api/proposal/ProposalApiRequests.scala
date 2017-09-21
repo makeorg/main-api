@@ -96,3 +96,5 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
     SearchQuery(filter = filter, options = searchOptions)
   }
 }
+
+final case class VoteProposalRequest(key: String)

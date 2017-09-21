@@ -3,6 +3,7 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
+import org.make.core.proposal.indexed.Vote
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
@@ -15,7 +16,8 @@ final case class Proposal(proposalId: ProposalId,
                           theme: Option[ThemeId] = None,
                           status: ProposalStatus = ProposalStatus.Pending,
                           refusalReason: Option[String] = None,
-                          tags: Seq[TagId] = Seq(),
+                          tags: Seq[TagId] = Seq.empty,
+                          votes: Seq[Vote],
                           creationContext: RequestContext,
                           override val createdAt: Option[ZonedDateTime],
                           override val updatedAt: Option[ZonedDateTime],

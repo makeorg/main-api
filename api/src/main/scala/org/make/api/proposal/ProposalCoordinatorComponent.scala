@@ -3,11 +3,12 @@ package org.make.api.proposal
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import org.make.core.{RequestContext, ValidationFailedError}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.Vote
+import org.make.core.{RequestContext, ValidationFailedError}
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 trait ProposalCoordinatorComponent {
@@ -36,6 +37,8 @@ trait ProposalCoordinatorService {
   def update(command: UpdateProposalCommand): Future[Option[Proposal]]
   def accept(command: AcceptProposalCommand): Future[Option[Proposal]]
   def refuse(command: RefuseProposalCommand): Future[Option[Proposal]]
+  def vote(command: VoteProposalCommand): Future[Option[Vote]]
+  def unvote(command: UnvoteProposalCommand): Future[Option[Vote]]
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -78,6 +81,14 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def refuse(command: RefuseProposalCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command).mapTo[Option[Proposal]]
+    }
+
+    override def vote(command: VoteProposalCommand): Future[Option[Vote]] = {
+      (proposalCoordinator ? command).mapTo[Option[Vote]]
+    }
+
+    override def unvote(command: UnvoteProposalCommand): Future[Option[Vote]] = {
+      (proposalCoordinator ? command).mapTo[Option[Vote]]
     }
   }
 }

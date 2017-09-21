@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.{Vote, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -56,6 +57,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     theme = None,
     status = ProposalStatus.Pending,
     tags = Seq(),
+    votes = Seq(
+      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+    ),
     events = List(
       ProposalAction(
         date = mainCreatedAt.get,

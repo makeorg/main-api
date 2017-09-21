@@ -88,9 +88,11 @@ class ProposalSearchEngineIT
     slug = "this-is-a-test-proposal",
     createdAt = now,
     updatedAt = None,
-    votesAgree = Vote(key = VoteKey.Agree, qualifications = Seq()),
-    votesDisagree = Vote(key = VoteKey.Disagree, qualifications = Seq()),
-    votesNeutral = Vote(key = VoteKey.Neutral, qualifications = Seq()),
+    votes = Seq(
+      IndexedVote(key = VoteKey.Agree, qualifications = Seq.empty),
+      IndexedVote(key = VoteKey.Disagree, qualifications = Seq.empty),
+      IndexedVote(key = VoteKey.Neutral, qualifications = Seq.empty)
+    ),
     proposalContext = ProposalContext(operation = None, location = None, question = None, source = None),
     author = Author(firstName = None, postalCode = None, age = None),
     themeId = None,
@@ -112,9 +114,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 123, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 105, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 59, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 123, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 105, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 59, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -132,9 +136,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 79, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 104, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 127, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 79, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 104, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 127, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -152,9 +158,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 56, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 18, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 53, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 56, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 18, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 53, qualifications = Seq.empty)
+      ),
       status = ProposalStatus.Accepted,
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
@@ -174,9 +182,11 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-protege-notre-agriculture-locale-et-donne-les-moyens-aux-agriculteurs-de-vivre-de-leur-metier-de-production",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 152, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 78, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 123, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 152, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 78, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 123, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -194,9 +204,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-favorise-l-acces-a-l-alimentation-issue-de-l-agriculture-biologique",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 175, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 70, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 123, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 175, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 70, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 123, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -216,9 +228,11 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-dissolve-la-SAFER-et-ainsi-laisser-les-petits-paysans-s-installer-avec-des-petites-exploitations",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 48, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 70, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 187, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 48, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 70, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 187, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -236,9 +250,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-soutienne-et-defende-l-agriculture-dans-mon-departement",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 60, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 56, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 170, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 60, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 56, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 170, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -256,9 +272,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 95, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 32, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 35, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 95, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 32, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 35, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -281,9 +299,11 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-favorise-l-agriculture-qualitative-plutot-que-l-agriculture-intensive-plus-de-pesticides-pour-plus-de-rendements",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 37, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 66, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 75, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 37, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 66, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 75, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -303,9 +323,11 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-vote-une-loi-pour-obliger-l-industrie-pharmaceutique-d-investir-dans-la-recherche-sur-les-maladies-rares",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 67, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 42, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 22, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 67, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 42, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 22, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -325,9 +347,11 @@ class ProposalSearchEngineIT
         "il-faut-qu-il-elle-propose-d-interdire-aux-politiques-l-utilisation-du-big-data-menant-a-faire-des-projets-demagogiques",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 116, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 167, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 73, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 116, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 167, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 73, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -347,9 +371,11 @@ class ProposalSearchEngineIT
         "Il-faut-qu-il-elle-mette-en-avant-la-creation-de-lieux-de-culture-et-d-echange-avec-quelques-petites-subventions",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 86, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 165, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 96, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 86, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 165, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 96, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -367,9 +393,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-defende-un-meilleur-acces-a-la-culture-et-a-l-education-pour-tous",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 170, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 33, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 64, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 170, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 33, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 64, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -387,9 +415,11 @@ class ProposalSearchEngineIT
       slug = "il-faut-qu-il-elle-pratique-le-mecennat-et-cree-des-aides-pour-les-artistes-surtout-les-jeunes",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 17, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 119, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 68, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 17, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 119, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 68, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),
@@ -407,9 +437,11 @@ class ProposalSearchEngineIT
       slug = "il-elle-defende-la-francophonie-dans-le-monde-en-luttant-contre-l-hegemonie-de-l-anglais",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      votesAgree = Vote(key = VoteKey.Agree, count = 124, qualifications = Seq()),
-      votesDisagree = Vote(key = VoteKey.Disagree, count = 74, qualifications = Seq()),
-      votesNeutral = Vote(key = VoteKey.Neutral, count = 56, qualifications = Seq()),
+      votes = Seq(
+        IndexedVote(key = VoteKey.Agree, count = 124, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Disagree, count = 74, qualifications = Seq.empty),
+        IndexedVote(key = VoteKey.Neutral, count = 56, qualifications = Seq.empty)
+      ),
       proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
       trending = None,
       labels = Seq(),

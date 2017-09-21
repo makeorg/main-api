@@ -6,7 +6,7 @@ import io.circe.{Decoder, Encoder, Json}
 sealed trait QualificationKey { val shortName: String }
 
 object QualificationKey extends StrictLogging {
-  private val qualificationKeys: Map[String, QualificationKey] = Map(
+  val qualificationKeys: Map[String, QualificationKey] = Map(
     LikeIt.shortName -> LikeIt,
     Doable.shortName -> Doable,
     PlatitudeAgree.shortName -> PlatitudeAgree,

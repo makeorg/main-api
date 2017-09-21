@@ -21,7 +21,37 @@ class ProposalProducerActor extends ProducerActor {
     case event: ProposalRefused  => onProposalRefused(event)
     case event: ProposalUpdated  => onUpdateProposal(event)
     case event: ProposalViewed   => onViewProposal(event)
+    case event: ProposalVoted    => onVoteProposal(event)
+    case event: ProposalUnvoted  => onUnvoteProposal(event)
     case other                   => log.warning(s"Unknown event $other")
+  }
+
+  private def onVoteProposal(event: ProposalVoted): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      ProposalEventWrapper(
+        version = ProposalVoted.version,
+        id = event.id.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = ProposalEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.id.value, record)
+  }
+
+  private def onUnvoteProposal(event: ProposalUnvoted): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      ProposalEventWrapper(
+        version = ProposalUnvoted.version,
+        id = event.id.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = ProposalEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.id.value, record)
   }
 
   private def onProposalAccepted(event: ProposalAccepted): Unit = {

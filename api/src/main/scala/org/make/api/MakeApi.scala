@@ -29,7 +29,6 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.vote._
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
@@ -50,7 +49,6 @@ trait MakeApi
     with DefaultTagServiceComponent
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
-    with DefaultVoteServiceComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
     with DefaultEventBusServiceComponent
@@ -63,9 +61,7 @@ trait MakeApi
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with UserHistoryCoordinatorComponent
-    with VoteCoordinatorComponent
     with ProposalApi
-    with VoteApi
     with MailJetApi
     with AuthenticationApi
     with BusinessConfigApi
@@ -92,13 +88,6 @@ trait MakeApi
   override lazy val userHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / UserHistoryCoordinator.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
-  )
-
-  override lazy val voteCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / VoteSupervisor.name / VoteCoordinator.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )

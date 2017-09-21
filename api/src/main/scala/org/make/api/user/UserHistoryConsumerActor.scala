@@ -50,24 +50,24 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
-    (userHistoryCoordinator ? LogRegisterCitizenEvent(
-      userId = event.userId,
-      requestContext = event.requestContext,
-      action = UserAction(
-        date = event.eventDate,
-        actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = event.email,
-          dateOfBirth = event.dateOfBirth,
-          firstName = event.firstName,
-          lastName = event.lastName,
-          profession = event.profession,
-          postalCode = event.postalCode
+    Future(
+      userHistoryCoordinator ? LogRegisterCitizenEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogRegisterCitizenEvent.action,
+          arguments = UserRegistered(
+            email = event.email,
+            dateOfBirth = event.dateOfBirth,
+            firstName = event.firstName,
+            lastName = event.lastName,
+            profession = event.profession,
+            postalCode = event.postalCode
+          )
         )
       )
-    )).map { _ =>
-      {}
-    }
+    )
   }
 
   private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {
