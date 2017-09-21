@@ -8,7 +8,7 @@ import cats.implicits._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryServiceComponent
-import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
+import org.make.core.proposal.indexed._
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
@@ -53,13 +53,23 @@ trait ProposalService {
                      requestContext: RequestContext,
                      request: RefuseProposalRequest): Future[Option[Proposal]]
   def voteProposal(proposalId: ProposalId,
-                   userId: Option[UserId],
+                   maybeUserId: Option[UserId],
                    requestContext: RequestContext,
                    voteKey: VoteKey): Future[Option[Vote]]
   def unvoteProposal(proposalId: ProposalId,
-                     userId: Option[UserId],
+                     maybeUserId: Option[UserId],
                      requestContext: RequestContext,
                      voteKey: VoteKey): Future[Option[Vote]]
+  def qualifyVote(proposalId: ProposalId,
+                  maybeUserId: Option[UserId],
+                  requestContext: RequestContext,
+                  voteKey: VoteKey,
+                  qualificationKey: QualificationKey): Future[Option[Qualification]]
+  def unqualifyVote(proposalId: ProposalId,
+                    maybeUserId: Option[UserId],
+                    requestContext: RequestContext,
+                    voteKey: VoteKey,
+                    qualificationKey: QualificationKey): Future[Option[Qualification]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters {
@@ -313,6 +323,56 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           maybeUserId = maybeUserId,
           requestContext = requestContext,
           voteKey = voteKey
+        )
+      )
+    }
+
+    override def qualifyVote(proposalId: ProposalId,
+                             maybeUserId: Option[UserId],
+                             requestContext: RequestContext,
+                             voteKey: VoteKey,
+                             qualificationKey: QualificationKey): Future[Option[Qualification]] = {
+      maybeUserId.foreach { userId =>
+        userHistoryService.logHistory(
+          LogUserQualificationEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserQualificationEvent.action, UserQualification(voteKey, qualificationKey))
+          )
+        )
+      }
+      proposalCoordinatorService.qualification(
+        QualifyVoteCommand(
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          qualificationKey = qualificationKey
+        )
+      )
+    }
+
+    override def unqualifyVote(proposalId: ProposalId,
+                               maybeUserId: Option[UserId],
+                               requestContext: RequestContext,
+                               voteKey: VoteKey,
+                               qualificationKey: QualificationKey): Future[Option[Qualification]] = {
+      maybeUserId.foreach { userId =>
+        userHistoryService.logHistory(
+          LogUserQualificationEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserQualificationEvent.action, UserQualification(voteKey, qualificationKey))
+          )
+        )
+      }
+      proposalCoordinatorService.unqualification(
+        UnqualifyVoteCommand(
+          proposalId = proposalId,
+          maybeUserId = maybeUserId,
+          requestContext = requestContext,
+          voteKey = voteKey,
+          qualificationKey = qualificationKey
         )
       )
     }

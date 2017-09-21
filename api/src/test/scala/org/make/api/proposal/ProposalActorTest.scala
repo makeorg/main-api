@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Vote, VoteKey}
+import org.make.core.proposal.indexed.{Qualification, QualificationKey, Vote, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -58,9 +58,30 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     status = ProposalStatus.Pending,
     tags = Seq(),
     votes = Seq(
-      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+      Vote(
+        key = VoteKey.Agree,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.LikeIt),
+          Qualification(key = QualificationKey.Doable),
+          Qualification(key = QualificationKey.PlatitudeAgree)
+        )
+      ),
+      Vote(
+        key = VoteKey.Disagree,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.NoWay),
+          Qualification(key = QualificationKey.Impossible),
+          Qualification(key = QualificationKey.PlatitudeDisagree)
+        )
+      ),
+      Vote(
+        key = VoteKey.Neutral,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.DoNotUnderstand),
+          Qualification(key = QualificationKey.NoOpinion),
+          Qualification(key = QualificationKey.DoNotCare)
+        )
+      )
     ),
     events = List(
       ProposalAction(

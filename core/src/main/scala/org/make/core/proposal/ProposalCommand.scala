@@ -3,7 +3,7 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.proposal.indexed.VoteKey
+import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 
@@ -60,4 +60,18 @@ final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
                                        voteKey: VoteKey)
+    extends ProposalCommand
+
+final case class QualifyVoteCommand(proposalId: ProposalId,
+                                    maybeUserId: Option[UserId],
+                                    requestContext: RequestContext,
+                                    voteKey: VoteKey,
+                                    qualificationKey: QualificationKey)
+    extends ProposalCommand
+
+final case class UnqualifyVoteCommand(proposalId: ProposalId,
+                                      maybeUserId: Option[UserId],
+                                      requestContext: RequestContext,
+                                      voteKey: VoteKey,
+                                      qualificationKey: QualificationKey)
     extends ProposalCommand

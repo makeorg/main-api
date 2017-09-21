@@ -2,7 +2,7 @@ package org.make.core.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.core.proposal.indexed.VoteKey
+import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
@@ -17,7 +17,7 @@ sealed trait ProposalEvent extends MakeSerializable {
 object ProposalEvent {
 
   type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
-    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: CNil
+    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -28,13 +28,15 @@ object ProposalEvent {
 
   object ProposalEventWrapper {
     def wrapEvent(event: ProposalEvent): AnyProposalEvent = event match {
-      case e: ProposalProposed => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAccepted => Coproduct[AnyProposalEvent](e)
-      case e: ProposalRefused  => Coproduct[AnyProposalEvent](e)
-      case e: ProposalViewed   => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUpdated  => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVoted    => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnvoted  => Coproduct[AnyProposalEvent](e)
+      case e: ProposalProposed    => Coproduct[AnyProposalEvent](e)
+      case e: ProposalAccepted    => Coproduct[AnyProposalEvent](e)
+      case e: ProposalRefused     => Coproduct[AnyProposalEvent](e)
+      case e: ProposalViewed      => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUpdated     => Coproduct[AnyProposalEvent](e)
+      case e: ProposalVoted       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnvoted     => Coproduct[AnyProposalEvent](e)
+      case e: ProposalQualified   => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnqualified => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -128,6 +130,30 @@ object ProposalEvent {
       extends ProposalEvent
 
   object ProposalUnvoted {
+    val version: Int = MakeSerializable.V1
+  }
+
+  final case class ProposalQualified(id: ProposalId,
+                                     maybeUserId: Option[UserId],
+                                     eventDate: ZonedDateTime,
+                                     requestContext: RequestContext,
+                                     voteKey: VoteKey,
+                                     qualificationKey: QualificationKey)
+      extends ProposalEvent
+
+  object ProposalQualified {
+    val version: Int = MakeSerializable.V1
+  }
+
+  final case class ProposalUnqualified(id: ProposalId,
+                                       maybeUserId: Option[UserId],
+                                       eventDate: ZonedDateTime,
+                                       requestContext: RequestContext,
+                                       voteKey: VoteKey,
+                                       qualificationKey: QualificationKey)
+      extends ProposalEvent
+
+  object ProposalUnqualified {
     val version: Int = MakeSerializable.V1
   }
 

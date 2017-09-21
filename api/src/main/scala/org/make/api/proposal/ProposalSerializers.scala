@@ -37,6 +37,12 @@ object ProposalSerializers extends SprayJsonFormatters {
   implicit val proposalUnvotedFormatter: RootJsonFormat[ProposalUnvoted] =
     DefaultJsonProtocol.jsonFormat5(ProposalUnvoted.apply)
 
+  implicit val proposalQualifiedFormatter: RootJsonFormat[ProposalQualified] =
+    DefaultJsonProtocol.jsonFormat6(ProposalQualified.apply)
+
+  implicit val proposalUnqualifiedFormatter: RootJsonFormat[ProposalUnqualified] =
+    DefaultJsonProtocol.jsonFormat6(ProposalUnqualified.apply)
+
   implicit val proposalActionFormatter: RootJsonFormat[ProposalAction] =
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
 
@@ -62,7 +68,13 @@ object ProposalSerializers extends SprayJsonFormatters {
     persister[ProposalVoted]("proposal-voted")
 
   private val proposalUnvotedSerializer: JsonPersister[ProposalUnvoted, V1] =
-    persister[ProposalUnvoted]("proposal-unvote")
+    persister[ProposalUnvoted]("proposal-unvoted")
+
+  private val proposalQualifiedSerializer: JsonPersister[ProposalQualified, V1] =
+    persister[ProposalQualified]("proposal-qualified")
+
+  private val proposalUnqualifiedSerializer: JsonPersister[ProposalUnqualified, V1] =
+    persister[ProposalUnqualified]("proposal-unqualified")
 
   private val proposalSerializer: JsonPersister[Proposal, V1] =
     persister[Proposal]("proposal")
@@ -76,6 +88,8 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalRefusedSerializer,
       proposalVotedSerializer,
       proposalUnvotedSerializer,
+      proposalQualifiedSerializer,
+      proposalUnqualifiedSerializer,
       proposalSerializer
     )
 }

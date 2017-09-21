@@ -78,6 +78,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val userVoteFormatted: RootJsonFormat[UserVote] =
     DefaultJsonProtocol.jsonFormat1(UserVote.apply)
 
+  implicit val userQualifFormatted: RootJsonFormat[UserQualification] =
+    DefaultJsonProtocol.jsonFormat2(UserQualification.apply)
+
   implicit val searchParametersFormatted: RootJsonFormat[SearchParameters] =
     DefaultJsonProtocol.jsonFormat1(SearchParameters.apply)
 
@@ -109,6 +112,12 @@ object UserHistorySerializers extends SprayJsonFormatters {
   implicit val logUserUnvoteEventFormatted: RootJsonFormat[LogUserUnvoteEvent] =
     DefaultJsonProtocol.jsonFormat(LogUserUnvoteEvent.apply, "userId", "context", "action")
 
+  implicit val logUserQualifEventFormatted: RootJsonFormat[LogUserQualificationEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserQualificationEvent.apply, "userId", "context", "action")
+
+  implicit val logUserUnqualifEventFormatted: RootJsonFormat[LogUserUnqualificationEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUnqualificationEvent.apply, "userId", "context", "action")
+
   private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V1] =
     json.persister[LogRegisterCitizenEvent]("user-history-registered")
 
@@ -130,6 +139,12 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserUnvoteEventSerializer: JsonPersister[LogUserUnvoteEvent, V1] =
     json.persister[LogUserUnvoteEvent]("user-history-unvote-proposal")
 
+  private val logUserQualificationEventSerializer: JsonPersister[LogUserQualificationEvent, V1] =
+    json.persister[LogUserQualificationEvent]("user-history-qualification-proposal")
+
+  private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
+    json.persister[LogUserUnqualificationEvent]("user-history-unqualification-proposal")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       logRegisterCitizenEventSerializer,
@@ -138,6 +153,8 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logRefuseProposalEventSerializer,
       logUserProposalEventSerializer,
       logUserVoteEventSerializer,
-      logUserUnvoteEventSerializer
+      logUserUnvoteEventSerializer,
+      logUserQualificationEventSerializer,
+      logUserUnqualificationEventSerializer
     )
 }

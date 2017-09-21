@@ -33,13 +33,15 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed   => handleProposalViewed(event)
-      case event: ProposalUpdated  => handleProposalUpdated(event)
-      case event: ProposalProposed => handleProposalProposed(event)
-      case event: ProposalAccepted => handleProposalAccepted(event)
-      case event: ProposalRefused  => handleProposalRefused(event)
-      case event: ProposalVoted    => handleVotedProposal(event)
-      case event: ProposalUnvoted  => handleUnvotedProposal(event)
+      case event: ProposalViewed      => handleProposalViewed(event)
+      case event: ProposalUpdated     => handleProposalUpdated(event)
+      case event: ProposalProposed    => handleProposalProposed(event)
+      case event: ProposalAccepted    => handleProposalAccepted(event)
+      case event: ProposalRefused     => handleProposalRefused(event)
+      case event: ProposalVoted       => handleVotedProposal(event)
+      case event: ProposalUnvoted     => handleUnvotedProposal(event)
+      case event: ProposalQualified   => handleQualifiedProposal(event)
+      case event: ProposalUnqualified => handleUnqualifiedProposal(event)
     }
 
   }
@@ -52,6 +54,8 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
+    implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
+    implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
   }
 
   def handleVotedProposal(event: ProposalVoted): Future[Unit] = {
@@ -61,6 +65,18 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
   }
 
   def handleUnvotedProposal(event: ProposalUnvoted): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleQualifiedProposal(event: ProposalQualified): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleUnqualifiedProposal(event: ProposalUnqualified): Future[Unit] = {
     Future.successful[Unit] {
       log.debug(s"received $event")
     }

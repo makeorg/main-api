@@ -3,9 +3,9 @@ package org.make.core.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
-import org.make.core.proposal.indexed.VoteKey
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.ThemeId
+import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.{MakeSerializable, RequestContext}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
@@ -33,6 +33,8 @@ final case class UserRegistered(email: String,
 final case class UserProposal(content: String, theme: Option[ThemeId])
 
 final case class UserVote(voteKey: VoteKey)
+
+final case class UserQualification(voteKey: VoteKey, qualificationKey: QualificationKey)
 
 final case class LogSearchProposalsEvent(userId: UserId,
                                          requestContext: RequestContext,
@@ -100,6 +102,28 @@ final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestConte
 
 object LogUserUnvoteEvent {
   val action: String = "unvote"
+}
+
+final case class LogUserQualificationEvent(userId: UserId,
+                                           requestContext: RequestContext,
+                                           action: UserAction[UserQualification])
+    extends UserHistoryEvent[UserQualification] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserQualificationEvent {
+  val action: String = "qualification"
+}
+
+final case class LogUserUnqualificationEvent(userId: UserId,
+                                             requestContext: RequestContext,
+                                             action: UserAction[UserQualification])
+    extends UserHistoryEvent[UserQualification] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserUnqualificationEvent {
+  val action: String = "unqualification"
 }
 
 // Moderator actions

@@ -6,14 +6,13 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, validate}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 
 final case class ProposeProposalRequest(content: String, theme: Option[ThemeId]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   validate(maxLength("content", maxProposalLength, content))
 }
-
-final case class ProposeProposalResponse(proposalId: ProposalId)
 
 final case class UpdateProposalRequest(content: String)
 
@@ -116,4 +115,6 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
   }
 }
 
-final case class VoteProposalRequest(key: String)
+final case class VoteProposalRequest(voteKey: VoteKey)
+
+final case class QualificationProposalRequest(qualificationKey: QualificationKey, voteKey: VoteKey)

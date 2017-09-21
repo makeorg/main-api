@@ -5,7 +5,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.make.core.proposal.indexed.VoteKey
+import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 
 trait AvroSerializers {
 
@@ -46,6 +46,21 @@ trait AvroSerializers {
   implicit object VoteKeyFromValue extends FromValue[VoteKey] {
     override def apply(value: Any, field: Field): VoteKey =
       VoteKey.matchVoteKey(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a VoteKey"))
+  }
+
+  implicit object QualificationKeyToSchema extends ToSchema[QualificationKey] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object QualificationKeyToValue extends ToValue[QualificationKey] {
+    override def apply(value: QualificationKey): String = value.shortName
+  }
+
+  implicit object QualificationKeyFromValue extends FromValue[QualificationKey] {
+    override def apply(value: Any, field: Field): QualificationKey =
+      QualificationKey
+        .matchQualificationKey(value.toString)
+        .getOrElse(throw new IllegalArgumentException(s"$value is not a QualificationKey"))
   }
 
 }

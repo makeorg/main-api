@@ -143,6 +143,6 @@ trait SprayJsonFormatters {
     DefaultJsonProtocol.jsonFormat5(Vote.apply)
 
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
-    DefaultJsonProtocol.jsonFormat2(Qualification.apply)
+    DefaultJsonProtocol.jsonFormat4(Qualification.apply)
 
 }

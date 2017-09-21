@@ -18,14 +18,16 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
   }
 
   override def receiveCommand: Receive = {
-    case GetUserHistory(_)                => sender() ! state
-    case command: LogSearchProposalsEvent => persistAndPublishEvent(command)
-    case command: LogAcceptProposalEvent  => persistAndPublishEvent(command)
-    case command: LogRefuseProposalEvent  => persistAndPublishEvent(command)
-    case command: LogRegisterCitizenEvent => persistAndPublishEvent(command)
-    case command: LogUserProposalEvent    => persistAndPublishEvent(command)
-    case command: LogUserVoteEvent        => persistAndPublishEvent(command)
-    case command: LogUserUnvoteEvent      => persistAndPublishEvent(command)
+    case GetUserHistory(_)                    => sender() ! state
+    case command: LogSearchProposalsEvent     => persistAndPublishEvent(command)
+    case command: LogAcceptProposalEvent      => persistAndPublishEvent(command)
+    case command: LogRefuseProposalEvent      => persistAndPublishEvent(command)
+    case command: LogRegisterCitizenEvent     => persistAndPublishEvent(command)
+    case command: LogUserProposalEvent        => persistAndPublishEvent(command)
+    case command: LogUserVoteEvent            => persistAndPublishEvent(command)
+    case command: LogUserUnvoteEvent          => persistAndPublishEvent(command)
+    case command: LogUserQualificationEvent   => persistAndPublishEvent(command)
+    case command: LogUserUnqualificationEvent => persistAndPublishEvent(command)
   }
 
   override def persistenceId: String = userId.value
