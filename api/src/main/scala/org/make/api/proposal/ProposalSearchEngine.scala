@@ -70,7 +70,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     override def updateProposal(record: IndexedProposal): Future[Done] = {
       logger.info(s"Updating in Elasticsearch: $record")
       client
-        .execute((update(id = record.id.toString) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
+        .execute((update(id = record.id.value) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
     }
   }
