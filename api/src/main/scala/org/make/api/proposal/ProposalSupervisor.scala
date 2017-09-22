@@ -1,6 +1,7 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.MakeBackoffSupervisor
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
 
@@ -16,20 +17,28 @@ class ProposalSupervisor(userService: UserService, userHistoryCoordinator: Actor
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(ProposalProducerActor.props, ProposalProducerActor.name))
-    context.watch(
-      context
-        .actorOf(ProposalUserHistoryConsumerActor.props(userHistoryCoordinator), ProposalUserHistoryConsumerActor.name)
-    )
-    context.watch(
-      context
-        .actorOf(
-          ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService),
-          ProposalEmailConsumerActor.name
-        )
-    )
-    context.watch(
-      context.actorOf(ProposalConsumerActor.props(proposalCoordinator, userService), ProposalConsumerActor.name)
-    )
+
+    context.watch {
+      val (props, name) = MakeBackoffSupervisor.propsAndName(
+        ProposalUserHistoryConsumerActor.props(userHistoryCoordinator),
+        ProposalUserHistoryConsumerActor.name
+      )
+      context.actorOf(props, name)
+    }
+    context.watch {
+      val (props, name) = MakeBackoffSupervisor.propsAndName(
+        ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService),
+        ProposalEmailConsumerActor.name
+      )
+      context.actorOf(props, name)
+    }
+    context.watch {
+      val (props, name) = MakeBackoffSupervisor.propsAndName(
+        ProposalConsumerActor.props(proposalCoordinator, userService),
+        ProposalConsumerActor.name
+      )
+      context.actorOf(props, name)
+    }
   }
 
   override def receive: Receive = {

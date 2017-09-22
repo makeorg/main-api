@@ -1,6 +1,7 @@
 package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.MakeBackoffSupervisor
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
@@ -17,11 +18,11 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
         .actorOf(UserProducerActor.props, UserProducerActor.name)
     )
 
-    context.watch(
-      context
-        .actorOf(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
-    )
-
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
+      context.actorOf(props, name)
+    }
   }
 
   override def receive: Receive = {
