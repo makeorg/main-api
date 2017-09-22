@@ -5,6 +5,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.NotFound
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
@@ -113,7 +114,22 @@ trait UserApi extends MakeAuthenticationDirectives {
                 socialService
                   .login(request.provider, request.token, Some(ip))
               ) { accessToken =>
-                complete(StatusCodes.Created -> accessToken)
+                mapResponseHeaders(
+                  _ ++ Seq(
+                    `Set-Cookie`(
+                      HttpCookie(
+                        name = makeSettings.SessionCookie.name,
+                        value = accessToken.access_token,
+                        secure = makeSettings.SessionCookie.isSecure,
+                        httpOnly = true,
+                        maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                        path = Some("/")
+                      )
+                    )
+                  )
+                ) {
+                  complete(StatusCodes.Created -> accessToken)
+                }
               }
             }
           }

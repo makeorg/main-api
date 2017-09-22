@@ -23,6 +23,7 @@ import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class UserApiTest
@@ -55,6 +56,7 @@ class UserApiTest
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     handleExceptions(MakeApi.exceptionHandler) {
@@ -232,6 +234,7 @@ class UserApiTest
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
+        header("Set-Cookie").get.value should include("cookie-session")
         verify(socialService).login(matches("google"), matches("ABCDEFGHIJK"), matches(Some("192.0.0.1")))
       }
     }
