@@ -146,7 +146,13 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
             from = Some(
               Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
             ),
-            variables = Some(Map("content" -> proposal.content, "name" -> user.fullName.getOrElse("")))
+            variables = Some(
+              Map(
+                "content" -> proposal.content,
+                "name" -> user.fullName.getOrElse(""),
+                "refusalReason" -> proposal.refusalReason.getOrElse("")
+              )
+            )
           )
         )
 
