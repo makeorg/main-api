@@ -23,7 +23,11 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
-    context.watch(context.actorOf(MailJetConsumerActor.props, MailJetConsumerActor.name))
+
+    val (props, name) =
+      MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)
+
+    context.watch(context.actorOf(props, name))
   }
 
   override def receive: Receive = {
