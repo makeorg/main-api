@@ -93,7 +93,7 @@ class ProposalSearchEngineIT
       IndexedVote(key = VoteKey.Disagree, qualifications = Seq.empty),
       IndexedVote(key = VoteKey.Neutral, qualifications = Seq.empty)
     ),
-    proposalContext = ProposalContext(operation = None, location = None, question = None, source = None),
+    context = Some(Context(operation = None, location = None, question = None, source = None)),
     author = Author(firstName = None, postalCode = None, age = None),
     themeId = None,
     tags = Seq.empty,
@@ -119,7 +119,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 105, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 59, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Craig"), postalCode = Some("92876"), age = Some(25)),
@@ -141,7 +141,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 104, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 127, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
@@ -164,7 +164,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Neutral, count = 53, qualifications = Seq.empty)
       ),
       status = ProposalStatus.Accepted,
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
@@ -187,7 +187,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 78, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 123, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Jennifer"), postalCode = Some("40734"), age = Some(23)),
@@ -209,7 +209,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 70, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 123, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
@@ -233,7 +233,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 70, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 187, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = None,
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
@@ -255,7 +255,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 56, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 170, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = None,
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
@@ -277,7 +277,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 32, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 35, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = None,
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
@@ -304,7 +304,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 66, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 75, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Ronald"), postalCode = Some("41556"), age = Some(26)),
@@ -328,7 +328,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 42, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 22, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
@@ -352,7 +352,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 167, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 73, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Ronald"), postalCode = Some("40734"), age = Some(23)),
@@ -376,7 +376,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 165, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 96, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
@@ -398,7 +398,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 33, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 64, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Craig"), postalCode = Some("40734"), age = Some(23)),
@@ -420,7 +420,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 119, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 68, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Valerie"), postalCode = Some("92876"), age = Some(25)),
@@ -442,7 +442,7 @@ class ProposalSearchEngineIT
         IndexedVote(key = VoteKey.Disagree, count = 74, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Neutral, count = 56, qualifications = Seq.empty)
       ),
-      proposalContext = ProposalContext(source = None, operation = None, location = None, question = None),
+      context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Craig"), postalCode = Some("41556"), age = Some(26)),
@@ -468,7 +468,18 @@ class ProposalSearchEngineIT
   feature("search proposals by content") {
     Given("searching by keywords")
     val query =
-      SearchQuery(filter = Some(SearchFilter(content = Some(ContentSearchFilter(text = "Il faut que")))))
+      SearchQuery(
+        filters = Some(
+          SearchFilters(
+            content = Some(ContentSearchFilter(text = "Il faut que")),
+            theme = None,
+            tags = None,
+            labels = None,
+            status = None,
+            context = None
+          )
+        )
+      )
     scenario("should return a list of proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.length should be > 0
@@ -488,7 +499,18 @@ class ProposalSearchEngineIT
 
   feature("search proposals by status") {
     Given("searching pending proposals")
-    val query = SearchQuery(Some(SearchFilter(status = Some(StatusSearchFilter(ProposalStatus.Pending)))))
+    val query = SearchQuery(
+      Some(
+        SearchFilters(
+          status = Some(StatusSearchFilter(ProposalStatus.Pending)),
+          theme = None,
+          tags = None,
+          labels = None,
+          content = None,
+          context = None
+        )
+      )
+    )
     scenario("should return a list of pending proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.map(_.status).mkString)

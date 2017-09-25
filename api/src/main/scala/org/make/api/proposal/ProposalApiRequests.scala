@@ -49,51 +49,70 @@ object Order {
   }
 }
 
-final case class SortOptionRequest(field: String, mode: Option[Order]) {
-  def toSortOption: SortOption = {
-    val maybeOrder = mode match {
+final case class SortRequest(field: Option[String], direction: Option[Order]) {
+  def toSort: Sort = {
+    val maybeOrderDirection = direction match {
       case Some(OrderAsc)  => Some(SortOrder.ASC)
       case Some(OrderDesc) => Some(SortOrder.DESC)
       case None            => None
     }
-    SortOption(field, maybeOrder)
+
+    Sort(field, maybeOrderDirection)
   }
 }
 
-final case class SearchOptionsRequest(sort: Seq[SortOptionRequest], limit: Option[Int], skip: Option[Int]) {
-  def toSearchOptions: Option[SearchOptions] =
-    SearchOptions.parseSearchOptions(sort.map(_.toSortOption), limit.map(LimitOption), skip.map(SkipOption))
+final case class ContextFilterRequest(operation: Option[String] = None,
+                                      source: Option[String] = None,
+                                      location: Option[String] = None,
+                                      question: Option[String] = None) {
+  def toContext: ContextSearchFilter = {
+    ContextSearchFilter(operation, source, location, question)
+  }
 }
 
 final case class SearchRequest(themesIds: Option[Seq[String]] = None,
                                tagsIds: Option[Seq[String]] = None,
+                               labelsIds: Option[Seq[String]] = None,
                                content: Option[String] = None,
-                               options: Option[SearchOptionsRequest] = None) {
+                               context: Option[ContextFilterRequest] = None,
+                               sorts: Option[Seq[SortRequest]] = None,
+                               limit: Option[Int] = None,
+                               skip: Option[Int] = None) {
   def toSearchQuery: SearchQuery = {
-    val filter: Option[SearchFilter] = SearchFilter.parseSearchFilter(
-      theme = themesIds.map(ThemeSearchFilter),
-      tag = tagsIds.map(TagSearchFilter),
-      content = content.map(text => ContentSearchFilter(text))
-    )
-    val searchOptions: Option[SearchOptions] = options.flatMap(_.toSearchOptions)
-    SearchQuery(filter = filter, options = searchOptions)
+    val filters: Option[SearchFilters] =
+      SearchFilters.parse(
+        theme = themesIds.map(ThemeSearchFilter),
+        tags = tagsIds.map(TagsSearchFilter),
+        labels = labelsIds.map(LabelsSearchFilter),
+        content = content.map(text => ContentSearchFilter(text)),
+        context = context.map(_.toContext)
+      )
+
+    SearchQuery(filters = filters, sorts = sorts.getOrElse(Seq.empty).map(_.toSort), limit = limit, skip = skip)
   }
 }
 
 final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
                                          tagsIds: Option[Seq[String]] = None,
+                                         labelsIds: Option[Seq[String]] = None,
                                          content: Option[String] = None,
+                                         context: Option[ContextFilterRequest] = None,
                                          status: Option[ProposalStatus] = None,
-                                         options: Option[SearchOptionsRequest] = None) {
+                                         sorts: Option[Seq[SortRequest]] = None,
+                                         limit: Option[Int] = None,
+                                         skip: Option[Int] = None) {
   def toSearchQuery: SearchQuery = {
-    val filter: Option[SearchFilter] = SearchFilter.parseSearchFilter(
-      theme = themesIds.map(ThemeSearchFilter),
-      tag = tagsIds.map(TagSearchFilter),
-      content = content.map(text => ContentSearchFilter(text)),
-      status = status.map(StatusSearchFilter)
-    )
-    val searchOptions: Option[SearchOptions] = options.flatMap(_.toSearchOptions)
-    SearchQuery(filter = filter, options = searchOptions)
+    val filters: Option[SearchFilters] =
+      SearchFilters.parse(
+        theme = themesIds.map(ThemeSearchFilter),
+        tags = tagsIds.map(TagsSearchFilter),
+        labels = labelsIds.map(LabelsSearchFilter),
+        content = content.map(text => ContentSearchFilter(text)),
+        context = context.map(_.toContext),
+        status = status.map(StatusSearchFilter)
+      )
+
+    SearchQuery(filters = filters, sorts = sorts.getOrElse(Seq.empty).map(_.toSort), limit = limit, skip = skip)
   }
 }
 

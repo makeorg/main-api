@@ -3,7 +3,6 @@ package org.make.api.proposal
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NotFound}
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -21,7 +20,7 @@ import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposal")
-@Path(value = "/proposal")
+@Path(value = "/proposals")
 trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   this: ProposalServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
@@ -33,7 +32,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{proposalId}")
   def getProposal: Route = {
     get {
-      path("proposal" / proposalId) { proposalId =>
+      path("proposals" / proposalId) { proposalId =>
         makeTrace("GetProposal") { requestContext =>
           provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
             complete(proposal)
@@ -54,7 +53,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/search")
   def search: Route = {
     post {
-      path("proposal" / "search") {
+      path("proposals" / "search") {
         makeTrace("Search") { requestContext =>
           // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
@@ -103,7 +102,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/search/all")
   def searchAll: Route = {
     post {
-      path("proposal" / "search" / "all") {
+      path("proposals" / "search" / "all") {
         makeTrace("SearchAll") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
             authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
@@ -149,10 +148,10 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposeProposalResponse]))
   )
-  def propose: Route =
+  def postProposal: Route =
     post {
-      path("proposal") {
-        makeTrace("Propose") { requestContext =>
+      path("proposals") {
+        makeTrace("PostProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[User] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
@@ -195,9 +194,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
   @Path(value = "/{proposalId}")
-  def update: Route =
+  def updateProposal: Route =
     put {
-      path("proposal" / proposalId) { proposalId =>
+      path("proposals" / proposalId) { proposalId =>
         makeTrace("EditProposal") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
             decodeRequest {
@@ -218,7 +217,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                           )
                       ) {
                         case Some(prop) => complete(prop)
-                        case None       => complete(Forbidden)
+                        case None       => complete(StatusCodes.Forbidden)
                       }
                     }
                 }
@@ -247,7 +246,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
   @Path(value = "/{proposalId}/accept")
   def acceptProposal: Route = post {
-    path("proposal" / proposalId / "accept") { proposalId =>
+    path("proposals" / proposalId / "accept") { proposalId =>
       makeTrace("ValidateProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[User] =>
           requireModerationRole(auth.user) {
@@ -285,7 +284,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
   @Path(value = "/{proposalId}/refuse")
   def refuseProposal: Route = post {
-    path("proposal" / proposalId / "refuse") { proposalId =>
+    path("proposals" / proposalId / "refuse") { proposalId =>
       makeTrace("RefuseProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[User] =>
           requireModerationRole(auth.user) {
@@ -319,14 +318,14 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @Path(value = "/{proposalId}/vote")
   def vote: Route = post {
-    path("proposal" / proposalId / "vote") { proposalId =>
+    path("proposals" / proposalId / "vote") { proposalId =>
       makeTrace("VoteProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
               val maybeVoteKey = VoteKey.matchVoteKey(request.key)
               maybeVoteKey match {
-                case None => complete(BadRequest)
+                case None => complete(StatusCodes.BadRequest)
                 case Some(voteKey) =>
                   provideAsync(
                     proposalService.voteProposal(
@@ -338,7 +337,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   ) {
                     case Some(vote) =>
                       complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(NotFound)
+                    case None => complete(StatusCodes.NotFound)
                   }
               }
             }
@@ -358,14 +357,14 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
   @Path(value = "/{proposalId}/unvote")
   def unvote: Route = post {
-    path("proposal" / proposalId / "unvote") { proposalId =>
+    path("proposals" / proposalId / "unvote") { proposalId =>
       makeTrace("UnvoteProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
               val maybeVoteKey = VoteKey.matchVoteKey(request.key)
               maybeVoteKey match {
-                case None => complete(BadRequest)
+                case None => complete(StatusCodes.BadRequest)
                 case Some(voteKey) =>
                   provideAsync(
                     proposalService.unvoteProposal(
@@ -377,7 +376,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   ) {
                     case Some(vote) =>
                       complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(NotFound)
+                    case None => complete(StatusCodes.NotFound)
                   }
               }
             }
@@ -388,7 +387,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   }
 
   val proposalRoutes
-    : Route = propose ~ getProposal ~ update ~ acceptProposal ~ refuseProposal ~ search ~ searchAll ~ vote ~ unvote
+    : Route = postProposal ~ getProposal ~ updateProposal ~ acceptProposal ~ refuseProposal ~ search ~ searchAll ~ vote ~ unvote
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

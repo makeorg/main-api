@@ -88,7 +88,7 @@
           "type": "keyword",
           "index": true
         },
-        "proposalContext": {
+        "context": {
           "type": "object",
           "properties": {
             "operation": {
@@ -114,8 +114,15 @@
           "index": true
         },
         "labels": {
-          "type": "keyword",
-          "index": true
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "text"
+            },
+            "id": {
+              "type": "text"
+            }
+          }
         },
         "author": {
          "type": "object",
@@ -140,8 +147,7 @@
               "index": true
             },
             "id": {
-              "type": "keyword",
-              "index": true
+              "type": "text"
             }
           }
         },

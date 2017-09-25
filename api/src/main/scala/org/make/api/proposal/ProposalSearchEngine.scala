@@ -45,13 +45,14 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     override def searchProposals(searchQuery: SearchQuery): Future[Seq[IndexedProposal]] = {
       client.execute {
         // parse json string to build search query
-        val searchFilters = SearchFilter.getSearchFilters(searchQuery)
+        val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
         // build search query
         search(proposalIndex)
           .bool(BoolQueryDefinition(must = searchFilters))
-          .sortBy(SearchFilter.getSortOption(searchQuery))
-          .from(SearchFilter.getSkipSearchOption(searchQuery))
-          .size(SearchFilter.getLimitSearchOption(searchQuery))
+          .sortBy(SearchFilters.getSort(searchQuery))
+          .from(SearchFilters.getSkipSearch(searchQuery))
+          .size(SearchFilters.getLimitSearch(searchQuery))
 
       }.map { response =>
         response.to[IndexedProposal]

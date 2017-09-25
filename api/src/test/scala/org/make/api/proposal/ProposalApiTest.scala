@@ -239,7 +239,7 @@ class ProposalApiTest
       Given("an un authenticated user")
       When("the user wants to propose")
       Then("he should get an unauthorized (401) return code")
-      Post("/proposal").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+      Post("/proposals").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -249,7 +249,7 @@ class ProposalApiTest
       When("the user wants to propose")
       Then("the proposal should be saved if valid")
 
-      Post("/proposal")
+      Post("/proposals")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -261,7 +261,7 @@ class ProposalApiTest
       When("the user wants to propose")
       Then("the proposal should be rejected if invalid")
 
-      Post("/proposal")
+      Post("/proposals")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidProposalText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -271,13 +271,13 @@ class ProposalApiTest
 
   feature("proposal validation") {
     scenario("unauthenticated validation") {
-      Post("/proposal/123456/accept") ~> routes ~> check {
+      Post("/proposals/123456/accept") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("validation with user role") {
-      Post("/proposal/123456/accept")
+      Post("/proposals/123456/accept")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -285,7 +285,7 @@ class ProposalApiTest
 
     scenario("validation with moderation role") {
 
-      Post("/proposal/123456/accept")
+      Post("/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -293,7 +293,7 @@ class ProposalApiTest
     }
 
     scenario("validation with admin role") {
-      Post("/proposal/987654/accept")
+      Post("/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -301,7 +301,7 @@ class ProposalApiTest
     }
 
     scenario("validation of non existing with admin role") {
-      Post("/proposal/nop/accept")
+      Post("/proposals/nop/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -310,5 +310,39 @@ class ProposalApiTest
 
     // Todo: implement this test
     scenario("validation of proposal without Tag: this test should be done") {}
+  }
+
+  feature("proposal refuse") {
+    scenario("unauthenticated refuse") {
+      Post("/proposals/123456/refuse") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("refuse with user role") {
+      Post("/proposals/123456/refuse")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("refusing with moderation role") {
+      Post("/proposals/123456/refuse")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("refusing with admin role") {
+      Post("/proposals/987654/refuse")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    // Todo: implement this test
+    scenario("refusing proposal without reason with admin role: this test should be done") {}
   }
 }
