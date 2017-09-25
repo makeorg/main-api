@@ -138,9 +138,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}/duplicates")
-  def duplicates: Route = {
+  def getDuplicates: Route = {
     get {
-      path("proposal" / proposalId / "duplicates") { proposalId =>
+      path("proposals" / proposalId / "duplicates") { proposalId =>
         makeTrace("Duplicates") { requestContext =>
           makeOAuth2 { userAuth =>
             authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
@@ -420,7 +420,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   }
 
   val proposalRoutes: Route =
-    duplicates ~
+    getDuplicates ~
       postProposal ~
       getProposal ~
       updateProposal ~

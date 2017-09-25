@@ -5,6 +5,21 @@ import org.make.GitHooks
 lazy val commonSettings = Seq(
   organization := "org.make",
   scalaVersion := "2.12.1",
+  coursierUseSbtCredentials := true,
+  credentials ++= {
+    if (System.getenv().containsKey("CI_BUILD")) {
+      Seq(
+        Credentials(
+          "Sonatype Nexus Repository Manager",
+          System.getenv("NEXUS_URL"),
+          System.getenv("NEXUS_USER"),
+          System.getenv("NEXUS_PASSWORD")
+        )
+      )
+    } else {
+      Nil
+    }
+  },
   libraryDependencies ++= Seq(
     Dependencies.logger,
     Dependencies.loggerBridge,
@@ -16,10 +31,11 @@ lazy val commonSettings = Seq(
     if (isSnapshot.value) {
       Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-snapshots/"))
     } else {
-      Some("Sonatype Snapshots Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-releases/"))
+      Some("Sonatype Releases Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-releases/"))
     }
   },
   resolvers += "Confluent Releases".at("http://packages.confluent.io/maven/"),
+  resolvers += "Sonatype Nexus Repository Manager".at("https://nexus.prod.makeorg.tech/repository/maven-public/"),
   scalastyleFailOnError := true,
   compileScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("").value,
   testScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Test).toTask("").value,
@@ -76,21 +92,6 @@ lazy val api = project
     s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
   })
   .dependsOn(core)
-
-credentials ++= {
-  if (System.getenv().containsKey("CI_BUILD")) {
-    Seq(
-      Credentials(
-        "Sonatype Nexus Repository Manager",
-        System.getenv("NEXUS_URL"),
-        System.getenv("NEXUS_USER"),
-        System.getenv("NEXUS_PASSWORD")
-      )
-    )
-  } else {
-    Nil
-  }
-}
 
 enablePlugins(GitHooks)
 
