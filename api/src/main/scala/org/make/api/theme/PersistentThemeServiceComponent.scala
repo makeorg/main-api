@@ -89,7 +89,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
           insert
             .into(PersistentThemeTranslation)
             .namedValues(
-              themeTranslationcolumn.themeId -> theme.themeId.value,
+              themeTranslationcolumn.themeUuid -> theme.themeId.value,
               themeTranslationcolumn.slug -> translation.slug,
               themeTranslationcolumn.title -> translation.title,
               themeTranslationcolumn.language -> translation.language
@@ -105,7 +105,7 @@ object DefaultPersistentThemeServiceComponent {
 
   val TAG_SEPARATOR = ","
 
-  case class PersistentThemeTranslation(themeId: String, slug: String, title: String, language: String)
+  case class PersistentThemeTranslation(themeUuid: String, slug: String, title: String, language: String)
 
   case class PersistentTheme(uuid: String,
                              themeTranslations: Seq[PersistentThemeTranslation],
@@ -160,14 +160,14 @@ object DefaultPersistentThemeServiceComponent {
       themeTranslation: SyntaxProvider[PersistentThemeTranslation]
     )(resultSet: WrappedResultSet): Option[PersistentThemeTranslation] =
       resultSet
-        .stringOpt(themeTranslation.resultName.themeId)
+        .stringOpt(themeTranslation.resultName.themeUuid)
         .map(_ => PersistentThemeTranslation(themeTranslation.resultName)(resultSet))
 
     def apply(
       themeTranslationResultName: ResultName[PersistentThemeTranslation] = themeTranslationAlias.resultName
     )(resultSet: WrappedResultSet): PersistentThemeTranslation = {
       PersistentThemeTranslation.apply(
-        themeId = resultSet.string(themeTranslationResultName.slug),
+        themeUuid = resultSet.string(themeTranslationResultName.themeUuid),
         slug = resultSet.string(themeTranslationResultName.slug),
         title = resultSet.string(themeTranslationResultName.title),
         language = resultSet.string(themeTranslationResultName.language)
