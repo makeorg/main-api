@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS tag (
 );
 %
 CREATE TABLE IF NOT EXISTS theme (
-  id VARCHAR(256) PRIMARY KEY,
+  uuid  VARCHAR(256) PRIMARY KEY,
   actions_count INT,
   proposals_count INT,
   country VARCHAR(3),
@@ -86,16 +86,18 @@ CREATE TABLE IF NOT EXISTS theme (
 );
 %
 CREATE TABLE IF NOT EXISTS theme_translation (
-  theme_id VARCHAR(256) NOT NULL REFERENCES theme,
+  theme_uuid VARCHAR(256) NOT NULL REFERENCES theme,
   language VARCHAR(3),
   title VARCHAR(256),
-  slug VARCHAR(256)
+  slug VARCHAR(256),
+  PRIMARY KEY (theme_uuid, language)
 );
 %
 INSERT into oauth_client
     (uuid, secret, allowed_grant_types)
     VALUES
-    ('#clientid#', '#clientsecret#', '{"password", "refresh_token", "client_credentials"}');
+    ('#clientid#', '#clientsecret#', '{"password", "refresh_token", "client_credentials"}')
+    ON CONFLICT (uuid) DO NOTHING;
 %
 INSERT INTO tag (slug, label, enabled) VALUES
 	('absenteisme-activite', e'absentéisme / activité', true),
@@ -282,10 +284,11 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('violence', 'violence', true),
 	('vivre-ensemble', 'vivre ensemble', true),
 	('vote-blanc', 'vote blanc', true),
-	('zero-dechets', e'zéro-déchets', true);
+	('zero-dechets', e'zéro-déchets', true)
+	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme
-    (id, actions_count, proposals_count, country, color, gradient_from, gradient_to, tags_ids)
+    (uuid, actions_count, proposals_count, country, color, gradient_from, gradient_to, tags_ids)
     VALUES
     ('4f79b301-6735-4e88-ad36-69320d69cf2e', 0, 0, 'FR', '#E91E63', '#E81E61', '#7F2FD0', 'les-institutions,elections,financement,ethique,statut-de-l-elu,absenteisme-activite,processus-legislatif,influence,controle-des-institutions,les-elus,collectivites,parite,mandats,eligibilite,remuneration,affaires,vote-blanc,budget-depenses,referendum,role-du-citoyen'),
     ('036f24fa-dc32-4808-bca9-7ccec1665585', 0, 0, 'FR', '#8BC34A', '#83BB1A', '#1FC8F1', 'energies-fossiles-energies-sales,carburant-s,alimentation,permaculture,bio-le-bio,sensibilisation,taxes-taxation,gachis,compostage,urbanisme,collectivite-s,electricite,ogms,sante,vegetalisation,recherche,pollution,impots,zero-dechets,recyclage,reglementation,entreprise-s,pesticides,energies-renouvelables-propres,vegetarisme-vegetariens,photovoltaique,eco-conception,transports-propres,subventions,economie-du-partage,circuit-courts,pret-a-porter,particulier-s'),
@@ -298,10 +301,11 @@ INSERT INTO theme
     ('969118ae-949f-4a4a-af33-ec1bcc107450', 0, 0, 'FR', '#2E7D32', '#2E7D32', '#8FCF4B', 'agriculture-intensive'),
     ('8a4a9d0a-92b8-48e4-946d-3e6986296ec7', 0, 0, 'FR', '#311B92', '#311B92', '#54A0E3', 'territoire,gouvernance,institutions,monnaie,richesses,flux-migratoires,accords,derives,culture,fiscalite,cooperation-internationale,sortie-de-l-europe,commerce-international,langue,etats-unis,populations,conflits,protectionnisme,defense'),
     ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 0, 0, 'FR', '#F5515F', '#F5515F', '#9F031B', ''),
-    ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 0, 0, 'FR', '#03A9F4', '#4FC8FF', '#FFDC00', '');
+    ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 0, 0, 'FR', '#03A9F4', '#4FC8FF', '#FFDC00', '')
+    ON CONFLICT (uuid) DO NOTHING;
 %
 INSERT INTO theme_translation
-    (theme_id, language, slug, title)
+    (theme_uuid, language, slug, title)
     VALUES
     ('4f79b301-6735-4e88-ad36-69320d69cf2e', 'fr', 'democratie-vie-politique', 'démocratie / vie politique'),
     ('036f24fa-dc32-4808-bca9-7ccec1665585', 'fr', 'developpement-durable-energie', 'développement durable / énergie'),
@@ -314,9 +318,11 @@ INSERT INTO theme_translation
     ('969118ae-949f-4a4a-af33-ec1bcc107450', 'fr', 'agriculture-ruralite', 'agriculture / ruralité'),
     ('8a4a9d0a-92b8-48e4-946d-3e6986296ec7', 'fr', 'europe-monde', 'europe / monde'),
     ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 'fr', 'transports-deplacement', 'transports / déplacement'),
-    ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 'fr', 'numerique-culture', 'numérique / culture');
+    ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 'fr', 'numerique-culture', 'numérique / culture')
+    ON CONFLICT (theme_uuid, language) DO NOTHING;
 %
 INSERT INTO make_user
 VALUES
 ('11111111-1111-1111-1111-111111111111','2017-09-15 08:43:30','2017-09-15 08:43:30','#adminemail#','#adminfirstname#',NULL,NULL,'#adminencryptedpassword#',true,false,'2017-09-15 08:43:30',NULL,'2017-10-15 08:43:30',NULL,NULL,'ROLE_ADMIN,ROLE_CITIZEN',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,false)
+ON CONFLICT (uuid) DO NOTHING
 %

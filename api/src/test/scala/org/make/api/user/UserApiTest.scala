@@ -82,6 +82,8 @@ class UserApiTest
     profile = None
   )
 
+  val expiresInSecond = 1000
+
   feature("register user") {
     scenario("successful register user") {
       Mockito
@@ -217,7 +219,7 @@ class UserApiTest
             TokenResponse(
               token_type = "Bearer",
               access_token = "access_token",
-              expires_in = 1000,
+              expires_in = expiresInSecond,
               refresh_token = "refresh_token"
             )
           )
@@ -250,7 +252,7 @@ class UserApiTest
             TokenResponse(
               token_type = "Bearer",
               access_token = "access_token",
-              expires_in = 1000,
+              expires_in = expiresInSecond,
               refresh_token = "refresh_token"
             )
           )

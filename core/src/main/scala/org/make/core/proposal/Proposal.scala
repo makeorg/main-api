@@ -51,8 +51,8 @@ object ProposalStatus {
       Archived.shortName -> Archived
     )
 
-  implicit lazy val proposalStatusEncoder: Encoder[ProposalStatus] = (gender: ProposalStatus) =>
-    Json.fromString(gender.shortName)
+  implicit lazy val proposalStatusEncoder: Encoder[ProposalStatus] = (status: ProposalStatus) =>
+    Json.fromString(status.shortName)
   implicit lazy val proposalStatusDecoder: Decoder[ProposalStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {
