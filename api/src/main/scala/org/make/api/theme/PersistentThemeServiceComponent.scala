@@ -172,7 +172,6 @@ object DefaultPersistentThemeServiceComponent {
         title = resultSet.string(themeTranslationResultName.title),
         language = resultSet.string(themeTranslationResultName.language)
       )
-
     }
   }
 
