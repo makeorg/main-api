@@ -41,7 +41,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
             select
               .from(PersistentTheme.as(themeAlias))
               .leftJoin(PersistentThemeTranslation.as(themeTranslationAlias))
-              .on(themeAlias.id, themeTranslationAlias.themeId)
+              .on(themeAlias.uuid, themeTranslationAlias.themeUuid)
           }.one(PersistentTheme.apply())
             .toMany(PersistentThemeTranslation.opt(themeTranslationAlias))
             .map { (theme, translations) =>
@@ -66,7 +66,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
           insert
             .into(PersistentTheme)
             .namedValues(
-              column.id -> theme.themeId.value,
+              column.uuid -> theme.themeId.value,
               column.actionsCount -> theme.actionsCount,
               column.proposalsCount -> theme.proposalsCount,
               column.country -> theme.country,
@@ -107,7 +107,7 @@ object DefaultPersistentThemeServiceComponent {
 
   case class PersistentThemeTranslation(themeId: String, slug: String, title: String, language: String)
 
-  case class PersistentTheme(id: String,
+  case class PersistentTheme(uuid: String,
                              themeTranslations: Seq[PersistentThemeTranslation],
                              actionsCount: Int,
                              proposalsCount: Int,
@@ -124,7 +124,7 @@ object DefaultPersistentThemeServiceComponent {
     def toTheme(allTags: Seq[Tag]): Theme = {
       val tags: Seq[Tag] = tagsIdsFromSlug.flatMap(tagId => allTags.find(_.tagId == tagId))
       Theme(
-        themeId = ThemeId(id),
+        themeId = ThemeId(uuid),
         translations = themeTranslations.map(
           trans => ThemeTranslation(slug = trans.slug, title = trans.title, language = trans.language)
         ),
@@ -148,7 +148,7 @@ object DefaultPersistentThemeServiceComponent {
       with ShortenedNames
       with StrictLogging {
 
-    override val columnNames: Seq[String] = Seq("theme_id", "slug", "title", "language")
+    override val columnNames: Seq[String] = Seq("theme_uuid", "slug", "title", "language")
 
     override val tableName: String = "theme_translation"
 
@@ -179,7 +179,7 @@ object DefaultPersistentThemeServiceComponent {
   object PersistentTheme extends SQLSyntaxSupport[PersistentTheme] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] = Seq(
-      "id",
+      "uuid",
       "actions_count",
       "proposals_count",
       "country",
@@ -199,7 +199,7 @@ object DefaultPersistentThemeServiceComponent {
       themeResultName: ResultName[PersistentTheme] = themeAlias.resultName
     )(resultSet: WrappedResultSet): PersistentTheme = {
       PersistentTheme.apply(
-        id = resultSet.string(themeResultName.id),
+        uuid = resultSet.string(themeResultName.uuid),
         themeTranslations = Seq.empty,
         actionsCount = resultSet.int(themeResultName.actionsCount),
         proposalsCount = resultSet.int(themeResultName.proposalsCount),

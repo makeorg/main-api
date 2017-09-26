@@ -386,8 +386,16 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  val proposalRoutes
-    : Route = postProposal ~ getProposal ~ updateProposal ~ acceptProposal ~ refuseProposal ~ search ~ searchAll ~ vote ~ unvote
+  val proposalRoutes: Route =
+    postProposal ~
+      getProposal ~
+      updateProposal ~
+      acceptProposal ~
+      refuseProposal ~
+      search ~
+      searchAll ~
+      vote ~
+      unvote
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

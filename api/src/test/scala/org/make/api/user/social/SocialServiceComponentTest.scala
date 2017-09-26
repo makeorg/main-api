@@ -40,6 +40,10 @@ class SocialServiceComponentTest
     Mockito.reset(userService, oauth2DataHandler, googleApi, facebookApi)
   }
 
+  val expireInSeconds = 123000
+  var refreshTokenValue = "my_refresh_token"
+  var accessTokenValue = "my_access_token"
+
   feature("login user from google provider") {
     scenario("successful create UserInfo Object") {
       Given("a user logged via google")
@@ -84,10 +88,10 @@ class SocialServiceComponentTest
       )
 
       val accessToken = AccessToken(
-        "my_access_token",
-        Some("my_refresh_token"),
+        accessTokenValue,
+        Some(refreshTokenValue),
         None,
-        Some(123000),
+        Some(expireInSeconds),
         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
         Map.empty
       )
@@ -167,10 +171,10 @@ class SocialServiceComponentTest
       )
 
       val accessToken = AccessToken(
-        "my_access_token",
-        Some("my_refresh_token"),
+        accessTokenValue,
+        Some(refreshTokenValue),
         None,
-        Some(123000),
+        Some(expireInSeconds),
         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
         Map.empty
       )
@@ -193,8 +197,8 @@ class SocialServiceComponentTest
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
         tokenResponse shouldBe a[TokenResponse]
-        tokenResponse.access_token should be("my_access_token")
-        tokenResponse.refresh_token should be("my_refresh_token")
+        tokenResponse.access_token should be(accessTokenValue)
+        tokenResponse.refresh_token should be(refreshTokenValue)
         tokenResponse.token_type should be("Bearer")
       }
     }
@@ -248,8 +252,8 @@ class SocialServiceComponentTest
       )
 
       val accessToken = AccessToken(
-        "my_access_token",
-        Some("my_refresh_token"),
+        accessTokenValue,
+        Some(refreshTokenValue),
         None,
         Some(99000),
         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-08-13 12:00:00"),
@@ -329,8 +333,8 @@ class SocialServiceComponentTest
       )
 
       val accessToken = AccessToken(
-        "my_access_token",
-        Some("my_refresh_token"),
+        accessTokenValue,
+        Some(refreshTokenValue),
         None,
         Some(99000),
         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-08-13 12:00:00"),
@@ -355,8 +359,8 @@ class SocialServiceComponentTest
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
         tokenResponse shouldBe a[TokenResponse]
-        tokenResponse.access_token should be("my_access_token")
-        tokenResponse.refresh_token should be("my_refresh_token")
+        tokenResponse.access_token should be(accessTokenValue)
+        tokenResponse.refresh_token should be(refreshTokenValue)
         tokenResponse.token_type should be("Bearer")
       }
     }
