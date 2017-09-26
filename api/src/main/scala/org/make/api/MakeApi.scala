@@ -17,7 +17,7 @@ import org.make.api.proposal._
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
-import org.make.api.technical.businessconfig.BusinessConfigApi
+import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
@@ -64,7 +64,7 @@ trait MakeApi
     with ProposalApi
     with MailJetApi
     with AuthenticationApi
-    with BusinessConfigApi
+    with ConfigurationsApi
     with UserApi
     with TagApi
     with BuildInfoRoutes
@@ -108,7 +108,7 @@ trait MakeApi
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val apiClasses: Set[Class[_]] =
-    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[TagApi], classOf[ProposalApi], classOf[BusinessConfigApi])
+    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[TagApi], classOf[ProposalApi], classOf[ConfigurationsApi])
 
   private lazy val optionsCors: Route = options {
     corsHeaders() {
