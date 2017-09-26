@@ -18,13 +18,13 @@ build:
   script:
     - sbt clean coverage test it:test
     - sbt coverageReport coverageAggregate
+    - sbt clean publish
 
 deploy:
   stage: deploy
   only:
     - master
   script:
-    - sbt clean publish
     - >
       curl -D - -X "POST"
       -H "Accept: application/json"
