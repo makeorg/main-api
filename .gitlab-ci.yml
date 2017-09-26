@@ -19,6 +19,8 @@ build:
     - sbt clean coverage test it:test
     - sbt coverageReport coverageAggregate
     - sbt clean publish
+    - docker tag $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-`date +"%Y-%m-%d"`-`git rev-parse --short HEAD` $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-latest
+    - docker push $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-latest
 
 deploy:
   stage: deploy
@@ -30,5 +32,5 @@ deploy:
       -H "Accept: application/json"
       -H "Content-Type: application/x-www-form-urlencoded"
       -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
-      --data-urlencode "argString=-tag 0.0.1-SNAPSHOT"
+      --data-urlencode "argString=-tag $CI_COMMIT_REF_NAME-latest"
       http://rundeck.prod.makeorg.tech:4440/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run

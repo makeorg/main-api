@@ -1,3 +1,4 @@
+import java.time.LocalDate
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
@@ -49,7 +50,6 @@ lazy val commonSettings = Seq(
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
     "-Xfuture",
-    // "-Ywarn-unused",
     "-Ywarn-unused-import",
     "-Ydelambdafy:method",
     "-language:_"
@@ -89,6 +89,20 @@ lazy val api = project
   })
   .dependsOn(core)
 
-enablePlugins(GitHooks)
+isSnapshot in ThisBuild := false
+publishArtifact in ThisBuild := false
+
+git.formattedShaVersion := git.gitHeadCommit.value map { sha => sha.take(7) }
+
+version in ThisBuild := {
+  if (System.getenv().containsKey("CI_BUILD")) {
+    s"${System.getenv("CI_COMMIT_REF_NAME")}-${LocalDate.now()}-${git.formattedShaVersion.value.get}"
+  } else {
+    s"${git.gitCurrentBranch.value}-${LocalDate.now()}-${git.formattedShaVersion.value.get}"
+  }
+}
 
 gitCommitMessageHook := Some(baseDirectory.value / "bin" / "commit-msg.hook")
+
+enablePlugins(GitHooks)
+enablePlugins(GitVersioning)

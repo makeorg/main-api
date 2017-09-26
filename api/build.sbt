@@ -1,6 +1,6 @@
 import java.time.{ZoneOffset, ZonedDateTime}
 
-import com.typesafe.sbt.SbtGit.GitKeys._
+import com.typesafe.sbt.SbtGit.GitKeys
 
 name := "make-api"
 
@@ -63,10 +63,17 @@ lazy val buildTime: SettingKey[String] = SettingKey[String]("buildTime", "time o
 
 buildTime := ZonedDateTime.now(ZoneOffset.UTC).toString
 
-enablePlugins(BuildInfoPlugin)
-enablePlugins(SbtAspectj)
-
-buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime, swaggerUiVersion)
+buildInfoKeys :=
+  Seq[BuildInfoKey](
+    name,
+    version,
+    scalaVersion,
+    sbtVersion,
+    GitKeys.gitHeadCommit,
+    GitKeys.gitCurrentBranch,
+    buildTime,
+    swaggerUiVersion
+  )
 
 fork in run := true
 fork in Test := true
@@ -76,3 +83,6 @@ javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
 javaOptions in run += "-Dconfig.resource=default-application.conf"
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
+
+enablePlugins(BuildInfoPlugin)
+enablePlugins(SbtAspectj)
