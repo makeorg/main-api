@@ -22,9 +22,9 @@ import org.mockito.Mockito._
 import scala.concurrent.Future
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-class BusinessConfigApiTest
+class ConfigurationsApiTest
     extends MakeApiTestUtils
-    with BusinessConfigApi
+    with ConfigurationsApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with ThemeServiceComponent
@@ -140,7 +140,7 @@ class BusinessConfigApiTest
       Given("an un authenticated user")
       When("the user wants to get the backoffice's business config")
       Then("he should get an unauthorized (401) return code")
-      Get("/business_config_back") ~> routes ~> check {
+      Get("/configurations/backoffice") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -150,7 +150,7 @@ class BusinessConfigApiTest
       When("the user wants to get the backoffice's business config")
       Then("he should get an forbidden (403) return code")
 
-      Get("/business_config_back")
+      Get("/configurations/backoffice")
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -161,23 +161,23 @@ class BusinessConfigApiTest
       When("the user wants to get the backoffice's business config")
       Then("the backoffice's business config is returned")
 
-      Get("/business_config_back")
+      Get("/configurations/backoffice")
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val businessConfig: BusinessConfigBack = entityAs[BusinessConfigBack]
+        val businessConfig: BackofficeConfiguration = entityAs[BackofficeConfiguration]
         businessConfig.themes.forall(themesList.contains) should be(true)
       }
     }
   }
 
-  feature("Production's business config") {
+  feature("front business config") {
     scenario("unauthenticated") {
       Given("an un authenticated user")
-      When("the user wants to get the backoffice's business config")
-      Then("the production's business config is returned")
-      Get("/business_config_prod") ~> routes ~> check {
+      When("the user wants to get the front business config")
+      Then("the front business config is returned")
+      Get("/configurations/front") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val businessConfig: BusinessConfigFront = entityAs[BusinessConfigFront]
+        val businessConfig: FrontConfiguration = entityAs[FrontConfiguration]
         businessConfig.themes.forall(themesList.contains) should be(true)
       }
     }

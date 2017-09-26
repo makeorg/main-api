@@ -8,20 +8,20 @@ sealed trait BusinessConfig {
   val themes: Seq[Theme]
 }
 
-case class BusinessConfigBack(override val proposalMinLength: Int,
-                              override val proposalMaxLength: Int,
-                              override val themes: Seq[Theme],
-                              nVotesTriggerConnexion: Int,
-                              nPendingProposalsTriggerEmailModerator: Int,
-                              minProposalsPerSequence: Int,
-                              maxProposalsPerSequence: Int,
-                              reasonsForRefusal: Seq[String])
+case class BackofficeConfiguration(override val proposalMinLength: Int,
+                                   override val proposalMaxLength: Int,
+                                   override val themes: Seq[Theme],
+                                   nVotesTriggerConnexion: Int,
+                                   nPendingProposalsTriggerEmailModerator: Int,
+                                   minProposalsPerSequence: Int,
+                                   maxProposalsPerSequence: Int,
+                                   reasonsForRefusal: Seq[String])
     extends BusinessConfig
 
-case class BusinessConfigFront(override val proposalMinLength: Int,
-                               override val proposalMaxLength: Int,
-                               override val themes: Seq[Theme],
-                               newVisitorCookieDefinition: String)
+case class FrontConfiguration(override val proposalMinLength: Int,
+                              override val proposalMaxLength: Int,
+                              override val themes: Seq[Theme],
+                              newVisitorCookieDefinition: String)
     extends BusinessConfig
 
 object BusinessConfig {
@@ -30,14 +30,14 @@ object BusinessConfig {
   val themes: Seq[Theme] = Seq.empty
 }
 
-object BusinessConfigFront {
+object FrontConfiguration {
   val defaultNewVisitorCookieDefinition: String = "New user"
 
   def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
               proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
               themes: Seq[Theme] = BusinessConfig.themes,
-              newVisitorCookieDefinition: String = defaultNewVisitorCookieDefinition): BusinessConfigFront =
-    BusinessConfigFront(
+              newVisitorCookieDefinition: String = defaultNewVisitorCookieDefinition): FrontConfiguration =
+    FrontConfiguration(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
       themes = themes,
@@ -45,7 +45,7 @@ object BusinessConfigFront {
     )
 }
 
-object BusinessConfigBack {
+object BackofficeConfiguration {
   val defaultNumberVotesTriggerConnexion: Int = 5
   val defaultNumberPendingProposalsTriggerEmailModerator: Int = 50
   val defaultMinProposalsPerSequence: Int = 3
@@ -61,8 +61,8 @@ object BusinessConfigBack {
               nPendingProposalsTriggerEmailModerator: Int = defaultNumberPendingProposalsTriggerEmailModerator,
               minProposalsPerSequence: Int = defaultMinProposalsPerSequence,
               maxProposalsPerSequence: Int = defaultMaxProposalsPerSequence,
-              reasonsForRefusal: Seq[String] = defaultReasonsForRefusal): BusinessConfigBack =
-    BusinessConfigBack(
+              reasonsForRefusal: Seq[String] = defaultReasonsForRefusal): BackofficeConfiguration =
+    BackofficeConfiguration(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
       themes = themes,

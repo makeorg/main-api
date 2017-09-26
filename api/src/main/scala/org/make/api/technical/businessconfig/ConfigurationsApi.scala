@@ -15,30 +15,30 @@ import org.make.core.user.User
 
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Business Config")
-@Path(value = "/")
-trait BusinessConfigApi extends MakeDirectives with MakeAuthenticationDirectives with ShortenedNames {
+@Api(value = "Configurations")
+@Path(value = "/configurations")
+trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives with ShortenedNames {
   self: MakeDataHandlerComponent with IdGeneratorComponent with ThemeServiceComponent with MakeSettingsComponent =>
 
-  @Path(value = "business_config_prod")
-  @ApiOperation(value = "business_config_prod", httpMethod = "GET", code = HttpCodes.OK)
+  @Path(value = "front")
+  @ApiOperation(value = "front-configuration", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BusinessConfigFront]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[FrontConfiguration]))
   )
-  def businessConfigProd: Route =
+  def businessConfigurationFront: Route =
     get {
-      path("business_config_prod") {
-        makeTrace("BusinessConfigFront") { _ =>
+      path("configurations" / "front") {
+        makeTrace("FrontConfiguration") { _ =>
           onSuccess(themeService.findAll()) { themes =>
-            complete(BusinessConfigFront.default(themes = themes))
+            complete(FrontConfiguration.default(themes = themes))
           }
         }
       }
     }
 
-  @Path(value = "business_config_back")
+  @Path(value = "back")
   @ApiOperation(
-    value = "business_config_back",
+    value = "backoffice-configuration",
     httpMethod = "GET",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -52,16 +52,16 @@ trait BusinessConfigApi extends MakeDirectives with MakeAuthenticationDirectives
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BusinessConfigBack]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[BackofficeConfiguration]))
   )
   def businessConfigBack: Route =
     get {
-      path("business_config_back") {
-        makeTrace("BusinessConfigBack") { _ =>
+      path("configurations" / "backoffice") {
+        makeTrace("BackofficeConfiguration") { _ =>
           makeOAuth2 { userAuth: AuthInfo[User] =>
             authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
               onSuccess(themeService.findAll()) { themes =>
-                complete(BusinessConfigBack.default(themes = themes))
+                complete(BackofficeConfiguration.default(themes = themes))
               }
             }
           }
@@ -69,6 +69,6 @@ trait BusinessConfigApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  val businessConfigRoutes: Route = businessConfigProd ~ businessConfigBack
+  val businessConfigRoutes: Route = businessConfigurationFront ~ businessConfigBack
 
 }
