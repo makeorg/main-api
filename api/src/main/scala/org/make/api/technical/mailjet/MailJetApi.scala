@@ -7,8 +7,8 @@ import akka.http.scaladsl.server.directives.Credentials.Provided
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 
 trait MailJetApi extends MakeDirectives with StrictLogging {
   this: MakeDataHandlerComponent

@@ -2,17 +2,18 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
+import org.make.core.DateHelper
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
-import com.github.t3hnar.bcrypt._
-import org.make.core.DateHelper
-import org.make.api.technical.DatabaseTransactions._
+
 import scala.concurrent.Future
 
 trait PersistentUserServiceComponent {
@@ -256,8 +257,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findUserByUserIdAndVerificationToken(userId: UserId,
-                                                      verificationToken: String): Future[Option[User]] = {
+    override def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {

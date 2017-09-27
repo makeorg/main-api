@@ -49,6 +49,7 @@ trait MakeApi
     with DefaultTagServiceComponent
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
+    with DuplicateDetectorConfigurationComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
     with DefaultEventBusServiceComponent
@@ -77,6 +78,10 @@ trait MakeApi
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
 
   override lazy val elasticsearchConfiguration: ElasticsearchConfiguration = ElasticsearchConfiguration(actorSystem)
+
+  override lazy val duplicateDetectorConfiguration: DuplicateDetectorConfiguration = DuplicateDetectorConfiguration(
+    actorSystem
+  )
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem

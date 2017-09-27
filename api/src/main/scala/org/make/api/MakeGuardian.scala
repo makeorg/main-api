@@ -2,7 +2,7 @@ package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
-import org.make.api.proposal.ProposalSupervisor
+import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSupervisor}
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
@@ -23,6 +23,8 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
+
+    context.watch(context.actorOf(DuplicateDetectorProducerActor.props, DuplicateDetectorProducerActor.name))
 
     val (props, name) =
       MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)

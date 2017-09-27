@@ -123,6 +123,39 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   }
 
   @ApiOperation(
+    value = "duplicates",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/{proposalId}/duplicates")
+  def getDuplicates: Route = {
+    get {
+      path("proposals" / proposalId / "duplicates") { proposalId =>
+        makeTrace("Duplicates") { requestContext =>
+          makeOAuth2 { userAuth =>
+            authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+              provideAsync(
+                proposalService.getDuplicates(userId = userAuth.user.userId, proposalId = proposalId, requestContext)
+              ) { proposals =>
+                complete(proposals)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  @ApiOperation(
     value = "propose-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -387,7 +420,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   }
 
   val proposalRoutes: Route =
-    postProposal ~
+    getDuplicates ~
+      postProposal ~
       getProposal ~
       updateProposal ~
       acceptProposal ~

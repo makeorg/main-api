@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.api.user.PersistentUserServiceComponent
@@ -14,7 +15,6 @@ import org.make.core.user.{User, UserId}
 import scalikejdbc._
 
 import scala.concurrent.Future
-import org.make.api.technical.DatabaseTransactions._
 
 trait PersistentTokenServiceComponent {
   def persistentTokenService: PersistentTokenService

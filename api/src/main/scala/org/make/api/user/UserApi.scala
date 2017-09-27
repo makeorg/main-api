@@ -13,12 +13,12 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.social.SocialServiceComponent
-import org.make.core.{DateHelper, HttpCodes}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.user.{Role, User, UserId}
+import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo

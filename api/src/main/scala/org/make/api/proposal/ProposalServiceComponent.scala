@@ -3,13 +3,17 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import akka.util.Timeout
-import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.userhistory.UserHistoryServiceComponent
 import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
+import org.make.semantic.text.document.Corpus
+import org.make.semantic.text.feature.{FeatureExtractor, TokenFT}
+import org.make.semantic.text.model.duplicate.{SimilarDocResult, SimpleDuplicateDetector}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -21,6 +25,9 @@ trait ProposalService {
 
   def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
+  def getDuplicates(userId: UserId,
+                    proposalId: ProposalId,
+                    requestContext: RequestContext): Future[Seq[IndexedProposal]]
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[Seq[IndexedProposal]]
   def propose(user: User, requestContext: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
   def update(proposalId: ProposalId,
@@ -50,11 +57,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserHistoryServiceComponent
-    with ProposalSearchEngineComponent =>
+    with ProposalSearchEngineComponent
+    with DuplicateDetectorConfigurationComponent
+    with EventBusServiceComponent =>
 
   override lazy val proposalService = new ProposalService {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
+
+    private val duplicateDetector: SimpleDuplicateDetector =
+      new SimpleDuplicateDetector(lang = "fr", targetFeature = TokenFT)
 
     override def getProposalById(proposalId: ProposalId,
                                  requestContext: RequestContext): Future[Option[IndexedProposal]] = {
@@ -147,6 +159,54 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
           refusalReason = request.refusalReason
         )
       )
+    }
+
+    override def getDuplicates(userId: UserId,
+                               proposalId: ProposalId,
+                               requestContext: RequestContext): Future[Seq[IndexedProposal]] = {
+      userHistoryService.logHistory(
+        LogGetProposalDuplicatesEvent(
+          userId,
+          requestContext,
+          UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposalId)
+        )
+      )
+
+      elasticsearchAPI.findProposalById(proposalId).flatMap {
+        case Some(indexedProposal) =>
+          elasticsearchAPI
+            .searchProposals(
+              SearchQuery(
+                // TODO add language filter
+                filters = Some(SearchFilters(content = Some(ContentSearchFilter(text = indexedProposal.content))))
+              )
+            )
+            .map({ possibleDuplicates: Seq[IndexedProposal] =>
+              // do duplicate detection
+              val corpus = Corpus(
+                rawCorpus = possibleDuplicates.filter(_.id != proposalId).map(_.content),
+                extractor = new FeatureExtractor(Seq.empty),
+                lang = indexedProposal.language,
+                maybeCorpusMeta = Some(possibleDuplicates.filter(_.id != proposalId))
+              )
+              val predictedResults: Seq[SimilarDocResult[IndexedProposal]] = duplicateDetector
+                .getSimilar(indexedProposal.content, corpus, duplicateDetectorConfiguration.maxResults)
+              val predictedDuplicates: Seq[IndexedProposal] = predictedResults.flatMap(_.targetDoc.document.meta)
+
+              eventBusService.publish(
+                PredictDuplicate(
+                  proposalId = proposalId,
+                  predictedDuplicates = predictedDuplicates.map(_.id),
+                  predictedScores = predictedResults.map(_.score),
+                  algoLabel = duplicateDetector.getClass.getSimpleName
+                )
+              )
+
+              predictedDuplicates
+            })
+
+        case None => Future.successful(Seq.empty)
+      }
     }
 
     override def voteProposal(proposalId: ProposalId,
