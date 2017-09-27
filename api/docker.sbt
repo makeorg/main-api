@@ -10,6 +10,7 @@ daemonUser in Docker := "user"
 packageName in Docker := "repository/docker-dev/make-api"
 
 dockerCmd := Seq(
+  "-Dfile.encoding=UTF-8",
   "-Dlog4j.configurationFile=conf/log4j2.yaml",
   "-Dconfig.file=conf/application.conf",
   "-Dcom.sun.management.jmxremote",
