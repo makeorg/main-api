@@ -42,6 +42,41 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @ApiOperation(
+    value = "get-moderation-proposal",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/moderation/{proposalId}")
+  def getModerationProposal: Route = {
+    get {
+      path("proposals" / "moderation" / proposalId) { proposalId =>
+        makeTrace("GetModerationProposal") { _ =>
+          makeOAuth2 { auth: AuthInfo[User] =>
+            requireModerationRole(auth.user) {
+              provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) { proposalResponse =>
+                complete(proposalResponse)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
@@ -424,6 +459,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     getDuplicates ~
       postProposal ~
       getProposal ~
+      getModerationProposal ~
       updateProposal ~
       acceptProposal ~
       refuseProposal ~

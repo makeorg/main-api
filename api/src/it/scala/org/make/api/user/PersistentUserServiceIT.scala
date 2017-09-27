@@ -47,7 +47,43 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = Some(profile)
   )
 
-  feature("The app can persist a user") {
+  val jennaDoo = User(
+    userId = UserId("2"),
+    email = "jennaDoo@example.com",
+    firstName = Some("Jenna"),
+    lastName = Some("Doo"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    verified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleCitizen),
+    profile = None
+  )
+
+  val janeDee = User(
+    userId = UserId("3"),
+    email = "janeDee@example.com",
+    firstName = Some("Jane"),
+    lastName = Some("Dee"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    verified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin),
+    profile = None
+  )
+
+  feature("The app can persist and retrieve users") {
     info("As a programmer")
     info("I want to be able to persist a user")
 
@@ -104,6 +140,33 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user karmaLevel must be 2")
         user.profile.get.karmaLevel.get shouldBe 2
+      }
+    }
+
+    scenario("persist multiple users and get by multiple ids") {
+      Given("""
+          |Two users "Jenna Doo" and "Jane Dee"
+        """.stripMargin)
+      When("""
+          |I persist two users "Jenna Doo" and "Jane Dee"
+        """.stripMargin)
+      And("I get the persisted users by ids")
+      val futureUsers: Future[Seq[User]] =
+        for {
+          _        <- persistentUserService.persist(jennaDoo)
+          _        <- persistentUserService.persist(janeDee)
+          allUsers <- persistentUserService.findAllByUserIds(Seq(jennaDoo.userId, janeDee.userId))
+        } yield allUsers
+
+      whenReady(futureUsers, Timeout(3.seconds)) { results =>
+        Then("results should be an instance of Seq[User]")
+        results shouldBe a[Seq[_]]
+        results.size should be > 0
+        results.head shouldBe a[User]
+
+        And("""results should have at least "Jenna Doo" and "Jane Dee"""")
+        results.exists(_.userId.value == jennaDoo.userId.value) shouldBe true
+        results.exists(_.userId.value == janeDee.userId.value) shouldBe true
       }
     }
   }

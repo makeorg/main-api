@@ -3,13 +3,16 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import akka.util.Timeout
+import cats.data.OptionT
+import cats.implicits._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryServiceComponent
 import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.make.semantic.text.document.Corpus
 import org.make.semantic.text.feature.{FeatureExtractor, TokenFT}
 import org.make.semantic.text.model.duplicate.{SimilarDocResult, SimpleDuplicateDetector}
@@ -25,6 +28,7 @@ trait ProposalServiceComponent {
 trait ProposalService {
 
   def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
+  def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]]
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
@@ -58,14 +62,15 @@ trait ProposalService {
                      voteKey: VoteKey): Future[Option[Vote]]
 }
 
-trait DefaultProposalServiceComponent extends ProposalServiceComponent {
+trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters {
   this: IdGeneratorComponent
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserHistoryServiceComponent
     with ProposalSearchEngineComponent
     with DuplicateDetectorConfigurationComponent
-    with EventBusServiceComponent =>
+    with EventBusServiceComponent
+    with UserServiceComponent =>
 
   override lazy val proposalService = new ProposalService {
 
@@ -78,6 +83,55 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
                                  requestContext: RequestContext): Future[Option[IndexedProposal]] = {
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
       elasticsearchAPI.findProposalById(proposalId)
+    }
+
+    private def proposalResponse(proposal: Proposal, author: User): Future[Option[ProposalResponse]] = {
+      val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
+      val futureEventsUsers: Future[Seq[UserResponse]] =
+        userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
+
+      futureEventsUsers.map { eventsUsers =>
+        val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
+          ProposalActionResponse(
+            date = action.date,
+            user = eventsUsers.find(_.userId.value == action.user.value),
+            actionType = action.actionType,
+            arguments = action.arguments
+          )
+        }
+        Some(
+          ProposalResponse(
+            proposalId = proposal.proposalId,
+            slug = proposal.slug,
+            content = proposal.content,
+            author = UserResponse(author),
+            labels = proposal.labels,
+            theme = proposal.theme,
+            status = proposal.status,
+            refusalReason = proposal.refusalReason,
+            tags = proposal.tags,
+            votes = proposal.votes,
+            creationContext = proposal.creationContext,
+            createdAt = proposal.createdAt,
+            updatedAt = proposal.updatedAt,
+            events = events
+          )
+        )
+      }
+    }
+
+    override def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]] = {
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
     }
 
     override def getEventSourcingProposal(proposalId: ProposalId,

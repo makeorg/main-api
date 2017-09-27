@@ -25,6 +25,7 @@ trait UserServiceComponent {
 trait UserService extends ShortenedNames {
   def getUser(uuid: UserId): Future[Option[User]]
   def getUser(uuid: String): Future[Option[User]]
+  def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User]
   def requestPasswordReset(userId: UserId): Unit
@@ -58,6 +59,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getUser(uuid: String): Future[Option[User]] = {
       persistentUserService.get(UserId(uuid))
+    }
+
+    override def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {
+      persistentUserService.findAllByUserIds(ids)
     }
 
     private def registerUser(userRegisterData: UserRegisterData,
