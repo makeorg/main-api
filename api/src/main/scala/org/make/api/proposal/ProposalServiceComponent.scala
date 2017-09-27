@@ -3,7 +3,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import akka.util.Timeout
-import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.userhistory.UserHistoryServiceComponent
 import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
 import org.make.core.proposal.{SearchQuery, _}
@@ -11,7 +11,7 @@ import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.make.semantic.text.document.Corpus
 import org.make.semantic.text.feature.{FeatureExtractor, TokenFT}
-import org.make.semantic.text.model.duplicate.SimpleDuplicateDetector
+import org.make.semantic.text.model.duplicate.{SimilarDocResult, SimpleDuplicateDetector}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,7 +58,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     with ProposalCoordinatorServiceComponent
     with UserHistoryServiceComponent
     with ProposalSearchEngineComponent
-    with DuplicateDetectorConfigurationComponent =>
+    with DuplicateDetectorConfigurationComponent
+    with EventBusServiceComponent =>
 
   override lazy val proposalService = new ProposalService {
 
@@ -186,11 +187,22 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
                 rawCorpus = possibleDuplicates.filter(_.id != proposalId).map(_.content),
                 extractor = new FeatureExtractor(Seq.empty),
                 lang = indexedProposal.language,
-                maybeCorpusMeta = Some(possibleDuplicates)
+                maybeCorpusMeta = Some(possibleDuplicates.filter(_.id != proposalId))
               )
-              duplicateDetector
+              val predictedResults: Seq[SimilarDocResult[IndexedProposal]] = duplicateDetector
                 .getSimilar(indexedProposal.content, corpus, duplicateDetectorConfiguration.maxResults)
-                .flatMap(_.targetDoc.document.meta)
+              val predictedDuplicates: Seq[IndexedProposal] = predictedResults.flatMap(_.targetDoc.document.meta)
+
+              eventBusService.publish(
+                PredictDuplicate(
+                  proposalId = proposalId,
+                  predictedDuplicates = predictedDuplicates.map(_.id),
+                  predictedScores = predictedResults.map(_.score),
+                  algoLabel = duplicateDetector.getClass.getSimpleName
+                )
+              )
+
+              predictedDuplicates
             })
 
         case None => Future.successful(Seq.empty)
