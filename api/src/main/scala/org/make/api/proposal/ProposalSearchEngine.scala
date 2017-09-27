@@ -36,24 +36,26 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
-    private val proposalIndex: IndexAndType = "proposals" / "proposal"
+    private val proposalIndex: IndexAndType = elasticsearchConfiguration.indexName / "proposal"
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.execute(get(id = proposalId.value).from(proposalIndex)).map(_.toOpt[IndexedProposal])
     }
 
     override def searchProposals(searchQuery: SearchQuery): Future[Seq[IndexedProposal]] = {
+      // parse json string to build search query
+      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
+      val request = search(proposalIndex)
+        .bool(BoolQueryDefinition(must = searchFilters))
+        .sortBy(SearchFilters.getSort(searchQuery))
+        .from(SearchFilters.getSkipSearch(searchQuery))
+        .size(SearchFilters.getLimitSearch(searchQuery))
+
+      logger.debug(client.show(request))
+
       client.execute {
-        // parse json string to build search query
-        val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-
-        // build search query
-        search(proposalIndex)
-          .bool(BoolQueryDefinition(must = searchFilters))
-          .sortBy(SearchFilters.getSort(searchQuery))
-          .from(SearchFilters.getSkipSearch(searchQuery))
-          .size(SearchFilters.getLimitSearch(searchQuery))
-
+        request
       }.map { response =>
         response.to[IndexedProposal]
       }

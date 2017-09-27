@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
+import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -16,6 +17,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   override implicit val actorSystem: ActorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)
+  actorSystem.registerExtension(ElasticsearchConfiguration)
   actorSystem.actorOf(MakeGuardian.props(userService = userService), MakeGuardian.name)
 
   private val settings = MakeSettings(actorSystem)
