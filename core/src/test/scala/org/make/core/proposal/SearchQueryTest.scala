@@ -3,11 +3,12 @@ package org.make.core.proposal
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.http.ElasticDsl
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 import org.scalatest.mockito.MockitoSugar
 
-class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers {
+class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
   val themeValue = "Theme"
   val themeFilter = ThemeSearchFilter(Seq(themeValue))
   val tagValue = "Tag1"
@@ -74,7 +75,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       Given("a searchFilter")
       When("call buildLabelsSearchFilter with SearchQuery")
       val labelsSearchFilterResult = SearchFilters.buildLabelsSearchFilter(searchQuery)
-      labelsSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.labelId, labelValue))
+      labelsSearchFilterResult shouldBe Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labelValue))
     }
 
     scenario("build ContentSearchFilter from Search filter") {
