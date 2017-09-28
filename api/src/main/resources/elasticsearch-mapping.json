@@ -81,15 +81,8 @@
           "index": true
         },
         "labels": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "text"
-            },
-            "id": {
-              "type": "text"
-            }
-          }
+          "type": "keyword",
+          "index": true
         },
         "author": {
          "type": "object",
