@@ -19,9 +19,9 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
   val connectionString: String = configuration.getString("connection-string")
   val indexName: String = configuration.getString("index-name")
   // create index
-  val elasticSearchMapping = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
+  val elasticSearchMapping: String = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
 
-  private val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://${connectionString}"))
+  private val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
 
   client.execute {
     createIndex(indexName).source(elasticSearchMapping)

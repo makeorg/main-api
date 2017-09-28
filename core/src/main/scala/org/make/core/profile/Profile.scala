@@ -19,12 +19,14 @@ object Gender extends StrictLogging {
 
   val genders: Map[String, Gender] = Map(Male.shortName -> Male, Female.shortName -> Female, Other.shortName -> Other)
 
-  def matchGender(gender: String): Option[Gender] = {
-    val maybeGender = genders.get(gender)
-    if (maybeGender.isEmpty) {
-      logger.warn(s"$gender is not a gender")
+  def matchGender(genderOrNull: String): Option[Gender] = {
+    Option(genderOrNull).flatMap { gender =>
+      val maybeGender = genders.get(gender)
+      if (maybeGender.isEmpty) {
+        logger.warn(s"$gender is not a gender")
+      }
+      maybeGender
     }
-    maybeGender
   }
 
   case object Male extends Gender {
