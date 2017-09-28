@@ -2,7 +2,7 @@ enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
 
-dockerBaseImage := "nexus.prod.makeorg.tech/repository/docker-dev/java:8"
+dockerBaseImage := "makeorg/centos-java:latest"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
 dockerRepository := Some("nexus.prod.makeorg.tech")
