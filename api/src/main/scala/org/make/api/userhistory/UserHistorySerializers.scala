@@ -70,7 +70,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
     DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)
 
   implicit val userProposalFormatted: RootJsonFormat[UserProposal] =
-    DefaultJsonProtocol.jsonFormat1(UserProposal.apply)
+    DefaultJsonProtocol.jsonFormat2(UserProposal.apply)
 
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
     DefaultJsonProtocol.jsonFormat6(UserRegistered.apply)

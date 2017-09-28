@@ -69,7 +69,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
         action = UserAction(
           date = event.eventDate,
           actionType = LogUserProposalEvent.action,
-          arguments = UserProposal(content = event.content)
+          arguments = UserProposal(content = event.content, event.theme)
         )
       )
     )

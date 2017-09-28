@@ -44,7 +44,8 @@ object ProposalEvent {
                                     author: ProposalAuthorInfo,
                                     userId: UserId,
                                     eventDate: ZonedDateTime,
-                                    content: String)
+                                    content: String,
+                                    theme: Option[ThemeId] = None)
       extends ProposalEvent
 
   object ProposalProposed {

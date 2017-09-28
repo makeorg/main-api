@@ -31,10 +31,10 @@ object Proposal extends SimulationConfig {
       record("username")
     }
 
-  private val userFeeder = ssv(userFeederPath)
+  private val userFeeder = ssv(userFeederPath, '"', '\\')
   private val defaultPause = 0
 
-  val scnRegister: ScenarioBuilder = scenario("Create proposal without theme")
+  val scnRegister: ScenarioBuilder = scenario("Create proposal with theme")
     .feed(userFeeder.circular)
     .exec(
       session =>
@@ -47,7 +47,7 @@ object Proposal extends SimulationConfig {
           mayBeProposals.map { proposals =>
             proposals(ThreadLocalRandom.current.nextInt(proposals.length))
             val selectedProposal = proposals(ThreadLocalRandom.current.nextInt(proposals.length))
-            session.set("content", selectedProposal("content"))
+            session.set("content", selectedProposal("content")).set("theme", selectedProposal("theme"))
           }.getOrElse(session)
       }
     )

@@ -182,8 +182,10 @@ class ProposalApiTest
     "Il faut que le texte de la proposition n'exède pas une certaine limite, par exemple 140 caractères car sinon, " +
       "ça fait vraiment troooooop long. D'un autre côté on en dit peu en 140 caractères..."
 
-  when(proposalService.propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText)))
-    .thenReturn(Future.successful(ProposalId("my-proposal-id")))
+  when(
+    proposalService
+      .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Option[ThemeId]])
+  ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   when(
     proposalService

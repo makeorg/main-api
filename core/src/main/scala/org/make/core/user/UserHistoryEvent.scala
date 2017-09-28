@@ -5,6 +5,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.proposal.indexed.VoteKey
 import org.make.core.proposal.{ProposalId, SearchQuery}
+import org.make.core.reference.ThemeId
 import org.make.core.{MakeSerializable, RequestContext}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
@@ -29,7 +30,7 @@ final case class UserRegistered(email: String,
                                 profession: Option[String],
                                 postalCode: Option[String])
 
-final case class UserProposal(content: String)
+final case class UserProposal(content: String, theme: Option[ThemeId])
 
 final case class UserVote(voteKey: VoteKey)
 
