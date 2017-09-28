@@ -194,7 +194,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                       user = auth.user,
                       requestContext = requestContext,
                       createdAt = DateHelper.now(),
-                      content = request.content
+                      content = request.content,
+                      theme = request.theme
                     )
                 ) { proposalId =>
                   complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))

@@ -8,7 +8,7 @@ import org.make.core.Validation.{maxLength, validate}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 
-final case class ProposeProposalRequest(content: String) {
+final case class ProposeProposalRequest(content: String, theme: Option[ThemeId]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   validate(maxLength("content", maxProposalLength, content))
 }

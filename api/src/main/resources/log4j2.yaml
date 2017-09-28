@@ -29,6 +29,18 @@ Configuration:
         AppenderRef:
           - ref: AkkaConsole
           - ref: console
+      - name: org.apache.http
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: org.apache.http.wire
+        level: error
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
       - name: akka.event.slf4j
         level: debug
         additivity: false

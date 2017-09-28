@@ -16,7 +16,8 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 requestContext: RequestContext,
                                 user: User,
                                 createdAt: ZonedDateTime,
-                                content: String)
+                                content: String,
+                                theme: Option[ThemeId] = None)
     extends ProposalCommand
 
 final case class UpdateProposalCommand(proposalId: ProposalId,

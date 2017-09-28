@@ -7,6 +7,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.userhistory.UserHistoryServiceComponent
 import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey}
 import org.make.core.proposal.{SearchQuery, _}
+import org.make.core.reference.ThemeId
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.make.semantic.text.document.Corpus
@@ -29,7 +30,12 @@ trait ProposalService {
                     proposalId: ProposalId,
                     requestContext: RequestContext): Future[Seq[IndexedProposal]]
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[Seq[IndexedProposal]]
-  def propose(user: User, requestContext: RequestContext, createdAt: ZonedDateTime, content: String): Future[ProposalId]
+  def propose(user: User,
+              requestContext: RequestContext,
+              createdAt: ZonedDateTime,
+              content: String,
+              theme: Option[ThemeId]): Future[ProposalId]
+  // toDo: add theme
   def update(proposalId: ProposalId,
              requestContext: RequestContext,
              updatedAt: ZonedDateTime,
@@ -97,7 +103,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
     override def propose(user: User,
                          requestContext: RequestContext,
                          createdAt: ZonedDateTime,
-                         content: String): Future[ProposalId] = {
+                         content: String,
+                         theme: Option[ThemeId]): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -105,7 +112,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent {
           requestContext = requestContext,
           user = user,
           createdAt = createdAt,
-          content = content
+          content = content,
+          theme = theme
         )
       )
     }

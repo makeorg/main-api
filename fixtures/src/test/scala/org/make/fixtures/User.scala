@@ -17,7 +17,7 @@ object User extends SimulationConfig {
     .userAgentHeader(defaultUserAgent)
     .disableCaching
 
-  private val userFeeder = ssv(userFeederPath)
+  private val userFeeder = ssv(userFeederPath, '"', '\\')
   private val defaultPause = 2
 
   val scnRegister: ScenarioBuilder = scenario("Register user")

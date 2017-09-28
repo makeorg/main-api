@@ -87,7 +87,8 @@ class ProposalActor extends PersistentActor with ActorLogging {
         requestContext = command.requestContext,
         userId = user.userId,
         eventDate = command.createdAt,
-        content = command.content
+        content = command.content,
+        theme = command.theme
       )
     ) {
       sender() ! proposalId
@@ -298,7 +299,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           updatedAt = None,
           content = e.content,
           status = ProposalStatus.Pending,
-          theme = e.requestContext.currentTheme,
+          theme = if (e.theme.isEmpty) e.requestContext.currentTheme else e.theme,
           creationContext = e.requestContext,
           labels = Seq.empty,
           votes = Seq(
