@@ -64,6 +64,7 @@ lazy val buildTime: SettingKey[String] = SettingKey[String]("buildTime", "time o
 buildTime := ZonedDateTime.now(ZoneOffset.UTC).toString
 
 enablePlugins(BuildInfoPlugin)
+enablePlugins(SbtAspectj)
 
 buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, gitHeadCommit, buildTime, swaggerUiVersion)
 
@@ -71,9 +72,7 @@ fork in run := true
 fork in Test := true
 fork in IntegrationTest := true
 
-aspectjSettings
-
-javaOptions ++= (AspectjKeys.weaverOptions in Aspectj).value
+javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
 javaOptions in run += "-Dconfig.resource=default-application.conf"
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
