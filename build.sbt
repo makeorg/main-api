@@ -1,6 +1,6 @@
-import sbt.Keys.scalacOptions
-import Tasks.{testScalastyle, _}
+import Tasks._
 import org.make.GitHooks
+import sbt.Keys.scalacOptions
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -37,10 +37,6 @@ lazy val commonSettings = Seq(
   resolvers += "Confluent Releases".at("http://packages.confluent.io/maven/"),
   resolvers += "Sonatype Nexus Repository Manager".at("https://nexus.prod.makeorg.tech/repository/maven-public/"),
   scalastyleFailOnError := true,
-  compileScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("").value,
-  testScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Test).toTask("").value,
-  (compile in Compile) := (compile in Compile).dependsOn(compileScalastyle).value,
-  (test in Test) := (test in Test).dependsOn(testScalastyle).value,
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint",
