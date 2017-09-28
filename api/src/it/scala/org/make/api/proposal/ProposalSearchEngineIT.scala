@@ -36,6 +36,7 @@ class ProposalSearchEngineIT
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$defaultElasticsearchPortExposed")
+  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchIndex)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -49,7 +50,7 @@ class ProposalSearchEngineIT
     val databaseEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
 
     // register index
-    val proposalMapping = Source.fromResource("proposal-mapping.json").getLines().mkString("")
+    val proposalMapping = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
