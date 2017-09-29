@@ -71,12 +71,6 @@ class ProposalApiTest
   val refuseProposalWithReasonEntity: String =
     RefuseProposalRequest(sendNotificationEmail = true, refusalReason = Some("not allowed word")).asJson.toString
 
-  val voteProposalEntity: String =
-    VoteProposalRequest(key = "agree").asJson.toString
-
-  val wrongVoteProposalEntity: String =
-    VoteProposalRequest(key = "wrong").asJson.toString
-
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))

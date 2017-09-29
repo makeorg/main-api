@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.Vote
+import org.make.core.proposal.indexed.{Qualification, Vote}
 import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,6 +39,8 @@ trait ProposalCoordinatorService {
   def refuse(command: RefuseProposalCommand): Future[Option[Proposal]]
   def vote(command: VoteProposalCommand): Future[Option[Vote]]
   def unvote(command: UnvoteProposalCommand): Future[Option[Vote]]
+  def qualification(command: QualifyVoteCommand): Future[Option[Qualification]]
+  def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]]
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -89,6 +91,14 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def unvote(command: UnvoteProposalCommand): Future[Option[Vote]] = {
       (proposalCoordinator ? command).mapTo[Option[Vote]]
+    }
+
+    override def qualification(command: QualifyVoteCommand): Future[Option[Qualification]] = {
+      (proposalCoordinator ? command).mapTo[Option[Qualification]]
+    }
+
+    override def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]] = {
+      (proposalCoordinator ? command).mapTo[Option[Qualification]]
     }
   }
 }

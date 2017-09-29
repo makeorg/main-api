@@ -10,7 +10,6 @@
           "type": "keyword",
           "index": true
         },
-
         "content": {
           "type": "text",
           "fields": {
@@ -107,7 +106,8 @@
               "index": true
             },
             "id": {
-              "type": "text"
+              "type": "keyword",
+              "index": true
             }
           }
         },

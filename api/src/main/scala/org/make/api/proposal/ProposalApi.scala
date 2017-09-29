@@ -11,7 +11,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, Vote, VoteKey, VoteResponse}
+import org.make.core.proposal.indexed._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
 import org.make.core.{DateHelper, HttpCodes}
@@ -384,7 +384,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.VoteProposalRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[VoteResponse])))
   @Path(value = "/{proposalId}/vote")
   def vote: Route = post {
     path("proposals" / proposalId / "vote") { proposalId =>
@@ -392,22 +392,15 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
-              val maybeVoteKey = VoteKey.matchVoteKey(request.key)
-              maybeVoteKey match {
-                case None => complete(StatusCodes.BadRequest)
-                case Some(voteKey) =>
-                  provideAsync(
-                    proposalService.voteProposal(
-                      proposalId = proposalId,
-                      userId = maybeAuth.map(_.user.userId),
-                      requestContext = requestContext,
-                      voteKey = voteKey
-                    )
-                  ) {
-                    case Some(vote) =>
-                      complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(StatusCodes.NotFound)
-                  }
+              provideAsyncOrNotFound(
+                proposalService.voteProposal(
+                  proposalId = proposalId,
+                  maybeUserId = maybeAuth.map(_.user.userId),
+                  requestContext = requestContext,
+                  voteKey = request.voteKey
+                )
+              ) { vote: Vote =>
+                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
               }
             }
           }
@@ -423,7 +416,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.VoteProposalRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Vote])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[VoteResponse])))
   @Path(value = "/{proposalId}/unvote")
   def unvote: Route = post {
     path("proposals" / proposalId / "unvote") { proposalId =>
@@ -431,22 +424,99 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
-              val maybeVoteKey = VoteKey.matchVoteKey(request.key)
-              maybeVoteKey match {
-                case None => complete(StatusCodes.BadRequest)
-                case Some(voteKey) =>
-                  provideAsync(
-                    proposalService.unvoteProposal(
-                      proposalId = proposalId,
-                      userId = maybeAuth.map(_.user.userId),
-                      requestContext = requestContext,
-                      voteKey = voteKey
-                    )
-                  ) {
-                    case Some(vote) =>
-                      complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
-                    case None => complete(StatusCodes.NotFound)
-                  }
+              provideAsyncOrNotFound(
+                proposalService.unvoteProposal(
+                  proposalId = proposalId,
+                  maybeUserId = maybeAuth.map(_.user.userId),
+                  requestContext = requestContext,
+                  voteKey = request.voteKey
+                )
+              ) { vote: Vote =>
+                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "qualification-vote", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.QualificationProposalRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QualificationResponse]))
+  )
+  @Path(value = "/{proposalId}/qualification")
+  def qualification: Route = post {
+    path("proposal" / proposalId / "qualification") { proposalId =>
+      makeTrace("QualificationProposal") { requestContext =>
+        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
+          decodeRequest {
+            entity(as[QualificationProposalRequest]) { request =>
+              provideAsyncOrNotFound(
+                proposalService.qualifyVote(
+                  proposalId = proposalId,
+                  maybeUserId = maybeAuth.map(_.user.userId),
+                  requestContext = requestContext,
+                  voteKey = request.voteKey,
+                  qualificationKey = request.qualificationKey
+                )
+              ) { qualification: Qualification =>
+                complete(
+                  QualificationResponse
+                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "unqualification-vote", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.QualificationProposalRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QualificationResponse]))
+  )
+  @Path(value = "/{proposalId}/unqualification")
+  def unqualification: Route = post {
+    path("proposal" / proposalId / "unqualification") { proposalId =>
+      makeTrace("UnqualificationProposal") { requestContext =>
+        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
+          decodeRequest {
+            entity(as[QualificationProposalRequest]) { request =>
+              provideAsyncOrNotFound(
+                proposalService.unqualifyVote(
+                  proposalId = proposalId,
+                  maybeUserId = maybeAuth.map(_.user.userId),
+                  requestContext = requestContext,
+                  voteKey = request.voteKey,
+                  qualificationKey = request.qualificationKey
+                )
+              ) { qualification: Qualification =>
+                complete(
+                  QualificationResponse
+                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
+                )
               }
             }
           }
@@ -466,7 +536,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       search ~
       searchAll ~
       vote ~
-      unvote
+      unvote ~
+      qualification ~
+      unqualification
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

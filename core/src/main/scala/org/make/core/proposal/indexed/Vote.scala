@@ -34,24 +34,16 @@ object VoteKey extends StrictLogging {
 final case class Vote(key: VoteKey,
                       count: Int = 0,
                       qualifications: Seq[Qualification],
-                      userIds: Seq[UserId] = Seq(),
-                      sessionIds: Seq[String] = Seq())
+                      userIds: Seq[UserId] = Seq.empty,
+                      sessionIds: Seq[String] = Seq.empty)
 
-final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification])
+final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
 
 object IndexedVote {
   def apply(vote: Vote): IndexedVote =
-    IndexedVote(key = vote.key, count = vote.count, qualifications = vote.qualifications)
-}
-
-final case class VoteResponse(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification], hasVoted: Boolean)
-
-object VoteResponse {
-  def parseVote(vote: Vote, maybeUserId: Option[UserId], sessionId: String): VoteResponse =
-    VoteResponse(
+    IndexedVote(
       key = vote.key,
       count = vote.count,
-      qualifications = vote.qualifications,
-      hasVoted = vote.userIds.contains(maybeUserId.getOrElse(UserId(""))) || vote.sessionIds.contains(sessionId)
+      qualifications = vote.qualifications.map(IndexedQualification.apply)
     )
 }

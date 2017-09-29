@@ -2,6 +2,7 @@ package org.make.core.proposal.indexed
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
+import org.make.core.user.UserId
 
 sealed trait QualificationKey { val shortName: String }
 
@@ -47,4 +48,14 @@ object QualificationKey extends StrictLogging {
   case object DoNotCare extends QualificationKey { override val shortName: String = "doNotCare" }
 }
 
-final case class Qualification(key: QualificationKey, count: Int = 0)
+final case class Qualification(key: QualificationKey,
+                               count: Int = 0,
+                               userIds: Seq[UserId] = Seq.empty,
+                               sessionIds: Seq[String] = Seq.empty)
+
+final case class IndexedQualification(key: QualificationKey, count: Int = 0)
+
+object IndexedQualification {
+  def apply(qualification: Qualification): IndexedQualification =
+    IndexedQualification(key = qualification.key, count = qualification.count)
+}

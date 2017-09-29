@@ -37,13 +37,15 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case _: ProposalViewed       => Future.successful {}
-      case event: ProposalUpdated  => onCreateOrUpdate(event)
-      case event: ProposalProposed => onCreateOrUpdate(event)
-      case event: ProposalAccepted => onCreateOrUpdate(event)
-      case event: ProposalRefused  => onCreateOrUpdate(event)
-      case event: ProposalVoted    => onCreateOrUpdate(event)
-      case event: ProposalUnvoted  => onCreateOrUpdate(event)
+      case _: ProposalViewed          => Future.successful {}
+      case event: ProposalUpdated     => onCreateOrUpdate(event)
+      case event: ProposalProposed    => onCreateOrUpdate(event)
+      case event: ProposalAccepted    => onCreateOrUpdate(event)
+      case event: ProposalRefused     => onCreateOrUpdate(event)
+      case event: ProposalVoted       => onCreateOrUpdate(event)
+      case event: ProposalUnvoted     => onCreateOrUpdate(event)
+      case event: ProposalQualified   => onCreateOrUpdate(event)
+      case event: ProposalUnqualified => onCreateOrUpdate(event)
     }
 
   }
@@ -56,6 +58,8 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
+    implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
+    implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
