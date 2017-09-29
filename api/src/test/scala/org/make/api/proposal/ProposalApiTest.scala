@@ -347,4 +347,10 @@ class ProposalApiTest
     // Todo: implement this test
     scenario("refusing proposal without reason with admin role: this test should be done") {}
   }
+
+  // Todo: implement this test suite. Test the behaviour of the service.
+  feature("get proposal for moderation") {
+    scenario("get new proposal without history") {}
+    scenario("get validated proposal gives history with moderator") {}
+  }
 }

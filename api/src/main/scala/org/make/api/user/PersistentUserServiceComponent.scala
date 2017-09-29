@@ -60,7 +60,7 @@ object PersistentUserServiceComponent {
         firstName = firstName,
         lastName = lastName,
         lastIp = lastIp,
-        hashedPassword = Some(hashedPassword),
+        hashedPassword = Option(hashedPassword),
         enabled = enabled,
         verified = verified,
         lastConnection = lastConnection,
@@ -178,7 +178,9 @@ object PersistentUserServiceComponent {
 }
 
 trait PersistentUserService {
+
   def get(uuid: UserId): Future[Option[User]]
+  def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -216,6 +218,19 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
+    def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.in(userAlias.uuid, ids.map(_.value)))
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+    }
+
     override def findByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
@@ -224,8 +239,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
-      }).map(_.filter { persistenUser =>
-        password.isBcrypted(persistenUser.hashedPassword)
+      }).map(_.filter { persistentUser =>
+        password.isBcrypted(persistentUser.hashedPassword)
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -257,7 +272,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]] = {
+    override def findUserByUserIdAndVerificationToken(userId: UserId,
+                                                      verificationToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
