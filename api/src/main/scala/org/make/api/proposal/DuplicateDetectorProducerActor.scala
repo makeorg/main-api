@@ -6,9 +6,9 @@ import org.make.api.technical.ProducerActor
 
 class DuplicateDetectorProducerActor extends ProducerActor {
 
-  override protected val eventClass: Class[PredictDuplicate] = classOf[PredictDuplicate]
-  override protected val format: RecordFormat[PredictDuplicate] = RecordFormat[PredictDuplicate]
-  override protected val schema: SchemaFor[PredictDuplicate] = SchemaFor[PredictDuplicate]
+  override protected lazy val eventClass: Class[PredictDuplicate] = classOf[PredictDuplicate]
+  override protected lazy val format: RecordFormat[PredictDuplicate] = RecordFormat[PredictDuplicate]
+  override protected lazy val schema: SchemaFor[PredictDuplicate] = SchemaFor[PredictDuplicate]
 
   val kafkaTopic: String = kafkaConfiguration.topics(DuplicateDetectorProducerActor.topicKey)
 
