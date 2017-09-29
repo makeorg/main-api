@@ -90,7 +90,6 @@ lazy val api = project
   .dependsOn(core)
 
 isSnapshot in ThisBuild := false
-publishArtifact in ThisBuild := false
 
 git.formattedShaVersion := git.gitHeadCommit.value map { sha => sha.take(7) }
 
