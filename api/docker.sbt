@@ -24,11 +24,9 @@ dockerCmd := Seq(
 publishLocal := {
   (packageBin in Universal).value
   (publishLocal in Docker).value
-  publishLocal.value
 }
 
 publish := {
   (packageBin in Universal).value
   (publish in Docker).value
-  publish.value
 }
