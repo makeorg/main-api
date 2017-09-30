@@ -5,8 +5,11 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
+import org.make.core.SprayJsonFormatters._
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 /**
   * The class holding the entire search query
@@ -20,6 +23,12 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
                        sorts: Seq[Sort] = Seq.empty,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None)
+
+object SearchQuery {
+  implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
+    DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)
+
+}
 
 /**
   * The class holding the filters
@@ -38,6 +47,9 @@ case class SearchFilters(theme: Option[ThemeSearchFilter] = None,
                          context: Option[ContextSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
+
+  implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
+    DefaultJsonProtocol.jsonFormat6(SearchFilters.apply)
 
   def parse(theme: Option[ThemeSearchFilter] = None,
             tags: Option[TagsSearchFilter] = None,
@@ -202,25 +214,78 @@ case class ThemeSearchFilter(themeIds: Seq[String]) {
   validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
 }
 
+object ThemeSearchFilter {
+  implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
+
+}
+
 case class TagsSearchFilter(tagIds: Seq[String]) {
   validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
+}
+
+object TagsSearchFilter {
+  implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
+
 }
 
 case class LabelsSearchFilter(labelIds: Seq[String]) {
   validate(validateField("labelId", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
+object LabelsSearchFilter {
+  implicit val labelsSearchFilterFormatted: RootJsonFormat[LabelsSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(LabelsSearchFilter.apply)
+
+}
+
 case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
 
+object ContentSearchFilter {
+  implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
+    DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
+
+}
+
 case class StatusSearchFilter(status: ProposalStatus)
+
+object StatusSearchFilter {
+  implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
+
+}
 
 case class ContextSearchFilter(operation: Option[String],
                                source: Option[String],
                                location: Option[String],
                                question: Option[String])
 
+object ContextSearchFilter {
+  implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
+    DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
+
+}
+
 case class Sort(field: Option[String], mode: Option[SortOrder])
+
+object Sort {
+  implicit val sortFormatted: RootJsonFormat[Sort] =
+    DefaultJsonProtocol.jsonFormat2(Sort.apply)
+}
 
 case class Limit(value: Int)
 
+object Limit {
+  implicit val limitFormatted: RootJsonFormat[Limit] =
+    DefaultJsonProtocol.jsonFormat1(Limit.apply)
+
+}
+
 case class Skip(value: Int)
+
+object Skip {
+  implicit val skipFormatted: RootJsonFormat[Skip] =
+    DefaultJsonProtocol.jsonFormat1(Skip.apply)
+
+}

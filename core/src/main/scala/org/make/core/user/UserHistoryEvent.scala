@@ -7,8 +7,21 @@ import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.ThemeId
 import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.{MakeSerializable, RequestContext}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
+import org.make.core.SprayJsonFormatters._
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
+
+object UserAction {
+  implicit def userActionUserRegisteredFormatted[T](
+    implicit formatter: RootJsonFormat[T]
+  ): RootJsonFormat[UserAction[T]] =
+    DefaultJsonProtocol.jsonFormat3[ZonedDateTime, String, T, UserAction[T]](
+      (date: ZonedDateTime, action: String, parameter: T) => UserAction[T](date, action, parameter)
+    )
+
+}
 
 sealed trait Protagonist
 
@@ -23,6 +36,13 @@ sealed trait UserHistoryEvent[T] extends MakeSerializable {
 }
 
 final case class SearchParameters(query: SearchQuery)
+
+object SearchParameters {
+  implicit val searchParametersFormatted: RootJsonFormat[SearchParameters] =
+    DefaultJsonProtocol.jsonFormat1(SearchParameters.apply)
+
+}
+
 final case class UserRegistered(email: String,
                                 dateOfBirth: Option[LocalDate],
                                 firstName: Option[String],
@@ -30,11 +50,35 @@ final case class UserRegistered(email: String,
                                 profession: Option[String],
                                 postalCode: Option[String])
 
+object UserRegistered {
+  implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
+    DefaultJsonProtocol.jsonFormat6(UserRegistered.apply)
+
+}
+
 final case class UserProposal(content: String, theme: Option[ThemeId])
+
+object UserProposal {
+  implicit val userProposalFormatted: RootJsonFormat[UserProposal] =
+    DefaultJsonProtocol.jsonFormat2(UserProposal.apply)
+
+}
 
 final case class UserVote(voteKey: VoteKey)
 
+object UserVote {
+  implicit val userVoteFormatted: RootJsonFormat[UserVote] =
+    DefaultJsonProtocol.jsonFormat1(UserVote.apply)
+
+}
+
 final case class UserQualification(voteKey: VoteKey, qualificationKey: QualificationKey)
+
+object UserQualification {
+  implicit val userQualifFormatted: RootJsonFormat[UserQualification] =
+    DefaultJsonProtocol.jsonFormat2(UserQualification.apply)
+
+}
 
 final case class LogSearchProposalsEvent(userId: UserId,
                                          requestContext: RequestContext,
@@ -46,6 +90,10 @@ final case class LogSearchProposalsEvent(userId: UserId,
 // User actions
 object LogSearchProposalsEvent {
   val action: String = "search"
+
+  implicit val logSearchProposalsEventFormatted: RootJsonFormat[LogSearchProposalsEvent] =
+    DefaultJsonProtocol.jsonFormat(LogSearchProposalsEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogGetProposalDuplicatesEvent(userId: UserId,
@@ -75,6 +123,10 @@ final case class LogRefuseProposalEvent(userId: UserId,
 
 object LogRegisterCitizenEvent {
   val action = "register"
+
+  implicit val logRegisterCitizenEventFormatted: RootJsonFormat[LogRegisterCitizenEvent] =
+    DefaultJsonProtocol.jsonFormat(LogRegisterCitizenEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogUserProposalEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserProposal])
@@ -84,6 +136,9 @@ final case class LogUserProposalEvent(userId: UserId, requestContext: RequestCon
 
 object LogUserProposalEvent {
   val action: String = "propose"
+  implicit val logUserProposalEventFormatted: RootJsonFormat[LogUserProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserProposalEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogUserVoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
@@ -93,6 +148,10 @@ final case class LogUserVoteEvent(userId: UserId, requestContext: RequestContext
 
 object LogUserVoteEvent {
   val action: String = "vote"
+
+  implicit val logUserVoteEventFormatted: RootJsonFormat[LogUserVoteEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserVoteEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
@@ -102,6 +161,10 @@ final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestConte
 
 object LogUserUnvoteEvent {
   val action: String = "unvote"
+
+  implicit val logUserUnvoteEventFormatted: RootJsonFormat[LogUserUnvoteEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUnvoteEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogUserQualificationEvent(userId: UserId,
@@ -113,6 +176,10 @@ final case class LogUserQualificationEvent(userId: UserId,
 
 object LogUserQualificationEvent {
   val action: String = "qualification"
+
+  implicit val logUserQualifEventFormatted: RootJsonFormat[LogUserQualificationEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserQualificationEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogUserUnqualificationEvent(userId: UserId,
@@ -124,14 +191,26 @@ final case class LogUserUnqualificationEvent(userId: UserId,
 
 object LogUserUnqualificationEvent {
   val action: String = "unqualification"
+
+  implicit val logUserUnqualifEventFormatted: RootJsonFormat[LogUserUnqualificationEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUnqualificationEvent.apply, "userId", "context", "action")
+
 }
 
 // Moderator actions
 object LogAcceptProposalEvent {
   val action: String = "accept-proposal"
+
+  implicit val logAcceptProposalEventFormatted: RootJsonFormat[LogAcceptProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogAcceptProposalEvent.apply, "userId", "context", "action")
+
 }
 object LogRefuseProposalEvent {
   val action: String = "refuse-proposal"
+
+  implicit val logRefuseProposalEventFormatted: RootJsonFormat[LogRefuseProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogRefuseProposalEvent.apply, "userId", "context", "action")
+
 }
 
 final case class LogRegisterCitizenEvent(userId: UserId,

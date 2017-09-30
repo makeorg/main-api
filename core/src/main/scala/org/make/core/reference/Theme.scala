@@ -2,6 +2,7 @@ package org.make.core.reference
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.{MakeSerializable, StringValue}
+import spray.json.{JsString, JsValue, JsonFormat}
 
 final case class GradientColor(from: String, to: String) extends MakeSerializable
 
@@ -24,4 +25,16 @@ object ThemeId {
     (a: ThemeId) => Json.fromString(a.value)
   implicit lazy val themeIdDecoder: Decoder[ThemeId] =
     Decoder.decodeString.map(ThemeId(_))
+
+  implicit val themeIdFormatter: JsonFormat[ThemeId] = new JsonFormat[ThemeId] {
+    override def read(json: JsValue): ThemeId = json match {
+      case JsString(s) => ThemeId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ThemeId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+
 }

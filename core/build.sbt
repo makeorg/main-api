@@ -8,6 +8,7 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4sHttp,
   Dependencies.avro4s,
   Dependencies.circeGeneric,
+  Dependencies.stamina,
   Dependencies.slugify
 )
 

@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import org.make.core.profile.Profile
 import org.make.core.{MakeSerializable, StringValue, Timestamped}
+import spray.json.{JsString, JsValue, JsonFormat}
 
 sealed trait Role {
   def shortName: String
@@ -91,5 +92,16 @@ object UserId {
   implicit lazy val userIdEncoder: Encoder[UserId] = (a: UserId) => Json.fromString(a.value)
   implicit lazy val userIdDecoder: Decoder[UserId] =
     Decoder.decodeString.map(UserId(_))
+
+  implicit val userIdFormatter: JsonFormat[UserId] = new JsonFormat[UserId] {
+    override def read(json: JsValue): UserId = json match {
+      case JsString(s) => UserId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: UserId): JsValue = {
+      JsString(obj.value)
+    }
+  }
 
 }

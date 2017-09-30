@@ -3,6 +3,8 @@ package org.make.core.proposal.indexed
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.user.UserId
+import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 sealed trait QualificationKey { val shortName: String }
 
@@ -29,6 +31,18 @@ object QualificationKey extends StrictLogging {
           .getOrElse(throw new IllegalArgumentException(s"$qualificationKey is not a QualificationKey"))
     )
 
+  implicit val qualificationKeyFormatter: JsonFormat[QualificationKey] = new JsonFormat[QualificationKey] {
+    override def read(json: JsValue): QualificationKey = json match {
+      case JsString(s) =>
+        QualificationKey.qualificationKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
+      case other => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: QualificationKey): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
   def matchQualificationKey(qualificationKey: String): Option[QualificationKey] = {
     val maybeQualificationKey = qualificationKeys.get(qualificationKey)
     if (maybeQualificationKey.isEmpty) {
@@ -52,6 +66,12 @@ final case class Qualification(key: QualificationKey,
                                count: Int = 0,
                                userIds: Seq[UserId] = Seq.empty,
                                sessionIds: Seq[String] = Seq.empty)
+
+object Qualification {
+  implicit val qualificationFormatter: RootJsonFormat[Qualification] =
+    DefaultJsonProtocol.jsonFormat4(Qualification.apply)
+
+}
 
 final case class IndexedQualification(key: QualificationKey, count: Int = 0)
 

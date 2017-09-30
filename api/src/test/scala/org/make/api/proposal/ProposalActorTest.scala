@@ -346,6 +346,52 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
     }
 
+    scenario("accept an existing proposal without a theme") {
+      Given("a freshly created proposal")
+      val originalContent = "This is a proposal that will be validated"
+      val proposalId = ProposalId("to-be-moderated-without-a-theme")
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I validate the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        theme = None,
+        labels = Seq.empty,
+        tags = Seq(TagId("some tag id")),
+        similarProposals = Seq.empty
+      )
+
+      Then("I should receive the accepted proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
+
+      response.proposalId should be(proposalId)
+      response.events.length should be(2)
+      response.content should be(originalContent)
+      response.status should be(Accepted)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+      response.tags should be(Seq(TagId("some tag id")))
+      response.labels should be(Seq.empty)
+      response.theme should be(None)
+    }
+
     scenario("validating a validated proposal shouldn't do anything") {
       Given("a validated proposal")
       val originalContent = "This is a proposal that will be validated"
