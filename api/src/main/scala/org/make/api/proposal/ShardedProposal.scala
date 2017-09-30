@@ -34,6 +34,6 @@ class ShardedProposal extends ProposalActor {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopProposal)
     case StopProposal                  => context.stop(self)
     case SaveSnapshotSuccess(_)        => log.info("Snapshot saved")
-    case SaveSnapshotFailure(_, cause) => log.error("Error while saving snapshot", cause)
+    case SaveSnapshotFailure(_, cause) => log.error(cause, "Error while saving snapshot")
   }
 }

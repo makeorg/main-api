@@ -457,7 +457,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @Path(value = "/{proposalId}/qualification")
   def qualification: Route = post {
-    path("proposal" / proposalId / "qualification") { proposalId =>
+    path("proposals" / proposalId / "qualification") { proposalId =>
       makeTrace("QualificationProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {
@@ -499,7 +499,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @Path(value = "/{proposalId}/unqualification")
   def unqualification: Route = post {
-    path("proposal" / proposalId / "unqualification") { proposalId =>
+    path("proposals" / proposalId / "unqualification") { proposalId =>
       makeTrace("UnqualificationProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[User]] =>
           decodeRequest {

@@ -17,7 +17,7 @@ class ShardedUserHistory extends UserHistoryActor with ActorLogging {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopUserHistory)
     case StopUserHistory               => context.stop(self)
     case SaveSnapshotSuccess(_)        => log.info("Snapshot saved")
-    case SaveSnapshotFailure(_, cause) => log.error("Error while saving snapshot", cause)
+    case SaveSnapshotFailure(_, cause) => log.error(cause, "Error while saving snapshot")
   }
 }
 
