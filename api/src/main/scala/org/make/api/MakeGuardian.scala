@@ -2,10 +2,11 @@ package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
+import org.make.api.sequence.SequenceSupervisor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
+import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
-import org.make.api.tag.TagService
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
 import org.make.api.user.{SessionHistoryConsumerActor, UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
@@ -49,6 +50,9 @@ class MakeGuardian(userService: UserService, tagService: TagService) extends Act
       )
     )
     context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
+    context.watch(
+      context.actorOf(SequenceSupervisor.props(userService, userHistoryCoordinator), SequenceSupervisor.name)
+    )
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
