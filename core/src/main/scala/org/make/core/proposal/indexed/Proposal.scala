@@ -25,7 +25,6 @@ object ProposalElasticsearchFieldNames {
   val contextQuestion: String = "context.question"
   val trending: String = "trending"
   val labels: String = "labels"
-  val labelId: String = "labels.id"
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
   val authorAge: String = "author.age"

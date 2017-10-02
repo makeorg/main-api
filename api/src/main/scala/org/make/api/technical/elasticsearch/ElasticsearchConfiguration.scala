@@ -7,9 +7,10 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.ConfigurationSupport
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.Source
+import scala.util.{Failure, Success}
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
     extends Extension
@@ -25,10 +26,12 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   client.execute {
     createIndex(indexName).source(elasticSearchMapping)
-  }.foreach {
-    logger.info(s"Elasticsearch index $indexName created")
-    _ =>
-    }
+  }.onComplete {
+    case Success(_) =>
+      logger.info(s"Elasticsearch index $indexName created")
+    case Failure(e) =>
+      logger.error(s"Error when creating Elasticsearch index $indexName", e)
+  }
 }
 
 object ElasticsearchConfiguration extends ExtensionId[ElasticsearchConfiguration] with ExtensionIdProvider {

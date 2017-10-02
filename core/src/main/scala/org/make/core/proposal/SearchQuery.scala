@@ -122,8 +122,6 @@ object SearchFilters extends ElasticDsl {
   def buildLabelsSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
     searchQuery.filters.flatMap {
       _.labels match {
-        case Some(LabelsSearchFilter(Seq(labelId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.labelId, labelId))
         case Some(LabelsSearchFilter(labels)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels))
         case _ => None
@@ -183,7 +181,7 @@ object SearchFilters extends ElasticDsl {
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
 
     query match {
-      case None => Some(ElasticApi.matchAllQuery)
+      case None => None
       case _    => query
     }
   }
@@ -231,7 +229,7 @@ object TagsSearchFilter {
 }
 
 case class LabelsSearchFilter(labelIds: Seq[String]) {
-  validate(validateField("labelId", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
+  validate(validateField("labelIds", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
 object LabelsSearchFilter {
