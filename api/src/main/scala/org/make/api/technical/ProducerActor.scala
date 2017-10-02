@@ -19,8 +19,8 @@ abstract class ProducerActor extends Actor with KafkaConfigurationExtension with
   protected val eventClass: Class[_]
 
   val sendCallBack: Callback = (r: RecordMetadata, e: Exception) => {
-    Option(e).foreach(e => log.debug("[EXCEPTION] Producer sent: ", e))
-    Option(r).foreach(r => log.debug("[RECORDMETADATA] Producer sent: {} {}", Array(r.topic(), r.offset())))
+    val topic = Option(r).map(_.topic()).getOrElse("unknown")
+    Option(e).foreach(e => log.error(e, "Error when producing message on topic {}", topic))
   }
 
   protected val format: RecordFormat[_]
@@ -36,7 +36,7 @@ abstract class ProducerActor extends Actor with KafkaConfigurationExtension with
     val props = new Properties()
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     props.put(ProducerConfig.ACKS_CONFIG, "all")
-    props.put(ProducerConfig.RETRIES_CONFIG, "0")
+    props.put(ProducerConfig.RETRIES_CONFIG, "3")
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")

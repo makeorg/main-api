@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
 
   private val akkaVersion = "2.5.3"
-  private val akkaHttpVersion = "10.0.9"
+  private val akkaHttpVersion = "10.0.10"
   private val nettyVersion = "4.1.12.Final"
   private val kafkaVersion = "0.11.0.0"
   private val elastic4sVersion = "5.4.1"
@@ -75,6 +75,7 @@ object Dependencies {
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.3"
+  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.3"
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"     %% "akka-testkit"             % akkaVersion     % "it,test"

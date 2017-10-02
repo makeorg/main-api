@@ -80,9 +80,9 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter),
-        tags = tagsIds.map(TagsSearchFilter),
-        labels = labelsIds.map(LabelsSearchFilter),
+        theme = themesIds.map(ThemeSearchFilter.apply),
+        tags = tagsIds.map(TagsSearchFilter.apply),
+        labels = labelsIds.map(LabelsSearchFilter.apply),
         content = content.map(text => ContentSearchFilter(text)),
         context = context.map(_.toContext)
       )
@@ -103,12 +103,12 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter),
-        tags = tagsIds.map(TagsSearchFilter),
-        labels = labelsIds.map(LabelsSearchFilter),
+        theme = themesIds.map(ThemeSearchFilter.apply),
+        tags = tagsIds.map(TagsSearchFilter.apply),
+        labels = labelsIds.map(LabelsSearchFilter.apply),
         content = content.map(text => ContentSearchFilter(text)),
         context = context.map(_.toContext),
-        status = status.map(StatusSearchFilter)
+        status = status.map(StatusSearchFilter.apply)
       )
 
     SearchQuery(filters = filters, sorts = sorts.getOrElse(Seq.empty).map(_.toSort), limit = limit, skip = skip)

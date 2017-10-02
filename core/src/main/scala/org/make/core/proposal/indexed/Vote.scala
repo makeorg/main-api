@@ -3,6 +3,8 @@ package org.make.core.proposal.indexed
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.user.UserId
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 sealed trait VoteKey { val shortName: String }
 
@@ -17,6 +19,17 @@ object VoteKey extends StrictLogging {
       voteKey =>
         VoteKey.matchVoteKey(voteKey).getOrElse(throw new IllegalArgumentException(s"$voteKey is not a VoteKey"))
     )
+
+  implicit val voteKeyFormatter: JsonFormat[VoteKey] = new JsonFormat[VoteKey] {
+    override def read(json: JsValue): VoteKey = json match {
+      case JsString(s) => VoteKey.voteKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: VoteKey): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
 
   def matchVoteKey(voteKey: String): Option[VoteKey] = {
     val maybeVoteKey = voteKeys.get(voteKey)
@@ -36,6 +49,12 @@ final case class Vote(key: VoteKey,
                       qualifications: Seq[Qualification],
                       userIds: Seq[UserId] = Seq.empty,
                       sessionIds: Seq[String] = Seq.empty)
+
+object Vote {
+  implicit val voteFormatter: RootJsonFormat[Vote] =
+    DefaultJsonProtocol.jsonFormat5(Vote.apply)
+
+}
 
 final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
 
