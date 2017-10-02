@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.userhistory.UserHistoryActor.UserHistory
+import org.make.core.proposal.ProposalId
 import org.make.core.user._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,22 +15,22 @@ trait UserHistoryCoordinatorComponent {
   def userHistoryCoordinator: ActorRef
 }
 
-trait UserHistoryService {
+trait UserHistoryCoordinatorService {
   def userHistory(userId: UserId): Future[UserHistory]
   def moderatorHistory(userId: UserId): Future[UserHistory]
   def logHistory(command: UserHistoryEvent[_]): Unit
 }
 
-trait UserHistoryServiceComponent {
-  def userHistoryService: UserHistoryService
+trait UserHistoryCoordinatorServiceComponent {
+  def userHistoryCoordinatorService: UserHistoryCoordinatorService
 }
 
-trait DefaultUserHistoryServiceComponent extends UserHistoryServiceComponent {
+trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinatorServiceComponent {
   self: UserHistoryCoordinatorComponent =>
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  override def userHistoryCoordinatorService: UserHistoryCoordinatorService = new UserHistoryCoordinatorService {
 
-  override def userHistoryService: UserHistoryService = new UserHistoryService {
+    implicit val timeout: Timeout = Timeout(3.seconds)
 
     override def userHistory(userId: UserId): Future[UserHistory] = {
       (userHistoryCoordinator ? GetUserHistory(userId)).mapTo[UserHistory].map { history =>
@@ -46,6 +47,6 @@ trait DefaultUserHistoryServiceComponent extends UserHistoryServiceComponent {
     override def logHistory(command: UserHistoryEvent[_]): Unit = {
       userHistoryCoordinator ! command
     }
-  }
 
+  }
 }

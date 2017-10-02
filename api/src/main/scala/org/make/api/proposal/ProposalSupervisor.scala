@@ -5,7 +5,9 @@ import org.make.api.MakeBackoffSupervisor
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
 
-class ProposalSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
+class ProposalSupervisor(userService: UserService,
+                         userHistoryCoordinator: ActorRef,
+                         sessionHistoryCoordinator: ActorRef)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -22,6 +24,13 @@ class ProposalSupervisor(userService: UserService, userHistoryCoordinator: Actor
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalUserHistoryConsumerActor.props(userHistoryCoordinator),
         ProposalUserHistoryConsumerActor.name
+      )
+      context.actorOf(props, name)
+    }
+    context.watch {
+      val (props, name) = MakeBackoffSupervisor.propsAndName(
+        ProposalSessionHistoryConsumerActor.props(sessionHistoryCoordinator),
+        ProposalSessionHistoryConsumerActor.name
       )
       context.actorOf(props, name)
     }
@@ -50,6 +59,6 @@ class ProposalSupervisor(userService: UserService, userHistoryCoordinator: Actor
 object ProposalSupervisor {
 
   val name: String = "proposal"
-  def props(userService: UserService, userHistoryCoordinator: ActorRef): Props =
-    Props(new ProposalSupervisor(userService, userHistoryCoordinator))
+  def props(userService: UserService, userHistoryCoordinator: ActorRef, sessionHistoryCoordinator: ActorRef): Props =
+    Props(new ProposalSupervisor(userService, userHistoryCoordinator, sessionHistoryCoordinator))
 }

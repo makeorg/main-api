@@ -123,7 +123,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResult]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -404,7 +404,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                complete(VoteResponse.parseVote(vote))
               }
             }
           }
@@ -436,7 +436,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                complete(VoteResponse.parseVote(vote))
               }
             }
           }
@@ -475,10 +475,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   qualificationKey = request.qualificationKey
                 )
               ) { qualification: Qualification =>
-                complete(
-                  QualificationResponse
-                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
-                )
+                complete(QualificationResponse.parseQualification(qualification))
               }
             }
           }
@@ -517,10 +514,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   qualificationKey = request.qualificationKey
                 )
               ) { qualification: Qualification =>
-                complete(
-                  QualificationResponse
-                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
-                )
+                complete(QualificationResponse.parseQualification(qualification))
               }
             }
           }

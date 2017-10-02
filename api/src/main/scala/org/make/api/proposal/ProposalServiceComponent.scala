@@ -5,12 +5,15 @@ import java.time.ZonedDateTime
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
+import com.typesafe.scalalogging.StrictLogging
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryServiceComponent
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
+import org.make.core.session._
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.make.semantic.text.document.Corpus
@@ -72,11 +75,12 @@ trait ProposalService {
                     qualificationKey: QualificationKey): Future[Option[Qualification]]
 }
 
-trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters {
+trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
   this: IdGeneratorComponent
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
-    with UserHistoryServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with SessionHistoryCoordinatorServiceComponent
     with ProposalSearchEngineComponent
     with DuplicateDetectorConfigurationComponent
     with EventBusServiceComponent
@@ -152,14 +156,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
                         requestContext: RequestContext): Future[ProposalsResult] = {
-      maybeUserId.foreach { userId =>
-        userHistoryService.logHistory(
-          LogSearchProposalsEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogSearchProposalsEvent.action, SearchParameters(query))
+      maybeUserId match {
+        case Some(userId) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserSearchProposalsEvent(
+              userId,
+              requestContext,
+              UserAction(DateHelper.now(), LogUserSearchProposalsEvent.action, UserSearchParameters(query))
+            )
           )
-        )
+        case None =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionSearchProposalsEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(DateHelper.now(), LogSessionSearchProposalsEvent.action, SessionSearchParameters(query))
+            )
+          )
       }
       elasticsearchAPI.searchProposals(query)
     }
@@ -258,7 +271,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
                                requestContext: RequestContext): Future[Seq[IndexedProposal]] = {
-      userHistoryService.logHistory(
+      userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
           requestContext,
@@ -308,14 +321,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                               maybeUserId: Option[UserId],
                               requestContext: RequestContext,
                               voteKey: VoteKey): Future[Option[Vote]] = {
-      maybeUserId.foreach { userId =>
-        userHistoryService.logHistory(
-          LogUserVoteEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(voteKey))
+      maybeUserId match {
+        case Some(userId) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserVoteEvent(
+              userId,
+              requestContext,
+              UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposalId, voteKey))
+            )
           )
-        )
+        case None =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionVoteEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(DateHelper.now(), LogSessionVoteEvent.action, SessionVote(proposalId, voteKey))
+            )
+          )
       }
       proposalCoordinatorService.vote(
         VoteProposalCommand(
@@ -331,14 +353,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                 maybeUserId: Option[UserId],
                                 requestContext: RequestContext,
                                 voteKey: VoteKey): Future[Option[Vote]] = {
-      maybeUserId.foreach { userId =>
-        userHistoryService.logHistory(
-          LogUserUnvoteEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogUserUnvoteEvent.action, UserVote(voteKey))
+      maybeUserId match {
+        case Some(userId) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserUnvoteEvent(
+              userId,
+              requestContext,
+              UserAction(DateHelper.now(), LogUserUnvoteEvent.action, UserUnvote(proposalId, voteKey))
+            )
           )
-        )
+        case None =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionUnvoteEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(DateHelper.now(), LogSessionUnvoteEvent.action, SessionUnvote(proposalId, voteKey))
+            )
+          )
       }
       proposalCoordinatorService.unvote(
         UnvoteProposalCommand(
@@ -355,14 +386,31 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                              requestContext: RequestContext,
                              voteKey: VoteKey,
                              qualificationKey: QualificationKey): Future[Option[Qualification]] = {
-      maybeUserId.foreach { userId =>
-        userHistoryService.logHistory(
-          LogUserQualificationEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogUserQualificationEvent.action, UserQualification(voteKey, qualificationKey))
+      maybeUserId match {
+        case Some(userId) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserQualificationEvent(
+              userId,
+              requestContext,
+              UserAction(
+                DateHelper.now(),
+                LogUserQualificationEvent.action,
+                UserQualification(proposalId, qualificationKey)
+              )
+            )
           )
-        )
+        case None =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionQualificationEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(
+                DateHelper.now(),
+                LogSessionQualificationEvent.action,
+                SessionQualification(proposalId, qualificationKey)
+              )
+            )
+          )
       }
       proposalCoordinatorService.qualification(
         QualifyVoteCommand(
@@ -380,14 +428,31 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                requestContext: RequestContext,
                                voteKey: VoteKey,
                                qualificationKey: QualificationKey): Future[Option[Qualification]] = {
-      maybeUserId.foreach { userId =>
-        userHistoryService.logHistory(
-          LogUserQualificationEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogUserQualificationEvent.action, UserQualification(voteKey, qualificationKey))
+      maybeUserId match {
+        case Some(userId) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserUnqualificationEvent(
+              userId,
+              requestContext,
+              UserAction(
+                DateHelper.now(),
+                LogUserUnqualificationEvent.action,
+                UserUnqualification(proposalId, qualificationKey)
+              )
+            )
           )
-        )
+        case None =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionUnqualificationEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(
+                DateHelper.now(),
+                LogSessionUnqualificationEvent.action,
+                SessionUnqualification(proposalId, qualificationKey)
+              )
+            )
+          )
       }
       proposalCoordinatorService.unqualification(
         UnqualifyVoteCommand(

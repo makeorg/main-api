@@ -2,7 +2,6 @@ package org.make.core.proposal.indexed
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
@@ -62,14 +61,11 @@ object QualificationKey extends StrictLogging {
   case object DoNotCare extends QualificationKey { override val shortName: String = "doNotCare" }
 }
 
-final case class Qualification(key: QualificationKey,
-                               count: Int = 0,
-                               userIds: Seq[UserId] = Seq.empty,
-                               sessionIds: Seq[String] = Seq.empty)
+final case class Qualification(key: QualificationKey, count: Int = 0, hasQualified: Boolean = false)
 
 object Qualification {
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
-    DefaultJsonProtocol.jsonFormat4(Qualification.apply)
+    DefaultJsonProtocol.jsonFormat3(Qualification.apply)
 
 }
 

@@ -12,6 +12,7 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.reference.ThemeId
+import org.make.core.session.SessionId
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
 import org.make.core.{CirceFormatters, RequestContext}
@@ -102,7 +103,7 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
         requestId = requestId,
-        sessionId = sessionId,
+        sessionId = SessionId(sessionId),
         externalId = externalId,
         operation = maybeOperation,
         source = maybeSource,

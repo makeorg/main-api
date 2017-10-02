@@ -33,8 +33,6 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.id"
 }
 
-case class ProposalsResult(total: Int, results: Seq[IndexedProposal])
-
 case class IndexedProposal(id: ProposalId,
                            userId: UserId,
                            content: String,
@@ -56,4 +54,5 @@ final case class Context(operation: Option[String],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])
+
 final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])

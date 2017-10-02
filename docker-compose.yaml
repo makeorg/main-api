@@ -47,7 +47,7 @@ services:
       - 7000:7000
       - 9042:9042
     environment:
-      JVM_OPTS: '-Xms1G -Xmx1G'
+      JVM_OPTS: '-Xms256M -Xmx256M'
     networks:
       - makeapi
   elasticsearch:
@@ -59,7 +59,7 @@ services:
     networks:
       - makeapi
     environment:
-      ES_JAVA_OPTS: '-Xms1G -Xmx1G'
+      ES_JAVA_OPTS: '-Xms256M -Xmx256M'
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost

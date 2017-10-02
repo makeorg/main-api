@@ -3,6 +3,7 @@ package org.make.api
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSupervisor}
+import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
@@ -16,10 +17,19 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
     context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
 
-    val historyCoordinator = context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
+    val userHistoryCoordinator =
+      context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
 
-    context.watch(context.actorOf(ProposalSupervisor.props(userService, historyCoordinator), ProposalSupervisor.name))
-    context.watch(context.actorOf(UserSupervisor.props(userService, historyCoordinator), UserSupervisor.name))
+    val sessionHistoryCoordinator =
+      context.watch(context.actorOf(SessionHistoryCoordinator.props, SessionHistoryCoordinator.name))
+
+    context.watch(
+      context.actorOf(
+        ProposalSupervisor.props(userService, userHistoryCoordinator, sessionHistoryCoordinator),
+        ProposalSupervisor.name
+      )
+    )
+    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))

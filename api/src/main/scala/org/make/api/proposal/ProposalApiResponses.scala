@@ -4,9 +4,9 @@ import java.time.ZonedDateTime
 
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
-import org.make.core.proposal.indexed.{Qualification, QualificationKey, Vote, VoteKey}
+import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, Tag, TagId, ThemeId}
 import org.make.core.user.UserId
 
 final case class ProposalResponse(proposalId: ProposalId,
@@ -31,32 +31,48 @@ final case class ProposalActionResponse(date: ZonedDateTime,
 
 final case class ProposeProposalResponse(proposalId: ProposalId)
 
+final case class ProposalsResultResponse(id: ProposalId,
+                                         userId: UserId,
+                                         content: String,
+                                         slug: String,
+                                         status: ProposalStatus,
+                                         createdAt: ZonedDateTime,
+                                         updatedAt: Option[ZonedDateTime],
+                                         votes: Seq[VoteResponse],
+                                         context: Option[Context],
+                                         trending: Option[String],
+                                         labels: Seq[String],
+                                         author: Author,
+                                         country: String,
+                                         language: String,
+                                         themeId: Option[ThemeId],
+                                         tags: Seq[Tag])
+
+final case class ProposalsResult(total: Int, results: Seq[IndexedProposal])
+
 final case class VoteResponse(voteKey: VoteKey,
-                              count: Int = 0,
+                              count: Int,
                               qualifications: Seq[QualificationResponse],
                               hasVoted: Boolean)
 
 object VoteResponse {
-  def parseVote(vote: Vote, maybeUserId: Option[UserId], sessionId: String): VoteResponse =
+  def parseVote(vote: Vote): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
       count = vote.count,
       qualifications = vote.qualifications
-        .map(qualification => QualificationResponse.parseQualification(qualification, maybeUserId, sessionId)),
-      hasVoted = vote.userIds.contains(maybeUserId.getOrElse(UserId(""))) || vote.sessionIds.contains(sessionId)
+        .map(qualification => QualificationResponse.parseQualification(qualification)),
+      hasVoted = vote.hasVoted
     )
 }
 
-final case class QualificationResponse(qualificationKey: QualificationKey, count: Int = 0, hasQualified: Boolean)
+final case class QualificationResponse(qualificationKey: QualificationKey, count: Int, hasQualified: Boolean)
 
 object QualificationResponse {
-  def parseQualification(qualification: Qualification,
-                         maybeUserId: Option[UserId],
-                         sessionId: String): QualificationResponse =
+  def parseQualification(qualification: Qualification): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,
-      hasQualified = qualification.userIds.contains(maybeUserId.getOrElse(UserId(""))) || qualification.sessionIds
-        .contains(sessionId)
+      hasQualified = qualification.hasQualified
     )
 }

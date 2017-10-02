@@ -10,8 +10,8 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V1] =
     json.persister[LogRegisterCitizenEvent]("user-history-registered")
 
-  private val logSearchProposalsEventSerializer: JsonPersister[LogSearchProposalsEvent, V1] =
-    json.persister[LogSearchProposalsEvent]("user-history-searched")
+  private val logSearchProposalsEventSerializer: JsonPersister[LogUserSearchProposalsEvent, V1] =
+    json.persister[LogUserSearchProposalsEvent]("user-history-searched")
 
   private val logAcceptProposalEventSerializer: JsonPersister[LogAcceptProposalEvent, V1] =
     json.persister[LogAcceptProposalEvent]("user-history-accepted-proposal")
@@ -29,10 +29,10 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogUserUnvoteEvent]("user-history-unvote-proposal")
 
   private val logUserQualificationEventSerializer: JsonPersister[LogUserQualificationEvent, V1] =
-    json.persister[LogUserQualificationEvent]("user-history-qualification-proposal")
+    json.persister[LogUserQualificationEvent]("user-history-qualification-vote")
 
   private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
-    json.persister[LogUserUnqualificationEvent]("user-history-unqualification-proposal")
+    json.persister[LogUserUnqualificationEvent]("user-history-unqualification-vote")
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(

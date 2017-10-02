@@ -2,9 +2,8 @@ package org.make.core.proposal.indexed
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.user.UserId
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 sealed trait VoteKey { val shortName: String }
 
@@ -44,15 +43,11 @@ object VoteKey extends StrictLogging {
   case object Neutral extends VoteKey { override val shortName: String = "neutral" }
 }
 
-final case class Vote(key: VoteKey,
-                      count: Int = 0,
-                      qualifications: Seq[Qualification],
-                      userIds: Seq[UserId] = Seq.empty,
-                      sessionIds: Seq[String] = Seq.empty)
+final case class Vote(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification], hasVoted: Boolean = false)
 
 object Vote {
   implicit val voteFormatter: RootJsonFormat[Vote] =
-    DefaultJsonProtocol.jsonFormat5(Vote.apply)
+    DefaultJsonProtocol.jsonFormat4(Vote.apply)
 
 }
 
