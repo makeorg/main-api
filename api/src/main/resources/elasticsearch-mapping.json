@@ -4,14 +4,15 @@
       "properties": {
         "id": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "userId": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "content": {
           "type": "text",
+          "index": true,
           "fields": {
             "french": {
               "type":     "text",
@@ -57,29 +58,29 @@
           "properties": {
             "operation": {
               "type": "keyword",
-              "index": false
+              "index": true
             },
             "source": {
               "type": "keyword",
-              "index": false
+              "index": true
             },
             "location": {
               "type": "keyword",
-              "index": false
+              "index": true
             },
             "question": {
               "type": "keyword",
-              "index": false
+              "index": true
             }
           }
         },
         "trending": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "labels": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "author": {
          "type": "object",
@@ -103,17 +104,17 @@
           "properties": {
             "label": {
               "type": "keyword",
-              "index": false
+              "index": true
             },
             "id": {
               "type": "keyword",
-              "index": false
+              "index": true
             }
           }
         },
         "themeId": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "country": {
           "type": "keyword",

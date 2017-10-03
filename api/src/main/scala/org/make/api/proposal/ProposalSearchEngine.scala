@@ -12,7 +12,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalsResult}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -23,7 +23,7 @@ trait ProposalSearchEngineComponent {
 
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
-  def searchProposals(query: SearchQuery): Future[Seq[IndexedProposal]]
+  def searchProposals(query: SearchQuery): Future[ProposalsResult]
   def indexProposal(record: IndexedProposal): Future[Done]
   def updateProposal(record: IndexedProposal): Future[Done]
 }
@@ -42,7 +42,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.execute(get(id = proposalId.value).from(proposalIndex)).map(_.toOpt[IndexedProposal])
     }
 
-    override def searchProposals(searchQuery: SearchQuery): Future[Seq[IndexedProposal]] = {
+    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
@@ -57,12 +57,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.execute {
         request
       }.map { response =>
-        response.to[IndexedProposal]
+        ProposalsResult(total = response.totalHits, results = response.to[IndexedProposal])
       }
+
     }
 
     override def indexProposal(record: IndexedProposal): Future[Done] = {
-      logger.info(s"Saving in Elasticsearch: $record")
+      logger.info(s"$proposalIndex -> Saving in Elasticsearch: $record")
       client.execute {
         indexInto(proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
       }.map { _ =>
@@ -71,7 +72,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     }
 
     override def updateProposal(record: IndexedProposal): Future[Done] = {
-      logger.info(s"Updating in Elasticsearch: $record")
+      logger.info(s"$proposalIndex -> Updating in Elasticsearch: $record")
       client
         .execute((update(id = record.id.value) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
