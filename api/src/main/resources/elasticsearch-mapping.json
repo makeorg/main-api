@@ -67,11 +67,11 @@
         },
         "createdAt": {
           "type": "date",
-          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+          "format": "date_time"
         },
         "updatedAt": {
           "type": "date",
-          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+          "format": "date_time"
         },
         "slug": {
           "type": "keyword",
@@ -215,12 +215,12 @@
         },
         "createdAt": {
           "type": "date",
-          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+          "format": "date_time",
           "index": true
         },
         "updatedAt": {
           "type": "date",
-          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+          "format": "date_time",
           "index": true
         },
         "votes": {

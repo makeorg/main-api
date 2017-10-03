@@ -1,7 +1,7 @@
 package org.make.api.sequence
 
 import akka.actor.{ActorLogging, PoisonPill}
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.persistence.{PersistentActor, SnapshotOffer}
 import org.make.api.sequence.SequenceActor.Snapshot
 import org.make.api.sequence.SequenceEvent._
 import org.make.core.sequence._
@@ -15,7 +15,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
   override def receiveRecover: Receive = {
     case e: SequenceEvent                     => state = applyEvent(e)
     case SnapshotOffer(_, snapshot: Sequence) => state = Some(snapshot)
-    case _: RecoveryCompleted                 =>
+    case _                                    =>
   }
 
   override def receiveCommand: Receive = {

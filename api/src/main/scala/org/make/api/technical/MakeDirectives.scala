@@ -305,6 +305,10 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
   def requireModerationRole(user: UserRights): Directive0 = {
     authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))
   }
+
+  def requireAdminRole(user: UserRights): Directive0 = {
+    authorize(user.roles.contains(RoleAdmin))
+  }
 }
 
 final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {

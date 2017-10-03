@@ -5,7 +5,6 @@ import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import com.sksamuel.elastic4s.update.UpdateDefinition
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -27,8 +26,8 @@ trait SequenceSearchEngine {
   def findSequenceById(sequenceId: SequenceId): Future[Option[IndexedSequence]]
   def findSequenceBySlug(slugSequence: String): Future[Option[IndexedSequence]]
   def searchSequences(query: SearchQuery): Future[SequencesSearchResult]
-  def indexSequence(record: IndexedSequence): Future[Done]
-  def updateSequence(record: IndexedSequence): Future[Done]
+  def indexSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
 trait DefaultSequenceSearchEngineComponent
@@ -37,21 +36,24 @@ trait DefaultSequenceSearchEngineComponent
     with DefaultProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent =>
 
+  val sequenceIndexName = "sequence"
+
   override lazy val elasticsearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
 
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
-    private val sequenceIndex: IndexAndType = elasticsearchConfiguration.indexName / "sequence"
+
+    private val sequenceAlias: IndexAndType = elasticsearchConfiguration.aliasName / sequenceIndexName
 
     override def findSequenceById(sequenceId: SequenceId): Future[Option[IndexedSequence]] = {
-      client.execute(get(id = sequenceId.value).from(sequenceIndex)).map(_.toOpt[IndexedSequence])
+      client.execute(get(id = sequenceId.value).from(sequenceAlias)).map(_.toOpt[IndexedSequence])
     }
 
     override def findSequenceBySlug(slugSequence: String): Future[Option[IndexedSequence]] = {
       val query = SearchStartSequenceRequest(slug = slugSequence).toSearchQuery
       val searchFilters = SearchFilters.getSearchFilters(query)
-      val request = search(sequenceIndex)
+      val request = search(sequenceAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .from(0)
         .size(1)
@@ -69,8 +71,7 @@ trait DefaultSequenceSearchEngineComponent
     override def searchSequences(searchQuery: SearchQuery): Future[SequencesSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-
-      val request = search(sequenceIndex)
+      val request = search(sequenceAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
@@ -85,22 +86,21 @@ trait DefaultSequenceSearchEngineComponent
       }
     }
 
-    override def indexSequence(record: IndexedSequence): Future[Done] = {
-      logger.info(s"Saving in Elasticsearch: $record")
+    override def indexSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      logger.debug(s"Saving in Elasticsearch: $record")
+      val index = mayBeIndex.getOrElse(sequenceAlias)
       client.execute {
-        indexInto(sequenceIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
+        indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
       }.map { _ =>
         Done
       }
     }
 
-    override def updateSequence(record: IndexedSequence): Future[Done] = {
-      logger.info(s"Updating in Elasticsearch: $record")
-      val updateDefinition: UpdateDefinition =
-        (update(id = record.id.value) in sequenceIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE)
-      logger.debug(client.show(updateDefinition))
+    override def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val index = mayBeIndex.getOrElse(sequenceAlias)
+      logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
-        .execute(updateDefinition)
+        .execute((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
     }
   }
