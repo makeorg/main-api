@@ -79,7 +79,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResult]))
   )
   @ApiImplicitParams(
     value =

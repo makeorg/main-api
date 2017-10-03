@@ -13,9 +13,8 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.indexed.VoteKey
-import org.make.core.proposal.indexed.Vote
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.indexed._
+import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
@@ -206,6 +205,29 @@ class ProposalApiTest
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
+  val indexedProposal = IndexedProposal(
+    id = ProposalId("aaa-bbb-ccc"),
+    userId = UserId("foo-bar"),
+    content = "il faut fou",
+    slug = "il-faut-fou",
+    status = ProposalStatus.Accepted,
+    createdAt = DateHelper.now(),
+    updatedAt = None,
+    votes = Seq.empty,
+    context = None,
+    trending = None,
+    labels = Seq.empty,
+    author = Author(None, None, None),
+    country = "TN",
+    language = "ar",
+    themeId = None,
+    tags = Seq.empty
+  )
+  when(
+    proposalService
+      .search(any[Option[UserId]], any[SearchQuery], any[RequestContext])
+  ).thenReturn(Future.successful(ProposalsResult(1, Seq(indexedProposal))))
+
   private def proposal(id: ProposalId): Proposal = {
     Proposal(
       proposalId = id,
@@ -346,5 +368,21 @@ class ProposalApiTest
   feature("get proposal for moderation") {
     scenario("get new proposal without history") {}
     scenario("get validated proposal gives history with moderator") {}
+  }
+
+  feature("search proposal from front") {
+    scenario("search and get results + total") {
+      Post("/proposals/search")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+                  | "content": "faut",
+                  | "limit": 10,
+                  | "skip": 0
+                  |}""".stripMargin)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val proposalResults: ProposalsResult = entityAs[ProposalsResult]
+        proposalResults.total should be(1)
+        proposalResults.results should be(Seq(indexedProposal))
+      }
+    }
   }
 }

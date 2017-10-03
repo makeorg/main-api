@@ -42,6 +42,7 @@ object SearchQuery {
 case class SearchFilters(theme: Option[ThemeSearchFilter] = None,
                          tags: Option[TagsSearchFilter] = None,
                          labels: Option[LabelsSearchFilter] = None,
+                         trending: Option[TrendingSearchFilter] = None,
                          content: Option[ContentSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
                          context: Option[ContextSearchFilter] = None)
@@ -49,18 +50,20 @@ case class SearchFilters(theme: Option[ThemeSearchFilter] = None,
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat6(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat7(SearchFilters.apply)
 
   def parse(theme: Option[ThemeSearchFilter] = None,
             tags: Option[TagsSearchFilter] = None,
             labels: Option[LabelsSearchFilter] = None,
+            trending: Option[TrendingSearchFilter] = None,
             content: Option[ContentSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
             context: Option[ContextSearchFilter] = None): Option[SearchFilters] = {
 
-    (theme, tags, labels, content, status, context) match {
-      case (None, None, None, None, None, None) => None
-      case _                                    => Some(SearchFilters(theme, tags, labels, content, status, context))
+    (theme, tags, labels, trending, content, status, context) match {
+      case (None, None, None, None, None, None, None) => None
+      case _ =>
+        Some(SearchFilters(theme, tags, labels, trending, content, status, context))
     }
   }
 
@@ -75,6 +78,7 @@ object SearchFilters extends ElasticDsl {
       buildThemeSearchFilter(searchQuery),
       buildTagsSearchFilter(searchQuery),
       buildLabelsSearchFilter(searchQuery),
+      buildTrendingSearchFilter(searchQuery),
       buildContentSearchFilter(searchQuery),
       buildStatusSearchFilter(searchQuery),
       buildContextOperationSearchFilter(searchQuery),
@@ -124,6 +128,15 @@ object SearchFilters extends ElasticDsl {
       _.labels match {
         case Some(LabelsSearchFilter(labels)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels))
+        case _ => None
+      }
+    }
+  }
+  def buildTrendingSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.trending match {
+        case Some(TrendingSearchFilter(trending)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, trending))
         case _ => None
       }
     }
@@ -215,7 +228,6 @@ case class ThemeSearchFilter(themeIds: Seq[String]) {
 object ThemeSearchFilter {
   implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
-
 }
 
 case class TagsSearchFilter(tagIds: Seq[String]) {
@@ -225,7 +237,6 @@ case class TagsSearchFilter(tagIds: Seq[String]) {
 object TagsSearchFilter {
   implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
-
 }
 
 case class LabelsSearchFilter(labelIds: Seq[String]) {
@@ -235,7 +246,15 @@ case class LabelsSearchFilter(labelIds: Seq[String]) {
 object LabelsSearchFilter {
   implicit val labelsSearchFilterFormatted: RootJsonFormat[LabelsSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(LabelsSearchFilter.apply)
+}
 
+case class TrendingSearchFilter(trending: String) {
+  validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))
+}
+
+object TrendingSearchFilter {
+  implicit val trendingSearchFilterFormatted: RootJsonFormat[TrendingSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(TrendingSearchFilter.apply)
 }
 
 case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
@@ -243,7 +262,6 @@ case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
 object ContentSearchFilter {
   implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
     DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
-
 }
 
 case class StatusSearchFilter(status: ProposalStatus)
@@ -251,7 +269,6 @@ case class StatusSearchFilter(status: ProposalStatus)
 object StatusSearchFilter {
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
-
 }
 
 case class ContextSearchFilter(operation: Option[String],
@@ -262,7 +279,6 @@ case class ContextSearchFilter(operation: Option[String],
 object ContextSearchFilter {
   implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
     DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
-
 }
 
 case class Sort(field: Option[String], mode: Option[SortOrder])
@@ -277,7 +293,6 @@ case class Limit(value: Int)
 object Limit {
   implicit val limitFormatted: RootJsonFormat[Limit] =
     DefaultJsonProtocol.jsonFormat1(Limit.apply)
-
 }
 
 case class Skip(value: Int)
@@ -285,5 +300,4 @@ case class Skip(value: Int)
 object Skip {
   implicit val skipFormatted: RootJsonFormat[Skip] =
     DefaultJsonProtocol.jsonFormat1(Skip.apply)
-
 }

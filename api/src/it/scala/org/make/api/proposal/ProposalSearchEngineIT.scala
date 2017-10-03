@@ -864,7 +864,7 @@ class ProposalSearchEngineIT
       )
     scenario("should return a list of proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.length should be > 0
+        result.total should be > 0
       }
     }
   }
@@ -874,7 +874,7 @@ class ProposalSearchEngineIT
     val query = SearchQuery()
     scenario("should return a list of accepted proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.length should be(acceptedProposals.size)
+        result.total should be(acceptedProposals.size)
       }
     }
   }
@@ -895,8 +895,8 @@ class ProposalSearchEngineIT
     )
     scenario("should return a list of pending proposals") {
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        info(result.map(_.status).mkString)
-        result.size should be(pendingProposals.size)
+        info(result.results.map(_.status).mkString)
+        result.total should be(pendingProposals.size)
       }
     }
   }

@@ -33,7 +33,7 @@ trait ProposalService {
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
                     requestContext: RequestContext): Future[Seq[IndexedProposal]]
-  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[Seq[IndexedProposal]]
+  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsResult]
   def propose(user: User,
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
@@ -151,7 +151,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
-                        requestContext: RequestContext): Future[Seq[IndexedProposal]] = {
+                        requestContext: RequestContext): Future[ProposalsResult] = {
       maybeUserId.foreach { userId =>
         userHistoryService.logHistory(
           LogSearchProposalsEvent(
@@ -253,7 +253,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 filters = Some(SearchFilters(content = Some(ContentSearchFilter(text = indexedProposal.content))))
               )
             )
-            .map({ possibleDuplicates: Seq[IndexedProposal] =>
+            .map({ response =>
+              val possibleDuplicates: Seq[IndexedProposal] = response.results
               // do duplicate detection
               val corpus = Corpus(
                 rawCorpus = possibleDuplicates.filter(_.id != proposalId).map(_.content),

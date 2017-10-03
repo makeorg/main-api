@@ -6,8 +6,6 @@ import org.make.core.proposal._
 import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
 
-import scala.concurrent.Future
-
 object ProposalElasticsearchFieldNames {
   val id: String = "id"
   val userId: String = "userId"
@@ -35,7 +33,7 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.id"
 }
 
-case class ProposalsResult(total: Future[Int], results: Future[Seq[IndexedProposal]])
+case class ProposalsResult(total: Int, results: Seq[IndexedProposal])
 
 case class IndexedProposal(id: ProposalId,
                            userId: UserId,
