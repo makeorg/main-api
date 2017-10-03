@@ -97,6 +97,16 @@ object Validation {
     validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
   }
 
+  def validChoices(fieldName: String,
+                   message: Option[String] = None,
+                   userChoices: Seq[_],
+                   validChoices: Seq[_]): Requirement = {
+    val condition: () => Boolean = () => {
+      userChoices.forall(validChoices.contains)
+    }
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+  }
+
   private def exists(value: Any): Boolean = {
     Option(value).isDefined
   }

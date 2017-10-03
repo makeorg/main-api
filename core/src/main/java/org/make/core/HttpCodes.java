@@ -4,5 +4,5 @@ public class HttpCodes {
 
     public static final int OK = 200;
     public static final int NoContent = 204;
-
+    public static final int Created = 201;
 }
