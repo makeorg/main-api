@@ -539,7 +539,7 @@ object ProposalActor {
           .contains(event.requestContext.sessionId)) {
       qualification.copy(
         count = qualification.count - 1,
-        userIds = qualification.userIds.filter(_ != event.maybeUserId.get),
+        userIds = qualification.userIds.filter(_ != event.maybeUserId.getOrElse(UserId(""))),
         sessionIds = qualification.sessionIds.filter(_ != event.requestContext.sessionId)
       )
     } else {
