@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 
 object Proposal extends SimulationConfig {
 
-  val maxClients = 20
+  val maxClients = 252
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
@@ -32,7 +32,7 @@ object Proposal extends SimulationConfig {
     }
 
   private val userFeeder = ssv(userFeederPath, '"', '\\')
-  private val defaultPause = 0
+  private val defaultPause = 2
 
   val scnRegister: ScenarioBuilder = scenario("Create proposal with theme")
     .feed(userFeeder.circular)

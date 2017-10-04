@@ -8,7 +8,7 @@ import io.gatling.http.request.builder.HttpRequestBuilder
 
 object User extends SimulationConfig {
 
-  val maxClients = 6
+  val maxClients = 94
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
@@ -17,8 +17,15 @@ object User extends SimulationConfig {
     .userAgentHeader(defaultUserAgent)
     .disableCaching
 
-  private val userFeeder = ssv(userFeederPath, '"', '\\')
-  private val defaultPause = 2
+  private val userFeeder = ssv(userFeederPath, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case dateOfBirth if dateOfBirth.isEmpty || dateOfBirth == null => "null"
+        case age                                                       => "\"" + age + "\""
+      }
+  }
+
+  private val defaultPause = 10
 
   val scnRegister: ScenarioBuilder = scenario("Register user")
     .feed(userFeeder)
@@ -27,9 +34,9 @@ object User extends SimulationConfig {
         .pause(defaultPause),
       UserChainBuilder
         .authenticate(UserAuthParams(username = "${username}", password = "${password}"))
-        .pause(defaultPause),
+        .pause(defaultPause) /*,
       UserChainBuilder.getUser
-        .pause(defaultPause)
+        .pause(defaultPause)*/
     )
 }
 
