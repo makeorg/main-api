@@ -5,6 +5,7 @@ import org.elasticsearch.search.sort.SortOrder
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
+import org.make.core.common.indexed.Sort
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 

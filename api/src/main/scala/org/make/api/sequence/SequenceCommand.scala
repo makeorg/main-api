@@ -1,8 +1,9 @@
-package org.make.core.sequence
+package org.make.api.sequence
 
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 
 sealed trait SequenceCommand {

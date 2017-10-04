@@ -1,9 +1,9 @@
 package org.make.api.sequence
 
-import akka.actor.{ActorLogging, PoisonPill, Props}
+import akka.actor.{ActorLogging, PoisonPill}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.sequence.SequenceActor.Snapshot
-import org.make.core.sequence.SequenceEvent._
+import org.make.api.sequence.SequenceEvent._
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -115,7 +115,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
           createdAt = Some(e.eventDate),
           updatedAt = Some(e.eventDate),
           title = e.title,
-          status = SequenceStatus.Unpublished,
+          status = SequenceStatus.Published,
           themeIds = e.themeIds,
           creationContext = e.requestContext,
           tagIds = e.tagIds,
@@ -155,7 +155,6 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
 }
 
 object SequenceActor {
-  def props(dateHelper: DateHelper): Props = Props(new SequenceActor(dateHelper = dateHelper))
 
   case object Snapshot
 }

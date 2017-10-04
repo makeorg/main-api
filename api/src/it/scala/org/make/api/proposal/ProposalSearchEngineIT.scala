@@ -839,7 +839,7 @@ class ProposalSearchEngineIT
   feature("get proposal by id") {
     val proposalId = proposals.head.id
     scenario("should return a proposal") {
-      whenReady(elasticsearchAPI.findProposalById(proposalId), Timeout(3.seconds)) {
+      whenReady(elasticSearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
         case Some(proposal) =>
           proposal.id should equal(proposalId)
         case None => fail("proposal not found by id")
@@ -863,7 +863,7 @@ class ProposalSearchEngineIT
         )
       )
     scenario("should return a list of proposals") {
-      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 0
       }
     }
@@ -873,7 +873,7 @@ class ProposalSearchEngineIT
     Given("searching without query")
     val query = SearchQuery()
     scenario("should return a list of accepted proposals") {
-      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
       }
     }
@@ -894,7 +894,7 @@ class ProposalSearchEngineIT
       )
     )
     scenario("should return a list of pending proposals") {
-      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
       }
@@ -923,7 +923,7 @@ class ProposalSearchEngineIT
 
   feature("saving new proposal") {
     scenario("should return done") {
-      whenReady(elasticsearchAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
         result should be(Done)
       }
     }

@@ -70,11 +70,11 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
     log.debug(s"Indexing $proposal")
-    elasticsearchAPI
+    elasticSearchProposalAPI
       .findProposalById(proposal.id)
       .flatMap {
-        case None    => elasticsearchAPI.indexProposal(proposal)
-        case Some(_) => elasticsearchAPI.updateProposal(proposal)
+        case None    => elasticSearchProposalAPI.indexProposal(proposal)
+        case Some(_) => elasticSearchProposalAPI.updateProposal(proposal)
       }
       .map { _ =>
         }

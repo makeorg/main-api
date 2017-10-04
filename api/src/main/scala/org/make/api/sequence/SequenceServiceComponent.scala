@@ -3,15 +3,17 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 
 import akka.util.Timeout
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory._
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
+import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.user._
-import org.make.core.{RequestContext, SlugHelper}
+import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -22,7 +24,13 @@ trait SequenceServiceComponent {
 }
 
 trait SequenceService {
-  // toDo
+  def search(maybeUserId: Option[UserId],
+             query: SearchQuery,
+             requestContext: RequestContext): Future[SequencesSearchResult]
+  def startNewSequence(maybeUserId: Option[UserId],
+                       slug: String,
+                       excludedProposals: Seq[ProposalId] = Seq.empty,
+                       requestContext: RequestContext): Future[Option[IndexedStartSequence]]
   def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]]
   def create(userId: UserId,
              requestContext: RequestContext,
@@ -33,26 +41,25 @@ trait SequenceService {
   def update(sequenceId: SequenceId,
              moderatorId: UserId,
              requestContext: RequestContext,
-             updatedAt: ZonedDateTime,
-             title: String): Future[Option[Sequence]]
+             title: String): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
                    moderatorId: UserId,
                    requestContext: RequestContext,
-                   updatedAt: ZonedDateTime,
-                   proposalids: Seq[ProposalId]): Future[Option[Sequence]]
+                   proposalIds: Seq[ProposalId]): Future[Option[SequenceResponse]]
   def removeProposals(sequenceId: SequenceId,
                       moderatorId: UserId,
                       requestContext: RequestContext,
-                      updatedAt: ZonedDateTime,
-                      proposalIds: Seq[ProposalId]): Future[Option[Sequence]]
+                      proposalIds: Seq[ProposalId]): Future[Option[SequenceResponse]]
   def getModerationSequenceById(sequenceId: SequenceId): Future[Option[SequenceResponse]]
 }
 
 trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   this: IdGeneratorComponent
+    with ProposalServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with SessionHistoryCoordinatorServiceComponent
     with SequenceServiceComponent
+    with SequenceSearchEngineComponent
     with SequenceCoordinatorServiceComponent
     with EventBusServiceComponent
     with UserServiceComponent =>
@@ -60,6 +67,39 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   override lazy val sequenceService: SequenceService = new SequenceService {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
+
+    override def search(maybeUserId: Option[UserId],
+                        query: SearchQuery,
+                        requestContext: RequestContext): Future[SequencesSearchResult] = {
+      maybeUserId.foreach { userId =>
+        userHistoryCoordinatorService.logHistory(
+          LogUserSearchSequencesEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserSearchSequencesEvent.action, SearchSequenceParameters(query))
+          )
+        )
+      }
+      elasticSearchSequenceAPI.searchSequences(query)
+    }
+
+    override def startNewSequence(maybeUserId: Option[UserId],
+                                  slug: String,
+                                  excludedProposals: Seq[ProposalId] = Seq.empty,
+                                  requestContext: RequestContext): Future[Option[IndexedStartSequence]] = {
+
+      val query = SearchStartSequenceRequest(slug = slug).toSearchQuery
+      maybeUserId.foreach { userId =>
+        userHistoryCoordinatorService.logHistory(
+          LogUserStartSequenceEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserStartSequenceEvent.action, StartSequenceParameters(query))
+          )
+        )
+      }
+      elasticSearchSequenceAPI.getStartSequence(query)
+    }
 
     override def create(userId: UserId,
                         requestContext: RequestContext,
@@ -86,47 +126,59 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     override def addProposals(sequenceId: SequenceId,
                               userId: UserId,
                               requestContext: RequestContext,
-                              updatedAt: ZonedDateTime,
-                              proposalIds: Seq[ProposalId]): Future[Option[Sequence]] = {
-      sequenceCoordinatorService.addProposals(
-        AddProposalsSequenceCommand(
-          sequenceId = sequenceId,
-          requestContext = requestContext,
-          proposalIds = proposalIds,
-          moderatorId = userId
+                              proposalIds: Seq[ProposalId]): Future[Option[SequenceResponse]] = {
+      sequenceCoordinatorService
+        .addProposals(
+          AddProposalsSequenceCommand(
+            sequenceId = sequenceId,
+            requestContext = requestContext,
+            proposalIds = proposalIds,
+            moderatorId = userId
+          )
         )
-      )
+        .flatMap {
+          case Some(sequence) => getSequenceResponse(sequence)
+          case _              => Future.successful(None)
+        }
     }
 
     override def removeProposals(sequenceId: SequenceId,
                                  userId: UserId,
                                  requestContext: RequestContext,
-                                 updatedAt: ZonedDateTime,
-                                 proposalIds: Seq[ProposalId]): Future[Option[Sequence]] = {
-      sequenceCoordinatorService.removeProposals(
-        RemoveProposalsSequenceCommand(
-          moderatorId = userId,
-          sequenceId = sequenceId,
-          proposalIds = proposalIds,
-          requestContext = requestContext
+                                 proposalIds: Seq[ProposalId]): Future[Option[SequenceResponse]] = {
+      sequenceCoordinatorService
+        .removeProposals(
+          RemoveProposalsSequenceCommand(
+            moderatorId = userId,
+            sequenceId = sequenceId,
+            proposalIds = proposalIds,
+            requestContext = requestContext
+          )
         )
-      )
+        .flatMap {
+          case Some(sequence) => getSequenceResponse(sequence)
+          case _              => Future.successful(None)
+        }
     }
 
     override def update(sequenceId: SequenceId,
                         userId: UserId,
                         requestContext: RequestContext,
-                        updatedAt: ZonedDateTime,
-                        title: String): Future[Option[Sequence]] = {
+                        title: String): Future[Option[SequenceResponse]] = {
 
-      sequenceCoordinatorService.update(
-        UpdateSequenceCommand(
-          moderatorId = userId,
-          sequenceId = sequenceId,
-          requestContext = requestContext,
-          title = title
+      sequenceCoordinatorService
+        .update(
+          UpdateSequenceCommand(
+            moderatorId = userId,
+            sequenceId = sequenceId,
+            requestContext = requestContext,
+            title = title
+          )
         )
-      )
+        .flatMap {
+          case Some(sequence) => getSequenceResponse(sequence)
+          case _              => Future.successful(None)
+        }
     }
 
     override def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]] = {
@@ -134,7 +186,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     }
 
     override def getModerationSequenceById(sequenceId: SequenceId): Future[Option[SequenceResponse]] = {
-
       sequenceCoordinatorService.getSequence(sequenceId).flatMap {
         case Some(sequence) => getSequenceResponse(sequence)
         case _              => Future.successful(None)

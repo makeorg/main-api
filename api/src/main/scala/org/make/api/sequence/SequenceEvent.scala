@@ -1,15 +1,16 @@
-package org.make.core.sequence
+package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
+import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 sealed trait SequenceEvent extends MakeSerializable {
   def id: SequenceId

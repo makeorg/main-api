@@ -24,7 +24,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>
         Future.traverse(themes) { theme =>
-          elasticsearchAPI
+          elasticSearchProposalAPI
             .countProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
             )

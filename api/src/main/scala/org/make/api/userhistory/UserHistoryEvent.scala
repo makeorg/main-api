@@ -3,15 +3,16 @@ package org.make.api.userhistory
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
-import org.make.core.SprayJsonFormatters._
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.ThemeId
-import org.make.core.sequence.SequenceEvent.{
+import org.make.api.sequence.SequenceEvent.{
   SequenceCreated,
   SequenceProposalsAdded,
   SequenceProposalsRemoved,
   SequenceUpdated
 }
+import org.make.core.SprayJsonFormatters._
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.reference.ThemeId
+import org.make.core.sequence.{SearchQuery => SequenceSearchQuery}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
@@ -58,6 +59,8 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserCreateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
           case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) => json.convertTo[LogGetProposalDuplicatesEvent]
           case Seq(JsString("LogUserUpdateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserSearchSequencesEvent"))         => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserStartSequenceEvent"))           => json.convertTo[LogGetProposalDuplicatesEvent]
         }
       }
 
@@ -77,6 +80,8 @@ object UserHistoryEvent {
           case event: LogUserCreateSequenceEvent          => event.toJson
           case event: LogUserRemoveProposalsSequenceEvent => event.toJson
           case event: LogUserUpdateSequenceEvent          => event.toJson
+          case event: LogUserSearchSequencesEvent         => event.toJson
+          case event: LogUserStartSequenceEvent           => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -88,7 +93,18 @@ final case class UserSearchParameters(term: String)
 object UserSearchParameters {
   implicit val searchParametersFormatted: RootJsonFormat[UserSearchParameters] =
     DefaultJsonProtocol.jsonFormat1(UserSearchParameters.apply)
+}
 
+final case class SearchSequenceParameters(query: SequenceSearchQuery)
+object SearchSequenceParameters {
+  implicit val searchParametersFormatted: RootJsonFormat[SearchSequenceParameters] =
+    DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
+}
+
+final case class StartSequenceParameters(query: SequenceSearchQuery)
+object StartSequenceParameters {
+  implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
+    DefaultJsonProtocol.jsonFormat1(StartSequenceParameters.apply)
 }
 
 final case class UserRegistered(email: String,
@@ -338,6 +354,34 @@ object LogUserUpdateSequenceEvent {
 
   implicit val logUserUpdateSequenceEventFormatted: RootJsonFormat[LogUserUpdateSequenceEvent] =
     DefaultJsonProtocol.jsonFormat(LogUserUpdateSequenceEvent.apply, "userId", "context", "action")
+}
+
+final case class LogUserSearchSequencesEvent(userId: UserId,
+                                             requestContext: RequestContext,
+                                             action: UserAction[SearchSequenceParameters])
+    extends UserHistoryEvent[SearchSequenceParameters] {
+  override val protagonist: Protagonist = Moderator
+}
+object LogUserSearchSequencesEvent {
+  val action: String = "search-sequence"
+
+  implicit val logUserSearchSequencesEventFormatted: RootJsonFormat[LogUserSearchSequencesEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserSearchSequencesEvent.apply, "userId", "context", "action")
+
+}
+
+final case class LogUserStartSequenceEvent(userId: UserId,
+                                           requestContext: RequestContext,
+                                           action: UserAction[StartSequenceParameters])
+    extends UserHistoryEvent[StartSequenceParameters] {
+  override val protagonist: Protagonist = Citizen
+}
+object LogUserStartSequenceEvent {
+  val action: String = "start-sequence"
+
+  implicit val logUserStartSequenceEventFormatted: RootJsonFormat[LogUserStartSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserStartSequenceEvent.apply, "userId", "context", "action")
+
 }
 
 sealed trait UserHistoryAction {

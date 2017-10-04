@@ -5,8 +5,8 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
-import org.make.core.SprayJsonFormatters._
 import org.make.core.Validation.{validate, validateField}
+import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -20,14 +20,13 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
   * @param skip    number of items to skip
   */
 case class SearchQuery(filters: Option[SearchFilters] = None,
-                       sorts: Seq[Sort] = Seq.empty,
+                       sorts: Seq[IndexedSort] = Seq.empty,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None)
 
 object SearchQuery {
   implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
     DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)
-
 }
 
 /**

@@ -50,7 +50,13 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogGetProposalDuplicatesEvent]("user-history-get-proposals-duplicate")
 
   private val logUserUpdateSequenceEventSerializer: JsonPersister[LogUserUpdateSequenceEvent, V1] =
-    json.persister[LogUserUpdateSequenceEvent]("user-history-create-sequence")
+    json.persister[LogUserUpdateSequenceEvent]("user-history-update-sequence")
+
+  private val logUserSearchSequencesEventSerializer: JsonPersister[LogUserSearchSequencesEvent, V1] =
+    json.persister[LogUserSearchSequencesEvent]("user-history-search-sequence")
+
+  private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V1] =
+    json.persister[LogUserStartSequenceEvent]("user-history-start-sequence")
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
@@ -68,6 +74,8 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logUserUpdateSequenceEventSerializer,
       logUserAddProposalsSequenceEventSerializer,
       logUserRemoveSequenceEventSerializer,
-      logGetProposalDuplicatesEventSerializer
+      logGetProposalDuplicatesEventSerializer,
+      logUserSearchSequencesEventSerializer,
+      logUserStartSequenceEventSerializer
     )
 }

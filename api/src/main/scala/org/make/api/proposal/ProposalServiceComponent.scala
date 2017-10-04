@@ -100,7 +100,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def getProposalById(proposalId: ProposalId,
                                  requestContext: RequestContext): Future[Option[IndexedProposal]] = {
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
-      elasticsearchAPI.findProposalById(proposalId)
+      elasticSearchProposalAPI.findProposalById(proposalId)
     }
 
     private def proposalResponse(proposal: Proposal, author: User): Future[Option[ProposalResponse]] = {
@@ -184,7 +184,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
         }
       })
-      elasticsearchAPI.searchProposals(query)
+      elasticSearchProposalAPI.searchProposals(query)
     }
 
     def mergeVoteResults(maybeUserId: Option[UserId],
@@ -322,9 +322,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         )
       )
 
-      elasticsearchAPI.findProposalById(proposalId).flatMap {
+      elasticSearchProposalAPI.findProposalById(proposalId).flatMap {
         case Some(indexedProposal) =>
-          elasticsearchAPI
+          elasticSearchProposalAPI
             .searchProposals(
               SearchQuery(
                 // TODO add language filter

@@ -69,6 +69,7 @@ trait MakeApi
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultSequenceCoordinatorServiceComponent
+    with DefaultSequenceSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
