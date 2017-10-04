@@ -36,13 +36,13 @@ object Validation {
 
   def maxLength(field: String,
                 maxLength: Int,
-                fieldValue: => String,
+                fieldValue: String,
                 message: Option[Int => String] = None): Requirement = {
 
-    def computeLength: Int = {
+    val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
     }
-    def isValid = {
+    val isValid = {
       computeLength <= maxLength
     }
 
@@ -51,6 +51,27 @@ object Validation {
         ""
       } else {
         message.map(_(computeLength)).getOrElse(s"$field should not be longer than $maxLength")
+      }
+    })
+
+  }
+  def minLength(field: String,
+                minLength: Int,
+                fieldValue: String,
+                message: Option[Int => String] = None): Requirement = {
+
+    val computeLength: Int = {
+      Option(fieldValue).map(_.length).getOrElse(0)
+    }
+    val isValid = {
+      computeLength >= minLength
+    }
+
+    Requirement(field, () => isValid, () => {
+      if (isValid) {
+        ""
+      } else {
+        message.map(_(computeLength)).getOrElse(s"$field should not be shorter than $minLength")
       }
     })
 

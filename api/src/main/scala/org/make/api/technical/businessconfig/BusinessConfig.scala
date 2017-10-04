@@ -25,7 +25,7 @@ case class FrontConfiguration(override val proposalMinLength: Int,
     extends BusinessConfig
 
 object BusinessConfig {
-  val defaultProposalMinLength: Int = 7
+  val defaultProposalMinLength: Int = 12
   val defaultProposalMaxLength: Int = 140
   val themes: Seq[Theme] = Seq.empty
 }

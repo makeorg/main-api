@@ -18,7 +18,7 @@ import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus, SearchQuery
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 
@@ -171,9 +171,11 @@ class ProposalApiTest
     )
 
   val validProposalText: String = "Il faut que tout le monde respecte les conventions de code"
-  val invalidProposalText: String =
+  val invalidMaxLengthProposalText: String =
     "Il faut que le texte de la proposition n'exède pas une certaine limite, par exemple 140 caractères car sinon, " +
       "ça fait vraiment troooooop long. D'un autre côté on en dit peu en 140 caractères..."
+
+  val invalidMinLengthProposalText: String = "Il faut"
 
   when(
     proposalService
@@ -274,15 +276,33 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal") {
+    scenario("invalid proposal due to max length") {
       Given("an authenticated user")
-      When("the user wants to propose")
+      When("the user wants to propose a long proposal")
       Then("the proposal should be rejected if invalid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidProposalText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMaxLengthProposalText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "content")
+        contentError should be(Some(ValidationError("content", Some("content should not be longer than 140"))))
+      }
+    }
+
+    scenario("invalid proposal due to min length") {
+      Given("an authenticated user")
+      When("the user wants to propose a short proposal")
+      Then("the proposal should be rejected if invalid")
+
+      Post("/proposals")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMinLengthProposalText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "content")
+        contentError should be(Some(ValidationError("content", Some("content should not be shorter than 12"))))
       }
     }
   }
