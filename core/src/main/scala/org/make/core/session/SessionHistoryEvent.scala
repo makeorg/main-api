@@ -126,3 +126,6 @@ sealed trait SessionHistoryAction {
 }
 
 final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryAction
+
+final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
+    extends SessionHistoryAction

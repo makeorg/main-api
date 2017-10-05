@@ -3,6 +3,8 @@ package org.make.api.sessionhistory
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.userhistory.UserHistoryActor.VoteAndQualifications
+import org.make.core.proposal.ProposalId
 import org.make.core.session._
 
 class SessionHistoryActor extends PersistentActor with ActorLogging {
@@ -18,12 +20,13 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
   }
 
   override def receiveCommand: Receive = {
-    case GetSessionHistory(_)                    => sender() ! state
-    case command: LogSessionVoteEvent            => persistEvent(command)
-    case command: LogSessionUnvoteEvent          => persistEvent(command)
-    case command: LogSessionQualificationEvent   => persistEvent(command)
-    case command: LogSessionUnqualificationEvent => persistEvent(command)
-    case command: LogSessionSearchProposalsEvent => persistEvent(command)
+    case GetSessionHistory(_)                     => sender() ! state
+    case command: LogSessionVoteEvent             => persistEvent(command)
+    case command: LogSessionUnvoteEvent           => persistEvent(command)
+    case command: LogSessionQualificationEvent    => persistEvent(command)
+    case command: LogSessionUnqualificationEvent  => persistEvent(command)
+    case command: LogSessionSearchProposalsEvent  => persistEvent(command)
+    case RequestSessionVoteValues(_, proposalIds) => sender() ! Map[ProposalId, VoteAndQualifications]()
   }
 
   override def persistenceId: String = sessionId.value

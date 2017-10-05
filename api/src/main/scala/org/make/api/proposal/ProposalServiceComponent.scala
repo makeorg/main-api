@@ -339,15 +339,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          proposalCoordinatorService.vote(
-            VoteProposalCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              vote = None // TODO: send vote info
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
             )
-          )
+            .flatMap { votes =>
+              proposalCoordinatorService.vote(
+                VoteProposalCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  vote = votes.get(proposalId)
+                )
+              )
+            }
       }
 
     }
@@ -373,15 +379,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          proposalCoordinatorService.unvote(
-            UnvoteProposalCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              vote = None // TODO: send vote info
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
             )
-          )
+            .flatMap { votes =>
+              proposalCoordinatorService.unvote(
+                UnvoteProposalCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  vote = votes.get(proposalId)
+                )
+              )
+            }
       }
 
     }
@@ -409,16 +421,22 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          proposalCoordinatorService.qualification(
-            QualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              qualificationKey = qualificationKey,
-              vote = None // TODO: send vote info
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
             )
-          )
+            .flatMap { votes =>
+              proposalCoordinatorService.qualification(
+                QualifyVoteCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  qualificationKey = qualificationKey,
+                  vote = votes.get(proposalId)
+                )
+              )
+            }
       }
 
     }
@@ -446,16 +464,22 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          proposalCoordinatorService.unqualification(
-            UnqualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              qualificationKey = qualificationKey,
-              vote = None // TODO: send votes
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
             )
-          )
+            .flatMap { votes =>
+              proposalCoordinatorService.unqualification(
+                UnqualifyVoteCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  qualificationKey = qualificationKey,
+                  vote = votes.get(proposalId)
+                )
+              )
+            }
       }
 
     }
