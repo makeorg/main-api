@@ -42,30 +42,9 @@ class ProposalActor extends PersistentActor with ActorLogging {
   }
 
   private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
-
-    if (command.vote.isEmpty) {
-      persistAndPublishEvent(
-        ProposalVoted(
-          id = proposalId,
-          maybeUserId = command.maybeUserId,
-          eventDate = DateHelper.now(),
-          requestContext = command.requestContext,
-          voteKey = command.voteKey
-        )
-      ) {
-        sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
-        self ! Snapshot
-      }
-    } else {
-      persistAndPublishEvents(
-        immutable.Seq(
-          ProposalUnvoted(
-            id = proposalId,
-            maybeUserId = command.maybeUserId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            voteKey = command.voteKey
-          ),
+    command.vote match {
+      case None =>
+        persistAndPublishEvent(
           ProposalVoted(
             id = proposalId,
             maybeUserId = command.maybeUserId,
@@ -73,65 +52,115 @@ class ProposalActor extends PersistentActor with ActorLogging {
             requestContext = command.requestContext,
             voteKey = command.voteKey
           )
-        )
-      ) {
-        case _: ProposalVoted =>
+        ) {
           sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
-        case _ =>
-      }
+          self ! Snapshot
+        }
+      case Some(vote) if vote.voteKey == command.voteKey =>
+        sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+      case Some(vote) =>
+        persistAndPublishEvents(
+          immutable.Seq(
+            ProposalUnvoted(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              voteKey = vote.voteKey
+            ),
+            ProposalVoted(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              voteKey = command.voteKey
+            )
+          )
+        ) {
+          case _: ProposalVoted =>
+            sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+          case _ =>
+        }
     }
-
   }
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {
-    persistAndPublishEvent(
-      ProposalUnvoted(
-        id = proposalId,
-        maybeUserId = command.maybeUserId,
-        eventDate = DateHelper.now(),
-        requestContext = command.requestContext,
-        voteKey = command.voteKey
-      )
-    ) {
-      sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
-      self ! Snapshot
+    command.vote match {
+      case None => sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+      case Some(vote) =>
+        persistAndPublishEvent(
+          ProposalUnvoted(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = vote.voteKey
+          )
+        ) {
+          sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+          self ! Snapshot
+        }
     }
+
   }
 
   private def onQualificationProposalCommand(command: QualifyVoteCommand): Unit = {
-    persistAndPublishEvent(
-      ProposalQualified(
-        id = proposalId,
-        maybeUserId = command.maybeUserId,
-        eventDate = DateHelper.now(),
-        requestContext = command.requestContext,
-        voteKey = command.voteKey,
-        qualificationKey = command.qualificationKey
-      )
-    ) {
-      sender() ! state
-        .flatMap(_.votes.find(_.key == command.voteKey))
-        .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-      self ! Snapshot
+    command.vote match {
+      case None =>
+        sender() ! state
+          .flatMap(_.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+      case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
+        sender() ! state
+          .flatMap(_.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+      case _ =>
+        persistAndPublishEvent(
+          ProposalQualified(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = command.voteKey,
+            qualificationKey = command.qualificationKey
+          )
+        ) {
+          sender() ! state
+            .flatMap(_.votes.find(_.key == command.voteKey))
+            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+          self ! Snapshot
+        }
     }
   }
 
   private def onUnqualificationProposalCommand(command: UnqualifyVoteCommand): Unit = {
-    persistAndPublishEvent(
-      ProposalUnqualified(
-        id = proposalId,
-        maybeUserId = command.maybeUserId,
-        eventDate = DateHelper.now(),
-        requestContext = command.requestContext,
-        voteKey = command.voteKey,
-        qualificationKey = command.qualificationKey
-      )
-    ) {
-      sender() ! state
-        .flatMap(_.votes.find(_.key == command.voteKey))
-        .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-      self ! Snapshot
+    command.vote match {
+      case None =>
+        sender() ! state
+          .flatMap(_.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+      case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
+        persistAndPublishEvent(
+          ProposalUnqualified(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = command.voteKey,
+            qualificationKey = command.qualificationKey
+          )
+        ) {
+          sender() ! state
+            .flatMap(_.votes.find(_.key == command.voteKey))
+            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+          self ! Snapshot
+        }
+      case _ =>
+        sender() ! state
+          .flatMap(_.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
     }
+
   }
 
   private def onViewProposalCommand(command: ViewProposalCommand): Unit = {
