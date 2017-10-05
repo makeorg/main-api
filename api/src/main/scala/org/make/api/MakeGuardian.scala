@@ -1,8 +1,7 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.stream.ActorMaterializer
-import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSupervisor}
+import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
@@ -13,7 +12,6 @@ import org.make.api.userhistory.UserHistoryCoordinator
 class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
-    val materializer: ActorMaterializer = ActorMaterializer()
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
     context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
 
@@ -28,6 +26,15 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
         MakeBackoffSupervisor.propsAndName(
           SessionHistoryConsumerActor.props(sessionHistoryCoordinator),
           SessionHistoryConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          ProposalSessionHistoryConsumerActor.props(sessionHistoryCoordinator),
+          ProposalSessionHistoryConsumerActor.name
         )
       context.actorOf(props, name)
     }

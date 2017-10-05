@@ -5,12 +5,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe._
 import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{
-  MailJetConfiguration,
-  MailJetConfigurationComponent,
-  MakeSettings,
-  MakeSettingsComponent
-}
+import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent, MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth._
 import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
 import org.mockito.ArgumentMatchers.any

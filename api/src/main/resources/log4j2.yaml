@@ -30,7 +30,7 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
       - name: org.apache.http
-        level: debug
+        level: error
         additivity: false
         AppenderRef:
           - ref: AkkaConsole
@@ -66,6 +66,12 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
       - name: org.apache.kafka
+        level: warn
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: sun.net
         level: warn
         additivity: false
         AppenderRef:

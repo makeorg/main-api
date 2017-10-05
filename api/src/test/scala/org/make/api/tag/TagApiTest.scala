@@ -14,8 +14,8 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.reference.Tag
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => matches}
+import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
 
 import scala.concurrent.Future

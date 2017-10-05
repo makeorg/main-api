@@ -165,5 +165,5 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
 object ProposalSessionHistoryConsumerActor {
   val name: String = "proposal-events-session-history-consumer"
   def props(sessionHistoryCoordinator: ActorRef): Props =
-    Props(new ProposalUserHistoryConsumerActor(sessionHistoryCoordinator))
+    Props(new ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator))
 }

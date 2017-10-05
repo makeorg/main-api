@@ -99,8 +99,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         )
       )
       _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
-    } yield
-      RequestContext(
+    } yield {
+
+      val context = RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
         requestId = requestId,
         sessionId = SessionId(sessionId),
@@ -112,6 +113,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         language = maybeLanguage,
         country = maybeCountry
       )
+      println(s"extracted ${context.toString}")
+      context
+    }
   }
 
   def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =

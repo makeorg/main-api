@@ -90,7 +90,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("proposals" / "search") {
         makeTrace("Search") { requestContext =>
-          // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest {
               entity(as[SearchRequest]) { request: SearchRequest =>

@@ -74,6 +74,6 @@ class SessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
 
 object SessionHistoryConsumerActor {
   def props(sessionHistoryCoordinator: ActorRef): Props =
-    Props(new UserHistoryConsumerActor(sessionHistoryCoordinator))
+    Props(new SessionHistoryConsumerActor(sessionHistoryCoordinator))
   val name: String = "session-events-history-consumer"
 }
