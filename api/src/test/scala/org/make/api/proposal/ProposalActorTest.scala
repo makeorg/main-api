@@ -8,7 +8,6 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Qualification, QualificationKey, Vote, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}

@@ -3,9 +3,8 @@ package org.make.core.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
-import org.make.core.proposal.{ProposalId, SearchQuery}
+import org.make.core.proposal.{ProposalId, QualificationKey, SearchQuery, VoteKey}
 import org.make.core.reference.ThemeId
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._

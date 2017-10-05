@@ -10,7 +10,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.proposal.indexed._
+import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.session._

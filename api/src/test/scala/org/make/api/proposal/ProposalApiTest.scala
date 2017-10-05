@@ -15,7 +15,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserResponse
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}

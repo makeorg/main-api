@@ -5,8 +5,7 @@ import java.time.ZonedDateTime
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.userhistory.UserHistoryActor._
-import org.make.core.proposal.ProposalId
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 
 class UserHistoryActor extends PersistentActor with ActorLogging {

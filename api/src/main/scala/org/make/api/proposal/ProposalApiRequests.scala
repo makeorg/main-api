@@ -6,7 +6,6 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 
 final case class ProposeProposalRequest(content: String, theme: Option[ThemeId]) {

@@ -3,7 +3,6 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 

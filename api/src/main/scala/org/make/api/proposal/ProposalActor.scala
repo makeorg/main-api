@@ -9,20 +9,9 @@ import org.make.api.proposal.ProposalActor._
 import org.make.core._
 import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
-import org.make.core.proposal._
-import org.make.core.proposal.indexed.QualificationKey.{
-  DoNotCare,
-  DoNotUnderstand,
-  Doable,
-  Impossible,
-  LikeIt,
-  NoOpinion,
-  NoWay,
-  PlatitudeAgree,
-  PlatitudeDisagree
-}
-import org.make.core.proposal.indexed.VoteKey.{Agree, Disagree, Neutral}
-import org.make.core.proposal.indexed.{Qualification, Vote}
+import org.make.core.proposal.QualificationKey._
+import org.make.core.proposal.VoteKey._
+import org.make.core.proposal.{Qualification, Vote, _}
 
 class ProposalActor extends PersistentActor with ActorLogging {
   def proposalId: ProposalId = ProposalId(self.path.name)
@@ -402,11 +391,7 @@ object ProposalActor {
   }
 
   def applyUnqualifVote(qualification: Qualification): Qualification = {
-    if (qualification.hasQualified) {
-      qualification.copy(count = qualification.count - 1)
-    } else {
-      qualification
-    }
+    qualification.copy(count = qualification.count - 1)
   }
 
   def applyProposalQualified(state: Proposal, event: ProposalQualified): Proposal = {

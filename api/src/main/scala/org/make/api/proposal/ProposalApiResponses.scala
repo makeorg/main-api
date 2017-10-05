@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.proposal._
 import org.make.core.reference.{LabelId, Tag, TagId, ThemeId}
 import org.make.core.user.UserId
 
