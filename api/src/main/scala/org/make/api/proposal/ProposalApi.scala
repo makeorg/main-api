@@ -10,7 +10,6 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
