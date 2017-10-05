@@ -3,7 +3,8 @@ package org.make.api.userhistory
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import org.make.api.userhistory.UserHistoryActor.{RequestVoteValues, UserHistory, VoteAndQualifications}
+import org.make.api.userhistory.UserHistoryActor.{RequestVoteValues, UserHistory}
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.user._
 

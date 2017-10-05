@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
-import org.make.api.userhistory.UserHistoryActor.VoteAndQualifications
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.session.{GetSessionHistory, RequestSessionVoteValues, SessionHistoryEvent, SessionId}
 

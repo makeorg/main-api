@@ -2,8 +2,8 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.api.userhistory.UserHistoryActor.VoteAndQualifications
 import org.make.core.RequestContext
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}

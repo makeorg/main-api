@@ -1,11 +1,10 @@
 package org.make.api.userhistory
 
-import java.time.ZonedDateTime
-
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.userhistory.UserHistoryActor._
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.history.HistoryActions._
+import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.user._
 
 class UserHistoryActor extends PersistentActor with ActorLogging {
@@ -124,25 +123,4 @@ object UserHistoryActor {
 
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId])
 
-  final case class VoteAndQualifications(voteKey: VoteKey, qualificationKeys: Seq[QualificationKey])
-
-  sealed trait VoteRelatedAction {
-    def proposalId: ProposalId
-    def date: ZonedDateTime
-  }
-
-  sealed trait GenericVoteAction extends VoteRelatedAction {
-    def key: VoteKey
-  }
-
-  sealed trait GenericQualificationAction extends VoteRelatedAction {
-    def key: QualificationKey
-  }
-
-  final case class VoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey) extends GenericVoteAction
-  final case class UnvoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey) extends GenericVoteAction
-  final case class QualificationAction(proposalId: ProposalId, date: ZonedDateTime, key: QualificationKey)
-      extends GenericQualificationAction
-  final case class UnqualificationAction(proposalId: ProposalId, date: ZonedDateTime, key: QualificationKey)
-      extends GenericQualificationAction
 }

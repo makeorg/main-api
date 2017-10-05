@@ -391,10 +391,11 @@ class ProposalActor extends PersistentActor with ActorLogging {
     }
   }
 
-  private def persistAndPublishEvents(events: immutable.Seq[ProposalEvent])(andThen: => Unit): Unit = {
+  private def persistAndPublishEvents(events: immutable.Seq[ProposalEvent])(andThen: ProposalEvent => Unit): Unit = {
     persistAll(events) { event: ProposalEvent =>
       state = applyEvent(event)
       context.system.eventStream.publish(event)
+      andThen(event)
     }
   }
 
