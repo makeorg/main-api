@@ -3,7 +3,6 @@ package org.make.api.userhistory
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
-import org.make.core.user.UserHistoryEvent
 
 class UserHistoryCoordinator extends Actor {
   ClusterSharding(context.system).start(

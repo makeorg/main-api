@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory._
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
@@ -344,7 +344,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalId = proposalId,
           maybeUserId = maybeUserId,
           requestContext = requestContext,
-          voteKey = voteKey
+          voteKey = voteKey,
+          userVoteInfo = None // TODO: send vote info
         )
       )
     }

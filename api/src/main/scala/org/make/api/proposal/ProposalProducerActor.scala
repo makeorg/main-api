@@ -4,8 +4,7 @@ import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.DateHelper
-import org.make.core.proposal.ProposalEvent
-import org.make.core.proposal.ProposalEvent._
+import org.make.api.proposal.ProposalEvent._
 
 class ProposalProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[ProposalEvent] = classOf[ProposalEvent]

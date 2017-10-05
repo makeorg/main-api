@@ -4,7 +4,6 @@ import akka.actor.{Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import org.make.core.proposal.ProposalCommand
 
 import scala.concurrent.duration._
 

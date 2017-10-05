@@ -6,7 +6,6 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.userhistory.ShardedUserHistory.StopUserHistory
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
-import org.make.core.user.{UserHistoryAction, UserHistoryEvent}
 
 import scala.concurrent.duration._
 

@@ -6,8 +6,8 @@ import java.time.{LocalDate, ZoneOffset}
 import akka.actor.{ActorLogging, PoisonPill, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.proposal.ProposalActor._
+import org.make.api.proposal.ProposalEvent._
 import org.make.core._
-import org.make.core.proposal.ProposalEvent._
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._

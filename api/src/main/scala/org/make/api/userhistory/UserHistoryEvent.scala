@@ -1,14 +1,15 @@
-package org.make.core.user
+package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
+import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
+import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, SearchQuery, VoteKey}
 import org.make.core.reference.ThemeId
+import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
-import org.make.core.SprayJsonFormatters._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 

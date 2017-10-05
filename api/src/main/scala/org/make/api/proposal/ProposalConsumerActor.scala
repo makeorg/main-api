@@ -14,7 +14,7 @@ import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.user.UserService
 import org.make.core.RequestContext
-import org.make.core.proposal.ProposalEvent._
+import org.make.api.proposal.ProposalEvent._
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import shapeless.Poly1

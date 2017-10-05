@@ -1,14 +1,15 @@
-package org.make.core.proposal
+package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.core.SprayJsonFormatters._
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 sealed trait ProposalEvent extends MakeSerializable {
   def id: ProposalId

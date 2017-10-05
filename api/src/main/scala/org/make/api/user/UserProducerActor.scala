@@ -3,9 +3,9 @@ package org.make.api.user
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
+import org.make.api.userhistory.UserEvent
 import org.make.core.DateHelper
-import org.make.core.user.UserEvent
-import org.make.core.user.UserEvent.{
+import org.make.api.userhistory.UserEvent.{
   ResendValidationEmailEvent,
   ResetPasswordEvent,
   UserEventWrapper,

@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.userhistory.UserHistoryActor.{RequestVoteValues, VoteAndQualifications}
-import org.make.api.userhistory.UserHistoryCoordinator
+import org.make.api.userhistory._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}

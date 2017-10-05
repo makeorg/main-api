@@ -1,7 +1,6 @@
 package org.make.api.userhistory
 
 import org.make.core.SprayJsonFormatters
-import org.make.core.user._
 import stamina.json.JsonPersister
 import stamina.{json, V1}
 

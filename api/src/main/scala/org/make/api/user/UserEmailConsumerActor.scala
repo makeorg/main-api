@@ -6,7 +6,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
-import org.make.core.user.UserEvent.{
+import org.make.api.userhistory.UserEvent.{
   ResendValidationEmailEvent,
   ResetPasswordEvent,
   UserEventWrapper,

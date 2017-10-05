@@ -1,7 +1,8 @@
-package org.make.core.user
+package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
 

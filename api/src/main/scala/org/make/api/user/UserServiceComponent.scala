@@ -9,7 +9,7 @@ import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, ResetT
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.core.profile.Profile
-import org.make.core.user.UserEvent.UserRegisteredEvent
+import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 

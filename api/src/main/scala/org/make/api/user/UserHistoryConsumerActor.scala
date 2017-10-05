@@ -6,13 +6,13 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
-import org.make.core.user.UserEvent.{
+import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
+import org.make.api.userhistory.UserEvent.{
   ResendValidationEmailEvent,
   ResetPasswordEvent,
   UserEventWrapper,
   UserRegisteredEvent
 }
-import org.make.core.user.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global

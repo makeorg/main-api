@@ -4,8 +4,8 @@ import java.time.ZonedDateTime
 
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
-import org.make.core.proposal.indexed._
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.reference.{LabelId, Tag, TagId, ThemeId}
 import org.make.core.user.UserId
 
@@ -62,7 +62,7 @@ object VoteResponse {
       count = vote.count,
       qualifications = vote.qualifications
         .map(qualification => QualificationResponse.parseQualification(qualification)),
-      hasVoted = vote.hasVoted
+      hasVoted = false
     )
 }
 
@@ -70,9 +70,5 @@ final case class QualificationResponse(qualificationKey: QualificationKey, count
 
 object QualificationResponse {
   def parseQualification(qualification: Qualification): QualificationResponse =
-    QualificationResponse(
-      qualificationKey = qualification.key,
-      count = qualification.count,
-      hasQualified = qualification.hasQualified
-    )
+    QualificationResponse(qualificationKey = qualification.key, count = qualification.count, hasQualified = false)
 }

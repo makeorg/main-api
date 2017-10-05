@@ -1,8 +1,10 @@
-package org.make.core.proposal
+package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.api.userhistory.UserHistoryActor.VoteAndQualifications
 import org.make.core.RequestContext
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 
@@ -52,7 +54,8 @@ final case class RefuseProposalCommand(moderator: UserId,
 final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
-                                     voteKey: VoteKey)
+                                     voteKey: VoteKey,
+                                     userVoteInfo: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class UnvoteProposalCommand(proposalId: ProposalId,
