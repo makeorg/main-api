@@ -324,14 +324,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                               voteKey: VoteKey): Future[Option[Vote]] = {
       maybeUserId match {
         case Some(userId) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserVoteEvent(
-              userId,
-              requestContext,
-              UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposalId, voteKey))
-            )
-          )
-
           userHistoryCoordinatorService
             .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
             .flatMap(
@@ -347,13 +339,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          sessionHistoryCoordinatorService.logHistory(
-            LogSessionVoteEvent(
-              requestContext.sessionId,
-              requestContext,
-              SessionAction(DateHelper.now(), LogSessionVoteEvent.action, SessionVote(proposalId, voteKey))
-            )
-          )
           proposalCoordinatorService.vote(
             VoteProposalCommand(
               proposalId = proposalId,
@@ -373,14 +358,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                 voteKey: VoteKey): Future[Option[Vote]] = {
       maybeUserId match {
         case Some(userId) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserUnvoteEvent(
-              userId,
-              requestContext,
-              UserAction(DateHelper.now(), LogUserUnvoteEvent.action, UserUnvote(proposalId, voteKey))
-            )
-          )
-
           userHistoryCoordinatorService
             .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
             .flatMap(
@@ -396,14 +373,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          sessionHistoryCoordinatorService.logHistory(
-            LogSessionUnvoteEvent(
-              requestContext.sessionId,
-              requestContext,
-              SessionAction(DateHelper.now(), LogSessionUnvoteEvent.action, SessionUnvote(proposalId, voteKey))
-            )
-          )
-
           proposalCoordinatorService.unvote(
             UnvoteProposalCommand(
               proposalId = proposalId,
@@ -424,17 +393,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                              qualificationKey: QualificationKey): Future[Option[Qualification]] = {
       maybeUserId match {
         case Some(userId) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserQualificationEvent(
-              userId,
-              requestContext,
-              UserAction(
-                DateHelper.now(),
-                LogUserQualificationEvent.action,
-                UserQualification(proposalId, qualificationKey)
-              )
-            )
-          )
           userHistoryCoordinatorService
             .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
             .flatMap(
@@ -451,17 +409,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          sessionHistoryCoordinatorService.logHistory(
-            LogSessionQualificationEvent(
-              requestContext.sessionId,
-              requestContext,
-              SessionAction(
-                DateHelper.now(),
-                LogSessionQualificationEvent.action,
-                SessionQualification(proposalId, qualificationKey)
-              )
-            )
-          )
           proposalCoordinatorService.qualification(
             QualifyVoteCommand(
               proposalId = proposalId,
@@ -469,7 +416,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               requestContext = requestContext,
               voteKey = voteKey,
               qualificationKey = qualificationKey,
-              vote = None
+              vote = None // TODO: send vote info
             )
           )
       }
@@ -483,17 +430,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                qualificationKey: QualificationKey): Future[Option[Qualification]] = {
       maybeUserId match {
         case Some(userId) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserUnqualificationEvent(
-              userId,
-              requestContext,
-              UserAction(
-                DateHelper.now(),
-                LogUserUnqualificationEvent.action,
-                UserUnqualification(proposalId, qualificationKey)
-              )
-            )
-          )
           userHistoryCoordinatorService
             .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
             .flatMap(
@@ -510,18 +446,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
         case None =>
-          sessionHistoryCoordinatorService.logHistory(
-            LogSessionUnqualificationEvent(
-              requestContext.sessionId,
-              requestContext,
-              SessionAction(
-                DateHelper.now(),
-                LogSessionUnqualificationEvent.action,
-                SessionUnqualification(proposalId, qualificationKey)
-              )
-            )
-          )
-
           proposalCoordinatorService.unqualification(
             UnqualifyVoteCommand(
               proposalId = proposalId,
