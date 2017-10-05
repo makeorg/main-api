@@ -2,7 +2,7 @@ package org.make.api.sessionhistory
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
-import org.make.core.session.SessionHistoryEvent
+import org.make.core.session.{SessionHistoryAction, SessionHistoryEvent}
 
 class SessionHistoryCoordinator extends Actor {
   ClusterSharding(context.system).start(
@@ -19,6 +19,7 @@ class SessionHistoryCoordinator extends Actor {
 
   override def receive: Receive = {
     case cmd: SessionHistoryEvent[_] => shardedSessionHistory.forward(cmd)
+    case cmd: SessionHistoryAction   => shardedSessionHistory.forward(cmd)
   }
 }
 

@@ -208,7 +208,7 @@ class ProposalApiTest
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
-  val indexedProposal = IndexedProposal(
+  val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
     content = "il faut fou",
@@ -224,12 +224,13 @@ class ProposalApiTest
     country = "TN",
     language = "ar",
     themeId = None,
-    tags = Seq.empty
+    tags = Seq.empty,
+    myProposal = false
   )
   when(
     proposalService
-      .search(any[Option[UserId]], any[SearchQuery], any[RequestContext])
-  ).thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal))))
+      .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
+  ).thenReturn(Future.successful(ProposalsResultResponse(1, Seq(proposalResult))))
 
   private def proposal(id: ProposalId): ProposalResponse = {
     ProposalResponse(
@@ -410,9 +411,9 @@ class ProposalApiTest
                   | "skip": 0
                   |}""".stripMargin)) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val proposalResults: ProposalsSearchResult = entityAs[ProposalsSearchResult]
+        val proposalResults: ProposalsResultResponse = entityAs[ProposalsResultResponse]
         proposalResults.total should be(1)
-        proposalResults.results should be(Seq(indexedProposal))
+        proposalResults.results should be(Seq(proposalResult))
       }
     }
   }

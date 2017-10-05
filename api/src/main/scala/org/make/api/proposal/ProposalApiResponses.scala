@@ -64,7 +64,7 @@ object ProposalResult {
       indexedProposal.updatedAt,
       indexedProposal.votes.map { indexedVote =>
         VoteResponse
-          .parseVote(indexedVote.asInstanceOf[Vote], hasVoted = voteAndQualifications match {
+          .parseVote(indexedVote, hasVoted = voteAndQualifications match {
             case Some(VoteAndQualifications(indexedVote.key, _)) => true
             case _                                               => false
           }, voteAndQualifications)
@@ -89,6 +89,23 @@ final case class VoteResponse(voteKey: VoteKey,
                               hasVoted: Boolean)
 
 object VoteResponse {
+  def parseVote(indexedVote: IndexedVote,
+                hasVoted: Boolean,
+                voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
+    VoteResponse(
+      voteKey = indexedVote.key,
+      count = indexedVote.count,
+      qualifications = indexedVote.qualifications
+        .map(
+          qualification =>
+            QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
+              case Some(VoteAndQualifications(_, keys)) if keys.contains(qualification.key) => true
+              case _                                                                        => false
+            })
+        ),
+      hasVoted = hasVoted
+    )
+
   def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
@@ -108,6 +125,13 @@ object VoteResponse {
 final case class QualificationResponse(qualificationKey: QualificationKey, count: Int, hasQualified: Boolean)
 
 object QualificationResponse {
+  def parseQualification(indexedQualification: IndexedQualification, hasQualified: Boolean): QualificationResponse =
+    QualificationResponse(
+      qualificationKey = indexedQualification.key,
+      count = indexedQualification.count,
+      hasQualified = hasQualified
+    )
+
   def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,
