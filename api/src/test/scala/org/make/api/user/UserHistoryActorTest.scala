@@ -5,8 +5,9 @@ import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.api.userhistory.UserHistoryActor.{RequestVoteValues, VoteAndQualifications}
+import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
