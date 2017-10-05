@@ -10,6 +10,7 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -404,7 +405,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote = vote, hasVoted = true))
+                complete(VoteResponse.parseVote(vote = vote, hasVoted = true, None))
               }
             }
           }
@@ -436,7 +437,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote = vote, hasVoted = false))
+                complete(VoteResponse.parseVote(vote = vote, hasVoted = false, None))
               }
             }
           }

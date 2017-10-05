@@ -11,6 +11,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
@@ -181,17 +182,36 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       elasticsearchAPI.searchProposals(query)
     }
 
+    def mergeVoteResults(maybeUserId: Option[UserId],
+                         searchResult: ProposalsSearchResult,
+                         votes: Map[ProposalId, VoteAndQualifications]): ProposalsResultResponse = {
+      val proposals = searchResult.results.map { indexedProposal =>
+        ProposalResult.apply(
+          indexedProposal,
+          myProposal = maybeUserId.contains(indexedProposal.userId),
+          votes.get(indexedProposal.id)
+        )
+      }
+      ProposalsResultResponse(searchResult.total, proposals)
+    }
+
     override def searchForUser(maybeUserId: Option[UserId],
                                query: SearchQuery,
                                requestContext: RequestContext): Future[ProposalsResultResponse] = {
 
       search(maybeUserId, query, requestContext).flatMap { searchResult =>
-        Future(
-          ProposalsResultResponse(
-            searchResult.total,
-            searchResult.results.map(indexedPropsoal => ProposalResult.apply(indexedPropsoal, myProposal = false))
-          )
-        )
+        maybeUserId match {
+          case Some(userId) =>
+            userHistoryCoordinatorService
+              .retrieveVoteAndQualifications(RequestVoteValues(userId, searchResult.results.map(_.id)))
+              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
+          case None =>
+            sessionHistoryCoordinatorService
+              .retrieveVoteAndQualifications(
+                RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+              )
+              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
+        }
       }
     }
 

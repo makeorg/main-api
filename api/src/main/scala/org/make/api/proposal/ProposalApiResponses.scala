@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{LabelId, Tag, TagId, ThemeId}
@@ -50,7 +51,9 @@ final case class ProposalResult(id: ProposalId,
                                 myProposal: Boolean)
 
 object ProposalResult {
-  def apply(indexedProposal: IndexedProposal, myProposal: Boolean): ProposalResult =
+  def apply(indexedProposal: IndexedProposal,
+            myProposal: Boolean,
+            voteAndQualifications: Option[VoteAndQualifications]): ProposalResult =
     ProposalResult(
       indexedProposal.id,
       indexedProposal.userId,
@@ -60,7 +63,11 @@ object ProposalResult {
       indexedProposal.createdAt,
       indexedProposal.updatedAt,
       indexedProposal.votes.map { indexedVote =>
-        VoteResponse.parseVote(indexedVote.asInstanceOf[Vote], hasVoted = false)
+        VoteResponse
+          .parseVote(indexedVote.asInstanceOf[Vote], hasVoted = voteAndQualifications match {
+            case Some(VoteAndQualifications(indexedVote.key, _)) => true
+            case _                                               => false
+          }, voteAndQualifications)
       },
       indexedProposal.context,
       indexedProposal.trending,
@@ -82,12 +89,18 @@ final case class VoteResponse(voteKey: VoteKey,
                               hasVoted: Boolean)
 
 object VoteResponse {
-  def parseVote(vote: Vote, hasVoted: Boolean): VoteResponse =
+  def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
       count = vote.count,
       qualifications = vote.qualifications
-        .map(qualification => QualificationResponse.parseQualification(qualification, hasQualified = false)),
+        .map(
+          qualification =>
+            QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
+              case Some(VoteAndQualifications(_, keys)) if keys.contains(qualification.key) => true
+              case _                                                                        => false
+            })
+        ),
       hasVoted = hasVoted
     )
 }
