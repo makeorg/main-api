@@ -12,9 +12,10 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.user.UserResponse
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
@@ -230,12 +231,22 @@ class ProposalApiTest
       .search(any[Option[UserId]], any[SearchQuery], any[RequestContext])
   ).thenReturn(Future.successful(ProposalsResult(1, Seq(indexedProposal))))
 
-  private def proposal(id: ProposalId): Proposal = {
-    Proposal(
+  private def proposal(id: ProposalId): ProposalResponse = {
+    ProposalResponse(
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
       content = "A song of fire and ice",
-      author = UserId("Georges RR Martin"),
+      author = UserResponse(
+        UserId("Georges RR Martin"),
+        email = "g@rr.martin",
+        firstName = Some("Georges"),
+        lastName = Some("Martin"),
+        enabled = true,
+        verified = true,
+        lastConnection = DateHelper.now(),
+        roles = Seq.empty,
+        None
+      ),
       labels = Seq(),
       theme = None,
       status = Accepted,
