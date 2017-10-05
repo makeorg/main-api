@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
+import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{SearchQuery, _}
@@ -86,7 +87,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with EventBusServiceComponent
     with UserServiceComponent =>
 
-  override lazy val proposalService = new ProposalService {
+  override lazy val proposalService: ProposalService = new ProposalService {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
@@ -330,6 +331,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposalId, voteKey))
             )
           )
+
+          userHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
+            .flatMap(
+              votes =>
+                proposalCoordinatorService.vote(
+                  VoteProposalCommand(
+                    proposalId = proposalId,
+                    maybeUserId = maybeUserId,
+                    requestContext = requestContext,
+                    voteKey = voteKey,
+                    vote = votes.get(proposalId)
+                  )
+              )
+            )
         case None =>
           sessionHistoryCoordinatorService.logHistory(
             LogSessionVoteEvent(
@@ -338,16 +354,17 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               SessionAction(DateHelper.now(), LogSessionVoteEvent.action, SessionVote(proposalId, voteKey))
             )
           )
+          proposalCoordinatorService.vote(
+            VoteProposalCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              vote = None // TODO: send vote info
+            )
+          )
       }
-      proposalCoordinatorService.vote(
-        VoteProposalCommand(
-          proposalId = proposalId,
-          maybeUserId = maybeUserId,
-          requestContext = requestContext,
-          voteKey = voteKey,
-          userVoteInfo = None // TODO: send vote info
-        )
-      )
+
     }
 
     override def unvoteProposal(proposalId: ProposalId,
@@ -363,6 +380,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               UserAction(DateHelper.now(), LogUserUnvoteEvent.action, UserUnvote(proposalId, voteKey))
             )
           )
+
+          userHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
+            .flatMap(
+              votes =>
+                proposalCoordinatorService.unvote(
+                  UnvoteProposalCommand(
+                    proposalId = proposalId,
+                    maybeUserId = maybeUserId,
+                    requestContext = requestContext,
+                    voteKey = voteKey,
+                    vote = votes.get(proposalId)
+                  )
+              )
+            )
         case None =>
           sessionHistoryCoordinatorService.logHistory(
             LogSessionUnvoteEvent(
@@ -371,15 +403,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               SessionAction(DateHelper.now(), LogSessionUnvoteEvent.action, SessionUnvote(proposalId, voteKey))
             )
           )
+
+          proposalCoordinatorService.unvote(
+            UnvoteProposalCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              vote = None // TODO: send vote info
+            )
+          )
       }
-      proposalCoordinatorService.unvote(
-        UnvoteProposalCommand(
-          proposalId = proposalId,
-          maybeUserId = maybeUserId,
-          requestContext = requestContext,
-          voteKey = voteKey
-        )
-      )
+
     }
 
     override def qualifyVote(proposalId: ProposalId,
@@ -400,6 +435,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
           )
+          userHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
+            .flatMap(
+              votes =>
+                proposalCoordinatorService.qualification(
+                  QualifyVoteCommand(
+                    proposalId = proposalId,
+                    maybeUserId = maybeUserId,
+                    requestContext = requestContext,
+                    voteKey = voteKey,
+                    qualificationKey = qualificationKey,
+                    vote = votes.get(proposalId)
+                  )
+              )
+            )
         case None =>
           sessionHistoryCoordinatorService.logHistory(
             LogSessionQualificationEvent(
@@ -412,16 +462,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
           )
+          proposalCoordinatorService.qualification(
+            QualifyVoteCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              qualificationKey = qualificationKey,
+              vote = None
+            )
+          )
       }
-      proposalCoordinatorService.qualification(
-        QualifyVoteCommand(
-          proposalId = proposalId,
-          maybeUserId = maybeUserId,
-          requestContext = requestContext,
-          voteKey = voteKey,
-          qualificationKey = qualificationKey
-        )
-      )
+
     }
 
     override def unqualifyVote(proposalId: ProposalId,
@@ -442,6 +494,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
           )
+          userHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
+            .flatMap(
+              votes =>
+                proposalCoordinatorService.unqualification(
+                  UnqualifyVoteCommand(
+                    proposalId = proposalId,
+                    maybeUserId = maybeUserId,
+                    requestContext = requestContext,
+                    voteKey = voteKey,
+                    qualificationKey = qualificationKey,
+                    vote = votes.get(proposalId)
+                  )
+              )
+            )
         case None =>
           sessionHistoryCoordinatorService.logHistory(
             LogSessionUnqualificationEvent(
@@ -454,16 +521,19 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             )
           )
+
+          proposalCoordinatorService.unqualification(
+            UnqualifyVoteCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              qualificationKey = qualificationKey,
+              vote = None // TODO: send votes
+            )
+          )
       }
-      proposalCoordinatorService.unqualification(
-        UnqualifyVoteCommand(
-          proposalId = proposalId,
-          maybeUserId = maybeUserId,
-          requestContext = requestContext,
-          voteKey = voteKey,
-          qualificationKey = qualificationKey
-        )
-      )
+
     }
   }
 

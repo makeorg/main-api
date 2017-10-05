@@ -13,6 +13,8 @@ import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.{Qualification, Vote, _}
 
+import scala.collection.immutable
+
 class ProposalActor extends PersistentActor with ActorLogging {
   def proposalId: ProposalId = ProposalId(self.path.name)
 
@@ -40,18 +42,45 @@ class ProposalActor extends PersistentActor with ActorLogging {
   }
 
   private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
-    persistAndPublishEvent(
-      ProposalVoted(
-        id = proposalId,
-        maybeUserId = command.maybeUserId,
-        eventDate = DateHelper.now(),
-        requestContext = command.requestContext,
-        voteKey = command.voteKey
-      )
-    ) {
-      sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
-      self ! Snapshot
+
+    if (command.vote.isEmpty) {
+      persistAndPublishEvent(
+        ProposalVoted(
+          id = proposalId,
+          maybeUserId = command.maybeUserId,
+          eventDate = DateHelper.now(),
+          requestContext = command.requestContext,
+          voteKey = command.voteKey
+        )
+      ) {
+        sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+        self ! Snapshot
+      }
+    } else {
+      persistAndPublishEvents(
+        immutable.Seq(
+          ProposalUnvoted(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = command.voteKey
+          ),
+          ProposalVoted(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = command.voteKey
+          )
+        )
+      ) {
+        case _: ProposalVoted =>
+          sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
+        case _ =>
+      }
     }
+
   }
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {
@@ -329,6 +358,13 @@ class ProposalActor extends PersistentActor with ActorLogging {
       state = applyEvent(e)
       context.system.eventStream.publish(e)
       andThen
+    }
+  }
+
+  private def persistAndPublishEvents(events: immutable.Seq[ProposalEvent])(andThen: => Unit): Unit = {
+    persistAll(events) { event: ProposalEvent =>
+      state = applyEvent(event)
+      context.system.eventStream.publish(event)
     }
   }
 

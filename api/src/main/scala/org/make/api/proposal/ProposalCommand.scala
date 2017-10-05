@@ -55,25 +55,28 @@ final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
-                                     userVoteInfo: Option[VoteAndQualifications])
+                                     vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
-                                       voteKey: VoteKey)
+                                       voteKey: VoteKey,
+                                       vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class QualifyVoteCommand(proposalId: ProposalId,
                                     maybeUserId: Option[UserId],
                                     requestContext: RequestContext,
                                     voteKey: VoteKey,
-                                    qualificationKey: QualificationKey)
+                                    qualificationKey: QualificationKey,
+                                    vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class UnqualifyVoteCommand(proposalId: ProposalId,
                                       maybeUserId: Option[UserId],
                                       requestContext: RequestContext,
                                       voteKey: VoteKey,
-                                      qualificationKey: QualificationKey)
+                                      qualificationKey: QualificationKey,
+                                      vote: Option[VoteAndQualifications])
     extends ProposalCommand
