@@ -19,7 +19,6 @@ import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
@@ -62,9 +61,10 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
             HttpCookie(
               name = sessionIdKey,
               value = sessionId,
-              secure = true,
+              secure = makeSettings.SessionCookie.isSecure,
               httpOnly = true,
-              maxAge = Some(20.minutes.toMillis)
+              maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+              path = Some("/")
             )
           )
         )

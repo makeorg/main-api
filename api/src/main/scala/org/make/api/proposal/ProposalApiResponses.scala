@@ -89,13 +89,12 @@ final case class VoteResponse(voteKey: VoteKey,
                               hasVoted: Boolean)
 
 object VoteResponse {
-  def parseVote(indexedVote: IndexedVote,
-                hasVoted: Boolean,
-                voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
+
+  def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
     VoteResponse(
-      voteKey = indexedVote.key,
-      count = indexedVote.count,
-      qualifications = indexedVote.qualifications
+      voteKey = vote.key,
+      count = vote.count,
+      qualifications = vote.qualifications
         .map(
           qualification =>
             QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
@@ -105,8 +104,9 @@ object VoteResponse {
         ),
       hasVoted = hasVoted
     )
-
-  def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
+  def parseVote(vote: IndexedVote,
+                hasVoted: Boolean,
+                voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
       count = vote.count,
@@ -125,14 +125,13 @@ object VoteResponse {
 final case class QualificationResponse(qualificationKey: QualificationKey, count: Int, hasQualified: Boolean)
 
 object QualificationResponse {
-  def parseQualification(indexedQualification: IndexedQualification, hasQualified: Boolean): QualificationResponse =
+  def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
-      qualificationKey = indexedQualification.key,
-      count = indexedQualification.count,
+      qualificationKey = qualification.key,
+      count = qualification.count,
       hasQualified = hasQualified
     )
-
-  def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
+  def parseQualification(qualification: IndexedQualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,

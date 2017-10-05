@@ -157,14 +157,15 @@ object ProposalEvent {
                                    maybeUserId: Option[UserId],
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
-                                   voteKey: VoteKey)
+                                   voteKey: VoteKey,
+                                   selectedQualifications: Seq[QualificationKey])
       extends ProposalEvent
 
   object ProposalUnvoted {
     val version: Int = MakeSerializable.V1
 
     implicit val proposalUnvotedFormatter: RootJsonFormat[ProposalUnvoted] =
-      DefaultJsonProtocol.jsonFormat5(ProposalUnvoted.apply)
+      DefaultJsonProtocol.jsonFormat6(ProposalUnvoted.apply)
   }
 
   final case class ProposalQualified(id: ProposalId,

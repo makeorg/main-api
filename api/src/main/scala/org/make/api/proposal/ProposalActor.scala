@@ -66,7 +66,8 @@ class ProposalActor extends PersistentActor with ActorLogging {
               maybeUserId = command.maybeUserId,
               eventDate = DateHelper.now(),
               requestContext = command.requestContext,
-              voteKey = vote.voteKey
+              voteKey = vote.voteKey,
+              selectedQualifications = vote.qualificationKeys
             ),
             ProposalVoted(
               id = proposalId,
@@ -95,7 +96,8 @@ class ProposalActor extends PersistentActor with ActorLogging {
             maybeUserId = command.maybeUserId,
             eventDate = DateHelper.now(),
             requestContext = command.requestContext,
-            voteKey = vote.voteKey
+            voteKey = vote.voteKey,
+            selectedQualifications = vote.qualificationKeys
           )
         ) {
           sender() ! state.flatMap(_.votes.find(_.key == command.voteKey))
@@ -451,14 +453,19 @@ object ProposalActor {
       case vote if vote.key == event.voteKey =>
         vote.copy(
           count = vote.count - 1,
-          qualifications = vote.qualifications.map(qualification => applyUnqualifVote(qualification))
+          qualifications =
+            vote.qualifications.map(qualification => applyUnqualifVote(qualification, event.selectedQualifications))
         )
       case vote => vote
     })
   }
 
-  def applyUnqualifVote(qualification: Qualification): Qualification = {
-    qualification.copy(count = qualification.count - 1)
+  def applyUnqualifVote(qualification: Qualification, selectedQualifications: Seq[QualificationKey]): Qualification = {
+    if (selectedQualifications.contains(qualification.key)) {
+      qualification.copy(count = qualification.count - 1)
+    } else {
+      qualification
+    }
   }
 
   def applyProposalQualified(state: Proposal, event: ProposalQualified): Proposal = {

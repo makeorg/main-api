@@ -23,9 +23,14 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
     val sessionHistoryCoordinator =
       context.watch(context.actorOf(SessionHistoryCoordinator.props, SessionHistoryCoordinator.name))
 
-    context.watch(
-      context.actorOf(SessionHistoryConsumerActor.props(sessionHistoryCoordinator), SessionHistoryConsumerActor.name)
-    )
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          SessionHistoryConsumerActor.props(sessionHistoryCoordinator),
+          SessionHistoryConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
 
     context.watch(
       context.actorOf(
@@ -40,10 +45,11 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(DuplicateDetectorProducerActor.props, DuplicateDetectorProducerActor.name))
 
-    val (props, name) =
-      MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)
-
-    context.watch(context.actorOf(props, name))
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)
+      context.actorOf(props, name)
+    }
   }
 
   override def receive: Receive = {

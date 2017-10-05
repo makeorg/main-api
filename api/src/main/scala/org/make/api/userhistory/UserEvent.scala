@@ -30,6 +30,7 @@ object UserEvent {
       event match {
         case e: ResetPasswordEvent         => Coproduct[AnyUserEvent](e)
         case e: ResendValidationEmailEvent => Coproduct[AnyUserEvent](e)
+        case e: UserConnectedEvent         => Coproduct[AnyUserEvent](e)
         case e: UserRegisteredEvent        => Coproduct[AnyUserEvent](e)
       }
   }

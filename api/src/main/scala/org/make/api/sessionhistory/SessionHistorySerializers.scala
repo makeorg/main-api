@@ -7,6 +7,9 @@ import stamina.{json, V1}
 
 object SessionHistorySerializers extends SprayJsonFormatters {
 
+  private val logSessionSearchEventSerializer: JsonPersister[LogSessionSearchProposalsEvent, V1] =
+    json.persister[LogSessionSearchProposalsEvent]("session-history-search-proposal")
+
   private val logSessionVoteEventSerializer: JsonPersister[LogSessionVoteEvent, V1] =
     json.persister[LogSessionVoteEvent]("session-history-vote-proposal")
 
@@ -21,6 +24,7 @@ object SessionHistorySerializers extends SprayJsonFormatters {
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
+      logSessionSearchEventSerializer,
       logSessionVoteEventSerializer,
       logSessionUnvoteEventSerializer,
       logSessionQualificationEventSerializer,

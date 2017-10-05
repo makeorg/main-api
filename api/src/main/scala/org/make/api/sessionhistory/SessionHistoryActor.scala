@@ -32,7 +32,9 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
     case UserCreated(_, userId)                   => transformSession(userId)
   }
 
-  private def transformSession(userId: UserId): Unit = {}
+  private def transformSession(userId: UserId): Unit = {
+    log.debug(s"Transforming session to user ${userId.value}")
+  }
 
   private def getVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)

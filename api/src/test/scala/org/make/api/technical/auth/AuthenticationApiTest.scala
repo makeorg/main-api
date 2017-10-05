@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical._
 import org.make.api.{MakeApiTestUtils, MakeUnitTest}
 import org.make.core.DateHelper
 import org.make.core.user.{User, UserId}
@@ -23,7 +23,8 @@ class AuthenticationApiTest
     with MakeDataHandlerComponent
     with AuthenticationApi
     with MakeSettingsComponent
-    with IdGeneratorComponent {
+    with IdGeneratorComponent
+    with EventBusServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
@@ -32,6 +33,7 @@ class AuthenticationApiTest
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
+  override val eventBusService: EventBusService = mock[EventBusService]
 
   Mockito
     .when(makeSettings.SessionCookie)
