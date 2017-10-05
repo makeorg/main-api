@@ -4,13 +4,7 @@ import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.api.userhistory.UserEvent
-import org.make.core.DateHelper
-import org.make.api.userhistory.UserEvent.{
-  ResendValidationEmailEvent,
-  ResetPasswordEvent,
-  UserEventWrapper,
-  UserRegisteredEvent
-}
+import org.make.api.userhistory.UserEvent._
 
 class UserProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
@@ -24,6 +18,7 @@ class UserProducerActor extends ProducerActor {
     case event: ResetPasswordEvent         => onResetPassword(event)
     case event: ResendValidationEmailEvent => onResendValidationEmail(event)
     case event: UserRegisteredEvent        => onUserRegisteredEvent(event)
+    case event: UserConnectedEvent         => onUserConnectedEvent(event)
     case other                             => log.warning(s"Unknown event $other")
   }
 
@@ -32,7 +27,7 @@ class UserProducerActor extends ProducerActor {
       UserEventWrapper(
         version = UserRegisteredEvent.version,
         id = event.userId.value,
-        date = DateHelper.now(),
+        date = event.eventDate,
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
@@ -46,7 +41,7 @@ class UserProducerActor extends ProducerActor {
       UserEventWrapper(
         version = ResetPasswordEvent.version,
         id = event.userId.value,
-        date = DateHelper.now(),
+        date = event.eventDate,
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
@@ -60,7 +55,21 @@ class UserProducerActor extends ProducerActor {
       UserEventWrapper(
         version = ResendValidationEmailEvent.version,
         id = event.userId.value,
-        date = DateHelper.now(),
+        date = event.eventDate,
+        eventType = event.getClass.getSimpleName,
+        event = UserEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.userId.value, record)
+  }
+
+  def onUserConnectedEvent(event: UserConnectedEvent): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      UserEventWrapper(
+        version = UserConnectedEvent.version,
+        id = event.userId.value,
+        date = event.eventDate,
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )

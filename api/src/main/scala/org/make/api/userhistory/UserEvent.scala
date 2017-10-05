@@ -15,7 +15,8 @@ sealed trait UserEvent {
 
 object UserEvent {
 
-  type AnyUserEvent = ResetPasswordEvent :+: ResendValidationEmailEvent :+: UserRegisteredEvent :+: CNil
+  type AnyUserEvent =
+    ResetPasswordEvent :+: ResendValidationEmailEvent :+: UserRegisteredEvent :+: UserConnectedEvent :+: CNil
 
   final case class UserEventWrapper(version: Int,
                                     id: String,
@@ -75,4 +76,13 @@ object UserEvent {
     val version: Int = 1
   }
 
+  case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
+                                override val eventDate: ZonedDateTime = DateHelper.now(),
+                                override val userId: UserId,
+                                override val requestContext: RequestContext)
+      extends UserEvent
+
+  object UserConnectedEvent {
+    val version: Int = 1
+  }
 }

@@ -6,15 +6,14 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
-import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 import org.make.api.userhistory.UserEvent._
+import org.make.core.session.{UserConnected, UserCreated}
 import shapeless.Poly1
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
+class SessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[UserEventWrapper]
     with MailJetTemplateConfigurationExtension
     with ActorEventBusServiceComponent
@@ -22,7 +21,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
-  override val groupId = "user-history"
+  override val groupId = "session-history"
 
   implicit val timeout: Timeout = Timeout(3.seconds)
 
@@ -47,24 +46,8 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
-    Future(
-      userHistoryCoordinator ? LogRegisterCitizenEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogRegisterCitizenEvent.action,
-          arguments = UserRegistered(
-            email = event.email,
-            dateOfBirth = event.dateOfBirth,
-            firstName = event.firstName,
-            lastName = event.lastName,
-            profession = event.profession,
-            postalCode = event.postalCode
-          )
-        )
-      )
-    )
+    (sessionHistoryCoordinator ? UserCreated(sessionId = event.requestContext.sessionId, userId = event.userId))
+      .mapTo[Unit]
   }
 
   private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {
@@ -84,13 +67,13 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
-    log.debug(s"got event $event")
-    Future.successful {}
+    (sessionHistoryCoordinator ? UserConnected(sessionId = event.requestContext.sessionId, userId = event.userId))
+      .mapTo[Unit]
   }
 }
 
-object UserHistoryConsumerActor {
-  def props(userHistoryCoordinator: ActorRef): Props =
-    Props(new UserHistoryConsumerActor(userHistoryCoordinator))
-  val name: String = "user-events-history-consumer"
+object SessionHistoryConsumerActor {
+  def props(sessionHistoryCoordinator: ActorRef): Props =
+    Props(new UserHistoryConsumerActor(sessionHistoryCoordinator))
+  val name: String = "session-events-history-consumer"
 }

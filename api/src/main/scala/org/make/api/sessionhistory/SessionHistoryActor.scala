@@ -6,6 +6,7 @@ import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
+import org.make.core.user.UserId
 
 class SessionHistoryActor extends PersistentActor with ActorLogging {
 
@@ -27,7 +28,11 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
     case command: LogSessionUnqualificationEvent  => persistEvent(command)
     case command: LogSessionSearchProposalsEvent  => persistEvent(command)
     case RequestSessionVoteValues(_, proposalIds) => getVoteValues(proposalIds)
+    case UserConnected(_, userId)                 => transformSession(userId)
+    case UserCreated(_, userId)                   => transformSession(userId)
   }
+
+  private def transformSession(userId: UserId): Unit = {}
 
   private def getVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)

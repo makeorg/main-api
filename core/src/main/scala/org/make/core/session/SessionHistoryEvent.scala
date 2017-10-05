@@ -7,6 +7,7 @@ import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
 import org.make.core.SprayJsonFormatters._
+import org.make.core.user.UserId
 
 final case class SessionAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
@@ -129,3 +130,6 @@ final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryA
 
 final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
     extends SessionHistoryAction
+
+final case class UserCreated(sessionId: SessionId, userId: UserId) extends SessionHistoryAction
+final case class UserConnected(sessionId: SessionId, userId: UserId) extends SessionHistoryAction

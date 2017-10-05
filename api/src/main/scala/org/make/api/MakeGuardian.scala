@@ -7,7 +7,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
-import org.make.api.user.{UserService, UserSupervisor}
+import org.make.api.user.{SessionHistoryConsumerActor, UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
 class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
@@ -22,6 +22,10 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     val sessionHistoryCoordinator =
       context.watch(context.actorOf(SessionHistoryCoordinator.props, SessionHistoryCoordinator.name))
+
+    context.watch(
+      context.actorOf(SessionHistoryConsumerActor.props(sessionHistoryCoordinator), SessionHistoryConsumerActor.name)
+    )
 
     context.watch(
       context.actorOf(
