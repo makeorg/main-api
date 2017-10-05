@@ -1,8 +1,11 @@
 package org.make.api.theme
 
+import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.technical.ShortenedNames
+import org.make.core.proposal.{SearchFilters, SearchQuery, ThemeSearchFilter}
 import org.make.core.reference._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait ThemeServiceComponent {
@@ -14,12 +17,22 @@ trait ThemeService extends ShortenedNames {
 }
 
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
-  this: PersistentThemeServiceComponent =>
+  this: PersistentThemeServiceComponent with ProposalSearchEngineComponent =>
 
   val themeService = new ThemeService {
 
     override def findAll(): Future[Seq[Theme]] = {
-      persistentThemeService.findAll()
+      persistentThemeService.findAll().flatMap { themes =>
+        Future.traverse(themes) { theme =>
+          elasticsearchAPI
+            .countProposals(
+              SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
+            )
+            .map { count =>
+              theme.copy(proposalsCount = count)
+            }
+        }
+      }
     }
   }
 }

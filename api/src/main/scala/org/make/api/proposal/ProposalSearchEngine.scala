@@ -24,6 +24,7 @@ trait ProposalSearchEngineComponent {
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
   def searchProposals(query: SearchQuery): Future[ProposalsResult]
+  def countProposals(query: SearchQuery): Future[Int]
   def indexProposal(record: IndexedProposal): Future[Done]
   def updateProposal(record: IndexedProposal): Future[Done]
 }
@@ -62,6 +63,22 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
+    override def countProposals(searchQuery: SearchQuery): Future[Int] = {
+      // parse json string to build search query
+      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
+      val request = search(proposalIndex)
+        .bool(BoolQueryDefinition(must = searchFilters))
+
+      logger.debug(client.show(request))
+
+      client.execute {
+        request
+      }.map { response =>
+        response.totalHits
+      }
+
+    }
     override def indexProposal(record: IndexedProposal): Future[Done] = {
       logger.info(s"$proposalIndex -> Saving in Elasticsearch: $record")
       client.execute {
