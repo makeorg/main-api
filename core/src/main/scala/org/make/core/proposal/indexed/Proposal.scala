@@ -74,3 +74,5 @@ object IndexedQualification {
   def apply(qualification: Qualification): IndexedQualification =
     IndexedQualification(key = qualification.key, count = qualification.count)
 }
+
+final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])

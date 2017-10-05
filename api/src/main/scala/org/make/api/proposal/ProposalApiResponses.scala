@@ -31,24 +31,50 @@ final case class ProposalActionResponse(date: ZonedDateTime,
 
 final case class ProposeProposalResponse(proposalId: ProposalId)
 
-final case class ProposalsResultResponse(id: ProposalId,
-                                         userId: UserId,
-                                         content: String,
-                                         slug: String,
-                                         status: ProposalStatus,
-                                         createdAt: ZonedDateTime,
-                                         updatedAt: Option[ZonedDateTime],
-                                         votes: Seq[VoteResponse],
-                                         context: Option[Context],
-                                         trending: Option[String],
-                                         labels: Seq[String],
-                                         author: Author,
-                                         country: String,
-                                         language: String,
-                                         themeId: Option[ThemeId],
-                                         tags: Seq[Tag])
+final case class ProposalResult(id: ProposalId,
+                                userId: UserId,
+                                content: String,
+                                slug: String,
+                                status: ProposalStatus,
+                                createdAt: ZonedDateTime,
+                                updatedAt: Option[ZonedDateTime],
+                                votes: Seq[VoteResponse],
+                                context: Option[Context],
+                                trending: Option[String],
+                                labels: Seq[String],
+                                author: Author,
+                                country: String,
+                                language: String,
+                                themeId: Option[ThemeId],
+                                tags: Seq[Tag],
+                                myProposal: Boolean)
 
-final case class ProposalsResult(total: Int, results: Seq[IndexedProposal])
+object ProposalResult {
+  def apply(indexedProposal: IndexedProposal, myProposal: Boolean): ProposalResult =
+    ProposalResult(
+      indexedProposal.id,
+      indexedProposal.userId,
+      indexedProposal.content,
+      indexedProposal.slug,
+      indexedProposal.status,
+      indexedProposal.createdAt,
+      indexedProposal.updatedAt,
+      indexedProposal.votes.map { indexedVote =>
+        VoteResponse.parseVote(indexedVote.asInstanceOf[Vote], hasVoted = false)
+      },
+      indexedProposal.context,
+      indexedProposal.trending,
+      indexedProposal.labels,
+      indexedProposal.author,
+      indexedProposal.country,
+      indexedProposal.language,
+      indexedProposal.themeId,
+      indexedProposal.tags,
+      myProposal = myProposal
+    )
+}
+
+final case class ProposalsResultResponse(total: Int, results: Seq[ProposalResult])
 
 final case class VoteResponse(voteKey: VoteKey,
                               count: Int,
@@ -56,19 +82,23 @@ final case class VoteResponse(voteKey: VoteKey,
                               hasVoted: Boolean)
 
 object VoteResponse {
-  def parseVote(vote: Vote): VoteResponse =
+  def parseVote(vote: Vote, hasVoted: Boolean): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
       count = vote.count,
       qualifications = vote.qualifications
-        .map(qualification => QualificationResponse.parseQualification(qualification)),
-      hasVoted = false
+        .map(qualification => QualificationResponse.parseQualification(qualification, hasQualified = false)),
+      hasVoted = hasVoted
     )
 }
 
 final case class QualificationResponse(qualificationKey: QualificationKey, count: Int, hasQualified: Boolean)
 
 object QualificationResponse {
-  def parseQualification(qualification: Qualification): QualificationResponse =
-    QualificationResponse(qualificationKey = qualification.key, count = qualification.count, hasQualified = false)
+  def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
+    QualificationResponse(
+      qualificationKey = qualification.key,
+      count = qualification.count,
+      hasQualified = hasQualified
+    )
 }

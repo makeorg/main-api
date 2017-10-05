@@ -12,7 +12,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -23,7 +23,7 @@ trait ProposalSearchEngineComponent {
 
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
-  def searchProposals(query: SearchQuery): Future[ProposalsResult]
+  def searchProposals(query: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(query: SearchQuery): Future[Int]
   def indexProposal(record: IndexedProposal): Future[Done]
   def updateProposal(record: IndexedProposal): Future[Done]
@@ -32,7 +32,7 @@ trait ProposalSearchEngine {
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent =>
 
-  override lazy val elasticsearchAPI = new ProposalSearchEngine with StrictLogging {
+  override lazy val elasticsearchAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
@@ -43,7 +43,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.execute(get(id = proposalId.value).from(proposalIndex)).map(_.toOpt[IndexedProposal])
     }
 
-    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsResult] = {
+    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
@@ -58,7 +58,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.execute {
         request
       }.map { response =>
-        ProposalsResult(total = response.totalHits, results = response.to[IndexedProposal])
+        ProposalsSearchResult(total = response.totalHits, results = response.to[IndexedProposal])
       }
 
     }

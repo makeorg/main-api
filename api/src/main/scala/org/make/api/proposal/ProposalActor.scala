@@ -82,6 +82,7 @@ class ProposalActor extends PersistentActor with ActorLogging {
           case _ =>
         }
     }
+
   }
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {

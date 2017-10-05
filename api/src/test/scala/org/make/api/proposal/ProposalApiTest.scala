@@ -229,7 +229,7 @@ class ProposalApiTest
   when(
     proposalService
       .search(any[Option[UserId]], any[SearchQuery], any[RequestContext])
-  ).thenReturn(Future.successful(ProposalsResult(1, Seq(indexedProposal))))
+  ).thenReturn(Future.successful(ProposalsSearchResult(1, Seq(indexedProposal))))
 
   private def proposal(id: ProposalId): ProposalResponse = {
     ProposalResponse(
@@ -410,7 +410,7 @@ class ProposalApiTest
                   | "skip": 0
                   |}""".stripMargin)) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val proposalResults: ProposalsResult = entityAs[ProposalsResult]
+        val proposalResults: ProposalsSearchResult = entityAs[ProposalsSearchResult]
         proposalResults.total should be(1)
         proposalResults.results should be(Seq(indexedProposal))
       }

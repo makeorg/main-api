@@ -11,7 +11,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.session._
@@ -37,7 +37,10 @@ trait ProposalService {
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
                     requestContext: RequestContext): Future[Seq[IndexedProposal]]
-  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsResult]
+  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
+  def searchForUser(userId: Option[UserId],
+                    query: SearchQuery,
+                    requestContext: RequestContext): Future[ProposalsResultResponse]
   def propose(user: User,
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
@@ -156,7 +159,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
-                        requestContext: RequestContext): Future[ProposalsResult] = {
+                        requestContext: RequestContext): Future[ProposalsSearchResult] = {
       maybeUserId match {
         case Some(userId) =>
           userHistoryCoordinatorService.logHistory(
@@ -176,6 +179,20 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           )
       }
       elasticsearchAPI.searchProposals(query)
+    }
+
+    override def searchForUser(maybeUserId: Option[UserId],
+                               query: SearchQuery,
+                               requestContext: RequestContext): Future[ProposalsResultResponse] = {
+
+      search(maybeUserId, query, requestContext).flatMap { searchResult =>
+        Future(
+          ProposalsResultResponse(
+            searchResult.total,
+            searchResult.results.map(indexedPropsoal => ProposalResult.apply(indexedPropsoal, myProposal = false))
+          )
+        )
+      }
     }
 
     override def propose(user: User,
@@ -300,7 +317,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
               val predictedResults: Seq[SimilarDocResult[IndexedProposal]] = duplicateDetector
                 .getSimilar(indexedProposal.content, corpus, duplicateDetectorConfiguration.maxResults)
-              val predictedDuplicates: Seq[IndexedProposal] = predictedResults.flatMap(_.targetDoc.document.meta)
+              val predictedDuplicates: Seq[IndexedProposal] =
+                predictedResults.flatMap(_.targetDoc.document.meta)
 
               eventBusService.publish(
                 PredictDuplicate(
@@ -420,6 +438,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   )
               )
             )
+
         case None =>
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(
