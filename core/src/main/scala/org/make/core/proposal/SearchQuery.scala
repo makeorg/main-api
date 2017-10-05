@@ -189,9 +189,15 @@ object SearchFilters extends ElasticDsl {
   def buildContentSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
 
     val query: Option[QueryDefinition] = for {
-      filters                          <- searchQuery.filters
-      ContentSearchFilter(text, fuzzy) <- filters.content
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
+      filters                               <- searchQuery.filters
+      ContentSearchFilter(text, maybeFuzzy) <- filters.content
+    } yield {
+      maybeFuzzy match {
+        case Some(fuzzy) =>
+          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text).fuzziness(fuzzy.toString)
+        case None => ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
+      }
+    }
 
     query match {
       case None => None
