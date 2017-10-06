@@ -1,6 +1,7 @@
 {
   "mappings": {
     "proposal": {
+      "dynamic": "strict",
       "properties": {
         "id": {
           "type": "keyword",
