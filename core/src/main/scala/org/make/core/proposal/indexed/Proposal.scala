@@ -33,8 +33,6 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.id"
 }
 
-case class ProposalsResult(total: Int, results: Seq[IndexedProposal])
-
 case class IndexedProposal(id: ProposalId,
                            userId: UserId,
                            content: String,
@@ -56,4 +54,25 @@ final case class Context(operation: Option[String],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])
+
 final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
+
+final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
+
+object IndexedVote {
+  def apply(vote: Vote): IndexedVote =
+    IndexedVote(
+      key = vote.key,
+      count = vote.count,
+      qualifications = vote.qualifications.map(IndexedQualification.apply)
+    )
+}
+
+final case class IndexedQualification(key: QualificationKey, count: Int = 0)
+
+object IndexedQualification {
+  def apply(qualification: Qualification): IndexedQualification =
+    IndexedQualification(key = qualification.key, count = qualification.count)
+}
+
+final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])

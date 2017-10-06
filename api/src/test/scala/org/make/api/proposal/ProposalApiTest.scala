@@ -15,7 +15,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserResponse
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
@@ -24,6 +24,7 @@ import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class ProposalApiTest
@@ -45,6 +46,7 @@ class ProposalApiTest
 
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(makeSettings.frontUrl).thenReturn("http://make.org")
@@ -208,7 +210,7 @@ class ProposalApiTest
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
-  val indexedProposal = IndexedProposal(
+  val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
     content = "il faut fou",
@@ -224,12 +226,13 @@ class ProposalApiTest
     country = "TN",
     language = "ar",
     themeId = None,
-    tags = Seq.empty
+    tags = Seq.empty,
+    myProposal = false
   )
   when(
     proposalService
-      .search(any[Option[UserId]], any[SearchQuery], any[RequestContext])
-  ).thenReturn(Future.successful(ProposalsResult(1, Seq(indexedProposal))))
+      .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
+  ).thenReturn(Future.successful(ProposalsResultResponse(1, Seq(proposalResult))))
 
   private def proposal(id: ProposalId): ProposalResponse = {
     ProposalResponse(
@@ -410,9 +413,9 @@ class ProposalApiTest
                   | "skip": 0
                   |}""".stripMargin)) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val proposalResults: ProposalsResult = entityAs[ProposalsResult]
+        val proposalResults: ProposalsResultResponse = entityAs[ProposalsResultResponse]
         proposalResults.total should be(1)
-        proposalResults.results should be(Seq(indexedProposal))
+        proposalResults.results should be(Seq(proposalResult))
       }
     }
   }

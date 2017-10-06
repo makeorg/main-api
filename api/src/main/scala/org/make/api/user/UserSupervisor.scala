@@ -23,6 +23,16 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
         MakeBackoffSupervisor.propsAndName(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
       context.actorOf(props, name)
     }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          UserHistoryConsumerActor.props(userHistoryCoordinator),
+          UserHistoryConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
   }
 
   override def receive: Receive = {

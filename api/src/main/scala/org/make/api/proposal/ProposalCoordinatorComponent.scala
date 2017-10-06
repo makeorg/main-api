@@ -4,7 +4,6 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Qualification, Vote}
 import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global

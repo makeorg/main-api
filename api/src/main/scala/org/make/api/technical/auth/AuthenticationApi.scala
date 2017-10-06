@@ -10,8 +10,9 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
+import org.make.api.userhistory.UserEvent.UserConnectedEvent
 import org.make.core.HttpCodes
 import org.make.core.user.User
 
@@ -26,7 +27,7 @@ trait AuthenticationApi
     with MakeAuthenticationDirectives
     with ShortenedNames
     with StrictLogging {
-  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with MakeSettingsComponent =>
+  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with EventBusServiceComponent =>
 
   val tokenEndpoint: TokenEndpoint
 
@@ -36,7 +37,7 @@ trait AuthenticationApi
   def accessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("access_token") {
-        makeTrace("OauthAccessToken") { _ =>
+        makeTrace("OauthAccessToken") { requestContext =>
           post {
             formFieldMap { fields =>
               onComplete(
@@ -48,6 +49,9 @@ trait AuthenticationApi
               ) {
                 case Success(maybeGrantResponse) =>
                   maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                    eventBusService.publish(
+                      UserConnectedEvent(userId = grantResult.authInfo.user.userId, requestContext = requestContext)
+                    )
                     complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
                   })
                 case Failure(ex) => throw ex
@@ -64,7 +68,7 @@ trait AuthenticationApi
   def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {
       path("make_access_token") {
-        makeTrace("OauthMakeAccessToken") { _ =>
+        makeTrace("OauthMakeAccessToken") { requestContext =>
           post {
             formFieldMap { fields =>
               val allFields = fields ++ Map(
@@ -80,6 +84,7 @@ trait AuthenticationApi
               ) {
                 case Success(maybeGrantResponse) =>
                   maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+
                     handleGrantResult(fields, grantResult)
                   })
                 case Failure(ex) => throw ex

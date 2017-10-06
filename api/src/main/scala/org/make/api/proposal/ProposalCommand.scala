@@ -1,9 +1,10 @@
-package org.make.core.proposal
+package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
+import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 
@@ -53,25 +54,29 @@ final case class RefuseProposalCommand(moderator: UserId,
 final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
-                                     voteKey: VoteKey)
+                                     voteKey: VoteKey,
+                                     vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
-                                       voteKey: VoteKey)
+                                       voteKey: VoteKey,
+                                       vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class QualifyVoteCommand(proposalId: ProposalId,
                                     maybeUserId: Option[UserId],
                                     requestContext: RequestContext,
                                     voteKey: VoteKey,
-                                    qualificationKey: QualificationKey)
+                                    qualificationKey: QualificationKey,
+                                    vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
 final case class UnqualifyVoteCommand(proposalId: ProposalId,
                                       maybeUserId: Option[UserId],
                                       requestContext: RequestContext,
                                       voteKey: VoteKey,
-                                      qualificationKey: QualificationKey)
+                                      qualificationKey: QualificationKey,
+                                      vote: Option[VoteAndQualifications])
     extends ProposalCommand

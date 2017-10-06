@@ -5,7 +5,7 @@ Configuration:
     Console:
       - name: AkkaConsole
         PatternLayout:
-          Pattern: "%highlight{%d %p [%X{akkaSource}:%L] %m%n}"
+          Pattern: "%highlight{%d %p [%X{akkaSource}:%L] %X %m%n}"
         ThreadContextMapFilter:
           onMatch: ACCEPT
           onMismatch: DENY
@@ -14,7 +14,7 @@ Configuration:
             value: make-api
       - name: console
         PatternLayout:
-          Pattern: "%highlight{%d %p %C:%L %m%n}"
+          Pattern: "%highlight{%d %p %C:%L %X %m%n}"
         ThreadContextMapFilter:
           onMatch: DENY
           onMismatch: NEUTRAL
@@ -30,7 +30,7 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
       - name: org.apache.http
-        level: debug
+        level: error
         additivity: false
         AppenderRef:
           - ref: AkkaConsole
@@ -66,6 +66,12 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
       - name: org.apache.kafka
+        level: warn
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: sun.net
         level: warn
         additivity: false
         AppenderRef:

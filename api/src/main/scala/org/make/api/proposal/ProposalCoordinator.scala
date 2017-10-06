@@ -2,7 +2,6 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
-import org.make.core.proposal.ProposalCommand
 
 object ProposalCoordinator {
   val props: Props = Props[ProposalCoordinator]

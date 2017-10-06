@@ -2,7 +2,7 @@ package org.make.api.proposal
 
 import org.make.core.SprayJsonFormatters
 import org.make.core.proposal.Proposal
-import org.make.core.proposal.ProposalEvent._
+import org.make.api.proposal.ProposalEvent._
 import stamina.V1
 import stamina.json._
 

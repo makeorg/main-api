@@ -16,6 +16,8 @@ import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
+import scala.concurrent.duration.Duration
+
 class MailJetApiTest
     extends MakeApiTestUtils
     with MailJetApi
@@ -39,6 +41,7 @@ class MailJetApiTest
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")

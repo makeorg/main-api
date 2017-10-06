@@ -5,7 +5,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
+import org.make.core.proposal.{QualificationKey, VoteKey}
 
 trait AvroSerializers {
 

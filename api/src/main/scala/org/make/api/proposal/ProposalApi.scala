@@ -79,7 +79,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResult]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
   )
   @ApiImplicitParams(
     value =
@@ -90,13 +90,12 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("proposals" / "search") {
         makeTrace("Search") { requestContext =>
-          // TODO if user logged in, must return additional information for propositions that belong to user
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
             decodeRequest {
               entity(as[SearchRequest]) { request: SearchRequest =>
                 provideAsync(
                   proposalService
-                    .search(userAuth.map(_.user.userId), request.toSearchQuery, requestContext)
+                    .searchForUser(userAuth.map(_.user.userId), request.toSearchQuery, requestContext)
                 ) { proposals =>
                   complete(proposals)
                 }
@@ -123,7 +122,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IndexedProposal]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -404,7 +403,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                complete(VoteResponse.parseVote(vote = vote, hasVoted = true, None))
               }
             }
           }
@@ -436,7 +435,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   voteKey = request.voteKey
                 )
               ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote, maybeAuth.map(_.user.userId), requestContext.sessionId))
+                complete(VoteResponse.parseVote(vote = vote, hasVoted = false, None))
               }
             }
           }
@@ -475,10 +474,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   qualificationKey = request.qualificationKey
                 )
               ) { qualification: Qualification =>
-                complete(
-                  QualificationResponse
-                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
-                )
+                complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = true))
               }
             }
           }
@@ -517,10 +513,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   qualificationKey = request.qualificationKey
                 )
               ) { qualification: Qualification =>
-                complete(
-                  QualificationResponse
-                    .parseQualification(qualification, maybeAuth.map(_.user.userId), requestContext.sessionId)
-                )
+                complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = false))
               }
             }
           }

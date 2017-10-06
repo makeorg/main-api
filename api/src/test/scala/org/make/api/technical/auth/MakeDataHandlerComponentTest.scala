@@ -42,6 +42,7 @@ class MakeDataHandlerComponentTest
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
   private val tokenLifeTime = 1800
   when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime)

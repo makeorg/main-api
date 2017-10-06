@@ -4,25 +4,23 @@ import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.MailJetTemplateConfigurationExtension
-import org.make.api.proposal.ProposalEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
-import org.make.api.userhistory._
+import org.make.api.proposal.ProposalEvent._
+import org.make.core.session._
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
+class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with ActorEventBusServiceComponent
-    with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
-  override val groupId = "proposal-user-history"
+  override val groupId = "proposal-session-history"
 
   implicit val timeout: Timeout = Timeout(3.seconds)
 
@@ -66,114 +64,106 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    Future(
-      userHistoryCoordinator ? LogUserProposalEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogUserProposalEvent.action,
-          arguments = UserProposal(content = event.content, event.theme)
-        )
-      )
-    )
-  }
-
-  def handleProposalVoted(event: ProposalVoted): Future[Unit] = {
-    event.maybeUserId.map { userId =>
-      Future[Unit](
-        userHistoryCoordinator ? LogUserVoteEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = LogUserVoteEvent.action,
-            arguments = UserVote(event.id, event.voteKey)
-          )
-        )
-      )
-    }.getOrElse(Future.successful[Unit] {
+    Future.successful[Unit] {
       log.debug(s"received $event")
-    })
-  }
-
-  def handleProposalUnvoted(event: ProposalUnvoted): Future[Unit] = {
-    event.maybeUserId.map { userId =>
-      Future[Unit](
-        userHistoryCoordinator ? LogUserUnvoteEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = LogUserUnvoteEvent.action,
-            arguments = UserUnvote(event.id, event.voteKey)
-          )
-        )
-      )
-    }.getOrElse(Future.successful[Unit] {
-      log.debug(s"received $event")
-    })
-  }
-
-  def handleProposalQualified(event: ProposalQualified): Future[Unit] = {
-    event.maybeUserId.map { userId =>
-      Future[Unit](
-        userHistoryCoordinator ? LogUserQualificationEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = LogUserQualificationEvent.action,
-            arguments = UserQualification(event.id, event.qualificationKey)
-          )
-        )
-      )
-    }.getOrElse(Future.successful[Unit] {
-      log.debug(s"received $event")
-    })
-  }
-
-  def handleProposalUnqualified(event: ProposalUnqualified): Future[Unit] = {
-    event.maybeUserId.map { userId =>
-      Future[Unit](
-        userHistoryCoordinator ? LogUserUnqualificationEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = LogUserUnqualificationEvent.action,
-            arguments = UserUnqualification(event.id, event.qualificationKey)
-          )
-        )
-      )
-    }.getOrElse(Future.successful[Unit] {
-      log.debug(s"received $event")
-    })
+    }
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
-    Future(
-      userHistoryCoordinator ? LogAcceptProposalEvent(
-        userId = event.moderator,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleProposalVoted(event: ProposalVoted): Future[Unit] = {
+    event.maybeUserId.map { _ =>
+      Future.successful[Unit] {
+        log.debug(s"received $event")
+      }
+    }.getOrElse(
+      Future[Unit](
+        sessionHistoryCoordinator ? LogSessionVoteEvent(
+          sessionId = event.requestContext.sessionId,
+          requestContext = event.requestContext,
+          action = SessionAction(
+            date = event.eventDate,
+            actionType = LogSessionVoteEvent.action,
+            arguments = SessionVote(event.id, event.voteKey)
+          )
+        )
       )
     )
   }
 
-  def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
-    Future(
-      userHistoryCoordinator ? LogRefuseProposalEvent(
-        userId = event.moderator,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+  def handleProposalUnvoted(event: ProposalUnvoted): Future[Unit] = {
+    event.maybeUserId.map { _ =>
+      Future.successful[Unit] {
+        log.debug(s"received $event")
+      }
+    }.getOrElse(
+      Future[Unit](
+        sessionHistoryCoordinator ? LogSessionUnvoteEvent(
+          sessionId = event.requestContext.sessionId,
+          requestContext = event.requestContext,
+          action = SessionAction(
+            date = event.eventDate,
+            actionType = LogSessionUnvoteEvent.action,
+            arguments = SessionUnvote(event.id, event.voteKey)
+          )
+        )
+      )
+    )
+  }
+
+  def handleProposalQualified(event: ProposalQualified): Future[Unit] = {
+    event.maybeUserId.map { _ =>
+      Future.successful[Unit] {
+        log.debug(s"received $event")
+      }
+    }.getOrElse(
+      Future[Unit](
+        sessionHistoryCoordinator ? LogSessionQualificationEvent(
+          sessionId = event.requestContext.sessionId,
+          requestContext = event.requestContext,
+          action = SessionAction(
+            date = event.eventDate,
+            actionType = LogSessionQualificationEvent.action,
+            arguments = SessionQualification(event.id, event.qualificationKey)
+          )
+        )
+      )
+    )
+  }
+
+  def handleProposalUnqualified(event: ProposalUnqualified): Future[Unit] = {
+    event.maybeUserId.map { _ =>
+      Future.successful[Unit] {
+        log.debug(s"received $event")
+      }
+    }.getOrElse(
+      Future[Unit](
+        sessionHistoryCoordinator ? LogSessionUnqualificationEvent(
+          sessionId = event.requestContext.sessionId,
+          requestContext = event.requestContext,
+          action = SessionAction(
+            date = event.eventDate,
+            actionType = LogSessionUnqualificationEvent.action,
+            arguments = SessionUnqualification(event.id, event.qualificationKey)
+          )
+        )
       )
     )
   }
 }
 
-object ProposalUserHistoryConsumerActor {
-  val name: String = "proposal-events-user-history-consumer"
-  def props(userHistoryCoordinator: ActorRef): Props =
-    Props(new ProposalUserHistoryConsumerActor(userHistoryCoordinator))
+object ProposalSessionHistoryConsumerActor {
+  val name: String = "proposal-events-session-history-consumer"
+  def props(sessionHistoryCoordinator: ActorRef): Props =
+    Props(new ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator))
 }

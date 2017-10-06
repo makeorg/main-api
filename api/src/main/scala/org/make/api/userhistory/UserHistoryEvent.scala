@@ -1,15 +1,15 @@
-package org.make.core.user
+package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
-import org.make.core.proposal.{ProposalId, SearchQuery}
-import org.make.core.reference.ThemeId
-import org.make.core.proposal.indexed.{QualificationKey, VoteKey}
-import org.make.core.{MakeSerializable, RequestContext}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-import spray.json.DefaultJsonProtocol._
+import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.SprayJsonFormatters._
+import org.make.core.proposal.{ProposalId, QualificationKey, SearchQuery, VoteKey}
+import org.make.core.reference.ThemeId
+import org.make.core.user._
+import org.make.core.{MakeSerializable, RequestContext}
+import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
@@ -35,11 +35,11 @@ sealed trait UserHistoryEvent[T] extends MakeSerializable {
   def protagonist: Protagonist
 }
 
-final case class SearchParameters(query: SearchQuery)
+final case class UserSearchParameters(query: SearchQuery)
 
-object SearchParameters {
-  implicit val searchParametersFormatted: RootJsonFormat[SearchParameters] =
-    DefaultJsonProtocol.jsonFormat1(SearchParameters.apply)
+object UserSearchParameters {
+  implicit val searchParametersFormatted: RootJsonFormat[UserSearchParameters] =
+    DefaultJsonProtocol.jsonFormat1(UserSearchParameters.apply)
 
 }
 
@@ -64,35 +64,51 @@ object UserProposal {
 
 }
 
-final case class UserVote(voteKey: VoteKey)
+final case class UserVote(proposalId: ProposalId, voteKey: VoteKey)
 
 object UserVote {
   implicit val userVoteFormatted: RootJsonFormat[UserVote] =
-    DefaultJsonProtocol.jsonFormat1(UserVote.apply)
+    DefaultJsonProtocol.jsonFormat2(UserVote.apply)
 
 }
 
-final case class UserQualification(voteKey: VoteKey, qualificationKey: QualificationKey)
+final case class UserUnvote(proposalId: ProposalId, voteKey: VoteKey)
+
+object UserUnvote {
+  implicit val userUnvoteFormatted: RootJsonFormat[UserUnvote] =
+    DefaultJsonProtocol.jsonFormat2(UserUnvote.apply)
+
+}
+
+final case class UserQualification(proposalId: ProposalId, qualificationKey: QualificationKey)
 
 object UserQualification {
-  implicit val userQualifFormatted: RootJsonFormat[UserQualification] =
+  implicit val userQualificationFormatted: RootJsonFormat[UserQualification] =
     DefaultJsonProtocol.jsonFormat2(UserQualification.apply)
 
 }
 
-final case class LogSearchProposalsEvent(userId: UserId,
-                                         requestContext: RequestContext,
-                                         action: UserAction[SearchParameters])
-    extends UserHistoryEvent[SearchParameters] {
+final case class UserUnqualification(proposalId: ProposalId, qualificationKey: QualificationKey)
+
+object UserUnqualification {
+  implicit val userQualifFormatted: RootJsonFormat[UserUnqualification] =
+    DefaultJsonProtocol.jsonFormat2(UserUnqualification.apply)
+
+}
+
+final case class LogUserSearchProposalsEvent(userId: UserId,
+                                             requestContext: RequestContext,
+                                             action: UserAction[UserSearchParameters])
+    extends UserHistoryEvent[UserSearchParameters] {
   override val protagonist: Protagonist = Citizen
 }
 
 // User actions
-object LogSearchProposalsEvent {
+object LogUserSearchProposalsEvent {
   val action: String = "search"
 
-  implicit val logSearchProposalsEventFormatted: RootJsonFormat[LogSearchProposalsEvent] =
-    DefaultJsonProtocol.jsonFormat(LogSearchProposalsEvent.apply, "userId", "context", "action")
+  implicit val logUserSearchProposalsEventFormatted: RootJsonFormat[LogUserSearchProposalsEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserSearchProposalsEvent.apply, "userId", "context", "action")
 
 }
 
@@ -154,8 +170,8 @@ object LogUserVoteEvent {
 
 }
 
-final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
-    extends UserHistoryEvent[UserVote] {
+final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserUnvote])
+    extends UserHistoryEvent[UserUnvote] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -184,8 +200,8 @@ object LogUserQualificationEvent {
 
 final case class LogUserUnqualificationEvent(userId: UserId,
                                              requestContext: RequestContext,
-                                             action: UserAction[UserQualification])
-    extends UserHistoryEvent[UserQualification] {
+                                             action: UserAction[UserUnqualification])
+    extends UserHistoryEvent[UserUnqualification] {
   override val protagonist: Protagonist = Citizen
 }
 

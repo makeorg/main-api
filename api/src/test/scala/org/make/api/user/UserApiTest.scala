@@ -14,8 +14,8 @@ import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
+import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.{MakeApi, MakeApiTestUtils}
-import org.make.core.user.UserEvent.ResetPasswordEvent
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}

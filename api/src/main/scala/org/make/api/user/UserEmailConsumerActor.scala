@@ -6,12 +6,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
-import org.make.core.user.UserEvent.{
-  ResendValidationEmailEvent,
-  ResetPasswordEvent,
-  UserEventWrapper,
-  UserRegisteredEvent
-}
+import org.make.api.userhistory.UserEvent._
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,6 +32,7 @@ class UserEmailConsumerActor(userService: UserService)
   object HandledMessages extends Poly1 {
     implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
     implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
+    implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
     implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
       at(identity)
   }
@@ -45,6 +41,7 @@ class UserEmailConsumerActor(userService: UserService)
     message.event.fold(HandledMessages) match {
       case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
       case event: UserRegisteredEvent        => handleUserRegisteredEventEvent(event)
+      case event: UserConnectedEvent         => Future.successful {}
       case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
     }
   }

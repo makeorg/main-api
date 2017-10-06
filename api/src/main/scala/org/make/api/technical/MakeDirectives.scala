@@ -12,13 +12,13 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.reference.ThemeId
+import org.make.core.session.SessionId
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.User
 import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
@@ -61,9 +61,10 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
             HttpCookie(
               name = sessionIdKey,
               value = sessionId,
-              secure = true,
+              secure = makeSettings.SessionCookie.isSecure,
               httpOnly = true,
-              maxAge = Some(20.minutes.toMillis)
+              maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+              path = Some("/")
             )
           )
         )
@@ -98,11 +99,12 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         )
       )
       _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
-    } yield
-      RequestContext(
+    } yield {
+
+      val context = RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
         requestId = requestId,
-        sessionId = sessionId,
+        sessionId = SessionId(sessionId),
         externalId = externalId,
         operation = maybeOperation,
         source = maybeSource,
@@ -111,6 +113,9 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         language = maybeLanguage,
         country = maybeCountry
       )
+      println(s"extracted ${context.toString}")
+      context
+    }
   }
 
   def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =

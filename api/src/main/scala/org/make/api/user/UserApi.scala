@@ -16,7 +16,7 @@ import org.make.api.user.social.SocialServiceComponent
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
+import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, HttpCodes}
 
