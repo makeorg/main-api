@@ -312,7 +312,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
   @Path(value = "/{proposalId}/accept")
   def acceptProposal: Route = post {
     path("proposals" / proposalId / "accept") { proposalId =>
@@ -328,8 +330,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     requestContext = requestContext,
                     request = request
                   )
-                ) { proposal: Proposal =>
-                  complete(proposal)
+                ) { proposalResponse: ProposalResponse =>
+                  complete(proposalResponse)
                 }
               }
             }
@@ -350,7 +352,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.RefuseProposalRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
   @Path(value = "/{proposalId}/refuse")
   def refuseProposal: Route = post {
     path("proposals" / proposalId / "refuse") { proposalId =>
@@ -366,8 +370,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     requestContext = requestContext,
                     request = refuseProposalRequest
                   )
-                ) { proposal: Proposal =>
-                  complete(proposal)
+                ) { proposalResponse: ProposalResponse =>
+                  complete(proposalResponse)
                 }
               }
             }

@@ -47,11 +47,11 @@ trait ProposalService {
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
-                       request: ValidateProposalRequest): Future[Option[Proposal]]
+                       request: ValidateProposalRequest): Future[Option[ProposalResponse]]
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
                      requestContext: RequestContext,
-                     request: RefuseProposalRequest): Future[Option[Proposal]]
+                     request: RefuseProposalRequest): Future[Option[ProposalResponse]]
   def voteProposal(proposalId: ProposalId,
                    maybeUserId: Option[UserId],
                    requestContext: RequestContext,
@@ -200,9 +200,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def validateProposal(proposalId: ProposalId,
                                   moderator: UserId,
                                   requestContext: RequestContext,
-                                  request: ValidateProposalRequest): Future[Option[Proposal]] = {
+                                  request: ValidateProposalRequest): Future[Option[ProposalResponse]] = {
 
-      proposalCoordinatorService.accept(
+      def acceptedProposal = proposalCoordinatorService.accept(
         AcceptProposalCommand(
           proposalId = proposalId,
           moderator = moderator,
@@ -215,14 +215,25 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           similarProposals = request.similarProposals
         )
       )
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(acceptedProposal)
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
     }
 
     override def refuseProposal(proposalId: ProposalId,
                                 moderator: UserId,
                                 requestContext: RequestContext,
-                                request: RefuseProposalRequest): Future[Option[Proposal]] = {
+                                request: RefuseProposalRequest): Future[Option[ProposalResponse]] = {
 
-      proposalCoordinatorService.refuse(
+      def refusedProposal = proposalCoordinatorService.refuse(
         RefuseProposalCommand(
           proposalId = proposalId,
           moderator = moderator,
@@ -231,6 +242,17 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           refusalReason = request.refusalReason
         )
       )
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(refusedProposal)
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
     }
 
     override def getDuplicates(userId: UserId,
