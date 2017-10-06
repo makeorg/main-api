@@ -113,11 +113,11 @@ class ProposalActor extends PersistentActor with ActorLogging {
     voteKey match {
       case key if key != commandVoteKey => false
       case Agree =>
-        Seq(LikeIt, Doable, PlatitudeAgree).contains(qualificationKey)
+        qualificationKey == LikeIt || qualificationKey == Doable || qualificationKey == PlatitudeAgree
       case Disagree =>
-        Seq(NoWay, Impossible, PlatitudeDisagree).contains(qualificationKey)
+        qualificationKey == NoWay || qualificationKey == Impossible || qualificationKey == PlatitudeDisagree
       case Neutral =>
-        Seq(DoNotCare, DoNotUnderstand, NoOpinion).contains(qualificationKey)
+        qualificationKey == DoNotCare || qualificationKey == DoNotUnderstand || qualificationKey == NoOpinion
       case _ => false
     }
   }
