@@ -13,14 +13,13 @@ import scala.util.{Failure, Success, Try}
 
 object Proposal extends SimulationConfig {
 
-  val maxClients = 3
+  val maxClients = 523
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
-    .header("x-make-theme-id", "1234-5678-abcd")
     .header("x-make-operation", "")
     .header("x-make-source", "core")
     .header("x-make-location", "homepage")
@@ -77,6 +76,7 @@ object ProposalChainBuilder {
 
     exec(
       MakeServicesBuilder.createProposalBuilder
+        .header("x-make-theme-id", "${theme}")
         .body(ElFileBody("jsonModel/createProposal.json"))
         .asJSON
         .check(jsonPath("$.proposalId").saveAs("proposalId"))

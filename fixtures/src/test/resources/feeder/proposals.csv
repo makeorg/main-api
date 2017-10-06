@@ -1,4 +1,524 @@
-"username";"content";"theme";"tags"
-"yopmail+chafi@make.org";"Il faut aider nos agriculteurs à se convertir à la permaculture";"969118ae-949f-4a4a-af33-ec1bcc107450";"agriculture-raisonnee|permaculture"
-"yopmail+jeremy@make.org";"Il faut changer les modes de productions qui ne sont plus rentables passer de l'intensif à l'extensif, produire moins mais mieux.";"969118ae-949f-4a4a-af33-ec1bcc107450";"agriculture-raisonnee"
-"yopmail+anonymous@make.org";"Il faut favoriser la vente des fruits et légumes moches en les rendant plus attractifs et en sensibilisant les gens à leur utilisation";"969118ae-949f-4a4a-af33-ec1bcc107450";"consommation-raisonnee"
+username;content;theme;tags
+yopmail+chafi@make.org;Il faut aider nos agriculteurs à se convertir à la permaculture;969118ae-949f-4a4a-af33-ec1bcc107450;agriculture-raisonnee|permaculture
+yopmail+jeremy@make.org;Il faut changer les modes de productions qui ne sont plus rentables passer de l'intensif à l'extensif, produire moins mais mieux.;969118ae-949f-4a4a-af33-ec1bcc107450;agriculture-raisonnee
+yopmail+anonymous@make.org;Il faut favoriser la vente des fruits et légumes moches en les rendant plus attractifs et en sensibilisant les gens à leur utilisation;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee
+yopmail+matthieu@make.org;Il faut instaurer des quotas européens sur certains produits agricoles, alimentaires comme le lait pour éviter des surproductions et crises;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|union-europeenne
+yopmail+jean-paul@make.org;Il faut faciliter les circuits courts et aider les agriculteurs à les développer;969118ae-949f-4a4a-af33-ec1bcc107450;local|agriculture raisonnée
+yopmail+daniel@make.org;Il faut approcher les producteurs et les consommateurs avec des outils numériques.;969118ae-949f-4a4a-af33-ec1bcc107450;nouvelles-technologies
+yopmail+matthieu@make.org;Il faut interdire les OGM;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+matthieu@make.org;Il faut que l'Etat, les services publics (écoles, collèges, mairies) et les cantines d'entreprise soient obligés de consommer à 75% local;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|local
+yopmail+matthieu@make.org;Il faut créer des licences de semences/graines libres de Droit afin que les agriculteurs puissent produire et commercer leurs propres graine;969118ae-949f-4a4a-af33-ec1bcc107450;agriculture-raisonnee
+yopmail+isabelle@make.org;Il faut légaliser le cannabis et le faire cultiver par nos agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;produits-agricoles
+yopmail+anonymous@make.org;Il faut créer un fond d'Etat pour les agriculteurs surendettés;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+yannick@make.org;Il faut faire en sorte que leurs produits soient achetés à un prix plus juste par la grande distribution;969118ae-949f-4a4a-af33-ec1bcc107450;distribution
+yopmail+matthieu@make.org;Il faut aider financièrement les agriculteurs à moderniser leurs installations (Productivité/Ecologie);969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;consommation-raisonnee|information-n-labels
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;produits-chimiques-n-ogms
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;local
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;vie-rurale
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;formation
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;information-labels
+yopmail+anonymous@make.org;Il faut que le ministre de l'agriculture fasse un tour du pays d'un mois avant de prendre des décisions;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut que l'Etat réduise les subventions aux agriculteurs;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut mieux expliquer aux français les labels de qualité dans l'agriculture pour savoir ce qu'on achète;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut interdire le glyphosate en France;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut aider les petits villages à donner des locaux pour réinstaller des petits commerces (épicerie, boulangerie...);969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut des applications de rencontre pour les gens des villages isolés, pour connaitre ses voisins;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut que l'État finance le tout à l'égoût partout;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut que les mairies de province fasse des trucs pour les jeunes actifs sinon resteront à la ville;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut des services communs de garderie entre villages;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut revaloriser les filières agricoles pour les jeunes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut un JT national du soir et grand public uniquement réservé aux actualités du monde rural et agricole;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut que l'Etat paie la transition bio des terres des agriculteurs qui ont été fourvoyés par monsanto et compagnie;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut une première année généraliste à la fac.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut sauver le patrimoine de nos petits villages !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut ouvrir les bibliothèques municipales tard le soir et le dimanche;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut arrêter de mettre les billets d'opéra à 100 euros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut inviter plus d'artistes dans les écoles pour donner envie aux enfants;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut qu'il y ait une oeuvre d'art en bas de chaque nouvel immeuble construit;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut arrêter de subventionner les artistes avec l'argent du contribuable. S'ils sont bons, ils auront un public !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut supprimer le régime des intermittents et le remplacer par un système plus clair et moins précaire.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut aider la musique française comme on aide le cinéma français !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut défendre les petits artistes pas connus plutôt que de subventionner toujours les mêmes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut mettre plus de chansons françaises à la radio;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut programmer plus de culture à la télé ! les programmes actuels sont trop tard.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut valoriser les enseignements artistiques dès les petites classes;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut arrêter de faire jouer de la flûte à bec à l'école. Ca n'est pas comme cela qu'on donne envie.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut ouvrir les conservatoires à tous les gamins, et les obliger à bosser avec les écoles de leurs villes.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut reconnaître les métiers d'art à leur juste place. ;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut encourager les entreprises à laisser du temps pour la culture pour les salariés;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut plus de femmes dans les premiers rôles des séries, il n'y a que des hommes en héros !;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut que les grands théâtres d'État tournent partout en France dans les petites salles;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+anonymous@make.org;Il faut harmoniser tous les sites des ministères, régions, villes, services publics, etc.;969118ae-949f-4a4a-af33-ec1bcc107450;action-publique|bio
+yopmail+richard@make.org;Il faut que celui qui se présente passe une journée complète avec une famille pauvre qui vit dans la précarité;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite|exemplarite
+yopmail+germain@make.org;Il faut définir des thèmes sur lesquels les candidats à la présidentielle doivent obligatoirement se positionner.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+anonymous@make.org;Il faut organiser la journée du débat citoyen, un jour férié pour affuter son sens politique;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+erik@make.org;Il faut instaurer un service civique obligatoire pour tous à 18 ans.;4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+adrien@make.org;Il faut que le Ministre des Affaires Etrangères soit un ancien diplomate;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut détruire l'idée même de représentation politique pour privilégier les actions locales et autonomes.;4f79b301-6735-4e88-ad36-69320d69cf2e;collectivites-locales
+yopmail+anonymous@make.org;Il faut une décentralisation du pouvoir, des régions plus fortes permettant de rapprocher les décisions des citoyens.;4f79b301-6735-4e88-ad36-69320d69cf2e;collectivites-locales
+yopmail+raphaël@make.org;Il faut enseigner la critique, et l'analyse politique au lycée pour donner au citoyen les moyens de voter intelligemment;4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+léonie@make.org;Il faut obliger chaque classe de collège à visiter le Sénat ou l'Assemblée;4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+julien@make.org;Il faut remettre l'éducation au centre des préoccupations avec des cours pour apprendre à devenir citoyen-électeur (S-P);4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+killian@make.org;Il faut 2h de cours par semaine à l'école sur des sujets d'actualités. Exprimer son opinion et respecter celle des autres.;4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+robinson@make.org;Il faut réduire le temps de travail afin de dégager du temps pour l'investissement citoyen en politique.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+raphaël@make.org;Il faut expliquer davantage l'action de l'UE de manière simple et pédagogique.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+anonymous@make.org;Il faut interdire la ré-élection des députés qui sont très souvent absents et qui n'ont aucune activité / aucune action;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+thierry@make.org;Il faut que tout politicien qui ont une fraude fiscale ne puisse plus exercer pendant 20 ans;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+anonymous@make.org;Il faut tirer au sort un groupe de citoyens chargés de contrôler les actions des élus;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+gilles@make.org;Il faut corréler la rémunération des élus à leur présences aux assemblées et à leur travail effectif;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite|statut-de-l-elu
+yopmail+margot@make.org;Il faut que les élus aient un casier vierge.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+anonymous@make.org;Il faut définir un temps de présence obligatoire en hémicycle pour les parlementaires.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite|statut-de-l-elu
+yopmail+hugo@make.org;Il faut que les salaires des hauts fonctionnaires de l'Etat et ceux des PDG soient plafonnés.;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+anonymous@make.org;Il faut rendre inéligible toute personne condamnée pour détournement de fonds ou fraude électorale.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+solene@make.org;Il faut une inéligibilité pour tous les élus accusés d'agression, d'exhibition ou de harcèlement sexuel.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+emilie@make.org;Il faut interdire aux hommes politiques de se dénigrer entre eux, cela leur fait perdre toute crédibilité !;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+anonymous@make.org;Il faut que les politiques justifient d'un certain nombres d'années en milieu professionnel;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite|representativite
+yopmail+anonymous@make.org;Il faut confier la passation des marchés publics aux services du préfet et non aux élus afin de limiter le favoritisme;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+maxime@make.org;Il faut sanctionner les parlementaires qui ont eu une absence injustifiée lors d'une séance de vote;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+robin@make.org;Il faut contrôler la présence des députés à l'Assemblée Nationale, et adapter leur salaire en fonction;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite|statut-de-l-elu
+yopmail+anonymous@make.org;Il faut éviter et sanctionner les conflits d'intérêt au sein du gouvernement français et de l'Union Européenne.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+yann@make.org;Il faut interdire le lobbyisme.;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+anonymous@make.org;Il faut un 'csa du bullshit politique' multi-partiste assainissant le débat et redonnant les chiffres réels aux citoyens;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+samuel@make.org;Il faut que tous les livres écrits par les candidats à la présidence et lors des élections mêmes soient gratuits pour toutes et tous!;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|elections
+yopmail+pol@make.org;Il faut une application mobile permettant de comparer les programmes des candidats sur les sujets qui nous intéressent;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|elections
+yopmail+anonymous@make.org;Il faut interdire le cumul des mandats;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement
+yopmail+anonymous@make.org;Il faut suprimer l'Ecole Nationale d'Administration !;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut supprimer la moitié des sénateurs et députés;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut ...aussi changer les hauts fonctionnaires de l'état à chaque élection.;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement|institutions
+yopmail+cfan@make.org;Il faut un mandat non renouvelable de 7 ans pour le Président de la République.;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement|institutions
+yopmail+anonymous@make.org;Il faut supprimer les conseils départementaux;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions|collectivites-locales
+yopmail+jean-michel@make.org;Il faut mettre en place des assemblées locales où les citoyens peuvent proposer/voter des lois locales puis nationales.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+arthur@make.org;Il faut supprimer le C.E.S.E.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+stephane@make.org;Il faut interdire aux parlementaires de voter les lois qui les impactent directement.;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+damien@make.org;Il faut élire plusieurs présidents, pour atténuer le culte de la personnalité et la concentration du pouvoir;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+laurent@make.org;Il faut interdire le passage en force des textes de lois (49.3, etc.);4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut limiter le nombre de mandats dans une vie, pour que cette dernière ne soit pas consacrée que à la politique;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement
+yopmail+anonymous@make.org;Il faut supprimer le Sénat;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut donner le droit de votes aux étrangers dès lors qu'ils payent des impôts;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+janis@make.org;Il faut des représentants pour les habitants étant en incapacité de voter et voulant s'exprimer (réfugiés,jeunesse, etc);4f79b301-6735-4e88-ad36-69320d69cf2e;elections|representativite
+yopmail+romain@make.org;Il faut une chambre de citoyens tirés au sort pour contrôler les élus.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions|participation-citoyenne
+yopmail+sylvie@make.org;Il faut imposer à nos élus la retraite obligatoire à 65 ans comme pour tous les français.;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+théophile@make.org;Il faut plus de rapidité dans le processus d'adoption des lois.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+anonymous@make.org;Il faut rendre obligatoire la présence des élus aux séances parlementaires, sous peine de destitution.;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu|exemplarite
+yopmail+anonymous@make.org;Il faut créer une plateforme numérique publique pour organiser la participation citoyenne.;4f79b301-6735-4e88-ad36-69320d69cf2e;nouvelles-technologies|participation-citoyenne
+yopmail+damien@make.org;Il faut permettre aux citoyens de pouvoir destituer et de juger les élus par pétition;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+anonymous@make.org;Il faut transformer le Sénat en Assemblée citoyenne tirée au sort sur les listes électorales.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions|participation-citoyenne
+yopmail+thomas@make.org;Il faut organiser des assises nationales où les citoyens réécriront la constitution et notre système démocratique.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions|participation-citoyenne
+yopmail+pierre@make.org;Il faut imposer à chaque parti des quotas pour l'âge des députés, à l'image du quota pour la parité homme/femme.;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+yann@make.org;Il faut tirer au sort dans la population une partie des parlementaires.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions|elections
+yopmail+poulain@make.org;Il faut que le president se presente aux élections avec son premier ministre;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+hélène@make.org;Il faut favoriser les pouvoirs locaux tant dans les décisions que dans les financements.;4f79b301-6735-4e88-ad36-69320d69cf2e;collectivites-locales
+yopmail+charlotte@make.org;Il faut que l'État et les collectivités promeuvent et financent différentes formes de démocratie à toutes les échelles territoriales;4f79b301-6735-4e88-ad36-69320d69cf2e;collectivites-locales
+yopmail+cfan@make.org;Il faut une limitation à deux mandats consécutifs de parlementaire ou d'élu local;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement
+yopmail+rene@make.org;Il faut faciliter le vote par internet;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|nouvelles-technologies
+yopmail+vincent@make.org;Il faut créer une chambre d'experts pluridisciplinaires comportant des professionnels du privé dans chaque ministère;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|representativite
+yopmail+thomas@make.org;Il faut que toute action de guerre soit décidée par référendum;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+christophe@make.org;Il faut Organiser des G1000 où des citoyens tirés au sort proposent des solutions sur un sujet précis après débats ...;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+anonymous@make.org;Il faut associer des citoyens tirés au sort à la rédaction des lois et en particulier de la constitution;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+hugo@make.org;Il faut faire des expérimentations de démocratie directe dans les collectivités à moins de 1000 habitants;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|collectivites-locales
+yopmail+penelope@make.org;Il faut accroître le rôle des organisations de la société civile dans les prises de décision;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+denis@make.org;Il faut qu'une loi soit soutenue par au moins 650 000 citoyens (pétition) pour qu'elle puisse être votée à l'Assemblée.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+anonymous@make.org;Il faut désigner des conseils de citoyens diversifiés pour réfléchir aux problèmes qui intéressent les Français;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|institutions
+yopmail+christine@make.org;Il faut instaurer les référendums d'initiative populaire.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|institutions
+yopmail+chloé@make.org;Il faut écouter le peuple en tirant au sort chaque mois 10 personnes pour discuter de questions fondamentales.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+paul@make.org;Il faut créer une assemblée citoyenne tirée au sort chargée de proposer des projets de lois.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|institutions
+yopmail+jeremy@make.org;Il faut que le Président rencontre chaque mois un groupe de 5 citoyens tirés au sort pour échanger.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|institutions
+yopmail+anonymous@make.org;Il faut dès qu'un élu est mis en examen qu'une commission citoyenne décide de son maintien ou non dans la vie publique;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|exemplarite
+yopmail+louis@make.org;Il faut que tout citoyen soit capable de voter chaque loi par le biais d'une appli pour smartphone par exemple;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que pour chaque projet de loi, des groupes de citoyens et d'experts de tous les horizons soient sollicités;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|representativite
+yopmail+guillaume@make.org;Il faut interdire les signes religieux dans l'espace public;4f79b301-6735-4e88-ad36-69320d69cf2e;laicite
+yopmail+anonymous@make.org;Il faut interdire les cumuls d'indemnités de retraite;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+anonymous@make.org;Il faut payer les parlementaires en fonction de leur présence dans l'hémicycle. (présent à 50% = payé à 50%);4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+rene@make.org;Il faut que ce soit une commission de citoyens qui vote les traitements et avantages des élus;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu|participation-citoyenne
+yopmail+anonymous@make.org;Il faut que les indemnités des parlementaires ou des sénateurs soient aux frais réels;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+sylvie@make.org;Il faut supprimer tous les avantages aux anciens Présidents et Premiers ministres;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+rene@make.org;Il faut qu'un homme politique qui est battu lors de trois élections ne puisse plus se représenter;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement
+yopmail+patrick@make.org;Il faut mettre un âge limite pour faire de la politique;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+poulain@make.org;Il faut que l'ensemble des professions et categories sociales soit représenté à l'Assemblée;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+solveig@make.org;Il faut avoir une expérience de terrain dans le domaine d'expertise d'un ministère avant d'y être assigné.;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+jean-pierre@make.org;Il faut des élections législatives à la proportionnelle;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+anonymous@make.org;Il faut rendre le vote obligatoire;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+alexis@make.org;Il faut une élection indirecte pour élire le président : élection par l'Assemblée, à une majorité de deux tiers.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+jerome@make.org;Il faut prendre en compte le vote blanc;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+anonymous@make.org;Il faut que si une personne obtient moins de 30% des voies à une élection, elle ne puisse plus s'y présenter.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|renouvellement
+yopmail+nans@make.org;Il faut recommencer un scrutin si les votes exprimés sont inférieurs à 50% des inscrits sur les listes;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+benoît@make.org;Il faut changer le système électoral par le système du jugement majoritaire.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+paul@make.org;Il faut instaurer une part de tirage au sort dans toutes les élections.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+coralie@make.org;Il faut interdire les sondages pendant les campagnes électorales car ils pèsent sur le vote des citoyens;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|information-n-transparence
+yopmail+adrien@make.org;Il faut élire le premier ministre et tous les ministres au suffrage universel direct;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+jean-luc@make.org;Il faut mettre en place le mandat impératif pour qu'on puisse révoquer un élu quand il ne respecte pas ses engagements;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|exemplarite
+yopmail+kévin@make.org;Il faut accorder un pourcentage de sièges à l'assemblée nationale proportionnel au pourcentage du vote blanc à des citoyens tirés au sort;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|participation-citoyenne
+yopmail+anonymous@make.org;Il faut que les élus declarent tous les liens qu'ils ont avec les lobbies;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|information-n-transparence
+yopmail+victor@make.org;Il faut des comités de citoyens qui suivent la tenue des promesses de campagne des élus;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|participation-citoyenne
+yopmail+sabine@make.org;Il faut renforcer les pouvoirs du journalisme d'investigation et l'independence de la presse;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+franck@make.org;Il faut un site internet où les votes et la participation de tous les élus sont référencés.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|nouvelles-technologies
+yopmail+anonymous@make.org;Il faut que des organismes institutionnalisés fact-checkent les déclarations politiques.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+beatrice@make.org;Il faut par referendum voter les attributions financières ( salaire, indemnités etc..) des hommes politiques;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne|statut-de-l-elu
+yopmail+pierre@make.org;Il faut faire une enquête fiscale préliminaire sur les candidats à la présidentielle;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|statut-de-l-elu
+yopmail+aurélien@make.org;Il faut que les sources de financement des candidats soient transparentes et accessibles en ligne.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|statut-de-l-elu
+yopmail+anonymous@make.org;Il faut que l'ensemble des outils informatiques utilisés dans les administrations soient open source;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|nouvelles-technologies
+yopmail+vincent@make.org;Il faut redéfinir le statut de lanceur d'alerte et donner plus de protection à ce dernier.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+anonymous@make.org;Il faut absolument simplifier le processus de vote grâce aux technologies numériques.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections|nouvelles-technologies
+yopmail+bertrand@make.org;Il faut évaluer de manière systématique les politiques publiques pour rendre des comptes au citoyen;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+maximilien@make.org;Il faut que les négociations et discussions avec des représentants du privé se fassent en toute clarté pour les citoyens;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|exemplarite
+yopmail+alizee@make.org;Il faut que une loi interdise les députés Européens de travailler parallèlement pour les multinationales;4f79b301-6735-4e88-ad36-69320d69cf2e;exemplarite
+yopmail+anonymous@make.org;Il faut plus de pédagogie sur ce qui est accompli par le gourvernement. Ex : une émission bilan mensuelle ou trimestrielle;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence
+yopmail+jean-baptiste@make.org;Il faut que les indemnités des élus soient imposables comme les revenus de tous les citoyens.;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+margot@make.org;Il faut que les élus soient révocables à tout moment.;4f79b301-6735-4e88-ad36-69320d69cf2e;institutions
+yopmail+armel@make.org;Il faut tirer au sort des jurys citoyens qui prendront les décisions après avoir été bien informés et avoir débattu.;4f79b301-6735-4e88-ad36-69320d69cf2e;information-n-transparence|participation-citoyenne
+yopmail+marie-eve@make.org;Il faut limiter le cumul des mandats dans le temps afin de généraliser les allers-retours entre vie civile et vie politique.;4f79b301-6735-4e88-ad36-69320d69cf2e;renouvellement
+yopmail+laurent@make.org;Il faut que les fonctionnaires démissionnent definitivement de la fonction publique pour se presenter à une élection;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+claude@make.org;Il faut réduire l'indemnité du Président et le budget de l'Elysée.;4f79b301-6735-4e88-ad36-69320d69cf2e;statut-de-l-elu
+yopmail+anonymous@make.org;Il faut instaurer une limite d'âge pour se présenter à un poste d'élu;4f79b301-6735-4e88-ad36-69320d69cf2e;representativite
+yopmail+rémi@make.org;Il faut donner au peuple le droit de grâce, plutôt qu'au Président de la République.;4f79b301-6735-4e88-ad36-69320d69cf2e;participation-citoyenne
+yopmail+anonymous@make.org;Il faut reconnaître le racisme et le sexisme institutionnels;4f79b301-6735-4e88-ad36-69320d69cf2e;egalite-hommes-femmes
+yopmail+thomas@make.org;"Il faut promouvoir la mixité socio-spatiale pour pouvoir réconcilier tous les français et apprendre à connaître l'autre""""";4f79b301-6735-4e88-ad36-69320d69cf2e;education-civique
+yopmail+bob@make.org;Il faut cesser de voter pour des élus mais pour des programmes. L'élue sera tiré au sort parmi les porteurs du projet;4f79b301-6735-4e88-ad36-69320d69cf2e;elections
+yopmail+pierre@make.org;Il faut obliger la réembauche au même poste d'un employé qui est élu.;4f79b301-6735-4e88-ad36-69320d69cf2e;elections

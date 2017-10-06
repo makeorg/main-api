@@ -1,4 +1,3 @@
 {
-  "content": "${content}",
-  "theme": "${theme}"
+  "content": "${content}"
 }
