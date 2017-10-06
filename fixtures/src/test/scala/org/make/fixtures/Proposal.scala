@@ -4,6 +4,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import io.gatling.core.Predef._
 import io.gatling.core.feeder._
+import io.gatling.core.json.Json
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef.{http, jsonPath, status}
 import io.gatling.http.protocol.HttpProtocolBuilder
@@ -12,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 
 object Proposal extends SimulationConfig {
 
-  val maxClients = 252
+  val maxClients = 3
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
@@ -47,7 +48,11 @@ object Proposal extends SimulationConfig {
           mayBeProposals.map { proposals =>
             proposals(ThreadLocalRandom.current.nextInt(proposals.length))
             val selectedProposal = proposals(ThreadLocalRandom.current.nextInt(proposals.length))
-            session.set("content", selectedProposal("content")).set("theme", selectedProposal("theme"))
+            val tags = Json.stringify(selectedProposal("tags").split('|').toSeq)
+            session
+              .set("content", selectedProposal("content"))
+              .set("theme", selectedProposal("theme"))
+              .set("tags", tags)
           }.getOrElse(session)
       }
     )

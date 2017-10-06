@@ -18,7 +18,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   override implicit val actorSystem: ActorSystem = ActorSystem("make-api")
   actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)
-  actorSystem.actorOf(MakeGuardian.props(userService = userService), MakeGuardian.name)
+  actorSystem.actorOf(MakeGuardian.props(userService = userService, tagService = tagService), MakeGuardian.name)
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher

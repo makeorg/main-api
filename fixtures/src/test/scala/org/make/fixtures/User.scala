@@ -5,10 +5,11 @@ import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
 import io.gatling.http.request.builder.HttpRequestBuilder
+import scala.concurrent.duration._
 
 object User extends SimulationConfig {
 
-  val maxClients = 94
+  val maxClients = 3
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
@@ -25,7 +26,7 @@ object User extends SimulationConfig {
       }
   }
 
-  private val defaultPause = 10
+  private val defaultPause = 20.seconds
 
   val scnRegister: ScenarioBuilder = scenario("Register user")
     .feed(userFeeder)
