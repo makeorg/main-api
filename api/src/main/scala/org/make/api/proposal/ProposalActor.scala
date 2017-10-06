@@ -107,6 +107,21 @@ class ProposalActor extends PersistentActor with ActorLogging {
 
   }
 
+  private def checkQualification(voteKey: VoteKey,
+                                 commandVoteKey: VoteKey,
+                                 qualificationKey: QualificationKey): Boolean = {
+    voteKey match {
+      case key if key != commandVoteKey => false
+      case Agree =>
+        Seq(LikeIt, Doable, PlatitudeAgree).contains(qualificationKey)
+      case Disagree =>
+        Seq(NoWay, Impossible, PlatitudeDisagree).contains(qualificationKey)
+      case Neutral =>
+        Seq(DoNotCare, DoNotUnderstand, NoOpinion).contains(qualificationKey)
+      case _ => false
+    }
+  }
+
   private def onQualificationProposalCommand(command: QualifyVoteCommand): Unit = {
     command.vote match {
       case None =>
@@ -114,6 +129,10 @@ class ProposalActor extends PersistentActor with ActorLogging {
           .flatMap(_.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
+        sender() ! state
+          .flatMap(_.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+      case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
         sender() ! state
           .flatMap(_.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
