@@ -30,7 +30,7 @@ object ProposalElasticsearchFieldNames {
   val country: String = "country"
   val language: String = "language"
   val tags: String = "tags"
-  val tagId: String = "tags.id"
+  val tagId: String = "tags.tagId"
 }
 
 case class IndexedProposal(id: ProposalId,
