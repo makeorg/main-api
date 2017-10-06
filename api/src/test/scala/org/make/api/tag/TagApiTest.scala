@@ -14,11 +14,12 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.reference.Tag
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.mockito.{ArgumentMatchers, Mockito}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class TagApiTest
@@ -41,6 +42,7 @@ class TagApiTest
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
 

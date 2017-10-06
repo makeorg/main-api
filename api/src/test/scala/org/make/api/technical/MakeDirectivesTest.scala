@@ -13,6 +13,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 class MakeDirectivesTest
     extends FeatureSpec
@@ -41,6 +42,7 @@ class MakeDirectivesTest
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val route: Route = sealRoute(get {
@@ -74,7 +76,7 @@ class MakeDirectivesTest
         status should be(StatusCodes.OK)
         header[`Set-Cookie`] shouldBe defined
         header[`Set-Cookie`].get.cookie.name shouldBe "make-session-id"
-        header[`Set-Cookie`].get.cookie.secure shouldBe true
+        header[`Set-Cookie`].get.cookie.secure shouldBe false
         header[`Set-Cookie`].get.cookie.httpOnly shouldBe true
       }
     }

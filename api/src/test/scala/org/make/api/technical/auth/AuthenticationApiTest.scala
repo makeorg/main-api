@@ -14,6 +14,7 @@ import org.make.core.user.{User, UserId}
 import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo, TokenEndpoint}
 
 class AuthenticationApiTest
@@ -50,6 +51,9 @@ class AuthenticationApiTest
   Mockito
     .when(sessionCookieConfiguration.isSecure)
     .thenReturn(false)
+  Mockito
+    .when(sessionCookieConfiguration.lifetime)
+    .thenReturn(Duration("20 minutes"))
   Mockito
     .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))
