@@ -108,7 +108,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
           postalCode = user.profile.flatMap(_.postalCode),
           age = user.profile
             .flatMap(_.dateOfBirth)
-            .map(date => ChronoUnit.YEARS.between(LocalDate.now(), date).toInt)
+            .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt)
         ),
         country = proposal.creationContext.country.getOrElse("FR"),
         language = proposal.creationContext.language.getOrElse("fr"),
