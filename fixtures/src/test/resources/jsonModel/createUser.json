@@ -1,6 +1,6 @@
 {
   "email": "${username}",
-  "dateOfBirth": null,
+  "dateOfBirth": ${dateOfBirth},
   "firstName": "${firstName}",
   "lastName": null,
   "password": "${password}",

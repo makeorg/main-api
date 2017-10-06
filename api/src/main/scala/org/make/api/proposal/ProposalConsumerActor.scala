@@ -10,6 +10,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.user.UserService
@@ -17,13 +18,14 @@ import org.make.core.RequestContext
 import org.make.api.proposal.ProposalEvent._
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.reference.{Tag, TagId}
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserService)
+class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserService, tagService: TagService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with DefaultProposalSearchEngineComponent
@@ -79,9 +81,17 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
   }
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
+
+    def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
+      tagService
+        .fetchEnabledByTagIds(tags)
+        .map(Some(_))
+    }
+
     val maybeResult = for {
       proposal <- OptionT((proposalCoordinator ? GetProposal(id, RequestContext.empty)).mapTo[Option[Proposal]])
       user     <- OptionT(userService.getUser(proposal.author))
+      tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
       // TODO: missing tags and qualifs
       IndexedProposal(
@@ -113,7 +123,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
         country = proposal.creationContext.country.getOrElse("FR"),
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = Seq.empty
+        tags = tags
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))
@@ -123,7 +133,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 }
 
 object ProposalConsumerActor {
-  def props(proposalCoordinator: ActorRef, userService: UserService): Props =
-    Props(new ProposalConsumerActor(proposalCoordinator, userService))
+  def props(proposalCoordinator: ActorRef, userService: UserService, tagService: TagService): Props =
+    Props(new ProposalConsumerActor(proposalCoordinator, userService, tagService))
   val name: String = "proposal-consumer"
 }

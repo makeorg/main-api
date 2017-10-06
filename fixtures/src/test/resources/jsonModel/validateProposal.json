@@ -3,6 +3,6 @@
   "sendNotificationEmail": false,
   "theme": "${theme}",
   "labels": ["violence"],
-  "tags": ["affaires"],
+  "tags": ${tags},
   "similarProposals": []
 }

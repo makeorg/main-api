@@ -4,6 +4,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import io.gatling.core.Predef._
 import io.gatling.core.feeder._
+import io.gatling.core.json.Json
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef.{http, jsonPath, status}
 import io.gatling.http.protocol.HttpProtocolBuilder
@@ -12,14 +13,13 @@ import scala.util.{Failure, Success, Try}
 
 object Proposal extends SimulationConfig {
 
-  val maxClients = 20
+  val maxClients = 523
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
-    .header("x-make-theme-id", "1234-5678-abcd")
     .header("x-make-operation", "")
     .header("x-make-source", "core")
     .header("x-make-location", "homepage")
@@ -32,7 +32,7 @@ object Proposal extends SimulationConfig {
     }
 
   private val userFeeder = ssv(userFeederPath, '"', '\\')
-  private val defaultPause = 0
+  private val defaultPause = 2
 
   val scnRegister: ScenarioBuilder = scenario("Create proposal with theme")
     .feed(userFeeder.circular)
@@ -47,7 +47,11 @@ object Proposal extends SimulationConfig {
           mayBeProposals.map { proposals =>
             proposals(ThreadLocalRandom.current.nextInt(proposals.length))
             val selectedProposal = proposals(ThreadLocalRandom.current.nextInt(proposals.length))
-            session.set("content", selectedProposal("content")).set("theme", selectedProposal("theme"))
+            val tags = Json.stringify(selectedProposal("tags").split('|').toSeq)
+            session
+              .set("content", selectedProposal("content"))
+              .set("theme", selectedProposal("theme"))
+              .set("tags", tags)
           }.getOrElse(session)
       }
     )
@@ -72,6 +76,7 @@ object ProposalChainBuilder {
 
     exec(
       MakeServicesBuilder.createProposalBuilder
+        .header("x-make-theme-id", "${theme}")
         .body(ElFileBody("jsonModel/createProposal.json"))
         .asJSON
         .check(jsonPath("$.proposalId").saveAs("proposalId"))

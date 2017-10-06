@@ -111,6 +111,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('addictions', 'addictions', true),
 	('affaires', 'affaires', true),
 	('agriculture', 'agriculture', true),
+	('agriculture-raisonnee', 'agriculture raisonnée', true),
 	('agriculture-intensive', 'agriculture intensive', true),
 	('aides', 'aides', true),
 	('aides-de-l-etat', e'aides de l\'etat', true),
@@ -134,6 +135,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('conditions-de-travail', 'conditions de travail', true),
 	('conflits', 'conflits', true),
 	('consommation', 'consommation', true),
+	('consommation-raisonnee', 'consommation raisonnée', true),
 	('construction', 'construction', true),
 	('contrat-de-travail', 'contrat de travail', true),
 	('controle-des-institutions', e'contrôle (des institutions)', true),
@@ -284,21 +286,46 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('violence', 'violence', true),
 	('vivre-ensemble', 'vivre ensemble', true),
 	('vote-blanc', 'vote blanc', true),
-	('zero-dechets', e'zéro-déchets', true)
+	('zero-dechets', e'zéro-déchets', true),
+	('action-publique', 'action publique', true),
+	('local', 'local', true),
+	('nouvelle-technologies', 'nouvelle technologies', true),
+	('produits-chimiques-n-ogms', 'produits chimiques & ogms', true),
+	('produits-agricoles', 'produits agricoles', true),
+	('distribution', 'distribution', true),
+	('vie-rurale', 'vie rurale', true),
+	('information-labels', 'information /labels', true),
+	('representativite', e'représentativité', true),
+	('participation-citoyenne', 'participation citoyenne', true),
+	('collectivites-locales', e'collectivités locales', true),
+	('information-n-transparence', 'information & transparence', true),
+	('exemplarite', e'exemplarité', true),
+	('renouvellement', 'renouvellement', true),
+	('laicite', e'laïcité', true),
+	('bio', 'bio', true),
+	('egalite-hommes-femmes', e'égalité hommes femmes', true),
+	('circuits-courts', 'circuits courts', true),
+	('entreprises-n-collectivites', e'entreprises & collectivités', true),
+	('transports', 'transports', true),
+	('urbanisme-n-habitat', 'urbanisme & habitat', true),
+	('sensibilisation-n-education', e'sensibilisation & éducation', true),
+	('consommation-responsable', 'consommation responsable', true)
+
+
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme
     (uuid, actions_count, proposals_count, country, color, gradient_from, gradient_to, tags_ids)
     VALUES
-    ('4f79b301-6735-4e88-ad36-69320d69cf2e', 0, 0, 'FR', '#E91E63', '#E81E61', '#7F2FD0', 'les-institutions,elections,financement,ethique,statut-de-l-elu,absenteisme-activite,processus-legislatif,influence,controle-des-institutions,les-elus,collectivites,parite,mandats,eligibilite,remuneration,affaires,vote-blanc,budget-depenses,referendum,role-du-citoyen'),
-    ('036f24fa-dc32-4808-bca9-7ccec1665585', 0, 0, 'FR', '#8BC34A', '#83BB1A', '#1FC8F1', 'energies-fossiles-energies-sales,carburant-s,alimentation,permaculture,bio-le-bio,sensibilisation,taxes-taxation,gachis,compostage,urbanisme,collectivite-s,electricite,ogms,sante,vegetalisation,recherche,pollution,impots,zero-dechets,recyclage,reglementation,entreprise-s,pesticides,energies-renouvelables-propres,vegetarisme-vegetariens,photovoltaique,eco-conception,transports-propres,subventions,economie-du-partage,circuit-courts,pret-a-porter,particulier-s'),
-    ('b3b37b86-1198-4e06-94ff-cb04f57c6b67', 0, 0, 'FR', '#26A69A', '#26A69A', '#1CEBA0', 'pesticides,agriculture,sensibilisation,alimentation,agriculture,sante,acces-aux-soins,agriculture-intensive,zero-dechets,ogms,vegetarisme-vegetariens,consommation,reglementation,particulier-s,bio-le-bio,institutions,importations,addictions,animaux,recherche,remboursement-des-soins,etiquettage-label,handicap,personnel-soignant'),
-    ('706b277c-3db8-403c-b3c9-7f69939181df', 0, 0, 'FR', '#9173C5', '#9173C6', '#EE98D7', 'ecole-primaire,enseignement-secondaire,enseignement-superieur,carriere,orientation,soutien-scolaire,pedagogie,effectifs,infrastructures,loisirs,epanouissement,matieres,decrochage,examens,rythmes-scolaires,handicap,discipline,violence,parents,enfants,enseignants,harcelement,stages,apprentissage,devoirs,uniforme,langues,numerique,restauration,ressources-pedagogiques,education-civique,sante,diplomes'),
+    ('4f79b301-6735-4e88-ad36-69320d69cf2e', 0, 0, 'FR', '#E91E63', '#E81E61', '#7F2FD0', 'les-institutions,elections,financement,ethique,statut-de-l-elu,absenteisme-activite,processus-legislatif,influence,controle-des-institutions,les-elus,collectivites,parite,mandats,eligibilite,remuneration,affaires,vote-blanc,budget-depenses,referendum,role-du-citoyen,representativite,participation-citoyenne,education-civique,institutions,collectivites-locales,information-n-transparence,exemplarite,renouvellement,laicite,egalite-hommes-femmes'),
+    ('036f24fa-dc32-4808-bca9-7ccec1665585', 0, 0, 'FR', '#8BC34A', '#83BB1A', '#1FC8F1', 'energies-fossiles-energies-sales,carburant-s,alimentation,permaculture,bio-le-bio,sensibilisation,taxes-taxation,gachis,compostage,urbanisme,collectivite-s,electricite,ogms,sante,vegetalisation,recherche,pollution,impots,zero-dechets,recyclage,reglementation,entreprise-s,pesticides,energies-renouvelables-propres,vegetarisme-vegetariens,photovoltaique,eco-conception,transports-propres,subventions,economie-du-partage,circuit-courts,pret-a-porter,particulier-s,action-publique,circuits-courts,agriculture,entreprises-n-collectivites,transports,urbanisme-n-habitat,consommation-responsable'),
+    ('b3b37b86-1198-4e06-94ff-cb04f57c6b67', 0, 0, 'FR', '#26A69A', '#26A69A', '#1CEBA0', 'pesticides,agriculture,sensibilisation,alimentation,sante,acces-aux-soins,agriculture-intensive,zero-dechets,ogms,vegetarisme-vegetariens,consommation,reglementation,particulier-s,bio-le-bio,institutions,importations,addictions,animaux,recherche,remboursement-des-soins,etiquettage-label,handicap,personnel-soignant'),
+    ('706b277c-3db8-403c-b3c9-7f69939181df', 0, 0, 'FR', '#673AB7', '#9173C6', '#EE98D7', 'ecole-primaire,enseignement-secondaire,enseignement-superieur,carriere,orientation,soutien-scolaire,pedagogie,effectifs,infrastructures,loisirs,epanouissement,matieres,decrochage,examens,rythmes-scolaires,handicap,discipline,violence,parents,enfants,enseignants,harcelement,stages,apprentissage,devoirs,uniforme,langues,numerique,restauration,ressources-pedagogiques,education-civique,sante,diplomes'),
     ('bae38574-56a7-4b91-8540-1428e737881a', 0, 0, 'FR', '#0E75C6', '#0E75C6', '#41CED6', 'formation,acces-a-l-emploi,statuts,discrimination,orientation,chomage,metiers,entreprises,commerce-international,vie-en-entreprise,precarite,acquis-sociaux,derives,immobilier,territoire,niveau-de-vie,competitivite,monnaie,finance,patronnat,retraite,union-europeenne,strategie-economique,industrie,impots,salaires,solidarite,transition,entrepreneuriat,patrimoine,contrat-de-travail,fonction-publique-fonctionnaires,licenciement,aides-de-l-etat,travailleurs-independants,conditions-de-travail,delocalisation,croissance'),
     ('d6f4d333-2dc8-493b-aeac-e4a8f9a0f9af', 0, 0, 'FR', '#B7588B', '#FF9047', '#B7588B', 'sensibilisation,securite-routiere,territoire,religion,crimes,police,peines,impunite,delits,systeme-carceral,systeme-judiciaire,terrorisme,mineurs,victimes,coupables,application-des-peines,vivre-ensemble,armes,medias,minorites,defense,drogues,inegalites,militaires'),
     ('980e6688-c169-4810-98d8-2b68043559bd', 0, 0, 'FR', '#FF9800', '#FF9800', '#FFEA9F', 'marche-immobilier,accession,propriete,acquisition,revente,insalubrite,financement,entreprises,particuliers,logements-sociaux,aides,gerance,accessibilite,location,precarite,protection,etudiants,charges,fiscalite,loyers,construction'),
     ('f1990dfb-7b92-47cd-8015-e7ca0f961006', 0, 0, 'FR', '#F9E42A', '#ECD400', '#FF9FFD', 'seniors'),
-    ('969118ae-949f-4a4a-af33-ec1bcc107450', 0, 0, 'FR', '#2E7D32', '#2E7D32', '#8FCF4B', 'agriculture-intensive'),
+    ('969118ae-949f-4a4a-af33-ec1bcc107450', 0, 0, 'FR', '#2E7D32', '#2E7D32', '#8FCF4B', 'agriculture,agriculture-intensive,action-publique,agriculture-raisonnee,consommation-raisonnee,local,nouvelle-technologies,produits-chimiques-n-ogms,produits-agricoles,distribution,vie-rurale,formation,information-labels,union-europeenne,bio'),
     ('8a4a9d0a-92b8-48e4-946d-3e6986296ec7', 0, 0, 'FR', '#311B92', '#311B92', '#54A0E3', 'territoire,gouvernance,institutions,monnaie,richesses,flux-migratoires,accords,derives,culture,fiscalite,cooperation-internationale,sortie-de-l-europe,commerce-international,langue,etats-unis,populations,conflits,protectionnisme,defense'),
     ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 0, 0, 'FR', '#F5515F', '#F5515F', '#9F031B', ''),
     ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 0, 0, 'FR', '#03A9F4', '#4FC8FF', '#FFDC00', '')

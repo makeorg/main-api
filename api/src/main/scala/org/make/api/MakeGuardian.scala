@@ -5,11 +5,12 @@ import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHis
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
+import org.make.api.tag.TagService
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
 import org.make.api.user.{SessionHistoryConsumerActor, UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
+class MakeGuardian(userService: UserService, tagService: TagService) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
@@ -41,7 +42,7 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
     context.watch(
       context.actorOf(
-        ProposalSupervisor.props(userService, userHistoryCoordinator, sessionHistoryCoordinator),
+        ProposalSupervisor.props(userService, userHistoryCoordinator, sessionHistoryCoordinator, tagService),
         ProposalSupervisor.name
       )
     )
@@ -66,5 +67,5 @@ class MakeGuardian(userService: UserService) extends Actor with ActorLogging {
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(userService: UserService): Props = Props(new MakeGuardian(userService))
+  def props(userService: UserService, tagService: TagService): Props = Props(new MakeGuardian(userService, tagService))
 }
