@@ -40,9 +40,7 @@ There are two methods here:
     - Define the task as `api/run`
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
     - Set the config resource: `-Dconfig.resource=default-application.conf`
-    - Set the javaagent: `-javaagent:/path/to/aspectjweaver-1.6.2.jar`.
-
-        Usually aspectjweaver is downloaded in coursier's cache for example at `/Users/user/.coursier/cache/v1/https/repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.8.10/aspectjweaver-1.8.10.jar`
+    - Set the javaagent: type `sbt "show aspectj:aspectjWeaverOptions"` and copy the javaagent in vm parameters.
 
 
 ### Access the Api documentation

@@ -66,7 +66,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    Future(
+    (
       userHistoryCoordinator ? LogUserProposalEvent(
         userId = event.userId,
         requestContext = event.requestContext,
@@ -76,12 +76,12 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
           arguments = UserProposal(content = event.content, event.theme)
         )
       )
-    )
+    ).map(_ => {})
   }
 
   def handleProposalVoted(event: ProposalVoted): Future[Unit] = {
     event.maybeUserId.map { userId =>
-      Future[Unit](
+      (
         userHistoryCoordinator ? LogUserVoteEvent(
           userId = userId,
           requestContext = event.requestContext,
@@ -91,7 +91,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
             arguments = UserVote(event.id, event.voteKey)
           )
         )
-      )
+      ).map(_ => {})
     }.getOrElse(Future.successful[Unit] {
       log.debug(s"received $event")
     })
@@ -99,7 +99,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   def handleProposalUnvoted(event: ProposalUnvoted): Future[Unit] = {
     event.maybeUserId.map { userId =>
-      Future[Unit](
+      (
         userHistoryCoordinator ? LogUserUnvoteEvent(
           userId = userId,
           requestContext = event.requestContext,
@@ -109,7 +109,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
             arguments = UserUnvote(event.id, event.voteKey)
           )
         )
-      )
+      ).map(_ => {})
     }.getOrElse(Future.successful[Unit] {
       log.debug(s"received $event")
     })
@@ -117,7 +117,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   def handleProposalQualified(event: ProposalQualified): Future[Unit] = {
     event.maybeUserId.map { userId =>
-      Future[Unit](
+      (
         userHistoryCoordinator ? LogUserQualificationEvent(
           userId = userId,
           requestContext = event.requestContext,
@@ -127,7 +127,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
             arguments = UserQualification(event.id, event.qualificationKey)
           )
         )
-      )
+      ).map(_ => {})
     }.getOrElse(Future.successful[Unit] {
       log.debug(s"received $event")
     })
@@ -135,7 +135,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   def handleProposalUnqualified(event: ProposalUnqualified): Future[Unit] = {
     event.maybeUserId.map { userId =>
-      Future[Unit](
+      (
         userHistoryCoordinator ? LogUserUnqualificationEvent(
           userId = userId,
           requestContext = event.requestContext,
@@ -145,30 +145,30 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
             arguments = UserUnqualification(event.id, event.qualificationKey)
           )
         )
-      )
+      ).map(_ => {})
     }.getOrElse(Future.successful[Unit] {
       log.debug(s"received $event")
     })
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
-    Future(
+    (
       userHistoryCoordinator ? LogAcceptProposalEvent(
         userId = event.moderator,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
-    Future(
+    (
       userHistoryCoordinator ? LogRefuseProposalEvent(
         userId = event.moderator,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 }
 

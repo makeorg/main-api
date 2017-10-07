@@ -20,7 +20,9 @@ class MakeGuardian(userService: UserService, tagService: TagService) extends Act
       context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
 
     val sessionHistoryCoordinator =
-      context.watch(context.actorOf(SessionHistoryCoordinator.props, SessionHistoryCoordinator.name))
+      context.watch(
+        context.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator), SessionHistoryCoordinator.name)
+      )
 
     context.watch {
       val (props, name) =

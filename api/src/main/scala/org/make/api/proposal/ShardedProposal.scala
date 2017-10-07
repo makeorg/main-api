@@ -32,7 +32,7 @@ class ShardedProposal extends ProposalActor {
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopProposal)
     case StopProposal                  => context.stop(self)
-    case SaveSnapshotSuccess(snapshot) => log.info(s"Snapshot saved: $snapshot")
+    case SaveSnapshotSuccess(snapshot) => log.debug(s"Snapshot saved: $snapshot")
     case SaveSnapshotFailure(_, cause) => log.error(cause, "Error while saving snapshot")
   }
 }

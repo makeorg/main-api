@@ -9,13 +9,15 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, Status
 import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.social.{FacebookApi, GoogleApi, SocialService, SocialServiceComponent}
+import org.make.api.user.social._
 import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.{MakeApi, MakeApiTestUtils}
+import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -33,8 +35,9 @@ class UserApiTest
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with SocialServiceComponent
-    with EventBusServiceComponent
+    with SessionHistoryCoordinatorServiceComponent
     with PersistentUserServiceComponent
+    with EventBusServiceComponent
     with MakeSettingsComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
@@ -44,8 +47,10 @@ class UserApiTest
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val socialService: SocialService = mock[SocialService]
   override val facebookApi: FacebookApi = mock[FacebookApi]
-  override val googleApi: GoogleApi = mock[GoogleApi]
   override val eventBusService: EventBusService = mock[EventBusService]
+  override val googleApi: GoogleApi = mock[GoogleApi]
+  override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
+    mock[SessionHistoryCoordinatorService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
@@ -57,6 +62,8 @@ class UserApiTest
   when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
+  private val successful: Future[Unit] = Future.successful {}
+  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     handleExceptions(MakeApi.exceptionHandler) {
@@ -216,11 +223,14 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            TokenResponse(
-              token_type = "Bearer",
-              access_token = "access_token",
-              expires_in = expiresInSecond,
-              refresh_token = "refresh_token"
+            UserIdAndToken(
+              UserId("12347"),
+              TokenResponse(
+                token_type = "Bearer",
+                access_token = "access_token",
+                expires_in = expiresInSecond,
+                refresh_token = "refresh_token"
+              )
             )
           )
         )
@@ -249,11 +259,14 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            TokenResponse(
-              token_type = "Bearer",
-              access_token = "access_token",
-              expires_in = expiresInSecond,
-              refresh_token = "refresh_token"
+            UserIdAndToken(
+              UserId("12347"),
+              TokenResponse(
+                token_type = "Bearer",
+                access_token = "access_token",
+                expires_in = expiresInSecond,
+                refresh_token = "refresh_token"
+              )
             )
           )
         )

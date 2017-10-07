@@ -47,7 +47,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
-    Future(
+    (
       userHistoryCoordinator ? LogRegisterCitizenEvent(
         userId = event.userId,
         requestContext = event.requestContext,
@@ -64,7 +64,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
           )
         )
       )
-    )
+    ).map(_ => {})
   }
 
   private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {

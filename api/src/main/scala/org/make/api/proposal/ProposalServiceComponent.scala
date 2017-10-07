@@ -6,7 +6,7 @@ import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
@@ -15,7 +15,6 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
-import org.make.core.session._
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import org.make.semantic.text.document.Corpus
@@ -161,24 +160,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
                         requestContext: RequestContext): Future[ProposalsSearchResult] = {
-      maybeUserId match {
-        case Some(userId) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserSearchProposalsEvent(
-              userId,
-              requestContext,
-              UserAction(DateHelper.now(), LogUserSearchProposalsEvent.action, UserSearchParameters(query))
+      query.filters.foreach(_.content.foreach { content =>
+        maybeUserId match {
+          case Some(userId) =>
+            userHistoryCoordinatorService.logHistory(
+              LogUserSearchProposalsEvent(
+                userId,
+                requestContext,
+                UserAction(DateHelper.now(), LogUserSearchProposalsEvent.action, UserSearchParameters(content.text))
+              )
             )
-          )
-        case None =>
-          sessionHistoryCoordinatorService.logHistory(
-            LogSessionSearchProposalsEvent(
-              requestContext.sessionId,
-              requestContext,
-              SessionAction(DateHelper.now(), LogSessionSearchProposalsEvent.action, SessionSearchParameters(query))
+          case None =>
+            sessionHistoryCoordinatorService.logHistory(
+              LogSessionSearchProposalsEvent(
+                requestContext.sessionId,
+                requestContext,
+                SessionAction(
+                  DateHelper.now(),
+                  LogSessionSearchProposalsEvent.action,
+                  SessionSearchParameters(content.text)
+                )
+              )
             )
-          )
-      }
+        }
+      })
       elasticsearchAPI.searchProposals(query)
     }
 

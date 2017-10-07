@@ -10,15 +10,15 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.userhistory.UserEvent.UserConnectedEvent
 import org.make.core.HttpCodes
 import org.make.core.user.User
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, TokenEndpoint}
+import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, OAuthError, TokenEndpoint}
 
 @Api(value = "Authentication")
 @Path(value = "/oauth")
@@ -27,7 +27,10 @@ trait AuthenticationApi
     with MakeAuthenticationDirectives
     with ShortenedNames
     with StrictLogging {
-  self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with EventBusServiceComponent =>
+  self: MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent =>
 
   val tokenEndpoint: TokenEndpoint
 
@@ -49,9 +52,6 @@ trait AuthenticationApi
               ) {
                 case Success(maybeGrantResponse) =>
                   maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                    eventBusService.publish(
-                      UserConnectedEvent(userId = grantResult.authInfo.user.userId, requestContext = requestContext)
-                    )
                     complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
                   })
                 case Failure(ex) => throw ex
@@ -75,19 +75,24 @@ trait AuthenticationApi
                 "client_id" -> makeSettings.Authentication.defaultClientId,
                 "client_secret" -> makeSettings.Authentication.defaultClientSecret
               )
-              onComplete(
-                tokenEndpoint
-                  .handleRequest(
-                    new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
-                    oauth2DataHandler
-                  )
-              ) {
-                case Success(maybeGrantResponse) =>
-                  maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
 
-                    handleGrantResult(fields, grantResult)
-                  })
-                case Failure(ex) => throw ex
+              val future: Future[Either[OAuthError, GrantHandlerResult[User]]] = tokenEndpoint
+                .handleRequest(
+                  new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
+                  oauth2DataHandler
+                )
+                .flatMap[Either[OAuthError, GrantHandlerResult[User]]] {
+                  case Left(e) => Future.successful(Left(e))
+                  case Right(result) =>
+                    sessionHistoryCoordinatorService
+                      .convertSession(requestContext.sessionId, result.authInfo.user.userId)
+                      .map(_ => Right(result))
+                }
+
+              onComplete(future) {
+                case Success(Right(result)) => handleGrantResult(fields, result)
+                case Success(Left(_))       => complete(Unauthorized)
+                case Failure(ex)            => throw ex
               }
             }
           }
@@ -95,7 +100,7 @@ trait AuthenticationApi
       }
     }
 
-  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[User]) = {
+  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[User]): Route = {
     val redirectUri = fields.getOrElse("redirect_uri", "")
     if (redirectUri != "") {
       redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)

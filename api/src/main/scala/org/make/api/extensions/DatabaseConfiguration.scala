@@ -61,8 +61,8 @@ class DatabaseConfiguration(override protected val configuration: Config)
   GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
     enabled = true,
     warningEnabled = false,
-    printUnprocessedStackTrace = true,
-    logLevel = 'info
+    printUnprocessedStackTrace = false,
+    logLevel = 'debug
   )
 
   if (autoCreateSchemas) {

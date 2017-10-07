@@ -1,13 +1,11 @@
 package org.make.api.user
 
 import akka.actor.{ActorRef, Props}
-import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
 import org.make.api.userhistory.UserEvent._
-import org.make.core.session.{UserConnected, UserCreated}
 import shapeless.Poly1
 
 import scala.concurrent.Future
@@ -46,8 +44,8 @@ class SessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
-    (sessionHistoryCoordinator ? UserCreated(sessionId = event.requestContext.sessionId, userId = event.userId))
-      .mapTo[Unit]
+    log.debug(s"got event $event")
+    Future.successful {}
   }
 
   private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {
@@ -67,8 +65,8 @@ class SessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
   }
 
   def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
-    (sessionHistoryCoordinator ? UserConnected(sessionId = event.requestContext.sessionId, userId = event.userId))
-      .mapTo[Unit]
+    log.debug("Received event {}", event)
+    Future.successful {}
   }
 }
 

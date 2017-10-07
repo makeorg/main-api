@@ -1,14 +1,27 @@
 package org.make.api.sessionhistory
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, ActorRef}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 
-class SessionHistoryActor extends PersistentActor with ActorLogging {
+import scala.concurrent.duration._
+import akka.pattern.ask
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentActor with ActorLogging {
+
+  implicit val timeout: Timeout = Timeout(3.seconds)
 
   def sessionId: SessionId = SessionId(self.path.name)
 
@@ -22,18 +35,56 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
 
   override def receiveCommand: Receive = {
     case GetSessionHistory(_)                     => sender() ! state
-    case command: LogSessionVoteEvent             => persistEvent(command)
-    case command: LogSessionUnvoteEvent           => persistEvent(command)
-    case command: LogSessionQualificationEvent    => persistEvent(command)
-    case command: LogSessionUnqualificationEvent  => persistEvent(command)
-    case command: LogSessionSearchProposalsEvent  => persistEvent(command)
+    case command: LogSessionVoteEvent             => persistEvent(command)()
+    case command: LogSessionUnvoteEvent           => persistEvent(command)()
+    case command: LogSessionQualificationEvent    => persistEvent(command)()
+    case command: LogSessionUnqualificationEvent  => persistEvent(command)()
+    case command: LogSessionSearchProposalsEvent  => persistEvent(command)()
     case RequestSessionVoteValues(_, proposalIds) => getVoteValues(proposalIds)
     case UserConnected(_, userId)                 => transformSession(userId)
     case UserCreated(_, userId)                   => transformSession(userId)
   }
 
   private def transformSession(userId: UserId): Unit = {
-    log.debug(s"Transforming session to user ${userId.value}")
+    log.debug(
+      "Transforming session {} to user {} with events {}",
+      persistenceId,
+      userId.value,
+      state.events.map(_.toString).mkString(", ")
+    )
+    persistEvent(
+      SessionTransformed(
+        sessionId = sessionId,
+        requestContext = RequestContext.empty,
+        action = SessionAction(date = DateHelper.now(), actionType = "transformSession", arguments = userId)
+      )
+    ) { event =>
+      val events = state.events
+      val originalSender = sender()
+      Future
+        .traverse(events) {
+          case event: LogSessionVoteEvent =>
+            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
+          case event: LogSessionUnvoteEvent =>
+            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
+          case event: LogSessionQualificationEvent =>
+            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
+          case event: LogSessionUnqualificationEvent =>
+            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
+          case event: LogSessionSearchProposalsEvent =>
+            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
+          case other =>
+            Future.successful {}
+        }
+        .onComplete {
+          case Success(_) => originalSender ! event
+          case Failure(e) => log.error(e, "error while transforming session")
+        }
+      state = state.copy(events = Nil)
+      // We need a snapshot here since we don't want to be able to replay a session transformation event
+      saveSnapshot(state)
+    }
+
   }
 
   private def getVoteValues(proposalIds: Seq[ProposalId]): Unit = {
@@ -112,9 +163,12 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
 
   override def persistenceId: String = sessionId.value
 
-  private def persistEvent(event: SessionHistoryEvent[_]): Unit = {
+  private def persistEvent(event: SessionHistoryEvent[_])(andThen: SessionHistoryEvent[_] => Unit = { e =>
+    sender() ! e
+  }): Unit = {
     persist(event) { e: SessionHistoryEvent[_] =>
       state = applyEvent(e)
+      andThen(e)
     }
   }
 
@@ -124,5 +178,10 @@ class SessionHistoryActor extends PersistentActor with ActorLogging {
 }
 
 object SessionHistoryActor {
-  case class SessionHistory(events: List[SessionHistoryEvent[_]])
+  case class SessionHistory(events: List[SessionHistoryEvent[_]]) extends MakeSerializable
+
+  object SessionHistory {
+    implicit val persister: RootJsonFormat[SessionHistory] = DefaultJsonProtocol.jsonFormat1(SessionHistory.apply)
+  }
+
 }
