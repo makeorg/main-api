@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 
 object Proposal extends SimulationConfig {
 
-  val maxClients = 523
+  val maxClients = 710
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
