@@ -106,7 +106,7 @@
               "type": "keyword",
               "index": true
             },
-            "id": {
+            "tagId": {
               "type": "keyword",
               "index": true
             }
