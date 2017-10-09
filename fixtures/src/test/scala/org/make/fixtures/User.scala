@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 object User extends SimulationConfig {
 
-  val maxClients = 99
+  val maxClients = 328
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
@@ -32,9 +32,6 @@ object User extends SimulationConfig {
     .feed(userFeeder)
     .exec(
       UserChainBuilder.createUser
-        .pause(defaultPause),
-      UserChainBuilder
-        .authenticate(UserAuthParams(username = "${username}", password = "${password}"))
         .pause(defaultPause)
     )
 }

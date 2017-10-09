@@ -6,10 +6,10 @@ import scala.concurrent.duration._
 class Main extends Simulation {
   setUp(
     User.scnRegister
-      .inject(heavisideUsers(User.maxClients).over(20.minutes))
+      .inject(heavisideUsers(User.maxClients).over(30.minutes))
       .protocols(User.httpConf),
     Proposal.scnRegister
-      .inject(nothingFor(6.seconds), heavisideUsers(Proposal.maxClients).over(20.minutes))
+      .inject(nothingFor(30.seconds), heavisideUsers(Proposal.maxClients).over(30.minutes))
       .protocols(Proposal.httpConf)
   )
 }
