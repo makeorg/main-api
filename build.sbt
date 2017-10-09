@@ -53,9 +53,7 @@ lazy val commonSettings = Seq(
     "-Ywarn-unused-import",
     "-Ydelambdafy:method",
     "-language:_"
-  ),
-  publishArtifact := false,
-  publishArtifact in Docker := true
+  )
 )
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
