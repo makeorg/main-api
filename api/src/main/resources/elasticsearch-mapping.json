@@ -27,7 +27,7 @@
         },
         "status": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "createdAt": {
           "type": "date",
