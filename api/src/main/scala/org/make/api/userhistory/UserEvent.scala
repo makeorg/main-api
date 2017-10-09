@@ -86,4 +86,5 @@ object UserEvent {
   object UserConnectedEvent {
     val version: Int = 1
   }
+
 }

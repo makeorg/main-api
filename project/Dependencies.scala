@@ -13,8 +13,10 @@ object Dependencies {
   val swaggerUiVersion: String = "3.1.4"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.5.0"
-  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.8.2"
-  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.8.2"
+  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.9.1"
+  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.9.1"
+  val commonsLoggingBridge: ModuleID = "org.slf4j"          % "jcl-over-slf4j"   % "1.7.25"
+  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % "2.9.1"
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyEpollMac: ModuleID =

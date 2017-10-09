@@ -7,11 +7,15 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical._
 import org.make.api.{MakeApiTestUtils, MakeUnitTest}
 import org.make.core.DateHelper
+import org.make.core.session.SessionId
 import org.make.core.user.{User, UserId}
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -25,7 +29,8 @@ class AuthenticationApiTest
     with AuthenticationApi
     with MakeSettingsComponent
     with IdGeneratorComponent
-    with EventBusServiceComponent {
+    with EventBusServiceComponent
+    with SessionHistoryCoordinatorServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
@@ -35,33 +40,29 @@ class AuthenticationApiTest
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
   override val eventBusService: EventBusService = mock[EventBusService]
+  override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
+    mock[SessionHistoryCoordinatorService]
 
-  Mockito
-    .when(makeSettings.SessionCookie)
+  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId]))
+    .thenReturn(Future.successful {})
+
+  when(makeSettings.SessionCookie)
     .thenReturn(sessionCookieConfiguration)
-  Mockito
-    .when(makeSettings.Oauth)
+  when(makeSettings.Oauth)
     .thenReturn(oauthConfiguration)
-  Mockito
-    .when(makeSettings.frontUrl)
+  when(makeSettings.frontUrl)
     .thenReturn("http:://localhost")
-  Mockito
-    .when(sessionCookieConfiguration.name)
+  when(sessionCookieConfiguration.name)
     .thenReturn("cookie-session")
-  Mockito
-    .when(sessionCookieConfiguration.isSecure)
+  when(sessionCookieConfiguration.isSecure)
     .thenReturn(false)
-  Mockito
-    .when(sessionCookieConfiguration.lifetime)
+  when(sessionCookieConfiguration.lifetime)
     .thenReturn(Duration("20 minutes"))
-  Mockito
-    .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.any[String]))
+  when(oauth2DataHandler.removeTokenByAccessToken(any[String]))
     .thenReturn(Future.successful(1))
-  Mockito
-    .when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
+  when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
     .thenReturn(Future.successful(0))
-  Mockito
-    .when(idGenerator.nextId())
+  when(idGenerator.nextId())
     .thenReturn("some-id")
 
   val routes: Route = sealRoute(authenticationRoutes)
@@ -91,17 +92,13 @@ class AuthenticationApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[User] = AuthInfo(fakeUser, None, None, None)
-      Mockito
-        .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
         .thenReturn(Future.successful(Some(accessToken)))
-      Mockito
-        .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
-      Mockito
-        .when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.same(fakeAuthInfo)))
+      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.same(fakeAuthInfo)))
         .thenReturn(Future.successful(Some(accessToken)))
-      Mockito
-        .when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.same(fakeUser.userId)))
+      when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.same(fakeUser.userId)))
         .thenReturn(Future.successful(42))
 
       When("logout is called")
@@ -116,8 +113,7 @@ class AuthenticationApiTest
     scenario("unauthorize an empty authentication") {
       Given("a invalid authentication")
       val invalidToken: String = "FAULTY_TOKEN"
-      Mockito
-        .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
         .thenReturn(Future.successful(None))
 
       When("logout is called")

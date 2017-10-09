@@ -16,7 +16,7 @@ class ShardedUserHistory extends UserHistoryActor with ActorLogging {
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopUserHistory)
     case StopUserHistory               => context.stop(self)
-    case SaveSnapshotSuccess(_)        => log.info("Snapshot saved")
+    case SaveSnapshotSuccess(_)        => log.debug("Snapshot saved")
     case SaveSnapshotFailure(_, cause) => log.error(cause, "Error while saving snapshot")
   }
 }

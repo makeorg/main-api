@@ -196,10 +196,10 @@ class SocialServiceComponentTest
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
-        tokenResponse shouldBe a[TokenResponse]
-        tokenResponse.access_token should be(accessTokenValue)
-        tokenResponse.refresh_token should be(refreshTokenValue)
-        tokenResponse.token_type should be("Bearer")
+        tokenResponse.token shouldBe a[TokenResponse]
+        tokenResponse.token.access_token should be(accessTokenValue)
+        tokenResponse.token.refresh_token should be(refreshTokenValue)
+        tokenResponse.token.token_type should be("Bearer")
       }
     }
 
@@ -358,10 +358,10 @@ class SocialServiceComponentTest
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
-        tokenResponse shouldBe a[TokenResponse]
-        tokenResponse.access_token should be(accessTokenValue)
-        tokenResponse.refresh_token should be(refreshTokenValue)
-        tokenResponse.token_type should be("Bearer")
+        tokenResponse.token shouldBe a[TokenResponse]
+        tokenResponse.token.access_token should be(accessTokenValue)
+        tokenResponse.token.refresh_token should be(refreshTokenValue)
+        tokenResponse.token.token_type should be("Bearer")
       }
     }
 

@@ -1,7 +1,7 @@
 package org.make.api.sessionhistory
 
+import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.core.SprayJsonFormatters
-import org.make.core.session._
 import stamina.json.JsonPersister
 import stamina.{json, V1}
 
@@ -22,12 +22,20 @@ object SessionHistorySerializers extends SprayJsonFormatters {
   private val logSessionUnqualificationEventSerializer: JsonPersister[LogSessionUnqualificationEvent, V1] =
     json.persister[LogSessionUnqualificationEvent]("session-history-unqualificaion-vote")
 
+  private val logSessionTransformedEventSerializer: JsonPersister[SessionTransformed, V1] =
+    json.persister[SessionTransformed]("session-transformed")
+
+  private val SessionHistorySerializer: JsonPersister[SessionHistory, V1] =
+    json.persister[SessionHistory]("session-history")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       logSessionSearchEventSerializer,
       logSessionVoteEventSerializer,
       logSessionUnvoteEventSerializer,
       logSessionQualificationEventSerializer,
-      logSessionUnqualificationEventSerializer
+      logSessionUnqualificationEventSerializer,
+      logSessionTransformedEventSerializer,
+      SessionHistorySerializer
     )
 }

@@ -17,9 +17,13 @@ class UserProducerActor extends ProducerActor {
   override def receive: Receive = {
     case event: ResetPasswordEvent         => onResetPassword(event)
     case event: ResendValidationEmailEvent => onResendValidationEmail(event)
-    case event: UserRegisteredEvent        => onUserRegisteredEvent(event)
-    case event: UserConnectedEvent         => onUserConnectedEvent(event)
-    case other                             => log.warning(s"Unknown event $other")
+    case event: UserRegisteredEvent =>
+      log.debug("got event {}", event)
+      onUserRegisteredEvent(event)
+    case event: UserConnectedEvent =>
+      log.debug("got event {}", event)
+      onUserConnectedEvent(event)
+    case other => log.warning("Unknown event {}", other)
   }
 
   def onUserRegisteredEvent(event: UserRegisteredEvent): Unit = {

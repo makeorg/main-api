@@ -6,10 +6,13 @@ import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
-import org.make.core.session.{GetSessionHistory, RequestSessionVoteValues, SessionHistoryEvent, SessionId}
+import org.make.core.session.SessionId
+import org.make.core.user.UserId
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import scala.concurrent.ExecutionContext.Implicits._
 
 trait SessionHistoryCoordinatorComponent {
   def sessionHistoryCoordinator: ActorRef
@@ -18,6 +21,7 @@ trait SessionHistoryCoordinatorComponent {
 trait SessionHistoryCoordinatorService {
   def sessionHistory(sessionId: SessionId): Future[SessionHistory]
   def logHistory(command: SessionHistoryEvent[_]): Unit
+  def convertSession(sessionId: SessionId, userId: UserId): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
 }
 
@@ -38,7 +42,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
 
       override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-        sessionHistoryCoordinator ! command
+        sessionHistoryCoordinator ? command
       }
 
       override def retrieveVoteAndQualifications(
@@ -46,5 +50,10 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       ): Future[Map[ProposalId, VoteAndQualifications]] = {
         (sessionHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
       }
+
+      override def convertSession(sessionId: SessionId, userId: UserId): Future[Unit] = {
+        (sessionHistoryCoordinator ? UserConnected(sessionId, userId)).map(_ => {})
+      }
     }
+
 }

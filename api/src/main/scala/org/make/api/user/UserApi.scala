@@ -10,16 +10,18 @@ import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.social.SocialServiceComponent
+import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
-import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, HttpCodes}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
@@ -32,7 +34,8 @@ trait UserApi extends MakeAuthenticationDirectives {
     with SocialServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
-    with MakeSettingsComponent =>
+    with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent =>
 
   @Path(value = "/{userId}")
   @ApiOperation(
@@ -105,7 +108,7 @@ trait UserApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   def socialLogin: Route = post {
     path("user" / "login" / "social") {
-      makeTrace("SocialLogin") { _ =>
+      makeTrace("SocialLogin") { requestContext =>
         decodeRequest {
           entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
             extractClientIP { clientIp =>
@@ -113,13 +116,18 @@ trait UserApi extends MakeAuthenticationDirectives {
               onSuccess(
                 socialService
                   .login(request.provider, request.token, Some(ip))
-              ) { accessToken =>
+                  .flatMap { social =>
+                    sessionHistoryCoordinatorService
+                      .convertSession(requestContext.sessionId, social.userId)
+                      .map(_ => social)
+                  }
+              ) { social =>
                 mapResponseHeaders(
                   _ ++ Seq(
                     `Set-Cookie`(
                       HttpCookie(
                         name = makeSettings.SessionCookie.name,
-                        value = accessToken.access_token,
+                        value = social.token.access_token,
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
                         maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
@@ -128,7 +136,7 @@ trait UserApi extends MakeAuthenticationDirectives {
                     )
                   )
                 ) {
-                  complete(StatusCodes.Created -> accessToken)
+                  complete(StatusCodes.Created -> social.token)
                 }
               }
             }
@@ -172,6 +180,11 @@ trait UserApi extends MakeAuthenticationDirectives {
                     ),
                     requestContext
                   )
+                  .flatMap { user =>
+                    sessionHistoryCoordinatorService
+                      .convertSession(requestContext.sessionId, user.userId)
+                      .map(_ => user)
+                  }
               ) { result =>
                 complete(StatusCodes.Created -> UserResponse(result))
               }

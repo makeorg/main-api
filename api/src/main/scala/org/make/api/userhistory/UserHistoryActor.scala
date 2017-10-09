@@ -3,9 +3,12 @@ package org.make.api.userhistory
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.userhistory.UserHistoryActor._
+import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.user._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 class UserHistoryActor extends PersistentActor with ActorLogging {
 
@@ -38,7 +41,9 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
 
   private def persistEvent(event: UserHistoryEvent[_]): Unit = {
     persist(event) { e: UserHistoryEvent[_] =>
+      log.debug("Persisted event {} for user {}", e.toString, persistenceId)
       state = applyEvent(e)
+      sender() ! event
     }
   }
 
@@ -119,7 +124,11 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
 }
 
 object UserHistoryActor {
-  final case class UserHistory(events: List[UserHistoryEvent[_]])
+  final case class UserHistory(events: List[UserHistoryEvent[_]]) extends MakeSerializable
+
+  object UserHistory {
+    implicit val formatter: RootJsonFormat[UserHistory] = DefaultJsonProtocol.jsonFormat1(UserHistory.apply)
+  }
 
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId])
 

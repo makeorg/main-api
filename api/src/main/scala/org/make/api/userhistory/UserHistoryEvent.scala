@@ -4,19 +4,17 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.SprayJsonFormatters._
-import org.make.core.proposal.{ProposalId, QualificationKey, SearchQuery, VoteKey}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json._
 
 final case class UserAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
 object UserAction {
-  implicit def userActionUserRegisteredFormatted[T](
-    implicit formatter: RootJsonFormat[T]
-  ): RootJsonFormat[UserAction[T]] =
+  implicit def userActionUserRegisteredFormatted[T](implicit formatter: JsonFormat[T]): RootJsonFormat[UserAction[T]] =
     DefaultJsonProtocol.jsonFormat3[ZonedDateTime, String, T, UserAction[T]](
       (date: ZonedDateTime, action: String, parameter: T) => UserAction[T](date, action, parameter)
     )
@@ -28,14 +26,50 @@ sealed trait Protagonist
 case object Moderator extends Protagonist
 case object Citizen extends Protagonist
 
-sealed trait UserHistoryEvent[T] extends MakeSerializable {
+sealed trait UserHistoryEvent[T] extends MakeSerializable with Product {
   def userId: UserId
   def requestContext: RequestContext
   def action: UserAction[T]
   def protagonist: Protagonist
 }
 
-final case class UserSearchParameters(query: SearchQuery)
+object UserHistoryEvent {
+  implicit val format: RootJsonFormat[UserHistoryEvent[_]] =
+    new RootJsonFormat[UserHistoryEvent[_]] {
+      override def read(json: JsValue): UserHistoryEvent[_] = {
+        json.asJsObject.getFields("type") match {
+          case Seq(JsString("LogUserSearchProposalsEvent"))   => json.convertTo[LogUserSearchProposalsEvent]
+          case Seq(JsString("LogUserVoteEvent"))              => json.convertTo[LogUserVoteEvent]
+          case Seq(JsString("LogUserUnvoteEvent"))            => json.convertTo[LogUserUnvoteEvent]
+          case Seq(JsString("LogUserQualificationEvent"))     => json.convertTo[LogUserQualificationEvent]
+          case Seq(JsString("LogUserUnqualificationEvent"))   => json.convertTo[LogUserUnqualificationEvent]
+          case Seq(JsString("LogRegisterCitizenEvent"))       => json.convertTo[LogRegisterCitizenEvent]
+          case Seq(JsString("LogUserProposalEvent"))          => json.convertTo[LogUserProposalEvent]
+          case Seq(JsString("LogAcceptProposalEvent"))        => json.convertTo[LogAcceptProposalEvent]
+          case Seq(JsString("LogRefuseProposalEvent"))        => json.convertTo[LogRefuseProposalEvent]
+          case Seq(JsString("LogGetProposalDuplicatesEvent")) => json.convertTo[LogGetProposalDuplicatesEvent]
+        }
+      }
+
+      override def write(obj: UserHistoryEvent[_]): JsObject = {
+        JsObject((obj match {
+          case event: LogUserSearchProposalsEvent   => event.toJson
+          case event: LogUserVoteEvent              => event.toJson
+          case event: LogUserUnvoteEvent            => event.toJson
+          case event: LogUserQualificationEvent     => event.toJson
+          case event: LogUserUnqualificationEvent   => event.toJson
+          case event: LogRegisterCitizenEvent       => event.toJson
+          case event: LogUserProposalEvent          => event.toJson
+          case event: LogAcceptProposalEvent        => event.toJson
+          case event: LogRefuseProposalEvent        => event.toJson
+          case event: LogGetProposalDuplicatesEvent => event.toJson
+        }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
+      }
+    }
+
+}
+
+final case class UserSearchParameters(term: String)
 
 object UserSearchParameters {
   implicit val searchParametersFormatted: RootJsonFormat[UserSearchParameters] =
@@ -121,6 +155,9 @@ final case class LogGetProposalDuplicatesEvent(userId: UserId,
 
 object LogGetProposalDuplicatesEvent {
   val action: String = "duplicates"
+
+  implicit val format: RootJsonFormat[LogGetProposalDuplicatesEvent] =
+    DefaultJsonProtocol.jsonFormat(LogGetProposalDuplicatesEvent.apply, "userId", "context", "action")
 }
 
 final case class LogAcceptProposalEvent(userId: UserId,

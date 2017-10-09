@@ -4,9 +4,9 @@ import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.proposal.ProposalEvent._
-import org.make.core.session._
+import org.make.api.sessionhistory._
+import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -87,17 +87,15 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
         log.debug(s"received $event")
       }
     }.getOrElse(
-      Future[Unit](
-        sessionHistoryCoordinator ? LogSessionVoteEvent(
-          sessionId = event.requestContext.sessionId,
-          requestContext = event.requestContext,
-          action = SessionAction(
-            date = event.eventDate,
-            actionType = LogSessionVoteEvent.action,
-            arguments = SessionVote(event.id, event.voteKey)
-          )
+      (sessionHistoryCoordinator ? LogSessionVoteEvent(
+        sessionId = event.requestContext.sessionId,
+        requestContext = event.requestContext,
+        action = SessionAction(
+          date = event.eventDate,
+          actionType = LogSessionVoteEvent.action,
+          arguments = SessionVote(event.id, event.voteKey)
         )
-      )
+      )).map(_ => {})
     )
   }
 
@@ -107,7 +105,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
         log.debug(s"received $event")
       }
     }.getOrElse(
-      Future[Unit](
+      (
         sessionHistoryCoordinator ? LogSessionUnvoteEvent(
           sessionId = event.requestContext.sessionId,
           requestContext = event.requestContext,
@@ -117,7 +115,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
             arguments = SessionUnvote(event.id, event.voteKey)
           )
         )
-      )
+      ).map(_ => {})
     )
   }
 
@@ -127,7 +125,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
         log.debug(s"received $event")
       }
     }.getOrElse(
-      Future[Unit](
+      (
         sessionHistoryCoordinator ? LogSessionQualificationEvent(
           sessionId = event.requestContext.sessionId,
           requestContext = event.requestContext,
@@ -137,7 +135,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
             arguments = SessionQualification(event.id, event.qualificationKey)
           )
         )
-      )
+      ).map(_ => {})
     )
   }
 
@@ -147,7 +145,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
         log.debug(s"received $event")
       }
     }.getOrElse(
-      Future[Unit](
+      (
         sessionHistoryCoordinator ? LogSessionUnqualificationEvent(
           sessionId = event.requestContext.sessionId,
           requestContext = event.requestContext,
@@ -157,7 +155,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
             arguments = SessionUnqualification(event.id, event.qualificationKey)
           )
         )
-      )
+      ).map(_ => {})
     )
   }
 }

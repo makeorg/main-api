@@ -5,6 +5,8 @@ import com.typesafe.sbt.SbtGit.GitKeys
 name := "make-api"
 
 libraryDependencies ++= Seq(
+  Dependencies.commonsLoggingBridge,
+  Dependencies.log4jJul,
   Dependencies.kamonJmx,
   Dependencies.kamonAkka,
   Dependencies.kamonAkkaHttp,
@@ -80,7 +82,10 @@ fork in Test := true
 fork in IntegrationTest := true
 
 javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
-javaOptions in run += "-Dconfig.resource=default-application.conf"
+javaOptions in run ++= Seq(
+  "-Dconfig.resource=default-application.conf",
+  "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+)
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 

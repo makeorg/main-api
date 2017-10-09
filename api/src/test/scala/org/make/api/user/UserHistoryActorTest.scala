@@ -32,6 +32,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now(), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
     }
@@ -44,11 +46,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserUnvoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "unvote", UserUnvote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserUnvoteEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(Map.empty)
     }
@@ -61,16 +67,22 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Disagree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserUnvoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "unvote", UserUnvote(proposalId, VoteKey.Disagree))
       )
+      expectMsgType[LogUserUnvoteEvent]
+
       coordinator ! LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
     }
@@ -83,11 +95,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "qualification", UserQualification(proposalId, QualificationKey.LikeIt))
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq(QualificationKey.LikeIt))))
     }
@@ -100,6 +116,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -109,11 +127,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "qualification", UserQualification(proposalId, QualificationKey.PlatitudeAgree))
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(
         Map(
@@ -133,6 +155,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -142,6 +166,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -151,11 +177,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.Doable)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "qualification", UserQualification(proposalId, QualificationKey.PlatitudeAgree))
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(
         Map(
@@ -175,6 +205,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -184,6 +216,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -193,6 +227,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.Doable)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserUnqualificationEvent(
         userId,
         RequestContext.empty,
@@ -202,6 +238,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserUnqualification(proposalId, QualificationKey.LikeIt)
         )
       )
+      expectMsgType[LogUserUnqualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -211,6 +249,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.PlatitudeAgree)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
       expectMsg(
         Map(
@@ -232,16 +272,22 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId1, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId2, VoteKey.Disagree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", UserVote(proposalId3, VoteKey.Neutral))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3))
       expectMsg(
         Map(
@@ -262,6 +308,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId1, VoteKey.Agree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -271,11 +319,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId1, QualificationKey.Doable)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId2, VoteKey.Disagree))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -285,6 +337,8 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId2, QualificationKey.Impossible)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserQualificationEvent(
         userId,
         RequestContext.empty,
@@ -294,11 +348,15 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId2, QualificationKey.NoWay)
         )
       )
+      expectMsgType[LogUserQualificationEvent]
+
       coordinator ! LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", UserVote(proposalId3, VoteKey.Neutral))
       )
+      expectMsgType[LogUserVoteEvent]
+
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3))
       expectMsg(
         Map(
