@@ -25,6 +25,10 @@
           "type": "keyword",
           "index": false
         },
+        "status": {
+          "type": "keyword",
+          "index": false
+        },
         "createdAt": {
           "type": "date",
           "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
