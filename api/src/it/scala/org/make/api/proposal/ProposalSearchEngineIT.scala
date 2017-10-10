@@ -82,7 +82,7 @@ class ProposalSearchEngineIT
   }
 
   private val now = DateHelper.now()
-  private val newProposal = IndexedProposal(
+  private def newProposal = IndexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
     userId = UserId("user-id"),
     content = "This is a test proposal",
@@ -126,7 +126,7 @@ class ProposalSearchEngineIT
     status = ProposalStatus.Accepted
   )
 
-  private val acceptedProposals: Seq[IndexedProposal] = Seq(
+  private def acceptedProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       country = "FR",
@@ -501,7 +501,7 @@ class ProposalSearchEngineIT
     )
   )
 
-  private val pendingProposals: Seq[IndexedProposal] = Seq(
+  private def pendingProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
       country = "FR",
@@ -834,7 +834,7 @@ class ProposalSearchEngineIT
     )
   )
 
-  private val proposals: Seq[IndexedProposal] = acceptedProposals ++ pendingProposals
+  private def proposals: Seq[IndexedProposal] = acceptedProposals ++ pendingProposals
 
   feature("get proposal by id") {
     val proposalId = proposals.head.id
@@ -897,6 +897,26 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
+      }
+    }
+  }
+
+  feature("search proposals by slug") {
+    scenario("searching a non-existing slug") {
+      val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
+
+      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(0)
+      }
+    }
+
+    scenario("searching an existing slug") {
+      val slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile"
+      val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
+
+      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(1)
+        result.results.head.slug should be(slug)
       }
     }
   }
