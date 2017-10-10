@@ -45,12 +45,13 @@ case class SearchFilters(theme: Option[ThemeSearchFilter] = None,
                          trending: Option[TrendingSearchFilter] = None,
                          content: Option[ContentSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
-                         context: Option[ContextSearchFilter] = None)
+                         context: Option[ContextSearchFilter] = None,
+                         slug: Option[SlugSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat7(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat8(SearchFilters.apply)
 
   def parse(theme: Option[ThemeSearchFilter] = None,
             tags: Option[TagsSearchFilter] = None,
@@ -84,7 +85,8 @@ object SearchFilters extends ElasticDsl {
       buildContextOperationSearchFilter(searchQuery),
       buildContextSourceSearchFilter(searchQuery),
       buildContextLocationSearchFilter(searchQuery),
-      buildContextQuestionSearchFilter(searchQuery)
+      buildContextQuestionSearchFilter(searchQuery),
+      buildSlugSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
@@ -180,6 +182,15 @@ object SearchFilters extends ElasticDsl {
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextQuestion, question)
 
     questionFilter
+  }
+
+  def buildSlugSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    val slugFilter: Option[QueryDefinition] = for {
+      filters    <- searchQuery.filters
+      slugFilter <- filters.slug
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.slug, slugFilter.slug)
+
+    slugFilter
   }
 
   /*
@@ -285,6 +296,13 @@ case class ContextSearchFilter(operation: Option[String],
 object ContextSearchFilter {
   implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
     DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
+}
+
+case class SlugSearchFilter(slug: String)
+
+object SlugSearchFilter {
+  implicit val format: RootJsonFormat[SlugSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(SlugSearchFilter.apply)
 }
 
 case class Sort(field: Option[String], mode: Option[SortOrder])
