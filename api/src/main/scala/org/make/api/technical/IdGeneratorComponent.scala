@@ -3,6 +3,7 @@ package org.make.api.technical
 import java.util.UUID
 
 import org.make.core.proposal.ProposalId
+import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 
 trait IdGeneratorComponent {
@@ -12,6 +13,7 @@ trait IdGeneratorComponent {
 trait IdGenerator {
   def nextUserId(): UserId = UserId(nextId())
   def nextProposalId(): ProposalId = ProposalId(nextId())
+  def nextSequenceId(): SequenceId = SequenceId(nextId())
   def nextId(): String
 }
 

@@ -6,6 +6,12 @@ import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalRefused}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.ThemeId
+import org.make.core.sequence.SequenceEvent.{
+  SequenceCreated,
+  SequenceProposalsAdded,
+  SequenceProposalsRemoved,
+  SequenceUpdated
+}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
@@ -38,31 +44,39 @@ object UserHistoryEvent {
     new RootJsonFormat[UserHistoryEvent[_]] {
       override def read(json: JsValue): UserHistoryEvent[_] = {
         json.asJsObject.getFields("type") match {
-          case Seq(JsString("LogUserSearchProposalsEvent"))   => json.convertTo[LogUserSearchProposalsEvent]
-          case Seq(JsString("LogUserVoteEvent"))              => json.convertTo[LogUserVoteEvent]
-          case Seq(JsString("LogUserUnvoteEvent"))            => json.convertTo[LogUserUnvoteEvent]
-          case Seq(JsString("LogUserQualificationEvent"))     => json.convertTo[LogUserQualificationEvent]
-          case Seq(JsString("LogUserUnqualificationEvent"))   => json.convertTo[LogUserUnqualificationEvent]
-          case Seq(JsString("LogRegisterCitizenEvent"))       => json.convertTo[LogRegisterCitizenEvent]
-          case Seq(JsString("LogUserProposalEvent"))          => json.convertTo[LogUserProposalEvent]
-          case Seq(JsString("LogAcceptProposalEvent"))        => json.convertTo[LogAcceptProposalEvent]
-          case Seq(JsString("LogRefuseProposalEvent"))        => json.convertTo[LogRefuseProposalEvent]
-          case Seq(JsString("LogGetProposalDuplicatesEvent")) => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserSearchProposalsEvent"))         => json.convertTo[LogUserSearchProposalsEvent]
+          case Seq(JsString("LogUserVoteEvent"))                    => json.convertTo[LogUserVoteEvent]
+          case Seq(JsString("LogUserUnvoteEvent"))                  => json.convertTo[LogUserUnvoteEvent]
+          case Seq(JsString("LogUserQualificationEvent"))           => json.convertTo[LogUserQualificationEvent]
+          case Seq(JsString("LogUserUnqualificationEvent"))         => json.convertTo[LogUserUnqualificationEvent]
+          case Seq(JsString("LogRegisterCitizenEvent"))             => json.convertTo[LogRegisterCitizenEvent]
+          case Seq(JsString("LogUserProposalEvent"))                => json.convertTo[LogUserProposalEvent]
+          case Seq(JsString("LogAcceptProposalEvent"))              => json.convertTo[LogAcceptProposalEvent]
+          case Seq(JsString("LogRefuseProposalEvent"))              => json.convertTo[LogRefuseProposalEvent]
+          case Seq(JsString("LogGetProposalDuplicatesEvent"))       => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserAddProposalsSequenceEvent"))    => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserCreateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserUpdateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
         }
       }
 
       override def write(obj: UserHistoryEvent[_]): JsObject = {
         JsObject((obj match {
-          case event: LogUserSearchProposalsEvent   => event.toJson
-          case event: LogUserVoteEvent              => event.toJson
-          case event: LogUserUnvoteEvent            => event.toJson
-          case event: LogUserQualificationEvent     => event.toJson
-          case event: LogUserUnqualificationEvent   => event.toJson
-          case event: LogRegisterCitizenEvent       => event.toJson
-          case event: LogUserProposalEvent          => event.toJson
-          case event: LogAcceptProposalEvent        => event.toJson
-          case event: LogRefuseProposalEvent        => event.toJson
-          case event: LogGetProposalDuplicatesEvent => event.toJson
+          case event: LogUserSearchProposalsEvent         => event.toJson
+          case event: LogUserVoteEvent                    => event.toJson
+          case event: LogUserUnvoteEvent                  => event.toJson
+          case event: LogUserQualificationEvent           => event.toJson
+          case event: LogUserUnqualificationEvent         => event.toJson
+          case event: LogRegisterCitizenEvent             => event.toJson
+          case event: LogUserProposalEvent                => event.toJson
+          case event: LogAcceptProposalEvent              => event.toJson
+          case event: LogRefuseProposalEvent              => event.toJson
+          case event: LogGetProposalDuplicatesEvent       => event.toJson
+          case event: LogUserAddProposalsSequenceEvent    => event.toJson
+          case event: LogUserCreateSequenceEvent          => event.toJson
+          case event: LogUserRemoveProposalsSequenceEvent => event.toJson
+          case event: LogUserUpdateSequenceEvent          => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -271,6 +285,59 @@ final case class LogRegisterCitizenEvent(userId: UserId,
                                          action: UserAction[UserRegistered])
     extends UserHistoryEvent[UserRegistered] {
   override val protagonist: Protagonist = Citizen
+}
+
+final case class LogUserCreateSequenceEvent(userId: UserId,
+                                            requestContext: RequestContext,
+                                            action: UserAction[SequenceCreated])
+    extends UserHistoryEvent[SequenceCreated] {
+  override val protagonist: Protagonist = Moderator
+}
+object LogUserCreateSequenceEvent {
+  val action: String = "create-sequence"
+
+  implicit val logUserCreateSequenceEventFormatted: RootJsonFormat[LogUserCreateSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserCreateSequenceEvent.apply, "userId", "context", "action")
+}
+
+final case class LogUserAddProposalsSequenceEvent(userId: UserId,
+                                                  requestContext: RequestContext,
+                                                  action: UserAction[SequenceProposalsAdded])
+    extends UserHistoryEvent[SequenceProposalsAdded] {
+  override val protagonist: Protagonist = Moderator
+}
+
+object LogUserAddProposalsSequenceEvent {
+  val action: String = "add-proposals-sequence"
+
+  implicit val logUserAddProposalsSequenceEventFormatted: RootJsonFormat[LogUserAddProposalsSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserAddProposalsSequenceEvent.apply, "userId", "context", "action")
+}
+
+final case class LogUserRemoveProposalsSequenceEvent(userId: UserId,
+                                                     requestContext: RequestContext,
+                                                     action: UserAction[SequenceProposalsRemoved])
+    extends UserHistoryEvent[SequenceProposalsRemoved] {
+  override val protagonist: Protagonist = Moderator
+}
+object LogUserRemoveProposalsSequenceEvent {
+  val action: String = "remove-proposals-sequence"
+
+  implicit val logUserRemoveProposalsSequenceEvent: RootJsonFormat[LogUserRemoveProposalsSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserRemoveProposalsSequenceEvent.apply, "userId", "context", "action")
+}
+
+final case class LogUserUpdateSequenceEvent(userId: UserId,
+                                            requestContext: RequestContext,
+                                            action: UserAction[SequenceUpdated])
+    extends UserHistoryEvent[SequenceUpdated] {
+  override val protagonist: Protagonist = Moderator
+}
+object LogUserUpdateSequenceEvent {
+  val action: String = "update-sequence"
+
+  implicit val logUserUpdateSequenceEventFormatted: RootJsonFormat[LogUserUpdateSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUpdateSequenceEvent.apply, "userId", "context", "action")
 }
 
 sealed trait UserHistoryAction {

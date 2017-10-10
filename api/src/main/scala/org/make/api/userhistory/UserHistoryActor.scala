@@ -25,16 +25,20 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case GetUserHistory(_) =>
       sender() ! state
-    case command: LogUserSearchProposalsEvent => persistEvent(command)
-    case command: LogAcceptProposalEvent      => persistEvent(command)
-    case command: LogRefuseProposalEvent      => persistEvent(command)
-    case command: LogRegisterCitizenEvent     => persistEvent(command)
-    case command: LogUserProposalEvent        => persistEvent(command)
-    case command: LogUserVoteEvent            => persistEvent(command)
-    case command: LogUserUnvoteEvent          => persistEvent(command)
-    case command: LogUserQualificationEvent   => persistEvent(command)
-    case command: LogUserUnqualificationEvent => persistEvent(command)
-    case RequestVoteValues(_, values)         => getVoteValues(values)
+    case command: LogUserSearchProposalsEvent         => persistEvent(command)
+    case command: LogAcceptProposalEvent              => persistEvent(command)
+    case command: LogRefuseProposalEvent              => persistEvent(command)
+    case command: LogRegisterCitizenEvent             => persistEvent(command)
+    case command: LogUserProposalEvent                => persistEvent(command)
+    case command: LogUserVoteEvent                    => persistEvent(command)
+    case command: LogUserUnvoteEvent                  => persistEvent(command)
+    case command: LogUserQualificationEvent           => persistEvent(command)
+    case command: LogUserUnqualificationEvent         => persistEvent(command)
+    case RequestVoteValues(_, values)                 => getVoteValues(values)
+    case command: LogUserCreateSequenceEvent          => persistEvent(command)
+    case command: LogUserUpdateSequenceEvent          => persistEvent(command)
+    case command: LogUserAddProposalsSequenceEvent    => persistEvent(command)
+    case command: LogUserRemoveProposalsSequenceEvent => persistEvent(command)
   }
 
   override def persistenceId: String = userId.value

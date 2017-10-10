@@ -2,7 +2,10 @@ package org.make.core
 
 import java.time.{ZoneOffset, ZonedDateTime}
 
-object DateHelper {
+trait DateHelper {
+  def now(): ZonedDateTime
+}
+object DateHelper extends DateHelper {
   private val utc = ZoneOffset.UTC
 
   def now(): ZonedDateTime = {
