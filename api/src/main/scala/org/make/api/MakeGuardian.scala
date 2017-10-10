@@ -8,7 +8,7 @@ import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
-import org.make.api.user.{SessionHistoryConsumerActor, UserService, UserSupervisor}
+import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
 class MakeGuardian(userService: UserService, tagService: TagService) extends Actor with ActorLogging {
@@ -24,15 +24,6 @@ class MakeGuardian(userService: UserService, tagService: TagService) extends Act
       context.watch(
         context.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator), SessionHistoryCoordinator.name)
       )
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          SessionHistoryConsumerActor.props(sessionHistoryCoordinator),
-          SessionHistoryConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
 
     context.watch {
       val (props, name) =

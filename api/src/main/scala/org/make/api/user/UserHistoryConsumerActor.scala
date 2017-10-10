@@ -30,6 +30,9 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
    * Add an implicit for each event to manage
    */
   object HandledMessages extends Poly1 {
+    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] = at(
+      identity
+    )
     implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
     implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
     implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
@@ -43,6 +46,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: UserRegisteredEvent        => handleUserRegisteredEvent(event)
       case event: UserConnectedEvent         => handleUserConnectedEvent(event)
       case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
+      case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
     }
   }
 
@@ -69,6 +73,11 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {
     log.debug(s"got event $resetPasswordEvent")
+    Future.successful {}
+  }
+
+  private def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
+    log.debug(s"got event $event")
     Future.successful {}
   }
 

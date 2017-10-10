@@ -17,13 +17,10 @@ class UserProducerActor extends ProducerActor {
   override def receive: Receive = {
     case event: ResetPasswordEvent         => onResetPassword(event)
     case event: ResendValidationEmailEvent => onResendValidationEmail(event)
-    case event: UserRegisteredEvent =>
-      log.debug("got event {}", event)
-      onUserRegisteredEvent(event)
-    case event: UserConnectedEvent =>
-      log.debug("got event {}", event)
-      onUserConnectedEvent(event)
-    case other => log.warning("Unknown event {}", other)
+    case event: UserRegisteredEvent        => onUserRegisteredEvent(event)
+    case event: UserConnectedEvent         => onUserConnectedEvent(event)
+    case event: UserValidatedAccountEvent  => onUserValidatedAccountEvent(event)
+    case other                             => log.warning("Unknown event {}", other)
   }
 
   def onUserRegisteredEvent(event: UserRegisteredEvent): Unit = {
@@ -80,6 +77,21 @@ class UserProducerActor extends ProducerActor {
     )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
+
+  def onUserValidatedAccountEvent(event: UserValidatedAccountEvent): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      UserEventWrapper(
+        version = UserValidatedAccountEvent.version,
+        id = event.userId.value,
+        date = event.eventDate,
+        eventType = event.getClass.getSimpleName,
+        event = UserEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.userId.value, record)
+  }
+
 }
 
 object UserProducerActor extends ProducerActorCompanion {
