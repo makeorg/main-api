@@ -188,7 +188,7 @@ object SearchFilters extends ElasticDsl {
     val slugFilter: Option[QueryDefinition] = for {
       filters    <- searchQuery.filters
       slugFilter <- filters.slug
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.slug, slugFilter.slug)
+    } yield ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, slugFilter.slug)
 
     slugFilter
   }

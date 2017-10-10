@@ -112,7 +112,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       When("call buildSlugSearchFilter with SearchQuery")
       val slugSearchFilterResult = SearchFilters.buildSlugSearchFilter(searchQuery)
       slugSearchFilterResult shouldBe Some(
-        ElasticApi.matchQuery(ProposalElasticsearchFieldNames.slug, "my-awesome-slug")
+        ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, "my-awesome-slug")
       )
     }
   }
