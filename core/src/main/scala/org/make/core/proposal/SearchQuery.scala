@@ -117,7 +117,7 @@ object SearchFilters extends ElasticDsl {
         case Some(TagsSearchFilter(Seq(tagId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagId))
         case Some(TagsSearchFilter(tags)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tags, tags))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, tags))
         case _ => None
       }
     }
