@@ -54,7 +54,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     creationContext = RequestContext.empty,
     proposalIds = Seq(),
     themeIds = Seq(),
-    status = SequenceStatus.Unpublished,
+    status = SequenceStatus.Published,
     events = List(
       SequenceAction(
         date = mainCreatedAt.get,
@@ -87,7 +87,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published
       )
 
       expectMsg(sequenceId)
@@ -147,7 +147,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published
       )
 
       expectMsg(sequenceId)
@@ -213,7 +213,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published
       )
 
       expectMsg(sequenceId)
@@ -261,7 +261,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published
       )
 
       expectMsg(sequenceId)
@@ -317,7 +317,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published
       )
 
       expectMsg(sequenceId)

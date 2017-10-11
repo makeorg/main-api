@@ -905,7 +905,7 @@ class ProposalSearchEngineIT
     scenario("searching a non-existing slug") {
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
 
-      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(0)
       }
     }
@@ -914,7 +914,7 @@ class ProposalSearchEngineIT
       val slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile"
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
 
-      whenReady(elasticsearchAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(1)
         result.results.head.slug should be(slug)
       }

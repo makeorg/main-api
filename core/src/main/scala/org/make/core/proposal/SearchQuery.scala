@@ -305,13 +305,6 @@ object SlugSearchFilter {
     DefaultJsonProtocol.jsonFormat1(SlugSearchFilter.apply)
 }
 
-case class Sort(field: Option[String], mode: Option[SortOrder])
-
-object Sort {
-  implicit val sortFormatted: RootJsonFormat[Sort] =
-    DefaultJsonProtocol.jsonFormat2(Sort.apply)
-}
-
 case class Limit(value: Int)
 
 object Limit {
