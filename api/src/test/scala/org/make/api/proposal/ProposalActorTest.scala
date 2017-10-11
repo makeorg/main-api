@@ -2,7 +2,7 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
@@ -13,14 +13,37 @@ import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.scalatest.GivenWhenThen
+import org.scalatest.mockito.MockitoSugar
 
-class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
+
+  class Controller {
+    def handle(message: Any, sender: ActorRef): Unit = {
+      sender ! message
+    }
+  }
+
+  class ControllableActor(controller: Controller) extends Actor {
+    override def receive: Receive = {
+      case something => controller.handle(something, sender())
+    }
+  }
+
+  val userHistoryController: Controller = new Controller
+  val sessionHistoryController: Controller = new Controller
+
+  val userHistoryActor: ActorRef = system.actorOf(Props(new ControllableActor(userHistoryController)), "user-history")
+  val sessionHistoryActor: ActorRef =
+    system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val THREAD_SLEEP_MICROSECONDS: Int = 100
 
   val coordinator: ActorRef =
-    system.actorOf(ProposalCoordinator.props, ProposalCoordinator.name)
+    system.actorOf(
+      ProposalCoordinator.props(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor),
+      ProposalCoordinator.name
+    )
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))

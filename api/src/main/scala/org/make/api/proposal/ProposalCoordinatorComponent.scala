@@ -49,7 +49,7 @@ trait ProposalCoordinatorServiceComponent {
 trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServiceComponent {
   self: ProposalCoordinatorComponent =>
 
-  override def proposalCoordinatorService: ProposalCoordinatorService = new ProposalCoordinatorService {
+  override lazy val proposalCoordinatorService: ProposalCoordinatorService = new ProposalCoordinatorService {
 
     implicit val timeout: Timeout = Timeout(3.seconds)
 
@@ -85,19 +85,31 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
     }
 
     override def vote(command: VoteProposalCommand): Future[Option[Vote]] = {
-      (proposalCoordinator ? command).mapTo[Option[Vote]]
+      (proposalCoordinator ? command).mapTo[Either[Exception, Option[Vote]]].flatMap {
+        case Right(success) => Future.successful(success)
+        case Left(e)        => Future.failed(e)
+      }
     }
 
     override def unvote(command: UnvoteProposalCommand): Future[Option[Vote]] = {
-      (proposalCoordinator ? command).mapTo[Option[Vote]]
+      (proposalCoordinator ? command).mapTo[Either[Exception, Option[Vote]]].flatMap {
+        case Right(success) => Future.successful(success)
+        case Left(e)        => Future.failed(e)
+      }
     }
 
     override def qualification(command: QualifyVoteCommand): Future[Option[Qualification]] = {
-      (proposalCoordinator ? command).mapTo[Option[Qualification]]
+      (proposalCoordinator ? command).mapTo[Either[Exception, Option[Qualification]]].flatMap {
+        case Right(success) => Future.successful(success)
+        case Left(e)        => Future.failed(e)
+      }
     }
 
     override def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]] = {
-      (proposalCoordinator ? command).mapTo[Option[Qualification]]
+      (proposalCoordinator ? command).mapTo[Either[Exception, Option[Qualification]]].flatMap {
+        case Right(success) => Future.successful(success)
+        case Left(e)        => Future.failed(e)
+      }
     }
   }
 }

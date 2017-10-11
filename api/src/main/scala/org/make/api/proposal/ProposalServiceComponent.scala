@@ -361,43 +361,39 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def voteProposal(proposalId: ProposalId,
-                              maybeUserId: Option[UserId],
-                              requestContext: RequestContext,
-                              voteKey: VoteKey): Future[Option[Vote]] = {
-      maybeUserId match {
+    private def retrieveVoteHistory(proposalId: ProposalId,
+                                    maybeUserId: Option[UserId],
+                                    requestContext: RequestContext) = {
+      val votesHistory = maybeUserId match {
         case Some(userId) =>
           userHistoryCoordinatorService
             .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
-            .flatMap(
-              votes =>
-                proposalCoordinatorService.vote(
-                  VoteProposalCommand(
-                    proposalId = proposalId,
-                    maybeUserId = maybeUserId,
-                    requestContext = requestContext,
-                    voteKey = voteKey,
-                    vote = votes.get(proposalId)
-                  )
-              )
-            )
         case None =>
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(
               RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
             )
-            .flatMap { votes =>
-              proposalCoordinatorService.vote(
-                VoteProposalCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  vote = votes.get(proposalId)
-                )
-              )
-            }
       }
+      votesHistory
+    }
+
+    override def voteProposal(proposalId: ProposalId,
+                              maybeUserId: Option[UserId],
+                              requestContext: RequestContext,
+                              voteKey: VoteKey): Future[Option[Vote]] = {
+
+      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
+        votes =>
+          proposalCoordinatorService.vote(
+            VoteProposalCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              vote = votes.get(proposalId)
+            )
+        )
+      )
 
     }
 
@@ -405,40 +401,19 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                 maybeUserId: Option[UserId],
                                 requestContext: RequestContext,
                                 voteKey: VoteKey): Future[Option[Vote]] = {
-      maybeUserId match {
-        case Some(userId) =>
-          userHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
-            .flatMap(
-              votes =>
-                proposalCoordinatorService.unvote(
-                  UnvoteProposalCommand(
-                    proposalId = proposalId,
-                    maybeUserId = maybeUserId,
-                    requestContext = requestContext,
-                    voteKey = voteKey,
-                    vote = votes.get(proposalId)
-                  )
-              )
-            )
-        case None =>
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
-            )
-            .flatMap { votes =>
-              proposalCoordinatorService.unvote(
-                UnvoteProposalCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  vote = votes.get(proposalId)
-                )
-              )
-            }
-      }
 
+      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
+        votes =>
+          proposalCoordinatorService.unvote(
+            UnvoteProposalCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              vote = votes.get(proposalId)
+            )
+        )
+      )
     }
 
     override def qualifyVote(proposalId: ProposalId,
@@ -446,42 +421,20 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                              requestContext: RequestContext,
                              voteKey: VoteKey,
                              qualificationKey: QualificationKey): Future[Option[Qualification]] = {
-      maybeUserId match {
-        case Some(userId) =>
-          userHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
-            .flatMap(
-              votes =>
-                proposalCoordinatorService.qualification(
-                  QualifyVoteCommand(
-                    proposalId = proposalId,
-                    maybeUserId = maybeUserId,
-                    requestContext = requestContext,
-                    voteKey = voteKey,
-                    qualificationKey = qualificationKey,
-                    vote = votes.get(proposalId)
-                  )
-              )
-            )
 
-        case None =>
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
+      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
+        votes =>
+          proposalCoordinatorService.qualification(
+            QualifyVoteCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              qualificationKey = qualificationKey,
+              vote = votes.get(proposalId)
             )
-            .flatMap { votes =>
-              proposalCoordinatorService.qualification(
-                QualifyVoteCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  qualificationKey = qualificationKey,
-                  vote = votes.get(proposalId)
-                )
-              )
-            }
-      }
+        )
+      )
 
     }
 
@@ -490,42 +443,20 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                requestContext: RequestContext,
                                voteKey: VoteKey,
                                qualificationKey: QualificationKey): Future[Option[Qualification]] = {
-      maybeUserId match {
-        case Some(userId) =>
-          userHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestVoteValues(userId, Seq(proposalId)))
-            .flatMap(
-              votes =>
-                proposalCoordinatorService.unqualification(
-                  UnqualifyVoteCommand(
-                    proposalId = proposalId,
-                    maybeUserId = maybeUserId,
-                    requestContext = requestContext,
-                    voteKey = voteKey,
-                    qualificationKey = qualificationKey,
-                    vote = votes.get(proposalId)
-                  )
-              )
-            )
-        case None =>
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
-            )
-            .flatMap { votes =>
-              proposalCoordinatorService.unqualification(
-                UnqualifyVoteCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  qualificationKey = qualificationKey,
-                  vote = votes.get(proposalId)
-                )
-              )
-            }
-      }
 
+      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
+        votes =>
+          proposalCoordinatorService.unqualification(
+            UnqualifyVoteCommand(
+              proposalId = proposalId,
+              maybeUserId = maybeUserId,
+              requestContext = requestContext,
+              voteKey = voteKey,
+              qualificationKey = qualificationKey,
+              vote = votes.get(proposalId)
+            )
+        )
+      )
     }
   }
 

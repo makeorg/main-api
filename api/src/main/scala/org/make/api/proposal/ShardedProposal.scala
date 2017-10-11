@@ -1,6 +1,6 @@
 package org.make.api.proposal
 
-import akka.actor.{Props, ReceiveTimeout}
+import akka.actor.{ActorRef, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
@@ -8,7 +8,8 @@ import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import scala.concurrent.duration._
 
 object ShardedProposal {
-  val props: Props = Props(new ShardedProposal)
+  def props(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef): Props =
+    Props(new ShardedProposal(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor))
   val shardName: String = "proposal"
 
   case object StopProposal
@@ -23,7 +24,8 @@ object ShardedProposal {
   }
 }
 
-class ShardedProposal extends ProposalActor {
+class ShardedProposal(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
+    extends ProposalActor(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor) {
 
   import ShardedProposal._
 

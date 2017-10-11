@@ -17,7 +17,13 @@ class ProposalSupervisor(userService: UserService,
     with ProposalCoordinatorComponent {
 
   override val proposalCoordinator: ActorRef =
-    context.watch(context.actorOf(ProposalCoordinator.props, ProposalCoordinator.name))
+    context.watch(
+      context.actorOf(
+        ProposalCoordinator
+          .props(userHistoryActor = userHistoryCoordinator, sessionHistoryActor = sessionHistoryCoordinator),
+        ProposalCoordinator.name
+      )
+    )
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(ProposalProducerActor.props, ProposalProducerActor.name))
