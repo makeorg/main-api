@@ -218,8 +218,20 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           )
         ) { event =>
           val originalSender = sender()
-
-          logUnvoteEvent(event).onComplete {
+          logUnvoteEvent(event).flatMap { _ =>
+            Future.traverse(event.selectedQualifications) { qualification =>
+              logRemoveVoteQualificationEvent(
+                ProposalUnqualified(
+                  event.id,
+                  maybeUserId = event.maybeUserId,
+                  eventDate = event.eventDate,
+                  requestContext = event.requestContext,
+                  voteKey = event.voteKey,
+                  qualificationKey = qualification
+                )
+              )
+            }
+          }.onComplete {
             case Success(_) => originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
             case Failure(e) => originalSender ! Left(e)
           }
