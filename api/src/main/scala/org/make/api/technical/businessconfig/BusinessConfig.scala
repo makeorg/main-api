@@ -52,7 +52,7 @@ object BackofficeConfiguration {
   val defaultMaxProposalsPerSequence: Int = 10
   //TODO: redefine it with team product
   val defaultReasonsForRefusal: Seq[String] =
-    Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "Other")
+    Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "MultipleIdeas", "Other")
 
   def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
               proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
