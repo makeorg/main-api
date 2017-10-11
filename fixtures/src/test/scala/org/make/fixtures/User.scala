@@ -12,12 +12,8 @@ object User extends SimulationConfig {
   val userFeeder = ssv(userFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {
-        case dateOfBirth if dateOfBirth.isEmpty =>
-          println("dateOfBirth = " + dateOfBirth)
-          "null"
-        case dateOfBirth =>
-          println("dateOfBirth = " + dateOfBirth)
-          s""""$dateOfBirth""""
+        case dateOfBirth if dateOfBirth.isEmpty => "null"
+        case dateOfBirth                        => s""""$dateOfBirth""""
       }
   }
 

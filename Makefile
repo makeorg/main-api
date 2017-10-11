@@ -10,7 +10,8 @@ help:
 	@echo "   test-all-with-coverage         to test the application with code coverage"
 	@echo "   test-int                       to test the application (integration tests)"
 	@echo "   test-unit                      to test the application (unit tests)"
-	@echo "   infra-clean                    to stop and remove containers, networks, images, and volumes"
+	@echo "   infra-clean                    to stop docker containers"
+	@echo "   infra-clean-all                to stop and remove containers, networks, images, and volumes"
 	@echo "   infra-rebuild                  to clean and up all"
 	@echo "   infra-show-containers          to show all the containers"
 	@echo "   infra-show-images              to show all the images"
@@ -49,6 +50,9 @@ test-unit:
 #              INFRA                   #
 ########################################
 infra-clean:
+	docker-compose -f $(DOCKER_COMPOSE_FILE) down
+
+infra-clean-all:
 	docker-compose -f $(DOCKER_COMPOSE_FILE) down -v --rmi all
 
 infra-rebuild: infra-clean infra-up
