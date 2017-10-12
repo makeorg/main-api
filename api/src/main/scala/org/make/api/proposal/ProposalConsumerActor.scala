@@ -93,7 +93,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
-      // TODO: missing tags and qualifs
+      // TODO: missing qualifs
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,

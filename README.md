@@ -25,11 +25,25 @@ when infrastructure is up you can run your app
 make run
 ```
 
+### Launching fixture
+
 when app is running you can load fixtures data
 
+To load all fixtures
 ```
 make fixtures
 ```
+
+To load fixtures for core Product
+```
+make fixtures-core
+```
+
+To load fixtures for Vff operation
+```
+make fixtures-vff
+```
+
 
 #### Running the app in Debug Mode:
 

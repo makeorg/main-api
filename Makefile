@@ -3,6 +3,8 @@
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
 	@echo "   fixtures                       to load fixtures data"
+	@echo "   fixtures-core                  to load fixtures data for Core"
+	@echo "   fixtures-vff                   to load fixtures data for Vff Operation"
 	@echo "   package-docker-image           to build locally the docker image"
 	@echo "   release                        to release the application"
 	@echo "   run                            to run app"
@@ -23,6 +25,12 @@ DOCKER_COMPOSE_FILE := docker-compose.yaml
 
 fixtures:
 	sbt fixtures/gatling:test
+
+fixtures-core:
+	sbt "fixtures/gatling:testOnly org.make.fixtures.Core"
+
+fixtures-vff:
+	sbt "fixtures/gatling:testOnly org.make.fixtures.Vff"
 
 package-docker-image:
 	sbt publishLocal

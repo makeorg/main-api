@@ -11,6 +11,11 @@ object Proposal extends SimulationConfig {
     ssv(proposalFeederPath, '"', '\\').records.groupBy { record =>
       record("username")
     }
+
+  val vffProposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
+    ssv(vffProposalFeederPath, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
 }
 
 object ProposalChainBuilder {

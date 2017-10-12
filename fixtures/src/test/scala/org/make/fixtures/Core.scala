@@ -1,17 +1,16 @@
 package org.make.fixtures
-import java.util.concurrent.ThreadLocalRandom
+import io.gatling.core.Predef._
 import io.gatling.core.feeder.Record
 import io.gatling.core.json.Json
-import io.gatling.core.Predef._
 import io.gatling.http.Predef.http
 import io.gatling.http.protocol.HttpProtocolBuilder
-import org.make.fixtures.User._
 import org.make.fixtures.Proposal.proposalsByUsername
+import org.make.fixtures.User._
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-class Main extends Simulation {
+class Core extends Simulation {
   val maxClients = 326
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
@@ -32,7 +31,7 @@ class Main extends Simulation {
       .exec(
         session =>
           session("username").validate[String].map { username: String =>
-            val mayBeProposals: Option[IndexedSeq[Record[String]]] = Try(Some(proposalsByUsername(username))) match {
+            val mayBeProposals: Option[IndexedSeq[Record[Any]]] = Try(Some(proposalsByUsername(username))) match {
               case Success(indexedSeqOption) => indexedSeqOption
               case Failure(_)                => None
             }

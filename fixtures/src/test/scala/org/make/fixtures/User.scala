@@ -1,6 +1,7 @@
 package org.make.fixtures
 
 import io.gatling.core.Predef._
+import io.gatling.core.feeder.RecordSeqFeederBuilder
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder
@@ -9,7 +10,15 @@ import scala.concurrent.duration._
 
 object User extends SimulationConfig {
 
-  val userFeeder = ssv(userFeederPath, '"', '\\').convert {
+  val userFeeder: RecordSeqFeederBuilder[Any] = ssv(userFeederPath, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case dateOfBirth if dateOfBirth.isEmpty => "null"
+        case dateOfBirth                        => s""""$dateOfBirth""""
+      }
+  }
+
+  val vffUserFeeder: RecordSeqFeederBuilder[Any] = ssv(vffUserFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {
         case dateOfBirth if dateOfBirth.isEmpty => "null"
