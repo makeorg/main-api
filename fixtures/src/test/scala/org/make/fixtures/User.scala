@@ -1,39 +1,23 @@
 package org.make.fixtures
 
 import io.gatling.core.Predef._
-import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
+import io.gatling.core.structure.ChainBuilder
 import io.gatling.http.Predef._
-import io.gatling.http.protocol.HttpProtocolBuilder
 import io.gatling.http.request.builder.HttpRequestBuilder
+
 import scala.concurrent.duration._
 
 object User extends SimulationConfig {
 
-  val maxClients = 328
-  val httpConf: HttpProtocolBuilder = http
-    .baseURL(baseURL)
-    .acceptHeader("*/*")
-    .acceptEncodingHeader("gzip, deflate")
-    .acceptLanguageHeader(defaultAcceptLanguage)
-    .userAgentHeader(defaultUserAgent)
-    .disableCaching
-
-  private val userFeeder = ssv(userFeederPath, '"', '\\').convert {
+  val userFeeder = ssv(userFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {
-        case dateOfBirth if dateOfBirth.isEmpty || dateOfBirth == null => "null"
-        case age                                                       => s""""$age""""
+        case dateOfBirth if dateOfBirth.isEmpty => "null"
+        case dateOfBirth                        => s""""$dateOfBirth""""
       }
   }
 
-  private val defaultPause = 20.seconds
-
-  val scnRegister: ScenarioBuilder = scenario("Register user")
-    .feed(userFeeder)
-    .exec(
-      UserChainBuilder.createUser
-        .pause(defaultPause)
-    )
+  val defaultPause = 2.seconds
 }
 
 object UserChainBuilder extends SimulationConfig {

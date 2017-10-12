@@ -68,7 +68,10 @@ lazy val phantom = project
 
 lazy val fixtures = project
   .in(file("fixtures"))
-  .settings(commonSettings: _*)
+  .settings(
+    organization := "org.make",
+    scalaVersion := "2.12.1"
+  )
   .configs(Gatling)
   .settings(moduleName := "make-fixtures": _*)
 

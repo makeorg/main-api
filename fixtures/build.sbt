@@ -2,9 +2,7 @@ name := "make-fixtures"
 
 libraryDependencies ++= Seq(
   Dependencies.gatling,
-  Dependencies.gatlingHighcharts,
-  Dependencies.postgresql,
-  Dependencies.scalike
+  Dependencies.gatlingHighcharts
 )
 
 enablePlugins(GatlingPlugin)
