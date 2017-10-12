@@ -39,6 +39,7 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     case command: LogUserUpdateSequenceEvent          => persistEvent(command)
     case command: LogUserAddProposalsSequenceEvent    => persistEvent(command)
     case command: LogUserRemoveProposalsSequenceEvent => persistEvent(command)
+    case command: LogGetProposalDuplicatesEvent       => persistEvent(command)
   }
 
   override def persistenceId: String = userId.value

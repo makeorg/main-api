@@ -6,6 +6,7 @@ sealed trait BusinessConfig {
   val proposalMinLength: Int
   val proposalMaxLength: Int
   val themes: Seq[Theme]
+  //TODO: have a consistent operation model & configuration
   val tagsVFF: Seq[Tag]
 }
 
