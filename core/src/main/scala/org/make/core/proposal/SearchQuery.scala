@@ -59,12 +59,13 @@ object SearchFilters extends ElasticDsl {
             trending: Option[TrendingSearchFilter] = None,
             content: Option[ContentSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
+            slug: Option[SlugSearchFilter] = None,
             context: Option[ContextSearchFilter] = None): Option[SearchFilters] = {
 
-    (theme, tags, labels, trending, content, status, context) match {
-      case (None, None, None, None, None, None, None) => None
+    (theme, tags, labels, trending, content, status, slug, context) match {
+      case (None, None, None, None, None, None, None, None) => None
       case _ =>
-        Some(SearchFilters(theme, tags, labels, trending, content, status, context))
+        Some(SearchFilters(theme, tags, labels, trending, content, status, context, slug))
     }
   }
 

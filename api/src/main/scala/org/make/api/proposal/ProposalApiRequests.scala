@@ -75,6 +75,7 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
                                labelsIds: Option[Seq[String]] = None,
                                trending: Option[String] = None,
                                content: Option[String] = None,
+                               slug: Option[String] = None,
                                context: Option[ContextFilterRequest] = None,
                                sorts: Option[Seq[SortRequest]] = None,
                                limit: Option[Int] = None,
@@ -90,6 +91,7 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
         content = content.map(text => {
           ContentSearchFilter(text, Some(fuzziness))
         }),
+        slug = slug.map(value => SlugSearchFilter(value)),
         context = context.map(_.toContext)
       )
 
