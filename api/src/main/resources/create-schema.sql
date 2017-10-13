@@ -283,7 +283,17 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('urbanisme', e'urbanisme', true),
 	('urbanisme-habitat', e'urbanisme & habitat', true),
 	('vegetarien', e'végétarien', true),
-	('vie-rurale', e'vie rurale', true)
+	('vie-rurale', e'vie rurale', true),
+	('signalement', e'signalement', true),
+	('police-justice', e'police & justice', true),
+	('image-de-la-femme', e'image de la femme', true),
+	('cyber-harcelement', e'cyber-harcèlement', true),
+	('protection-des-victimes', e'protection des victimes', true),
+	('hebergement', e'hébergement', true),
+	('pedagogie', e'pédagogie', true),
+	('soutien-psychologique', e'soutien psychologique', true),
+	('plaintes', e'plaintes', true),
+	('agressions', e'agressions', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme

@@ -43,6 +43,8 @@ trait SimulationConfig {
   val customerLink: String = getRequiredString("service.api-link")
   val userFeederPath: String = getRequiredString("feeder.users")
   val proposalFeederPath: String = getRequiredString("feeder.proposals")
+  val vffUserFeederPath: String = getRequiredString("feeder.users-vff")
+  val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
 
   val defaultUserAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
