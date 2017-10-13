@@ -44,6 +44,7 @@ class MakeSettings(config: Config) extends Extension {
   }
 
   val frontUrl: String = config.getString("front-url")
+  val newsletterUrl: String = config.getString("newsletter-url")
   val authorizedCorsUri: Seq[String] =
     config.getStringList("authorized-cors-uri").asScala
 

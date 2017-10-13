@@ -4,6 +4,7 @@ import java.net.InetAddress
 import java.time.{Instant, LocalDate}
 import java.util.Date
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -16,7 +17,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.userhistory.UserEvent.ResetPasswordEvent
-import org.make.api.{MakeApi, MakeApiTestUtils}
+import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestUtils}
 import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
@@ -38,7 +39,8 @@ class UserApiTest
     with SessionHistoryCoordinatorServiceComponent
     with PersistentUserServiceComponent
     with EventBusServiceComponent
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with ActorSystemComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val userService: UserService = mock[UserService]
@@ -62,6 +64,9 @@ class UserApiTest
   when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
+
+  override lazy val actorSystem: ActorSystem = ActorSystem()
+
   private val successful: Future[Unit] = Future.successful {}
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
