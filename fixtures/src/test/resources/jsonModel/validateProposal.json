@@ -1,8 +1,8 @@
 {
   "newContent": null,
   "sendNotificationEmail": false,
-  "theme": ${theme},
   "labels": ["violence"],
   "tags": ${tags},
+  "theme": ${theme},
   "similarProposals": []
 }

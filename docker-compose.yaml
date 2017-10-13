@@ -34,7 +34,7 @@ services:
         sr_kafkastore_connection_url: zookeeper:2181/kafka
     restart: on-failure:2
   cockroach:
-    image: cockroachdb/cockroach:v1.0.2
+    image: cockroachdb/cockroach:v1.1.0
     command: start --insecure
     ports:
       - 26257:26257

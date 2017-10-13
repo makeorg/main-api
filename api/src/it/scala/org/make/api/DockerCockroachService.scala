@@ -11,7 +11,7 @@ trait DockerCockroachService extends DockerKit {
   // toDo: use random port to avoid collisions with parallel execution test
   val defaultCockroachPortExposed = 36257
 
-  private val cockroachContainer = DockerContainer("cockroachdb/cockroach:v1.0.2")
+  private val cockroachContainer = DockerContainer("cockroachdb/cockroach:v1.1.0")
     .withPorts(defaultCockroachPort -> Some(defaultCockroachPortExposed))
     .withReadyChecker(DockerReadyChecker.LogLineContains("CockroachDB node starting at"))
     .withCommand("start", "--insecure")
