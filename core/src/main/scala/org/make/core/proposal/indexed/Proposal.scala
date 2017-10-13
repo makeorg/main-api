@@ -76,3 +76,7 @@ object IndexedQualification {
 }
 
 final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])
+
+object ProposalsSearchResult {
+  def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
+}

@@ -36,7 +36,7 @@ trait ProposalService {
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
-                    requestContext: RequestContext): Future[Seq[IndexedProposal]]
+                    requestContext: RequestContext): Future[ProposalsSearchResult]
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
   def searchForUser(userId: Option[UserId],
                     query: SearchQuery,
@@ -313,7 +313,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
-                               requestContext: RequestContext): Future[Seq[IndexedProposal]] = {
+                               requestContext: RequestContext): Future[ProposalsSearchResult] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -354,10 +354,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 )
               )
 
-              predictedDuplicates
+              ProposalsSearchResult(predictedDuplicates.size, predictedDuplicates)
             })
 
-        case None => Future.successful(Seq.empty)
+        case None => Future.successful(ProposalsSearchResult.empty)
       }
     }
 

@@ -20,7 +20,7 @@ class DuplicateDetectorProducerActor extends ProducerActor {
   private def onPredictedDuplicate(event: PredictDuplicate): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(event)
-    sendRecord(kafkaTopic, record.get("proposalId").asInstanceOf[String], record)
+    sendRecord(kafkaTopic, event.proposalId.value, record)
   }
 }
 
