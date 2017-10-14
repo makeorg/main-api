@@ -10,7 +10,7 @@ trait DockerElasticsearchService extends DockerKit {
 
   val defaultElasticsearchHttpPort = 9200
   val defaultElasticsearchClientPort = 9300
-  val defaultElasticsearchPortExposed = 9700
+  val defaultElasticsearchPortExposed = 9998
 
   val defaultElasticsearchIndex = "proposals"
   val defaultElasticsearchDocType = "proposal"

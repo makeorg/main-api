@@ -2,6 +2,8 @@ image: makeorg/docker-sbt-coursier
 
 variables:
   CI_BUILD: "true"
+  SBT_OPTS: "-Xms1G -Xmx1G"
+  IMAGE: "/repository/docker-dev/make-api"
 
 stages:
   - build
@@ -15,12 +17,15 @@ build:
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=vfs dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
+    - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.4.0
   script:
+    - export IMAGE_VERSION=`date +"%Y-%m-%d"`-`git rev-parse --short HEAD`
     - sbt clean coverage test it:test
     - sbt coverageReport coverageAggregate
-    - sbt clean publish
-    - docker tag $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-`date +"%Y-%m-%d"`-`git rev-parse --short HEAD` $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-latest
-    - docker push $NEXUS_URL/repository/docker-dev/make-api:$CI_COMMIT_REF_NAME-latest
+    - sbt clean publishLocal
+    - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-$IMAGE_VERSION
+    - docker tag $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
+    - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
 
 deploy:
   stage: deploy
