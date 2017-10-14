@@ -1,14 +1,19 @@
 package org.make.api.user
 
+import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
+import akka.stream.ActorMaterializer
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -22,12 +27,13 @@ import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, HttpCodes}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "User")
 @Path(value = "/user")
-trait UserApi extends MakeAuthenticationDirectives {
+trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   this: UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -35,7 +41,8 @@ trait UserApi extends MakeAuthenticationDirectives {
     with EventBusServiceComponent
     with PersistentUserServiceComponent
     with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+    with SessionHistoryCoordinatorServiceComponent
+    with ActorSystemComponent =>
 
   @Path(value = "/{userId}")
   @ApiOperation(
@@ -309,7 +316,7 @@ trait UserApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/user/:userId/resend-validation-email")
+  @Path(value = "/:userId/resend-validation-email")
   @ApiImplicitParams(value = Array())
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
@@ -330,6 +337,50 @@ trait UserApi extends MakeAuthenticationDirectives {
     }
   }
 
+  @ApiOperation(value = "subscribe-newsletter", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SubscribeToNewsLetter")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  @Path(value = "/newsletter")
+  def subscribeToNewsLetter: Route = post {
+    path("user" / "newsletter") {
+      makeTrace("SubscribeToNewsletter") { _ =>
+        decodeRequest {
+          entity(as[SubscribeToNewsLetter]) { request: SubscribeToNewsLetter =>
+            // Keep as info in case sending form would fail
+            logger.info(s"inscribing ${request.email} to newsletter")
+
+            val encodedEmailFieldName = URLEncoder.encode("fields[Email]", "UTF-8")
+            val encodedEmail = URLEncoder.encode(request.email, "UTF-8")
+            val encodedName = URLEncoder.encode("VFF Séquence Test", "UTF-8")
+
+            val httpRequest = HttpRequest(
+              method = HttpMethods.POST,
+              uri = makeSettings.newsletterUrl,
+              entity = HttpEntity(
+                ContentType(MediaTypes.`application/x-www-form-urlencoded`, HttpCharsets.`UTF-8`),
+                s"$encodedEmailFieldName=$encodedEmail&name=$encodedName"
+              )
+            )
+            logger.debug(s"Subscribe newsletter request: ${httpRequest.toString}")
+            val futureHttpResponse: Future[HttpResponse] =
+              Http(actorSystem).singleRequest(httpRequest)(ActorMaterializer()(actorSystem))
+
+            onSuccess(futureHttpResponse) { httpResponse =>
+              httpResponse.status match {
+                case StatusCodes.OK => complete(StatusCodes.OK)
+                case status         => complete(StatusCodes.ServiceUnavailable)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -337,6 +388,7 @@ trait UserApi extends MakeAuthenticationDirectives {
     resetPasswordRequestRoute ~
     resetPasswordCheckRoute ~
     resetPasswordRoute ~
+    subscribeToNewsLetter ~
     validateAccountRoute
 
   val userId: PathMatcher1[UserId] =
@@ -369,6 +421,10 @@ final case class ResetPasswordRequest(email: String) {
 final case class ResetPassword(resetToken: String, password: String) {
   validate(mandatoryField("resetToken", resetToken))
   validate(mandatoryField("password", password))
+}
+
+final case class SubscribeToNewsLetter(email: String) {
+  validate(mandatoryField("email", email), validateEmail("email", email))
 }
 
 case class UserResponse(userId: UserId,
