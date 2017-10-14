@@ -371,7 +371,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
 
             onSuccess(futureHttpResponse) { httpResponse =>
               httpResponse.status match {
-                case StatusCodes.OK => complete(StatusCodes.OK)
+                case StatusCodes.OK => complete(StatusCodes.NoContent)
                 case status         => complete(StatusCodes.ServiceUnavailable)
               }
             }
