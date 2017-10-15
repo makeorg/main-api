@@ -115,28 +115,30 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
         user: User         <- OptionT(userService.getUser(proposal.author))
       } yield {
         val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operation, country, language)
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(templateConfiguration.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
-                "proposal_text" -> proposal.content,
-                "firstname" -> user.firstName.getOrElse(""),
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(templateConfiguration.customCampaign),
-            monitoringCategory = Some(templateConfiguration.monitoringCategory)
+        if (templateConfiguration.enabled) {
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(templateConfiguration.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
+                  "proposal_text" -> proposal.content,
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(templateConfiguration.customCampaign),
+              monitoringCategory = Some(templateConfiguration.monitoringCategory)
+            )
           )
-        )
+        }
       }
 
       maybePublish.getOrElseF(
@@ -163,29 +165,31 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
         user: User         <- OptionT(userService.getUser(proposal.author))
       } yield {
         val proposalRefused = mailJetTemplateConfiguration.proposalRefused(operation, country, language)
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(proposalRefused.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "proposal_text" -> proposal.content,
-                "firstname" -> user.fullName.getOrElse(""),
-                "refusal_reason" -> proposal.refusalReason.getOrElse(""),
-                "registration_context" -> event.requestContext.operation.getOrElse(""),
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(proposalRefused.customCampaign),
-            monitoringCategory = Some(proposalRefused.monitoringCategory)
+        if (proposalRefused.enabled) {
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(proposalRefused.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "proposal_text" -> proposal.content,
+                  "firstname" -> user.fullName.getOrElse(""),
+                  "refusal_reason" -> proposal.refusalReason.getOrElse(""),
+                  "registration_context" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(proposalRefused.customCampaign),
+              monitoringCategory = Some(proposalRefused.monitoringCategory)
+            )
           )
-        )
+        }
       }
 
       maybePublish.getOrElseF(

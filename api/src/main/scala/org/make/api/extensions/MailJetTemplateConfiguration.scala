@@ -25,27 +25,28 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
                                          country: String,
                                          language: String): TemplateConfiguration = {
 
-    var defaultedConfig: Config = config
+    var templateConfiguration: Config = config
 
     if (config.hasPath(operation)) {
-      defaultedConfig = config.getConfig(operation).withFallback(defaultedConfig)
+      templateConfiguration = config.getConfig(operation).withFallback(templateConfiguration)
     }
     if (config.hasPath(s"$operation.$country")) {
-      defaultedConfig = config.getConfig(s"$operation.$country").withFallback(defaultedConfig)
+      templateConfiguration = config.getConfig(s"$operation.$country").withFallback(templateConfiguration)
     }
     if (config.hasPath(s"$operation.$country.$language")) {
-      defaultedConfig = config.getConfig(s"$operation.$country.$language").withFallback(defaultedConfig)
+      templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
     }
 
     TemplateConfiguration(
-      templateId = defaultedConfig.getInt("template-id"),
-      customCampaign = defaultedConfig.getString("custom-campaign"),
-      monitoringCategory = defaultedConfig.getString("monitoring-category")
+      templateId = templateConfiguration.getInt("template-id"),
+      customCampaign = templateConfiguration.getString("custom-campaign"),
+      monitoringCategory = templateConfiguration.getString("monitoring-category"),
+      enabled = templateConfiguration.getBoolean("enabled")
     )
   }
 }
 
-case class TemplateConfiguration(templateId: Int, customCampaign: String, monitoringCategory: String)
+case class TemplateConfiguration(templateId: Int, customCampaign: String, monitoringCategory: String, enabled: Boolean)
 
 object MailJetTemplateConfiguration extends ExtensionId[MailJetTemplateConfiguration] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MailJetTemplateConfiguration =

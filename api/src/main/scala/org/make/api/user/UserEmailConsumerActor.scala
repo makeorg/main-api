@@ -31,9 +31,8 @@ class UserEmailConsumerActor(userService: UserService)
    */
   object HandledMessages extends Poly1 {
     implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
-    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] = at(
-      identity
-    )
+    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] =
+      at(identity)
     implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
     implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
     implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
@@ -60,27 +59,29 @@ class UserEmailConsumerActor(userService: UserService)
         val templateConfiguration = mailJetTemplateConfiguration
           .welcome(operation = operation, country = country, language = language)
 
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(templateConfiguration.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "registration_context" -> operation,
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(templateConfiguration.customCampaign),
-            monitoringCategory = Some(templateConfiguration.monitoringCategory)
+        if (templateConfiguration.enabled) {
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(templateConfiguration.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "registration_context" -> operation,
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(templateConfiguration.customCampaign),
+              monitoringCategory = Some(templateConfiguration.monitoringCategory)
+            )
           )
-        )
+        }
       }
     }
   }
@@ -95,30 +96,32 @@ class UserEmailConsumerActor(userService: UserService)
         val registration =
           mailJetTemplateConfiguration.registration(operation = operation, country = country, language = language)
 
-        val url = s"${settings.frontUrl}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
-          s"?operation=$operation&language=$language&country=$country"
+        if (registration.enabled) {
+          val url = s"${settings.frontUrl}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+            s"?operation=$operation&language=$language&country=$country"
 
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(registration.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "email_validation_url" -> url,
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(registration.customCampaign),
-            monitoringCategory = Some(registration.monitoringCategory)
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(registration.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "email_validation_url" -> url,
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(registration.customCampaign),
+              monitoringCategory = Some(registration.monitoringCategory)
+            )
           )
-        )
+        }
       }
     }
   }
@@ -132,30 +135,33 @@ class UserEmailConsumerActor(userService: UserService)
 
         val forgottenPassword =
           mailJetTemplateConfiguration.forgottenPassword(operation = operation, country = country, language = language)
-        val url = s"${settings.frontUrl}/#/password-recovery/${user.userId.value}/${user.resetToken.get}" +
-          s"?operation=$operation&language=$language&country=$country"
 
-        context.system.eventStream.publish(
-          SendEmail(
-            templateId = Some(forgottenPassword.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "forgotten_password_url" -> url,
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(forgottenPassword.customCampaign),
-            monitoringCategory = Some(forgottenPassword.monitoringCategory)
+        if (forgottenPassword.enabled) {
+          val url = s"${settings.frontUrl}/#/password-recovery/${user.userId.value}/${user.resetToken.get}" +
+            s"?operation=$operation&language=$language&country=$country"
+
+          context.system.eventStream.publish(
+            SendEmail(
+              templateId = Some(forgottenPassword.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "forgotten_password_url" -> url,
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(forgottenPassword.customCampaign),
+              monitoringCategory = Some(forgottenPassword.monitoringCategory)
+            )
           )
-        )
+        }
       }
     }
   }
@@ -175,29 +181,31 @@ class UserEmailConsumerActor(userService: UserService)
         val resendAccountValidationLink = mailJetTemplateConfiguration
           .resendAccountValidationLink(operation = operation, country = country, language = language)
 
-        val url = s"${settings.frontUrl}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
-          s"?operation=$operation&language=$language&country=$country"
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(resendAccountValidationLink.templateId),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "email_validation_url" -> url,
-                "operation" -> event.requestContext.operation.getOrElse(""),
-                "question" -> event.requestContext.question.getOrElse(""),
-                "location" -> event.requestContext.location.getOrElse(""),
-                "source" -> event.requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = Some(resendAccountValidationLink.customCampaign),
-            monitoringCategory = Some(resendAccountValidationLink.monitoringCategory)
+        if (resendAccountValidationLink.enabled) {
+          val url = s"${settings.frontUrl}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+            s"?operation=$operation&language=$language&country=$country"
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(resendAccountValidationLink.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "email_validation_url" -> url,
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(resendAccountValidationLink.customCampaign),
+              monitoringCategory = Some(resendAccountValidationLink.monitoringCategory)
+            )
           )
-        )
+        }
       }
     }
   }
