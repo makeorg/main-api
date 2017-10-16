@@ -123,7 +123,7 @@ class ProposalSearchEngineIT
     labels = Seq(),
     country = "FR",
     language = "fr",
-    status = ProposalStatus.Accepted
+    status = ProposalStatus.Refused
   )
 
   private def acceptedProposals: Seq[IndexedProposal] = Seq(
