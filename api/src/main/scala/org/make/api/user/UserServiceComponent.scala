@@ -48,7 +48,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with PersistentUserServiceComponent
     with EventBusServiceComponent =>
 
-  val userService = new UserService {
+  val userService: UserService = new UserService {
 
     val validationTokenExpiresIn: Long = 30.days.toSeconds
     val resetTokenExpiresIn: Long = 1.days.toSeconds
@@ -194,8 +194,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield result
 
       result.onComplete {
-        case Success(result) => Future.successful(true)
-        case (_)             => Future.failed(ResetTokenRequestException())
+        case Success(_) => Future.successful(true)
+        case (_)        => Future.failed(ResetTokenRequestException())
       }
     }
 

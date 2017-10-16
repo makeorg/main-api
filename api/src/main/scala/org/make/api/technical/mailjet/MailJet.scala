@@ -11,10 +11,12 @@ case class SendEmail(from: Option[Recipient] = None,
                      variables: Option[Map[String, String]] = None,
                      recipients: Seq[Recipient],
                      headers: Option[Map[String, String]] = None,
-                     emailId: Option[String] = None)
+                     emailId: Option[String] = None,
+                     customCampaign: Option[String] = None,
+                     monitoringCategory: Option[String] = None)
 
 object SendEmail {
-  implicit val encoder: Encoder[SendEmail] = Encoder.forProduct10(
+  implicit val encoder: Encoder[SendEmail] = Encoder.forProduct12(
     "From",
     "Subject",
     "TextPart",
@@ -24,7 +26,9 @@ object SendEmail {
     "Variables",
     "To",
     "Headers",
-    "CustomID"
+    "CustomID",
+    "CustomCampaign",
+    "MonitoringCategory"
   ) { sendEmail =>
     (
       sendEmail.from,
@@ -36,7 +40,9 @@ object SendEmail {
       sendEmail.variables,
       sendEmail.recipients,
       sendEmail.headers,
-      sendEmail.emailId
+      sendEmail.emailId,
+      sendEmail.customCampaign,
+      sendEmail.monitoringCategory
     )
   }
 }

@@ -95,17 +95,8 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    userService.getUser(event.userId).map(_.get).map { user =>
-      eventBusService.publish(
-        SendEmail(
-          templateId = Some(mailJetTemplateConfiguration.proposalSentTemplate),
-          recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-          from = Some(
-            Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-          ),
-          variables = Some(Map("content" -> event.content, "name" -> user.fullName.getOrElse("")))
-        )
-      )
+    Future.successful[Unit] {
+      log.debug(s"received $event")
     }
   }
 
@@ -115,26 +106,40 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
 
+      val operation = event.requestContext.operation.getOrElse("core")
+      val language = event.requestContext.language.getOrElse("fr")
+      val country = event.requestContext.country.getOrElse("FR")
+
       val maybePublish: OptionT[Future, Unit] = for {
         proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
         user: User         <- OptionT(userService.getUser(proposal.author))
-      } yield
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(mailJetTemplateConfiguration.proposalValidatedTemplate),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
-                "content" -> proposal.content,
-                "name" -> user.fullName.getOrElse("")
-              )
+      } yield {
+        val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operation, country, language)
+        if (templateConfiguration.enabled) {
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(templateConfiguration.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
+                  "proposal_text" -> proposal.content,
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(templateConfiguration.customCampaign),
+              monitoringCategory = Some(templateConfiguration.monitoringCategory)
             )
           )
-        )
+        }
+      }
 
       maybePublish.getOrElseF(
         Future.failed(new IllegalStateException(s"proposal or user not found for proposal ${event.id.value}"))
@@ -151,26 +156,41 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
 
+      val operation = event.requestContext.operation.getOrElse("core")
+      val language = event.requestContext.language.getOrElse("fr")
+      val country = event.requestContext.country.getOrElse("FR")
+
       val maybePublish: OptionT[Future, Unit] = for {
         proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
         user: User         <- OptionT(userService.getUser(proposal.author))
-      } yield
-        eventBusService.publish(
-          SendEmail(
-            templateId = Some(mailJetTemplateConfiguration.proposalRefusedTemplate),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "content" -> proposal.content,
-                "name" -> user.fullName.getOrElse(""),
-                "refusalReason" -> proposal.refusalReason.getOrElse("")
-              )
+      } yield {
+        val proposalRefused = mailJetTemplateConfiguration.proposalRefused(operation, country, language)
+        if (proposalRefused.enabled) {
+          eventBusService.publish(
+            SendEmail(
+              templateId = Some(proposalRefused.templateId),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "proposal_text" -> proposal.content,
+                  "firstname" -> user.fullName.getOrElse(""),
+                  "refusal_reason" -> proposal.refusalReason.getOrElse(""),
+                  "registration_context" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "question" -> event.requestContext.question.getOrElse(""),
+                  "location" -> event.requestContext.location.getOrElse(""),
+                  "source" -> event.requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = Some(proposalRefused.customCampaign),
+              monitoringCategory = Some(proposalRefused.monitoringCategory)
             )
           )
-        )
+        }
+      }
 
       maybePublish.getOrElseF(
         Future.failed(new IllegalStateException(s"proposal or user not found for proposal ${event.id.value}"))

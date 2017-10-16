@@ -19,7 +19,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.social.SocialServiceComponent
-import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent}
+import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
@@ -206,10 +206,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/:userId/validate/:verificationToken")
   @ApiImplicitParams(value = Array())
-  def validateAccountRoute(implicit ctx: EC = ECGlobal): Route = {
+  def validateAccountRoute: Route = {
     post {
       path("user" / userId / "validate" / Segment) { (userId: UserId, verificationToken: String) =>
-        makeTrace("UserValidation") { _ =>
+        makeTrace("UserValidation") { requestContext =>
           provideAsyncOrNotFound(
             persistentUserService
               .findUserByUserIdAndVerificationToken(userId, verificationToken)
@@ -220,6 +220,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
               onSuccess(
                 userService
                   .validateEmail(verificationToken = verificationToken)
+                  .map { result =>
+                    eventBusService.publish(UserValidatedAccountEvent(userId = userId, requestContext = requestContext))
+                    result
+                  }
               ) { _ =>
                 complete(StatusCodes.NoContent)
               }
@@ -238,7 +242,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPasswordRequest")
     )
   )
-  def resetPasswordRequestRoute(implicit ctx: EC = ECGlobal): Route = {
+  def resetPasswordRequestRoute: Route = {
     post {
       path("user" / "reset-password" / "request-reset") {
         makeTrace("ResetPasswordRequest") { requestContext =>
@@ -266,7 +270,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/reset-password/check-validity/:userId/:resetToken")
   @ApiImplicitParams(value = Array())
-  def resetPasswordCheckRoute(implicit ctx: EC = ECGlobal): Route = {
+  def resetPasswordCheckRoute: Route = {
     post {
       path("user" / "reset-password" / "check-validity" / userId / Segment) { (userId: UserId, resetToken: String) =>
         makeTrace("ResetPasswordCheck") { _ =>
@@ -288,7 +292,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPassword"))
   )
-  def resetPasswordRoute(implicit ctx: EC = ECGlobal): Route = {
+  def resetPasswordRoute: Route = {
     post {
       path("user" / "reset-password" / "change-password" / userId) { userId =>
         makeTrace("ResetPassword") { _ =>
