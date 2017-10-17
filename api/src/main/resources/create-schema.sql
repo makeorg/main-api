@@ -293,7 +293,8 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('pedagogie', e'pédagogie', true),
 	('soutien-psychologique', e'soutien psychologique', true),
 	('plaintes', e'plaintes', true),
-	('agressions', e'agressions', true)
+	('agressions', e'agressions', true),
+	('prevention', e'prévention', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme
