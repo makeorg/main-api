@@ -61,7 +61,8 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
     override def persist(theme: Theme): Future[Theme] = {
       implicit val context: EC = writeExecutionContext
-      val tagsIds: String = theme.tags.map(_.tagId.value).mkString(DefaultPersistentThemeServiceComponent.TAG_SEPARATOR)
+      val tagsIds: String =
+        theme.tags.map(_.tagId.value).mkString(DefaultPersistentThemeServiceComponent.TAG_SEPARATOR.toString)
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
@@ -104,7 +105,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
 object DefaultPersistentThemeServiceComponent {
 
-  val TAG_SEPARATOR = ","
+  val TAG_SEPARATOR = '|'
 
   case class PersistentThemeTranslation(themeUuid: String, slug: String, title: String, language: String)
 
