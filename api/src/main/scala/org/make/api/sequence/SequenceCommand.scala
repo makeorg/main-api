@@ -18,7 +18,8 @@ final case class CreateSequenceCommand(sequenceId: SequenceId,
                                        themeIds: Seq[ThemeId] = Seq.empty,
                                        requestContext: RequestContext,
                                        moderatorId: UserId,
-                                       status: SequenceStatus)
+                                       status: SequenceStatus,
+                                       searchable: Boolean)
     extends SequenceCommand
 
 final case class UpdateSequenceCommand(sequenceId: SequenceId,

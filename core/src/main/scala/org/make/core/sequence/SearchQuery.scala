@@ -43,23 +43,25 @@ case class SearchFilters(tags: Option[TagsSearchFilter] = None,
                          title: Option[TitleSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
+                         searchable: Option[Boolean] = None,
                          context: Option[ContextSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat6(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat7(SearchFilters.apply)
 
   def parse(tags: Option[TagsSearchFilter] = None,
             themes: Option[ThemesSearchFilter] = None,
             title: Option[TitleSearchFilter] = None,
             slug: Option[SlugSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
+            searchable: Option[Boolean] = None,
             context: Option[ContextSearchFilter] = None): Option[SearchFilters] = {
 
-    (tags, themes, title, slug, status, context) match {
-      case (None, None, None, None, None, None) => None
-      case _                                    => Some(SearchFilters(tags, themes, title, slug, status, context))
+    (tags, themes, title, slug, status, searchable, context) match {
+      case (None, None, None, None, None, None, None) => None
+      case _                                          => Some(SearchFilters(tags, themes, title, slug, status, searchable, context))
     }
   }
 
@@ -79,7 +81,8 @@ object SearchFilters extends ElasticDsl {
       buildContextOperationSearchFilter(searchQuery),
       buildContextSourceSearchFilter(searchQuery),
       buildContextLocationSearchFilter(searchQuery),
-      buildContextQuestionSearchFilter(searchQuery)
+      buildContextQuestionSearchFilter(searchQuery),
+      buildSearchableFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
@@ -201,6 +204,18 @@ object SearchFilters extends ElasticDsl {
       case None =>
         Some(ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Published.shortName))
       case _ => query
+    }
+  }
+
+  def buildSearchableFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    val query: Option[QueryDefinition] = for {
+      filters    <- searchQuery.filters
+      searchable <- filters.searchable
+    } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.searchable, searchable)
+
+    query match {
+      case None => Some(ElasticApi.matchAllQuery)
+      case _    => query
     }
   }
 }

@@ -29,6 +29,7 @@ object SequenceElasticsearchFieldNames {
   val contextSource: String = "context.source"
   val contextLocation: String = "context.location"
   val contextQuestion: String = "context.question"
+  val searchable: String = "searchable"
 }
 
 case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequence]])
@@ -47,7 +48,8 @@ case class IndexedSequence(id: SequenceId,
                            context: Option[Context],
                            tags: Seq[Tag],
                            themes: Seq[IndexedSequenceTheme],
-                           proposals: Seq[IndexedProposalSequence])
+                           proposals: Seq[IndexedProposalSequence],
+                           searchable: Boolean)
 
 final case class Context(operation: Option[String],
                          source: Option[String],

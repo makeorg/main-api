@@ -131,6 +131,10 @@
               "index": true
             }
           }
+        },
+        "searchable": {
+          "type": "boolean",
+          "index": true
         }
       }
     },

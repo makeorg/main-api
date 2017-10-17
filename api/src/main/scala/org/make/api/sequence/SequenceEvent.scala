@@ -77,7 +77,8 @@ object SequenceEvent {
                                    eventDate: ZonedDateTime,
                                    title: String,
                                    themeIds: Seq[ThemeId],
-                                   tagIds: Seq[TagId])
+                                   tagIds: Seq[TagId],
+                                   searchable: Boolean)
       extends SequenceEvent
 
   object SequenceCreated {
@@ -85,7 +86,7 @@ object SequenceEvent {
     val actionType: String = "sequence-created"
 
     implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
-      DefaultJsonProtocol.jsonFormat8(SequenceCreated.apply)
+      DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)

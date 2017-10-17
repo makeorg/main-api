@@ -79,7 +79,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         title = command.title,
         themeIds = command.themeIds,
-        tagIds = command.tagIds
+        tagIds = command.tagIds,
+        searchable = command.searchable
       )
     ) {
       sender() ! sequenceId
@@ -127,7 +128,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
               arguments =
                 Map("title" -> e.title, "tagIds" -> e.tagIds.mkString(","), "themeIds" -> e.themeIds.mkString(","))
             )
-          )
+          ),
+          searchable = e.searchable
         )
       )
     case e: SequenceUpdated =>

@@ -62,7 +62,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         actionType = "create",
         arguments = Map("title" -> "This is a sequence", "tagIds" -> "", "themeIds" -> "")
       )
-    )
+    ),
+    searchable = false
   )
 
   var dateStubNow: OngoingStubbing[ZonedDateTime] = Mockito.when(dateHelper.now)
@@ -87,7 +88,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -147,7 +149,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -213,7 +216,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -261,7 +265,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -317,7 +322,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)

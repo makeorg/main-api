@@ -62,8 +62,20 @@ trait AuthenticationApi
       }
     }
 
-  @ApiOperation(value = "make-oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "make-oauth-access_token",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "application/x-www-form-urlencoded"
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "username", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(name = "grant_type", paramType = "form", dataType = "string", defaultValue = "password")
+    )
+  )
   @Path(value = "/oauth/make_access_token")
   def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
     pathPrefix("oauth") {

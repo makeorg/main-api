@@ -114,7 +114,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                           createdAt = DateHelper.now(),
                           title = request.title,
                           tagIds = request.tagIds.map(TagId(_)),
-                          themeIds = themeIds.map(ThemeId(_))
+                          themeIds = themeIds.map(ThemeId(_)),
+                          searchable = request.searchable
                         )
                     ) {
                       case Some(sequenceResponse) => complete(StatusCodes.Created -> sequenceResponse)

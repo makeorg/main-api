@@ -37,7 +37,8 @@ trait SequenceService {
              createdAt: ZonedDateTime,
              title: String,
              tagIds: Seq[TagId] = Seq.empty,
-             themeIds: Seq[ThemeId] = Seq.empty): Future[Option[SequenceResponse]]
+             themeIds: Seq[ThemeId] = Seq.empty,
+             searchable: Boolean): Future[Option[SequenceResponse]]
   def update(sequenceId: SequenceId,
              moderatorId: UserId,
              requestContext: RequestContext,
@@ -106,7 +107,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         createdAt: ZonedDateTime,
                         title: String,
                         tagIds: Seq[TagId],
-                        themeIds: Seq[ThemeId]): Future[Option[SequenceResponse]] = {
+                        themeIds: Seq[ThemeId],
+                        searchable: Boolean): Future[Option[SequenceResponse]] = {
       sequenceCoordinatorService
         .create(
           CreateSequenceCommand(
@@ -117,7 +119,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             moderatorId = userId,
             tagIds = tagIds,
             themeIds = themeIds,
-            status = SequenceStatus.Published
+            status = SequenceStatus.Published,
+            searchable = searchable
           )
         )
         .flatMap(getModerationSequenceById)

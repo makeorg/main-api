@@ -110,7 +110,8 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
         ),
         tags = tags,
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
-        proposals = sequence.proposalIds.map(IndexedProposalSequence(_))
+        proposals = sequence.proposalIds.map(IndexedProposalSequence(_)),
+        searchable = sequence.searchable
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Sequence ${id.value} doesn't exist")))

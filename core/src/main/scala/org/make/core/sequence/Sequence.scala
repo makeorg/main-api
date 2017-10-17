@@ -34,13 +34,14 @@ case class Sequence(sequenceId: SequenceId,
                     status: SequenceStatus = SequenceStatus.Unpublished,
                     creationContext: RequestContext,
                     sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-                    events: List[SequenceAction])
+                    events: List[SequenceAction],
+                    searchable: Boolean)
     extends MakeSerializable
     with Timestamped
 
 object Sequence {
   implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat12(Sequence.apply)
+    DefaultJsonProtocol.jsonFormat13(Sequence.apply)
 }
 
 final case class SequenceId(value: String) extends StringValue

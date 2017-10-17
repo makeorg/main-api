@@ -192,7 +192,8 @@ class SequenceApiTest
     status = SequenceStatus.Published,
     creationContext = RequestContext.empty,
     sequenceTranslation = Seq.empty,
-    events = Nil
+    events = Nil,
+    searchable = false
   )
   private def sequenceResponse(id: SequenceId): SequenceResponse = {
     SequenceResponse(
@@ -216,7 +217,8 @@ class SequenceApiTest
       |{
       | "tagIds": ["happy"],
       | "themeIds": [],
-      | "title": "my valid sequence"
+      | "title": "my valid sequence",
+      | "searchable": true
       |}
     """.stripMargin
 
@@ -225,7 +227,8 @@ class SequenceApiTest
       |{
       | "tagIds": ["happy"],
       | "themeIds": ["909090"],
-      | "title": "my valid sequence"
+      | "title": "my valid sequence",
+      | "searchable": true
       |}
     """.stripMargin
 
@@ -244,7 +247,15 @@ class SequenceApiTest
 
   when(
     sequenceService
-      .create(any[UserId], any[RequestContext], any[ZonedDateTime], any[String], any[Seq[TagId]], any[Seq[ThemeId]])
+      .create(
+        any[UserId],
+        any[RequestContext],
+        any[ZonedDateTime],
+        any[String],
+        any[Seq[TagId]],
+        any[Seq[ThemeId]],
+        matches(true)
+      )
   ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("43")))))
 
   when(
