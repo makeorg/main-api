@@ -2,7 +2,7 @@ image: makeorg/docker-sbt-coursier
 
 variables:
   CI_BUILD: "true"
-  SBT_OPTS: "-Xms1G -Xmx1G"
+  SBT_OPTS: "-Xms2G -Xmx2G"
   IMAGE: "/repository/docker-dev/make-api"
 
 stages:
