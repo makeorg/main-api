@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.Sort
+import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.indexed.SequenceElasticsearchFieldNames
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -220,14 +221,14 @@ object SearchFilters extends ElasticDsl {
   }
 }
 
-case class ThemesSearchFilter(themeIds: Seq[String])
+case class ThemesSearchFilter(themeIds: Seq[ThemeId])
 object ThemesSearchFilter {
   implicit val themeSearchFilterFormatted: RootJsonFormat[ThemesSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(ThemesSearchFilter.apply)
 
 }
 
-case class TagsSearchFilter(tagIds: Seq[String])
+case class TagsSearchFilter(tagIds: Seq[TagId])
 object TagsSearchFilter {
   implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)

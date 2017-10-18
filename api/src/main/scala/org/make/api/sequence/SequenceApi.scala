@@ -11,8 +11,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
-import org.make.core.proposal.ProposalId
-import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.user.User
@@ -99,12 +97,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                   provideAsync(themeService.findAll()) { themes =>
                     val themeIds = request.themeIds.distinct
                     Validation.validate(
-                      Validation.validChoices(
-                        "themeIds",
-                        Some("Some theme ids are invalid"),
-                        themeIds,
-                        themes.map(_.themeId.value)
-                      )
+                      Validation
+                        .validChoices("themeIds", Some("Some theme ids are invalid"), themeIds, themes.map(_.themeId))
                     )
                     onSuccess(
                       sequenceService
@@ -113,8 +107,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                           requestContext = requestContext,
                           createdAt = DateHelper.now(),
                           title = request.title,
-                          tagIds = request.tagIds.map(TagId(_)),
-                          themeIds = themeIds.map(ThemeId(_)),
+                          tagIds = request.tagIds,
+                          themeIds = themeIds,
                           searchable = request.searchable
                         )
                     ) {
@@ -236,7 +230,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       sequenceId = sequenceId,
                       moderatorId = auth.user.userId,
                       requestContext = requestContext,
-                      proposalIds = request.proposalIds.map(ProposalId(_))
+                      proposalIds = request.proposalIds
                     )
                   ) { sequenceResponse =>
                     complete(StatusCodes.OK -> sequenceResponse)
@@ -290,7 +284,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       sequenceId = sequenceId,
                       moderatorId = auth.user.userId,
                       requestContext = requestContext,
-                      proposalIds = request.proposalIds.map(ProposalId(_))
+                      proposalIds = request.proposalIds
                     )
                   ) { sequenceResponse =>
                     complete(StatusCodes.OK -> sequenceResponse)

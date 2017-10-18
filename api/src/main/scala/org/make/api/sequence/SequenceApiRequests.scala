@@ -1,17 +1,19 @@
 package org.make.api.sequence
 
 import org.make.core.common.indexed.SortRequest
+import org.make.core.proposal.ProposalId
+import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
 
 // ToDo: handle translations
-final case class CreateSequenceRequest(title: String, themeIds: Seq[String], tagIds: Seq[String], searchable: Boolean)
-final case class AddProposalSequenceRequest(proposalIds: Seq[String])
-final case class RemoveProposalSequenceRequest(proposalIds: Seq[String])
+final case class CreateSequenceRequest(title: String, themeIds: Seq[ThemeId], tagIds: Seq[TagId], searchable: Boolean)
+final case class AddProposalSequenceRequest(proposalIds: Seq[ProposalId])
+final case class RemoveProposalSequenceRequest(proposalIds: Seq[ProposalId])
 
 final case class UpdateSequenceRequest(title: Option[String], status: Option[String])
 
-final case class ExhaustiveSearchRequest(tagIds: Seq[String] = Seq.empty,
-                                         themeIds: Seq[String] = Seq.empty,
+final case class ExhaustiveSearchRequest(tagIds: Seq[TagId] = Seq.empty,
+                                         themeIds: Seq[ThemeId] = Seq.empty,
                                          title: Option[String] = None,
                                          slug: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
