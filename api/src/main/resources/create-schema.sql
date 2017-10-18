@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS make_user (
   opt_in_newsletter BOOLEAN DEFAULT FALSE NOT NULL
 );
 %
+CREATE UNIQUE index email_unique_index ON make_user (email);
+%
 CREATE TABLE IF NOT EXISTS oauth_client (
   uuid VARCHAR(256) PRIMARY KEY,
   secret VARCHAR(256) NOT NULL,
