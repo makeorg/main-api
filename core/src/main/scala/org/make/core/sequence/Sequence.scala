@@ -67,13 +67,13 @@ object SequenceId {
 sealed trait SequenceStatus {
   def shortName: String
 }
-
 object SequenceStatus {
   val statusMap: Map[String, SequenceStatus] =
     Map(Unpublished.shortName -> Unpublished, Published.shortName -> Published)
 
   implicit lazy val sequenceStatusEncoder: Encoder[SequenceStatus] = (status: SequenceStatus) =>
     Json.fromString(status.shortName)
+
   implicit lazy val sequenceStatusDecoder: Decoder[SequenceStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {

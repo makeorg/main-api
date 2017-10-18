@@ -42,7 +42,8 @@ trait SequenceService {
   def update(sequenceId: SequenceId,
              moderatorId: UserId,
              requestContext: RequestContext,
-             title: String): Future[Option[SequenceResponse]]
+             title: Option[String],
+             status: Option[SequenceStatus]): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
                    moderatorId: UserId,
                    requestContext: RequestContext,
@@ -167,7 +168,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     override def update(sequenceId: SequenceId,
                         userId: UserId,
                         requestContext: RequestContext,
-                        title: String): Future[Option[SequenceResponse]] = {
+                        title: Option[String],
+                        status: Option[SequenceStatus]): Future[Option[SequenceResponse]] = {
 
       sequenceCoordinatorService
         .update(
@@ -175,7 +177,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             moderatorId = userId,
             sequenceId = sequenceId,
             requestContext = requestContext,
-            title = title
+            title = title,
+            status = status
           )
         )
         .flatMap {

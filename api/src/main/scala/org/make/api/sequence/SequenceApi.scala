@@ -165,12 +165,24 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
+                  if (request.status.nonEmpty) {
+                    Validation.validate(
+                      Validation.validChoices(
+                        "status",
+                        Some("Invalid status"),
+                        Seq(request.status.get),
+                        SequenceStatus.statusMap.keys.toList
+                      )
+                    )
+                  }
+
                   provideAsyncOrNotFound(
                     sequenceService.update(
                       sequenceId = sequenceId,
                       moderatorId = auth.user.userId,
                       requestContext = requestContext,
-                      title = request.title
+                      title = request.title,
+                      status = request.status.map(SequenceStatus.statusMap)
                     )
                   ) { sequenceResponse =>
                     complete(StatusCodes.OK -> sequenceResponse)

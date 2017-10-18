@@ -8,7 +8,7 @@ final case class CreateSequenceRequest(title: String, themeIds: Seq[String], tag
 final case class AddProposalSequenceRequest(proposalIds: Seq[String])
 final case class RemoveProposalSequenceRequest(proposalIds: Seq[String])
 
-final case class UpdateSequenceRequest(title: String)
+final case class UpdateSequenceRequest(title: Option[String], status: Option[String])
 
 final case class ExhaustiveSearchRequest(tagIds: Seq[String] = Seq.empty,
                                          themeIds: Seq[String] = Seq.empty,

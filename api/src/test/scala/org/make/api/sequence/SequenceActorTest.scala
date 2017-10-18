@@ -130,7 +130,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         sequenceId = SequenceId("fake"),
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
-        title = "An updated content"
+        title = Some("An updated content"),
+        status = Some(SequenceStatus.Published)
       )
 
       Then("returns None")
@@ -160,7 +161,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         sequenceId = sequenceId,
         moderatorId = user.userId,
         requestContext = RequestContext.empty,
-        title = "An updated content"
+        title = Some("An updated content"),
+        status = Some(SequenceStatus.Published)
       )
 
       val modified = Some(

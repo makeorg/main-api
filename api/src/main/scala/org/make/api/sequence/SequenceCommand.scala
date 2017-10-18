@@ -25,7 +25,8 @@ final case class CreateSequenceCommand(sequenceId: SequenceId,
 final case class UpdateSequenceCommand(sequenceId: SequenceId,
                                        requestContext: RequestContext,
                                        moderatorId: UserId,
-                                       title: String)
+                                       title: Option[String],
+                                       status: Option[SequenceStatus])
     extends SequenceCommand
 
 final case class RemoveProposalsSequenceCommand(sequenceId: SequenceId,

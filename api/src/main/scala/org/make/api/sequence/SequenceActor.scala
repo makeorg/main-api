@@ -97,6 +97,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         requestContext = command.requestContext,
         title = command.title,
+        status = command.status,
         userId = userId
       )
     ) {
@@ -133,7 +134,15 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         )
       )
     case e: SequenceUpdated =>
-      state.map(_.copy(title = e.title, updatedAt = Some(e.eventDate), slug = SlugHelper(e.title)))
+      state.map(
+        state =>
+          state.copy(
+            title = e.title.getOrElse(state.title),
+            updatedAt = Some(e.eventDate),
+            slug = SlugHelper(e.title.getOrElse(state.title)),
+            status = e.status.getOrElse(state.status)
+        )
+      )
     case e: SequenceProposalsAdded =>
       state.map(
         state => state.copy(updatedAt = Some(e.eventDate), proposalIds = (state.proposalIds ++ e.proposalIds).distinct)

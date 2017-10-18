@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
@@ -103,7 +103,8 @@ object SequenceEvent {
                                    userId: UserId,
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
-                                   title: String)
+                                   title: Option[String],
+                                   status: Option[SequenceStatus])
       extends SequenceEvent
 
   object SequenceUpdated {
@@ -111,7 +112,7 @@ object SequenceEvent {
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
-      DefaultJsonProtocol.jsonFormat5(SequenceUpdated.apply)
+      DefaultJsonProtocol.jsonFormat6(SequenceUpdated.apply)
   }
 
   final case class SequenceEdition(oldVersion: String, newVersion: String)

@@ -300,12 +300,24 @@ class SequenceApiTest
 
   when(
     sequenceService
-      .update(matches(SequenceId("moderationSequence1")), any[UserId], any[RequestContext], matches("newSequenceTitle"))
+      .update(
+        matches(SequenceId("moderationSequence1")),
+        any[UserId],
+        any[RequestContext],
+        matches(Some("newSequenceTitle")),
+        matches(None)
+      )
   ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
 
   when(
     sequenceService
-      .update(matches(SequenceId("notexistsequenceId")), any[UserId], any[RequestContext], matches("newSequenceTitle"))
+      .update(
+        matches(SequenceId("notexistsequenceId")),
+        any[UserId],
+        any[RequestContext],
+        matches(Some("newSequenceTitle")),
+        matches(None)
+      )
   ).thenReturn(Future.successful(None))
 
   when(sequenceService.getSequenceById(any[SequenceId], any[RequestContext]))
@@ -548,6 +560,17 @@ class SequenceApiTest
       Patch("/moderation/sequences/moderationSequence1")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("invalid status") {
+      Patch("/moderation/sequences/moderationSequence1")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"status": "badstatus"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "status")
+        contentError should be(Some(ValidationError("status", Some("Invalid status"))))
       }
     }
 
