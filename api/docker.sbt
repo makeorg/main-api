@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.Cmd
+
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
@@ -8,6 +10,8 @@ dockerExposedPorts := Seq(4000, 9000)
 dockerRepository := Some("nexus.prod.makeorg.tech")
 daemonUser in Docker := "user"
 packageName in Docker := "repository/docker-dev/make-api"
+
+dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/version || exit 1")
 
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
