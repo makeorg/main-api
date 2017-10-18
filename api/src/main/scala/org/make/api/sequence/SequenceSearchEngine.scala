@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait SequenceSearchEngineComponent {
-  def elasticSearchSequenceAPI: SequenceSearchEngine
+  def elasticsearchSequenceAPI: SequenceSearchEngine
 }
 
 trait SequenceSearchEngine {
@@ -36,7 +36,7 @@ trait DefaultSequenceSearchEngineComponent
     with DefaultProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent =>
 
-  override lazy val elasticSearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
+  override lazy val elasticsearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
 
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
@@ -88,7 +88,7 @@ trait DefaultSequenceSearchEngineComponent
 
       futureMayBeIndexedSequence.flatMap {
         _.map(indexSequence => {
-          elasticSearchProposalAPI.findProposalsByIds(indexSequence.proposals.map(_.proposalId), Some(max)).map {
+          elasticsearchProposalAPI.findProposalsByIds(indexSequence.proposals.map(_.proposalId), Some(max)).map {
             seqIndexedProposals =>
               if (seqIndexedProposals.size >= 2) {
                 Some(

@@ -82,7 +82,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           )
         )
       }
-      elasticSearchSequenceAPI.searchSequences(query)
+      elasticsearchSequenceAPI.searchSequences(query)
     }
 
     override def startNewSequence(maybeUserId: Option[UserId],
@@ -100,7 +100,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           )
         )
       }
-      elasticSearchSequenceAPI.getStartSequence(query)
+      elasticsearchSequenceAPI.getStartSequence(query)
     }
 
     override def create(userId: UserId,

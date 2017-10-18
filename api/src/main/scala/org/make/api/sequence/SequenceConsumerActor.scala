@@ -62,11 +62,11 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
 
   def indexOrUpdate(sequence: IndexedSequence): Future[Unit] = {
     log.debug(s"Indexing $sequence")
-    elasticSearchSequenceAPI
+    elasticsearchSequenceAPI
       .findSequenceById(sequence.id)
       .flatMap {
-        case None    => elasticSearchSequenceAPI.indexSequence(sequence)
-        case Some(_) => elasticSearchSequenceAPI.updateSequence(sequence)
+        case None    => elasticsearchSequenceAPI.indexSequence(sequence)
+        case Some(_) => elasticsearchSequenceAPI.updateSequence(sequence)
       }
       .map { _ =>
         }

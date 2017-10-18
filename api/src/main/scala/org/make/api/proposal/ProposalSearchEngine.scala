@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait ProposalSearchEngineComponent {
-  def elasticSearchProposalAPI: ProposalSearchEngine
+  def elasticsearchProposalAPI: ProposalSearchEngine
 }
 
 trait ProposalSearchEngine {
@@ -37,7 +37,7 @@ trait ProposalSearchEngine {
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent =>
 
-  override lazy val elasticSearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
+  override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")

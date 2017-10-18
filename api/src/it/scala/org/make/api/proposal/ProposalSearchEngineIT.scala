@@ -839,7 +839,7 @@ class ProposalSearchEngineIT
   feature("get proposal by id") {
     val proposalId = proposals.head.id
     scenario("should return a proposal") {
-      whenReady(elasticSearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
+      whenReady(elasticsearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
         case Some(proposal) =>
           proposal.id should equal(proposalId)
         case None => fail("proposal not found by id")
@@ -863,7 +863,7 @@ class ProposalSearchEngineIT
         )
       )
     scenario("should return a list of proposals") {
-      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 0
       }
     }
@@ -873,7 +873,7 @@ class ProposalSearchEngineIT
     Given("searching without query")
     val query = SearchQuery()
     scenario("should return a list of accepted proposals") {
-      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
       }
     }
@@ -894,7 +894,7 @@ class ProposalSearchEngineIT
       )
     )
     scenario("should return a list of pending proposals") {
-      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
       }
@@ -905,7 +905,7 @@ class ProposalSearchEngineIT
     scenario("searching a non-existing slug") {
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
 
-      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(0)
       }
     }
@@ -914,7 +914,7 @@ class ProposalSearchEngineIT
       val slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile"
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
 
-      whenReady(elasticSearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(1)
         result.results.head.slug should be(slug)
       }
@@ -923,7 +923,7 @@ class ProposalSearchEngineIT
 
   feature("saving new proposal") {
     scenario("should return done") {
-      whenReady(elasticSearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
+      whenReady(elasticsearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
         result should be(Done)
       }
     }
