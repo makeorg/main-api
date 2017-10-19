@@ -581,8 +581,13 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 object ProposalActor {
 
   def applyProposalAccepted(state: Proposal, event: ProposalAccepted): Proposal = {
+    val arguments: Map[String, String] = Map(
+      "theme" -> event.theme.map(_.value).mkString(" "),
+      "tags" -> event.tags.map(_.value).mkString(" "),
+      "labels" -> event.labels.map(_.value).mkString
+    ).filter(!_._2.isEmpty)
     val action =
-      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = Map())
+      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = arguments)
     var result =
       state.copy(
         tags = event.tags,
@@ -604,8 +609,10 @@ object ProposalActor {
   }
 
   def applyProposalRefused(state: Proposal, event: ProposalRefused): Proposal = {
+    val arguments: Map[String, String] =
+      Map("refusalReason" -> event.refusalReason.mkString).filter(!_._2.isEmpty)
     val action =
-      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = Map())
+      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = arguments)
     state.copy(
       events = action :: state.events,
       status = Refused,
