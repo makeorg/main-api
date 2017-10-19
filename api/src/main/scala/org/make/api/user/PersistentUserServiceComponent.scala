@@ -367,7 +367,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.karmaLevel -> user.profile.map(_.karmaLevel),
               column.locale -> user.profile.map(_.locale),
               column.dateOfBirth -> user.profile.map(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
-              column.optInNewsletter -> user.profile.exists(_.optInNewsletter == true)
+              column.optInNewsletter -> user.profile.forall(_.optInNewsletter)
             )
         }.execute().apply()
       }).map(_ => user)

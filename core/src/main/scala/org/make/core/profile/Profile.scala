@@ -59,8 +59,8 @@ case class Profile(dateOfBirth: Option[LocalDate],
 
 object Profile {
   def isEmpty(profile: Profile): Boolean = profile match {
-    case Profile(None, None, None, None, None, None, None, None, None, None, None, None, false) => true
-    case _                                                                                      => false
+    case Profile(None, None, None, None, None, None, None, None, None, None, None, None, true) => true
+    case _                                                                                     => false
   }
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
@@ -75,7 +75,7 @@ object Profile {
                    postalCode: Option[String] = None,
                    karmaLevel: Option[Int] = None,
                    locale: Option[String] = None,
-                   optInNewsletter: Boolean = false): Option[Profile] = {
+                   optInNewsletter: Boolean = true): Option[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,
