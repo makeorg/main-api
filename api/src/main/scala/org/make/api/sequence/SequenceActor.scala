@@ -126,8 +126,11 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
               date = e.eventDate,
               user = e.userId,
               actionType = "create",
-              arguments =
-                Map("title" -> e.title, "tagIds" -> e.tagIds.mkString(","), "themeIds" -> e.themeIds.mkString(","))
+              arguments = Map(
+                "title" -> e.title,
+                "tagIds" -> e.tagIds.mkString(","),
+                "themeIds" -> e.themeIds.map(_.value).mkString(",")
+              )
             )
           ),
           searchable = e.searchable

@@ -1,27 +1,45 @@
 package org.make.api.sequence
 
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
 
+import scala.annotation.meta.field
+
 // ToDo: handle translations
-final case class CreateSequenceRequest(title: String, themeIds: Seq[ThemeId], tagIds: Seq[TagId], searchable: Boolean)
-final case class AddProposalSequenceRequest(proposalIds: Seq[ProposalId])
-final case class RemoveProposalSequenceRequest(proposalIds: Seq[ProposalId])
+@ApiModel
+final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma séquence") title: String,
+                                       @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId],
+                                       @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
+                                       searchable: Boolean)
+
+@ApiModel
+final case class AddProposalSequenceRequest(
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
+)
+
+@ApiModel
+final case class RemoveProposalSequenceRequest(
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
+)
 
 final case class UpdateSequenceRequest(title: Option[String], status: Option[String])
 
-final case class ExhaustiveSearchRequest(tagIds: Seq[TagId] = Seq.empty,
-                                         themeIds: Seq[ThemeId] = Seq.empty,
-                                         title: Option[String] = None,
-                                         slug: Option[String] = None,
-                                         context: Option[ContextFilterRequest] = None,
-                                         status: Option[SequenceStatus] = None,
-                                         searchable: Option[Boolean] = None,
-                                         sorts: Seq[SortRequest] = Seq.empty,
-                                         limit: Option[Int] = None,
-                                         skip: Option[Int] = None) {
+@ApiModel
+final case class ExhaustiveSearchRequest(
+  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
+  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId] = Seq.empty,
+  title: Option[String] = None,
+  slug: Option[String] = None,
+  context: Option[ContextFilterRequest] = None,
+  status: Option[SequenceStatus] = None,
+  searchable: Option[Boolean] = None,
+  sorts: Seq[SortRequest] = Seq.empty,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None
+) {
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] = {
       val tagsFilter: Option[TagsSearchFilter] = if (tagIds.isEmpty) None else Some(TagsSearchFilter(tagIds))
