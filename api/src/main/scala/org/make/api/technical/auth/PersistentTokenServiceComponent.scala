@@ -27,7 +27,7 @@ trait PersistentTokenService {
   def findByRefreshToken(token: String): Future[Option[Token]]
   def findByAccessToken(token: String): Future[Option[Token]]
   def get(accessToken: String): Future[Option[Token]]
-  def findByUser(userId: UserId): Future[Option[Token]]
+  def findByUserId(userId: UserId): Future[Option[Token]]
   def persist(token: Token): Future[Token]
   def deleteByRefreshToken(refreshToken: String): Future[Int]
   def deleteByAccessToken(accessToken: String): Future[Int]
@@ -173,7 +173,7 @@ trait DefaultPersistentTokenServiceComponent
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    override def findByUser(userId: UserId): Future[Option[Token]] = {
+    override def findByUserId(userId: UserId): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {

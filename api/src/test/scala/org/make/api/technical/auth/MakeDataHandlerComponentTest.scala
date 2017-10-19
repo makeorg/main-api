@@ -232,7 +232,7 @@ class MakeDataHandlerComponentTest
       )
 
       When("I get a persisted AccessToken")
-      when(persistentTokenService.findByUser(ArgumentMatchers.eq(authInfo.user.userId)))
+      when(persistentTokenService.findByUserId(ArgumentMatchers.eq(authInfo.user.userId)))
         .thenReturn(Future.successful(Option(token)))
       val futureAccessToken = oauth2DataHandler.getStoredAccessToken(authInfo)
 
@@ -387,11 +387,12 @@ class MakeDataHandlerComponentTest
 
     scenario("Get AuthInfo with a nonexistent accessToken") {
       Given("an nonexistent AccessToken")
+      val unexisting = accessTokenExample.copy(token = "some-inexisting-token")
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenObj.token)))
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(unexisting.token)))
         .thenReturn(Future.successful(None))
-      val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(accessTokenObj)
+      val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(unexisting)
 
       Then("I get an empty result")
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>

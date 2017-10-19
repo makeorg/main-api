@@ -117,7 +117,7 @@ class PersistentTokenServiceIT
     scenario("Find a Token from a valid user") {
       Given("a valid User")
       When("a token is searched from this User")
-      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUser(exampleUser.userId)
+      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUserId(exampleUser.userId)
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("the user's token is returned")
