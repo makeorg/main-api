@@ -7,7 +7,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
-import org.make.core.auth.{Client, ClientId, Token}
+import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,7 +18,7 @@ trait MakeDataHandlerComponent {
   def oauth2DataHandler: MakeDataHandler
 }
 
-trait MakeDataHandler extends DataHandler[User] {
+trait MakeDataHandler extends DataHandler[UserRights] {
   def removeTokenByAccessToken(token: String): Future[Int]
   def removeTokenByUserId(userId: UserId): Future[Int]
 }
@@ -59,7 +59,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findUser(maybeCredential: Option[ClientCredential],
-                          request: AuthorizationRequest): Future[Option[User]] = {
+                          request: AuthorizationRequest): Future[Option[UserRights]] = {
       //TODO: client.scope must be considered in the user serialization
       maybeCredential match {
         case Some(ClientCredential(clientId, secret)) =>
@@ -70,14 +70,14 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
               request.requireParam("password")
             )
           futureClient.flatMap {
-            case Some(_) => futureFoundUser
+            case Some(_) => futureFoundUser.map(_.map(user => UserRights(user.userId, user.roles)))
             case _       => Future.successful(None)
           }
         case _ => Future.successful(None)
       }
     }
 
-    override def createAccessToken(authInfo: AuthInfo[User]): Future[AccessToken] = {
+    override def createAccessToken(authInfo: AuthInfo[UserRights]): Future[AccessToken] = {
       val futureAccessTokens = oauthTokenGenerator.generateAccessToken()
       val futureRefreshTokens = oauthTokenGenerator.generateRefreshToken()
 
@@ -110,11 +110,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }.map(toAccessToken)
     }
 
-    override def getStoredAccessToken(authInfo: AuthInfo[User]): Future[Option[AccessToken]] = {
-      persistentTokenService.findByUser(authInfo.user).map(_.map(toAccessToken))
+    override def getStoredAccessToken(authInfo: AuthInfo[UserRights]): Future[Option[AccessToken]] = {
+      persistentTokenService.findByUser(authInfo.user.userId).map(_.map(toAccessToken))
     }
 
-    override def refreshAccessToken(authInfo: AuthInfo[User], refreshToken: String): Future[AccessToken] = {
+    override def refreshAccessToken(authInfo: AuthInfo[UserRights], refreshToken: String): Future[AccessToken] = {
       val futureAccessToken = for {
         affectedRows <- persistentTokenService.deleteByRefreshToken(refreshToken)
         accessToken  <- createAccessToken(authInfo) if affectedRows == 1
@@ -126,7 +126,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }
     }
 
-    override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[User]]] = {
+    override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[UserRights]]] = {
       // TODO: implement when needed Authorization Code Grant
       ???
     }
@@ -136,7 +136,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       ???
     }
 
-    override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[User]]] = {
+    override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[UserRights]]] = {
       persistentTokenService.findByRefreshToken(refreshToken).flatMap {
         case Some(token) =>
           Future.successful(
@@ -153,7 +153,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }
     }
 
-    override def findAuthInfoByAccessToken(accessToken: AccessToken): Future[Option[AuthInfo[User]]] = {
+    override def findAuthInfoByAccessToken(accessToken: AccessToken): Future[Option[AuthInfo[UserRights]]] = {
       persistentTokenService.findByAccessToken(accessToken.token).flatMap {
         case Some(token) =>
           Future.successful(

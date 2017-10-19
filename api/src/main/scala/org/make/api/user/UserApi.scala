@@ -21,6 +21,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, M
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
+import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{Role, User, UserId}
@@ -65,7 +66,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("user" / userId) { userId =>
         makeTrace("GetUser") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[User] =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
               onSuccess(userService.getUser(userId)) {
                 case Some(user) => complete(UserResponse(user))
@@ -98,8 +99,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("user" / "me") {
         makeTrace("GetMe") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[User] =>
-            complete(UserResponse(userAuth.user))
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
+              complete(UserResponse(user))
+            }
           }
         }
       }
@@ -246,7 +249,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("user" / "reset-password" / "request-reset") {
         makeTrace("ResetPasswordRequest") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { userId =>
                 userService.requestPasswordReset(userId)

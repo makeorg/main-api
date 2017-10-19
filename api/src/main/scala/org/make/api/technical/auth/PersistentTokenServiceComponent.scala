@@ -11,7 +11,7 @@ import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.Token
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -27,7 +27,7 @@ trait PersistentTokenService {
   def findByRefreshToken(token: String): Future[Option[Token]]
   def findByAccessToken(token: String): Future[Option[Token]]
   def get(accessToken: String): Future[Option[Token]]
-  def findByUser(user: User): Future[Option[Token]]
+  def findByUser(userId: UserId): Future[Option[Token]]
   def persist(token: Token): Future[Token]
   def deleteByRefreshToken(refreshToken: String): Future[Int]
   def deleteByAccessToken(accessToken: String): Future[Int]
@@ -57,7 +57,7 @@ trait DefaultPersistentTokenServiceComponent
         createdAt = createdAt,
         updatedAt = updatedAt,
         expiresIn = expiresIn,
-        user = makeUserUuid.toUser,
+        user = makeUserUuid.toUserRights,
         client = clientUuid.toClient
       )
     }
@@ -101,7 +101,8 @@ trait DefaultPersistentTokenServiceComponent
     }
   }
 
-  override lazy val persistentTokenService = new PersistentTokenService with ShortenedNames with StrictLogging {
+  override lazy val persistentTokenService: PersistentTokenService = new PersistentTokenService with ShortenedNames
+  with StrictLogging {
 
     private val tokenAlias = PersistentToken.tokenAlias
     private val column = PersistentToken.column
@@ -133,7 +134,15 @@ trait DefaultPersistentTokenServiceComponent
               .on(clientAlias.uuid, tokenAlias.clientUuid)
               .where(sqls.eq(tokenAlias.refreshToken, token))
             req
-          }.map(PersistentToken.apply(tokenAlias.resultName, userAlias.resultName, clientAlias.resultName)).single.apply
+          }.map(
+              PersistentToken(
+                tokenResultName = tokenAlias.resultName,
+                userResultName = userAlias.resultName,
+                clientResultName = clientAlias.resultName
+              )
+            )
+            .single
+            .apply
       })
 
       futurePersistentToken.map(_.map(_.toToken))
@@ -164,7 +173,7 @@ trait DefaultPersistentTokenServiceComponent
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    override def findByUser(user: User): Future[Option[Token]] = {
+    override def findByUser(userId: UserId): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -174,7 +183,7 @@ trait DefaultPersistentTokenServiceComponent
             .on(PersistentUser.userAlias.uuid, tokenAlias.makeUserUuid)
             .innerJoin(PersistentClient.as(PersistentClient.clientAlias))
             .on(PersistentClient.clientAlias.uuid, tokenAlias.clientUuid)
-            .where(sqls.eq(tokenAlias.makeUserUuid, user.userId.value))
+            .where(sqls.eq(tokenAlias.makeUserUuid, userId.value))
             .orderBy(tokenAlias.updatedAt)
             .desc
             .limit(1)

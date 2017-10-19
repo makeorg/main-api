@@ -4,6 +4,7 @@ import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{social, UserServiceComponent}
+import org.make.core.auth.UserRights
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -69,7 +70,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
         userInfo <- futureUserInfo
         user     <- userService.getOrCreateUserFromSocial(userInfo, clientIp)
         accessToken <- oauth2DataHandler.createAccessToken(
-          authInfo = AuthInfo(user = user, clientId = None, scope = None, redirectUri = None)
+          authInfo =
+            AuthInfo(user = UserRights(user.userId, user.roles), clientId = None, scope = None, redirectUri = None)
         )
       } yield {
         UserIdAndToken(

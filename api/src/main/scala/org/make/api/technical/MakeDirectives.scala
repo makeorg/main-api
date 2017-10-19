@@ -11,10 +11,10 @@ import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.auth.UserRights
 import org.make.core.reference.ThemeId
 import org.make.core.session.SessionId
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.User
 import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.collection.immutable
@@ -277,7 +277,7 @@ object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
 trait MakeAuthenticationDirectives extends MakeAuthentication {
   this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
-  def requireModerationRole(user: User): Directive0 = {
+  def requireModerationRole(user: UserRights): Directive0 = {
     authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))
   }
 }

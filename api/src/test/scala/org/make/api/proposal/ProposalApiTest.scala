@@ -12,7 +12,8 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
-import org.make.api.user.UserResponse
+import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
+import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
@@ -33,7 +34,8 @@ class ProposalApiTest
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with ProposalServiceComponent
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with UserServiceComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
@@ -51,6 +53,70 @@ class ProposalApiTest
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
+
+  override val userService: UserService = mock[UserService]
+
+  private val john = User(
+    userId = UserId("my-user-id"),
+    email = "john.snow@night-watch.com",
+    firstName = Some("John"),
+    lastName = Some("Snoww"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    verified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleCitizen),
+    profile = None,
+    createdAt = None,
+    updatedAt = None
+  )
+
+  val daenerys = User(
+    userId = UserId("the-mother-of-dragons"),
+    email = "d.narys@tergarian.com",
+    firstName = Some("Daenerys"),
+    lastName = Some("Tergarian"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    verified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleAdmin),
+    profile = None,
+    createdAt = None,
+    updatedAt = None
+  )
+
+  val tyrion = User(
+    userId = UserId("the-dwarf"),
+    email = "tyrion@pays-his-debts.com",
+    firstName = Some("Tyrion"),
+    lastName = Some("Lannister"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    verified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleModerator),
+    profile = None,
+    createdAt = None,
+    updatedAt = None
+  )
+
+  when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"
@@ -78,100 +144,15 @@ class ProposalApiTest
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("my-user-id"),
-              email = "john.snow@night-watch.com",
-              firstName = Some("John"),
-              lastName = Some("Snoww"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleCitizen),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
+    .thenReturn(Future.successful(Some(AuthInfo(UserRights(john.userId, john.roles), None, Some("user"), None))))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("the-mother-of-dragons"),
-              email = "d.narys@tergarian.com",
-              firstName = Some("Daenerys"),
-              lastName = Some("Tergarian"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleAdmin),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
+      Future.successful(Some(AuthInfo(UserRights(userId = daenerys.userId, roles = daenerys.roles), None, None, None)))
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("the-dwarf"),
-              email = "tyrion@pays-his-debts.com",
-              firstName = Some("Tyrion"),
-              lastName = Some("Lannister"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleModerator),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
+    .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
 
   val validProposalText: String = "Il faut que tout le monde respecte les conventions de code"
   val invalidMaxLengthProposalText: String =

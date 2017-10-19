@@ -9,6 +9,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
+import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import scalikejdbc._
@@ -71,6 +72,10 @@ object PersistentUserServiceComponent {
         roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
         profile = toProfile
       )
+    }
+
+    def toUserRights: UserRights = {
+      UserRights(userId = UserId(uuid), roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq))
     }
 
     private def toRole: (String)   => Option[Role] = Role.matchRole

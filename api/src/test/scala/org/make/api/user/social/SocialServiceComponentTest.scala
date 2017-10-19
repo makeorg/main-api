@@ -14,6 +14,7 @@ import org.make.api.user.social.models.facebook.{
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.DateHelper
+import org.make.core.auth.UserRights
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
@@ -105,7 +106,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login google user")
@@ -188,7 +189,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(userFromGoogle))
 
       Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login user from google")
@@ -278,7 +279,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login facebook user")
@@ -350,7 +351,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(userFromFacebook))
 
       Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[User]]))
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login user from facebook")

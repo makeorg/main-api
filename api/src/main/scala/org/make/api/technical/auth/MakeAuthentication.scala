@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credential
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeDirectives, ShortenedNames}
-import org.make.core.user.User
+import org.make.core.auth.UserRights
 
 import scala.concurrent.Future
 import scalaoauth2.provider._
@@ -15,21 +15,21 @@ import scalaoauth2.provider._
 trait MakeAuthentication extends ShortenedNames with MakeDirectives {
   self: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
-  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[User]] =
-    authenticateOAuth2Async[AuthInfo[User]]("make.org API", oauth2Authenticator)
+  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[UserRights]] =
+    authenticateOAuth2Async[AuthInfo[UserRights]]("make.org API", oauth2Authenticator)
 
-  def makeOAuth2: Directive1[AuthInfo[User]] = {
+  def makeOAuth2: Directive1[AuthInfo[UserRights]] = {
     defaultMakeOAuth2
   }
 
-  def optionalMakeOAuth2: Directive1[Option[AuthInfo[User]]] = {
-    defaultMakeOAuth2.map(Some(_): Option[AuthInfo[User]]).recover {
+  def optionalMakeOAuth2: Directive1[Option[AuthInfo[UserRights]]] = {
+    defaultMakeOAuth2.map(Some(_): Option[AuthInfo[UserRights]]).recover {
       case AuthenticationFailedRejection(_, _) +: _ ⇒ provide(None)
       case rejs ⇒ reject(rejs: _*)
     }
   }
 
-  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[User]]] =
+  def oauth2Authenticator(credentials: Credentials)(implicit ctx: EC = ECGlobal): Future[Option[AuthInfo[UserRights]]] =
     credentials match {
       case Credentials.Provided(token) =>
         oauth2DataHandler.findAccessToken(token).flatMap {
