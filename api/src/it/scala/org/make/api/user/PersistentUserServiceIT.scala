@@ -140,6 +140,9 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user karmaLevel must be 2")
         user.profile.get.karmaLevel.get shouldBe 2
+
+        And("the user newsletter option must be true")
+        user.profile.get.optInNewsletter shouldBe true
       }
     }
 
