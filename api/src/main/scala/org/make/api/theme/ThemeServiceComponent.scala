@@ -14,6 +14,7 @@ trait ThemeServiceComponent {
 
 trait ThemeService extends ShortenedNames {
   def findAll(): Future[Seq[Theme]]
+  def findByIds(themeIds: Seq[ThemeId]): Future[Seq[Theme]]
 }
 
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
@@ -33,6 +34,10 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
             }
         }
       }
+    }
+
+    override def findByIds(themeIds: Seq[ThemeId]) = {
+      findAll().map(_.filter(theme => themeIds.contains(theme.themeId)))
     }
   }
 }

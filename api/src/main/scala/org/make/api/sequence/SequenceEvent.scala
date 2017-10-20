@@ -104,7 +104,9 @@ object SequenceEvent {
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
                                    title: Option[String],
-                                   status: Option[SequenceStatus])
+                                   status: Option[SequenceStatus],
+                                   themeIds: Seq[ThemeId],
+                                   tagIds: Seq[TagId])
       extends SequenceEvent
 
   object SequenceUpdated {
@@ -112,7 +114,7 @@ object SequenceEvent {
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
-      DefaultJsonProtocol.jsonFormat6(SequenceUpdated.apply)
+      DefaultJsonProtocol.jsonFormat8(SequenceUpdated.apply)
   }
 
   final case class SequenceEdition(oldVersion: String, newVersion: String)

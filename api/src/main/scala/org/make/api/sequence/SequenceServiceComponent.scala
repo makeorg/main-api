@@ -43,7 +43,9 @@ trait SequenceService {
              moderatorId: UserId,
              requestContext: RequestContext,
              title: Option[String],
-             status: Option[SequenceStatus]): Future[Option[SequenceResponse]]
+             status: Option[SequenceStatus],
+             themeIds: Seq[ThemeId],
+             tagIds: Seq[TagId]): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
                    moderatorId: UserId,
                    requestContext: RequestContext,
@@ -169,7 +171,9 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         userId: UserId,
                         requestContext: RequestContext,
                         title: Option[String],
-                        status: Option[SequenceStatus]): Future[Option[SequenceResponse]] = {
+                        status: Option[SequenceStatus],
+                        themeIds: Seq[ThemeId],
+                        tagIds: Seq[TagId]): Future[Option[SequenceResponse]] = {
 
       sequenceCoordinatorService
         .update(
@@ -178,7 +182,9 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             sequenceId = sequenceId,
             requestContext = requestContext,
             title = title,
-            status = status
+            status = status,
+            themeIds = themeIds,
+            tagIds = tagIds
           )
         )
         .flatMap {

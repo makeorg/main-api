@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
@@ -26,7 +27,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with ThemeServiceComponent =>
+    with ThemeServiceComponent
+    with TagServiceComponent =>
 
   @ApiOperation(
     value = "moderation-get-sequence",
@@ -159,28 +161,55 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
-                  if (request.status.nonEmpty) {
-                    Validation.validate(
-                      Validation.validChoices(
-                        "status",
-                        Some("Invalid status"),
-                        Seq(request.status.get),
-                        SequenceStatus.statusMap.keys.toList
+                  provideAsync(themeService.findByIds(request.themeIds.getOrElse(Seq.empty))) { themes =>
+                    provideAsync(tagService.findByIds(request.tagIds.getOrElse(Seq.empty))) { tags =>
+                      val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
+                      Validation.validate(
+                        Validation.validateEquals(
+                          "themeIds",
+                          Some("Some theme ids are invalid"),
+                          requestThemesSize,
+                          themes.size
+                        )
                       )
-                    )
+
+                      Validation.validate(
+                        Validation.validateEquals(
+                          "tagIds",
+                          Some("Some tag ids are invalid"),
+                          request.tagIds.getOrElse(Seq.empty).distinct.size,
+                          tags.size
+                        )
+                      )
+
+                      if (request.status.nonEmpty) {
+                        Validation.validate(
+                          Validation
+                            .validChoices(
+                              "status",
+                              Some("Invalid status"),
+                              Seq(request.status.get),
+                              SequenceStatus.statusMap.keys.toList
+                            )
+                        )
+                      }
+
+                      provideAsyncOrNotFound(
+                        sequenceService.update(
+                          sequenceId = sequenceId,
+                          moderatorId = auth.user.userId,
+                          requestContext = requestContext,
+                          title = request.title,
+                          status = request.status.map(SequenceStatus.statusMap),
+                          themeIds = themes.map(_.themeId),
+                          tagIds = tags.map(_.tagId)
+                        )
+                      ) { sequenceResponse =>
+                        complete(StatusCodes.OK -> sequenceResponse)
+                      }
+                    }
                   }
 
-                  provideAsyncOrNotFound(
-                    sequenceService.update(
-                      sequenceId = sequenceId,
-                      moderatorId = auth.user.userId,
-                      requestContext = requestContext,
-                      title = request.title,
-                      status = request.status.map(SequenceStatus.statusMap)
-                    )
-                  ) { sequenceResponse =>
-                    complete(StatusCodes.OK -> sequenceResponse)
-                  }
                 }
               }
             }

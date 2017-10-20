@@ -34,10 +34,7 @@ object Validation {
   def validateField(field: String, condition: => Boolean, message: => String): Requirement =
     Requirement(field, () => condition, () => message)
 
-  def maxLength(field: String,
-                maxLength: Int,
-                fieldValue: String,
-                message: Option[Int => String] = None): Requirement = {
+  def maxLength(field: String, maxLength: Int, fieldValue: String, message: Option[Int => String] = None): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -55,10 +52,7 @@ object Validation {
     })
 
   }
-  def minLength(field: String,
-                minLength: Int,
-                fieldValue: String,
-                message: Option[Int => String] = None): Requirement = {
+  def minLength(field: String, minLength: Int, fieldValue: String, message: Option[Int => String] = None): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -103,6 +97,16 @@ object Validation {
                    validChoices: Seq[_]): Requirement = {
     val condition: () => Boolean = () => {
       userChoices.forall(validChoices.contains)
+    }
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+  }
+
+  def validateEquals(fieldName: String,
+                     message: Option[String] = None,
+                     userValue: AnyVal,
+                     expectedValue: AnyVal): Requirement = {
+    val condition: () => Boolean = () => {
+      userValue.equals(expectedValue)
     }
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
   }

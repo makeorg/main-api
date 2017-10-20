@@ -98,7 +98,9 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         requestContext = command.requestContext,
         title = command.title,
         status = command.status,
-        userId = userId
+        userId = userId,
+        themeIds = command.themeIds,
+        tagIds = command.tagIds
       )
     ) {
       sender() ! state
@@ -143,7 +145,9 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
             title = e.title.getOrElse(state.title),
             updatedAt = Some(e.eventDate),
             slug = SlugHelper(e.title.getOrElse(state.title)),
-            status = e.status.getOrElse(state.status)
+            status = e.status.getOrElse(state.status),
+            themeIds = e.themeIds,
+            tagIds = e.tagIds
         )
       )
     case e: SequenceProposalsAdded =>

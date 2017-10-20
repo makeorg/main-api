@@ -9,12 +9,13 @@ import akka.http.scaladsl.server.Route
 import io.circe.generic.auto._
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.proposal.ProposalId
 import org.make.core.sequence.SearchQuery
-import org.make.core.reference.{TagId, Theme, ThemeId}
+import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -34,13 +35,15 @@ class SequenceApiTest
     with MakeDataHandlerComponent
     with SequenceServiceComponent
     with MakeSettingsComponent
-    with ThemeServiceComponent {
+    with ThemeServiceComponent
+    with TagServiceComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val sequenceService: SequenceService = mock[SequenceService]
   override val themeService: ThemeService = mock[ThemeService]
+  override val tagService: TagService = mock[TagService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
@@ -71,6 +74,29 @@ class SequenceApiTest
       )
     )
   )
+  when(themeService.findByIds(matches(Seq(ThemeId("123"))))).thenReturn(
+    Future.successful(
+      Seq(
+        Theme(
+          themeId = ThemeId("123"),
+          translations = Seq.empty,
+          actionsCount = 0,
+          proposalsCount = 0,
+          country = "FR",
+          color = "#123123",
+          gradient = None,
+          tags = Seq.empty
+        )
+      )
+    )
+  )
+  when(themeService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
+  when(themeService.findByIds(matches(Seq(ThemeId("badthemeid"))))).thenReturn(Future.successful(Seq.empty))
+
+  when(tagService.findAll()).thenReturn(Future.successful(Seq(Tag("mytag"))))
+  when(tagService.findByIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(Tag("mytag"))))
+  when(tagService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
+  when(tagService.findByIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
 
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"
@@ -305,7 +331,9 @@ class SequenceApiTest
         any[UserId],
         any[RequestContext],
         matches(Some("newSequenceTitle")),
-        matches(None)
+        matches(None),
+        matches(Seq.empty),
+        matches(Seq.empty)
       )
   ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
 
@@ -316,7 +344,9 @@ class SequenceApiTest
         any[UserId],
         any[RequestContext],
         matches(Some("newSequenceTitle")),
-        matches(None)
+        matches(None),
+        matches(Seq.empty),
+        matches(Seq.empty)
       )
   ).thenReturn(Future.successful(None))
 
@@ -571,6 +601,28 @@ class SequenceApiTest
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "status")
         contentError should be(Some(ValidationError("status", Some("Invalid status"))))
+      }
+    }
+
+    scenario("invalid themeId") {
+      Patch("/moderation/sequences/moderationSequence1")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"themeIds": ["badthemeid"]}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "themeIds")
+        contentError should be(Some(ValidationError("themeIds", Some("Some theme ids are invalid"))))
+      }
+    }
+
+    scenario("invalid tagId") {
+      Patch("/moderation/sequences/moderationSequence1")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"tagIds": ["badtagid"]}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "tagIds")
+        contentError should be(Some(ValidationError("tagIds", Some("Some tag ids are invalid"))))
       }
     }
 

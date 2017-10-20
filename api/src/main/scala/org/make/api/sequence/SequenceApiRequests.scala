@@ -25,7 +25,13 @@ final case class RemoveProposalSequenceRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
 )
 
-final case class UpdateSequenceRequest(title: Option[String], status: Option[String])
+@ApiModel
+final case class UpdateSequenceRequest(
+  title: Option[String],
+  status: Option[String],
+  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]],
+  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Option[Seq[TagId]]
+)
 
 @ApiModel
 final case class ExhaustiveSearchRequest(
