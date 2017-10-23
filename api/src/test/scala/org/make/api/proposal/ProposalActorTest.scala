@@ -152,71 +152,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("Update a proposal") {
-    val proposalId: ProposalId = ProposalId("updateCommand")
-    scenario("Fail if ProposalId doesn't exists") {
-      Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
-
-      When("a asking for a fake ProposalId")
-      coordinator ! UpdateProposalCommand(
-        proposalId = ProposalId("fake"),
-        requestContext = RequestContext.empty,
-        updatedAt = mainUpdatedAt.get,
-        content = "An updated content"
-      )
-
-      Then("returns None")
-      expectMsg(None)
-    }
-
-    scenario("Change the state and create a snapshot if valid") {
-      Given("an empty state")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
-
-      And("a newly proposed Proposal")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
-      )
-
-      expectMsg(proposalId)
-
-      When("updating this Proposal")
-      coordinator ! UpdateProposalCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        updatedAt = mainUpdatedAt.get,
-        content = "An updated content"
-      )
-
-      val modified = Some(
-        proposal(proposalId)
-          .copy(content = "An updated content", slug = "an-updated-content", updatedAt = mainUpdatedAt)
-      )
-      expectMsg(modified)
-
-      Then("getting its updated state after update")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-
-      expectMsg(modified)
-
-      And("recover its updated state after having been kill")
-      coordinator ! KillProposalShard(proposalId, RequestContext.empty)
-
-      Thread.sleep(THREAD_SLEEP_MICROSECONDS)
-
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-
-      expectMsg(modified)
-    }
-  }
-
   feature("View a proposal") {
     val proposalId: ProposalId = ProposalId("viewCommand")
     scenario("Fail if ProposalId doesn't exists") {
@@ -270,9 +205,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("unknown")
-      error.errors.head.message should be(Some("Proposal nothing-there doesn't exist"))
+      expectMsg(None)
 
     }
 
@@ -479,9 +412,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("unknown")
-      error.errors.head.message should be(Some("Proposal nothing-there doesn't exist"))
+      expectMsg(None)
     }
 
     scenario("refuse an existing proposal with a refuse reason") {
@@ -601,6 +532,123 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val error = expectMsgType[ValidationFailedError]
       error.errors.head.field should be("unknown")
       error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already refused"))
+    }
+  }
+
+  feature("Update a proposal") {
+    val proposalId: ProposalId = ProposalId("updateCommand")
+    scenario("Fail if ProposalId doesn't exists") {
+      Given("an empty state")
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      expectMsg(None)
+
+      When("I want to update a non existant proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = ProposalId("fake"),
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        moderator = UserId("some user"),
+        newContent = None,
+        theme = None,
+        labels = Seq.empty,
+        tags = Seq.empty,
+        similarProposals = Seq()
+      )
+
+      Then("I should receive 'None' since nothing is found")
+      expectMsg(None)
+    }
+
+    scenario("Update a validated Proposal") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I accept the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        theme = Some(ThemeId("my theme")),
+        labels = Seq.empty,
+        tags = Seq(TagId("some tag id")),
+        similarProposals = Seq.empty
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+
+      And("I update this Proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        moderator = UserId("some user"),
+        newContent = Some("This content must be changed"),
+        theme = Some(ThemeId("my theme")),
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        similarProposals = Seq.empty
+      )
+
+      Then("I should receive the updated proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+
+      response.proposalId should be(ProposalId("updateCommand"))
+      response.content should be("This content must be changed")
+      response.status should be(Accepted)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+      response.tags should be(Seq(TagId("some tag id")))
+      response.labels should be(Seq(LabelId("action")))
+      response.theme should be(Some(ThemeId("my theme")))
+    }
+
+    scenario("Update a non validated Proposal") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I update the proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        moderator = UserId("some user"),
+        newContent = None,
+        theme = None,
+        labels = Seq.empty,
+        tags = Seq.empty,
+        similarProposals = Seq.empty
+      )
+
+      Then("I should receive a ValidationFailedError")
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("unknown")
+      error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
     }
   }
 

@@ -267,34 +267,29 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.UpdateProposalRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
   @Path(value = "/{proposalId}")
   def updateProposal: Route =
     put {
       path("proposals" / proposalId) { proposalId =>
         makeTrace("EditProposal") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            decodeRequest {
-              entity(as[UpdateProposalRequest]) { request: UpdateProposalRequest =>
-                provideAsyncOrNotFound(proposalService.getEventSourcingProposal(proposalId, requestContext)) {
-                  proposal =>
-                    authorize(
-                      proposal.author == userAuth.user.userId || userAuth.user.roles
-                        .exists(role => role == RoleAdmin || role == RoleModerator)
-                    ) {
-                      onSuccess(
-                        proposalService
-                          .update(
-                            proposalId = proposalId,
-                            requestContext = requestContext,
-                            updatedAt = DateHelper.now(),
-                            content = request.content
-                          )
-                      ) {
-                        case Some(prop) => complete(prop)
-                        case None       => complete(StatusCodes.Forbidden)
-                      }
-                    }
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[UpdateProposalRequest]) { request =>
+                  provideAsyncOrNotFound(
+                    proposalService.update(
+                      proposalId = proposalId,
+                      moderator = userAuth.user.userId,
+                      requestContext = requestContext,
+                      updatedAt = DateHelper.now(),
+                      request = request
+                    )
+                  ) { proposalResponse: ProposalResponse =>
+                    complete(proposalResponse)
+                  }
                 }
               }
             }

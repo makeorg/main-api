@@ -89,14 +89,20 @@ object ProposalEvent {
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
-                                   content: String)
+                                   moderator: UserId,
+                                   edition: Option[ProposalEdition],
+                                   theme: Option[ThemeId],
+                                   labels: Seq[LabelId],
+                                   tags: Seq[TagId],
+                                   similarProposals: Seq[ProposalId])
       extends ProposalEvent
 
   object ProposalUpdated {
     val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-updated"
 
     implicit val proposalUpdatedFormatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat5(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat10(ProposalUpdated.apply)
 
   }
 

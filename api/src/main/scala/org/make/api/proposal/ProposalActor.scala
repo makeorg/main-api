@@ -377,27 +377,25 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   }
 
   private def onUpdateProposalCommand(command: UpdateProposalCommand): Unit = {
-    persistAndPublishEvent(
-      ProposalUpdated(
-        id = proposalId,
-        eventDate = DateHelper.now(),
-        requestContext = command.requestContext,
-        updatedAt = command.updatedAt,
-        content = command.content
-      )
-    ) { _ =>
-      sender() ! state
-      self ! Snapshot
+    val maybeEvent = validateUpdateCommand(command)
+    maybeEvent match {
+      case Right(Some(event)) =>
+        persistAndPublishEvent(event) { _ =>
+          sender() ! state
+        }
+      case Right(None) => sender() ! None
+      case Left(error) => sender() ! error
     }
   }
 
   private def onAcceptProposalCommand(command: AcceptProposalCommand): Unit = {
     val maybeEvent = validateAcceptCommand(command)
     maybeEvent match {
-      case Right(event) =>
+      case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
           sender() ! state
         }
+      case Right(None) => sender() ! None
       case Left(error) => sender() ! error
     }
   }
@@ -405,15 +403,56 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   private def onRefuseProposalCommand(command: RefuseProposalCommand): Unit = {
     val maybeEvent = validateRefuseCommand(command)
     maybeEvent match {
-      case Right(event) =>
+      case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
           sender() ! state
         }
+      case Right(None) => sender() ! None
       case Left(error) => sender() ! error
     }
   }
 
-  private def validateAcceptCommand(command: AcceptProposalCommand): Either[ValidationFailedError, ProposalEvent] = {
+  private def validateUpdateCommand(
+    command: UpdateProposalCommand
+  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
+    state.map { proposal =>
+      if (proposal.status != ProposalStatus.Accepted) {
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "unknown",
+                Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
+              )
+            )
+          )
+        )
+      } else {
+        Right(
+          Some(
+            ProposalUpdated(
+              id = proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              updatedAt = command.updatedAt,
+              moderator = command.moderator,
+              edition = command.newContent.map { newContent =>
+                ProposalEdition(proposal.content, newContent)
+              },
+              theme = command.theme,
+              labels = command.labels,
+              tags = command.tags,
+              similarProposals = command.similarProposals
+            )
+          )
+        )
+      }
+    }.getOrElse(Right(None))
+  }
+
+  private def validateAcceptCommand(
+    command: AcceptProposalCommand
+  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map { proposal =>
       if (proposal.status == ProposalStatus.Archived) {
         Left(
@@ -436,32 +475,30 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
         )
       } else {
         Right(
-          ProposalAccepted(
-            id = command.proposalId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            moderator = command.moderator,
-            edition = command.newContent.map { newContent =>
-              ProposalEdition(proposal.content, newContent)
-            },
-            sendValidationEmail = command.sendNotificationEmail,
-            theme = command.theme,
-            labels = command.labels,
-            tags = command.tags,
-            similarProposals = command.similarProposals
+          Some(
+            ProposalAccepted(
+              id = command.proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              moderator = command.moderator,
+              edition = command.newContent.map { newContent =>
+                ProposalEdition(proposal.content, newContent)
+              },
+              sendValidationEmail = command.sendNotificationEmail,
+              theme = command.theme,
+              labels = command.labels,
+              tags = command.tags,
+              similarProposals = command.similarProposals
+            )
           )
         )
       }
-    }.getOrElse(
-      Left(
-        ValidationFailedError(
-          errors = Seq(ValidationError("unknown", Some(s"Proposal ${command.proposalId.value} doesn't exist")))
-        )
-      )
-    )
+    }.getOrElse(Right(None))
   }
 
-  private def validateRefuseCommand(command: RefuseProposalCommand): Either[ValidationFailedError, ProposalEvent] = {
+  private def validateRefuseCommand(
+    command: RefuseProposalCommand
+  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map { proposal =>
       if (proposal.status == ProposalStatus.Archived) {
         Left(
@@ -484,23 +521,19 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
         )
       } else {
         Right(
-          ProposalRefused(
-            id = command.proposalId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            moderator = command.moderator,
-            sendRefuseEmail = command.sendNotificationEmail,
-            refusalReason = command.refusalReason
+          Some(
+            ProposalRefused(
+              id = command.proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              moderator = command.moderator,
+              sendRefuseEmail = command.sendNotificationEmail,
+              refusalReason = command.refusalReason
+            )
           )
         )
       }
-    }.getOrElse(
-      Left(
-        ValidationFailedError(
-          errors = Seq(ValidationError("unknown", Some(s"Proposal ${command.proposalId.value} doesn't exist")))
-        )
-      )
-    )
+    }.getOrElse(Right(None))
   }
 
   override def persistenceId: String = proposalId.value
@@ -549,8 +582,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           )
         )
       )
-    case e: ProposalUpdated =>
-      state.map(_.copy(content = e.content, slug = SlugHelper(e.content), updatedAt = Option(e.updatedAt)))
+    case e: ProposalUpdated     => state.map(proposal => applyProposalUpdated(proposal, e))
     case e: ProposalAccepted    => state.map(proposal => applyProposalAccepted(proposal, e))
     case e: ProposalRefused     => state.map(proposal => applyProposalRefused(proposal, e))
     case e: ProposalVoted       => state.map(proposal => applyProposalVoted(proposal, e))
@@ -580,11 +612,38 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 
 object ProposalActor {
 
+  def applyProposalUpdated(state: Proposal, event: ProposalUpdated): Proposal = {
+    val arguments: Map[String, String] = Map(
+      "theme" -> event.theme.map(_.value).mkString(", "),
+      "tags" -> event.tags.map(_.value).mkString(", "),
+      "labels" -> event.labels.map(_.value).mkString(", ")
+    ).filter(!_._2.isEmpty)
+    val action =
+      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "update", arguments = arguments)
+    var result =
+      state.copy(
+        tags = event.tags,
+        labels = event.labels,
+        events = action :: state.events,
+        updatedAt = Some(event.eventDate)
+      )
+
+    result = event.edition match {
+      case None                                 => result
+      case Some(ProposalEdition(_, newVersion)) => result.copy(content = newVersion, slug = SlugHelper(newVersion))
+    }
+    result = event.theme match {
+      case None  => result
+      case theme => result.copy(theme = theme)
+    }
+    result
+  }
+
   def applyProposalAccepted(state: Proposal, event: ProposalAccepted): Proposal = {
     val arguments: Map[String, String] = Map(
-      "theme" -> event.theme.map(_.value).mkString(" "),
-      "tags" -> event.tags.map(_.value).mkString(" "),
-      "labels" -> event.labels.map(_.value).mkString
+      "theme" -> event.theme.map(_.value).mkString(", "),
+      "tags" -> event.tags.map(_.value).mkString(", "),
+      "labels" -> event.labels.map(_.value).mkString(", ")
     ).filter(!_._2.isEmpty)
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = arguments)

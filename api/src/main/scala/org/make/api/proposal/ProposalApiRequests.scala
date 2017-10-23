@@ -15,7 +15,13 @@ final case class ProposeProposalRequest(content: String) {
   validate(minLength("content", minProposalLength, content))
 }
 
-final case class UpdateProposalRequest(content: String)
+final case class UpdateProposalRequest(newContent: Option[String],
+                                       theme: Option[ThemeId],
+                                       labels: Seq[LabelId],
+                                       tags: Seq[TagId],
+                                       similarProposals: Seq[ProposalId]) {
+  validate(Validation.requireNonEmpty("tags", tags))
+}
 
 final case class ValidateProposalRequest(newContent: Option[String],
                                          sendNotificationEmail: Boolean,
