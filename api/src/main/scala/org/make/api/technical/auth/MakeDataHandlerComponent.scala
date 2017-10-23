@@ -1,24 +1,27 @@
 package org.make.api.technical.auth
 
+import java.util.concurrent.TimeUnit
 import java.util.{Date, NoSuchElementException}
 
+import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
-import org.make.core.auth.{Client, ClientId, Token}
+import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Success
 import scalaoauth2.provider._
 
 trait MakeDataHandlerComponent {
   def oauth2DataHandler: MakeDataHandler
 }
 
-trait MakeDataHandler extends DataHandler[User] {
+trait MakeDataHandler extends DataHandler[UserRights] {
   def removeTokenByAccessToken(token: String): Future[Int]
   def removeTokenByUserId(userId: UserId): Future[Int]
 }
@@ -36,6 +39,18 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     lazy val validityDurationAccessTokenSeconds: Int = makeSettings.Oauth.accessTokenLifetime
     lazy val validityDurationRefreshTokenSeconds: Int = makeSettings.Oauth.refreshTokenLifetime
+
+    private val accessTokenCache: Cache[String, AccessToken] =
+      CacheBuilder
+        .newBuilder()
+        .expireAfterWrite(20, TimeUnit.MINUTES)
+        .build[String, AccessToken]()
+
+    private val authInfoByAccessTokenCache: Cache[String, AuthInfo[UserRights]] =
+      CacheBuilder
+        .newBuilder()
+        .expireAfterWrite(20, TimeUnit.MINUTES)
+        .build[String, AuthInfo[UserRights]]()
 
     private def toAccessToken(token: Token): AccessToken = {
       AccessToken(
@@ -59,7 +74,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findUser(maybeCredential: Option[ClientCredential],
-                          request: AuthorizationRequest): Future[Option[User]] = {
+                          request: AuthorizationRequest): Future[Option[UserRights]] = {
       //TODO: client.scope must be considered in the user serialization
       maybeCredential match {
         case Some(ClientCredential(clientId, secret)) =>
@@ -70,14 +85,14 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
               request.requireParam("password")
             )
           futureClient.flatMap {
-            case Some(_) => futureFoundUser
+            case Some(_) => futureFoundUser.map(_.map(user => UserRights(user.userId, user.roles)))
             case _       => Future.successful(None)
           }
         case _ => Future.successful(None)
       }
     }
 
-    override def createAccessToken(authInfo: AuthInfo[User]): Future[AccessToken] = {
+    override def createAccessToken(authInfo: AuthInfo[UserRights]): Future[AccessToken] = {
       val futureAccessTokens = oauthTokenGenerator.generateAccessToken()
       val futureRefreshTokens = oauthTokenGenerator.generateRefreshToken()
 
@@ -110,11 +125,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }.map(toAccessToken)
     }
 
-    override def getStoredAccessToken(authInfo: AuthInfo[User]): Future[Option[AccessToken]] = {
-      persistentTokenService.findByUser(authInfo.user).map(_.map(toAccessToken))
+    override def getStoredAccessToken(authInfo: AuthInfo[UserRights]): Future[Option[AccessToken]] = {
+      persistentTokenService.findByUserId(authInfo.user.userId).map(_.map(toAccessToken))
     }
 
-    override def refreshAccessToken(authInfo: AuthInfo[User], refreshToken: String): Future[AccessToken] = {
+    override def refreshAccessToken(authInfo: AuthInfo[UserRights], refreshToken: String): Future[AccessToken] = {
       val futureAccessToken = for {
         affectedRows <- persistentTokenService.deleteByRefreshToken(refreshToken)
         accessToken  <- createAccessToken(authInfo) if affectedRows == 1
@@ -126,7 +141,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }
     }
 
-    override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[User]]] = {
+    override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[UserRights]]] = {
       // TODO: implement when needed Authorization Code Grant
       ???
     }
@@ -136,7 +151,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       ???
     }
 
-    override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[User]]] = {
+    override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[UserRights]]] = {
       persistentTokenService.findByRefreshToken(refreshToken).flatMap {
         case Some(token) =>
           Future.successful(
@@ -153,28 +168,38 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }
     }
 
-    override def findAuthInfoByAccessToken(accessToken: AccessToken): Future[Option[AuthInfo[User]]] = {
-      persistentTokenService.findByAccessToken(accessToken.token).flatMap {
-        case Some(token) =>
-          Future.successful(
-            Some(
-              AuthInfo(
+    override def findAuthInfoByAccessToken(accessToken: AccessToken): Future[Option[AuthInfo[UserRights]]] = {
+      Option(authInfoByAccessTokenCache.getIfPresent(accessToken.token))
+        .map(authInfo => Future.successful(Some(authInfo)))
+        .getOrElse {
+          persistentTokenService.findByAccessToken(accessToken.token).flatMap {
+            case Some(token) =>
+              val authInfo = AuthInfo(
                 user = token.user,
                 clientId = Some(token.client.clientId.value),
                 scope = token.scope,
                 redirectUri = None
               )
-            )
-          )
-        case None => Future.successful(None)
-      }
+              authInfoByAccessTokenCache.put(accessToken.token, authInfo)
+              Future.successful(Some(authInfo))
+            case None => Future.successful(None)
+          }
+        }
     }
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
-      persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
+      Option(accessTokenCache.getIfPresent(token)).map(token => Future.successful(Some(token))).getOrElse {
+        val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
+        future.onComplete {
+          case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
+          case _                        =>
+        }
+        future
+      }
     }
 
     override def removeTokenByAccessToken(token: String): Future[Int] = {
+      accessTokenCache.invalidate(token)
       persistentTokenService.deleteByAccessToken(token)
     }
 

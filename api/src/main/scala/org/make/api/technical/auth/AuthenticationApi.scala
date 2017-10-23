@@ -14,7 +14,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.HttpCodes
-import org.make.core.user.User
+import org.make.core.auth.UserRights
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -76,12 +76,12 @@ trait AuthenticationApi
                 "client_secret" -> makeSettings.Authentication.defaultClientSecret
               )
 
-              val future: Future[Either[OAuthError, GrantHandlerResult[User]]] = tokenEndpoint
+              val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
                 .handleRequest(
                   new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
                   oauth2DataHandler
                 )
-                .flatMap[Either[OAuthError, GrantHandlerResult[User]]] {
+                .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
                   case Left(e) => Future.successful(Left(e))
                   case Right(result) =>
                     sessionHistoryCoordinatorService
@@ -100,7 +100,7 @@ trait AuthenticationApi
       }
     }
 
-  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[User]): Route = {
+  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
     val redirectUri = fields.getOrElse("redirect_uri", "")
     if (redirectUri != "") {
       redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)
@@ -176,7 +176,7 @@ trait AuthenticationApi
 }
 
 object AuthenticationApi {
-  def grantResultToTokenResponse(grantResult: GrantHandlerResult[User]): TokenResponse =
+  def grantResultToTokenResponse(grantResult: GrantHandlerResult[UserRights]): TokenResponse =
     TokenResponse(
       grantResult.tokenType,
       grantResult.accessToken,

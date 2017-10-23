@@ -7,7 +7,7 @@ import org.make.api.DatabaseTest
 import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, DefaultPersistentTokenServiceComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
-import org.make.core.auth.{Client, ClientId, Token}
+import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -52,7 +52,7 @@ class PersistentTokenServiceIT
     refreshToken = Some("REFRESH_TOKEN"),
     scope = Some("scope"),
     expiresIn = 42,
-    user = exampleUser,
+    user = UserRights(exampleUser.userId, exampleUser.roles),
     client = exampleClient
   )
 
@@ -117,7 +117,7 @@ class PersistentTokenServiceIT
     scenario("Find a Token from a valid user") {
       Given("a valid User")
       When("a token is searched from this User")
-      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUser(exampleUser)
+      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUserId(exampleUser.userId)
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("the user's token is returned")

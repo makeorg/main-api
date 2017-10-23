@@ -1,6 +1,5 @@
 package org.make.api.tag
 
-import java.time.{ZoneOffset, ZonedDateTime}
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -11,9 +10,10 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.auth.UserRights
 import org.make.core.reference.Tag
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
@@ -60,50 +60,19 @@ class TagApiTest
   when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
     .thenReturn(Future.successful(Some(moderatorAccessToken)))
 
-  private val citizenUser = User(
-    userId = UserId("my-citizen-user-id"),
-    email = "john.snow@night-watch.com",
-    firstName = Some("John"),
-    lastName = Some("Snow"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    verified = true,
-    lastConnection = ZonedDateTime.now(ZoneOffset.UTC),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    profile = None,
-    createdAt = None,
-    updatedAt = None
-  )
-  private val moderatorUser = User(
-    userId = UserId("my-moderator-user-id"),
-    email = "daenerys.targaryen@dragon-queen.com",
-    firstName = Some("Daenerys"),
-    lastName = Some("Targaryen"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    verified = true,
-    lastConnection = ZonedDateTime.now(ZoneOffset.UTC),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleModerator),
-    profile = None,
-    createdAt = None,
-    updatedAt = None
-  )
-
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(citizenUser, None, Some("citizen"), None))))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen)), None, Some("citizen"), None))
+      )
+    )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(moderatorUser, None, Some("moderator"), None))))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator)), None, Some("moderator"), None))
+      )
+    )
 
   val validTagText: String = "tag"
   val specificValidTagText: String = "taxes/fiscalité"

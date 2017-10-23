@@ -10,9 +10,9 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical._
 import org.make.api.{MakeApiTestUtils, MakeUnitTest}
-import org.make.core.DateHelper
+import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -67,38 +67,20 @@ class AuthenticationApiTest
 
   val routes: Route = sealRoute(authenticationRoutes)
 
-  val fakeUser = User(
-    userId = UserId("ABCD"),
-    email = "foo@bar.com",
-    firstName = Some("olive"),
-    lastName = Some("tom"),
-    lastIp = Some("127.0.0.1"),
-    hashedPassword = Some("passpass"),
-    enabled = true,
-    verified = false,
-    lastConnection = DateHelper.now(),
-    verificationToken = Some("token"),
-    verificationTokenExpiresAt = Some(DateHelper.now()),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq.empty,
-    profile = None
-  )
-
   feature("logout user by deleting its token") {
     scenario("successful logout") {
       Given("a valid authentication")
       val token = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
-      val fakeAuthInfo: AuthInfo[User] = AuthInfo(fakeUser, None, None, None)
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+      val fakeAuthInfo: AuthInfo[UserRights] = AuthInfo(UserRights(UserId("ABCD"), Seq.empty), None, None, None)
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
         .thenReturn(Future.successful(Some(accessToken)))
-      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
-      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.same(fakeAuthInfo)))
+      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.eq(fakeAuthInfo)))
         .thenReturn(Future.successful(Some(accessToken)))
-      when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.same(fakeUser.userId)))
+      when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.eq(UserId("ABCD"))))
         .thenReturn(Future.successful(42))
 
       When("logout is called")

@@ -10,8 +10,8 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.core.HttpCodes
+import org.make.core.auth.UserRights
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.User
 
 import scalaoauth2.provider.AuthInfo
 
@@ -58,7 +58,7 @@ trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives
     get {
       path("configurations" / "backoffice") {
         makeTrace("BackofficeConfiguration") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[User] =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
               onSuccess(themeService.findAll()) { themes =>
                 complete(BackofficeConfiguration.default(themes = themes))

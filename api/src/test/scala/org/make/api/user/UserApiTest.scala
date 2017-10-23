@@ -18,6 +18,7 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestUtils}
+import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
@@ -552,7 +553,34 @@ class UserApiTest
       val token: String = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
-      val fakeAuthInfo: AuthInfo[User] = AuthInfo(fakeUser, None, None, None)
+      val fakeAuthInfo: AuthInfo[UserRights] =
+        AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen)), None, None, None)
+
+      when(userService.getUser(ArgumentMatchers.eq(UserId("user-id")))).thenReturn(
+        Future.successful(
+          Some(
+            User(
+              userId = UserId("user-id"),
+              email = "my-email@yopmail.com",
+              firstName = None,
+              lastName = None,
+              lastIp = None,
+              hashedPassword = None,
+              enabled = true,
+              verified = true,
+              lastConnection = DateHelper.now(),
+              verificationToken = None,
+              verificationTokenExpiresAt = None,
+              resetToken = None,
+              resetTokenExpiresAt = None,
+              roles = Seq(Role.RoleCitizen),
+              profile = None,
+              createdAt = None,
+              updatedAt = None
+            )
+          )
+        )
+      )
 
       Mockito
         .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))

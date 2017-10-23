@@ -9,8 +9,8 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
-import org.make.core.auth.{Client, ClientId, Token}
-import org.make.core.user.User
+import org.make.core.auth.{Client, ClientId, Token, UserRights}
+import org.make.core.user.{Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -78,7 +78,7 @@ class MakeDataHandlerComponentTest
     refreshToken = Some("refresh_token"),
     scope = None,
     expiresIn = tokenLifeTime,
-    user = exampleUser,
+    user = UserRights(UserId("user-id"), Seq(Role.RoleCitizen)),
     client = exampleClient
   )
 
@@ -124,7 +124,7 @@ class MakeDataHandlerComponentTest
       And("a valid user in a valid request")
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[User]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
 
       Then("the User is returned")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -138,7 +138,7 @@ class MakeDataHandlerComponentTest
       And("a valid user in a valid request")
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[User]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -154,7 +154,7 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(None))
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[User]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -170,7 +170,7 @@ class MakeDataHandlerComponentTest
 
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
-      val authInfo = AuthInfo(exampleUser, None, None, None)
+      val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen)), None, None, None)
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
@@ -210,7 +210,7 @@ class MakeDataHandlerComponentTest
 
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
-      val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
+      val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen)), Some(clientId), None, None)
       And("""a stored AccessToken with values:
           | token: "AF8"
           | refreshToken: "KKJ"
@@ -232,7 +232,7 @@ class MakeDataHandlerComponentTest
       )
 
       When("I get a persisted AccessToken")
-      when(persistentTokenService.findByUser(ArgumentMatchers.eq(authInfo.user)))
+      when(persistentTokenService.findByUserId(ArgumentMatchers.eq(authInfo.user.userId)))
         .thenReturn(Future.successful(Option(token)))
       val futureAccessToken = oauth2DataHandler.getStoredAccessToken(authInfo)
 
@@ -258,7 +258,7 @@ class MakeDataHandlerComponentTest
     info("As a developer")
     info("I want to refresh an access token")
 
-    val authInfo = AuthInfo(exampleUser, Some(clientId), None, None)
+    val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen)), Some(clientId), None, None)
     val refreshToken: String = "MYREFRESHTOKEN"
     val createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
     val accessTokenExample = AccessToken(
@@ -387,11 +387,12 @@ class MakeDataHandlerComponentTest
 
     scenario("Get AuthInfo with a nonexistent accessToken") {
       Given("an nonexistent AccessToken")
+      val unexisting = accessTokenExample.copy(token = "some-inexisting-token")
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenObj.token)))
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(unexisting.token)))
         .thenReturn(Future.successful(None))
-      val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(accessTokenObj)
+      val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(unexisting)
 
       Then("I get an empty result")
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>

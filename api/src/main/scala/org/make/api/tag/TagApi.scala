@@ -10,9 +10,9 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
+import org.make.core.auth.UserRights
 import org.make.core.reference.{Tag, TagId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.User
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -61,7 +61,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   def create: Route = post {
     path("tag") {
       makeTrace("RegisterTag") { _ =>
-        makeOAuth2 { userAuth: AuthInfo[User] =>
+        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
