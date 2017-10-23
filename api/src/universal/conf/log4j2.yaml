@@ -5,7 +5,7 @@ Configuration:
     Console:
       - name: console
         PatternLayout:
-          Pattern: "[MAKEAPI] %d %p %C:%L %X %replace{%m %throwable}{\n}{\\\\n}%n"
+          Pattern: "[MAKEAPI] %d{ISO8601} %p %C:%L %X %replace{%m %throwable}{\n}{\\\\n}%n"
           charset: "UTF-8"
           alwaysWriteExceptions: true
   Loggers:
