@@ -312,7 +312,6 @@ INSERT INTO theme
     ('f1990dfb-7b92-47cd-8015-e7ca0f961006', 0, 0, 'FR', '#F9E42A', '#ECD400', '#FF9FFD', 'accessibilite|aides|associations|contraception-ivg|discriminations|egalite|famille|information|jeunesse|laicite|lien-social|minorites|reinsertion|seniors|service-civique|solidarite'),
     ('969118ae-949f-4a4a-af33-ec1bcc107450', 0, 0, 'FR', '#2E7D32', '#2E7D32', '#8FCF4B', 'action-publique|agriculture-raisonnee|animaux|bio|consommation-raisonnee|distribution|fiscalite|formation|industrie-agroalimentaire|information-labels|local|nouvelles-technologies|permaculture|produits-agricoles|produits-chimiques-ogms|union-europeenne|vie-rurale'),
     ('8a4a9d0a-92b8-48e4-946d-3e6986296ec7', 0, 0, 'FR', '#311B92', '#311B92', '#54A0E3', 'afrique|aide-au-developpement|aide-humanitaire|amerique-du-nord|amerique-latine|asie|commerce|conflits|cooperation-internationale|culture-langues|diplomatie|ecologie|economie|immigration|institutions|monnaie|moyen-orient|oceanie|refugies|reglementation|terrorisme|union-europeenne'),
-    ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 0, 0, 'FR', '#F5515F', '#F5515F', '#9F031B', ''),
     ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 0, 0, 'FR', '#03A9F4', '#4FC8FF', '#FFDC00', 'acces-a-la-culture|action-publique|cinema|danse|deconnexion|dessin|financement|fiscalite|formation|fracture-numerique|gafa|gastronomie|mode|musees|musique|nouvelles-technologies|patrimoine|peinture|reglementation|reseaux-sociaux|sensibilisation|startups|street-art|television|theatre')
     ON CONFLICT (uuid) DO NOTHING;
 %
@@ -329,7 +328,6 @@ INSERT INTO theme_translation
     ('f1990dfb-7b92-47cd-8015-e7ca0f961006', 'fr', 'vivre-ensemble-solidarites', 'vivre ensemble / solidarités'),
     ('969118ae-949f-4a4a-af33-ec1bcc107450', 'fr', 'agriculture-ruralite', 'agriculture / ruralité'),
     ('8a4a9d0a-92b8-48e4-946d-3e6986296ec7', 'fr', 'europe-monde', 'europe / monde'),
-    ('5f6bc4e8-e353-4afa-8001-24232b2f8816', 'fr', 'transports-deplacement', 'transports / déplacement'),
     ('6fb8d14a-388c-4713-a8a9-52ef89de3888', 'fr', 'numerique-culture', 'numérique / culture')
     ON CONFLICT (theme_uuid, language) DO NOTHING;
 %
