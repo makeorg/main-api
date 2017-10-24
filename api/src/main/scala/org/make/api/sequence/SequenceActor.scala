@@ -119,7 +119,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
           createdAt = Some(e.eventDate),
           updatedAt = Some(e.eventDate),
           title = e.title,
-          status = SequenceStatus.Published,
+          status = SequenceStatus.Unpublished,
           themeIds = e.themeIds,
           creationContext = e.requestContext,
           tagIds = e.tagIds,

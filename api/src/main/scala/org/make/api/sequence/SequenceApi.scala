@@ -125,6 +125,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
         }
       }
     }
+
   @ApiOperation(
     value = "moderation-update-sequence",
     httpMethod = "PATCH",
@@ -162,7 +163,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
                   provideAsync(themeService.findByIds(request.themeIds.getOrElse(Seq.empty))) { themes =>
-                    provideAsync(tagService.findByIds(request.tagIds.getOrElse(Seq.empty))) { tags =>
+                    provideAsync(tagService.findByTagIds(request.tagIds.getOrElse(Seq.empty))) { tags =>
                       val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
                       Validation.validate(
                         Validation.validateEquals(

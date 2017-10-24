@@ -5,11 +5,13 @@ import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.update.UpdateDefinition
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
+import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.sequence._
@@ -68,8 +70,8 @@ trait DefaultSequenceSearchEngineComponent
 
     override def getStartSequence(searchQuery: SearchQuery): Future[Option[IndexedStartSequence]] = {
       // toDo: should be editable in BO
-      val max = 10
-      val min = 2
+      val max: Int = BackofficeConfiguration.defaultMaxProposalsPerSequence
+      val min: Int = BackofficeConfiguration.defaultMinProposalsPerSequence
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
       val request = search(sequenceIndex)
         .bool(BoolQueryDefinition(must = searchFilters))
@@ -90,7 +92,7 @@ trait DefaultSequenceSearchEngineComponent
         _.map(indexSequence => {
           elasticsearchProposalAPI.findProposalsByIds(indexSequence.proposals.map(_.proposalId), Some(max)).map {
             seqIndexedProposals =>
-              if (seqIndexedProposals.size >= 2) {
+              if (seqIndexedProposals.size >= min) {
                 Some(
                   IndexedStartSequence(
                     id = indexSequence.id,
@@ -121,11 +123,11 @@ trait DefaultSequenceSearchEngineComponent
 
     override def updateSequence(record: IndexedSequence): Future[Done] = {
       logger.info(s"Updating in Elasticsearch: $record")
-      logger.debug(
-        client.show((update(id = record.id.value) in sequenceIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
-      )
+      val updateDefinition: UpdateDefinition =
+        (update(id = record.id.value) in sequenceIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE)
+      logger.debug(client.show(updateDefinition))
       client
-        .execute((update(id = record.id.value) in sequenceIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
+        .execute(updateDefinition)
         .map(_ => Done)
     }
   }

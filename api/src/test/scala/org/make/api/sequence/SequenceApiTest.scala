@@ -93,10 +93,10 @@ class SequenceApiTest
   when(themeService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
   when(themeService.findByIds(matches(Seq(ThemeId("badthemeid"))))).thenReturn(Future.successful(Seq.empty))
 
-  when(tagService.findAll()).thenReturn(Future.successful(Seq(Tag("mytag"))))
-  when(tagService.findByIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(Tag("mytag"))))
-  when(tagService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
-  when(tagService.findByIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
+  when(tagService.findAllEnabled()).thenReturn(Future.successful(Seq(Tag("mytag"))))
+  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(Tag("mytag"))))
+  when(tagService.findByTagIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
+  when(tagService.findByTagIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
 
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"

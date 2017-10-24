@@ -76,7 +76,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
 
     def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
       tagService
-        .fetchEnabledByTagIds(tags)
+        .findEnabledByTagIds(tags)
         .map(Some(_))
     }
 

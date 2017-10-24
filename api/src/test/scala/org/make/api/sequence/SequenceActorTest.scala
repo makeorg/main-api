@@ -54,7 +54,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     creationContext = RequestContext.empty,
     proposalIds = Seq(),
     themeIds = Seq(),
-    status = SequenceStatus.Published,
+    status = SequenceStatus.Unpublished,
     events = List(
       SequenceAction(
         date = mainCreatedAt.get,
@@ -88,7 +88,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published,
+        status = SequenceStatus.Unpublished,
         searchable = false
       )
 
@@ -171,7 +171,12 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       val modified = Some(
         sequence(sequenceId)
-          .copy(title = "An updated content", slug = "an-updated-content", updatedAt = mainUpdatedAt)
+          .copy(
+            title = "An updated content",
+            slug = "an-updated-content",
+            updatedAt = mainUpdatedAt,
+            status = SequenceStatus.Published
+          )
       )
       expectMsg(modified)
 
@@ -222,7 +227,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published,
+        status = SequenceStatus.Unpublished,
         searchable = false
       )
 
@@ -271,7 +276,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Published,
+        status = SequenceStatus.Unpublished,
         searchable = false
       )
 
