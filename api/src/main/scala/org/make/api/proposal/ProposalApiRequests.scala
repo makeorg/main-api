@@ -49,7 +49,7 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None) {
   def toSearchQuery: SearchQuery = {
-    val fuzziness = 2
+    val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         theme = themesIds.map(ThemeSearchFilter.apply),

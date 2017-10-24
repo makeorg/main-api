@@ -1,13 +1,13 @@
 package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
-import com.sksamuel.elastic4s.http.ElasticDsl
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
-import org.scalatest.mockito.MockitoSugar
 import org.make.core.common.indexed.{Sort => IndexedSort}
+import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
 class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
   val themeValue = "Theme"
@@ -97,7 +97,16 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       Given("a searchFilter")
       When("call buildContentSearchFilter with SearchQuery")
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery)
-      contentSearchFilterResult shouldBe Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, textValue))
+      contentSearchFilterResult shouldBe Some(
+        ElasticApi
+          .multiMatchQuery(textValue)
+          .fields(
+            Map(
+              ProposalElasticsearchFieldNames.content -> 2.toFloat,
+              ProposalElasticsearchFieldNames.contentStemmed -> 1.toFloat
+            )
+          )
+      )
     }
 
     scenario("build StatusSearchFilter from Search filter") {

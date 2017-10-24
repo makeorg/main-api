@@ -15,7 +15,7 @@ trait DockerElasticsearchService extends DockerKit {
   val defaultElasticsearchIndex = "proposals"
   val defaultElasticsearchDocType = "proposal"
 
-  private val elasticsearchContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:5.4.0")
+  private val elasticSearchContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:5.6.3")
     .withPorts(defaultElasticsearchHttpPort -> Some(defaultElasticsearchPortExposed))
     .withEnv(
       "xpack.security.enabled=false",
@@ -31,7 +31,7 @@ trait DockerElasticsearchService extends DockerKit {
     )
 
   abstract override def dockerContainers: List[DockerContainer] =
-    elasticsearchContainer :: super.dockerContainers
+    elasticSearchContainer :: super.dockerContainers
 
   private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
 

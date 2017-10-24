@@ -69,7 +69,9 @@ services:
       - consul
       - api2
   elasticsearch:
-      image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+    build:
+        context: .
+        dockerfile: ./infra/elasticsearch/Dockerfile
       hostname: elasticsearch
       ports:
         - 9200:9200

@@ -193,10 +193,6 @@ object SearchFilters extends ElasticDsl {
     slugFilter
   }
 
-  /*
-   * TODO complete fuzzy search. potential hint:
-   * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_fuzziness
-   */
   def buildContentSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
 
     val query: Option[QueryDefinition] = for {
@@ -205,8 +201,32 @@ object SearchFilters extends ElasticDsl {
     } yield {
       maybeFuzzy match {
         case Some(fuzzy) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text).fuzziness(fuzzy.toString)
-        case None => ElasticApi.matchQuery(ProposalElasticsearchFieldNames.content, text)
+          ElasticApi
+            .should(
+              multiMatchQuery(text)
+                .fields(
+                  Map(
+                    ProposalElasticsearchFieldNames.content -> 2F,
+                    ProposalElasticsearchFieldNames.contentStemmed -> 1F
+                  )
+                )
+                .boost(2F),
+              multiMatchQuery(text)
+                .fields(
+                  Map(
+                    ProposalElasticsearchFieldNames.content -> 2F,
+                    ProposalElasticsearchFieldNames.contentStemmed -> 1F
+                  )
+                )
+                .fuzziness(fuzzy)
+                .boost(1F)
+            )
+        case None =>
+          ElasticApi
+            .multiMatchQuery(text)
+            .fields(
+              Map(ProposalElasticsearchFieldNames.content -> 2F, ProposalElasticsearchFieldNames.contentStemmed -> 1F)
+            )
       }
     }
 
@@ -274,7 +294,7 @@ object TrendingSearchFilter {
     DefaultJsonProtocol.jsonFormat1(TrendingSearchFilter.apply)
 }
 
-case class ContentSearchFilter(text: String, fuzzy: Option[Int] = None)
+case class ContentSearchFilter(text: String, fuzzy: Option[String] = None)
 
 object ContentSearchFilter {
   implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
