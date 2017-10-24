@@ -14,6 +14,8 @@ import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._
 import org.make.api.proposal._
+import org.make.api.sequence._
+import org.make.api.sequence.SequenceApi
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
@@ -54,6 +56,7 @@ trait MakeApi
     with DefaultTagServiceComponent
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
+    with DefaultSequenceServiceComponent
     with DuplicateDetectorConfigurationComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
@@ -65,11 +68,15 @@ trait MakeApi
     with DefaultUserHistoryCoordinatorServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultProposalCoordinatorServiceComponent
+    with DefaultSequenceCoordinatorServiceComponent
+    with DefaultSequenceSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
+    with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with ProposalApi
+    with SequenceApi
     with MailJetApi
     with AuthenticationApi
     with ConfigurationsApi
@@ -93,6 +100,13 @@ trait MakeApi
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
+  )
+
+  override lazy val sequenceCoordinator: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / SequenceSupervisor.name / SequenceCoordinator.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )
@@ -127,7 +141,14 @@ trait MakeApi
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
   private lazy val apiClasses: Set[Class[_]] =
-    Set(classOf[AuthenticationApi], classOf[UserApi], classOf[TagApi], classOf[ProposalApi], classOf[ConfigurationsApi])
+    Set(
+      classOf[AuthenticationApi],
+      classOf[UserApi],
+      classOf[TagApi],
+      classOf[ProposalApi],
+      classOf[ConfigurationsApi],
+      classOf[SequenceApi]
+    )
 
   private lazy val optionsCors: Route = options {
     corsHeaders() {
@@ -149,6 +170,7 @@ trait MakeApi
         userRoutes ~
         tagRoutes ~
         proposalRoutes ~
+        sequenceRoutes ~
         optionsAuthorized ~
         buildRoutes ~
         mailJetRoutes ~

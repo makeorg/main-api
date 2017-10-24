@@ -14,9 +14,11 @@ trait TagServiceComponent {
 trait TagService extends ShortenedNames {
   def getTag(slug: TagId): Future[Option[Tag]]
   def getTag(slug: String): Future[Option[Tag]]
-  def fetchEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
+  def findEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def createTag(label: String): Future[Tag]
   def findAll(): Future[Seq[Tag]]
+  def findAllEnabled(): Future[Seq[Tag]]
+  def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
 }
 
 trait DefaultTagServiceComponent extends TagServiceComponent with ShortenedNames {
@@ -43,12 +45,20 @@ trait DefaultTagServiceComponent extends TagServiceComponent with ShortenedNames
       }
     }
 
-    override def fetchEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
+    override def findEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
       persistentTagService.findAllEnabledFromIds(tagIds)
     }
 
-    override def findAll(): Future[Seq[Tag]] = {
+    override def findAllEnabled(): Future[Seq[Tag]] = {
       persistentTagService.findAllEnabled()
+    }
+
+    override def findAll(): Future[Seq[Tag]] = {
+      persistentTagService.findAll()
+    }
+
+    override def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
+      findAll().map(_.filter(tag => tagIds.contains(tag.tagId)))
     }
   }
 }

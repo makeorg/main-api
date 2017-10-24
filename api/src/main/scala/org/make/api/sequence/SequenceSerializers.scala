@@ -1,8 +1,8 @@
 package org.make.api.sequence
 
+import org.make.api.sequence.SequenceEvent._
 import org.make.core.SprayJsonFormatters
 import org.make.core.sequence.Sequence
-import org.make.core.sequence.SequenceEvent._
 import stamina.V1
 import stamina.json._
 

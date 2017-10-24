@@ -8,10 +8,13 @@ import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
+import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(userService: UserService, tagService: TagService) extends Actor with ActorLogging {
+class MakeGuardian(userService: UserService, tagService: TagService, themeService: ThemeService)
+    extends Actor
+    with ActorLogging {
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
@@ -42,7 +45,10 @@ class MakeGuardian(userService: UserService, tagService: TagService) extends Act
     )
     context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
     context.watch(
-      context.actorOf(SequenceSupervisor.props(userService, userHistoryCoordinator), SequenceSupervisor.name)
+      context.actorOf(
+        SequenceSupervisor.props(userService, userHistoryCoordinator, tagService, themeService),
+        SequenceSupervisor.name
+      )
     )
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
@@ -64,5 +70,6 @@ class MakeGuardian(userService: UserService, tagService: TagService) extends Act
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(userService: UserService, tagService: TagService): Props = Props(new MakeGuardian(userService, tagService))
+  def props(userService: UserService, tagService: TagService, themeService: ThemeService): Props =
+    Props(new MakeGuardian(userService, tagService, themeService))
 }

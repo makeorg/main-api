@@ -14,6 +14,7 @@ trait ThemeServiceComponent {
 
 trait ThemeService extends ShortenedNames {
   def findAll(): Future[Seq[Theme]]
+  def findByIds(themeIds: Seq[ThemeId]): Future[Seq[Theme]]
 }
 
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
@@ -24,7 +25,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>
         Future.traverse(themes) { theme =>
-          elasticsearchAPI
+          elasticsearchProposalAPI
             .countProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
             )
@@ -33,6 +34,10 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
             }
         }
       }
+    }
+
+    override def findByIds(themeIds: Seq[ThemeId]) = {
+      findAll().map(_.filter(theme => themeIds.contains(theme.themeId)))
     }
   }
 }

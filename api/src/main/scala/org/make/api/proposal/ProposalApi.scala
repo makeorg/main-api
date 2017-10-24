@@ -139,7 +139,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     )
   )
   @Path(value = "/search/all")
-  def searchAll: Route = {
+  def searchAllProposals: Route = {
     post {
       path("proposals" / "search" / "all") {
         makeTrace("SearchAll") { requestContext =>
@@ -264,7 +264,12 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.UpdateProposalRequest")
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.UpdateProposalRequest"
+      ),
+      new ApiImplicitParam(name = "proposalId", paramType = "path", required = true, value = "", dataType = "string")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Proposal])))
@@ -315,7 +320,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
         value = "body",
         paramType = "body",
         dataType = "org.make.api.proposal.ValidateProposalRequest"
-      )
+      ),
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")
     )
   )
   @ApiResponses(
@@ -538,7 +544,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       acceptProposal ~
       refuseProposal ~
       search ~
-      searchAll ~
+      searchAllProposals ~
       vote ~
       unvote ~
       qualification ~

@@ -1,5 +1,143 @@
 {
   "mappings": {
+    "sequence": {
+      "dynamic": "strict",
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "title": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "french": {
+              "type":     "text",
+              "analyzer": "french"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        },
+        "slug": {
+          "type": "keyword",
+          "index": true
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "operation": {
+              "type": "keyword",
+              "index": true
+            },
+            "source": {
+              "type": "keyword",
+              "index": true
+            },
+            "location": {
+              "type": "keyword",
+              "index": true
+            },
+            "question": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "tags": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "tagId": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "themes": {
+          "type": "object",
+          "properties": {
+            "translation": {
+              "type": "nested",
+              "properties": {
+                "slug": {
+                  "type": "keyword",
+                  "index": false
+                },
+                "title": {
+                  "type": "text",
+                  "index": true
+                },
+                "language": {
+                  "type": "keyword",
+                  "index": true
+                }
+
+              }
+            },
+            "themeId": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "proposals": {
+          "type": "object",
+          "properties": {
+            "proposalId": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
+        },
+        "translation": {
+          "type": "object",
+          "properties": {
+            "language": {
+              "type": "keyword",
+              "index": true
+            },
+            "title": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "french": {
+                  "type": "text",
+                  "analyzer": "french"
+                }
+              }
+            },
+            "slug": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "searchable": {
+          "type": "boolean",
+          "index": true
+        }
+      }
+    },
     "proposal": {
       "dynamic": "strict",
       "properties": {

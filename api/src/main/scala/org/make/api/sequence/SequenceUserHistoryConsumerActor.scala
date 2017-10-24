@@ -5,9 +5,9 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
+import org.make.api.sequence.SequenceEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.userhistory._
-import org.make.core.sequence.SequenceEvent._
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global

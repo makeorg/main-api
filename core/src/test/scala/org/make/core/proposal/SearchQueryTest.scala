@@ -7,6 +7,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 import org.scalatest.mockito.MockitoSugar
+import org.make.core.common.indexed.{Sort => IndexedSort}
 
 class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
   val themeValue = "Theme"
@@ -34,7 +35,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       slug = Some(slugFilter)
     )
 
-  val sorts = Seq(Sort(Some("field"), Some(SortOrder.ASC)))
+  val sorts = Seq(IndexedSort(Some("field"), Some(SortOrder.ASC)))
   val limit = 10
   val skip = 0
 

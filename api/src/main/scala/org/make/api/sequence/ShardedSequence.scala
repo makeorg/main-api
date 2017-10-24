@@ -5,7 +5,6 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.core.DateHelper
-import org.make.core.sequence.SequenceCommand
 
 import scala.concurrent.duration._
 

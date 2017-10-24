@@ -70,11 +70,11 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
     log.debug(s"Indexing $proposal")
-    elasticsearchAPI
+    elasticsearchProposalAPI
       .findProposalById(proposal.id)
       .flatMap {
-        case None    => elasticsearchAPI.indexProposal(proposal)
-        case Some(_) => elasticsearchAPI.updateProposal(proposal)
+        case None    => elasticsearchProposalAPI.indexProposal(proposal)
+        case Some(_) => elasticsearchProposalAPI.updateProposal(proposal)
       }
       .map { _ =>
         }
@@ -84,7 +84,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 
     def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
       tagService
-        .fetchEnabledByTagIds(tags)
+        .findEnabledByTagIds(tags)
         .map(Some(_))
     }
 

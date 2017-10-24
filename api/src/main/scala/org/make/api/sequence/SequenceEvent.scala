@@ -1,15 +1,16 @@
-package org.make.core.sequence
+package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
+import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 sealed trait SequenceEvent extends MakeSerializable {
   def id: SequenceId
@@ -76,7 +77,8 @@ object SequenceEvent {
                                    eventDate: ZonedDateTime,
                                    title: String,
                                    themeIds: Seq[ThemeId],
-                                   tagIds: Seq[TagId])
+                                   tagIds: Seq[TagId],
+                                   searchable: Boolean)
       extends SequenceEvent
 
   object SequenceCreated {
@@ -84,7 +86,7 @@ object SequenceEvent {
     val actionType: String = "sequence-created"
 
     implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
-      DefaultJsonProtocol.jsonFormat8(SequenceCreated.apply)
+      DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)
@@ -101,7 +103,10 @@ object SequenceEvent {
                                    userId: UserId,
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
-                                   title: String)
+                                   title: Option[String],
+                                   status: Option[SequenceStatus],
+                                   themeIds: Seq[ThemeId],
+                                   tagIds: Seq[TagId])
       extends SequenceEvent
 
   object SequenceUpdated {
@@ -109,7 +114,7 @@ object SequenceEvent {
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
-      DefaultJsonProtocol.jsonFormat5(SequenceUpdated.apply)
+      DefaultJsonProtocol.jsonFormat8(SequenceUpdated.apply)
   }
 
   final case class SequenceEdition(oldVersion: String, newVersion: String)

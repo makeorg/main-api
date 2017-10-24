@@ -62,7 +62,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         actionType = "create",
         arguments = Map("title" -> "This is a sequence", "tagIds" -> "", "themeIds" -> "")
       )
-    )
+    ),
+    searchable = false
   )
 
   var dateStubNow: OngoingStubbing[ZonedDateTime] = Mockito.when(dateHelper.now)
@@ -87,7 +88,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Unpublished,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -128,7 +130,10 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         sequenceId = SequenceId("fake"),
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
-        title = "An updated content"
+        title = Some("An updated content"),
+        status = Some(SequenceStatus.Published),
+        themeIds = Seq.empty,
+        tagIds = Seq.empty
       )
 
       Then("returns None")
@@ -147,7 +152,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -157,12 +163,20 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         sequenceId = sequenceId,
         moderatorId = user.userId,
         requestContext = RequestContext.empty,
-        title = "An updated content"
+        title = Some("An updated content"),
+        status = Some(SequenceStatus.Published),
+        themeIds = Seq.empty,
+        tagIds = Seq.empty
       )
 
       val modified = Some(
         sequence(sequenceId)
-          .copy(title = "An updated content", slug = "an-updated-content", updatedAt = mainUpdatedAt)
+          .copy(
+            title = "An updated content",
+            slug = "an-updated-content",
+            updatedAt = mainUpdatedAt,
+            status = SequenceStatus.Published
+          )
       )
       expectMsg(modified)
 
@@ -213,7 +227,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Unpublished,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -261,7 +276,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Unpublished,
+        searchable = false
       )
 
       expectMsg(sequenceId)
@@ -317,7 +333,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         moderatorId = user.userId,
         title = "This is a sequence",
-        status = SequenceStatus.Unpublished
+        status = SequenceStatus.Published,
+        searchable = false
       )
 
       expectMsg(sequenceId)

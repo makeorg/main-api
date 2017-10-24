@@ -83,7 +83,7 @@ trait TagApi extends MakeAuthenticationDirectives {
     get {
       path("tags") {
         makeTrace("Search") { _ =>
-          onSuccess(tagService.findAll()) { tags =>
+          onSuccess(tagService.findAllEnabled()) { tags =>
             complete(tags)
           }
         }

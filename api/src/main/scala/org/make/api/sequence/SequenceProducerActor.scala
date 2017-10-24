@@ -2,10 +2,9 @@ package org.make.api.sequence
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import org.make.api.sequence.SequenceEvent._
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.DateHelper
-import org.make.core.sequence.SequenceEvent
-import org.make.core.sequence.SequenceEvent._
 
 class SequenceProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[SequenceEvent] = classOf[SequenceEvent]

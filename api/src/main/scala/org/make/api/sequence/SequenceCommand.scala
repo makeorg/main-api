@@ -1,8 +1,9 @@
-package org.make.core.sequence
+package org.make.api.sequence
 
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 
 sealed trait SequenceCommand {
@@ -17,13 +18,17 @@ final case class CreateSequenceCommand(sequenceId: SequenceId,
                                        themeIds: Seq[ThemeId] = Seq.empty,
                                        requestContext: RequestContext,
                                        moderatorId: UserId,
-                                       status: SequenceStatus)
+                                       status: SequenceStatus,
+                                       searchable: Boolean)
     extends SequenceCommand
 
 final case class UpdateSequenceCommand(sequenceId: SequenceId,
                                        requestContext: RequestContext,
                                        moderatorId: UserId,
-                                       title: String)
+                                       title: Option[String],
+                                       status: Option[SequenceStatus],
+                                       themeIds: Seq[ThemeId],
+                                       tagIds: Seq[TagId])
     extends SequenceCommand
 
 final case class RemoveProposalsSequenceCommand(sequenceId: SequenceId,

@@ -1,9 +1,9 @@
 package org.make.api.sequence
 
-import akka.actor.{ActorLogging, PoisonPill, Props}
+import akka.actor.{ActorLogging, PoisonPill}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.make.api.sequence.SequenceActor.Snapshot
-import org.make.core.sequence.SequenceEvent._
+import org.make.api.sequence.SequenceEvent._
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -79,7 +79,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         title = command.title,
         themeIds = command.themeIds,
-        tagIds = command.tagIds
+        tagIds = command.tagIds,
+        searchable = command.searchable
       )
     ) {
       sender() ! sequenceId
@@ -96,7 +97,10 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         requestContext = command.requestContext,
         title = command.title,
-        userId = userId
+        status = command.status,
+        userId = userId,
+        themeIds = command.themeIds,
+        tagIds = command.tagIds
       )
     ) {
       sender() ! state
@@ -124,14 +128,28 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
               date = e.eventDate,
               user = e.userId,
               actionType = "create",
-              arguments =
-                Map("title" -> e.title, "tagIds" -> e.tagIds.mkString(","), "themeIds" -> e.themeIds.mkString(","))
+              arguments = Map(
+                "title" -> e.title,
+                "tagIds" -> e.tagIds.mkString(","),
+                "themeIds" -> e.themeIds.map(_.value).mkString(",")
+              )
             )
-          )
+          ),
+          searchable = e.searchable
         )
       )
     case e: SequenceUpdated =>
-      state.map(_.copy(title = e.title, updatedAt = Some(e.eventDate), slug = SlugHelper(e.title)))
+      state.map(
+        state =>
+          state.copy(
+            title = e.title.getOrElse(state.title),
+            updatedAt = Some(e.eventDate),
+            slug = SlugHelper(e.title.getOrElse(state.title)),
+            status = e.status.getOrElse(state.status),
+            themeIds = e.themeIds,
+            tagIds = e.tagIds
+        )
+      )
     case e: SequenceProposalsAdded =>
       state.map(
         state => state.copy(updatedAt = Some(e.eventDate), proposalIds = (state.proposalIds ++ e.proposalIds).distinct)
@@ -155,7 +173,6 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
 }
 
 object SequenceActor {
-  def props(dateHelper: DateHelper): Props = Props(new SequenceActor(dateHelper = dateHelper))
 
   case object Snapshot
 }

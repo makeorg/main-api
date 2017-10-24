@@ -6,7 +6,7 @@ object Dependencies {
   private val akkaHttpVersion = "10.0.10"
   private val nettyVersion = "4.1.12.Final"
   private val kafkaVersion = "0.11.0.0"
-  private val elastic4sVersion = "5.4.1"
+  private val elastic4sVersion = "5.6.0"
   private val kamonVersion = "0.6.8"
   private val kamonScalaVersion = "0.6.7"
   private val circeVersion = "0.8.0"
@@ -65,7 +65,7 @@ object Dependencies {
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
-  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.6.4"
+  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.0"
   val avroSerializer: ModuleID =
     ("io.confluent" % "kafka-avro-serializer" % "3.2.2")
       .exclude("org.slf4j", "slf4j-log4j12")

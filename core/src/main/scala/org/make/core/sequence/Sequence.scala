@@ -34,13 +34,14 @@ case class Sequence(sequenceId: SequenceId,
                     status: SequenceStatus = SequenceStatus.Unpublished,
                     creationContext: RequestContext,
                     sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-                    events: List[SequenceAction])
+                    events: List[SequenceAction],
+                    searchable: Boolean)
     extends MakeSerializable
     with Timestamped
 
 object Sequence {
   implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat12(Sequence.apply)
+    DefaultJsonProtocol.jsonFormat13(Sequence.apply)
 }
 
 final case class SequenceId(value: String) extends StringValue
@@ -66,13 +67,13 @@ object SequenceId {
 sealed trait SequenceStatus {
   def shortName: String
 }
-
 object SequenceStatus {
   val statusMap: Map[String, SequenceStatus] =
     Map(Unpublished.shortName -> Unpublished, Published.shortName -> Published)
 
   implicit lazy val sequenceStatusEncoder: Encoder[SequenceStatus] = (status: SequenceStatus) =>
     Json.fromString(status.shortName)
+
   implicit lazy val sequenceStatusDecoder: Decoder[SequenceStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {

@@ -19,6 +19,7 @@ trait PersistentTagServiceComponent {
 
 trait PersistentTagService {
   def get(slug: TagId): Future[Option[Tag]]
+  def findAll(): Future[Seq[Tag]]
   def findAllEnabled(): Future[Seq[Tag]]
   def findAllEnabledFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
@@ -52,6 +53,18 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.enabled, true))
+        }.map(PersistentTag.apply()).list.apply
+      })
+
+      futurePersistentTags.map(_.map(_.toTag))
+    }
+
+    override def findAll(): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
         }.map(PersistentTag.apply()).list.apply
       })
 
