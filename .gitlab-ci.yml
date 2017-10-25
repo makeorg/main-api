@@ -38,4 +38,4 @@ deploy:
       -H "Content-Type: application/x-www-form-urlencoded"
       -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
       --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
-      http://rundeck.preprod.makeorg.tech:4440/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
+      http://rundeck.preprod.makeorg.tech:4440/api/16/job/3d15510a-fa55-45dd-9cdb-6068808f11e4/run
