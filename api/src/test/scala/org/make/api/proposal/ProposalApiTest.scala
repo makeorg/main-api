@@ -240,7 +240,7 @@ class ProposalApiTest
         Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
         Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
       ),
-      creationContext = RequestContext.empty,
+      context = RequestContext.empty,
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil
