@@ -12,9 +12,9 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
+import org.make.core.auth.UserRights
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
-import org.make.core.user.User
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -53,7 +53,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("moderation" / "sequences" / sequenceId) { sequenceId =>
         makeTrace("GetModerationSequence") { _ =>
-          makeOAuth2 { auth: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(sequenceService.getModerationSequenceById(sequenceId)) { sequenceResponse =>
                 complete(sequenceResponse)
@@ -92,7 +92,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("moderation" / "sequences") {
         makeTrace("PostSequence") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[CreateSequenceRequest]) { request: CreateSequenceRequest =>
@@ -158,7 +158,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     patch {
       path("moderation" / "sequences" / sequenceId) { sequenceId =>
         makeTrace("PatchSequence") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
@@ -251,7 +251,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("moderation" / "sequences" / sequenceId / "proposals" / "add") { sequenceId =>
         makeTrace("AddProposalsSequence") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[AddProposalSequenceRequest]) { request: AddProposalSequenceRequest =>
@@ -305,7 +305,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("moderation" / "sequences" / sequenceId / "proposals" / "remove") { sequenceId =>
         makeTrace("AddProposalsSequence") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[User] =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[RemoveProposalSequenceRequest]) { request: RemoveProposalSequenceRequest =>
@@ -358,7 +358,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     post {
       path("moderation" / "sequences" / "search") {
         makeTrace("SearchAll") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[User] =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
@@ -387,7 +387,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("sequences" / sequenceSlug) { slug =>
         makeTrace("Search") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[User]] =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest {
               // toDo: manage already voted proposals (session or user)
               val excludedProposals = Seq.empty

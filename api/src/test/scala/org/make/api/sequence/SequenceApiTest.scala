@@ -13,13 +13,13 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
+import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
-import org.make.core.sequence.SearchQuery
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
-import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
+import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
@@ -114,96 +114,21 @@ class SequenceApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("my-user-id"),
-              email = "john.snow@night-watch.com",
-              firstName = Some("John"),
-              lastName = Some("Snoww"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleCitizen),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
+        Some(AuthInfo(UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen)), None, Some("user"), None))
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("the-mother-of-dragons"),
-              email = "d.narys@tergarian.com",
-              firstName = Some("Daenerys"),
-              lastName = Some("Tergarian"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleAdmin),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            None,
-            None
-          )
-        )
+        Some(AuthInfo(UserRights(userId = UserId("the-mother-of-dragons"), roles = Seq(RoleAdmin)), None, None, None))
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(
-          AuthInfo(
-            User(
-              userId = UserId("the-dwarf"),
-              email = "tyrion@pays-his-debts.com",
-              firstName = Some("Tyrion"),
-              lastName = Some("Lannister"),
-              lastIp = None,
-              hashedPassword = None,
-              enabled = true,
-              verified = true,
-              lastConnection = DateHelper.now(),
-              verificationToken = None,
-              verificationTokenExpiresAt = None,
-              resetToken = None,
-              resetTokenExpiresAt = None,
-              roles = Seq(RoleModerator),
-              profile = None,
-              createdAt = None,
-              updatedAt = None
-            ),
-            None,
-            None,
-            None
-          )
-        )
+        Some(AuthInfo(UserRights(userId = UserId("the-dwarf"), roles = Seq(RoleModerator)), None, None, None))
       )
     )
   val defaultSequence = Sequence(
