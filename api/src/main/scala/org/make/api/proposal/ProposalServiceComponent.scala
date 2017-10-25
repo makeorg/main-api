@@ -129,7 +129,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             refusalReason = proposal.refusalReason,
             tags = proposal.tags,
             votes = proposal.votes,
-            creationContext = proposal.creationContext,
+            context = proposal.creationContext,
             createdAt = proposal.createdAt,
             updatedAt = proposal.updatedAt,
             events = events

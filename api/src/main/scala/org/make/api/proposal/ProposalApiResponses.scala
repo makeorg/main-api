@@ -20,7 +20,7 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   refusalReason: Option[String] = None,
                                   tags: Seq[TagId] = Seq.empty,
                                   votes: Seq[Vote],
-                                  creationContext: RequestContext,
+                                  context: RequestContext,
                                   createdAt: Option[ZonedDateTime],
                                   updatedAt: Option[ZonedDateTime],
                                   events: Seq[ProposalActionResponse])
