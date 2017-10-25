@@ -125,7 +125,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
               ),
               variables = Some(
                 Map(
-                  "url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
+                  "proposal_url" -> s"${settings.frontUrl}/#/proposal/${proposal.slug}",
                   "proposal_text" -> proposal.content,
                   "firstname" -> user.firstName.getOrElse(""),
                   "operation" -> event.requestContext.operation.getOrElse(""),
