@@ -288,10 +288,10 @@ object StatusSearchFilter {
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 }
 
-case class ContextSearchFilter(operation: Option[String],
-                               source: Option[String],
-                               location: Option[String],
-                               question: Option[String])
+case class ContextSearchFilter(operation: Option[String] = None,
+                               source: Option[String] = None,
+                               location: Option[String] = None,
+                               question: Option[String] = None)
 
 object ContextSearchFilter {
   implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =

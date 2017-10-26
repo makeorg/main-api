@@ -328,7 +328,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             .searchProposals(
               SearchQuery(
                 // TODO add language filter
-                filters = Some(SearchFilters(content = Some(ContentSearchFilter(text = indexedProposal.content))))
+                filters = Some(
+                  SearchFilters(
+                    content = Some(ContentSearchFilter(text = indexedProposal.content)),
+                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId.value))),
+                    context = requestContext.operation.map(ope      => ContextSearchFilter(operation = Some(ope)))
+                  )
+                )
               )
             )
             .map({ response =>
@@ -344,7 +350,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 .getSimilar(indexedProposal.content, corpus, duplicateDetectorConfiguration.maxResults)
               val predictedDuplicates: Seq[IndexedProposal] =
                 predictedResults.flatMap(_.targetDoc.document.meta)
-
               eventBusService.publish(
                 PredictDuplicate(
                   proposalId = proposalId,
@@ -353,10 +358,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   algoLabel = duplicateDetector.getClass.getSimpleName
                 )
               )
-
               ProposalsSearchResult(predictedDuplicates.size, predictedDuplicates)
             })
-
         case None => Future.successful(ProposalsSearchResult.empty)
       }
     }
