@@ -17,7 +17,7 @@ build:
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=vfs dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
-    - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+    - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
   script:
     - export IMAGE_VERSION=`date +"%Y-%m-%d"`-`git rev-parse --short HEAD`
     - sbt clean coverage test it:test

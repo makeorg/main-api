@@ -55,28 +55,28 @@ object ProposalResult {
             myProposal: Boolean,
             voteAndQualifications: Option[VoteAndQualifications]): ProposalResult =
     ProposalResult(
-      indexedProposal.id,
-      indexedProposal.userId,
-      indexedProposal.content,
-      indexedProposal.slug,
-      indexedProposal.status,
-      indexedProposal.createdAt,
-      indexedProposal.updatedAt,
-      indexedProposal.votes.map { indexedVote =>
+      id = indexedProposal.id,
+      userId = indexedProposal.userId,
+      content = indexedProposal.content,
+      slug = indexedProposal.slug,
+      status = indexedProposal.status,
+      createdAt = indexedProposal.createdAt,
+      updatedAt = indexedProposal.updatedAt,
+      votes = indexedProposal.votes.map { indexedVote =>
         VoteResponse
           .parseVote(indexedVote, hasVoted = voteAndQualifications match {
             case Some(VoteAndQualifications(indexedVote.key, _)) => true
             case _                                               => false
           }, voteAndQualifications)
       },
-      indexedProposal.context,
-      indexedProposal.trending,
-      indexedProposal.labels,
-      indexedProposal.author,
-      indexedProposal.country,
-      indexedProposal.language,
-      indexedProposal.themeId,
-      indexedProposal.tags,
+      context = indexedProposal.context,
+      trending = indexedProposal.trending,
+      labels = indexedProposal.labels,
+      author = indexedProposal.author,
+      country = indexedProposal.country,
+      language = indexedProposal.language,
+      themeId = indexedProposal.themeId,
+      tags = indexedProposal.tags,
       myProposal = myProposal
     )
 }

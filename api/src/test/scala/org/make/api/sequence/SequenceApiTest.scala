@@ -131,6 +131,7 @@ class SequenceApiTest
         Some(AuthInfo(UserRights(userId = UserId("the-dwarf"), roles = Seq(RoleModerator)), None, None, None))
       )
     )
+
   val defaultSequence = Sequence(
     sequenceId = SequenceId("123"),
     title = "my sequence 1",

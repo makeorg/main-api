@@ -10,6 +10,7 @@ object ProposalElasticsearchFieldNames {
   val id: String = "id"
   val userId: String = "userId"
   val content: String = "content"
+  val contentStemmed: String = "content.stemmed"
   val slug: String = "slug"
   val status: String = "status"
   val createdAt: String = "createdAt"

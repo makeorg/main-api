@@ -1,4 +1,49 @@
 {
+  "settings": {
+    "analysis": {
+      "filter": {
+        "french_elision": {
+          "type": "elision",
+          "articles_case": true,
+          "articles": ["l", "m", "t", "qu", "n", "s", "j", "d", "c", "jusqu", "quoiqu", "lorsqu", "puisqu"]
+        },
+        "french_stemmer": {
+          "type": "stemmer",
+          "language": "light_french"
+        }
+      },
+      "analyzer": {
+        "french_std": {
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "french_elision",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter"
+          ]
+        },
+        "french_full": {
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "french_elision",
+            "icu_folding",
+            "french_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter"
+          ]
+        }
+      },
+      "char_filter": {
+        "make_char_filter": {
+          "type": "pattern_replace",
+          "pattern": "^Il faut",
+          "replacement": ""
+        }
+      }
+    }
+  },
   "mappings": {
     "sequence": {
       "dynamic": "strict",
@@ -152,10 +197,11 @@
         "content": {
           "type": "text",
           "index": true,
+          "analyzer": "french_std",
           "fields": {
-            "french": {
+            "stemmed": {
               "type":     "text",
-              "analyzer": "french"
+              "analyzer": "french_full"
             }
           }
         },

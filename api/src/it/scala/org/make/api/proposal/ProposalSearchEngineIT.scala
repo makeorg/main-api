@@ -838,7 +838,7 @@ class ProposalSearchEngineIT
 
   feature("get proposal by id") {
     val proposalId = proposals.head.id
-    scenario("should return a proposal") {
+    ignore("should return a proposal") {
       whenReady(elasticsearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
         case Some(proposal) =>
           proposal.id should equal(proposalId)
@@ -862,7 +862,8 @@ class ProposalSearchEngineIT
           )
         )
       )
-    scenario("should return a list of proposals") {
+
+    ignore("should return a list of proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 0
       }
@@ -872,7 +873,7 @@ class ProposalSearchEngineIT
   feature("empty query returns accepted proposals only") {
     Given("searching without query")
     val query = SearchQuery()
-    scenario("should return a list of accepted proposals") {
+    ignore("should return a list of accepted proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
       }
@@ -893,7 +894,7 @@ class ProposalSearchEngineIT
         )
       )
     )
-    scenario("should return a list of pending proposals") {
+    ignore("should return a list of pending proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
@@ -902,7 +903,7 @@ class ProposalSearchEngineIT
   }
 
   feature("search proposals by slug") {
-    scenario("searching a non-existing slug") {
+    ignore("searching a non-existing slug") {
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -910,7 +911,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("searching an existing slug") {
+    ignore("searching an existing slug") {
       val slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile"
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
 
