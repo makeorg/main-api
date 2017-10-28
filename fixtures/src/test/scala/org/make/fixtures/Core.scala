@@ -47,6 +47,7 @@ class Core extends Simulation {
 
           val proposal = session("proposal").as[Record[String]]
           val tags = Json.stringify(proposal("tags").split('|').toSeq)
+          val labels = Json.stringify(proposal("labels").split('|').toSeq)
           val theme = {
             if (proposal("theme").isEmpty) {
               null
@@ -59,6 +60,7 @@ class Core extends Simulation {
             .set("content", proposal("content"))
             .set("theme", theme)
             .set("tags", tags)
+            .set("labels", labels)
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
           ProposalChainBuilder.createProposal,
