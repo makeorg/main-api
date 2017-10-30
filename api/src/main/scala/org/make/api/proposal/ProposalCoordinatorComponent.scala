@@ -66,7 +66,13 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
     }
 
     override def update(command: UpdateProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command).mapTo[Option[Proposal]]
+      (proposalCoordinator ? command).flatMap[Option[Proposal]] {
+        case error: ValidationFailedError => Future.failed(error)
+        case None                         => Future.successful(None)
+        case Some(proposal) =>
+          Future.successful(Some(proposal.asInstanceOf[Proposal]))
+        case _ => Future.successful(None)
+      }
     }
 
     override def accept(command: AcceptProposalCommand): Future[Option[Proposal]] = {
@@ -76,12 +82,17 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         case Some(proposal) =>
           Future.successful(Some(proposal.asInstanceOf[Proposal]))
         case _ => Future.successful(None)
-
       }
     }
 
     override def refuse(command: RefuseProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command).mapTo[Option[Proposal]]
+      (proposalCoordinator ? command).flatMap[Option[Proposal]] {
+        case error: ValidationFailedError => Future.failed(error)
+        case None                         => Future.successful(None)
+        case Some(proposal) =>
+          Future.successful(Some(proposal.asInstanceOf[Proposal]))
+        case _ => Future.successful(None)
+      }
     }
 
     override def vote(command: VoteProposalCommand): Future[Option[Vote]] = {

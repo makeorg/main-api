@@ -48,9 +48,10 @@ trait ProposalService {
               theme: Option[ThemeId]): Future[ProposalId]
   // toDo: add theme
   def update(proposalId: ProposalId,
+             moderator: UserId,
              requestContext: RequestContext,
              updatedAt: ZonedDateTime,
-             content: String): Future[Option[Proposal]]
+             request: UpdateProposalRequest): Future[Option[ProposalResponse]]
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
@@ -239,18 +240,35 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     override def update(proposalId: ProposalId,
+                        moderator: UserId,
                         requestContext: RequestContext,
                         updatedAt: ZonedDateTime,
-                        content: String): Future[Option[Proposal]] = {
+                        request: UpdateProposalRequest): Future[Option[ProposalResponse]] = {
 
-      proposalCoordinatorService.update(
+      val updatedProposal = proposalCoordinatorService.update(
         UpdateProposalCommand(
+          moderator = moderator,
           proposalId = proposalId,
           requestContext = requestContext,
           updatedAt = updatedAt,
-          content = content
+          newContent = request.newContent,
+          theme = request.theme,
+          labels = request.labels,
+          tags = request.tags,
+          similarProposals = request.similarProposals
         )
       )
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(updatedProposal)
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
     }
 
     override def validateProposal(proposalId: ProposalId,

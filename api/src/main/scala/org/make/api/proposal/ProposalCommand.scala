@@ -21,10 +21,15 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 theme: Option[ThemeId] = None)
     extends ProposalCommand
 
-final case class UpdateProposalCommand(proposalId: ProposalId,
+final case class UpdateProposalCommand(moderator: UserId,
+                                       proposalId: ProposalId,
                                        requestContext: RequestContext,
                                        updatedAt: ZonedDateTime,
-                                       content: String)
+                                       newContent: Option[String],
+                                       theme: Option[ThemeId],
+                                       labels: Seq[LabelId],
+                                       tags: Seq[TagId],
+                                       similarProposals: Seq[ProposalId])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
