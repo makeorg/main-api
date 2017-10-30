@@ -90,6 +90,7 @@ object ProposalEvent {
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
                                    moderator: UserId,
+                                   @Deprecated content: String = "",
                                    edition: Option[ProposalEdition],
                                    theme: Option[ThemeId],
                                    labels: Seq[LabelId],
@@ -102,7 +103,7 @@ object ProposalEvent {
     val actionType: String = "proposal-updated"
 
     implicit val proposalUpdatedFormatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat10(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat11(ProposalUpdated.apply)
 
   }
 
