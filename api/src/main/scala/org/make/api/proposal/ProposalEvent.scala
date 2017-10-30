@@ -90,12 +90,12 @@ object ProposalEvent {
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
                                    moderator: UserId,
-                                   @Deprecated content: String,
-                                   edition: Option[ProposalEdition],
-                                   theme: Option[ThemeId],
-                                   labels: Seq[LabelId],
-                                   tags: Seq[TagId],
-                                   similarProposals: Seq[ProposalId])
+                                   @Deprecated content: String = "",
+                                   edition: Option[ProposalEdition] = None,
+                                   theme: Option[ThemeId] = None,
+                                   labels: Seq[LabelId] = Seq.empty,
+                                   tags: Seq[TagId] = Seq.empty,
+                                   similarProposals: Seq[ProposalId] = Seq.empty)
       extends ProposalEvent
 
   object ProposalUpdated {
