@@ -435,6 +435,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               eventDate = DateHelper.now(),
               requestContext = command.requestContext,
               updatedAt = command.updatedAt,
+              content = "",
               moderator = command.moderator,
               edition = command.newContent.map { newContent =>
                 ProposalEdition(proposal.content, newContent)

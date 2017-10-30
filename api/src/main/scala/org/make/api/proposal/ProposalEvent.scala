@@ -90,7 +90,7 @@ object ProposalEvent {
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
                                    moderator: UserId,
-                                   @Deprecated content: String = "",
+                                   @Deprecated content: String,
                                    edition: Option[ProposalEdition],
                                    theme: Option[ThemeId],
                                    labels: Seq[LabelId],
