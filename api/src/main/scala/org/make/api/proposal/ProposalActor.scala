@@ -16,6 +16,7 @@ import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.{Qualification, Vote, _}
+import org.make.core.user.UserId
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -435,8 +436,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               eventDate = DateHelper.now(),
               requestContext = command.requestContext,
               updatedAt = command.updatedAt,
-              content = "",
-              moderator = command.moderator,
+              moderator = Some(command.moderator),
               edition = command.newContent.map { newContent =>
                 ProposalEdition(proposal.content, newContent)
               },
@@ -619,8 +619,12 @@ object ProposalActor {
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", ")
     ).filter(!_._2.isEmpty)
+    if (event.moderator.isEmpty) {
+      throw new IllegalArgumentException("Update must be done by a moderator")
+    }
+    val moderator: UserId = event.moderator.get
     val action =
-      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "update", arguments = arguments)
+      ProposalAction(date = event.eventDate, user = moderator, actionType = "update", arguments = arguments)
     var result =
       state.copy(
         tags = event.tags,
