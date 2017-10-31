@@ -89,7 +89,7 @@ object ProposalEvent {
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
-                                   moderator: UserId = UserId(value = ""),
+                                   moderator: Option[UserId] = None,
                                    @Deprecated content: String = "",
                                    edition: Option[ProposalEdition] = None,
                                    theme: Option[ThemeId] = None,
