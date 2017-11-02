@@ -7,6 +7,13 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
   val from: String = config.getString("from")
   val fromName: String = config.getString("from-name")
 
+  def getFrontUrl(operation: String = ""): String = {
+    operation match {
+      case "vff" => config.getString("vff-front-url")
+      case _     => config.getString("front-url")
+    }
+  }
+
   def registration(operation: String, country: String, language: String): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("registration"), operation, country, language)
   def welcome(operation: String, country: String, language: String): TemplateConfiguration =
