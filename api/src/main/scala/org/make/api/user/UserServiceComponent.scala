@@ -9,7 +9,7 @@ import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, ResetT
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.core.profile.Profile
-import org.make.api.userhistory.UserEvent.UserRegisteredEvent
+import org.make.api.userhistory.UserEvent.{UserRegisteredEvent, UserValidatedAccountEvent}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -27,7 +27,9 @@ trait UserService extends ShortenedNames {
   def getUser(uuid: String): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
-  def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User]
+  def getOrCreateUserFromSocial(userInfo: UserInfo,
+                                clientIp: Option[String],
+                                requestContext: RequestContext): Future[User]
   def requestPasswordReset(userId: UserId): Unit
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
@@ -142,7 +144,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       result
     }
 
-    override def getOrCreateUserFromSocial(userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
+    override def getOrCreateUserFromSocial(userInfo: UserInfo,
+                                           clientIp: Option[String],
+                                           requestContext: RequestContext): Future[User] = {
       val lowerCasedEmail: String = userInfo.email.toLowerCase()
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
@@ -179,7 +183,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             profile = profile
           )
 
-          persistentUserService.persist(user)
+          persistentUserService.persist(user).map { user =>
+            eventBusService.publish(UserValidatedAccountEvent(userId = user.userId, requestContext = requestContext))
+            user
+          }
       }
     }
 

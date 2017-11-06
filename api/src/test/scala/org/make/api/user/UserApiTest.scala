@@ -225,7 +225,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Option[String]])
+            .login(any[String], any[String], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
@@ -253,7 +253,12 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         header("Set-Cookie").get.value should include("cookie-session")
-        verify(socialService).login(matches("google"), matches("ABCDEFGHIJK"), matches(Some("192.0.0.1")))
+        verify(socialService).login(
+          matches("google"),
+          matches("ABCDEFGHIJK"),
+          matches(Some("192.0.0.1")),
+          any[RequestContext]
+        )
       }
     }
 
@@ -261,7 +266,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Option[String]])
+            .login(any[String], any[String], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
