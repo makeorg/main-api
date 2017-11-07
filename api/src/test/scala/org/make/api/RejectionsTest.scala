@@ -30,7 +30,6 @@ class RejectionsTest
   when(idGenerator.nextId()).thenReturn("some-id")
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
 
   val route: Route = sealRoute(post {
     path("test") {

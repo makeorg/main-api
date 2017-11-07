@@ -45,7 +45,6 @@ class MailJetApiTest
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val routes: Route = sealRoute(mailJetRoutes)

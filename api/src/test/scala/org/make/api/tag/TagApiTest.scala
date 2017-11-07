@@ -43,7 +43,6 @@ class TagApiTest
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
