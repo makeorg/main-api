@@ -51,7 +51,6 @@ class MakeDataHandlerComponentTest
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("some-id")
 
   val invalidClientId = "invalidClientId"

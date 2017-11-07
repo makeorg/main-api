@@ -50,8 +50,6 @@ class AuthenticationApiTest
     .thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth)
     .thenReturn(oauthConfiguration)
-  when(makeSettings.frontUrl)
-    .thenReturn("http:://localhost")
   when(sessionCookieConfiguration.name)
     .thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure)

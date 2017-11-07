@@ -36,7 +36,6 @@ class MakeDirectivesTest
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
 
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(makeSettings.authorizedCorsUri).thenReturn(Seq("http://make.org"))
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)

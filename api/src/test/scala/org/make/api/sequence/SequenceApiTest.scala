@@ -56,7 +56,6 @@ class SequenceApiTest
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(makeSettings.frontUrl).thenReturn("http://make.org")
   when(idGenerator.nextId()).thenReturn("next-id")
   when(themeService.findAll()).thenReturn(
     Future.successful(

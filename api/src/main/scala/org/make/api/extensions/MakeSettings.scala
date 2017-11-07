@@ -43,7 +43,6 @@ class MakeSettings(config: Config) extends Extension {
     val ssl: Boolean = config.getBoolean("http.ssl")
   }
 
-  val frontUrl: String = config.getString("front-url")
   val newsletterUrl: String = config.getString("newsletter-url")
   val authorizedCorsUri: Seq[String] =
     config.getStringList("authorized-cors-uri").asScala
