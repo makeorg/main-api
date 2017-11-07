@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
@@ -15,7 +16,15 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   Kamon.start()
 
-  override implicit val actorSystem: ActorSystem = ActorSystem("make-api")
+  val envName: Option[String] = Option(System.getenv("ENV_NAME"))
+
+  val configuration: Config = envName match {
+    case Some(name) if !name.isEmpty => ConfigFactory.load(s"$name-application.conf")
+    case None                        => ConfigFactory.load("default-application.conf")
+  }
+
+  override implicit val actorSystem: ActorSystem = ActorSystem.apply("make-api", configuration)
+
   actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)
   actorSystem.actorOf(
