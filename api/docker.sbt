@@ -16,7 +16,6 @@ dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/vers
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
   "-Dlog4j.configurationFile=conf/log4j2.yaml",
-  "-Dconfig.file=conf/application.conf",
   "-Dcom.sun.management.jmxremote",
   "-Dcom.sun.management.jmxremote.ssl=false",
   "-Dcom.sun.management.jmxremote.authenticate=false",
