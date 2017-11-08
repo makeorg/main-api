@@ -125,7 +125,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
               val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
               onSuccess(
                 socialService
-                  .login(request.provider, request.token, Some(ip))
+                  .login(request.provider, request.token, Some(ip), requestContext)
                   .flatMap { social =>
                     sessionHistoryCoordinatorService
                       .convertSession(requestContext.sessionId, social.userId)

@@ -115,7 +115,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
         user: User         <- OptionT(userService.getUser(proposal.author))
       } yield {
         val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operation, country, language)
-        if (templateConfiguration.enabled) {
+        if (user.verified && templateConfiguration.enabled) {
           eventBusService.publish(
             SendEmail(
               templateId = Some(templateConfiguration.templateId),
@@ -140,9 +140,10 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
           )
         }
       }
-
       maybePublish.getOrElseF(
-        Future.failed(new IllegalStateException(s"proposal or user not found for proposal ${event.id.value}"))
+        Future.failed(
+          new IllegalStateException(s"proposal or user not found or user not verified for proposal ${event.id.value}")
+        )
       )
     } else {
       Future.successful[Unit] {}
@@ -155,7 +156,6 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       // OptionT[Future, Unit] is some kind of monad wrapper to be able to unwrap options with no boilerplate
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
-
       val operation = event.requestContext.operation.getOrElse("core")
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
@@ -165,7 +165,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
         user: User         <- OptionT(userService.getUser(proposal.author))
       } yield {
         val proposalRefused = mailJetTemplateConfiguration.proposalRefused(operation, country, language)
-        if (proposalRefused.enabled) {
+        if (user.verified && proposalRefused.enabled) {
           eventBusService.publish(
             SendEmail(
               templateId = Some(proposalRefused.templateId),
@@ -191,9 +191,10 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
           )
         }
       }
-
       maybePublish.getOrElseF(
-        Future.failed(new IllegalStateException(s"proposal or user not found for proposal ${event.id.value}"))
+        Future.failed(
+          new IllegalStateException(s"proposal or user not found or user not verified for proposal ${event.id.value}")
+        )
       )
     } else {
       Future.successful[Unit] {}

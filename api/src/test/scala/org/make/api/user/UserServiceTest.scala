@@ -6,6 +6,8 @@ import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.social.models.UserInfo
+import org.make.api.userhistory.UserEvent.UserValidatedAccountEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
@@ -13,6 +15,7 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
+import org.mockito.Mockito.{times, verify}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -100,6 +103,70 @@ class UserServiceTest
       }
     }
 
+    scenario("successful register user from social") {
+      Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(None))
+
+      val info = UserInfo(
+        email = "facebook@make.org",
+        firstName = "facebook",
+        lastName = "user",
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture")
+      )
+
+      val futureUser = userService.getOrCreateUserFromSocial(info, Some("127.0.0.1"), RequestContext.empty)
+
+      val returnedProfile = Profile(
+        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+        avatarUrl = Some("facebook.com/picture"),
+        profession = None,
+        phoneNumber = None,
+        twitterId = None,
+        facebookId = Some("444444"),
+        googleId = None,
+        gender = None,
+        genderName = None,
+        postalCode = None,
+        karmaLevel = None,
+        locale = None
+      )
+
+      val returnedUser = User(
+        userId = UserId("AAA-BBB-CCC-DDD"),
+        email = info.email,
+        firstName = Some(info.firstName),
+        lastName = Some(info.lastName),
+        lastIp = Some("127.0.0.1"),
+        hashedPassword = Some("passpass"),
+        enabled = true,
+        verified = true,
+        lastConnection = DateHelper.now(),
+        verificationToken = Some("Token"),
+        verificationTokenExpiresAt = Some(DateHelper.now()),
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq(RoleCitizen),
+        profile = Some(returnedProfile)
+      )
+
+      Mockito
+        .when(
+          persistentUserService
+            .persist(any[User])
+        )
+        .thenReturn(Future.successful(returnedUser))
+
+      whenReady(futureUser, Timeout(2.seconds)) { user =>
+        user shouldBe a[User]
+        user.email should be(info.email)
+        user.firstName should be(Some(info.firstName))
+        user.lastName should be(Some(info.lastName))
+        user.profile.get.facebookId should be(info.facebookId)
+        verify(eventBusService, times(2)).publish(any[UserValidatedAccountEvent])
+      }
+    }
+
     scenario("email already registred") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
@@ -118,6 +185,41 @@ class UserServiceTest
       whenReady(futureUser.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[EmailAlreadyRegisteredException]
         exception.asInstanceOf[EmailAlreadyRegisteredException].email should be("exist@mail.com")
+      }
+
+      val user = User(
+        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+        email = "existing-user@gmail.com",
+        firstName = None,
+        lastName = None,
+        lastIp = None,
+        hashedPassword = None,
+        enabled = true,
+        verified = true,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq(),
+        profile = None
+      )
+
+      Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
+
+      val info = UserInfo(
+        email = "facebook@make.org",
+        firstName = "facebook",
+        lastName = "user",
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture")
+      )
+
+      val futureUserSocial = userService.getOrCreateUserFromSocial(info, None, RequestContext.empty)
+
+      whenReady(futureUserSocial, Timeout(3.seconds)) { _ =>
+        verify(eventBusService, times(2)).publish(any[UserValidatedAccountEvent])
       }
     }
   }

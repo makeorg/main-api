@@ -4,6 +4,7 @@ import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{social, UserServiceComponent}
+import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.user.UserId
 
@@ -17,7 +18,10 @@ trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponen
 
 trait SocialService {
 
-  def login(provider: String, token: String, clientIp: Option[String]): Future[UserIdAndToken]
+  def login(provider: String,
+            token: String,
+            clientIp: Option[String],
+            requestContext: RequestContext): Future[UserIdAndToken]
 }
 
 case class UserIdAndToken(userId: UserId, token: TokenResponse)
@@ -37,7 +41,10 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       *
       * @return Future[UserInfo]
       */
-    def login(provider: String, token: String, clientIp: Option[String]): Future[UserIdAndToken] = {
+    def login(provider: String,
+              token: String,
+              clientIp: Option[String],
+              requestContext: RequestContext): Future[UserIdAndToken] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
         case GOOGLE_PROVIDER =>
@@ -68,7 +75,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
       for {
         userInfo <- futureUserInfo
-        user     <- userService.getOrCreateUserFromSocial(userInfo, clientIp)
+        user     <- userService.getOrCreateUserFromSocial(userInfo, clientIp, requestContext)
         accessToken <- oauth2DataHandler.createAccessToken(
           authInfo =
             AuthInfo(user = UserRights(user.userId, user.roles), clientId = None, scope = None, redirectUri = None)
