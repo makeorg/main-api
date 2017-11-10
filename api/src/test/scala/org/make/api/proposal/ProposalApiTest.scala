@@ -12,6 +12,7 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -35,7 +36,8 @@ class ProposalApiTest
     with MakeDataHandlerComponent
     with ProposalServiceComponent
     with MakeSettingsComponent
-    with UserServiceComponent {
+    with UserServiceComponent
+    with ThemeServiceComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
@@ -54,6 +56,8 @@ class ProposalApiTest
   when(idGenerator.nextId()).thenReturn("next-id")
 
   override val userService: UserService = mock[UserService]
+
+  override val themeService: ThemeService = mock[ThemeService]
 
   private val john = User(
     userId = UserId("my-user-id"),

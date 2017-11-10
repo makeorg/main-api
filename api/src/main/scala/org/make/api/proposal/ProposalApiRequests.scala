@@ -84,13 +84,14 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {
   def toSearchQuery: SearchQuery = {
+    val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         theme = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
-        content = content.map(text    => ContentSearchFilter(text)),
+        content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),
         status = status.map(StatusSearchFilter.apply)
       )
