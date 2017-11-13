@@ -61,6 +61,7 @@ class Vff extends Simulation {
             .set("content", proposal("content"))
             .set("theme", theme)
             .set("tags", tags)
+            .set("labels", Json.stringify(Seq.empty))
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
