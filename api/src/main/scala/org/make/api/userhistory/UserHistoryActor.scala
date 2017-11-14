@@ -7,8 +7,8 @@ import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.user._
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 class UserHistoryActor extends PersistentActor with ActorLogging {
 
@@ -23,11 +23,17 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
   }
 
   override def receiveCommand: Receive = {
-    case GetUserHistory(_) =>
-      sender() ! state
-    case command: LogUserSearchProposalsEvent         => persistEvent(command)
-    case command: LogAcceptProposalEvent              => persistEvent(command)
-    case command: LogRefuseProposalEvent              => persistEvent(command)
+    case GetUserHistory(_)                    => sender() ! state
+    case command: LogUserSearchProposalsEvent => persistEvent(command)
+    case command: LogAcceptProposalEvent      => persistEvent(command)
+    case command: LogRefuseProposalEvent      => persistEvent(command)
+    case command: LogLockProposalEvent =>
+      if (!state.events.exists {
+            case LogLockProposalEvent(command.userId, _, _, _) => true
+            case _                                             => false
+          }) {
+        persistEvent(command)
+      }
     case command: LogRegisterCitizenEvent             => persistEvent(command)
     case command: LogUserProposalEvent                => persistEvent(command)
     case command: LogUserVoteEvent                    => persistEvent(command)

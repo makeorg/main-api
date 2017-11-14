@@ -42,6 +42,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       case event: ProposalUnvoted     => handleUnvotedProposal(event)
       case event: ProposalQualified   => handleQualifiedProposal(event)
       case event: ProposalUnqualified => handleUnqualifiedProposal(event)
+      case event: ProposalLocked      => handleLockedProposal(event)
     }
 
   }
@@ -56,6 +57,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
+    implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
   }
 
   def handleVotedProposal(event: ProposalVoted): Future[Unit] = {
@@ -77,6 +79,12 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
   }
 
   def handleUnqualifiedProposal(event: ProposalUnqualified): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleLockedProposal(event: ProposalLocked): Future[Unit] = {
     Future.successful[Unit] {
       log.debug(s"received $event")
     }

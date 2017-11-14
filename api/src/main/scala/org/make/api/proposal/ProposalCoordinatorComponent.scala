@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.core.proposal._
+import org.make.core.user.UserId
 import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,6 +41,7 @@ trait ProposalCoordinatorService {
   def unvote(command: UnvoteProposalCommand): Future[Option[Vote]]
   def qualification(command: QualifyVoteCommand): Future[Option[Qualification]]
   def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]]
+  def lock(command: LockProposalCommand): Future[Option[UserId]]
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -118,6 +120,13 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]] = {
       (proposalCoordinator ? command).mapTo[Either[Exception, Option[Qualification]]].flatMap {
+        case Right(success) => Future.successful(success)
+        case Left(e)        => Future.failed(e)
+      }
+    }
+
+    override def lock(command: LockProposalCommand): Future[Option[UserId]] = {
+      (proposalCoordinator ? command).mapTo[Either[Exception, Option[UserId]]].flatMap {
         case Right(success) => Future.successful(success)
         case Left(e)        => Future.failed(e)
       }

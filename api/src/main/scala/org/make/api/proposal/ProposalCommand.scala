@@ -85,3 +85,9 @@ final case class UnqualifyVoteCommand(proposalId: ProposalId,
                                       qualificationKey: QualificationKey,
                                       vote: Option[VoteAndQualifications])
     extends ProposalCommand
+
+final case class LockProposalCommand(proposalId: ProposalId,
+                                     moderatorId: UserId,
+                                     moderatorName: Option[String],
+                                     requestContext: RequestContext)
+    extends ProposalCommand

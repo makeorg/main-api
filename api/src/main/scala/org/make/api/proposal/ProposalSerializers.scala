@@ -1,5 +1,6 @@
 package org.make.api.proposal
 
+import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.SprayJsonFormatters
 import org.make.core.proposal.Proposal
 import org.make.api.proposal.ProposalEvent._
@@ -35,8 +36,14 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalUnqualifiedSerializer: JsonPersister[ProposalUnqualified, V1] =
     persister[ProposalUnqualified]("proposal-unqualified")
 
+  private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
+    persister[ProposalLocked]("proposal-locked")
+
   private val proposalSerializer: JsonPersister[Proposal, V1] =
     persister[Proposal]("proposal")
+
+  private val proposalStateSerializer: JsonPersister[ProposalState, V1] =
+    persister[ProposalState]("proposalState")
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
@@ -49,6 +56,8 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalUnvotedSerializer,
       proposalQualifiedSerializer,
       proposalUnqualifiedSerializer,
+      proposalLockedSerializer,
+      proposalStateSerializer,
       proposalSerializer
     )
 }
