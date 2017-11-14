@@ -36,7 +36,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
       }
     }
 
-    override def findByIds(themeIds: Seq[ThemeId]) = {
+    override def findByIds(themeIds: Seq[ThemeId]): Future[Seq[Theme]] = {
       findAll().map(_.filter(theme => themeIds.contains(theme.themeId)))
     }
   }

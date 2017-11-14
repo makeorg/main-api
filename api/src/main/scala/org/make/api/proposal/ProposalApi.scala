@@ -2,16 +2,21 @@ package org.make.api.proposal
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -24,6 +29,7 @@ import scalaoauth2.provider.AuthInfo
 @Path(value = "/proposals")
 trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   this: ProposalServiceComponent
+    with ThemeServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -151,6 +157,81 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     proposalService.search(Some(userAuth.user.userId), request.toSearchQuery, requestContext)
                   ) { proposals =>
                     complete(proposals)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "export-proposals",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
+  )
+  @Path(value = "/moderation/proposals")
+  def exportProposals: Route = {
+    get {
+      path("moderation" / "proposals") {
+        makeTrace("ExportProposal") { requestContext =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              parameters(
+                'format, // TODO Use Accept header to get the format
+                'filename,
+                'theme.as(CsvSeq[String]).?,
+                'tags.as(CsvSeq[String]).?,
+                'content.?,
+                'operation.?,
+                'source.?,
+                'question.?
+              ) { (_, fileName, themeId, tags, content, operation, source, question) =>
+                provideAsync(themeService.findAll()) { themes =>
+                  provideAsync(
+                    proposalService.search(
+                      Some(auth.user.userId),
+                      ExhaustiveSearchRequest(
+                        themesIds = themeId,
+                        tagsIds = tags,
+                        content = content,
+                        context =
+                          Some(ContextFilterRequest(operation = operation, source = source, question = question)),
+                        status = Some(Accepted),
+                        limit = Some(5000) //TODO get limit value for export into config files
+                      ).toSearchQuery,
+                      requestContext
+                    )
+                  ) { proposals =>
+                    {
+                      complete {
+                        HttpResponse(
+                          entity = HttpEntity(
+                            ContentTypes.`text/csv(UTF-8)`,
+                            ByteString(
+                              (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
+                                .proposalsToRow(proposals.results, themes)).mkString("\n")
+                            )
+                          )
+                        ).withHeaders(
+                          `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> s"$fileName.csv"))
+                        )
+                      }
+                    }
                   }
                 }
               }
@@ -540,6 +621,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       refuseProposal ~
       search ~
       searchAllProposals ~
+      exportProposals ~
       vote ~
       unvote ~
       qualification ~
