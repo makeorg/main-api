@@ -6,14 +6,17 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
+import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.GivenWhenThen
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.time.{Seconds, Span}
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -649,6 +652,212 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val error = expectMsgType[ValidationFailedError]
       error.errors.head.field should be("unknown")
       error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
+    }
+  }
+
+  feature("Lock a proposal") {
+    scenario("lock an unlocked proposal") {
+      Given("an unlocked proposal")
+      val proposalId: ProposalId = ProposalId("unlockedProposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an unlocked proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      And("a moderator Mod")
+      val moderatorMod = UserId("mod")
+
+      When("I lock the proposal")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod,
+        moderatorName = Some("Mod"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive the moderatorId")
+      expectMsg(Right(Some(moderatorMod)))
+    }
+
+    scenario("expand the time a proposal is locked by yourself") {
+      Given("an unlocked proposal")
+      val proposalId: ProposalId = ProposalId("lockedProposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an unlocked proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      And("a moderator Mod")
+      val moderatorMod = UserId("mod")
+
+      When("I lock the proposal")
+      And("I lock the proposal again after 10 sec")
+      val timeout = Eventually.timeout(Span(11, Seconds))
+      Eventually.eventually(timeout) {
+        coordinator ! LockProposalCommand(
+          proposalId = proposalId,
+          moderatorId = moderatorMod,
+          moderatorName = Some("Mod"),
+          requestContext = RequestContext.empty
+        )
+
+        Then("I should receive the moderatorId twice")
+        expectMsg(Right(Some(moderatorMod)))
+
+        Thread.sleep(10000)
+      }
+    }
+
+    scenario("fail to lock a proposal already locked by someone else") {
+      Given("two moderators Mod1 & Mod2")
+      val moderatorMod1 = UserId("mod1")
+      val moderatorMod2 = UserId("mod2")
+
+      And("a proposal locked by Mod1")
+      val proposalId: ProposalId = ProposalId("lockedFailProposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an unlocked proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod1,
+        moderatorName = Some("Mod1"),
+        requestContext = RequestContext.empty
+      )
+
+      expectMsg(Right(Some(moderatorMod1)))
+
+      When("Mod2 tries to lock the proposal")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod2,
+        moderatorName = Some("Mod2"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("Mod2 fails to lock the proposal")
+      expectMsg(Left(ValidationFailedError(Seq(ValidationError("moderatorName", Some("Mod1"))))))
+    }
+
+    scenario("reset lock by moderating the proposal") {
+      Given("two moderators Mod1 & Mod2")
+      val moderatorMod1 = UserId("mod1")
+      val moderatorMod2 = UserId("mod2")
+
+      And("a proposal locked by Mod1")
+      val proposalId: ProposalId = ProposalId("lockedModerationProposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an unlocked proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod1,
+        moderatorName = Some("Mod1"),
+        requestContext = RequestContext.empty
+      )
+
+      expectMsg(Right(Some(moderatorMod1)))
+
+      When("Mod1 moderates the proposal")
+      coordinator ! RefuseProposalCommand(
+        proposalId = proposalId,
+        moderator = moderatorMod1,
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = false,
+        refusalReason = Some("nothing")
+      )
+
+      expectMsgType[Some[ProposalState]]
+
+      And("Mod2 tries to lock the proposal")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod2,
+        moderatorName = Some("Mod2"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("Mod2 succeeds to lock the proposal")
+      expectMsg(Right(Some(moderatorMod2)))
+    }
+
+    scenario("lock a proposal after lock expiration date was reached") {
+      Given("two moderators Mod1 & Mod2")
+      val moderatorMod1 = UserId("mod1")
+      val moderatorMod2 = UserId("mod2")
+
+      And("a proposal locked by Mod1")
+      val proposalId: ProposalId = ProposalId("lockedExpiredProposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an unlocked proposal"
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod1,
+        moderatorName = Some("Mod1"),
+        requestContext = RequestContext.empty
+      )
+
+      expectMsg(Right(Some(moderatorMod1)))
+
+      When("Mod2 waits more than 20seconds")
+      Thread.sleep(15000)
+      And("Mod2 tries to lock the proposal")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod2,
+        moderatorName = Some("Mod2"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("Mod2 succeeds to lock the proposal")
+      expectMsg(Right(Some(moderatorMod2)))
     }
   }
 
