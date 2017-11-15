@@ -79,6 +79,6 @@ object MakeServicesBuilder {
 
   val acceptProposalBuilder: HttpRequestBuilder =
     http("POST_validate_proposal")
-      .post("/proposals/${proposalId}/accept")
+      .post("/moderation/proposals/${proposalId}/accept")
       .header("Content-Type", "application/json")
 }
