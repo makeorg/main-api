@@ -76,6 +76,7 @@ trait MakeApi
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with ProposalApi
+    with ModerationProposalApi
     with SequenceApi
     with MailJetApi
     with AuthenticationApi
@@ -146,6 +147,7 @@ trait MakeApi
       classOf[UserApi],
       classOf[TagApi],
       classOf[ProposalApi],
+      classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi]
     )
@@ -170,6 +172,7 @@ trait MakeApi
         userRoutes ~
         tagRoutes ~
         proposalRoutes ~
+        moderationProposalRoutes ~
         sequenceRoutes ~
         optionsAuthorized ~
         buildRoutes ~

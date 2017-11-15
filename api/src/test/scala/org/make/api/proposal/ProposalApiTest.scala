@@ -32,6 +32,7 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 class ProposalApiTest
     extends MakeApiTestUtils
     with ProposalApi
+    with ModerationProposalApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with ProposalServiceComponent
@@ -250,7 +251,7 @@ class ProposalApiTest
     )
   }
 
-  val routes: Route = sealRoute(proposalRoutes)
+  val routes: Route = sealRoute(proposalRoutes ~ moderationProposalRoutes)
 
   feature("proposing") {
     scenario("unauthenticated proposal") {
@@ -307,13 +308,13 @@ class ProposalApiTest
 
   feature("proposal validation") {
     scenario("unauthenticated validation") {
-      Post("/proposals/123456/accept") ~> routes ~> check {
+      Post("/moderation/proposals/123456/accept") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("validation with user role") {
-      Post("/proposals/123456/accept")
+      Post("/moderation/proposals/123456/accept")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -321,7 +322,7 @@ class ProposalApiTest
 
     scenario("validation with moderation role") {
 
-      Post("/proposals/123456/accept")
+      Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -329,7 +330,7 @@ class ProposalApiTest
     }
 
     scenario("validation with admin role") {
-      Post("/proposals/987654/accept")
+      Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -337,7 +338,7 @@ class ProposalApiTest
     }
 
     scenario("validation of non existing with admin role") {
-      Post("/proposals/nop/accept")
+      Post("/moderation/proposals/nop/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -350,20 +351,20 @@ class ProposalApiTest
 
   feature("proposal refuse") {
     scenario("unauthenticated refuse") {
-      Post("/proposals/123456/refuse") ~> routes ~> check {
+      Post("/moderation/proposals/123456/refuse") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("refuse with user role") {
-      Post("/proposals/123456/refuse")
+      Post("/moderation/proposals/123456/refuse")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("refusing with moderation role") {
-      Post("/proposals/123456/refuse")
+      Post("/moderation/proposals/123456/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -371,7 +372,7 @@ class ProposalApiTest
     }
 
     scenario("refusing with admin role") {
-      Post("/proposals/987654/refuse")
+      Post("/moderation/proposals/987654/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)

@@ -3,10 +3,7 @@ package org.make.api.proposal
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import io.swagger.annotations._
@@ -16,7 +13,6 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
-import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -53,41 +49,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  @ApiOperation(
-    value = "get-moderation-proposal",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @Path(value = "/moderation/{proposalId}")
-  def getModerationProposal: Route = {
-    get {
-      path("proposals" / "moderation" / proposalId) { proposalId =>
-        makeTrace("GetModerationProposal") { _ =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireModerationRole(auth.user) {
-              provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) { proposalResponse =>
-                complete(proposalResponse)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
   @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
@@ -109,130 +70,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     .searchForUser(userAuth.map(_.user.userId), request.toSearchQuery, requestContext)
                 ) { proposals =>
                   complete(proposals)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "search-all-proposals",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.ExhaustiveSearchRequest"
-      )
-    )
-  )
-  @Path(value = "/search/all")
-  def searchAllProposals: Route = {
-    post {
-      path("proposals" / "search" / "all") {
-        makeTrace("SearchAll") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
-              decodeRequest {
-                entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
-                  provideAsync(
-                    proposalService.search(Some(userAuth.user.userId), request.toSearchQuery, requestContext)
-                  ) { proposals =>
-                    complete(proposals)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "export-proposals",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
-  )
-  @Path(value = "/moderation/proposals")
-  def exportProposals: Route = {
-    get {
-      path("moderation" / "proposals") {
-        makeTrace("ExportProposal") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireModerationRole(auth.user) {
-              parameters(
-                'format, // TODO Use Accept header to get the format
-                'filename,
-                'theme.as(CsvSeq[String]).?,
-                'tags.as(CsvSeq[String]).?,
-                'content.?,
-                'operation.?,
-                'source.?,
-                'question.?
-              ) { (_, fileName, themeId, tags, content, operation, source, question) =>
-                provideAsync(themeService.findAll()) { themes =>
-                  provideAsync(
-                    proposalService.search(
-                      Some(auth.user.userId),
-                      ExhaustiveSearchRequest(
-                        themesIds = themeId,
-                        tagsIds = tags,
-                        content = content,
-                        context =
-                          Some(ContextFilterRequest(operation = operation, source = source, question = question)),
-                        status = Some(Accepted),
-                        limit = Some(5000) //TODO get limit value for export into config files
-                      ).toSearchQuery,
-                      requestContext
-                    )
-                  ) { proposals =>
-                    {
-                      complete {
-                        HttpResponse(
-                          entity = HttpEntity(
-                            ContentTypes.`text/csv(UTF-8)`,
-                            ByteString(
-                              (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
-                                .proposalsToRow(proposals.results, themes)).mkString("\n")
-                            )
-                          )
-                        ).withHeaders(
-                          `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> s"$fileName.csv"))
-                        )
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -328,146 +165,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
         }
       }
     }
-
-  @ApiOperation(
-    value = "update-proposal",
-    httpMethod = "PUT",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.UpdateProposalRequest"
-      ),
-      new ApiImplicitParam(name = "proposalId", paramType = "path", required = true, value = "", dataType = "string")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
-  )
-  @Path(value = "/{proposalId}")
-  def updateProposal: Route =
-    put {
-      path("proposals" / proposalId) { proposalId =>
-        makeTrace("EditProposal") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
-              decodeRequest {
-                entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(
-                    proposalService.update(
-                      proposalId = proposalId,
-                      moderator = userAuth.user.userId,
-                      requestContext = requestContext,
-                      updatedAt = DateHelper.now(),
-                      request = request
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-  @ApiOperation(
-    value = "validate-proposal",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(new Authorization(value = "MakeApi"))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.ValidateProposalRequest"
-      ),
-      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
-  )
-  @Path(value = "/{proposalId}/accept")
-  def acceptProposal: Route = post {
-    path("proposals" / proposalId / "accept") { proposalId =>
-      makeTrace("ValidateProposal") { requestContext =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireModerationRole(auth.user) {
-            decodeRequest {
-              entity(as[ValidateProposalRequest]) { request =>
-                provideAsyncOrNotFound(
-                  proposalService.validateProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext,
-                    request = request
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "refuse-proposal",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(new Authorization(value = "MakeApi"))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.RefuseProposalRequest")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
-  )
-  @Path(value = "/{proposalId}/refuse")
-  def refuseProposal: Route = post {
-    path("proposals" / proposalId / "refuse") { proposalId =>
-      makeTrace("RefuseProposal") { requestContext =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireModerationRole(auth.user) {
-            decodeRequest {
-              entity(as[RefuseProposalRequest]) { refuseProposalRequest =>
-                provideAsyncOrNotFound(
-                  proposalService.refuseProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext,
-                    request = refuseProposalRequest
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 
   @ApiOperation(value = "vote-proposal", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -615,13 +312,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     getDuplicates ~
       postProposal ~
       getProposal ~
-      getModerationProposal ~
-      updateProposal ~
-      acceptProposal ~
-      refuseProposal ~
       search ~
-      searchAllProposals ~
-      exportProposals ~
       vote ~
       unvote ~
       qualification ~
