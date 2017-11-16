@@ -22,8 +22,11 @@ object SessionAction {
     )
 }
 
-sealed trait SessionHistoryEvent[T] extends MakeSerializable with Product {
+trait SessionRelatedEvent {
   def sessionId: SessionId
+}
+
+sealed trait SessionHistoryEvent[T] extends SessionRelatedEvent with MakeSerializable with Product {
   def requestContext: RequestContext
   def action: SessionAction[T]
 }
@@ -226,14 +229,13 @@ object SessionTransformed {
     DefaultJsonProtocol.jsonFormat(SessionTransformed.apply, "sessionId", "context", "action")
 }
 
-sealed trait SessionHistoryAction {
-  def sessionId: SessionId
-}
+sealed trait SessionHistoryAction extends SessionRelatedEvent
 
 final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryAction
 
 final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
-    extends SessionHistoryAction
+    extends SessionRelatedEvent
 
+final case class RequestSessionVotedProposals(sessionId: SessionId) extends SessionRelatedEvent
 final case class UserCreated(sessionId: SessionId, userId: UserId) extends SessionHistoryAction
 final case class UserConnected(sessionId: SessionId, userId: UserId) extends SessionHistoryAction

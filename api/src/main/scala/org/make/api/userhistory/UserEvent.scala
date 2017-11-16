@@ -7,10 +7,13 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
 
-sealed trait UserEvent {
+trait UserRelatedEvent {
+  def userId: UserId
+}
+
+sealed trait UserEvent extends UserRelatedEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
-  def userId: UserId
   def requestContext: RequestContext
 }
 

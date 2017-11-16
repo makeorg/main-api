@@ -29,14 +29,12 @@ object ShardedSessionHistory {
   case object StopSessionHistory
 
   def extractEntityId: ShardRegion.ExtractEntityId = {
-    case cmd: SessionHistoryEvent[_] => (cmd.sessionId.value, cmd)
-    case cmd: SessionHistoryAction   => (cmd.sessionId.value, cmd)
+    case cmd: SessionRelatedEvent => (cmd.sessionId.value, cmd)
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: SessionHistoryEvent[_] => Math.abs(cmd.sessionId.hashCode % 100).toString
-    case cmd: SessionHistoryAction   => Math.abs(cmd.sessionId.hashCode % 100).toString
-    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode            % 100).toString
+    case cmd: SessionRelatedEvent    => Math.abs(cmd.sessionId.value.hashCode % 100).toString
+    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode                  % 100).toString
   }
 
 }

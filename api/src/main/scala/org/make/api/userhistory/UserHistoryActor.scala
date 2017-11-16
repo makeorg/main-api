@@ -40,7 +40,8 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     case command: LogUserUnvoteEvent                  => persistEvent(command)
     case command: LogUserQualificationEvent           => persistEvent(command)
     case command: LogUserUnqualificationEvent         => persistEvent(command)
-    case RequestVoteValues(_, values)                 => getVoteValues(values)
+    case RequestVoteValues(_, values)                 => retrieveVoteValues(values)
+    case RequestUserVotedProposals(_)                 => retrieveUserVotedProposals()
     case command: LogUserCreateSequenceEvent          => persistEvent(command)
     case command: LogUserUpdateSequenceEvent          => persistEvent(command)
     case command: LogUserAddProposalsSequenceEvent    => persistEvent(command)
@@ -76,6 +77,18 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
       Some(QualificationAction(proposalId, date, qualificationKey))
     case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey)))
         if proposalIds.contains(proposalId) =>
+      Some(UnqualificationAction(proposalId, date, qualificationKey))
+    case _ => None
+  }
+
+  private def voteActions(): Seq[VoteRelatedAction] = state.events.flatMap {
+    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey))) =>
+      Some(VoteAction(proposalId, date, voteKey))
+    case LogUserUnvoteEvent(_, _, UserAction(date, _, UserUnvote(proposalId, voteKey))) =>
+      Some(UnvoteAction(proposalId, date, voteKey))
+    case LogUserQualificationEvent(_, _, UserAction(date, _, UserQualification(proposalId, qualificationKey))) =>
+      Some(QualificationAction(proposalId, date, qualificationKey))
+    case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey))) =>
       Some(UnqualificationAction(proposalId, date, qualificationKey))
     case _ => None
   }
@@ -122,7 +135,7 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
           }
       }
 
-  private def getVoteValues(proposalIds: Seq[ProposalId]): Unit = {
+  private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)
 
     val voteAndQualifications: Map[ProposalId, VoteAndQualifications] = voteByProposalId(voteRelatedActions).map {
@@ -134,6 +147,10 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     }
     sender() ! voteAndQualifications
   }
+
+  private def retrieveUserVotedProposals(): Unit = {
+    sender ! voteByProposalId(voteActions()).keys.toSeq
+  }
 }
 
 object UserHistoryActor {
@@ -143,6 +160,7 @@ object UserHistoryActor {
     implicit val formatter: RootJsonFormat[UserHistory] = DefaultJsonProtocol.jsonFormat1(UserHistory.apply)
   }
 
-  final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId])
+  final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId]) extends UserRelatedEvent
+  final case class RequestUserVotedProposals(userId: UserId) extends UserRelatedEvent
 
 }

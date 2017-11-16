@@ -18,8 +18,7 @@ class UserHistoryCoordinator extends Actor {
   }
 
   override def receive: Receive = {
-    case cmd: UserHistoryEvent[_] => shardedUserHistory.forward(cmd)
-    case cmd: RequestVoteValues   => shardedUserHistory.forward(cmd)
+    case cmd: UserRelatedEvent => shardedUserHistory.forward(cmd)
   }
 }
 

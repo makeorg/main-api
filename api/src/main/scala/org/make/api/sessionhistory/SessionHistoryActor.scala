@@ -40,7 +40,8 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
     case command: LogSessionQualificationEvent    => persistEvent(command)()
     case command: LogSessionUnqualificationEvent  => persistEvent(command)()
     case command: LogSessionSearchProposalsEvent  => persistEvent(command)()
-    case RequestSessionVoteValues(_, proposalIds) => getVoteValues(proposalIds)
+    case RequestSessionVoteValues(_, proposalIds) => retrieveVoteValues(proposalIds)
+    case RequestSessionVotedProposals(_)          => retrieveVotedProposals()
     case UserConnected(_, userId)                 => transformSession(userId)
     case UserCreated(_, userId)                   => transformSession(userId)
   }
@@ -87,7 +88,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
 
   }
 
-  private def getVoteValues(proposalIds: Seq[ProposalId]): Unit = {
+  private def retrieveVotedProposals(): Unit = {
+    sender() ! voteByProposalId(voteActions()).keys.toSeq
+  }
+
+  private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)
 
     val voteAndQualifications: Map[ProposalId, VoteAndQualifications] = voteByProposalId(voteRelatedActions).map {
@@ -115,6 +120,26 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
         _,
         SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey))
         ) if proposalIds.contains(proposalId) =>
+      Some(UnqualificationAction(proposalId, date, qualificationKey))
+    case _ => None
+  }
+
+  private def voteActions(): Seq[VoteRelatedAction] = state.events.flatMap {
+    case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey))) =>
+      Some(VoteAction(proposalId, date, voteKey))
+    case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey))) =>
+      Some(UnvoteAction(proposalId, date, voteKey))
+    case LogSessionQualificationEvent(
+        _,
+        _,
+        SessionAction(date, _, SessionQualification(proposalId, qualificationKey))
+        ) =>
+      Some(QualificationAction(proposalId, date, qualificationKey))
+    case LogSessionUnqualificationEvent(
+        _,
+        _,
+        SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey))
+        ) =>
       Some(UnqualificationAction(proposalId, date, qualificationKey))
     case _ => None
   }
