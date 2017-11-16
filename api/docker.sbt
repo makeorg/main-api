@@ -12,6 +12,12 @@ daemonUser in Docker := "user"
 packageName in Docker := "repository/docker-dev/make-api"
 
 dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/version || exit 1")
+dockerCommands := {
+  val originalCommands = dockerCommands.value
+  originalCommands.take(2) ++
+    Seq(Cmd("RUN", "yum install -y blas lapack arpack && yum clean all")) ++
+    originalCommands.drop(2)
+}
 
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
@@ -21,7 +27,13 @@ dockerCmd := Seq(
   "-Dcom.sun.management.jmxremote.authenticate=false",
   "-Dcom.sun.management.jmxremote.port=4000",
   "-Dcom.sun.management.rmi.jmxremote.port=4000",
-  "-J-javaagent:/opt/docker/lib/org.aspectj.aspectjweaver-" + Dependencies.aspectJVersion + ".jar"
+  "-J-javaagent:/opt/docker/lib/org.aspectj.aspectjweaver-" + Dependencies.aspectJVersion + ".jar",
+  "-J-Xms4G",
+  "-J-Xmx4G",
+  "-J-XX:+UseG1GC",
+  "-J-XX:MaxGCPauseMillis=100",
+  "-J-XX:MaxMetaspaceSize=1G",
+  "-J-XX:MetaspaceSize=1G"
 )
 
 publishLocal := {
