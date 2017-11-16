@@ -611,6 +611,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 )
               )
             ),
+            similarProposals = Seq.empty,
             events = List(
               ProposalAction(
                 date = e.eventDate,
@@ -691,7 +692,8 @@ object ProposalActor {
         tags = event.tags,
         labels = event.labels,
         events = action :: state.proposal.events,
-        updatedAt = Some(event.eventDate)
+        updatedAt = Some(event.eventDate),
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
@@ -725,7 +727,8 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.proposal.events,
         status = Accepted,
-        updatedAt = Some(event.eventDate)
+        updatedAt = Some(event.eventDate),
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
