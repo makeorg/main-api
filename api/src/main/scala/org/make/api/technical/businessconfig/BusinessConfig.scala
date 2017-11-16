@@ -35,16 +35,24 @@ object BusinessConfig {
   val tagsVFF: Seq[Tag] = Seq(
     Tag("signalement"),
     Tag("police & justice"),
-    Tag("image de la femme"),
-    Tag("cyber-harcèlement"),
-    Tag("protection des victimes"),
+    Tag("monde du travail"),
     Tag("transports"),
     Tag("action publique"),
     Tag("hébergement"),
-    Tag("pédagogie"),
+    Tag("éducation & sensibilisation"),
     Tag("soutien psychologique"),
-    Tag("plaintes"),
-    Tag("agressions")
+    Tag("indépendance financière"),
+    Tag("agissements sexistes"),
+    Tag("mutilations"),
+    Tag("violences sexuelles"),
+    Tag("harcèlement"),
+    Tag("traditions néfastes"),
+    Tag("image de la femme"),
+    Tag("violences conjugales"),
+    Tag("prévention"),
+    Tag("protection"),
+    Tag("réponses"),
+    Tag("agression")
   )
 }
 
