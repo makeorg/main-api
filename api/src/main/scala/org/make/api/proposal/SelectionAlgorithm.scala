@@ -48,8 +48,13 @@ object SelectionAlgorithm {
     */
   def getProposalsForSequence(lengthSequence: Int,
                               getSearchSpace: Seq[ProposalId]   => Seq[IndexedProposal],
-                              getSimilarForProposal: ProposalId => Seq[ProposalId]): Seq[IndexedProposal] = {
-    var excludeList: Set[ProposalId] = Set.empty
+                              getSimilarForProposal: ProposalId => Seq[ProposalId],
+                              includeList: Seq[IndexedProposal] = Seq.empty): Seq[IndexedProposal] = {
+    // initialize exclude list with the forced included and their similar
+    var excludeList: Set[ProposalId] = (includeList.map(_.id) ++ includeList.flatMap { proposal =>
+      getSimilarForProposal(proposal.id)
+    }).toSet
+    // initialize search space
     var searchSpace: Seq[IndexedProposal] = getSearchSpace(excludeList.toSeq)
 
     if (searchSpace.nonEmpty) {
@@ -57,21 +62,18 @@ object SelectionAlgorithm {
       var continue: Boolean = true
       var prunedSearchSpace = searchSpace
 
-      while (selectedProposals.length < lengthSequence && continue) {
+      while (selectedProposals.length < (lengthSequence - includeList.length) && continue) {
         // picking a proposal at (inverse weighted) random from {searchSpace - excludeList}
         val nextEntry = InverseWeightedRandom.randomWeighted(prunedSearchSpace)
         // adding next entry to list of selected proposals
         selectedProposals = nextEntry +: selectedProposals
-        // adding next entry to the exclude list
-        excludeList = excludeList + nextEntry.id
-        // adding similar of current entry to the exclude list
-        excludeList = excludeList ++ getSimilarForProposal(nextEntry.id).toSet
+        // adding next entry and it's similar to the exclude list
+        excludeList = excludeList + nextEntry.id ++ getSimilarForProposal(nextEntry.id).toSet
 
         // prune search space
         prunedSearchSpace = searchSpace.filter { e =>
           !excludeList.contains(e.id)
         }
-
         // pruned search space exhausted
         if (prunedSearchSpace.isEmpty) {
           // get new search space
@@ -82,9 +84,9 @@ object SelectionAlgorithm {
           }
         }
       }
-      selectedProposals.reverse
+      includeList ++ selectedProposals.reverse
     } else {
-      Seq.empty
+      includeList
     }
   }
 }
