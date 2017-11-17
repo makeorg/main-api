@@ -102,7 +102,7 @@ object SearchSequenceParameters {
     DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
 }
 
-final case class StartSequenceParameters(query: SequenceSearchQuery)
+final case class StartSequenceParameters(slug: String)
 object StartSequenceParameters {
   implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
     DefaultJsonProtocol.jsonFormat1(StartSequenceParameters.apply)

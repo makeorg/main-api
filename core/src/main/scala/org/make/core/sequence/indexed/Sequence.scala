@@ -36,7 +36,7 @@ case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequen
 
 case class IndexedSequenceTheme(themeId: ThemeId, translation: Seq[ThemeTranslation])
 
-case class IndexedProposalSequence(proposalId: ProposalId)
+case class IndexedSequenceProposalId(proposalId: ProposalId)
 
 case class IndexedSequence(id: SequenceId,
                            title: String,
@@ -48,7 +48,7 @@ case class IndexedSequence(id: SequenceId,
                            context: Option[Context],
                            tags: Seq[Tag],
                            themes: Seq[IndexedSequenceTheme],
-                           proposals: Seq[IndexedProposalSequence],
+                           proposals: Seq[IndexedSequenceProposalId],
                            searchable: Boolean)
 
 final case class Context(operation: Option[String],

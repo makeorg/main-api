@@ -3,6 +3,7 @@ package org.make.api.proposal
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed._
 
+import scala.concurrent.Future
 import scala.util.Random
 
 object InverseWeightedRandom {
@@ -47,12 +48,14 @@ object SelectionAlgorithm {
     * @return selected list of proposals for the sequence
     */
   def getProposalsForSequence(lengthSequence: Int,
-                              getSearchSpace: Seq[ProposalId]   => Seq[IndexedProposal],
-                              getSimilarForProposal: ProposalId => Seq[ProposalId],
-                              includeList: Seq[IndexedProposal] = Seq.empty): Seq[IndexedProposal] = {
+                              getSearchSpace: Seq[ProposalId]   => Future[Seq[IndexedProposal]],
+                              getSimilarForProposal: ProposalId => Future[Seq[ProposalId]],
+                              includeList: Seq[ProposalId] = Seq.empty): Seq[IndexedProposal] = {
     // initialize exclude list with the forced included and their similar
-    var excludeList: Set[ProposalId] = (includeList.map(_.id) ++ includeList.flatMap { proposal =>
-      getSimilarForProposal(proposal.id)
+
+    var futureSimilarExcludes = Future.sequence(includeList.map(getSimilarForProposal))
+    var excludeList: Set[ProposalId] = (includeList ++ includeList.map { proposalId =>
+      getSimilarForProposal(proposalId)
     }).toSet
     // initialize search space
     var searchSpace: Seq[IndexedProposal] = getSearchSpace(excludeList.toSeq)

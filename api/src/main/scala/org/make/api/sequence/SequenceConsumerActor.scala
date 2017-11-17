@@ -110,7 +110,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
         ),
         tags = tags,
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
-        proposals = sequence.proposalIds.map(IndexedProposalSequence(_)),
+        proposals = sequence.proposalIds.map(IndexedSequenceProposalId(_)),
         searchable = sequence.searchable
       )
     }
