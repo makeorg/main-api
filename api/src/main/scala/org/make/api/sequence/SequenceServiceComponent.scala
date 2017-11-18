@@ -3,6 +3,7 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 
 import akka.util.Timeout
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalSearchEngineComponent,
@@ -82,7 +83,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with ProposalSearchEngineComponent
     with SequenceCoordinatorServiceComponent
     with EventBusServiceComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
 
@@ -126,7 +128,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       val getSimilarForProposal: (ProposalId) => Future[Seq[ProposalId]] = { proposalId =>
         proposalCoordinatorService.getProposal(proposalId).map(_.toSeq.flatMap(_.similarProposals))
       }
-      val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] = getProposalsToExcludeFromSequence(
+      val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] = getFilteredProposalsFromSequence(
         excludedProposals,
         includedProposals,
         futureMayBeSequence,
@@ -138,15 +140,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         }.flatten
       }
       val futureProposalsForSequence: Future[Seq[IndexedProposal]] = SelectionAlgorithm.getProposalsForSequence(
-        lengthSequence = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+        targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+        minLength = BackofficeConfiguration.defaultMinProposalsPerSequence,
         getSearchSpace = getSearchSpace,
+        getProposals = proposalIds => { elasticsearchProposalAPI.findProposalsByIds(proposalIds, random = false) },
         getSimilarForProposal = getSimilarForProposal,
         includeList = includedProposals
       )
-      for {
+      futureProposalsForSequence.recover {
+        case _ => Future.successful(Seq.empty)
+      }
+
+      val futureMayBeIndexedStartSequence: Future[Option[IndexedStartSequence]] = for {
         proposalsForSequence <- futureProposalsForSequence
         mayBeSequence        <- futureMayBeSequence
-        if proposalsForSequence.size >= BackofficeConfiguration.defaultMinProposalsPerSequence
       } yield
         mayBeSequence.map { sequence =>
           IndexedStartSequence(
@@ -159,6 +166,11 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             proposals = proposalsForSequence
           )
         }
+      futureMayBeIndexedStartSequence.recover {
+        case _ => Future(None)
+      }
+
+      futureMayBeIndexedStartSequence
     }
 
     override def create(userId: UserId,
@@ -294,7 +306,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     }
   }
 
-  private def getProposalsToExcludeFromSequence(
+  private def getFilteredProposalsFromSequence(
     excludedProposals: Seq[ProposalId],
     includedProposals: Seq[ProposalId],
     futureMayBeSequence: Future[Option[IndexedSequence]],
@@ -310,20 +322,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       .map(_.flatten)
 
     val futureOfAllProposalIdsToExclude: Future[Seq[ProposalId]] = for {
-      included             <- Future(includedProposals)
+      included             <- Future.successful(includedProposals)
       duplicatesOfIncludes <- futureDuplicatesOfIncludes
-      excluded             <- Future(excludedProposals)
+      excluded             <- Future.successful(excludedProposals)
       voted                <- futureVotedProposals
     } yield included ++ duplicatesOfIncludes ++ excluded ++ voted
 
-    val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] = for {
-      allProposalIdsToExclude <- futureOfAllProposalIdsToExclude
-      mayBeProposals <- futureMayBeSequence.map {
-        case Some(sequence) =>
-          sequence.proposals.filterNot(proposal => allProposalIdsToExclude.contains(proposal.proposalId))
-        case _ => Seq()
-      }
-    } yield mayBeProposals
+    val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
+      futureOfAllProposalIdsToExclude.flatMap { allProposalIdsToExclude =>
+        futureMayBeSequence.map {
+          case Some(sequence) =>
+            Some(sequence.proposals.filterNot(proposal => allProposalIdsToExclude.contains(proposal.proposalId)))
+          case _ => Some(Seq.empty)
+        }
+      }.map(_.getOrElse(Seq.empty))
 
     futureFilteredSequenceProposalIds
   }

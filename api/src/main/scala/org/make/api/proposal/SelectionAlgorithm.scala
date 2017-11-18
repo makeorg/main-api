@@ -1,34 +1,37 @@
 package org.make.api.proposal
 
+import com.typesafe.scalalogging.StrictLogging
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed._
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.util.Random
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object InverseWeightedRandom {
 
   /** Returns the index result of a binary search to find @n in the discrete
     * cdf array.
     */
-  def search(n: Int, cdf: Seq[Int]): Int = {
-    if (n > cdf.head) {
-      1 + search(n - cdf.head, cdf.tail)
+  @tailrec
+  def search(n: Int, cdf: Seq[Int], index: Int = 0): Int = {
+    if (n <= cdf.head) {
+      index
     } else {
-      0
+      search(n - cdf.head, cdf.tail, index + 1)
     }
   }
 
   /** Returns the cumulative density function (CDF) of @list (in simple terms,
     * the cumulative sums of the weights).
     */
-  def cdf(list: Seq[Int]): Seq[Int] = list.map {
+  def cdf(list: Seq[Int]): Seq[Int] = {
     var s = 0
-    d =>
-      {
-        s += d
-        s
-      }
+    list.map { d =>
+      s += d
+      s
+    }
   }
 
   def randomWeighted(list: Seq[IndexedProposal]): IndexedProposal = {
@@ -39,57 +42,68 @@ object InverseWeightedRandom {
 
 }
 
-object SelectionAlgorithm {
+object SelectionAlgorithm extends StrictLogging {
 
   /**
-    * @param lengthSequence        number of elements in the sequence
+    * @param targetLength        number of elements in the sequence
     * @param getSearchSpace        function that returns a list of randomly chosen proposals
     * @param getSimilarForProposal function that returns a list of similar proposal ids for a given proposal id
     * @return selected list of proposals for the sequence
     */
-  def getProposalsForSequence(lengthSequence: Int,
+  def getProposalsForSequence(targetLength: Int,
+                              minLength: Int,
                               getSearchSpace: Seq[ProposalId]   => Future[Seq[IndexedProposal]],
                               getSimilarForProposal: ProposalId => Future[Seq[ProposalId]],
-                              includeList: Seq[ProposalId] = Seq.empty): Seq[IndexedProposal] = {
-    // initialize exclude list with the forced included and their similar
+                              getProposals: (Seq[ProposalId])   => Future[Seq[IndexedProposal]],
+                              includeList: Seq[ProposalId],
+                              retries: Int = 0): Future[Seq[IndexedProposal]] = {
 
-    var futureSimilarExcludes = Future.sequence(includeList.map(getSimilarForProposal))
-    var excludeList: Set[ProposalId] = (includeList ++ includeList.map { proposalId =>
-      getSimilarForProposal(proposalId)
-    }).toSet
-    // initialize search space
-    var searchSpace: Seq[IndexedProposal] = getSearchSpace(excludeList.toSeq)
+    val potentials: Future[Seq[IndexedProposal]] =
+      Future
+        .sequence(includeList.map(getSimilarForProposal))
+        .map(_.flatten)
+        .map(_ ++ includeList)
+        .flatMap(getSearchSpace)
 
-    if (searchSpace.nonEmpty) {
-      var selectedProposals: Seq[IndexedProposal] = Seq.empty
-      var continue: Boolean = true
-      var prunedSearchSpace = searchSpace
-
-      while (selectedProposals.length < (lengthSequence - includeList.length) && continue) {
-        // picking a proposal at (inverse weighted) random from {searchSpace - excludeList}
-        val nextEntry = InverseWeightedRandom.randomWeighted(prunedSearchSpace)
-        // adding next entry to list of selected proposals
-        selectedProposals = nextEntry +: selectedProposals
-        // adding next entry and it's similar to the exclude list
-        excludeList = excludeList + nextEntry.id ++ getSimilarForProposal(nextEntry.id).toSet
-
-        // prune search space
-        prunedSearchSpace = searchSpace.filter { e =>
-          !excludeList.contains(e.id)
+    potentials.flatMap { proposals =>
+      val allIds = includeList ++ proposals.map(_.id)
+      val duplicates: Future[Map[ProposalId, Seq[ProposalId]]] = Future
+        .traverse(allIds) { id =>
+          getSimilarForProposal(id).map(similar => id -> similar)
         }
-        // pruned search space exhausted
-        if (prunedSearchSpace.isEmpty) {
-          // get new search space
-          searchSpace = getSearchSpace(excludeList.toSeq)
-          if (searchSpace.isEmpty) {
-            // search space exhausted, exiting
-            continue = false
+        .map(_.toMap)
+
+      duplicates.flatMap { duplicates =>
+        var included = includeList.toList
+        var searchSpace: Seq[IndexedProposal] = proposals
+
+        while (searchSpace.nonEmpty && included.length < targetLength) {
+          included = InverseWeightedRandom.randomWeighted(searchSpace).id :: included
+
+          val forbiddenOnes = included.foldLeft(Set.empty[ProposalId]) { (accumulator, id) =>
+            accumulator ++ duplicates(id).toSet
           }
+          searchSpace = searchSpace.filter(proposal => !forbiddenOnes.contains(proposal.id))
+        }
+
+        if (included.length == targetLength || retries > 3 && included.length >= minLength) {
+          getProposals(included)
+        } else if (retries > 3) {
+          // TODO: what failure should be returned? what http status later on?
+          Future.failed(new IllegalStateException("Not enough different proposals to create a sequence"))
+        } else {
+          getProposalsForSequence(
+            targetLength,
+            minLength,
+            getSearchSpace,
+            getSimilarForProposal,
+            getProposals,
+            included,
+            retries + 1
+          )
         }
       }
-      includeList ++ selectedProposals.reverse
-    } else {
-      includeList
     }
   }
+
 }

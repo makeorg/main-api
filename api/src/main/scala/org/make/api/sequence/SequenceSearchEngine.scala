@@ -11,11 +11,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
-import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.{IndexedSequence, IndexedStartSequence, SequencesSearchResult}
+import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

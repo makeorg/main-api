@@ -18,7 +18,6 @@ import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Sequence")
@@ -405,7 +404,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       includedProposals = includes.toSeq.map(ProposalId(_)),
                       requestContext = requestContext
                     )
-                    .map(Option(_))
                 ) { sequences =>
                   complete(sequences)
                 }
