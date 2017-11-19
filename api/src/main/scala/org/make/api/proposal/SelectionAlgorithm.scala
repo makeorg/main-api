@@ -9,7 +9,7 @@ import scala.concurrent.Future
 import scala.util.Random
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object InverseWeightedRandom {
+object InverseWeightedRandom extends StrictLogging {
 
   /** Returns the index result of a binary search to find @n in the discrete
     * cdf array.
@@ -80,9 +80,10 @@ object SelectionAlgorithm extends StrictLogging {
         while (searchSpace.nonEmpty && included.length < targetLength) {
           included = InverseWeightedRandom.randomWeighted(searchSpace).id :: included
 
-          val forbiddenOnes = included.foldLeft(Set.empty[ProposalId]) { (accumulator, id) =>
+          val forbiddenOnes = included ++ included.foldLeft(Set.empty[ProposalId]) { (accumulator, id) =>
             accumulator ++ duplicates(id).toSet
           }
+
           searchSpace = searchSpace.filter(proposal => !forbiddenOnes.contains(proposal.id))
         }
 
