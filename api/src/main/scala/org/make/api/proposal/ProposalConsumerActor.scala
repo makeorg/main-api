@@ -39,16 +39,23 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case _: ProposalViewed          => Future.successful {}
-      case event: ProposalUpdated     => onCreateOrUpdate(event)
-      case event: ProposalProposed    => onCreateOrUpdate(event)
-      case event: ProposalAccepted    => onCreateOrUpdate(event)
+      case _: ProposalViewed => Future.successful {}
+      case event: ProposalUpdated =>
+        onSimilarProposalsUpdated(event.id, event.similarProposals)
+        onCreateOrUpdate(event)
+      case event: ProposalProposed => onCreateOrUpdate(event)
+      case event: ProposalAccepted =>
+        onSimilarProposalsUpdated(event.id, event.similarProposals)
+        onCreateOrUpdate(event)
       case event: ProposalRefused     => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
       case event: ProposalUnqualified => onCreateOrUpdate(event)
       case event: ProposalLocked      => Future.successful {}
+      case event: SimilarProposalsAdded =>
+        onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
+        Future.successful {}
     }
 
   }
@@ -63,11 +70,19 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
+    implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
     retrieveAndShapeProposal(event.id).flatMap(indexOrUpdate)
+  }
+
+  def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
+    val allIds = Seq(proposalId) ++ newSimilarProposals
+    newSimilarProposals.foreach { id =>
+      proposalCoordinator ! UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id))
+    }
   }
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
@@ -95,7 +110,6 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
-      // TODO: missing qualifs
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,

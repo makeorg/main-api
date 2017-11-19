@@ -38,6 +38,9 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalUnqualifiedSerializer: JsonPersister[ProposalUnqualified, V1] =
     persister[ProposalUnqualified]("proposal-unqualified")
 
+  private val similarProposalsAddedSerializer: JsonPersister[SimilarProposalsAdded, V1] =
+    persister[SimilarProposalsAdded]("similar-proposals-added")
+
   private val proposalSerializer: JsonPersister[Proposal, V2] =
     persister[Proposal, V2]("proposal", from[V1].to[V2](_.update('similarProposals ! set[Seq[ProposalId]](Seq.empty))))
 
@@ -60,6 +63,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalUnqualifiedSerializer,
       proposalLockedSerializer,
       proposalStateSerializer,
+      similarProposalsAddedSerializer,
       proposalSerializer
     )
 }

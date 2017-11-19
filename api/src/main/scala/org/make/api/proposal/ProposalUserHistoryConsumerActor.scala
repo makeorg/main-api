@@ -28,16 +28,17 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed      => handleProposalViewed(event)
-      case event: ProposalUpdated     => handleProposalUpdated(event)
-      case event: ProposalProposed    => handleProposalProposed(event)
-      case event: ProposalAccepted    => handleProposalAccepted(event)
-      case event: ProposalRefused     => handleProposalRefused(event)
-      case event: ProposalVoted       => handleProposalVoted(event)
-      case event: ProposalUnvoted     => handleProposalUnvoted(event)
-      case event: ProposalQualified   => handleProposalQualified(event)
-      case event: ProposalUnqualified => handleProposalUnqualified(event)
-      case event: ProposalLocked      => handleProposalLocked(event)
+      case event: ProposalViewed        => handleProposalViewed(event)
+      case event: ProposalUpdated       => handleProposalUpdated(event)
+      case event: ProposalProposed      => handleProposalProposed(event)
+      case event: ProposalAccepted      => handleProposalAccepted(event)
+      case event: ProposalRefused       => handleProposalRefused(event)
+      case event: ProposalVoted         => handleProposalVoted(event)
+      case event: ProposalUnvoted       => handleProposalUnvoted(event)
+      case event: ProposalQualified     => handleProposalQualified(event)
+      case event: ProposalUnqualified   => handleProposalUnqualified(event)
+      case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
+      case event: ProposalLocked        => handleProposalLocked(event)
     }
 
   }
@@ -53,9 +54,16 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
+    implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleSimilarProposalsAdded(event: SimilarProposalsAdded): Future[Unit] = {
     Future.successful[Unit] {
       log.debug(s"received $event")
     }
