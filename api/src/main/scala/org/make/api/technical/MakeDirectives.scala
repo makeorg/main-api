@@ -119,8 +119,8 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         question = maybeQuestion,
         language = maybeLanguage,
         country = maybeCountry,
-        hostname = maybeHostName.getOrElse("unknown"),
-        ipAddress = maybeIpAddress.toOption.map(_.getHostAddress).getOrElse("unknown"),
+        hostname = maybeHostName,
+        ipAddress = maybeIpAddress.toOption.map(_.getHostAddress),
         getParameters =
           maybeGetParameters.map(_.split("&").map(_.split("=", 2)).map { case Array(i, j) => i -> j }.toMap)
       )

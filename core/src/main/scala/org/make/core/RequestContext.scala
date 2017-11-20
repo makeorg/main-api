@@ -15,13 +15,13 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 source: Option[String],
                                 location: Option[String],
                                 question: Option[String],
-                                hostname: String,
-                                ipAddress: String,
+                                hostname: Option[String] = None,
+                                ipAddress: Option[String] = None,
                                 getParameters: Option[Map[String, String]])
 
 object RequestContext {
   val empty: RequestContext =
-    RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, "", "", None)
+    RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, None, None, None)
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
     DefaultJsonProtocol.jsonFormat13(RequestContext.apply)
