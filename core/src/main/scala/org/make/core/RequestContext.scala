@@ -17,7 +17,7 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 question: Option[String],
                                 hostname: Option[String] = None,
                                 ipAddress: Option[String] = None,
-                                getParameters: Option[Map[String, String]])
+                                getParameters: Option[Map[String, String]] = None)
 
 object RequestContext {
   val empty: RequestContext =
