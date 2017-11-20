@@ -2,7 +2,6 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.core.session.SessionId
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
@@ -100,21 +99,7 @@ object UserEvent {
   final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
                                              override val eventDate: ZonedDateTime = DateHelper.now(),
                                              override val userId: UserId = UserId(value = ""),
-                                             override val requestContext: RequestContext = RequestContext(
-                                               currentTheme = None,
-                                               requestId = "",
-                                               sessionId = SessionId(value = ""),
-                                               externalId = "",
-                                               country = None,
-                                               language = None,
-                                               operation = None,
-                                               source = None,
-                                               location = None,
-                                               question = None,
-                                               hostname = "",
-                                               ipAddress = "",
-                                               getParameters = None
-                                             ))
+                                             override val requestContext: RequestContext = RequestContext.empty)
       extends UserEvent
 
   object UserValidatedAccountEvent {
