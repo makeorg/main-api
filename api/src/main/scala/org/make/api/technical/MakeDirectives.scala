@@ -29,12 +29,17 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
   def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
+
   def routeNameFromTrace: String = getFromTrace("route-name")
+
   def externalIdFromTrace: String = getFromTrace("external-id")
+
   def requestIdFromTrace: String = getFromTrace("id")
 
   def requestId: Directive1[String] = BasicDirectives.provide(idGenerator.nextId())
+
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
+
   def sessionId: Directive1[String] =
     optionalCookie(sessionIdKey).map(_.map(_.value).getOrElse(idGenerator.nextId()))
 
@@ -76,18 +81,21 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
 
   def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive1[RequestContext] = {
     for {
-      maybeCookie    <- optionalCookie(sessionIdKey)
-      requestId      <- requestId
-      startTime      <- startTime
-      sessionId      <- sessionId
-      externalId     <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      maybeTheme     <- optionalHeaderValueByName(ThemeIdHeader.name)
-      maybeOperation <- optionalHeaderValueByName(OperationHeader.name)
-      maybeSource    <- optionalHeaderValueByName(SourceHeader.name)
-      maybeLocation  <- optionalHeaderValueByName(LocationHeader.name)
-      maybeQuestion  <- optionalHeaderValueByName(QuestionHeader.name)
-      maybeCountry   <- optionalHeaderValueByName(CountryHeader.name)
-      maybeLanguage  <- optionalHeaderValueByName(LanguageHeader.name)
+      maybeCookie        <- optionalCookie(sessionIdKey)
+      requestId          <- requestId
+      startTime          <- startTime
+      sessionId          <- sessionId
+      externalId         <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      maybeTheme         <- optionalHeaderValueByName(ThemeIdHeader.name)
+      maybeOperation     <- optionalHeaderValueByName(OperationHeader.name)
+      maybeSource        <- optionalHeaderValueByName(SourceHeader.name)
+      maybeLocation      <- optionalHeaderValueByName(LocationHeader.name)
+      maybeQuestion      <- optionalHeaderValueByName(QuestionHeader.name)
+      maybeCountry       <- optionalHeaderValueByName(CountryHeader.name)
+      maybeLanguage      <- optionalHeaderValueByName(LanguageHeader.name)
+      maybeHostName      <- optionalHeaderValueByName(HostNameHeader.name)
+      maybeIpAddress     <- extractClientIP
+      maybeGetParameters <- optionalHeaderValueByName(GetParametersHeader.name)
       _ <- traceName(
         name,
         tags ++ Map(
@@ -100,7 +108,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
       )
       _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
     } yield {
-
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
         requestId = requestId,
@@ -111,7 +118,11 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
         location = maybeLocation,
         question = maybeQuestion,
         language = maybeLanguage,
-        country = maybeCountry
+        country = maybeCountry,
+        hostname = maybeHostName.getOrElse("unknown"),
+        ipAddress = maybeIpAddress.toOption.map(_.getHostAddress).getOrElse("unknown"),
+        getParameters =
+          maybeGetParameters.map(_.split("&").map(_.split("=", 2)).map { case Array(i, j) => i -> j }.toMap)
       )
     }
   }
@@ -228,34 +239,43 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[RequestIdHeader] = RequestIdHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = true
 }
 
 object RequestIdHeader extends ModeledCustomHeaderCompanion[RequestIdHeader] {
   override val name: String = "x-request-id"
+
   override def parse(value: String): Try[RequestIdHeader] = Success(new RequestIdHeader(value))
 }
 
 final case class RouteNameHeader(override val value: String) extends ModeledCustomHeader[RouteNameHeader] {
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = true
+
   override def companion: ModeledCustomHeaderCompanion[RouteNameHeader] = RouteNameHeader
 }
 
 object RouteNameHeader extends ModeledCustomHeaderCompanion[RouteNameHeader] {
   override val name: String = "x-route-name"
+
   override def parse(value: String): Try[RouteNameHeader] = Success(new RouteNameHeader(value))
 }
 
 final case class RequestTimeHeader(override val value: String) extends ModeledCustomHeader[RequestTimeHeader] {
   override def companion: ModeledCustomHeaderCompanion[RequestTimeHeader] = RequestTimeHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = true
 }
 
 object RequestTimeHeader extends ModeledCustomHeaderCompanion[RequestTimeHeader] {
   override val name: String = "x-route-time"
+
   override def parse(value: String): Try[RequestTimeHeader] =
     Failure(new NotImplementedError("Please use the apply from long instead"))
 
@@ -265,12 +285,15 @@ object RequestTimeHeader extends ModeledCustomHeaderCompanion[RequestTimeHeader]
 
 final case class ExternalIdHeader(override val value: String) extends ModeledCustomHeader[ExternalIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[ExternalIdHeader] = ExternalIdHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = true
 }
 
 object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
   override val name: String = "x-make-external-id"
+
   override def parse(value: String): Try[ExternalIdHeader] = Success(new ExternalIdHeader(value))
 }
 
@@ -284,77 +307,126 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
 
 final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[ThemeIdHeader] = ThemeIdHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object ThemeIdHeader extends ModeledCustomHeaderCompanion[ThemeIdHeader] {
   override val name: String = "x-make-theme-id"
+
   override def parse(value: String): Try[ThemeIdHeader] = Success(new ThemeIdHeader(value))
 }
 
 final case class OperationHeader(override val value: String) extends ModeledCustomHeader[OperationHeader] {
   override def companion: ModeledCustomHeaderCompanion[OperationHeader] = OperationHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object OperationHeader extends ModeledCustomHeaderCompanion[OperationHeader] {
   override val name: String = "x-make-operation"
+
   override def parse(value: String): Try[OperationHeader] = Success(new OperationHeader(value))
 }
 
 final case class SourceHeader(override val value: String) extends ModeledCustomHeader[SourceHeader] {
   override def companion: ModeledCustomHeaderCompanion[SourceHeader] = SourceHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object SourceHeader extends ModeledCustomHeaderCompanion[SourceHeader] {
   override val name: String = "x-make-source"
+
   override def parse(value: String): Try[SourceHeader] = Success(new SourceHeader(value))
 }
 
 final case class LocationHeader(override val value: String) extends ModeledCustomHeader[LocationHeader] {
   override def companion: ModeledCustomHeaderCompanion[LocationHeader] = LocationHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object LocationHeader extends ModeledCustomHeaderCompanion[LocationHeader] {
   override val name: String = "x-make-location"
+
   override def parse(value: String): Try[LocationHeader] = Success(new LocationHeader(value))
 }
 
 final case class QuestionHeader(override val value: String) extends ModeledCustomHeader[QuestionHeader] {
   override def companion: ModeledCustomHeaderCompanion[QuestionHeader] = QuestionHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object QuestionHeader extends ModeledCustomHeaderCompanion[QuestionHeader] {
   override val name: String = "x-make-question"
+
   override def parse(value: String): Try[QuestionHeader] = Success(new QuestionHeader(value))
 }
 
 final case class LanguageHeader(override val value: String) extends ModeledCustomHeader[LanguageHeader] {
   override def companion: ModeledCustomHeaderCompanion[LanguageHeader] = LanguageHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object LanguageHeader extends ModeledCustomHeaderCompanion[LanguageHeader] {
   override val name: String = "x-make-language"
+
   override def parse(value: String): Try[LanguageHeader] = Success(new LanguageHeader(value))
 }
 
 final case class CountryHeader(override val value: String) extends ModeledCustomHeader[CountryHeader] {
   override def companion: ModeledCustomHeaderCompanion[CountryHeader] = CountryHeader
+
   override def renderInRequests: Boolean = true
+
   override def renderInResponses: Boolean = false
 }
 
 object CountryHeader extends ModeledCustomHeaderCompanion[CountryHeader] {
   override val name: String = "x-make-country"
+
   override def parse(value: String): Try[CountryHeader] = Success(new CountryHeader(value))
+}
+
+final case class HostNameHeader(override val value: String) extends ModeledCustomHeader[HostNameHeader] {
+  override def companion: ModeledCustomHeaderCompanion[HostNameHeader] = HostNameHeader
+
+  override def renderInRequests: Boolean = true
+
+  override def renderInResponses: Boolean = false
+}
+
+object HostNameHeader extends ModeledCustomHeaderCompanion[HostNameHeader] {
+  override val name: String = "x-hostname"
+
+  override def parse(value: String): Try[HostNameHeader] = Success(new HostNameHeader(value))
+}
+
+final case class GetParametersHeader(override val value: String) extends ModeledCustomHeader[GetParametersHeader] {
+  override def companion: ModeledCustomHeaderCompanion[GetParametersHeader] = GetParametersHeader
+
+  override def renderInRequests: Boolean = true
+
+  override def renderInResponses: Boolean = false
+}
+
+object GetParametersHeader extends ModeledCustomHeaderCompanion[GetParametersHeader] {
+  override val name: String = "x-get-parameters"
+
+  override def parse(value: String): Try[GetParametersHeader] = Success(new GetParametersHeader(value))
 }

@@ -107,7 +107,10 @@ object UserEvent {
                                                operation = None,
                                                source = None,
                                                location = None,
-                                               question = None
+                                               question = None,
+                                               hostname = "",
+                                               ipAddress = "",
+                                               getParameters = None
                                              ))
       extends UserEvent
 
