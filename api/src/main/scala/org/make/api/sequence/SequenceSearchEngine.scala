@@ -11,11 +11,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
-import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.{IndexedSequence, IndexedStartSequence, SequencesSearchResult}
+import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -26,8 +25,8 @@ trait SequenceSearchEngineComponent {
 
 trait SequenceSearchEngine {
   def findSequenceById(sequenceId: SequenceId): Future[Option[IndexedSequence]]
+  def findSequenceBySlug(slugSequence: String): Future[Option[IndexedSequence]]
   def searchSequences(query: SearchQuery): Future[SequencesSearchResult]
-  def getStartSequence(searchQuery: SearchQuery): Future[Option[IndexedStartSequence]]
   def indexSequence(record: IndexedSequence): Future[Done]
   def updateSequence(record: IndexedSequence): Future[Done]
 }
@@ -49,6 +48,24 @@ trait DefaultSequenceSearchEngineComponent
       client.execute(get(id = sequenceId.value).from(sequenceIndex)).map(_.toOpt[IndexedSequence])
     }
 
+    override def findSequenceBySlug(slugSequence: String): Future[Option[IndexedSequence]] = {
+      val query = SearchStartSequenceRequest(slug = slugSequence).toSearchQuery
+      val searchFilters = SearchFilters.getSearchFilters(query)
+      val request = search(sequenceIndex)
+        .bool(BoolQueryDefinition(must = searchFilters))
+        .from(0)
+        .size(1)
+
+      logger.debug(client.show(request))
+
+      client.execute {
+        request
+      }.map(_.to[IndexedSequence]).map {
+        case indexedSeq if indexedSeq.isEmpty => None
+        case other                            => Some(other.head)
+      }
+    }
+
     override def searchSequences(searchQuery: SearchQuery): Future[SequencesSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
@@ -65,50 +82,6 @@ trait DefaultSequenceSearchEngineComponent
         request
       }.map { response =>
         SequencesSearchResult(total = response.totalHits, results = response.to[IndexedSequence])
-      }
-    }
-
-    override def getStartSequence(searchQuery: SearchQuery): Future[Option[IndexedStartSequence]] = {
-      // toDo: should be editable in BO
-      val max: Int = BackofficeConfiguration.defaultMaxProposalsPerSequence
-      val min: Int = BackofficeConfiguration.defaultMinProposalsPerSequence
-      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-      val request = search(sequenceIndex)
-        .bool(BoolQueryDefinition(must = searchFilters))
-        .from(0)
-        .size(1)
-
-      logger.debug(client.show(request))
-
-      val futureMayBeIndexedSequence: Future[Option[IndexedSequence]] = client.execute {
-        request
-      }.map(_.to[IndexedSequence]).map {
-        case indexedSeq if indexedSeq.isEmpty => None
-        case other                            => Some(other.head)
-
-      }
-
-      futureMayBeIndexedSequence.flatMap {
-        _.map(indexSequence => {
-          elasticsearchProposalAPI.findProposalsByIds(indexSequence.proposals.map(_.proposalId), Some(max)).map {
-            seqIndexedProposals =>
-              if (seqIndexedProposals.size >= min) {
-                Some(
-                  IndexedStartSequence(
-                    id = indexSequence.id,
-                    title = indexSequence.title,
-                    slug = indexSequence.slug,
-                    translation = indexSequence.translation,
-                    tags = indexSequence.tags,
-                    themes = indexSequence.themes,
-                    proposals = seqIndexedProposals
-                  )
-                )
-              } else {
-                None
-              }
-          }
-        }).getOrElse(Future.successful(None))
       }
     }
 

@@ -13,11 +13,11 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.proposal.ProposalId
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Sequence")
@@ -381,30 +381,34 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "slug", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "slug", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "array", allowMultiple = true)
+    )
+  )
   @Path(value = "/sequences/{slug}")
   def startSequenceBySlug: Route = {
     get {
       path("sequences" / sequenceSlug) { slug =>
-        makeTrace("Search") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            decodeRequest {
-              // toDo: manage already voted proposals (session or user)
-              val excludedProposals = Seq.empty
-              provideAsyncOrNotFound(
-                sequenceService
-                  .startNewSequence(
-                    maybeUserId = userAuth.map(_.user.userId),
-                    slug = slug,
-                    excludedProposals = excludedProposals,
-                    requestContext = requestContext
-                  )
-                  .map(Option(_))
-              ) { sequences =>
-                complete(sequences)
+        parameters('include.*) { (includes) =>
+          makeTrace("Search") { requestContext =>
+            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+              decodeRequest {
+                provideAsyncOrNotFound(
+                  sequenceService
+                    .startNewSequence(
+                      maybeUserId = userAuth.map(_.user.userId),
+                      slug = slug,
+                      includedProposals = includes.toSeq.map(ProposalId(_)),
+                      requestContext = requestContext
+                    )
+                ) { sequences =>
+                  complete(sequences)
+                }
               }
-            }
 
+            }
           }
         }
       }

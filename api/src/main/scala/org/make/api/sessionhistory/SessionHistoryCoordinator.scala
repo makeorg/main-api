@@ -17,8 +17,7 @@ class SessionHistoryCoordinator(userHistoryCoordinator: ActorRef) extends Actor 
   }
 
   override def receive: Receive = {
-    case cmd: SessionHistoryEvent[_] => shardedSessionHistory.forward(cmd)
-    case cmd: SessionHistoryAction   => shardedSessionHistory.forward(cmd)
+    case cmd: SessionRelatedEvent => shardedSessionHistory.forward(cmd)
   }
 }
 

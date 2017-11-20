@@ -46,19 +46,40 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   }
 
   override def receiveCommand: Receive = {
-    case GetProposal(_, _)              => sender() ! state.map(_.proposal)
-    case command: ViewProposalCommand   => onViewProposalCommand(command)
-    case command: ProposeCommand        => onProposeCommand(command)
-    case command: UpdateProposalCommand => onUpdateProposalCommand(command)
-    case command: AcceptProposalCommand => onAcceptProposalCommand(command)
-    case command: RefuseProposalCommand => onRefuseProposalCommand(command)
-    case command: VoteProposalCommand   => onVoteProposalCommand(command)
-    case command: UnvoteProposalCommand => onUnvoteProposalCommand(command)
-    case command: QualifyVoteCommand    => onQualificationProposalCommand(command)
-    case command: UnqualifyVoteCommand  => onUnqualificationProposalCommand(command)
-    case command: LockProposalCommand   => onLockProposalCommand(command)
-    case Snapshot                       => state.foreach(saveSnapshot)
-    case _: KillProposalShard           => self ! PoisonPill
+    case GetProposal(_, _)                         => sender() ! state.map(_.proposal)
+    case command: ViewProposalCommand              => onViewProposalCommand(command)
+    case command: ProposeCommand                   => onProposeCommand(command)
+    case command: UpdateProposalCommand            => onUpdateProposalCommand(command)
+    case command: AcceptProposalCommand            => onAcceptProposalCommand(command)
+    case command: RefuseProposalCommand            => onRefuseProposalCommand(command)
+    case command: VoteProposalCommand              => onVoteProposalCommand(command)
+    case command: UnvoteProposalCommand            => onUnvoteProposalCommand(command)
+    case command: QualifyVoteCommand               => onQualificationProposalCommand(command)
+    case command: UnqualifyVoteCommand             => onUnqualificationProposalCommand(command)
+    case command: LockProposalCommand              => onLockProposalCommand(command)
+    case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
+    case Snapshot                                  => state.foreach(saveSnapshot)
+    case _: KillProposalShard                      => self ! PoisonPill
+  }
+
+  private def onUpdateDuplicatedProposalsCommand(command: UpdateDuplicatedProposalsCommand): Unit = {
+    state.foreach { proposalState =>
+      val newDuplicates =
+        command.duplicates.filter(
+          id => id != proposalState.proposal.proposalId && !proposalState.proposal.similarProposals.contains(id)
+        )
+
+      if (newDuplicates.nonEmpty) {
+        persistAndPublishEvent(
+          SimilarProposalsAdded(
+            command.proposalId,
+            proposalState.proposal.similarProposals.toSet ++ command.duplicates.toSet,
+            command.requestContext,
+            DateHelper.now()
+          )
+        )(_ => {})
+      }
+    }
   }
 
   private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
@@ -611,6 +632,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 )
               )
             ),
+            similarProposals = Seq.empty,
             events = List(
               ProposalAction(
                 date = e.eventDate,
@@ -622,15 +644,16 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           )
         )
       )
-    case e: ProposalUpdated     => state.map(proposalState => applyProposalUpdated(proposalState, e))
-    case e: ProposalAccepted    => state.map(proposalState => applyProposalAccepted(proposalState, e))
-    case e: ProposalRefused     => state.map(proposalState => applyProposalRefused(proposalState, e))
-    case e: ProposalVoted       => state.map(proposalState => applyProposalVoted(proposalState, e))
-    case e: ProposalUnvoted     => state.map(proposalState => applyProposalUnvoted(proposalState, e))
-    case e: ProposalQualified   => state.map(proposalState => applyProposalQualified(proposalState, e))
-    case e: ProposalUnqualified => state.map(proposalState => applyProposalUnqualified(proposalState, e))
-    case e: ProposalLocked      => state.map(proposalState => applyProposalLocked(proposalState, e))
-    case _                      => state
+    case e: ProposalUpdated       => state.map(proposalState => applyProposalUpdated(proposalState, e))
+    case e: ProposalAccepted      => state.map(proposalState => applyProposalAccepted(proposalState, e))
+    case e: ProposalRefused       => state.map(proposalState => applyProposalRefused(proposalState, e))
+    case e: ProposalVoted         => state.map(proposalState => applyProposalVoted(proposalState, e))
+    case e: ProposalUnvoted       => state.map(proposalState => applyProposalUnvoted(proposalState, e))
+    case e: ProposalQualified     => state.map(proposalState => applyProposalQualified(proposalState, e))
+    case e: ProposalUnqualified   => state.map(proposalState => applyProposalUnqualified(proposalState, e))
+    case e: ProposalLocked        => state.map(proposalState => applyProposalLocked(proposalState, e))
+    case e: SimilarProposalsAdded => state.map(proposalState => applySimilarProposalsAdded(proposalState, e))
+    case _                        => state
   }
 
   private def persistAndPublishEvent[T <: ProposalEvent](event: T)(andThen: T => Unit): Unit = {
@@ -691,7 +714,8 @@ object ProposalActor {
         tags = event.tags,
         labels = event.labels,
         events = action :: state.proposal.events,
-        updatedAt = Some(event.eventDate)
+        updatedAt = Some(event.eventDate),
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
@@ -725,7 +749,8 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.proposal.events,
         status = Accepted,
-        updatedAt = Some(event.eventDate)
+        updatedAt = Some(event.eventDate),
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
@@ -848,6 +873,10 @@ object ProposalActor {
           lock = Some(Lock(event.moderatorId, event.moderatorName.getOrElse("<unknown>")))
         )
     }
+  }
+
+  def applySimilarProposalsAdded(state: ProposalState, event: SimilarProposalsAdded): ProposalState = {
+    state.copy(proposal = state.proposal.copy(similarProposals = event.similarProposals.toSeq))
   }
 
   case object Snapshot

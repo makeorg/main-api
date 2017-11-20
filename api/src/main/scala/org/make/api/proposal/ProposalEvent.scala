@@ -21,7 +21,7 @@ object ProposalEvent {
 
   type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
     ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
-    ProposalLocked :+: CNil
+    SimilarProposalsAdded :+: ProposalLocked :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -32,16 +32,17 @@ object ProposalEvent {
 
   object ProposalEventWrapper {
     def wrapEvent(event: ProposalEvent): AnyProposalEvent = event match {
-      case e: ProposalProposed    => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAccepted    => Coproduct[AnyProposalEvent](e)
-      case e: ProposalRefused     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalViewed      => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUpdated     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVoted       => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnvoted     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalQualified   => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnqualified => Coproduct[AnyProposalEvent](e)
-      case e: ProposalLocked      => Coproduct[AnyProposalEvent](e)
+      case e: ProposalProposed      => Coproduct[AnyProposalEvent](e)
+      case e: ProposalAccepted      => Coproduct[AnyProposalEvent](e)
+      case e: ProposalRefused       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalViewed        => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUpdated       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalVoted         => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnvoted       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalQualified     => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnqualified   => Coproduct[AnyProposalEvent](e)
+      case e: SimilarProposalsAdded => Coproduct[AnyProposalEvent](e)
+      case e: ProposalLocked        => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -215,6 +216,19 @@ object ProposalEvent {
     implicit val proposalEditionFormatter: RootJsonFormat[ProposalEdition] =
       DefaultJsonProtocol.jsonFormat2(ProposalEdition.apply)
 
+  }
+
+  final case class SimilarProposalsAdded(id: ProposalId,
+                                         similarProposals: Set[ProposalId],
+                                         requestContext: RequestContext,
+                                         eventDate: ZonedDateTime)
+      extends ProposalEvent
+
+  object SimilarProposalsAdded {
+    val version: Int = MakeSerializable.V1
+
+    implicit val formatter: RootJsonFormat[SimilarProposalsAdded] =
+      DefaultJsonProtocol.jsonFormat4(SimilarProposalsAdded.apply)
   }
 
   final case class ProposalLocked(id: ProposalId = ProposalId(""),

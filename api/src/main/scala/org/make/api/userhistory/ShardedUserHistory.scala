@@ -5,7 +5,6 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.userhistory.ShardedUserHistory.StopUserHistory
-import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 
 import scala.concurrent.duration._
 
@@ -28,15 +27,11 @@ object ShardedUserHistory {
   case object StopUserHistory
 
   def extractEntityId: ShardRegion.ExtractEntityId = {
-    case cmd: UserHistoryEvent[_] => (cmd.userId.value, cmd)
-    case cmd: UserHistoryAction   => (cmd.userId.value, cmd)
-    case cmd: RequestVoteValues   => (cmd.userId.value, cmd)
+    case cmd: UserRelatedEvent => (cmd.userId.value, cmd)
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
-    case cmd: UserHistoryEvent[_]    => Math.abs(cmd.userId.value.hashCode % 100).toString
-    case cmd: UserHistoryAction      => Math.abs(cmd.userId.value.hashCode % 100).toString
-    case cmd: RequestVoteValues      => Math.abs(cmd.userId.value.hashCode % 100).toString
+    case cmd: UserRelatedEvent       => Math.abs(cmd.userId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) => Math.abs(id.hashCode               % 100).toString
   }
 

@@ -33,8 +33,7 @@ sealed trait Protagonist
 case object Moderator extends Protagonist
 case object Citizen extends Protagonist
 
-sealed trait UserHistoryEvent[T] extends MakeSerializable with Product {
-  def userId: UserId
+sealed trait UserHistoryEvent[T] extends UserRelatedEvent with MakeSerializable with Product {
   def requestContext: RequestContext
   def action: UserAction[T]
   def protagonist: Protagonist
@@ -103,7 +102,7 @@ object SearchSequenceParameters {
     DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
 }
 
-final case class StartSequenceParameters(query: SequenceSearchQuery)
+final case class StartSequenceParameters(slug: String)
 object StartSequenceParameters {
   implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
     DefaultJsonProtocol.jsonFormat1(StartSequenceParameters.apply)
@@ -402,8 +401,4 @@ object LogUserStartSequenceEvent {
 
 }
 
-sealed trait UserHistoryAction {
-  def userId: UserId
-}
-
-final case class GetUserHistory(userId: UserId) extends UserHistoryAction
+final case class GetUserHistory(userId: UserId) extends UserRelatedEvent

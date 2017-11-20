@@ -49,6 +49,11 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        similarProposals: Seq[ProposalId])
     extends ProposalCommand
 
+final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,
+                                                  duplicates: Seq[ProposalId],
+                                                  requestContext: RequestContext = RequestContext.empty)
+    extends ProposalCommand
+
 final case class RefuseProposalCommand(moderator: UserId,
                                        proposalId: ProposalId,
                                        requestContext: RequestContext,

@@ -22,6 +22,7 @@ final case class Proposal(proposalId: ProposalId,
                           tags: Seq[TagId] = Seq.empty,
                           votes: Seq[Vote],
                           creationContext: RequestContext,
+                          similarProposals: Seq[ProposalId] = Seq.empty,
                           override val createdAt: Option[ZonedDateTime],
                           override val updatedAt: Option[ZonedDateTime],
                           events: List[ProposalAction])
@@ -30,7 +31,7 @@ final case class Proposal(proposalId: ProposalId,
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat14(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat15(Proposal.apply)
 
 }
 

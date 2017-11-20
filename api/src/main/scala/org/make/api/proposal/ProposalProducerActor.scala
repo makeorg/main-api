@@ -15,17 +15,18 @@ class ProposalProducerActor extends ProducerActor {
     kafkaConfiguration.topics(ProposalProducerActor.topicKey)
 
   override def receive: Receive = {
-    case event: ProposalProposed    => onPropose(event)
-    case event: ProposalAccepted    => onProposalAccepted(event)
-    case event: ProposalRefused     => onProposalRefused(event)
-    case event: ProposalUpdated     => onUpdateProposal(event)
-    case event: ProposalViewed      => onViewProposal(event)
-    case event: ProposalVoted       => onVoteProposal(event)
-    case event: ProposalUnvoted     => onUnvoteProposal(event)
-    case event: ProposalQualified   => onQualificationProposal(event)
-    case event: ProposalUnqualified => onUnqualificationProposal(event)
-    case event: ProposalLocked      => onLockedProposal(event)
-    case other                      => log.warning(s"Unknown event $other")
+    case event: ProposalProposed      => onPropose(event)
+    case event: ProposalAccepted      => onProposalAccepted(event)
+    case event: ProposalRefused       => onProposalRefused(event)
+    case event: ProposalUpdated       => onUpdateProposal(event)
+    case event: ProposalViewed        => onViewProposal(event)
+    case event: ProposalVoted         => onVoteProposal(event)
+    case event: ProposalUnvoted       => onUnvoteProposal(event)
+    case event: ProposalQualified     => onQualificationProposal(event)
+    case event: ProposalUnqualified   => onUnqualificationProposal(event)
+    case event: SimilarProposalsAdded => onSimilarProposalsAdded(event)
+    case event: ProposalLocked        => onLockedProposal(event)
+    case other                        => log.warning(s"Unknown event $other")
   }
 
   private def onVoteProposal(event: ProposalVoted): Unit = {
@@ -33,6 +34,20 @@ class ProposalProducerActor extends ProducerActor {
     val record = format.to(
       ProposalEventWrapper(
         version = ProposalVoted.version,
+        id = event.id.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = ProposalEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.id.value, record)
+  }
+
+  private def onSimilarProposalsAdded(event: SimilarProposalsAdded): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      ProposalEventWrapper(
+        version = SimilarProposalsAdded.version,
         id = event.id.value,
         date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,

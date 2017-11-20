@@ -77,7 +77,7 @@ object BackofficeConfiguration {
   val defaultNumberVotesTriggerConnexion: Int = 5
   val defaultNumberPendingProposalsTriggerEmailModerator: Int = 50
   val defaultMinProposalsPerSequence: Int = 3
-  val defaultMaxProposalsPerSequence: Int = 10
+  val defaultMaxProposalsPerSequence: Int = 12
   //TODO: redefine it with team product
   val defaultReasonsForRefusal: Seq[String] =
     Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "MultipleIdeas", "Other")
