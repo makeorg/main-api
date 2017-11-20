@@ -24,6 +24,7 @@ class ProposalProducerActor extends ProducerActor {
     case event: ProposalUnvoted     => onUnvoteProposal(event)
     case event: ProposalQualified   => onQualificationProposal(event)
     case event: ProposalUnqualified => onUnqualificationProposal(event)
+    case event: ProposalLocked      => onLockedProposal(event)
     case other                      => log.warning(s"Unknown event $other")
   }
 
@@ -74,6 +75,20 @@ class ProposalProducerActor extends ProducerActor {
     val record = format.to(
       ProposalEventWrapper(
         version = ProposalUnqualified.version,
+        id = event.id.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = ProposalEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.id.value, record)
+  }
+
+  private def onLockedProposal(event: ProposalEvent): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      ProposalEventWrapper(
+        version = ProposalLocked.version,
         id = event.id.value,
         date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,

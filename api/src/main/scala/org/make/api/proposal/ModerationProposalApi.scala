@@ -2,6 +2,7 @@ package org.make.api.proposal
 
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.auto._
@@ -35,8 +36,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       new Authorization(
         value = "MakeApi",
         scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
         )
       )
     )
@@ -119,8 +120,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       new Authorization(
         value = "MakeApi",
         scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
         )
       )
     )
@@ -170,7 +171,15 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     value = "validate-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
-    authorizations = Array(new Authorization(value = "MakeApi"))
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
   )
   @ApiImplicitParams(
     value = Array(
@@ -215,7 +224,15 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     value = "refuse-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
-    authorizations = Array(new Authorization(value = "MakeApi"))
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
   )
   @ApiImplicitParams(
     value = Array(
@@ -251,12 +268,47 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "lock-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @Path(value = "/{proposalId}/lock")
+  def lock: Route = post {
+    path("moderation" / "proposals" / moderationProposalId / "lock") { proposalId =>
+      makeTrace("LockProposal") { requestContext =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireModerationRole(auth.user) {
+            provideAsyncOrNotFound(
+              proposalService
+                .lockProposal(proposalId = proposalId, moderatorId = auth.user.userId, requestContext = requestContext)
+            ) { _ =>
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
       updateProposal ~
       acceptProposal ~
-      refuseProposal
+      refuseProposal ~
+      lock
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

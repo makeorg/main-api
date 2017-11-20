@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
+import org.make.api.proposal.ProposalEvent.ProposalLocked
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -12,6 +13,8 @@ import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.scalatest.GivenWhenThen
+
+import scala.concurrent.duration.DurationInt
 
 class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
@@ -368,6 +371,25 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           proposalId3 -> VoteAndQualifications(VoteKey.Neutral, Seq.empty)
         )
       )
+    }
+  }
+
+  feature("lock set on proposal") {
+    scenario("start moderation and continue to lock") {
+      coordinator ! LogLockProposalEvent(
+        UserId("Mod"),
+        Some("Mod"),
+        RequestContext.empty,
+        UserAction(DateHelper.now(), "lock", ProposalLocked())
+      )
+      expectMsgType[LogLockProposalEvent]
+      coordinator ! LogLockProposalEvent(
+        UserId("Mod"),
+        Some("Mod"),
+        RequestContext.empty,
+        UserAction(DateHelper.now(), "lock", ProposalLocked())
+      )
+      expectNoMessage(1.second)
     }
   }
 }

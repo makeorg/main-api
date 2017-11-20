@@ -195,6 +195,16 @@ class ProposalApiTest
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
+  ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
+
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
+  ).thenReturn(Future.successful(Some(tyrion.userId)))
+
   val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
@@ -401,6 +411,33 @@ class ProposalApiTest
         val proposalResults: ProposalsResultResponse = entityAs[ProposalsResultResponse]
         proposalResults.total should be(1)
         proposalResults.results should be(Seq(proposalResult))
+      }
+    }
+  }
+
+  feature("lock proposal") {
+    scenario("moderator can lock an unlocked proposal") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("moderator can expand the time a proposal is locked by itself") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("user cannot lock an unlocked proposal") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
       }
     }
   }

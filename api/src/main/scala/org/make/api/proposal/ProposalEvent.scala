@@ -20,7 +20,8 @@ sealed trait ProposalEvent extends MakeSerializable {
 object ProposalEvent {
 
   type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
-    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+: CNil
+    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
+    ProposalLocked :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -40,6 +41,7 @@ object ProposalEvent {
       case e: ProposalUnvoted     => Coproduct[AnyProposalEvent](e)
       case e: ProposalQualified   => Coproduct[AnyProposalEvent](e)
       case e: ProposalUnqualified => Coproduct[AnyProposalEvent](e)
+      case e: ProposalLocked      => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -212,6 +214,22 @@ object ProposalEvent {
   object ProposalEdition {
     implicit val proposalEditionFormatter: RootJsonFormat[ProposalEdition] =
       DefaultJsonProtocol.jsonFormat2(ProposalEdition.apply)
+
+  }
+
+  final case class ProposalLocked(id: ProposalId = ProposalId(""),
+                                  moderatorId: UserId = UserId(""),
+                                  moderatorName: Option[String] = None,
+                                  eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                  requestContext: RequestContext = RequestContext.empty)
+      extends ProposalEvent
+
+  object ProposalLocked {
+    val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-locked"
+
+    implicit val proposalLockedFormatter: RootJsonFormat[ProposalLocked] =
+      DefaultJsonProtocol.jsonFormat5(ProposalLocked.apply)
 
   }
 

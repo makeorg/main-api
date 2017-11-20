@@ -92,6 +92,7 @@ trait ProposalService {
                     requestContext: RequestContext,
                     voteKey: VoteKey,
                     qualificationKey: QualificationKey): Future[Option[Qualification]]
+  def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -509,6 +510,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
         )
       )
+    }
+
+    override def lockProposal(proposalId: ProposalId,
+                              moderatorId: UserId,
+                              requestContext: RequestContext): Future[Option[UserId]] = {
+      userService.getUser(moderatorId).flatMap {
+        case None => Future.successful(None)
+        case Some(moderator) =>
+          proposalCoordinatorService.lock(
+            LockProposalCommand(
+              proposalId = proposalId,
+              moderatorId = moderatorId,
+              moderatorName = moderator.firstName,
+              requestContext = requestContext
+            )
+          )
+      }
     }
   }
 
