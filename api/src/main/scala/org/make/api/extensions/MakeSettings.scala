@@ -12,6 +12,10 @@ class MakeSettings(config: Config) extends Extension {
 
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
 
+  object Sequence {
+    val batchSize: Int = config.getInt("sequence.batch-size")
+  }
+
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
     val name: String = "make-secure"

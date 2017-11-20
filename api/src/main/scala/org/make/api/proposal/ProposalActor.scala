@@ -62,16 +62,18 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case _: KillProposalShard                      => self ! PoisonPill
   }
 
-  def onUpdateDuplicatedProposalsCommand(command: UpdateDuplicatedProposalsCommand): Unit = {
-    state.foreach { lock =>
+  private def onUpdateDuplicatedProposalsCommand(command: UpdateDuplicatedProposalsCommand): Unit = {
+    state.foreach { proposalState =>
       val newDuplicates =
-        command.duplicates.filter(id => id != lock.proposal.proposalId && !lock.proposal.similarProposals.contains(id))
+        command.duplicates.filter(
+          id => id != proposalState.proposal.proposalId && !proposalState.proposal.similarProposals.contains(id)
+        )
 
       if (newDuplicates.nonEmpty) {
         persistAndPublishEvent(
           SimilarProposalsAdded(
             command.proposalId,
-            lock.proposal.similarProposals.toSet ++ command.duplicates.toSet,
+            proposalState.proposal.similarProposals.toSet ++ command.duplicates.toSet,
             command.requestContext,
             DateHelper.now()
           )

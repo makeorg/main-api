@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
 import org.make.api.sessionhistory.{
   RequestSessionVoteValues,
@@ -37,7 +38,6 @@ trait SequenceService {
              requestContext: RequestContext): Future[SequencesSearchResult]
   def startNewSequence(maybeUserId: Option[UserId],
                        slug: String,
-                       excludedProposals: Seq[ProposalId] = Seq.empty,
                        includedProposals: Seq[ProposalId] = Seq.empty,
                        requestContext: RequestContext): Future[Option[SequenceResult]]
   def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]]
@@ -78,6 +78,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with SequenceCoordinatorServiceComponent
     with EventBusServiceComponent
     with UserServiceComponent
+    with MakeSettingsComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
@@ -101,7 +102,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
     override def startNewSequence(maybeUserId: Option[UserId],
                                   slug: String,
-                                  excludedProposals: Seq[ProposalId] = Seq.empty,
                                   includedProposals: Seq[ProposalId] = Seq.empty,
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
       val futureMayBeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
@@ -122,15 +122,15 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       val getSimilarForProposal: (ProposalId) => Future[Seq[ProposalId]] = { proposalId =>
         proposalCoordinatorService.getProposal(proposalId).map(_.toSeq.flatMap(_.similarProposals))
       }
-      val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] = getFilteredProposalsFromSequence(
-        excludedProposals,
-        includedProposals,
-        futureMayBeSequence,
-        futureVotedProposals
-      )
+      val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
+        getFilteredProposalsFromSequence(includedProposals, futureMayBeSequence, futureVotedProposals)
       val getSearchSpace: (Seq[ProposalId]) => Future[Seq[IndexedProposal]] = { excludedProposals =>
         futureFilteredSequenceProposalIds.map { filteredSequenceProposalIds =>
-          elasticsearchProposalAPI.findProposalsByIds(filteredSequenceProposalIds.map(_.proposalId), Some(100), true)
+          elasticsearchProposalAPI.findProposalsByIds(
+            filteredSequenceProposalIds.map(_.proposalId),
+            Some(makeSettings.Sequence.batchSize),
+            random = true
+          )
         }.flatten
       }
       val futureProposalsForSequence: Future[Seq[IndexedProposal]] = SelectionAlgorithm.getProposalsForSequence(
@@ -310,7 +310,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   }
 
   private def getFilteredProposalsFromSequence(
-    excludedProposals: Seq[ProposalId],
     includedProposals: Seq[ProposalId],
     futureMayBeSequence: Future[Option[IndexedSequence]],
     futureVotedProposals: Future[Seq[ProposalId]]
@@ -327,9 +326,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     val futureOfAllProposalIdsToExclude: Future[Seq[ProposalId]] = for {
       included             <- Future.successful(includedProposals)
       duplicatesOfIncludes <- futureDuplicatesOfIncludes
-      excluded             <- Future.successful(excludedProposals)
       voted                <- futureVotedProposals
-    } yield included ++ duplicatesOfIncludes ++ excluded ++ voted
+    } yield included ++ duplicatesOfIncludes ++ voted
 
     val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
       futureOfAllProposalIdsToExclude.flatMap { allProposalIdsToExclude =>

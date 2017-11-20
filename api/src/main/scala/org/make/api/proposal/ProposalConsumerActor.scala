@@ -52,7 +52,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef, userService: UserServ
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
       case event: ProposalUnqualified => onCreateOrUpdate(event)
-      case event: ProposalLocked      => Future.successful {}
+      case _: ProposalLocked          => Future.successful {}
       case event: SimilarProposalsAdded =>
         onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
         Future.successful {}

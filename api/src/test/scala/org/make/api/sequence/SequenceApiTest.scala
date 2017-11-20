@@ -286,13 +286,7 @@ class SequenceApiTest
 
   when(
     sequenceService
-      .startNewSequence(
-        any[Option[UserId]],
-        matches("start-sequence"),
-        matches(Seq.empty),
-        any[Seq[ProposalId]],
-        any[RequestContext]
-      )
+      .startNewSequence(any[Option[UserId]], matches("start-sequence"), any[Seq[ProposalId]], any[RequestContext])
   ).thenReturn(
     Future.successful(
       Some(

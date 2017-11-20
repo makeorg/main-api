@@ -400,7 +400,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                     .startNewSequence(
                       maybeUserId = userAuth.map(_.user.userId),
                       slug = slug,
-                      excludedProposals = Seq.empty,
                       includedProposals = includes.toSeq.map(ProposalId(_)),
                       requestContext = requestContext
                     )
