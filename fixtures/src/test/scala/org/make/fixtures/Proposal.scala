@@ -50,4 +50,12 @@ object ProposalChainBuilder {
         .check(status.is(statusOk))
     )
   }
+
+  val acceptProposalVFF: ChainBuilder = {
+    exec(
+      MakeServicesBuilder.acceptProposalBuilder
+        .body(ElFileBody("jsonModel/validateProposalVFF.json"))
+        .check(status.is(statusOk))
+    )
+  }
 }

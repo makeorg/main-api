@@ -59,7 +59,7 @@ class Vff extends Simulation {
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
           ProposalChainBuilder.createProposalVFF,
           UserChainBuilder.authenticateAsAdmin,
-          ProposalChainBuilder.acceptProposal
+          ProposalChainBuilder.acceptProposalVFF
         )
       }
       .inject(heavisideUsers(maxClients).over(2.minutes))

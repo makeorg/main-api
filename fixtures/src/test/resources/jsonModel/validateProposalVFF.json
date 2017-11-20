@@ -1,0 +1,7 @@
+{
+  "newContent": null,
+  "sendNotificationEmail": false,
+  "labels": ${labels},
+  "tags": ${tags},
+  "similarProposals": []
+}
