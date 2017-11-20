@@ -74,11 +74,11 @@ make package-docker-image
 In order to start a release, you need:
 
 - To login into the registry, using docker login
-- To define your credentials in the ~/.sbt/0.13/credentials.sbt with content :
+- To define your credentials in the ~/.sbt/1.0/credentials.sbt with content :
 
 ```scala
 credentials ++= Seq(
-  Credentials("Sonatype Nexus Repository Manager", "nexus.prod.makeorg.tech", "my-login", "my-password")
+  Credentials("Sonatype Nexus Repository Manager", "nexus.prod.makeorg.tech", global_login, global_password)
 )
 ```
 
