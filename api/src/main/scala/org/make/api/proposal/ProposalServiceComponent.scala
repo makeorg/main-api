@@ -148,7 +148,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             context = proposal.creationContext,
             createdAt = proposal.createdAt,
             updatedAt = proposal.updatedAt,
-            events = events
+            events = events,
+            similarProposals = proposal.similarProposals
           )
         )
       }

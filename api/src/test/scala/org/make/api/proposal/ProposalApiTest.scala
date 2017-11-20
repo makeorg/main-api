@@ -257,7 +257,8 @@ class ProposalApiTest
       context = RequestContext.empty,
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
-      events = Nil
+      events = Nil,
+      similarProposals = Seq.empty
     )
   }
 
