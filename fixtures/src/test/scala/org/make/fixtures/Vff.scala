@@ -49,23 +49,15 @@ class Vff extends Simulation {
 
           val proposal = session("proposal").as[Record[String]]
           val tags = Json.stringify(proposal("tags").split('|').toSeq)
-          val theme = {
-            if (proposal("theme").isEmpty) {
-              Json.stringify(null)
-            } else {
-              Json.stringify(proposal("theme"), false)
-            }
-          }
 
           session
             .set("content", proposal("content"))
-            .set("theme", theme)
             .set("tags", tags)
             .set("labels", Json.stringify(Seq.empty))
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
-          ProposalChainBuilder.createProposal,
+          ProposalChainBuilder.createProposalVFF,
           UserChainBuilder.authenticateAsAdmin,
           ProposalChainBuilder.acceptProposal
         )

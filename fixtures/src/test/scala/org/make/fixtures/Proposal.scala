@@ -33,6 +33,16 @@ object ProposalChainBuilder {
     )
   }
 
+  val createProposalVFF: ChainBuilder = {
+    exec(
+      MakeServicesBuilder.createProposalBuilder
+        .body(ElFileBody("jsonModel/createProposal.json"))
+        .asJSON
+        .check(jsonPath("$.proposalId").saveAs("proposalId"))
+        .check(status.is(createdStatus))
+    )
+  }
+
   val acceptProposal: ChainBuilder = {
     exec(
       MakeServicesBuilder.acceptProposalBuilder
