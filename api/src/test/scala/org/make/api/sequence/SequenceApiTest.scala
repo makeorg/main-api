@@ -16,7 +16,7 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
-import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
+import org.make.core.sequence.indexed.SequencesSearchResult
 import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -296,12 +296,10 @@ class SequenceApiTest
   ).thenReturn(
     Future.successful(
       Some(
-        IndexedStartSequence(
+        SequenceResult(
           id = SequenceId("searchSequence"),
           title = "sequence search",
           slug = "start-sequence",
-          tags = Seq.empty,
-          themes = Seq.empty,
           proposals = Seq.empty
         )
       )

@@ -4,28 +4,22 @@ import java.time.ZonedDateTime
 
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.proposal.{
-  ProposalCoordinatorServiceComponent,
-  ProposalSearchEngineComponent,
-  ProposalServiceComponent,
-  SelectionAlgorithm
+import org.make.api.proposal._
+import org.make.api.sessionhistory.{
+  RequestSessionVoteValues,
+  RequestSessionVotedProposals,
+  SessionHistoryCoordinatorServiceComponent
 }
-import org.make.api.sessionhistory.{RequestSessionVotedProposals, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.{
-  IndexedSequence,
-  IndexedSequenceProposalId,
-  IndexedStartSequence,
-  SequencesSearchResult
-}
+import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, SequencesSearchResult}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
@@ -45,7 +39,7 @@ trait SequenceService {
                        slug: String,
                        excludedProposals: Seq[ProposalId] = Seq.empty,
                        includedProposals: Seq[ProposalId] = Seq.empty,
-                       requestContext: RequestContext): Future[Option[IndexedStartSequence]]
+                       requestContext: RequestContext): Future[Option[SequenceResult]]
   def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]]
   def create(userId: UserId,
              requestContext: RequestContext,
@@ -109,7 +103,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   slug: String,
                                   excludedProposals: Seq[ProposalId] = Seq.empty,
                                   includedProposals: Seq[ProposalId] = Seq.empty,
-                                  requestContext: RequestContext): Future[Option[IndexedStartSequence]] = {
+                                  requestContext: RequestContext): Future[Option[SequenceResult]] = {
       val futureMayBeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
       maybeUserId.foreach { userId =>
         userHistoryCoordinatorService.logHistory(
@@ -151,26 +145,35 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         case _ => Future.successful(Seq.empty)
       }
 
-      val futureMayBeIndexedStartSequence: Future[Option[IndexedStartSequence]] = for {
+      val futureMaybeIndexedStartSequence: Future[Option[SequenceResult]] = for {
         proposalsForSequence <- futureProposalsForSequence
         mayBeSequence        <- futureMayBeSequence
+        votesAndQualifications <- {
+          val ids = proposalsForSequence.map(_.id)
+          maybeUserId.map { userId =>
+            userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(userId, ids))
+          }.getOrElse {
+            sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
+              RequestSessionVoteValues(requestContext.sessionId, ids)
+            )
+          }
+        }
       } yield
         mayBeSequence.map { sequence =>
-          IndexedStartSequence(
+          SequenceResult(
             id = sequence.id,
             title = sequence.title,
             slug = sequence.slug,
-            translation = sequence.translation,
-            tags = sequence.tags,
-            themes = sequence.themes,
-            proposals = proposalsForSequence
+            proposals = proposalsForSequence.map { p =>
+              ProposalResult(p, maybeUserId.contains(p.userId), votesAndQualifications.get(p.id))
+            }
           )
         }
-      futureMayBeIndexedStartSequence.recover {
+      futureMaybeIndexedStartSequence.recover {
         case _ => Future(None)
       }
 
-      futureMayBeIndexedStartSequence
+      futureMaybeIndexedStartSequence
     }
 
     override def create(userId: UserId,
