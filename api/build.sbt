@@ -22,6 +22,8 @@ libraryDependencies ++= Seq(
   Dependencies.akkaPersistenceCassandra,
   Dependencies.stamina,
   Dependencies.circeGeneric,
+  Dependencies.constructr,
+  Dependencies.constructrZookeeper,
   Dependencies.swaggerUi,
   Dependencies.kafkaClients,
   Dependencies.avroSerializer,
