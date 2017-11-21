@@ -400,6 +400,50 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
     }
 
+    scenario("validate a proposal and set similar proposals") {
+      Given("a validated proposal")
+      val proposalId = ProposalId("to-be-moderated-with-similar-1")
+      val similarProposals = Seq(ProposalId("similar-1"), ProposalId("similar-2"))
+      val originalContent = "This is a proposal that will be validated with similar duplicates"
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I validate the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        theme = Some(ThemeId("my theme")),
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        similarProposals = similarProposals
+      )
+      val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      Then("I should have similar proposals present")
+      validatedProposal.proposalId should be(proposalId)
+      validatedProposal.similarProposals should be(similarProposals)
+
+      When("I search for the proposal")
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+      val searchedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to search"))
+
+      Then("I should have similar proposals present")
+      searchedProposal.proposalId should be(proposalId)
+      searchedProposal.similarProposals should be(similarProposals)
+    }
   }
 
   feature("refuse a proposal") {
