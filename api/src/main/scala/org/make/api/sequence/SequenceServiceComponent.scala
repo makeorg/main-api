@@ -169,6 +169,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             }
           )
         }
+
       futureMaybeIndexedStartSequence.recover {
         case _ => Future(None)
       }
