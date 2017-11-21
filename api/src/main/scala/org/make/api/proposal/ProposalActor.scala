@@ -675,7 +675,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 }
 
 object ProposalActor {
-  case class ProposalState(proposal: Proposal, lock: Option[Lock] = None)
+  case class ProposalState(proposal: Proposal, lock: Option[Lock] = None) extends MakeSerializable
 
   object ProposalState {
     implicit val proposalStateFormatter: RootJsonFormat[ProposalState] =
