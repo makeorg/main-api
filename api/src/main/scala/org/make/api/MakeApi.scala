@@ -17,10 +17,15 @@ import org.make.api.proposal._
 import org.make.api.sequence._
 import org.make.api.sequence.SequenceApi
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticSearchComponent,
+  ElasticSearchApi,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -75,6 +80,8 @@ trait MakeApi
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
+    with DefaultElasticSearchComponent
+    with ElasticSearchApi
     with ProposalApi
     with ModerationProposalApi
     with SequenceApi
@@ -149,7 +156,8 @@ trait MakeApi
       classOf[ProposalApi],
       classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
-      classOf[SequenceApi]
+      classOf[SequenceApi],
+      classOf[ElasticSearchApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -169,6 +177,7 @@ trait MakeApi
       new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes ~
         swagger ~
         optionsCors ~
+        elasticsearchRoutes ~
         userRoutes ~
         tagRoutes ~
         proposalRoutes ~

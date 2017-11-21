@@ -1,6 +1,7 @@
 package org.make.core
 
-import java.time.format.DateTimeFormatter
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.temporal.ChronoField._
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
@@ -10,7 +11,19 @@ import scala.util.{Failure, Success, Try}
 
 trait CirceFormatters {
 
-  protected val dateFormatter: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+  protected val dateFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+    .append(DateTimeFormatter.ISO_LOCAL_DATE)
+    .appendLiteral("T")
+    .appendValue(HOUR_OF_DAY, 2)
+    .appendLiteral(':')
+    .appendValue(MINUTE_OF_HOUR, 2)
+    .optionalStart
+    .appendLiteral(':')
+    .appendValue(SECOND_OF_MINUTE, 2)
+    .optionalStart
+    .appendFraction(NANO_OF_SECOND, 3, 3, true)
+    .appendOffsetId()
+    .toFormatter()
 
   implicit lazy val zonedDateTimeEncoder: Encoder[ZonedDateTime] =
     (a: ZonedDateTime) => Json.fromString(dateFormatter.format(a))

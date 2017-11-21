@@ -30,22 +30,25 @@ trait ProposalSearchEngine {
                          random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(query: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(query: SearchQuery): Future[Int]
-  def indexProposal(record: IndexedProposal): Future[Done]
-  def updateProposal(record: IndexedProposal): Future[Done]
+  def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent =>
+
+  val proposalIndexName: String = "proposal"
 
   override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
-    private val proposalIndex: IndexAndType = elasticsearchConfiguration.indexName / "proposal"
+
+    private val proposalAlias: IndexAndType = elasticsearchConfiguration.aliasName / proposalIndexName
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
-      client.execute(get(id = proposalId.value).from(proposalIndex)).map(_.toOpt[IndexedProposal])
+      client.execute(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
     }
 
     override def findProposalsByIds(proposalIds: Seq[ProposalId],
@@ -59,7 +62,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val randomQuery: FunctionScoreQueryDefinition =
         functionScoreQuery(idsQuery(ids = proposalIds.map(_.value)).types("proposal")).scorers(Seq(randomScore(seed)))
 
-      val request: SearchDefinition = search(proposalIndex)
+      val request: SearchDefinition = search(proposalAlias)
         .query(if (random) randomQuery else query)
         .size(size.getOrElse(defaultMax))
 
@@ -76,7 +79,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
-      val request = search(proposalIndex)
+      val request = search(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
@@ -96,7 +99,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
-      val request = search(proposalIndex)
+      val request = search(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
 
       logger.debug(client.show(request))
@@ -108,19 +111,21 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
 
     }
-    override def indexProposal(record: IndexedProposal): Future[Done] = {
-      logger.info(s"$proposalIndex -> Saving in Elasticsearch: $record")
+    override def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val index = mayBeIndex.getOrElse(proposalAlias)
+      logger.debug(s"$index -> Saving in Elasticsearch: $record")
       client.execute {
-        indexInto(proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
+        indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
       }.map { _ =>
         Done
       }
     }
 
-    override def updateProposal(record: IndexedProposal): Future[Done] = {
-      logger.info(s"$proposalIndex -> Updating in Elasticsearch: $record")
+    override def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val index = mayBeIndex.getOrElse(proposalAlias)
+      logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
-        .execute((update(id = record.id.value) in proposalIndex).doc(record).refresh(RefreshPolicy.IMMEDIATE))
+        .execute((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
     }
   }

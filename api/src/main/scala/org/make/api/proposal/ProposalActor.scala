@@ -5,7 +5,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.pattern.ask
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.persistence.{PersistentActor, SnapshotOffer}
 import akka.util.Timeout
 import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
@@ -42,7 +42,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case e: ProposalEvent                          => state = applyEvent(e)
     case SnapshotOffer(_, snapshot: Proposal)      => state = Some(ProposalState(snapshot))
     case SnapshotOffer(_, snapshot: ProposalState) => state = Some(snapshot)
-    case _: RecoveryCompleted                      =>
+    case _                                         =>
   }
 
   override def receiveCommand: Receive = {
