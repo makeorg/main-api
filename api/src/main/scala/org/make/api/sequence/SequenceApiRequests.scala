@@ -29,6 +29,7 @@ final case class RemoveProposalSequenceRequest(
 final case class UpdateSequenceRequest(
   title: Option[String],
   status: Option[String],
+  operation: Option[String],
   @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]],
   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Option[Seq[TagId]]
 )

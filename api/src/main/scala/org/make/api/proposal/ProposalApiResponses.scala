@@ -23,7 +23,8 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   context: RequestContext,
                                   createdAt: Option[ZonedDateTime],
                                   updatedAt: Option[ZonedDateTime],
-                                  events: Seq[ProposalActionResponse])
+                                  events: Seq[ProposalActionResponse],
+                                  similarProposals: Seq[ProposalId])
 
 final case class ProposalActionResponse(date: ZonedDateTime,
                                         user: Option[UserResponse],

@@ -2,7 +2,7 @@ package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.SequenceSupervisor
+import org.make.api.sequence.{SequenceService, SequenceSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -12,7 +12,10 @@ import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(userService: UserService, tagService: TagService, themeService: ThemeService)
+class MakeGuardian(userService: UserService,
+                   tagService: TagService,
+                   themeService: ThemeService,
+                   sequenceService: SequenceService)
     extends Actor
     with ActorLogging {
 
@@ -39,7 +42,8 @@ class MakeGuardian(userService: UserService, tagService: TagService, themeServic
 
     context.watch(
       context.actorOf(
-        ProposalSupervisor.props(userService, userHistoryCoordinator, sessionHistoryCoordinator, tagService),
+        ProposalSupervisor
+          .props(userService, userHistoryCoordinator, sessionHistoryCoordinator, tagService, sequenceService),
         ProposalSupervisor.name
       )
     )
@@ -70,6 +74,9 @@ class MakeGuardian(userService: UserService, tagService: TagService, themeServic
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(userService: UserService, tagService: TagService, themeService: ThemeService): Props =
-    Props(new MakeGuardian(userService, tagService, themeService))
+  def props(userService: UserService,
+            tagService: TagService,
+            themeService: ThemeService,
+            sequenceService: SequenceService): Props =
+    Props(new MakeGuardian(userService, tagService, themeService, sequenceService))
 }

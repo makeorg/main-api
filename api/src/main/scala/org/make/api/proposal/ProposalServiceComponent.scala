@@ -111,7 +111,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
     private val duplicateDetector: DuplicateDetector[IndexedProposal] =
-      new DuplicateDetector(lang = "fr")
+      new DuplicateDetector(lang = "fr", 0.0)
 
     override def getProposalById(proposalId: ProposalId,
                                  requestContext: RequestContext): Future[Option[IndexedProposal]] = {
@@ -148,7 +148,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             context = proposal.creationContext,
             createdAt = proposal.createdAt,
             updatedAt = proposal.updatedAt,
-            events = events
+            events = events,
+            similarProposals = proposal.similarProposals
           )
         )
       }
