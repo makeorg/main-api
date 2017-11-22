@@ -66,7 +66,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     searchable = false
   )
 
-  var dateStubNow: OngoingStubbing[ZonedDateTime] = Mockito.when(dateHelper.now)
+  var dateStubNow: OngoingStubbing[ZonedDateTime] = Mockito.when(dateHelper.now())
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
@@ -132,6 +132,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderatorId = user.userId,
         title = Some("An updated content"),
         status = Some(SequenceStatus.Published),
+        operation = None,
         themeIds = Seq.empty,
         tagIds = Seq.empty
       )
@@ -164,6 +165,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderatorId = user.userId,
         requestContext = RequestContext.empty,
         title = Some("An updated content"),
+        operation = None,
         status = Some(SequenceStatus.Published),
         themeIds = Seq.empty,
         tagIds = Seq.empty

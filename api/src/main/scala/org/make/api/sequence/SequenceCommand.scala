@@ -27,6 +27,7 @@ final case class UpdateSequenceCommand(sequenceId: SequenceId,
                                        moderatorId: UserId,
                                        title: Option[String],
                                        status: Option[SequenceStatus],
+                                       operation: Option[String],
                                        themeIds: Seq[ThemeId],
                                        tagIds: Seq[TagId])
     extends SequenceCommand

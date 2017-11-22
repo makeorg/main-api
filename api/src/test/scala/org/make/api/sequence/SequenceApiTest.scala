@@ -257,6 +257,7 @@ class SequenceApiTest
         any[RequestContext],
         matches(Some("newSequenceTitle")),
         matches(None),
+        matches(None),
         matches(Seq.empty),
         matches(Seq.empty)
       )
@@ -269,6 +270,7 @@ class SequenceApiTest
         any[UserId],
         any[RequestContext],
         matches(Some("newSequenceTitle")),
+        matches(None),
         matches(None),
         matches(Seq.empty),
         matches(Seq.empty)

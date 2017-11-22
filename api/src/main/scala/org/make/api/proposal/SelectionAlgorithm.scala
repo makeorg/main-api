@@ -45,7 +45,7 @@ object InverseWeightedRandom extends StrictLogging {
 object SelectionAlgorithm extends StrictLogging {
 
   /**
-    * @param targetLength        number of elements in the sequence
+    * @param targetLength          number of elements in the sequence
     * @param getSearchSpace        function that returns a list of randomly chosen proposals
     * @param getSimilarForProposal function that returns a list of similar proposal ids for a given proposal id
     * @return selected list of proposals for the sequence
@@ -90,8 +90,7 @@ object SelectionAlgorithm extends StrictLogging {
         if (included.length == targetLength || retries > 3 && included.length >= minLength) {
           getProposals(included)
         } else if (retries > 3) {
-          // TODO: what failure should be returned? what http status later on?
-          Future.failed(new IllegalStateException("Not enough different proposals to create a sequence"))
+          Future.successful(Seq.empty)
         } else {
           getProposalsForSequence(
             targetLength,
