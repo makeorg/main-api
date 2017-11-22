@@ -101,5 +101,5 @@ object Dependencies {
   val gatling: ModuleID = "io.gatling"                      % "gatling-test-framework"    % "2.3.0" % "test"
 
   // Semantic
-  val semantic: ModuleID = "org.make" %% "semantic" % "0.1.3"
+  val semantic: ModuleID = "org.make" %% "semantic" % "0.1.5"
 }
