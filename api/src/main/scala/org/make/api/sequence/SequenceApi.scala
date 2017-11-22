@@ -202,6 +202,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                           requestContext = requestContext,
                           title = request.title,
                           status = request.status.map(SequenceStatus.statusMap),
+                          operation = request.operation,
                           themeIds = themes.map(_.themeId),
                           tagIds = tags.map(_.tagId)
                         )

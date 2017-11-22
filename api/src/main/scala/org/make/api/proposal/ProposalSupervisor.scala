@@ -2,6 +2,7 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
+import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
@@ -9,7 +10,8 @@ import org.make.api.user.UserService
 class ProposalSupervisor(userService: UserService,
                          userHistoryCoordinator: ActorRef,
                          sessionHistoryCoordinator: ActorRef,
-                         tagService: TagService)
+                         tagService: TagService,
+                         sequenceService: SequenceService)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -51,7 +53,7 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalConsumerActor.props(proposalCoordinator, userService, tagService),
+        ProposalConsumerActor.props(proposalCoordinator, userService, tagService, sequenceService),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)
@@ -70,6 +72,15 @@ object ProposalSupervisor {
   def props(userService: UserService,
             userHistoryCoordinator: ActorRef,
             sessionHistoryCoordinator: ActorRef,
-            tagService: TagService): Props =
-    Props(new ProposalSupervisor(userService, userHistoryCoordinator, sessionHistoryCoordinator, tagService))
+            tagService: TagService,
+            sequenceService: SequenceService): Props =
+    Props(
+      new ProposalSupervisor(
+        userService,
+        userHistoryCoordinator,
+        sessionHistoryCoordinator,
+        tagService,
+        sequenceService
+      )
+    )
 }
