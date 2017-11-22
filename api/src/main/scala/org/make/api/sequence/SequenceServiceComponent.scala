@@ -53,6 +53,7 @@ trait SequenceService {
              requestContext: RequestContext,
              title: Option[String],
              status: Option[SequenceStatus],
+             operation: Option[String],
              themeIds: Seq[ThemeId],
              tagIds: Seq[TagId]): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
@@ -244,6 +245,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         requestContext: RequestContext,
                         title: Option[String],
                         status: Option[SequenceStatus],
+                        operation: Option[String],
                         themeIds: Seq[ThemeId],
                         tagIds: Seq[TagId]): Future[Option[SequenceResponse]] = {
 
@@ -255,6 +257,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             requestContext = requestContext,
             title = title,
             status = status,
+            operation = operation,
             themeIds = themeIds,
             tagIds = tagIds
           )

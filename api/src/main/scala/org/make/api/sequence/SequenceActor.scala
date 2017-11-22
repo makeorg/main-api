@@ -98,6 +98,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         requestContext = command.requestContext,
         title = command.title,
         status = command.status,
+        operation = command.operation,
         userId = userId,
         themeIds = command.themeIds,
         tagIds = command.tagIds
@@ -142,6 +143,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
       state.map(
         state =>
           state.copy(
+            creationContext = state.creationContext.copy(operation = e.operation),
             title = e.title.getOrElse(state.title),
             updatedAt = Some(e.eventDate),
             slug = SlugHelper(e.title.getOrElse(state.title)),
