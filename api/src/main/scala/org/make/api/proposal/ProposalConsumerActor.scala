@@ -21,6 +21,7 @@ import org.make.core.RequestContext
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Tag, TagId}
+import org.make.core.sequence.indexed.IndexedSequenceProposalId
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,10 +51,12 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
         onCreateOrUpdate(event)
       case event: ProposalProposed => onCreateOrUpdate(event)
       case event: ProposalAccepted =>
-        onAddToSequence(event)
+        addToSequence(event)
         onSimilarProposalsUpdated(event.id, event.similarProposals)
         onCreateOrUpdate(event)
-      case event: ProposalRefused     => onCreateOrUpdate(event)
+      case event: ProposalRefused =>
+        removeFromSequence(event)
+        onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
@@ -84,7 +87,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     retrieveAndShapeProposal(event.id).flatMap(indexOrUpdate)
   }
 
-  def onAddToSequence(event: ProposalAccepted): Future[Unit] = {
+  def addToSequence(event: ProposalAccepted): Future[Unit] = {
     (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
       case Some(proposal) =>
         if (proposal.creationContext.operation.nonEmpty) {
@@ -102,6 +105,35 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
             .map { sequenceResult =>
               sequenceResult.results.map(sequence => {
                 sequenceService.addProposals(sequence.id, event.moderator, event.requestContext, Seq(event.id))
+              })
+            }
+        } else {
+          Future.successful[Unit] {}
+        }
+      case None => Future.successful[Unit] {}
+    }
+  }
+
+  def removeFromSequence(event: ProposalRefused): Future[Unit] = {
+    (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
+      case Some(proposal) =>
+        if (proposal.creationContext.operation.nonEmpty) {
+          sequenceService
+            .search(
+              Some(event.moderator),
+              sequence
+                .ExhaustiveSearchRequest(
+                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operation)),
+                  limit = Some(1)
+                )
+                .toSearchQuery,
+              event.requestContext
+            )
+            .map { sequenceResult =>
+              sequenceResult.results.map(sequence => {
+                if (sequence.proposals.contains(IndexedSequenceProposalId(proposal.proposalId))) {
+                  sequenceService.removeProposals(sequence.id, event.moderator, event.requestContext, Seq(event.id))
+                }
               })
             }
         } else {

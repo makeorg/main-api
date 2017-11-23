@@ -16,7 +16,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
@@ -129,8 +129,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         futureFilteredSequenceProposalIds.map { filteredSequenceProposalIds =>
           elasticsearchProposalAPI.findProposalsByIds(
             filteredSequenceProposalIds.map(_.proposalId),
-            Some(makeSettings.Sequence.batchSize),
-            random = true
+            Some(makeSettings.Sequence.batchSize)
           )
         }.flatten
       }
@@ -327,11 +326,23 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       )
       .map(_.flatten)
 
+    val futureRefusedProposals: Future[Seq[ProposalId]] = Future
+      .traverse(includedProposals) { proposalId =>
+        proposalCoordinatorService
+          .getProposal(proposalId)
+          .map {
+            case Some(proposal) => Seq(proposal).filter(_.status != ProposalStatus.Accepted).map(_.proposalId)
+            case None           => Seq.empty
+          }
+      }
+      .map(_.flatten)
+
     val futureOfAllProposalIdsToExclude: Future[Seq[ProposalId]] = for {
       included             <- Future.successful(includedProposals)
       duplicatesOfIncludes <- futureDuplicatesOfIncludes
       voted                <- futureVotedProposals
-    } yield included ++ duplicatesOfIncludes ++ voted
+      refused              <- futureRefusedProposals
+    } yield included ++ duplicatesOfIncludes ++ voted ++ refused
 
     val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
       futureOfAllProposalIdsToExclude.flatMap { allProposalIdsToExclude =>
