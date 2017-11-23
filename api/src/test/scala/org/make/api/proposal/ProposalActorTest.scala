@@ -861,4 +861,77 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
+  scenario("lock a proposal and try to vote after") {
+    Given("a moderator FooModerator")
+    val moderator = UserId("FooModerator")
+
+    And("a proposal locked by FooModerator")
+    val proposalId: ProposalId = ProposalId("proposal-to-lock")
+    coordinator ! ProposeCommand(
+      proposalId = proposalId,
+      requestContext = RequestContext.empty,
+      user = user,
+      createdAt = mainCreatedAt.get,
+      content = "This is a proposal"
+    )
+
+    expectMsgPF[Unit]() {
+      case None => fail("Proposal was not correctly proposed")
+      case _    => // ok
+    }
+
+    coordinator ! LockProposalCommand(
+      proposalId = proposalId,
+      moderatorId = moderator,
+      moderatorName = Some("FooModerator"),
+      requestContext = RequestContext.empty
+    )
+
+    expectMsg(Right(Some(moderator)))
+
+    val voteAgree = Vote(
+      key = VoteKey.Agree,
+      count = 1,
+      qualifications = Seq(
+        Qualification(key = QualificationKey.LikeIt),
+        Qualification(key = QualificationKey.Doable),
+        Qualification(key = QualificationKey.PlatitudeAgree)
+      )
+    )
+
+    coordinator ! VoteProposalCommand(
+      proposalId = proposalId,
+      Some(UserId("Bar")),
+      RequestContext.empty,
+      voteKey = VoteKey.Agree,
+      vote = None
+    )
+
+    expectMsg(Right(Some(voteAgree)))
+
+    val voteDisagree = Vote(
+      key = VoteKey.Disagree,
+      count = 1,
+      qualifications = Seq(
+        Qualification(key = QualificationKey.NoWay),
+        Qualification(key = QualificationKey.Impossible),
+        Qualification(key = QualificationKey.PlatitudeDisagree)
+      )
+    )
+
+    And("recover its state after having been kill")
+    coordinator ! KillProposalShard(proposalId, RequestContext.empty)
+
+    Thread.sleep(THREAD_SLEEP_MICROSECONDS)
+
+    coordinator ! VoteProposalCommand(
+      proposalId = proposalId,
+      Some(UserId("Baz")),
+      RequestContext.empty,
+      voteKey = VoteKey.Disagree,
+      vote = None
+    )
+
+    expectMsg(Right(Some(voteDisagree)))
+  }
 }

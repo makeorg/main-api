@@ -691,15 +691,6 @@ object ProposalActor {
   }
 
   def applyProposalUpdated(state: ProposalState, event: ProposalUpdated): ProposalState = {
-    if (event.moderator.isEmpty) {
-      throw new IllegalArgumentException("Update must be done by a moderator")
-    }
-    state.lock match {
-      case Some(Lock(moderatorId, moderatorName, expirationDate))
-          if moderatorId != event.moderator.get && expirationDate.isAfter(DateHelper.now()) =>
-        throw new IllegalArgumentException(s"Invalid moderator. Currently locked by: $moderatorName")
-      case _ =>
-    }
 
     val arguments: Map[String, String] = Map(
       "theme" -> event.theme.map(_.value).mkString(", "),
@@ -730,12 +721,6 @@ object ProposalActor {
   }
 
   def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {
-    state.lock match {
-      case Some(Lock(moderatorId, moderatorName, expirationDate))
-          if moderatorId != event.moderator && expirationDate.isAfter(DateHelper.now()) =>
-        throw new IllegalArgumentException(s"Invalid moderator. Currently locked by: $moderatorName")
-      case _ =>
-    }
     val arguments: Map[String, String] = Map(
       "theme" -> event.theme.map(_.value).mkString(", "),
       "tags" -> event.tags.map(_.value).mkString(", "),
@@ -765,12 +750,6 @@ object ProposalActor {
   }
 
   def applyProposalRefused(state: ProposalState, event: ProposalRefused): ProposalState = {
-    state.lock match {
-      case Some(Lock(moderatorId, moderatorName, expirationDate))
-          if moderatorId != event.moderator && expirationDate.isAfter(DateHelper.now()) =>
-        throw new IllegalArgumentException(s"Invalid moderator. Currently locked by: $moderatorName")
-      case _ =>
-    }
     val arguments: Map[String, String] =
       Map("refusalReason" -> event.refusalReason.mkString).filter(!_._2.isEmpty)
     val action =
@@ -840,9 +819,6 @@ object ProposalActor {
 
   def applyProposalLocked(state: ProposalState, event: ProposalLocked): ProposalState = {
     state.lock match {
-      case Some(Lock(moderatorId, moderatorName, expirationDate))
-          if moderatorId != event.moderatorId && expirationDate.isAfter(DateHelper.now()) =>
-        throw new IllegalArgumentException(s"Invalid moderator. Currently locked by: $moderatorName")
       case Some(Lock(moderatorId, _, _)) =>
         val arguments: Map[String, String] =
           Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter(!_._2.isEmpty)
