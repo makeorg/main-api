@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.parser._
 import org.make.api.ActorSystemComponent
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfo}
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -39,6 +40,8 @@ trait DefaultFacebookApiComponent extends FacebookApiComponent {
         .flatMap(strictToString(_))
         .flatMap { entity =>
           parse(entity).flatMap(_.as[FacebookUserInfo]) match {
+            case Right(userInfo) if userInfo.email.isEmpty =>
+              Future.failed(ValidationFailedError(Seq(ValidationError("email", Some("not valid")))))
             case Right(userInfo) => Future.successful(userInfo)
             case Left(e)         => Future.failed(e)
           }

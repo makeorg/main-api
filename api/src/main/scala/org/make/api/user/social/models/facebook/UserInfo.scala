@@ -18,7 +18,11 @@ object FacebookUserPicture {
 
 }
 
-final case class UserInfo(id: String, email: String, firstName: String, lastName: String, picture: FacebookUserPicture)
+final case class UserInfo(id: String,
+                          email: Option[String],
+                          firstName: String,
+                          lastName: String,
+                          picture: FacebookUserPicture)
 
 object UserInfo {
   implicit val decoder: Decoder[UserInfo] =
