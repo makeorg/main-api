@@ -8,6 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth._
+import org.make.core.RequestContext
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, Matchers}
@@ -64,6 +65,14 @@ class MakeDirectivesTest
     path("test") {
       makeTrace("test") { _ =>
         throw new Exception("fake exception")
+      }
+    }
+  })
+
+  val routeWithParameters: Route = sealRoute(get {
+    path("testWithParameter") {
+      makeTrace("testWithParameter") { requestContext: RequestContext =>
+        complete(StatusCodes.OK -> requestContext.getParameters)
       }
     }
   })
@@ -204,6 +213,7 @@ class MakeDirectivesTest
     }
 
   }
+
   feature("access control header") {
     scenario("return header allow all origins") {
       Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> route ~> check {
@@ -228,6 +238,22 @@ class MakeDirectivesTest
         info(headers.mkString("\n"))
         header[`Access-Control-Allow-Origin`] shouldBe defined
         header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
+      }
+    }
+  }
+
+  feature("get parameters management") {
+    scenario("return get parameters if provided") {
+      Get("/testWithParameter").addHeader(GetParametersHeader("foo=bar&baz=bibi")) ~> routeWithParameters ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[Map[String, String]] should be(Map("foo" -> "bar", "baz" -> "bibi"))
+      }
+    }
+
+    scenario("return get parameters when value not provided") {
+      Get("/testWithParameter").addHeader(GetParametersHeader("foo")) ~> routeWithParameters ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[Map[String, String]] should be(Map("foo" -> ""))
       }
     }
   }

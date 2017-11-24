@@ -107,7 +107,7 @@ class UserServiceTest
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(None))
 
       val info = UserInfo(
-        email = "facebook@make.org",
+        email = Some("facebook@make.org"),
         firstName = "facebook",
         lastName = "user",
         googleId = None,
@@ -134,7 +134,7 @@ class UserServiceTest
 
       val returnedUser = User(
         userId = UserId("AAA-BBB-CCC-DDD"),
-        email = info.email,
+        email = info.email.getOrElse(""),
         firstName = Some(info.firstName),
         lastName = Some(info.lastName),
         lastIp = Some("127.0.0.1"),
@@ -159,7 +159,7 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
-        user.email should be(info.email)
+        user.email should be(info.email.getOrElse(""))
         user.firstName should be(Some(info.firstName))
         user.lastName should be(Some(info.lastName))
         user.profile.get.facebookId should be(info.facebookId)
@@ -208,7 +208,7 @@ class UserServiceTest
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
 
       val info = UserInfo(
-        email = "facebook@make.org",
+        email = Some("facebook@make.org"),
         firstName = "facebook",
         lastName = "user",
         googleId = None,
