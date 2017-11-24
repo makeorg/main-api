@@ -6,21 +6,17 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
-import org.make.api.sessionhistory.{
-  RequestSessionVoteValues,
-  RequestSessionVotedProposals,
-  SessionHistoryCoordinatorServiceComponent
-}
+import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
-import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, SequencesSearchResult}
+import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
@@ -105,7 +101,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   slug: String,
                                   includedProposals: Seq[ProposalId] = Seq.empty,
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      val futureMayBeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
+
+      val futureMaybeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
       maybeUserId.foreach { userId =>
         userHistoryCoordinatorService.logHistory(
           LogUserStartSequenceEvent(
@@ -115,67 +112,63 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           )
         )
       }
-      val futureVotedProposals: Future[Seq[ProposalId]] = maybeUserId.map { userId =>
-        userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(userId))
-      }.getOrElse {
-        sessionHistoryCoordinatorService.retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
-      }
-      val getSimilarForProposal: (ProposalId) => Future[Seq[ProposalId]] = { proposalId =>
-        proposalCoordinatorService.getProposal(proposalId).map(_.toSeq.flatMap(_.similarProposals))
-      }
-      val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
-        getFilteredProposalsFromSequence(includedProposals, futureMayBeSequence, futureVotedProposals)
-      val getSearchSpace: (Seq[ProposalId]) => Future[Seq[IndexedProposal]] = { excludedProposals =>
-        futureFilteredSequenceProposalIds.map { filteredSequenceProposalIds =>
-          elasticsearchProposalAPI.findProposalsByIds(
-            filteredSequenceProposalIds.map(_.proposalId),
-            Some(makeSettings.Sequence.batchSize)
-          )
-        }.flatten
-      }
-      val futureProposalsForSequence: Future[Seq[IndexedProposal]] = SelectionAlgorithm.getProposalsForSequence(
-        targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-        minLength = BackofficeConfiguration.defaultMinProposalsPerSequence,
-        getSearchSpace = getSearchSpace,
-        getProposals = proposalIds => { elasticsearchProposalAPI.findProposalsByIds(proposalIds, random = false) },
-        getSimilarForProposal = getSimilarForProposal,
-        includeList = includedProposals
-      )
-      futureProposalsForSequence.recover {
-        case _ => Future.successful(Seq.empty)
-      }
 
-      val futureMaybeIndexedStartSequence: Future[Option[SequenceResult]] = for {
-        proposalsForSequence <- futureProposalsForSequence
-        mayBeSequence        <- futureMayBeSequence
-        votesAndQualifications <- {
-          val ids = proposalsForSequence.map(_.id)
-          maybeUserId.map { userId =>
-            userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(userId, ids))
-          }.getOrElse {
-            sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
-              RequestSessionVoteValues(requestContext.sessionId, ids)
+      val futureSequenceWithProposals = futureMaybeSequence.flatMap {
+        case None => Future.successful(None)
+        case Some(sequence) =>
+          val allProposals: Future[Seq[Proposal]] = Future
+            .traverse(sequence.proposals) { id =>
+              proposalCoordinatorService.getProposal(id.proposalId)
+            }
+            .map(_.flatten)
+
+          for {
+            allProposals   <- allProposals
+            votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+          } yield {
+            Some(
+              (
+                sequence,
+                SelectionAlgorithm.newProposalsForSequence(
+                  targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                  proposals = allProposals,
+                  votedProposals = votedProposals.keys.toSeq,
+                  newProposalVoteCount = 100,
+                  includeList = includedProposals
+                ),
+                votedProposals
+              )
             )
           }
-        }
-      } yield
-        mayBeSequence.map { sequence =>
-          SequenceResult(
-            id = sequence.id,
-            title = sequence.title,
-            slug = sequence.slug,
-            proposals = proposalsForSequence.map { p =>
-              ProposalResult(p, maybeUserId.contains(p.userId), votesAndQualifications.get(p.id))
-            }
-          )
-        }
-
-      futureMaybeIndexedStartSequence.recover {
-        case _ => Future(None)
       }
 
-      futureMaybeIndexedStartSequence
+      futureSequenceWithProposals.flatMap {
+        case None => Future.successful(None)
+        case Some((sequence, proposals, votes)) =>
+          elasticsearchProposalAPI.findProposalsByIds(proposals, random = false).map { indexedProposals =>
+            Some(
+              SequenceResult(
+                id = sequence.id,
+                title = sequence.title,
+                slug = sequence.slug,
+                proposals = indexedProposals
+                  .map(indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), votes.get(indexed.id)))
+              )
+            )
+          }
+      }
     }
+
+    private def futureVotedProposals(maybeUserId: Option[UserId],
+                                     requestContext: RequestContext,
+                                     proposals: Seq[ProposalId]): Future[Map[ProposalId, VoteAndQualifications]] =
+      maybeUserId.map { userId =>
+        userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(userId, proposals))
+      }.getOrElse {
+        sessionHistoryCoordinatorService.retrieveVoteAndQualifications(
+          RequestSessionVoteValues(requestContext.sessionId, proposals)
+        )
+      }
 
     override def create(userId: UserId,
                         requestContext: RequestContext,
@@ -310,49 +303,5 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         )
       }
     }
-  }
-
-  private def getFilteredProposalsFromSequence(
-    includedProposals: Seq[ProposalId],
-    futureMayBeSequence: Future[Option[IndexedSequence]],
-    futureVotedProposals: Future[Seq[ProposalId]]
-  ): Future[Seq[IndexedSequenceProposalId]] = {
-
-    val futureDuplicatesOfIncludes: Future[Seq[ProposalId]] = Future
-      .sequence(
-        includedProposals.map(
-          proposalId => proposalCoordinatorService.getProposal(proposalId).map(_.toSeq.flatMap(_.similarProposals))
-        )
-      )
-      .map(_.flatten)
-
-    val futureRefusedProposals: Future[Seq[ProposalId]] = Future
-      .traverse(includedProposals) { proposalId =>
-        proposalCoordinatorService
-          .getProposal(proposalId)
-          .map {
-            case Some(proposal) => Seq(proposal).filter(_.status != ProposalStatus.Accepted).map(_.proposalId)
-            case None           => Seq.empty
-          }
-      }
-      .map(_.flatten)
-
-    val futureOfAllProposalIdsToExclude: Future[Seq[ProposalId]] = for {
-      included             <- Future.successful(includedProposals)
-      duplicatesOfIncludes <- futureDuplicatesOfIncludes
-      voted                <- futureVotedProposals
-      refused              <- futureRefusedProposals
-    } yield included ++ duplicatesOfIncludes ++ voted ++ refused
-
-    val futureFilteredSequenceProposalIds: Future[Seq[IndexedSequenceProposalId]] =
-      futureOfAllProposalIdsToExclude.flatMap { allProposalIdsToExclude =>
-        futureMayBeSequence.map {
-          case Some(sequence) =>
-            Some(sequence.proposals.filterNot(proposal => allProposalIdsToExclude.contains(proposal.proposalId)))
-          case _ => Some(Seq.empty)
-        }
-      }.map(_.getOrElse(Seq.empty))
-
-    futureFilteredSequenceProposalIds
   }
 }

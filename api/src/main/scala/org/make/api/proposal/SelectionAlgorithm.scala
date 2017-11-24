@@ -1,13 +1,10 @@
 package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
-import org.make.core.proposal.ProposalId
-import org.make.core.proposal.indexed._
+import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.util.Random
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object InverseWeightedRandom extends StrictLogging {
 
@@ -34,7 +31,7 @@ object InverseWeightedRandom extends StrictLogging {
     }
   }
 
-  def randomWeighted(list: Seq[IndexedProposal]): IndexedProposal = {
+  def randomWeighted(list: Seq[Proposal]): Proposal = {
     val maxCount = list.map(_.votes.map(_.count).sum).max
     val transformedList = list.map(p => maxCount - p.votes.map(_.count).sum)
     list(search(Random.nextInt(transformedList.sum + 1), cdf(transformedList)))
@@ -44,66 +41,90 @@ object InverseWeightedRandom extends StrictLogging {
 
 object SelectionAlgorithm extends StrictLogging {
 
-  /**
-    * @param targetLength          number of elements in the sequence
-    * @param getSearchSpace        function that returns a list of randomly chosen proposals
-    * @param getSimilarForProposal function that returns a list of similar proposal ids for a given proposal id
-    * @return selected list of proposals for the sequence
-    */
-  def getProposalsForSequence(targetLength: Int,
-                              minLength: Int,
-                              getSearchSpace: Seq[ProposalId]   => Future[Seq[IndexedProposal]],
-                              getSimilarForProposal: ProposalId => Future[Seq[ProposalId]],
-                              getProposals: (Seq[ProposalId])   => Future[Seq[IndexedProposal]],
-                              includeList: Seq[ProposalId],
-                              retries: Int = 0): Future[Seq[IndexedProposal]] = {
+  def newProposalsForSequence(targetLength: Int,
+                              proposals: Seq[Proposal],
+                              votedProposals: Seq[ProposalId],
+                              newProposalVoteCount: Int,
+                              includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
-    val potentials: Future[Seq[IndexedProposal]] =
-      Future
-        .sequence(includeList.map(getSimilarForProposal))
-        .map(_.flatten)
-        .map(_ ++ includeList)
-        .flatMap(getSearchSpace)
+    val includedProposals = proposals.filter(p           => includeList.contains(p.proposalId))
+    val proposalsToExclude = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
 
-    potentials.flatMap { proposals =>
-      val allIds = includeList ++ proposals.map(_.id)
-      val duplicates: Future[Map[ProposalId, Seq[ProposalId]]] = Future
-        .traverse(allIds) { id =>
-          getSimilarForProposal(id).map(similar => id -> similar)
-        }
-        .map(_.toMap)
+    val availableProposals =
+      proposals.filter(
+        p =>
+          !proposalsToExclude.contains(p.proposalId) &&
+            !votedProposals.contains(p.proposalId) &&
+            p.status == ProposalStatus.Accepted &&
+            !p.similarProposals.exists(proposal => includeList.contains(proposal))
+      )
 
-      duplicates.flatMap { duplicates =>
-        var included = includeList.toList
-        var searchSpace: Seq[IndexedProposal] = proposals
+    val proposalsToChoose = targetLength - includeList.size
+    val targetNewProposalsCount = proposalsToChoose / 2
 
-        while (searchSpace.nonEmpty && included.length < targetLength) {
-          included = InverseWeightedRandom.randomWeighted(searchSpace).id :: included
+    val newProposals = availableProposals.filter { proposal =>
+      val votes = proposal.votes.map(_.count).sum
+      votes < newProposalVoteCount
+    }
 
-          val forbiddenOnes = included ++ included.foldLeft(Set.empty[ProposalId]) { (accumulator, id) =>
-            accumulator ++ duplicates(id).toSet
-          }
+    val newIncludedProposals = chooseNewProposals(newProposals, targetNewProposalsCount)
+    val newProposalsSimilars = newIncludedProposals.flatMap(_.similarProposals) ++ newProposals.map(_.proposalId)
 
-          searchSpace = searchSpace.filter(proposal => !forbiddenOnes.contains(proposal.id))
-        }
+    val testedProposals = availableProposals.filter { proposal =>
+      val votes = proposal.votes.map(_.count).sum
+      votes >= newProposalVoteCount && !newProposalsSimilars.contains(proposal.proposalId)
+    }
+    val testedProposalCount = proposalsToChoose - newIncludedProposals.size
+    val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(testedProposals, testedProposalCount)
 
-        if (included.length == targetLength || retries > 3 && included.length >= minLength) {
-          getProposals(included)
-        } else if (retries > 3) {
-          Future.successful(Seq.empty)
-        } else {
-          getProposalsForSequence(
-            targetLength,
-            minLength,
-            getSearchSpace,
-            getSimilarForProposal,
-            getProposals,
-            included,
-            retries + 1
-          )
-        }
-      }
+    val sequence = includeList ++ newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
+    if (sequence.size < targetLength) {
+      val excludeList =
+        (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
+
+      sequence ++ chooseNewProposals(
+        availableProposals.filter(p => !excludeList.contains(p.proposalId)),
+        targetLength - sequence.size
+      ).map(_.proposalId)
+    } else {
+      sequence
     }
   }
 
+  def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
+    if (proposals.isEmpty || count <= 0) {
+      Seq.empty
+    } else {
+      val chosen = algorithm(proposals)
+      Seq(chosen) ++ chooseProposals(
+        count = count - 1,
+        proposals =
+          proposals.filter(p => p.proposalId != chosen.proposalId && !chosen.similarProposals.contains(p.proposalId)),
+        algorithm = algorithm
+      )
+    }
+  }
+
+  def chooseTestedProposals(proposals: Seq[Proposal], count: Int): Seq[Proposal] = {
+    chooseProposals(proposals = proposals, count = count, algorithm = InverseWeightedRandom.randomWeighted)
+  }
+
+  def chooseNewProposals(proposals: Seq[Proposal], count: Int): Seq[Proposal] = {
+    chooseProposals(
+      proposals = proposals,
+      count = count,
+      algorithm = { proposals =>
+        proposals
+          .sortWith((first, second) => {
+            (for {
+              firstCreation  <- first.updatedAt
+              secondCreation <- second.updatedAt
+            } yield {
+              firstCreation.isBefore(secondCreation)
+            }).getOrElse(false)
+          })
+          .head
+      }
+    )
+  }
 }
