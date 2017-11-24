@@ -53,7 +53,7 @@ class SocialServiceComponentTest
         aud = None,
         sub = None,
         hd = Some("make.org"),
-        email = "google@make.org",
+        email = Some("google@make.org"),
         emailVerified = "true",
         atHash = None,
         iss = None,
@@ -137,7 +137,7 @@ class SocialServiceComponentTest
         aud = None,
         sub = None,
         hd = None,
-        email = "google@make.org",
+        email = Some("google@make.org"),
         emailVerified = "true",
         atHash = None,
         iss = None,
@@ -227,7 +227,7 @@ class SocialServiceComponentTest
       Given("a user logged via facebook")
       val facebookData = FacebookUserInfos(
         id = "444444",
-        email = "facebook@make.org",
+        email = Some("facebook@make.org"),
         firstName = "facebook",
         lastName = "user",
         picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture"))
@@ -263,7 +263,7 @@ class SocialServiceComponentTest
       )
 
       val info = UserInfo(
-        email = "facebook@make.org",
+        email = Some("facebook@make.org"),
         firstName = "facebook",
         lastName = "user",
         googleId = None,
@@ -308,7 +308,7 @@ class SocialServiceComponentTest
       Given("a user logged via facebook")
       val facebookData = FacebookUserInfos(
         id = "444444",
-        email = "facebook@make.org",
+        email = Some("facebook@make.org"),
         picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture")),
         firstName = "facebook",
         lastName = "USER"

@@ -147,7 +147,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def getOrCreateUserFromSocial(userInfo: UserInfo,
                                            clientIp: Option[String],
                                            requestContext: RequestContext): Future[User] = {
-      val lowerCasedEmail: String = userInfo.email.toLowerCase()
+      val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
         case Some(user) => Future.successful(user)
