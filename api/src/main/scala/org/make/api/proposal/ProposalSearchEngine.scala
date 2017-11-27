@@ -34,10 +34,12 @@ trait ProposalSearchEngine {
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
+object ProposalSearchEngine {
+  val proposalIndexName: String = "proposal"
+}
+
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent =>
-
-  val proposalIndexName: String = "proposal"
 
   override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
@@ -45,7 +47,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    private val proposalAlias: IndexAndType = elasticsearchConfiguration.aliasName / proposalIndexName
+    private val proposalAlias
+      : IndexAndType = elasticsearchConfiguration.aliasName / ProposalSearchEngine.proposalIndexName
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.execute(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])

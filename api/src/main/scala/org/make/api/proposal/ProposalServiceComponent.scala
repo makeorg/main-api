@@ -2,12 +2,15 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import akka.Done
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.sessionhistory._
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
@@ -93,6 +96,10 @@ trait ProposalService {
                     voteKey: VoteKey,
                     qualificationKey: QualificationKey): Future[Option[Qualification]]
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
+
+  def removeProposalFromCluster(proposalId: ProposalId): Future[Done]
+
+  def clearSimilarProposals(): Future[Done]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -104,6 +111,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with ProposalSearchEngineComponent
     with DuplicateDetectorConfigurationComponent
     with EventBusServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent
     with UserServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
@@ -112,6 +121,32 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     private val duplicateDetector: DuplicateDetector[IndexedProposal] =
       new DuplicateDetector(lang = "fr", 0.0)
+
+    override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+      readJournal
+        .currentPersistenceIds()
+        .map { id =>
+          proposalCoordinatorService.removeProposalFromCluster(ProposalId(id), proposalId)
+          Done
+        }
+        .runForeach { _ =>
+          {}
+        }
+    }
+
+    override def clearSimilarProposals(): Future[Done] = {
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+      readJournal
+        .currentPersistenceIds()
+        .map { id =>
+          proposalCoordinatorService.clearSimilarProposals(ProposalId(id))
+          Done
+        }
+        .runForeach { _ =>
+          {}
+        }
+    }
 
     override def getProposalById(proposalId: ProposalId,
                                  requestContext: RequestContext): Future[Option[IndexedProposal]] = {
