@@ -10,7 +10,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sequence
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService

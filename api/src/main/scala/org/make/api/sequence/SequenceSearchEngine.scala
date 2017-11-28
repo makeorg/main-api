@@ -30,13 +30,15 @@ trait SequenceSearchEngine {
   def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
+object SequenceSearchEngine {
+  val sequenceIndexName = "sequence"
+}
+
 trait DefaultSequenceSearchEngineComponent
     extends SequenceSearchEngineComponent
     with CirceFormatters
     with DefaultProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent =>
-
-  val sequenceIndexName = "sequence"
 
   override lazy val elasticsearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
 
@@ -44,7 +46,8 @@ trait DefaultSequenceSearchEngineComponent
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    private val sequenceAlias: IndexAndType = elasticsearchConfiguration.aliasName / sequenceIndexName
+    private val sequenceAlias
+      : IndexAndType = elasticsearchConfiguration.aliasName / SequenceSearchEngine.sequenceIndexName
 
     override def findSequenceById(sequenceId: SequenceId): Future[Option[IndexedSequence]] = {
       client.execute(get(id = sequenceId.value).from(sequenceAlias)).map(_.toOpt[IndexedSequence])

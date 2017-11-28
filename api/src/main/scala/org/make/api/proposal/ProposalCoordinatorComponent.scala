@@ -17,6 +17,10 @@ trait ProposalCoordinatorComponent {
 
 trait ProposalCoordinatorService {
 
+  def clearSimilarProposals(id: ProposalId): Unit
+
+  def removeProposalFromCluster(proposalId: ProposalId, proposalToRemove: ProposalId): Unit
+
   /**
     * Retrieve a Proposal without logging it
     *
@@ -130,6 +134,18 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         case Right(success) => Future.successful(success)
         case Left(e)        => Future.failed(e)
       }
+    }
+
+    override def removeProposalFromCluster(proposalId: ProposalId, proposalToRemove: ProposalId): Unit = {
+      proposalCoordinator ! RemoveSimilarProposalCommand(
+        proposalId = proposalId,
+        similarToRemove = proposalToRemove,
+        requestContext = RequestContext.empty
+      )
+    }
+
+    override def clearSimilarProposals(proposalId: ProposalId): Unit = {
+      proposalCoordinator ! ClearSimilarProposalsCommand(proposalId = proposalId, requestContext = RequestContext.empty)
     }
   }
 }

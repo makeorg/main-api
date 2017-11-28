@@ -27,6 +27,7 @@ dockerCmd := Seq(
   "-Dcom.sun.management.jmxremote.authenticate=false",
   "-Dcom.sun.management.jmxremote.port=4000",
   "-Dcom.sun.management.rmi.jmxremote.port=4000",
+  "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager",
   "-J-javaagent:/opt/docker/lib/org.aspectj.aspectjweaver-" + Dependencies.aspectJVersion + ".jar",
   "-J-Xms4G",
   "-J-Xmx4G",

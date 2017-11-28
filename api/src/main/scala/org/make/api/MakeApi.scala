@@ -75,6 +75,7 @@ trait MakeApi
     with DefaultProposalCoordinatorServiceComponent
     with DefaultSequenceCoordinatorServiceComponent
     with DefaultSequenceSearchEngineComponent
+    with DefaultReadJournalComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent

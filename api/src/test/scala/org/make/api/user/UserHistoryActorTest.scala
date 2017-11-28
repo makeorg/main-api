@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.api.proposal.ProposalEvent.ProposalLocked
+import org.make.api.proposal.PublishedProposalEvent.ProposalLocked
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -380,14 +380,14 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         UserId("Mod"),
         Some("Mod"),
         RequestContext.empty,
-        UserAction(DateHelper.now(), "lock", ProposalLocked())
+        UserAction(DateHelper.now(), "lock", ProposalLocked(ProposalId("1234"), UserId("1234")))
       )
       expectMsgType[LogLockProposalEvent]
       coordinator ! LogLockProposalEvent(
         UserId("Mod"),
         Some("Mod"),
         RequestContext.empty,
-        UserAction(DateHelper.now(), "lock", ProposalLocked())
+        UserAction(DateHelper.now(), "lock", ProposalLocked(ProposalId("1234"), UserId("1234")))
       )
       expectNoMessage(1.second)
     }
