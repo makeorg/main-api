@@ -4,6 +4,7 @@ import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.SprayJsonFormatters
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
 import stamina.{V1, V2}
 import spray.json.lenses.JsonLenses._
 import spray.json.DefaultJsonProtocol._
@@ -50,6 +51,12 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalStateSerializer: JsonPersister[ProposalState, V1] =
     persister[ProposalState]("proposalState")
 
+  private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
+    persister[SimilarProposalRemoved]("similar-proposal-removed")
+
+  private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
+    persister[SimilarProposalsCleared]("similar-proposals-cleared")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       proposalProposedSerializer,
@@ -64,6 +71,8 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalLockedSerializer,
       proposalStateSerializer,
       similarProposalsAddedSerializer,
-      proposalSerializer
+      proposalSerializer,
+      similarProposalRemovedSerializer,
+      similarProposalsClearedSerializer
     )
 }
