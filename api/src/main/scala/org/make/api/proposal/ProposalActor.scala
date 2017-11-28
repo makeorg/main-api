@@ -10,6 +10,7 @@ import akka.util.Timeout
 import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sessionhistory._
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
@@ -58,8 +59,34 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case command: UnqualifyVoteCommand             => onUnqualificationProposalCommand(command)
     case command: LockProposalCommand              => onLockProposalCommand(command)
     case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
+    case command: RemoveSimilarProposalCommand     => onRemoveSimilarProposalCommand(command)
+    case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
     case Snapshot                                  => state.foreach(saveSnapshot)
     case _: KillProposalShard                      => self ! PoisonPill
+  }
+
+  private def onRemoveSimilarProposalCommand(command: RemoveSimilarProposalCommand): Unit = {
+    if (state.exists(_.proposal.similarProposals.contains(command.similarToRemove))) {
+      persist(
+        SimilarProposalRemoved(
+          id = command.proposalId,
+          proposalToRemove = command.similarToRemove,
+          requestContext = command.requestContext
+        )
+      )(event => state = applyEvent(event))
+    } else if (command.similarToRemove == this.proposalId) {
+      persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext))(
+        event => state = applyEvent(event)
+      )
+    }
+  }
+
+  private def onClearSimilarProposalsCommand(command: ClearSimilarProposalsCommand): Unit = {
+    if (state.exists(_.proposal.similarProposals.nonEmpty)) {
+      persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext)) { event =>
+        state = applyEvent(event)
+      }
+    }
   }
 
   private def onUpdateDuplicatedProposalsCommand(command: UpdateDuplicatedProposalsCommand): Unit = {
@@ -77,7 +104,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             command.requestContext,
             DateHelper.now()
           )
-        )(_ => {})
+        ) { _ =>
+          {}
+        }
       }
     }
   }
@@ -653,7 +682,19 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case e: ProposalUnqualified   => state.map(proposalState => applyProposalUnqualified(proposalState, e))
     case e: ProposalLocked        => state.map(proposalState => applyProposalLocked(proposalState, e))
     case e: SimilarProposalsAdded => state.map(proposalState => applySimilarProposalsAdded(proposalState, e))
-    case _                        => state
+    case _: SimilarProposalsCleared =>
+      state.map(
+        proposalState => proposalState.copy(proposal = proposalState.proposal.copy(similarProposals = Seq.empty))
+      )
+    case e: SimilarProposalRemoved =>
+      state.map(
+        proposalState =>
+          proposalState.copy(
+            proposal = proposalState.proposal
+              .copy(similarProposals = proposalState.proposal.similarProposals.filter(_ != e.proposalToRemove))
+        )
+      )
+    case _ => state
   }
 
   private def persistAndPublishEvent[T <: ProposalEvent](event: T)(andThen: T => Unit): Unit = {

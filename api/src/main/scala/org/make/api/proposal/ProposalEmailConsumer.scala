@@ -10,7 +10,7 @@ import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.user.UserService
 import org.make.core.proposal.Proposal
-import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.user._
 import shapeless.Poly1
 

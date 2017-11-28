@@ -3,7 +3,8 @@ package org.make.api.proposal
 import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent.ProposalEventWrapper
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import shapeless.Poly1
 

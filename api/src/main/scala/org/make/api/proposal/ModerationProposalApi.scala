@@ -95,14 +95,16 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               parameters(
-                'format, // TODO Use Accept header to get the format
-                'filename,
-                'theme.as(CsvSeq[String]).?,
-                'tags.as(CsvSeq[String]).?,
-                'content.?,
-                'operation.?,
-                'source.?,
-                'question.?
+                (
+                  'format, // TODO Use Accept header to get the format
+                  'filename,
+                  'theme.as(CsvSeq[String]).?,
+                  'tags.as(CsvSeq[String]).?,
+                  'content.?,
+                  'operation.?,
+                  'source.?,
+                  'question.?
+                )
               ) { (_, fileName, themeId, tags, content, operation, source, question) =>
                 provideAsync(themeService.findAll()) { themes =>
                   provideAsync(
@@ -384,6 +386,67 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "remove-from-similars",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @Path(value = "/similars/{proposalId}")
+  def removeProposalFromClusters: Route = delete {
+    path("moderation" / "proposals" / "similars" / moderationProposalId) { proposalId =>
+      makeTrace("RemoveFromSimilars") { context =>
+        makeOAuth2 { auth =>
+          requireModerationRole(auth.user) {
+            onSuccess(proposalService.removeProposalFromCluster(proposalId)) { _ =>
+              complete(StatusCodes.OK)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "remove-clusters",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @Path(value = "/similars")
+  def removeClusters: Route = delete {
+    path("moderation" / "proposals" / "similars") {
+      makeTrace("RemoveClusters") { context =>
+        makeOAuth2 { auth =>
+          requireModerationRole(auth.user) {
+            onSuccess(proposalService.clearSimilarProposals()) { _ =>
+              complete(StatusCodes.OK)
+            }
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
@@ -391,6 +454,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       acceptProposal ~
       refuseProposal ~
       exportProposals ~
+      removeProposalFromClusters ~
+      removeClusters ~
       lock
 
   val moderationProposalId: PathMatcher1[ProposalId] =

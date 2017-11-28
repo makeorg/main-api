@@ -4,7 +4,7 @@ import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.DateHelper
-import org.make.api.proposal.ProposalEvent._
+import org.make.api.proposal.PublishedProposalEvent._
 
 class ProposalProducerActor extends ProducerActor {
   override protected lazy val eventClass: Class[ProposalEvent] = classOf[ProposalEvent]
@@ -71,7 +71,7 @@ class ProposalProducerActor extends ProducerActor {
     sendRecord(kafkaTopic, event.id.value, record)
   }
 
-  private def onQualificationProposal(event: ProposalEvent): Unit = {
+  private def onQualificationProposal(event: PublishedProposalEvent): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       ProposalEventWrapper(
@@ -85,7 +85,7 @@ class ProposalProducerActor extends ProducerActor {
     sendRecord(kafkaTopic, event.id.value, record)
   }
 
-  private def onUnqualificationProposal(event: ProposalEvent): Unit = {
+  private def onUnqualificationProposal(event: PublishedProposalEvent): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       ProposalEventWrapper(
@@ -99,7 +99,7 @@ class ProposalProducerActor extends ProducerActor {
     sendRecord(kafkaTopic, event.id.value, record)
   }
 
-  private def onLockedProposal(event: ProposalEvent): Unit = {
+  private def onLockedProposal(event: PublishedProposalEvent): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       ProposalEventWrapper(

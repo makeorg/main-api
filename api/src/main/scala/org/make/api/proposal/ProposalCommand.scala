@@ -96,3 +96,11 @@ final case class LockProposalCommand(proposalId: ProposalId,
                                      moderatorName: Option[String],
                                      requestContext: RequestContext)
     extends ProposalCommand
+
+final case class ClearSimilarProposalsCommand(proposalId: ProposalId, requestContext: RequestContext)
+    extends ProposalCommand
+
+final case class RemoveSimilarProposalCommand(proposalId: ProposalId,
+                                              similarToRemove: ProposalId,
+                                              requestContext: RequestContext)
+    extends ProposalCommand

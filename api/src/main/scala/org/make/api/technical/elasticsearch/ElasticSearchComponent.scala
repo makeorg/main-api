@@ -5,8 +5,6 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 import akka.Done
-import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
-import akka.persistence.query.PersistenceQuery
 import akka.stream.ActorMaterializer
 import cats.data.OptionT
 import cats.implicits._
@@ -17,11 +15,12 @@ import com.sksamuel.elastic4s.http.index.admin.IndicesAliasResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
-import org.make.api.proposal.{DefaultProposalSearchEngineComponent, ProposalCoordinatorServiceComponent}
-import org.make.api.sequence.{DefaultSequenceSearchEngineComponent, SequenceCoordinatorServiceComponent}
-import org.make.api.tag.DefaultTagServiceComponent
-import org.make.api.theme.DefaultThemeServiceComponent
-import org.make.api.user.DefaultUserServiceComponent
+import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
+import org.make.api.tag.TagServiceComponent
+import org.make.api.technical.ReadJournalComponent
+import org.make.api.theme.ThemeServiceComponent
+import org.make.api.user.UserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
@@ -52,11 +51,12 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     with ActorSystemComponent
     with ProposalCoordinatorServiceComponent
     with SequenceCoordinatorServiceComponent
-    with DefaultUserServiceComponent
-    with DefaultTagServiceComponent
-    with DefaultThemeServiceComponent
-    with DefaultProposalSearchEngineComponent
-    with DefaultSequenceSearchEngineComponent =>
+    with ReadJournalComponent
+    with UserServiceComponent
+    with TagServiceComponent
+    with ThemeServiceComponent
+    with ProposalSearchEngineComponent
+    with SequenceSearchEngineComponent =>
   override lazy val elasticSearch: ElasticSearch = new ElasticSearch {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -113,9 +113,6 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     }
 
     def executeIndexProposals(newIndexName: String): Future[Done] = {
-      val readJournal: CassandraReadJournal = PersistenceQuery(system = actorSystem)
-        .readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
-
       val start = System.currentTimeMillis()
       val parallelism = 5
       val result = readJournal
@@ -127,7 +124,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         .map(_.get)
         .mapAsync(parallelism) { indexedProposal =>
           elasticsearchProposalAPI
-            .indexProposal(indexedProposal, Some(IndexAndType(newIndexName, proposalIndexName)))
+            .indexProposal(indexedProposal, Some(IndexAndType(newIndexName, ProposalSearchEngine.proposalIndexName)))
             .recoverWith {
               case e =>
                 logger.error("indexing proposal failed", e)
@@ -147,9 +144,6 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     }
 
     def executeIndexSequences(newIndexName: String): Future[Done] = {
-      val readJournal: CassandraReadJournal = PersistenceQuery(system = actorSystem)
-        .readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
-
       val start = System.currentTimeMillis()
 
       val parallelism = 5
@@ -162,7 +156,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         .map(_.get)
         .mapAsync(parallelism) { indexedSequence =>
           elasticsearchSequenceAPI
-            .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, sequenceIndexName)))
+            .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, SequenceSearchEngine.sequenceIndexName)))
             .recoverWith {
               case e =>
                 logger.error("indexing sequence failed", e)

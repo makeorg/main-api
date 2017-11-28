@@ -2,7 +2,7 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.api.proposal.ProposalEvent.{ProposalAccepted, ProposalLocked, ProposalRefused}
+import org.make.api.proposal.PublishedProposalEvent.{ProposalAccepted, ProposalLocked, ProposalRefused}
 import org.make.api.sequence.SequenceEvent.{
   SequenceCreated,
   SequenceProposalsAdded,
