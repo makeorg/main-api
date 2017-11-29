@@ -40,7 +40,19 @@ object InverseWeightedRandom extends StrictLogging {
 }
 
 object SelectionAlgorithm extends StrictLogging {
-
+  /*
+    Returns the list of proposal to display in the sequence
+    The proposals are chosen such that:
+    - if they are imposed proposals (includeList) they will appear first
+    - the rest is 50/50 new proposals to test (less than newProposalVoteCount votes)
+      and tested proposals (more than newProposalVoteCount votes)
+    - new proposals are tested in a first-in first-out mode until they reach newProposalVoteCount votes
+    - if there are not enough tested proposals to provide the requested number of proposals,
+      the sequence is completed with new proposals
+    - the candidates proposals are filtered such that only one proposal by ideas
+      (cluster of similar proposals) can appear in each sequence
+    - the non imposed proposals are ordered randomly
+   */
   def newProposalsForSequence(targetLength: Int,
                               proposals: Seq[Proposal],
                               votedProposals: Seq[ProposalId],
