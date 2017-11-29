@@ -6,7 +6,7 @@ services:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=localhost:2888:3888
     ports:
-      - 2181:12181
+      - 12181:2181
     networks:
       - makeapi
   kafka:

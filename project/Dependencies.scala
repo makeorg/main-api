@@ -55,6 +55,9 @@ object Dependencies {
   val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
   val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
 
+  val constructr: ModuleID = "de.heikoseeberger"                 %% "constructr"                        % "0.18.0"
+  val constructrZookeeper: ModuleID = "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.0"
+
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.3.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.0"
 
@@ -90,7 +93,7 @@ object Dependencies {
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.5" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
-  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.6.0"
+  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.6.0" % "test"
 
   // Needed to use the client....
   val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.23.1"  % "it"
