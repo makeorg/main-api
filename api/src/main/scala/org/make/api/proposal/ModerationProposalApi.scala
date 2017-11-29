@@ -116,7 +116,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                         content = content,
                         context =
                           Some(ContextFilterRequest(operation = operation, source = source, question = question)),
-                        status = Some(Accepted),
+                        status = Some(Seq(Accepted)),
                         limit = Some(5000) //TODO get limit value for export into config files
                       ).toSearchQuery,
                       maybeSeed = None,
