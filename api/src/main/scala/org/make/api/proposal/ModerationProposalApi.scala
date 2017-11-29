@@ -109,8 +109,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 provideAsync(themeService.findAll()) { themes =>
                   provideAsync(
                     proposalService.search(
-                      Some(auth.user.userId),
-                      ExhaustiveSearchRequest(
+                      userId = Some(auth.user.userId),
+                      query = ExhaustiveSearchRequest(
                         themesIds = themeId,
                         tagsIds = tags,
                         content = content,
@@ -119,7 +119,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                         status = Some(Accepted),
                         limit = Some(5000) //TODO get limit value for export into config files
                       ).toSearchQuery,
-                      requestContext
+                      maybeSeed = None,
+                      requestContext = requestContext
                     )
                   ) { proposals =>
                     {
@@ -183,7 +184,12 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
               decodeRequest {
                 entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
                   provideAsync(
-                    proposalService.search(Some(userAuth.user.userId), request.toSearchQuery, requestContext)
+                    proposalService.search(
+                      userId = Some(userAuth.user.userId),
+                      query = request.toSearchQuery,
+                      maybeSeed = None,
+                      requestContext = requestContext
+                    )
                   ) { proposals =>
                     complete(proposals)
                   }

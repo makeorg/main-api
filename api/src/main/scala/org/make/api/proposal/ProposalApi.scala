@@ -67,7 +67,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
               entity(as[SearchRequest]) { request: SearchRequest =>
                 provideAsync(
                   proposalService
-                    .searchForUser(userAuth.map(_.user.userId), request.toSearchQuery, requestContext)
+                    .searchForUser(userAuth.map(_.user.userId), request.toSearchQuery, request.seed, requestContext)
                 ) { proposals =>
                   complete(proposals)
                 }
