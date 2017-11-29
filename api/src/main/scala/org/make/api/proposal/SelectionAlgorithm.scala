@@ -89,7 +89,9 @@ object SelectionAlgorithm extends StrictLogging {
     val testedProposalCount = proposalsToChoose - newIncludedProposals.size
     val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(testedProposals, testedProposalCount)
 
-    val sequence = includeList ++ newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
+    val sequence = includeList ++ Random.shuffle(
+      newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
+    )
     if (sequence.size < targetLength) {
       val excludeList =
         (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
