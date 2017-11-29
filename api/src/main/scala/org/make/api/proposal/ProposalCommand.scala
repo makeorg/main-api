@@ -61,6 +61,9 @@ final case class RefuseProposalCommand(moderator: UserId,
                                        refusalReason: Option[String])
     extends ProposalCommand
 
+final case class PostponeProposalCommand(moderator: UserId, proposalId: ProposalId, requestContext: RequestContext)
+    extends ProposalCommand
+
 final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,

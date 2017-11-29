@@ -7,7 +7,7 @@ import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
-import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
+import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
@@ -395,7 +395,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive an error")
       val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("unknown")
+      error.errors.head.field should be("status")
       error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already validated"))
 
     }
@@ -577,8 +577,137 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive an error")
       val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("unknown")
+      error.errors.head.field should be("status")
       error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already refused"))
+    }
+  }
+
+  feature("postpone a proposal") {
+    scenario("postpone a non existing proposal") {
+      Given("no proposal corresponding to id 'nothing-there'")
+      When("I try to postpone the proposal")
+      coordinator ! PostponeProposalCommand(
+        proposalId = ProposalId("nothing-there"),
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive 'None' since nothing is found")
+      expectMsg(None)
+    }
+
+    scenario("postpone a pending proposal") {
+      Given("a freshly created proposal")
+      val originalContent = "This is a proposal that will be postponed"
+      coordinator ! ProposeCommand(
+        ProposalId("to-be-postponed"),
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("i postpone the proposal")
+      coordinator ! PostponeProposalCommand(
+        moderator = UserId("moderatorFoo"),
+        proposalId = ProposalId("to-be-postponed"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive the postponed proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to postpone given proposal"))
+
+      response.proposalId should be(ProposalId("to-be-postponed"))
+      response.events.length should be(2)
+      response.content should be(originalContent)
+      response.status should be(Postponed)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+    }
+
+    scenario("postpone a refused proposal shouldn't do nothing") {
+      Given("a refused proposal")
+      val originalContent = "This is a new proposal to refuse"
+      coordinator ! ProposeCommand(
+        ProposalId("proposal-to-be-refused"),
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! RefuseProposalCommand(
+        proposalId = ProposalId("proposal-to-be-refused"),
+        moderator = UserId("fooUser"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        refusalReason = Some("good reason")
+      )
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      When("I try to postpone the proposal")
+      coordinator ! PostponeProposalCommand(
+        proposalId = ProposalId("proposal-to-be-refused"),
+        moderator = UserId("moderatorFoo"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive an error")
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("status")
+      error.errors.head.message should be(
+        Some("Proposal proposal-to-be-refused is already moderated and cannot be postponed")
+      )
+    }
+
+    scenario("postpone a postponed proposal shouldn't do nothing") {
+      Given("a postponed proposal")
+      val originalContent = "This is a new proposal to postpone"
+      coordinator ! ProposeCommand(
+        ProposalId("proposal-to-be-postponed"),
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = originalContent
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! PostponeProposalCommand(
+        proposalId = ProposalId("proposal-to-be-postponed"),
+        moderator = UserId("fooUser"),
+        requestContext = RequestContext.empty
+      )
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      When("I try to re-postpone the proposal")
+      coordinator ! PostponeProposalCommand(
+        proposalId = ProposalId("proposal-to-be-postponed"),
+        moderator = UserId("moderatorFoo"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive an error")
+      val error = expectMsgType[ValidationFailedError]
+      error.errors.head.field should be("status")
+      error.errors.head.message should be(Some("Proposal proposal-to-be-postponed is already postponed"))
     }
   }
 
@@ -694,7 +823,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive a ValidationFailedError")
       val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("unknown")
+      error.errors.head.field should be("proposalId")
       error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
     }
   }
@@ -903,79 +1032,80 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       Then("Mod2 succeeds to lock the proposal")
       expectMsg(Right(Some(moderatorMod2)))
     }
-  }
 
-  scenario("lock a proposal and try to vote after") {
-    Given("a moderator FooModerator")
-    val moderator = UserId("FooModerator")
+    scenario("lock a proposal and try to vote after") {
+      Given("a moderator FooModerator")
+      val moderator = UserId("FooModerator")
 
-    And("a proposal locked by FooModerator")
-    val proposalId: ProposalId = ProposalId("proposal-to-lock")
-    coordinator ! ProposeCommand(
-      proposalId = proposalId,
-      requestContext = RequestContext.empty,
-      user = user,
-      createdAt = mainCreatedAt.get,
-      content = "This is a proposal"
-    )
+      And("a proposal locked by FooModerator")
+      val proposalId: ProposalId = ProposalId("proposal-to-lock")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal"
+      )
 
-    expectMsgPF[Unit]() {
-      case None => fail("Proposal was not correctly proposed")
-      case _    => // ok
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderator,
+        moderatorName = Some("FooModerator"),
+        requestContext = RequestContext.empty
+      )
+
+      expectMsg(Right(Some(moderator)))
+
+      val voteAgree = Vote(
+        key = VoteKey.Agree,
+        count = 1,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.LikeIt),
+          Qualification(key = QualificationKey.Doable),
+          Qualification(key = QualificationKey.PlatitudeAgree)
+        )
+      )
+
+      coordinator ! VoteProposalCommand(
+        proposalId = proposalId,
+        Some(UserId("Bar")),
+        RequestContext.empty,
+        voteKey = VoteKey.Agree,
+        vote = None
+      )
+
+      expectMsg(Right(Some(voteAgree)))
+
+      val voteDisagree = Vote(
+        key = VoteKey.Disagree,
+        count = 1,
+        qualifications = Seq(
+          Qualification(key = QualificationKey.NoWay),
+          Qualification(key = QualificationKey.Impossible),
+          Qualification(key = QualificationKey.PlatitudeDisagree)
+        )
+      )
+
+      And("recover its state after having been kill")
+      coordinator ! KillProposalShard(proposalId, RequestContext.empty)
+
+      Thread.sleep(THREAD_SLEEP_MICROSECONDS)
+
+      coordinator ! VoteProposalCommand(
+        proposalId = proposalId,
+        Some(UserId("Baz")),
+        RequestContext.empty,
+        voteKey = VoteKey.Disagree,
+        vote = None
+      )
+
+      expectMsg(Right(Some(voteDisagree)))
     }
-
-    coordinator ! LockProposalCommand(
-      proposalId = proposalId,
-      moderatorId = moderator,
-      moderatorName = Some("FooModerator"),
-      requestContext = RequestContext.empty
-    )
-
-    expectMsg(Right(Some(moderator)))
-
-    val voteAgree = Vote(
-      key = VoteKey.Agree,
-      count = 1,
-      qualifications = Seq(
-        Qualification(key = QualificationKey.LikeIt),
-        Qualification(key = QualificationKey.Doable),
-        Qualification(key = QualificationKey.PlatitudeAgree)
-      )
-    )
-
-    coordinator ! VoteProposalCommand(
-      proposalId = proposalId,
-      Some(UserId("Bar")),
-      RequestContext.empty,
-      voteKey = VoteKey.Agree,
-      vote = None
-    )
-
-    expectMsg(Right(Some(voteAgree)))
-
-    val voteDisagree = Vote(
-      key = VoteKey.Disagree,
-      count = 1,
-      qualifications = Seq(
-        Qualification(key = QualificationKey.NoWay),
-        Qualification(key = QualificationKey.Impossible),
-        Qualification(key = QualificationKey.PlatitudeDisagree)
-      )
-    )
-
-    And("recover its state after having been kill")
-    coordinator ! KillProposalShard(proposalId, RequestContext.empty)
-
-    Thread.sleep(THREAD_SLEEP_MICROSECONDS)
-
-    coordinator ! VoteProposalCommand(
-      proposalId = proposalId,
-      Some(UserId("Baz")),
-      RequestContext.empty,
-      voteKey = VoteKey.Disagree,
-      vote = None
-    )
-
-    expectMsg(Right(Some(voteDisagree)))
   }
+
 }

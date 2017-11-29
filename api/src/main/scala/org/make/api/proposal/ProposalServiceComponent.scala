@@ -74,6 +74,10 @@ trait ProposalService {
                      requestContext: RequestContext,
                      request: RefuseProposalRequest): Future[Option[ProposalResponse]]
 
+  def postponeProposal(proposalId: ProposalId,
+                       moderator: UserId,
+                       requestContext: RequestContext): Future[Option[ProposalResponse]]
+
   def voteProposal(proposalId: ProposalId,
                    maybeUserId: Option[UserId],
                    requestContext: RequestContext,
@@ -372,6 +376,27 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
           proposal: Proposal <- OptionT(refusedProposal)
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
+    }
+
+    override def postponeProposal(proposalId: ProposalId,
+                                  moderator: UserId,
+                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
+
+      def postponedProposal = proposalCoordinatorService.postpone(
+        PostponeProposalCommand(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
+      )
+
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(postponedProposal)
           author: User       <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value

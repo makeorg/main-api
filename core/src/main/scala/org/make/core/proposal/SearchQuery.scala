@@ -243,6 +243,8 @@ object SearchFilters extends ElasticDsl {
           ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
         case StatusSearchFilter(ProposalStatus.Refused) =>
           ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Refused.shortName)
+        case StatusSearchFilter(ProposalStatus.Postponed) =>
+          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Postponed.shortName)
         case StatusSearchFilter(ProposalStatus.Archived) =>
           ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Archived.shortName)
         case StatusSearchFilter(ProposalStatus.Accepted) =>

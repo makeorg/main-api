@@ -183,6 +183,7 @@ object ProposalStatus {
   val statusMap: Map[String, ProposalStatus] =
     Map(
       Pending.shortName -> Pending,
+      Postponed.shortName -> Postponed,
       Accepted.shortName -> Accepted,
       Refused.shortName -> Refused,
       Archived.shortName -> Archived
@@ -193,8 +194,8 @@ object ProposalStatus {
   implicit lazy val proposalStatusDecoder: Decoder[ProposalStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {
-        case Some(profile) => Right(profile)
-        case None          => Left(s"$value is not a proposal status")
+        case Some(status) => Right(status)
+        case None         => Left(s"$value is not a proposal status")
       }
     }
 
@@ -219,6 +220,10 @@ object ProposalStatus {
 
   case object Refused extends ProposalStatus {
     override val shortName = "Refused"
+  }
+
+  case object Postponed extends ProposalStatus {
+    override val shortName = "Postponed"
   }
 
   case object Archived extends ProposalStatus {
