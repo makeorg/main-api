@@ -84,7 +84,7 @@ object ProposalResult {
 
 final case class ProposalsResultResponse(total: Int, results: Seq[ProposalResult])
 
-final case class ProposalsResultSeededResponse(total: Int, results: Seq[ProposalResult], seed: Int)
+final case class ProposalsResultSeededResponse(total: Int, results: Seq[ProposalResult], seed: Option[Int])
 
 final case class VoteResponse(voteKey: VoteKey,
                               count: Int,

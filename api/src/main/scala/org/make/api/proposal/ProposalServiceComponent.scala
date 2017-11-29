@@ -28,7 +28,6 @@ import org.make.semantic.text.model.duplicate.{DuplicateDetector, SimilarDocResu
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Random
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -260,11 +259,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def searchForUser(maybeUserId: Option[UserId],
                                query: SearchQuery,
-                               maybeSeed: Option[Int],
+                               seed: Option[Int],
                                requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      val seed: Int = maybeSeed.getOrElse(Random.nextInt())
-      search(maybeUserId, query, Some(seed), requestContext).flatMap { searchResult =>
+      search(maybeUserId, query, seed, requestContext).flatMap { searchResult =>
         maybeUserId match {
           case Some(userId) =>
             userHistoryCoordinatorService
