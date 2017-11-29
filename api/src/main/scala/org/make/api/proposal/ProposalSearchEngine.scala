@@ -82,16 +82,16 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
                                  maybeSeed: Option[Int] = None): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-
       var request: SearchDefinition = search(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
         .size(SearchFilters.getLimitSearch(searchQuery))
 
-      maybeSeed.foreach { seed =>
-        request = request.query(functionScoreQuery().scorers(randomScore(seed)))
-      }
+      for {
+        seed  <- maybeSeed
+        query <- request.query
+      } yield request = request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
 
       logger.debug(client.show(request))
 
