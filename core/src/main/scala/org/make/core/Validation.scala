@@ -34,7 +34,10 @@ object Validation {
   def validateField(field: String, condition: => Boolean, message: => String): Requirement =
     Requirement(field, () => condition, () => message)
 
-  def maxLength(field: String, maxLength: Int, fieldValue: String, message: Option[Int => String] = None): Requirement = {
+  def maxLength(field: String,
+                maxLength: Int,
+                fieldValue: String,
+                message: Option[Int => String] = None): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -52,7 +55,10 @@ object Validation {
     })
 
   }
-  def minLength(field: String, minLength: Int, fieldValue: String, message: Option[Int => String] = None): Requirement = {
+  def minLength(field: String,
+                minLength: Int,
+                fieldValue: String,
+                message: Option[Int => String] = None): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -89,6 +95,18 @@ object Validation {
 
   def requireNonEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
     validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+  }
+
+  def requirePresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
+    validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+  }
+
+  def requireEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
+    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should not be empty"))
+  }
+
+  def requireNotPresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
+    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should not be empty"))
   }
 
   def validChoices(fieldName: String,

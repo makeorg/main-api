@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
-import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
@@ -18,11 +18,15 @@ sealed trait SequenceEvent extends MakeSerializable {
   def eventDate: ZonedDateTime
 }
 
-object SequenceEvent {
+object SequenceEvent {}
+
+sealed trait PublishedSequenceEvent extends SequenceEvent
+
+object PublishedSequenceEvent {
 
   type AnySequenceEvent =
     SequenceCreated :+: SequenceViewed :+: SequenceUpdated :+:
-      SequenceProposalsRemoved :+: SequenceProposalsAdded :+: CNil
+      SequenceProposalsRemoved :+: SequenceProposalsAdded :+: SequencePatched :+: CNil
 
   final case class SequenceEventWrapper(version: Int,
                                         id: String,
@@ -32,13 +36,26 @@ object SequenceEvent {
       extends EventWrapper
 
   object SequenceEventWrapper {
-    def wrapEvent(event: SequenceEvent): AnySequenceEvent = event match {
+    def wrapEvent(event: PublishedSequenceEvent): AnySequenceEvent = event match {
       case e: SequenceCreated          => Coproduct[AnySequenceEvent](e)
       case e: SequenceViewed           => Coproduct[AnySequenceEvent](e)
       case e: SequenceUpdated          => Coproduct[AnySequenceEvent](e)
       case e: SequenceProposalsAdded   => Coproduct[AnySequenceEvent](e)
       case e: SequenceProposalsRemoved => Coproduct[AnySequenceEvent](e)
+      case e: SequencePatched          => Coproduct[AnySequenceEvent](e)
     }
+  }
+
+  final case class SequencePatched(id: SequenceId,
+                                   eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                   requestContext: RequestContext = RequestContext.empty,
+                                   sequence: Sequence)
+      extends PublishedSequenceEvent
+  object SequencePatched {
+    val version: Int = MakeSerializable.V1
+
+    implicit val formatter: RootJsonFormat[SequencePatched] =
+      DefaultJsonProtocol.jsonFormat4(SequencePatched.apply)
   }
 
   final case class SequenceProposalsAdded(id: SequenceId,
@@ -46,7 +63,7 @@ object SequenceEvent {
                                           requestContext: RequestContext,
                                           eventDate: ZonedDateTime,
                                           userId: UserId)
-      extends SequenceEvent
+      extends PublishedSequenceEvent
   object SequenceProposalsAdded {
     val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-proposal-added"
@@ -60,7 +77,7 @@ object SequenceEvent {
                                             requestContext: RequestContext,
                                             eventDate: ZonedDateTime,
                                             userId: UserId)
-      extends SequenceEvent
+      extends PublishedSequenceEvent
   object SequenceProposalsRemoved {
     val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-proposal-added"
@@ -79,7 +96,7 @@ object SequenceEvent {
                                    themeIds: Seq[ThemeId],
                                    tagIds: Seq[TagId],
                                    searchable: Boolean)
-      extends SequenceEvent
+      extends PublishedSequenceEvent
 
   object SequenceCreated {
     val version: Int = MakeSerializable.V1
@@ -90,7 +107,7 @@ object SequenceEvent {
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)
-      extends SequenceEvent
+      extends PublishedSequenceEvent
 
   object SequenceViewed {
     val version: Int = MakeSerializable.V1
@@ -108,7 +125,7 @@ object SequenceEvent {
                                    operation: Option[String] = None,
                                    themeIds: Seq[ThemeId],
                                    tagIds: Seq[TagId])
-      extends SequenceEvent
+      extends PublishedSequenceEvent
 
   object SequenceUpdated {
     val version: Int = MakeSerializable.V1

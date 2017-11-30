@@ -62,6 +62,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
     case command: RemoveSimilarProposalCommand     => onRemoveSimilarProposalCommand(command)
     case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
+    case command: PatchProposalCommand             => onPatchProposalCommand(command)
     case Snapshot                                  => state.foreach(saveSnapshot)
     case _: KillProposalShard                      => self ! PoisonPill
   }
@@ -85,6 +86,16 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   private def onClearSimilarProposalsCommand(command: ClearSimilarProposalsCommand): Unit = {
     if (state.exists(_.proposal.similarProposals.nonEmpty)) {
       persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext)) { event =>
+        state = applyEvent(event)
+      }
+    }
+  }
+
+  private def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
+    if (state.isDefined) {
+      persistAndPublishEvent(
+        ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = command.proposal)
+      ) { event =>
         state = applyEvent(event)
       }
     }
@@ -757,6 +768,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               .copy(similarProposals = proposalState.proposal.similarProposals.filter(_ != e.proposalToRemove))
         )
       )
+
+    case e: ProposalPatched =>
+      state.map(_.copy(proposal = e.proposal))
     case _ => state
   }
 

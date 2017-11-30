@@ -113,8 +113,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('addictions', e'addictions', true),
 	('afrique', e'Afrique', true),
 	('agissements-sexistes', e'agissements sexistes', true),
-	('agression', e'agression', true),
-	('agressions', e'agressions', true),
+	('agressions-physiques', e'agressions physiques', true),
 	('agriculture', e'agriculture', true),
 	('agriculture-raisonnee', e'agriculture raisonnée', true),
 	('aide-au-developpement', e'aide au développement', true),
@@ -198,7 +197,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('harcelement', e'harcèlement', true),
 	('harcelement-violence', e'harcèlement / violence', true),
 	('hebergement', e'hébergement', true),
-	('image-de-la-femme', e'image de la femme', true),
+	('image-des-femmes', e'image des femmes', true),
 	('immigration', e'immigration', true),
 	('independance-financiere', e'indépendance financière', true),
 	('industrie', e'industrie', true),
@@ -228,7 +227,6 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('moyen-orient', e'Moyen-Orient', true),
 	('musees', e'musées', true),
 	('musique', e'musique', true),
-	('mutilations', e'mutilations', true),
 	('nouvelles-technologies', e'nouvelles technologies', true),
 	('nucleaire', e'nucléaire', true),
 	('oceanie', e'Océanie', true),
@@ -298,7 +296,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('television', e'télévision', true),
 	('terrorisme', e'terrorisme', true),
 	('theatre', e'théâtre', true),
-	('traditions-nefastes', e'traditions néfastes', true),
+	('traditions-nefastes-mutilations', e'  traditions néfastes & mutilations', true),
 	('transports', e'transports', true),
 	('transports-en-commun', e'transports en commun', true),
 	('travailleurs-independants', e'travailleurs indépendants', true),
@@ -308,7 +306,8 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('vegetarien', e'végétarien', true),
 	('vie-rurale', e'vie rurale', true),
 	('violences-conjugales', e'violences conjugales', true),
-	('violences-sexuelles', e'violences-sexuelles', true)
+	('violences-sexuelles', e'violences-sexuelles', true),
+	('monde-medical', e'monde médical', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme

@@ -3,7 +3,7 @@ package org.make.api.sequence
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
-import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 
 sealed trait SequenceCommand {
@@ -45,3 +45,7 @@ final case class AddProposalsSequenceCommand(sequenceId: SequenceId,
 final case class ViewSequenceCommand(sequenceId: SequenceId, requestContext: RequestContext) extends SequenceCommand
 final case class GetSequence(sequenceId: SequenceId, requestContext: RequestContext) extends SequenceCommand
 final case class KillSequenceShard(sequenceId: SequenceId, requestContext: RequestContext) extends SequenceCommand
+final case class PatchSequenceCommand(sequenceId: SequenceId,
+                                      sequence: Sequence,
+                                      requestContext: RequestContext = RequestContext.empty)
+    extends SequenceCommand

@@ -62,6 +62,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
       case event: ProposalUnqualified => onCreateOrUpdate(event)
+      case event: ProposalPatched     => onCreateOrUpdate(event)
       case _: ProposalLocked          => Future.successful {}
       case event: SimilarProposalsAdded =>
         onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
@@ -83,6 +84,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
+    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {

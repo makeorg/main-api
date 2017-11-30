@@ -35,6 +35,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
     implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
     implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
+    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
     implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
       at(identity)
   }
@@ -44,6 +45,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
       case event: UserRegisteredEvent        => handleUserRegisteredEvent(event)
       case event: UserConnectedEvent         => handleUserConnectedEvent(event)
+      case event: UserUpdatedTagEvent        => handleUserUpdatedTagEvent(event)
       case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
       case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
     }
@@ -92,6 +94,11 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
+    log.debug(s"got event $event")
+    Future.successful {}
+  }
+
+  def handleUserUpdatedTagEvent(event: UserUpdatedTagEvent): Future[Unit] = {
     log.debug(s"got event $event")
     Future.successful {}
   }
