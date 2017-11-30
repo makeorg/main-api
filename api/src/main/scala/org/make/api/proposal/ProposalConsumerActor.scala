@@ -57,6 +57,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
       case event: ProposalRefused =>
         removeFromSequence(event)
         onCreateOrUpdate(event)
+      case event: ProposalPostponed   => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
@@ -75,6 +76,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)

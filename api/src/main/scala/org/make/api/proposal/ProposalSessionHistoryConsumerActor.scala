@@ -29,6 +29,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
       case event: ProposalProposed      => handleProposalProposed(event)
       case event: ProposalAccepted      => handleProposalAccepted(event)
       case event: ProposalRefused       => handleProposalRefused(event)
+      case event: ProposalPostponed     => handleProposalPostponed(event)
       case event: ProposalVoted         => handleProposalVoted(event)
       case event: ProposalUnvoted       => handleProposalUnvoted(event)
       case event: ProposalQualified     => handleProposalQualified(event)
@@ -45,6 +46,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
@@ -84,6 +86,12 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
+
+  def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
     Future.successful[Unit] {
       log.debug(s"received $event")
     }

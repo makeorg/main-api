@@ -18,6 +18,7 @@ class ProposalProducerActor extends ProducerActor {
     case event: ProposalProposed      => onPropose(event)
     case event: ProposalAccepted      => onProposalAccepted(event)
     case event: ProposalRefused       => onProposalRefused(event)
+    case event: ProposalPostponed     => onProposalPostponed(event)
     case event: ProposalUpdated       => onUpdateProposal(event)
     case event: ProposalViewed        => onViewProposal(event)
     case event: ProposalVoted         => onVoteProposal(event)
@@ -138,6 +139,21 @@ class ProposalProducerActor extends ProducerActor {
         event = ProposalEventWrapper.wrapEvent(event)
       )
     )
+    sendRecord(kafkaTopic, event.id.value, record)
+  }
+
+  private def onProposalPostponed(event: ProposalPostponed): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      ProposalEventWrapper(
+        version = ProposalPostponed.version,
+        id = event.id.value,
+        date = DateHelper.now(),
+        eventType = event.getClass.getSimpleName,
+        event = ProposalEventWrapper.wrapEvent(event)
+      )
+    )
+
     sendRecord(kafkaTopic, event.id.value, record)
   }
 

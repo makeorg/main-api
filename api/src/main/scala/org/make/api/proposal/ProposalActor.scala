@@ -15,7 +15,7 @@ import org.make.api.sessionhistory._
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
-import org.make.core.proposal.ProposalStatus.{Accepted, Refused}
+import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.{Qualification, Vote, _}
@@ -53,6 +53,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case command: UpdateProposalCommand            => onUpdateProposalCommand(command)
     case command: AcceptProposalCommand            => onAcceptProposalCommand(command)
     case command: RefuseProposalCommand            => onRefuseProposalCommand(command)
+    case command: PostponeProposalCommand          => onPostponeProposalCommand(command)
     case command: VoteProposalCommand              => onVoteProposalCommand(command)
     case command: UnvoteProposalCommand            => onUnvoteProposalCommand(command)
     case command: QualifyVoteCommand               => onQualificationProposalCommand(command)
@@ -168,7 +169,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "vote",
+            actionType = ProposalVoteAction.name,
             UserVote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -178,7 +179,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "vote",
+            actionType = ProposalVoteAction.name,
             SessionVote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -193,7 +194,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "unvote",
+            actionType = ProposalUnvoteAction.name,
             UserUnvote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -203,7 +204,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "unvote",
+            actionType = ProposalUnvoteAction.name,
             SessionUnvote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -218,7 +219,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "qualify",
+            actionType = ProposalQualifyAction.name,
             UserQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -228,7 +229,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "qualify",
+            actionType = ProposalQualifyAction.name,
             SessionQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -243,7 +244,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "unqualify",
+            actionType = ProposalUnqualifyAction.name,
             UserUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -253,7 +254,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "unqualify",
+            actionType = ProposalUnqualifyAction.name,
             SessionUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -469,6 +470,18 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     }
   }
 
+  private def onPostponeProposalCommand(command: PostponeProposalCommand): Unit = {
+    val maybeEvent = validatePostponeCommand(command)
+    maybeEvent match {
+      case Right(Some(event)) =>
+        persistAndPublishEvent(event) { _ =>
+          sender() ! state.map(_.proposal)
+        }
+      case Right(None) => sender() ! None
+      case Left(error) => sender() ! error
+    }
+  }
+
   private def onLockProposalCommand(command: LockProposalCommand): Unit = {
     state match {
       case None => sender() ! Right(None)
@@ -503,7 +516,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             ValidationFailedError(
               errors = Seq(
                 ValidationError(
-                  "unknown",
+                  "proposalId",
                   Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
                 )
               )
@@ -542,7 +555,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             ValidationFailedError(
               errors = Seq(
                 ValidationError(
-                  "unknown",
+                  "status",
                   Some(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
                 )
               )
@@ -554,7 +567,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           Left(
             ValidationFailedError(
               errors =
-                Seq(ValidationError("unknown", Some(s"Proposal ${command.proposalId.value} is already validated")))
+                Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already validated")))
             )
           )
         } else {
@@ -590,7 +603,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             ValidationFailedError(
               errors = Seq(
                 ValidationError(
-                  "unknown",
+                  "status",
                   Some(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
                 )
               )
@@ -601,7 +614,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           // other modifications should use the proposal update command
           Left(
             ValidationFailedError(
-              errors = Seq(ValidationError("unknown", Some(s"Proposal ${command.proposalId.value} is already refused")))
+              errors = Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already refused")))
             )
           )
         } else {
@@ -618,6 +631,55 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             )
           )
         }
+    }.getOrElse(Right(None))
+  }
+
+  private def validatePostponeCommand(
+    command: PostponeProposalCommand
+  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
+    state.map {
+      case ProposalState(proposal, lock) =>
+        if (proposal.status == ProposalStatus.Archived) {
+          Left(
+            ValidationFailedError(
+              errors = Seq(
+                ValidationError(
+                  "status",
+                  Some(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
+                )
+              )
+            )
+          )
+        } else if (proposal.status == ProposalStatus.Accepted || proposal.status == ProposalStatus.Refused) {
+          Left(
+            ValidationFailedError(
+              errors = Seq(
+                ValidationError(
+                  "status",
+                  Some(s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed")
+                )
+              )
+            )
+          )
+        } else if (proposal.status == ProposalStatus.Postponed) {
+          Left(
+            ValidationFailedError(
+              errors =
+                Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already postponed")))
+            )
+          )
+        } else {
+          Right(
+            Some(
+              ProposalPostponed(
+                id = command.proposalId,
+                requestContext = command.requestContext,
+                moderator = command.moderator
+              )
+            )
+          )
+        }
+
     }.getOrElse(Right(None))
   }
 
@@ -666,7 +728,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               ProposalAction(
                 date = e.eventDate,
                 user = e.userId,
-                actionType = "propose",
+                actionType = ProposalProposeAction.name,
                 arguments = Map("content" -> e.content)
               )
             )
@@ -676,6 +738,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case e: ProposalUpdated       => state.map(proposalState => applyProposalUpdated(proposalState, e))
     case e: ProposalAccepted      => state.map(proposalState => applyProposalAccepted(proposalState, e))
     case e: ProposalRefused       => state.map(proposalState => applyProposalRefused(proposalState, e))
+    case e: ProposalPostponed     => state.map(proposalState => applyProposalPostponed(proposalState, e))
     case e: ProposalVoted         => state.map(proposalState => applyProposalVoted(proposalState, e))
     case e: ProposalUnvoted       => state.map(proposalState => applyProposalUnvoted(proposalState, e))
     case e: ProposalQualified     => state.map(proposalState => applyProposalQualified(proposalState, e))
@@ -740,7 +803,12 @@ object ProposalActor {
     ).filter(!_._2.isEmpty)
     val moderator: UserId = event.moderator.get
     val action =
-      ProposalAction(date = event.eventDate, user = moderator, actionType = "update", arguments = arguments)
+      ProposalAction(
+        date = event.eventDate,
+        user = moderator,
+        actionType = ProposalUpdateAction.name,
+        arguments = arguments
+      )
     var proposal =
       state.proposal.copy(
         tags = event.tags,
@@ -768,7 +836,12 @@ object ProposalActor {
       "labels" -> event.labels.map(_.value).mkString(", ")
     ).filter(!_._2.isEmpty)
     val action =
-      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = arguments)
+      ProposalAction(
+        date = event.eventDate,
+        user = event.moderator,
+        actionType = ProposalAcceptAction.name,
+        arguments = arguments
+      )
     var proposal =
       state.proposal.copy(
         tags = event.tags,
@@ -802,6 +875,16 @@ object ProposalActor {
         refusalReason = event.refusalReason,
         updatedAt = Some(event.eventDate)
       ),
+      None
+    )
+  }
+
+  def applyProposalPostponed(state: ProposalState, event: ProposalPostponed): ProposalState = {
+    val action =
+      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "postpone", arguments = Map.empty)
+    state.copy(
+      proposal = state.proposal
+        .copy(events = action :: state.proposal.events, status = Postponed, updatedAt = Some(event.eventDate)),
       None
     )
   }

@@ -51,9 +51,10 @@ sealed trait PublishedProposalEvent extends ProposalEvent
 
 object PublishedProposalEvent {
 
-  type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
-    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
-    SimilarProposalsAdded :+: ProposalLocked :+: CNil
+  type AnyProposalEvent =
+    ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
+      ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
+      SimilarProposalsAdded :+: ProposalLocked :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -67,6 +68,7 @@ object PublishedProposalEvent {
       case e: ProposalProposed      => Coproduct[AnyProposalEvent](e)
       case e: ProposalAccepted      => Coproduct[AnyProposalEvent](e)
       case e: ProposalRefused       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalPostponed     => Coproduct[AnyProposalEvent](e)
       case e: ProposalViewed        => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated       => Coproduct[AnyProposalEvent](e)
       case e: ProposalVoted         => Coproduct[AnyProposalEvent](e)
@@ -177,6 +179,21 @@ object PublishedProposalEvent {
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
       DefaultJsonProtocol.jsonFormat6(ProposalRefused.apply)
+
+  }
+
+  final case class ProposalPostponed(id: ProposalId,
+                                     eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                     requestContext: RequestContext = RequestContext.empty,
+                                     moderator: UserId)
+      extends PublishedProposalEvent
+
+  object ProposalPostponed {
+    val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-postponed"
+
+    implicit val formatter: RootJsonFormat[ProposalPostponed] =
+      DefaultJsonProtocol.jsonFormat4(ProposalPostponed.apply)
 
   }
 
