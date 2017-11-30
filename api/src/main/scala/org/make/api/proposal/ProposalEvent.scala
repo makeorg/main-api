@@ -183,8 +183,8 @@ object PublishedProposalEvent {
   }
 
   final case class ProposalPostponed(id: ProposalId,
-                                     eventDate: ZonedDateTime,
-                                     requestContext: RequestContext,
+                                     eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                     requestContext: RequestContext = RequestContext.empty,
                                      moderator: UserId)
       extends PublishedProposalEvent
 

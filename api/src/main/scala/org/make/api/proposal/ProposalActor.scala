@@ -169,7 +169,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "vote",
+            actionType = ProposalVoteAction.name,
             UserVote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -179,7 +179,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "vote",
+            actionType = ProposalVoteAction.name,
             SessionVote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -194,7 +194,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "unvote",
+            actionType = ProposalUnvoteAction.name,
             UserUnvote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -204,7 +204,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "unvote",
+            actionType = ProposalUnvoteAction.name,
             SessionUnvote(proposalId = event.id, voteKey = event.voteKey)
           )
         )
@@ -219,7 +219,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "qualify",
+            actionType = ProposalQualifyAction.name,
             UserQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -229,7 +229,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "qualify",
+            actionType = ProposalQualifyAction.name,
             SessionQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -244,7 +244,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = UserAction(
             date = event.eventDate,
-            actionType = "unqualify",
+            actionType = ProposalUnqualifyAction.name,
             UserUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -254,7 +254,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           requestContext = event.requestContext,
           action = SessionAction(
             date = event.eventDate,
-            actionType = "unqualify",
+            actionType = ProposalUnqualifyAction.name,
             SessionUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
           )
         )
@@ -673,7 +673,6 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             Some(
               ProposalPostponed(
                 id = command.proposalId,
-                eventDate = DateHelper.now(),
                 requestContext = command.requestContext,
                 moderator = command.moderator
               )
@@ -729,7 +728,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               ProposalAction(
                 date = e.eventDate,
                 user = e.userId,
-                actionType = "propose",
+                actionType = ProposalProposeAction.name,
                 arguments = Map("content" -> e.content)
               )
             )
@@ -804,7 +803,12 @@ object ProposalActor {
     ).filter(!_._2.isEmpty)
     val moderator: UserId = event.moderator.get
     val action =
-      ProposalAction(date = event.eventDate, user = moderator, actionType = "update", arguments = arguments)
+      ProposalAction(
+        date = event.eventDate,
+        user = moderator,
+        actionType = ProposalUpdateAction.name,
+        arguments = arguments
+      )
     var proposal =
       state.proposal.copy(
         tags = event.tags,
@@ -832,7 +836,12 @@ object ProposalActor {
       "labels" -> event.labels.map(_.value).mkString(", ")
     ).filter(!_._2.isEmpty)
     val action =
-      ProposalAction(date = event.eventDate, user = event.moderator, actionType = "accept", arguments = arguments)
+      ProposalAction(
+        date = event.eventDate,
+        user = event.moderator,
+        actionType = ProposalAcceptAction.name,
+        arguments = arguments
+      )
     var proposal =
       state.proposal.copy(
         tags = event.tags,

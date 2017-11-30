@@ -112,7 +112,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       ProposalAction(
         date = mainCreatedAt.get,
         user = mainUserId,
-        actionType = "propose",
+        actionType = ProposalProposeAction.name,
         arguments = Map("content" -> "This is a proposal")
       )
     )

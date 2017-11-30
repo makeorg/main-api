@@ -66,6 +66,15 @@ object ProposalAction {
 
 }
 
+sealed trait ProposalActionType { val name: String }
+case object ProposalProposeAction extends ProposalActionType { override val name: String = "propose" }
+case object ProposalUpdateAction extends ProposalActionType { override val name: String = "update" }
+case object ProposalAcceptAction extends ProposalActionType { override val name: String = "accept" }
+case object ProposalVoteAction extends ProposalActionType { override val name: String = "vote" }
+case object ProposalUnvoteAction extends ProposalActionType { override val name: String = "unvote" }
+case object ProposalQualifyAction extends ProposalActionType { override val name: String = "qualify" }
+case object ProposalUnqualifyAction extends ProposalActionType { override val name: String = "unqualify" }
+
 sealed trait QualificationKey { val shortName: String }
 
 object QualificationKey extends StrictLogging {
