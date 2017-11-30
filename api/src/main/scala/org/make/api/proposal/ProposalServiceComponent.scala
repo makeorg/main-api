@@ -99,6 +99,7 @@ trait ProposalService {
                     requestContext: RequestContext,
                     voteKey: VoteKey,
                     qualificationKey: QualificationKey): Future[Option[Qualification]]
+
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 
   def removeProposalFromCluster(proposalId: ProposalId): Future[Done]
@@ -125,6 +126,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     private val duplicateDetector: DuplicateDetector[IndexedProposal] =
       new DuplicateDetector(lang = "fr", 0.0)
+    private val featureExtractor: FeatureExtractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption))))
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -461,7 +463,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): (Seq[SimilarDocResult[IndexedProposal]], Seq[IndexedProposal]) = {
       val corpus = Corpus(
         rawCorpus = candidates.filter(_.id != indexedProposal.id).map(_.content),
-        extractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption)))),
+        extractor = featureExtractor,
         lang = indexedProposal.language,
         maybeCorpusMeta = Some(candidates.filter(_.id != indexedProposal.id))
       )
