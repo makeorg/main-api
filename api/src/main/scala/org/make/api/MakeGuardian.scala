@@ -6,7 +6,6 @@ import org.make.api.sequence.{SequenceService, SequenceSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
-import org.make.api.technical.cluster.ClusterFormationActor
 import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
 import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
@@ -21,7 +20,7 @@ class MakeGuardian(userService: UserService,
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
-    context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
+    // context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
 
     val userHistoryCoordinator =
       context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
