@@ -43,7 +43,6 @@ object BusinessConfig {
     Tag("soutien psychologique"),
     Tag("indépendance financière"),
     Tag("agissements sexistes"),
-    Tag("mutilations"),
     Tag("violences sexuelles"),
     Tag("harcèlement"),
     Tag("traditions néfastes"),
@@ -52,7 +51,8 @@ object BusinessConfig {
     Tag("prévention"),
     Tag("protection"),
     Tag("réponses"),
-    Tag("agression")
+    Tag("agression"),
+    Tag("monde médical")
   )
 }
 
