@@ -12,6 +12,7 @@ import org.make.core.reference.{Tag, TagId}
 import scalikejdbc._
 
 import scala.concurrent.Future
+import scala.util.Success
 
 trait PersistentTagServiceComponent {
   def persistentTagService: PersistentTagService
@@ -23,6 +24,7 @@ trait PersistentTagService {
   def findAllEnabled(): Future[Seq[Tag]]
   def findAllEnabledFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
+  def remove(slug: TagId): Future[Int]
 }
 
 trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent {
@@ -105,6 +107,31 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         }.execute().apply()
       }).map(_ => tag)
     }
+
+    override def remove(slug: TagId): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      val result: Future[Int] = Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.eq(tagAlias.slug, slug.value))
+        }.update.apply()
+      })
+
+      result.onComplete {
+        case Success(0) => logger.info(s"Expected 1 row to be removed and get 0 rows with tag ${slug.value}")
+        case Success(rows) =>
+          if (rows != 1) {
+            logger.warn(s"Expected 1 row to be removed and get $rows rows with tag ${slug.value}")
+          } else {
+            logger.debug(s"Remove of tag ${slug.value} success")
+          }
+        case _ =>
+      }
+
+      result
+    }
+
   }
 }
 

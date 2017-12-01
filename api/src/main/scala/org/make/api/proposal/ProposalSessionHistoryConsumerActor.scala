@@ -36,6 +36,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
       case event: ProposalUnqualified   => handleProposalUnqualified(event)
       case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
       case event: ProposalLocked        => handleProposalLocked(event)
+      case _: ProposalPatched           => Future.successful {}
     }
 
   }
@@ -53,6 +54,7 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
+    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {

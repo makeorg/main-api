@@ -2,7 +2,7 @@ package org.make.api.sequence
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.sequence.SequenceEvent._
+import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.DateHelper
 
@@ -15,18 +15,20 @@ class SequenceProducerActor extends ProducerActor {
     kafkaConfiguration.topics(SequenceProducerActor.topicKey)
 
   override def receive: Receive = {
-    case event: SequenceCreated          => onCreate(event)
-    case event: SequenceUpdated          => onUpdateSequence(event)
-    case event: SequenceViewed           => onViewSequence(event)
-    case event: SequenceProposalsAdded   => onProposalsAddedSequence(event)
-    case event: SequenceProposalsRemoved => onProposalsRemovedSequence(event)
+    case event: SequenceCreated          => onEventSequence(event, SequenceCreated.version)
+    case event: SequenceUpdated          => onEventSequence(event, SequenceUpdated.version)
+    case event: SequenceViewed           => onEventSequence(event, SequenceViewed.version)
+    case event: SequenceProposalsAdded   => onEventSequence(event, SequenceProposalsAdded.version)
+    case event: SequenceProposalsRemoved => onEventSequence(event, SequenceProposalsRemoved.version)
+    case event: SequencePatched          => onEventSequence(event, SequencePatched.version)
     case other                           => log.warning(s"Unknown event $other")
   }
-  private def onViewSequence(event: SequenceViewed): Unit = {
+
+  private def onEventSequence(event: PublishedSequenceEvent, version: Int): Unit = {
     log.debug(s"Received event $event")
     val record = format.to(
       SequenceEventWrapper(
-        version = SequenceViewed.version,
+        version = version,
         id = event.id.value,
         date = DateHelper.now(),
         eventType = event.getClass.getSimpleName,
@@ -35,63 +37,6 @@ class SequenceProducerActor extends ProducerActor {
     )
     sendRecord(kafkaTopic, event.id.value, record)
   }
-
-  private def onUpdateSequence(event: SequenceUpdated): Unit = {
-    log.debug(s"Received event $event")
-    val record = format.to(
-      SequenceEventWrapper(
-        version = SequenceUpdated.version,
-        id = event.id.value,
-        date = DateHelper.now(),
-        eventType = event.getClass.getSimpleName,
-        event = SequenceEventWrapper.wrapEvent(event)
-      )
-    )
-    sendRecord(kafkaTopic, event.id.value, record)
-  }
-
-  private def onCreate(event: SequenceCreated): Unit = {
-    log.debug(s"Received event $event")
-    val record = format.to(
-      SequenceEventWrapper(
-        version = SequenceCreated.version,
-        id = event.id.value,
-        date = DateHelper.now(),
-        eventType = event.getClass.getSimpleName,
-        event = SequenceEventWrapper.wrapEvent(event)
-      )
-    )
-    sendRecord(kafkaTopic, event.id.value, record)
-  }
-
-  private def onProposalsAddedSequence(event: SequenceProposalsAdded): Unit = {
-    log.debug(s"Received event $event")
-    val record = format.to(
-      SequenceEventWrapper(
-        version = SequenceProposalsAdded.version,
-        id = event.id.value,
-        date = DateHelper.now(),
-        eventType = event.getClass.getSimpleName,
-        event = SequenceEventWrapper.wrapEvent(event)
-      )
-    )
-    sendRecord(kafkaTopic, event.id.value, record)
-  }
-
-  private def onProposalsRemovedSequence(event: SequenceProposalsRemoved): Unit = {
-    log.debug(s"Received event $event")
-    val record = format.to(
-      SequenceEventWrapper(
-        version = SequenceProposalsRemoved.version,
-        id = event.id.value,
-        date = DateHelper.now(),
-        eventType = event.getClass.getSimpleName,
-        event = SequenceEventWrapper.wrapEvent(event)
-      )
-    )
-    sendRecord(kafkaTopic, event.id.value, record)
-  }
-
 }
 
 object SequenceProducerActor extends ProducerActorCompanion {

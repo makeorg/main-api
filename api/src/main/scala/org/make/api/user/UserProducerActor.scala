@@ -19,6 +19,7 @@ class UserProducerActor extends ProducerActor {
     case event: ResendValidationEmailEvent => onResendValidationEmail(event)
     case event: UserRegisteredEvent        => onUserRegisteredEvent(event)
     case event: UserConnectedEvent         => onUserConnectedEvent(event)
+    case event: UserUpdatedTagEvent        => onUserUpdatedTagEvent(event)
     case event: UserValidatedAccountEvent  => onUserValidatedAccountEvent(event)
     case other                             => log.warning("Unknown event {}", other)
   }
@@ -69,6 +70,20 @@ class UserProducerActor extends ProducerActor {
     val record = format.to(
       UserEventWrapper(
         version = UserConnectedEvent.version,
+        id = event.userId.value,
+        date = event.eventDate,
+        eventType = event.getClass.getSimpleName,
+        event = UserEventWrapper.wrapEvent(event)
+      )
+    )
+    sendRecord(kafkaTopic, event.userId.value, record)
+  }
+
+  def onUserUpdatedTagEvent(event: UserUpdatedTagEvent): Unit = {
+    log.debug(s"Received event $event")
+    val record = format.to(
+      UserEventWrapper(
+        version = UserUpdatedTagEvent.version,
         id = event.userId.value,
         date = event.eventDate,
         eventType = event.getClass.getSimpleName,

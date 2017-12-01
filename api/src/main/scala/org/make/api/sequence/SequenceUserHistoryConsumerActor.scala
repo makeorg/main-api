@@ -5,7 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
-import org.make.api.sequence.SequenceEvent._
+import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.userhistory._
 import shapeless.Poly1
@@ -33,6 +33,7 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: SequenceCreated          => handleSequenceCreated(event)
       case event: SequenceProposalsRemoved => handleSequenceProposalsRemoved(event)
       case event: SequenceProposalsAdded   => handleSequenceProposalsAdded(event)
+      case event: SequencePatched          => Future.successful {}
     }
   }
 
@@ -42,6 +43,7 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atSequenceCreated: Case.Aux[SequenceCreated, SequenceCreated] = at(identity)
     implicit val atSequenceProposalsAdded: Case.Aux[SequenceProposalsAdded, SequenceProposalsAdded] = at(identity)
     implicit val atSequenceProposalsRemoved: Case.Aux[SequenceProposalsRemoved, SequenceProposalsRemoved] = at(identity)
+    implicit val atSequencePatched: Case.Aux[SequencePatched, SequencePatched] = at(identity)
   }
 
   def handleSequenceViewed(event: SequenceViewed): Future[Unit] = {

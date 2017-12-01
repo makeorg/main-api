@@ -8,7 +8,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
-import org.make.api.sequence.SequenceEvent.{
+import org.make.api.sequence.PublishedSequenceEvent.{
   SequenceCreated,
   SequenceProposalsAdded,
   SequenceProposalsRemoved,

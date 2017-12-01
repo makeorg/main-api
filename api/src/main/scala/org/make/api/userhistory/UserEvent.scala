@@ -23,6 +23,7 @@ object UserEvent {
       ResendValidationEmailEvent :+:
       UserRegisteredEvent :+:
       UserConnectedEvent :+:
+      UserUpdatedTagEvent :+:
       UserValidatedAccountEvent :+:
       CNil
 
@@ -39,6 +40,7 @@ object UserEvent {
         case e: ResetPasswordEvent         => Coproduct[AnyUserEvent](e)
         case e: ResendValidationEmailEvent => Coproduct[AnyUserEvent](e)
         case e: UserConnectedEvent         => Coproduct[AnyUserEvent](e)
+        case e: UserUpdatedTagEvent        => Coproduct[AnyUserEvent](e)
         case e: UserRegisteredEvent        => Coproduct[AnyUserEvent](e)
         case e: UserValidatedAccountEvent  => Coproduct[AnyUserEvent](e)
       }
@@ -106,4 +108,15 @@ object UserEvent {
     val version: Int = 1
   }
 
+  final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
+                                       override val eventDate: ZonedDateTime = DateHelper.now(),
+                                       override val userId: UserId = UserId(value = ""),
+                                       override val requestContext: RequestContext = RequestContext.empty,
+                                       oldTag: String,
+                                       newTag: String)
+      extends UserEvent
+
+  object UserUpdatedTagEvent {
+    val version: Int = 1
+  }
 }
