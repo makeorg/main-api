@@ -223,6 +223,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('minorites', e'minorités', true),
 	('mode', e'mode', true),
 	('monde-du-travail', e'monde du travail', true),
+	('monde-medical', e'monde médical', true),
 	('monnaie', e'monnaie', true),
 	('moyen-orient', e'Moyen-Orient', true),
 	('musees', e'musées', true),
@@ -276,7 +277,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('sante', e'santé', true),
 	('sdf', e'SDF', true),
 	('secu', e'Sécu', true),
-	('securite-routiere', e'sécurité routière ', true),
+	('securite-routiere', e'sécurité routière', true),
 	('seniors', e'seniors', true),
 	('seniors-juniors', e'seniors / juniors', true),
 	('sensibilisation', e'sensibilisation', true),
@@ -296,7 +297,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('television', e'télévision', true),
 	('terrorisme', e'terrorisme', true),
 	('theatre', e'théâtre', true),
-	('traditions-nefastes-mutilations', e'  traditions néfastes & mutilations', true),
+	('traditions-nefastes-mutilations', e'traditions néfastes & mutilations', true),
 	('transports', e'transports', true),
 	('transports-en-commun', e'transports en commun', true),
 	('travailleurs-independants', e'travailleurs indépendants', true),
@@ -306,8 +307,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('vegetarien', e'végétarien', true),
 	('vie-rurale', e'vie rurale', true),
 	('violences-conjugales', e'violences conjugales', true),
-	('violences-sexuelles', e'violences-sexuelles', true),
-	('monde-medical', e'monde médical', true)
+	('violences-sexuelles', e'violences-sexuelles', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme
