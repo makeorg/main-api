@@ -1,7 +1,7 @@
 package org.make.api.sequence
 
 import io.circe.Decoder
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal.ProposalId

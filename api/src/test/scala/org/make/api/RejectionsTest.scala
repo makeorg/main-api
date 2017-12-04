@@ -11,7 +11,8 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.{CirceFormatters, ValidationError}
 import org.mockito.Mockito.when
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 
 class RejectionsTest
     extends MakeUnitTest

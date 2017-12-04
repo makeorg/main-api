@@ -4,7 +4,8 @@ import java.time.ZonedDateTime
 
 import org.make.core.CirceFormatters
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications

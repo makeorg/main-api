@@ -1,7 +1,8 @@
 package org.make.api.proposal
 
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}

@@ -1,7 +1,8 @@
 package org.make.api.technical.businessconfig
 
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.make.core.reference.{Tag, Theme}
 
 sealed trait BusinessConfig {

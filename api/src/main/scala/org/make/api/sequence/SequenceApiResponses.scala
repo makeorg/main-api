@@ -3,7 +3,7 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 
 import io.circe.ObjectEncoder
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResult
 import org.make.api.user.UserResponse

@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.ObjectEncoder
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
