@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.StrictLogging
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
-import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._

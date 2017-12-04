@@ -11,7 +11,8 @@ import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.auto._
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto._
 import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
@@ -25,7 +26,7 @@ import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{Role, User, UserId}
-import org.make.core.{DateHelper, HttpCodes}
+import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -419,10 +420,22 @@ case class RegisterUserRequest(email: String,
   )
 }
 
+object RegisterUserRequest extends CirceFormatters {
+  implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
+}
+
 case class SocialLoginRequest(provider: String, token: String)
+
+object SocialLoginRequest {
+  implicit val decoder: Decoder[SocialLoginRequest] = deriveDecoder[SocialLoginRequest]
+}
 
 final case class ResetPasswordRequest(email: String) {
   validate(mandatoryField("email", email), validateEmail("email", email))
+}
+
+object ResetPasswordRequest {
+  implicit val decoder: Decoder[ResetPasswordRequest] = deriveDecoder[ResetPasswordRequest]
 }
 
 final case class ResetPassword(resetToken: String, password: String) {
@@ -430,8 +443,16 @@ final case class ResetPassword(resetToken: String, password: String) {
   validate(mandatoryField("password", password))
 }
 
+object ResetPassword {
+  implicit val decoder: Decoder[ResetPassword] = deriveDecoder[ResetPassword]
+}
+
 final case class SubscribeToNewsLetter(email: String) {
   validate(mandatoryField("email", email), validateEmail("email", email))
+}
+
+object SubscribeToNewsLetter {
+  implicit val decoder: Decoder[SubscribeToNewsLetter] = deriveDecoder[SubscribeToNewsLetter]
 }
 
 case class UserResponse(userId: UserId,
@@ -444,7 +465,10 @@ case class UserResponse(userId: UserId,
                         roles: Seq[Role],
                         profile: Option[Profile])
 
-object UserResponse {
+object UserResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
+  implicit val decoder: Decoder[UserResponse] = deriveDecoder[UserResponse]
+
   def apply(user: User): UserResponse = UserResponse(
     userId = user.userId,
     email = user.email,

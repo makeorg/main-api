@@ -1,9 +1,9 @@
 package org.make.core.reference
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.generic.semiauto._
 import org.make.core.{MakeSerializable, SlugHelper, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
-final case class Tag(tagId: TagId, label: String) extends MakeSerializable
 
 final case class TagId(value: String) extends StringValue
 
@@ -26,7 +26,12 @@ object TagId {
 
 }
 
+final case class Tag(tagId: TagId, label: String) extends MakeSerializable
+
 object Tag {
+  implicit val encoder: ObjectEncoder[Tag] = deriveEncoder[Tag]
+  implicit val decoder: Decoder[Tag] = deriveDecoder[Tag]
+
   def apply(label: String): Tag =
     Tag(tagId = TagId(SlugHelper(label)), label = label)
 }

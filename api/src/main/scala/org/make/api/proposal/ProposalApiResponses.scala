@@ -2,6 +2,9 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.core.CirceFormatters
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto._
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -26,12 +29,26 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   events: Seq[ProposalActionResponse],
                                   similarProposals: Seq[ProposalId])
 
+object ProposalResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
+  implicit val decoder: Decoder[ProposalResponse] = deriveDecoder[ProposalResponse]
+}
+
 final case class ProposalActionResponse(date: ZonedDateTime,
                                         user: Option[UserResponse],
                                         actionType: String,
                                         arguments: Map[String, String])
 
+object ProposalActionResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[ProposalActionResponse] = deriveEncoder[ProposalActionResponse]
+  implicit val decoder: Decoder[ProposalActionResponse] = deriveDecoder[ProposalActionResponse]
+}
+
 final case class ProposeProposalResponse(proposalId: ProposalId)
+
+object ProposeProposalResponse {
+  implicit val encoder: ObjectEncoder[ProposeProposalResponse] = deriveEncoder[ProposeProposalResponse]
+}
 
 final case class ProposalResult(id: ProposalId,
                                 userId: UserId,
@@ -51,7 +68,10 @@ final case class ProposalResult(id: ProposalId,
                                 tags: Seq[Tag],
                                 myProposal: Boolean)
 
-object ProposalResult {
+object ProposalResult extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[ProposalResult] = deriveEncoder[ProposalResult]
+  implicit val decoder: Decoder[ProposalResult] = deriveDecoder[ProposalResult]
+
   def apply(indexedProposal: IndexedProposal,
             myProposal: Boolean,
             voteAndQualifications: Option[VoteAndQualifications]): ProposalResult =
@@ -84,7 +104,16 @@ object ProposalResult {
 
 final case class ProposalsResultResponse(total: Int, results: Seq[ProposalResult])
 
+object ProposalsResultResponse {
+  implicit val encoder: ObjectEncoder[ProposalsResultResponse] = deriveEncoder[ProposalsResultResponse]
+  implicit val decoder: Decoder[ProposalsResultResponse] = deriveDecoder[ProposalsResultResponse]
+}
+
 final case class ProposalsResultSeededResponse(total: Int, results: Seq[ProposalResult], seed: Option[Int])
+
+object ProposalsResultSeededResponse {
+  implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
+}
 
 final case class VoteResponse(voteKey: VoteKey,
                               count: Int,
@@ -92,6 +121,9 @@ final case class VoteResponse(voteKey: VoteKey,
                               hasVoted: Boolean)
 
 object VoteResponse {
+
+  implicit val encoder: ObjectEncoder[VoteResponse] = deriveEncoder[VoteResponse]
+  implicit val decoder: Decoder[VoteResponse] = deriveDecoder[VoteResponse]
 
   def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
     VoteResponse(
@@ -128,6 +160,9 @@ object VoteResponse {
 final case class QualificationResponse(qualificationKey: QualificationKey, count: Int, hasQualified: Boolean)
 
 object QualificationResponse {
+  implicit val encoder: ObjectEncoder[QualificationResponse] = deriveEncoder[QualificationResponse]
+  implicit val decoder: Decoder[QualificationResponse] = deriveDecoder[QualificationResponse]
+
   def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,

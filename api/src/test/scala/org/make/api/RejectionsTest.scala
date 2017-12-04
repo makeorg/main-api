@@ -6,11 +6,12 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.knutwalker.akka.http.support.CirceHttpSupport
-import io.circe.generic.auto._
+import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.{CirceFormatters, ValidationError}
 import org.mockito.Mockito.when
+import io.circe.generic.semiauto._
 
 class RejectionsTest
     extends MakeUnitTest
@@ -96,3 +97,8 @@ class RejectionsTest
 }
 
 final case class TestRequest(field1: String, field2: Int, field3: LocalDate) {}
+
+object TestRequest extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[TestRequest] = deriveEncoder[TestRequest]
+  implicit val decoder: Decoder[TestRequest] = deriveDecoder[TestRequest]
+}

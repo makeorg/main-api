@@ -1,5 +1,7 @@
 package org.make.api.sequence
 
+import io.circe.Decoder
+import io.circe.generic.semiauto._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal.ProposalId
@@ -15,15 +17,27 @@ final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma 
                                        @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
                                        searchable: Boolean)
 
+object CreateSequenceRequest {
+  implicit val decoder: Decoder[CreateSequenceRequest] = deriveDecoder[CreateSequenceRequest]
+}
+
 @ApiModel
 final case class AddProposalSequenceRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
 )
 
+object AddProposalSequenceRequest {
+  implicit val decoder: Decoder[AddProposalSequenceRequest] = deriveDecoder[AddProposalSequenceRequest]
+}
+
 @ApiModel
 final case class RemoveProposalSequenceRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
 )
+
+object RemoveProposalSequenceRequest {
+  implicit val decoder: Decoder[RemoveProposalSequenceRequest] = deriveDecoder[RemoveProposalSequenceRequest]
+}
 
 @ApiModel
 final case class UpdateSequenceRequest(
@@ -33,6 +47,10 @@ final case class UpdateSequenceRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]],
   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Option[Seq[TagId]]
 )
+
+object UpdateSequenceRequest {
+  implicit val decoder: Decoder[UpdateSequenceRequest] = deriveDecoder[UpdateSequenceRequest]
+}
 
 @ApiModel
 final case class ExhaustiveSearchRequest(
@@ -65,6 +83,10 @@ final case class ExhaustiveSearchRequest(
   }
 }
 
+object ExhaustiveSearchRequest {
+  implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
+}
+
 final case class ContextFilterRequest(operation: Option[String] = None,
                                       source: Option[String] = None,
                                       location: Option[String] = None,
@@ -72,6 +94,10 @@ final case class ContextFilterRequest(operation: Option[String] = None,
   def toContext: ContextSearchFilter = {
     ContextSearchFilter(operation, source, location, question)
   }
+}
+
+object ContextFilterRequest {
+  implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 
 final case class SearchStartSequenceRequest(slug: String) {
@@ -84,4 +110,8 @@ final case class SearchStartSequenceRequest(slug: String) {
 
     SearchQuery(filters = filters, limit = Some(1))
   }
+}
+
+object SearchStartSequenceRequest {
+  implicit val decoder: Decoder[SearchStartSequenceRequest] = deriveDecoder[SearchStartSequenceRequest]
 }

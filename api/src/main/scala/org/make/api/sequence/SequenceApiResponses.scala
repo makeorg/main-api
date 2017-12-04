@@ -2,6 +2,8 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
+import io.circe.ObjectEncoder
+import io.circe.generic.semiauto._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResult
 import org.make.api.user.UserResponse
@@ -12,6 +14,7 @@ import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.sequence.{SequenceId, SequenceStatus, SequenceTranslation}
 import org.make.core.user.UserId
+import org.make.core.CirceFormatters
 
 import scala.annotation.meta.field
 
@@ -30,14 +33,24 @@ final case class SequenceResponse(sequenceId: SequenceId,
                                   sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
                                   events: Seq[SequenceActionResponse])
 
+object SequenceResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SequenceResponse] = deriveEncoder[SequenceResponse]
+}
+
 final case class SequenceActionResponse(date: ZonedDateTime,
                                         user: Option[UserResponse],
                                         actionType: String,
                                         arguments: Map[String, String])
 
+object SequenceActionResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
+}
+
 final case class SequenceResult(id: SequenceId, title: String, slug: String, proposals: Seq[ProposalResult])
 
 object SequenceResult {
+  implicit val encoder: ObjectEncoder[SequenceResult] = deriveEncoder[SequenceResult]
+
   def apply(sequence: IndexedStartSequence,
             user: Option[UserId],
             votesAndQualifications: Option[HistoryActions.VoteAndQualifications]): SequenceResult = {

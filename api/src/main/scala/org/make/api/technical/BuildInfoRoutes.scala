@@ -2,7 +2,8 @@ package org.make.api.technical
 
 import akka.http.scaladsl.server.Route
 import buildinfo.BuildInfo
-import io.circe.generic.auto._
+import io.circe.ObjectEncoder
+import io.circe.generic.semiauto._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 
@@ -26,3 +27,7 @@ case class BuildInformation(name: String = BuildInfo.name,
                             gitHeadCommit: String = BuildInfo.gitHeadCommit.get,
                             gitBranch: String = BuildInfo.gitCurrentBranch,
                             buildTime: String = BuildInfo.buildTime)
+
+object BuildInformation {
+  implicit val encoder: ObjectEncoder[BuildInformation] = deriveEncoder[BuildInformation]
+}

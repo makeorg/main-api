@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import io.circe.generic.auto._
 import io.circe.syntax._
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.{DockerElasticsearchService, ItMakeTest}

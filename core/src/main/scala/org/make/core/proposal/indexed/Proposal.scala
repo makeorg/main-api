@@ -2,6 +2,9 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto._
+import org.make.core.CirceFormatters
 import org.make.core.proposal._
 import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
@@ -51,16 +54,34 @@ case class IndexedProposal(id: ProposalId,
                            themeId: Option[ThemeId],
                            tags: Seq[Tag])
 
+object IndexedProposal extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[IndexedProposal] = deriveEncoder[IndexedProposal]
+  implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
+}
+
 final case class Context(operation: Option[String],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])
 
+object Context {
+  implicit val encoder: ObjectEncoder[Context] = deriveEncoder[Context]
+  implicit val decoder: Decoder[Context] = deriveDecoder[Context]
+}
+
 final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
+
+object Author {
+  implicit val encoder: ObjectEncoder[Author] = deriveEncoder[Author]
+  implicit val decoder: Decoder[Author] = deriveDecoder[Author]
+}
 
 final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
 
 object IndexedVote {
+  implicit val encoder: ObjectEncoder[IndexedVote] = deriveEncoder[IndexedVote]
+  implicit val decoder: Decoder[IndexedVote] = deriveDecoder[IndexedVote]
+
   def apply(vote: Vote): IndexedVote =
     IndexedVote(
       key = vote.key,
@@ -72,6 +93,9 @@ object IndexedVote {
 final case class IndexedQualification(key: QualificationKey, count: Int = 0)
 
 object IndexedQualification {
+  implicit val encoder: ObjectEncoder[IndexedQualification] = deriveEncoder[IndexedQualification]
+  implicit val decoder: Decoder[IndexedQualification] = deriveDecoder[IndexedQualification]
+
   def apply(qualification: Qualification): IndexedQualification =
     IndexedQualification(key = qualification.key, count = qualification.count)
 }
@@ -79,5 +103,7 @@ object IndexedQualification {
 final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])
 
 object ProposalsSearchResult {
+  implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
+
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
 }

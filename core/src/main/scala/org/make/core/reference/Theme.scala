@@ -1,12 +1,23 @@
 package org.make.core.reference
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.generic.semiauto._
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 final case class GradientColor(from: String, to: String) extends MakeSerializable
 
+object GradientColor {
+  implicit val encoder: ObjectEncoder[GradientColor] = deriveEncoder[GradientColor]
+  implicit val decoder: Decoder[GradientColor] = deriveDecoder[GradientColor]
+}
+
 final case class ThemeTranslation(slug: String, title: String, language: String) extends MakeSerializable
+
+object ThemeTranslation {
+  implicit val encoder: ObjectEncoder[ThemeTranslation] = deriveEncoder[ThemeTranslation]
+  implicit val decoder: Decoder[ThemeTranslation] = deriveDecoder[ThemeTranslation]
+}
 
 final case class Theme(themeId: ThemeId,
                        translations: Seq[ThemeTranslation],
@@ -17,6 +28,11 @@ final case class Theme(themeId: ThemeId,
                        gradient: Option[GradientColor] = None,
                        tags: Seq[Tag] = Seq.empty)
     extends MakeSerializable
+
+object Theme {
+  implicit val encoder: ObjectEncoder[Theme] = deriveEncoder[Theme]
+  implicit val decoder: Decoder[Theme] = deriveDecoder[Theme]
+}
 
 final case class ThemeId(value: String) extends StringValue
 

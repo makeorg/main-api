@@ -262,7 +262,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         ),
         tags = tags,
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
-        proposals = sequence.proposalIds.map(IndexedSequenceProposalId),
+        proposals = sequence.proposalIds.map(IndexedSequenceProposalId.apply),
         searchable = sequence.searchable
       )
     }
