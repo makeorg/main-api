@@ -3,7 +3,7 @@ package org.make.api
 import akka.actor.Props
 import akka.pattern.{Backoff, BackoffSupervisor}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 object MakeBackoffSupervisor {
 
@@ -18,7 +18,7 @@ object MakeBackoffSupervisor {
   }
 
   def propsAndName(childProps: Props, childName: String): (Props, String) = {
-    (props(childProps, childName), name((childName)))
+    (props(childProps, childName), name(childName))
   }
 
 }

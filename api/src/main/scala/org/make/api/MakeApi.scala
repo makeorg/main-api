@@ -43,7 +43,7 @@ import org.make.api.sessionhistory.{
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scalaoauth2.provider._
 
 trait MakeApi

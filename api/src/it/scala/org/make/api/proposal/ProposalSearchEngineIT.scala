@@ -18,7 +18,8 @@ import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.Failure

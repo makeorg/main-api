@@ -15,7 +15,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
 import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, ClientCredential}
 

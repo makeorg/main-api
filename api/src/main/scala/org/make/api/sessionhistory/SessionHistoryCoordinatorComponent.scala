@@ -10,7 +10,7 @@ import org.make.core.session.SessionId
 import org.make.core.user.UserId
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 import scala.concurrent.ExecutionContext.Implicits._
 

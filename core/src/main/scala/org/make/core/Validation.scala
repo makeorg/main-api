@@ -1,7 +1,8 @@
 package org.make.core
 
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 
 import scala.util.matching.Regex
