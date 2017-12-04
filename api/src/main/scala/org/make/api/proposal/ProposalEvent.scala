@@ -3,7 +3,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
@@ -51,9 +51,10 @@ sealed trait PublishedProposalEvent extends ProposalEvent
 
 object PublishedProposalEvent {
 
-  type AnyProposalEvent = ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalViewed :+:
-    ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
-    SimilarProposalsAdded :+: ProposalLocked :+: CNil
+  type AnyProposalEvent =
+    ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
+      ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
+      SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -67,6 +68,7 @@ object PublishedProposalEvent {
       case e: ProposalProposed      => Coproduct[AnyProposalEvent](e)
       case e: ProposalAccepted      => Coproduct[AnyProposalEvent](e)
       case e: ProposalRefused       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalPostponed     => Coproduct[AnyProposalEvent](e)
       case e: ProposalViewed        => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated       => Coproduct[AnyProposalEvent](e)
       case e: ProposalVoted         => Coproduct[AnyProposalEvent](e)
@@ -75,7 +77,20 @@ object PublishedProposalEvent {
       case e: ProposalUnqualified   => Coproduct[AnyProposalEvent](e)
       case e: SimilarProposalsAdded => Coproduct[AnyProposalEvent](e)
       case e: ProposalLocked        => Coproduct[AnyProposalEvent](e)
+      case e: ProposalPatched       => Coproduct[AnyProposalEvent](e)
     }
+  }
+
+  final case class ProposalPatched(id: ProposalId,
+                                   eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                   requestContext: RequestContext = RequestContext.empty,
+                                   proposal: Proposal)
+      extends PublishedProposalEvent
+  object ProposalPatched {
+    val version: Int = MakeSerializable.V1
+
+    implicit val formatter: RootJsonFormat[ProposalPatched] =
+      DefaultJsonProtocol.jsonFormat4(ProposalPatched.apply)
   }
 
   final case class ProposalProposed(id: ProposalId,
@@ -177,6 +192,21 @@ object PublishedProposalEvent {
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
       DefaultJsonProtocol.jsonFormat6(ProposalRefused.apply)
+
+  }
+
+  final case class ProposalPostponed(id: ProposalId,
+                                     eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                     requestContext: RequestContext = RequestContext.empty,
+                                     moderator: UserId)
+      extends PublishedProposalEvent
+
+  object ProposalPostponed {
+    val version: Int = MakeSerializable.V1
+    val actionType: String = "proposal-postponed"
+
+    implicit val formatter: RootJsonFormat[ProposalPostponed] =
+      DefaultJsonProtocol.jsonFormat4(ProposalPostponed.apply)
 
   }
 

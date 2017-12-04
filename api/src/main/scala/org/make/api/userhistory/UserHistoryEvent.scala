@@ -2,8 +2,13 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.api.proposal.PublishedProposalEvent.{ProposalAccepted, ProposalLocked, ProposalRefused}
-import org.make.api.sequence.SequenceEvent.{
+import org.make.api.proposal.PublishedProposalEvent.{
+  ProposalAccepted,
+  ProposalLocked,
+  ProposalPostponed,
+  ProposalRefused
+}
+import org.make.api.sequence.PublishedSequenceEvent.{
   SequenceCreated,
   SequenceProposalsAdded,
   SequenceProposalsRemoved,
@@ -53,6 +58,7 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserProposalEvent"))                => json.convertTo[LogUserProposalEvent]
           case Seq(JsString("LogAcceptProposalEvent"))              => json.convertTo[LogAcceptProposalEvent]
           case Seq(JsString("LogRefuseProposalEvent"))              => json.convertTo[LogRefuseProposalEvent]
+          case Seq(JsString("LogPostponeProposalEvent"))            => json.convertTo[LogPostponeProposalEvent]
           case Seq(JsString("LogLockProposalEvent"))                => json.convertTo[LogLockProposalEvent]
           case Seq(JsString("LogGetProposalDuplicatesEvent"))       => json.convertTo[LogGetProposalDuplicatesEvent]
           case Seq(JsString("LogUserAddProposalsSequenceEvent"))    => json.convertTo[LogGetProposalDuplicatesEvent]
@@ -75,6 +81,7 @@ object UserHistoryEvent {
           case event: LogUserProposalEvent                => event.toJson
           case event: LogAcceptProposalEvent              => event.toJson
           case event: LogRefuseProposalEvent              => event.toJson
+          case event: LogPostponeProposalEvent            => event.toJson
           case event: LogLockProposalEvent                => event.toJson
           case event: LogGetProposalDuplicatesEvent       => event.toJson
           case event: LogUserAddProposalsSequenceEvent    => event.toJson
@@ -198,11 +205,41 @@ final case class LogAcceptProposalEvent(userId: UserId,
   override val protagonist: Protagonist = Moderator
 }
 
+object LogAcceptProposalEvent {
+  val action: String = "accept-proposal"
+
+  implicit val logAcceptProposalEventFormatted: RootJsonFormat[LogAcceptProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogAcceptProposalEvent.apply, "userId", "context", "action")
+
+}
+
 final case class LogRefuseProposalEvent(userId: UserId,
                                         requestContext: RequestContext,
                                         action: UserAction[ProposalRefused])
     extends UserHistoryEvent[ProposalRefused] {
   override val protagonist: Protagonist = Moderator
+}
+
+object LogRefuseProposalEvent {
+  val action: String = "refuse-proposal"
+
+  implicit val logRefuseProposalEventFormatted: RootJsonFormat[LogRefuseProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogRefuseProposalEvent.apply, "userId", "context", "action")
+
+}
+
+final case class LogPostponeProposalEvent(userId: UserId,
+                                          requestContext: RequestContext,
+                                          action: UserAction[ProposalPostponed])
+    extends UserHistoryEvent[ProposalPostponed] {
+  override val protagonist: Protagonist = Moderator
+}
+
+object LogPostponeProposalEvent {
+  val action: String = "postpone-proposal"
+
+  implicit val logPostponeProposalEventFormatted: RootJsonFormat[LogPostponeProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogPostponeProposalEvent.apply, "userId", "context", "action")
 }
 
 final case class LogLockProposalEvent(userId: UserId,
@@ -211,6 +248,14 @@ final case class LogLockProposalEvent(userId: UserId,
                                       action: UserAction[ProposalLocked])
     extends UserHistoryEvent[ProposalLocked] {
   override val protagonist: Protagonist = Moderator
+}
+
+object LogLockProposalEvent {
+  val action: String = "lock-proposal"
+
+  implicit val logLockProposalEventFormatted: RootJsonFormat[LogLockProposalEvent] =
+    DefaultJsonProtocol.jsonFormat(LogLockProposalEvent.apply, "userId", "moderatorName", "context", "action")
+
 }
 
 object LogRegisterCitizenEvent {
@@ -286,30 +331,6 @@ object LogUserUnqualificationEvent {
 
   implicit val logUserUnqualifEventFormatted: RootJsonFormat[LogUserUnqualificationEvent] =
     DefaultJsonProtocol.jsonFormat(LogUserUnqualificationEvent.apply, "userId", "context", "action")
-
-}
-
-// Moderator actions
-object LogAcceptProposalEvent {
-  val action: String = "accept-proposal"
-
-  implicit val logAcceptProposalEventFormatted: RootJsonFormat[LogAcceptProposalEvent] =
-    DefaultJsonProtocol.jsonFormat(LogAcceptProposalEvent.apply, "userId", "context", "action")
-
-}
-object LogRefuseProposalEvent {
-  val action: String = "refuse-proposal"
-
-  implicit val logRefuseProposalEventFormatted: RootJsonFormat[LogRefuseProposalEvent] =
-    DefaultJsonProtocol.jsonFormat(LogRefuseProposalEvent.apply, "userId", "context", "action")
-
-}
-
-object LogLockProposalEvent {
-  val action: String = "lock-proposal"
-
-  implicit val logLockProposalEventFormatted: RootJsonFormat[LogLockProposalEvent] =
-    DefaultJsonProtocol.jsonFormat(LogLockProposalEvent.apply, "userId", "moderatorName", "context", "action")
 
 }
 
@@ -393,6 +414,7 @@ final case class LogUserStartSequenceEvent(userId: UserId,
     extends UserHistoryEvent[StartSequenceParameters] {
   override val protagonist: Protagonist = Citizen
 }
+
 object LogUserStartSequenceEvent {
   val action: String = "start-sequence"
 

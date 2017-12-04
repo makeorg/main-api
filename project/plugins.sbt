@@ -5,7 +5,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-aspectj"            % "0.11.0")
 addSbtPlugin("org.scalastyle"    %% "scalastyle-sbt-plugin" % "1.0.0")
 addSbtPlugin("com.geirsson"      % "sbt-scalafmt"           % "1.2.0")
 addSbtPlugin("org.scoverage"     % "sbt-scoverage"          % "1.5.1")
-addSbtPlugin("org.make"          % "git-hooks-plugin"       % "1.0.1")
+addSbtPlugin("org.make"          % "git-hooks-plugin"       % "1.0.3")
 addSbtPlugin("io.gatling"        % "gatling-sbt"            % "2.2.2")
 
 resolvers += Resolver.url("bintray-flaroche-sbt-plugins", url("http://dl.bintray.com/flaroche/make-sbt-plugins/"))(

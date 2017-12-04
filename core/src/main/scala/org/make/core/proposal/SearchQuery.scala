@@ -239,14 +239,10 @@ object SearchFilters extends ElasticDsl {
   def buildStatusSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
     val query: Option[QueryDefinition] = searchQuery.filters.flatMap {
       _.status.map {
-        case StatusSearchFilter(ProposalStatus.Pending) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
-        case StatusSearchFilter(ProposalStatus.Refused) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Refused.shortName)
-        case StatusSearchFilter(ProposalStatus.Archived) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Archived.shortName)
-        case StatusSearchFilter(ProposalStatus.Accepted) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.shortName)
+        case StatusSearchFilter(Seq(proposalStatus)) =>
+          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
+        case StatusSearchFilter(proposalStatuses) =>
+          ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.shortName))
       }
     }
 
@@ -301,7 +297,7 @@ object ContentSearchFilter {
     DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
 }
 
-case class StatusSearchFilter(status: ProposalStatus)
+case class StatusSearchFilter(status: Seq[ProposalStatus])
 
 object StatusSearchFilter {
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =

@@ -2,8 +2,8 @@ package org.make.api.sequence
 
 import akka.actor.{ActorLogging, PoisonPill}
 import akka.persistence.{PersistentActor, SnapshotOffer}
+import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.sequence.SequenceActor.Snapshot
-import org.make.api.sequence.SequenceEvent._
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -25,6 +25,7 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
     case command: UpdateSequenceCommand          => onUpdateSequenceCommand(command)
     case command: RemoveProposalsSequenceCommand => onProposalsRemovedSequence(command)
     case command: AddProposalsSequenceCommand    => onProposalsAddedSequence(command)
+    case command: PatchSequenceCommand           => onPatchSequenceCommand(command)
     case Snapshot                                => state.foreach(saveSnapshot)
     case _: KillSequenceShard                    => self ! PoisonPill
   }
@@ -109,6 +110,17 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
     }
   }
 
+  private def onPatchSequenceCommand(command: PatchSequenceCommand): Unit = {
+    if (state.exists(_.tagIds.nonEmpty)) {
+      persistAndPublishEvent(
+        SequencePatched(id = command.sequenceId, requestContext = command.requestContext, sequence = command.sequence)
+      ) {
+        sender() ! state
+        self ! Snapshot
+      }
+    }
+  }
+
   override def persistenceId: String = sequenceId.value
 
   private val applyEvent: PartialFunction[SequenceEvent, Option[Sequence]] = {
@@ -161,6 +173,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         state =>
           state.copy(updatedAt = Some(e.eventDate), proposalIds = state.proposalIds.filterNot(e.proposalIds.toSet))
       )
+    case e: SequencePatched =>
+      state.map(_ => e.sequence)
     case _ => state
   }
 

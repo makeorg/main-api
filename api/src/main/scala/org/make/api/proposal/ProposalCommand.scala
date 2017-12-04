@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 
@@ -61,6 +61,9 @@ final case class RefuseProposalCommand(moderator: UserId,
                                        refusalReason: Option[String])
     extends ProposalCommand
 
+final case class PostponeProposalCommand(moderator: UserId, proposalId: ProposalId, requestContext: RequestContext)
+    extends ProposalCommand
+
 final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
@@ -103,4 +106,9 @@ final case class ClearSimilarProposalsCommand(proposalId: ProposalId, requestCon
 final case class RemoveSimilarProposalCommand(proposalId: ProposalId,
                                               similarToRemove: ProposalId,
                                               requestContext: RequestContext)
+    extends ProposalCommand
+
+final case class PatchProposalCommand(proposalId: ProposalId,
+                                      proposal: Proposal,
+                                      requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand

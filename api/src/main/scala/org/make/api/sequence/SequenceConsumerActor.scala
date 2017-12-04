@@ -7,7 +7,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.sequence.SequenceEvent._
+import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
@@ -45,6 +45,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
       case event: SequenceCreated          => onCreateOrUpdate(event)
       case event: SequenceProposalsAdded   => onCreateOrUpdate(event)
       case event: SequenceProposalsRemoved => onCreateOrUpdate(event)
+      case event: SequencePatched          => onCreateOrUpdate(event)
     }
   }
 
@@ -54,6 +55,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
     implicit val atSequenceCreated: Case.Aux[SequenceCreated, SequenceCreated] = at(identity)
     implicit val atSequenceProposalsAdded: Case.Aux[SequenceProposalsAdded, SequenceProposalsAdded] = at(identity)
     implicit val atSequenceProposalsRemoved: Case.Aux[SequenceProposalsRemoved, SequenceProposalsRemoved] = at(identity)
+    implicit val atSequencePatched: Case.Aux[SequencePatched, SequencePatched] = at(identity)
   }
 
   def onCreateOrUpdate(event: SequenceEvent): Future[Unit] = {

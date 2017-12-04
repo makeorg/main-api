@@ -57,10 +57,12 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
       case event: ProposalRefused =>
         removeFromSequence(event)
         onCreateOrUpdate(event)
+      case event: ProposalPostponed   => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
       case event: ProposalQualified   => onCreateOrUpdate(event)
       case event: ProposalUnqualified => onCreateOrUpdate(event)
+      case event: ProposalPatched     => onCreateOrUpdate(event)
       case _: ProposalLocked          => Future.successful {}
       case event: SimilarProposalsAdded =>
         onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
@@ -75,12 +77,14 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
+    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {

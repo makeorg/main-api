@@ -109,17 +109,18 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 provideAsync(themeService.findAll()) { themes =>
                   provideAsync(
                     proposalService.search(
-                      Some(auth.user.userId),
-                      ExhaustiveSearchRequest(
+                      userId = Some(auth.user.userId),
+                      query = ExhaustiveSearchRequest(
                         themesIds = themeId,
                         tagsIds = tags,
                         content = content,
                         context =
                           Some(ContextFilterRequest(operation = operation, source = source, question = question)),
-                        status = Some(Accepted),
+                        status = Some(Seq(Accepted)),
                         limit = Some(5000) //TODO get limit value for export into config files
                       ).toSearchQuery,
-                      requestContext
+                      maybeSeed = None,
+                      requestContext = requestContext
                     )
                   ) { proposals =>
                     {
@@ -183,7 +184,12 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
               decodeRequest {
                 entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
                   provideAsync(
-                    proposalService.search(Some(userAuth.user.userId), request.toSearchQuery, requestContext)
+                    proposalService.search(
+                      userId = Some(userAuth.user.userId),
+                      query = request.toSearchQuery,
+                      maybeSeed = None,
+                      requestContext = requestContext
+                    )
                   ) { proposals =>
                     complete(proposals)
                   }
@@ -353,6 +359,47 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   }
 
   @ApiOperation(
+    value = "postpone-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/{proposalId}/postpone")
+  def postponeProposal: Route = post {
+    path("moderation" / "proposals" / moderationProposalId / "postpone") { proposalId =>
+      makeTrace("PostponeProposal") { requestContext =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireModerationRole(auth.user) {
+            decodeRequest {
+              provideAsyncOrNotFound(
+                proposalService.postponeProposal(
+                  proposalId = proposalId,
+                  moderator = auth.user.userId,
+                  requestContext = requestContext
+                )
+              ) { proposalResponse: ProposalResponse =>
+                complete(proposalResponse)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
     value = "lock-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -453,6 +500,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       updateProposal ~
       acceptProposal ~
       refuseProposal ~
+      postponeProposal ~
       exportProposals ~
       removeProposalFromClusters ~
       removeClusters ~

@@ -27,6 +27,9 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalRefusedSerializer: JsonPersister[ProposalRefused, V1] =
     persister[ProposalRefused]("proposal-refused")
 
+  private val proposalPostponedSerializer: JsonPersister[ProposalPostponed, V1] =
+    persister[ProposalPostponed]("proposal-postponed")
+
   private val proposalVotedSerializer: JsonPersister[ProposalVoted, V1] =
     persister[ProposalVoted]("proposal-voted")
 
@@ -57,6 +60,9 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
     persister[SimilarProposalsCleared]("similar-proposals-cleared")
 
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V1] =
+    persister[ProposalPatched]("proposal-tags-updated")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       proposalProposedSerializer,
@@ -64,6 +70,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalUpdatedSerializer,
       proposalAcceptedSerializer,
       proposalRefusedSerializer,
+      proposalPostponedSerializer,
       proposalVotedSerializer,
       proposalUnvotedSerializer,
       proposalQualifiedSerializer,
@@ -73,6 +80,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       similarProposalsAddedSerializer,
       proposalSerializer,
       similarProposalRemovedSerializer,
-      similarProposalsClearedSerializer
+      similarProposalsClearedSerializer,
+      proposalPatchedSerializer
     )
 }

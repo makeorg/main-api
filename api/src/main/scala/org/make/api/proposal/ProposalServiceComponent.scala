@@ -45,11 +45,15 @@ trait ProposalService {
                     proposalId: ProposalId,
                     requestContext: RequestContext): Future[ProposalsSearchResult]
 
-  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
+  def search(userId: Option[UserId],
+             query: SearchQuery,
+             maybeSeed: Option[Int],
+             requestContext: RequestContext): Future[ProposalsSearchResult]
 
   def searchForUser(userId: Option[UserId],
                     query: SearchQuery,
-                    requestContext: RequestContext): Future[ProposalsResultResponse]
+                    maybeSeed: Option[Int],
+                    requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 
   def propose(user: User,
               requestContext: RequestContext,
@@ -74,6 +78,10 @@ trait ProposalService {
                      requestContext: RequestContext,
                      request: RefuseProposalRequest): Future[Option[ProposalResponse]]
 
+  def postponeProposal(proposalId: ProposalId,
+                       moderator: UserId,
+                       requestContext: RequestContext): Future[Option[ProposalResponse]]
+
   def voteProposal(proposalId: ProposalId,
                    maybeUserId: Option[UserId],
                    requestContext: RequestContext,
@@ -95,6 +103,7 @@ trait ProposalService {
                     requestContext: RequestContext,
                     voteKey: VoteKey,
                     qualificationKey: QualificationKey): Future[Option[Qualification]]
+
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 
   def removeProposalFromCluster(proposalId: ProposalId): Future[Done]
@@ -121,6 +130,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     private val duplicateDetector: DuplicateDetector[IndexedProposal] =
       new DuplicateDetector(lang = "fr", 0.0)
+    private val featureExtractor: FeatureExtractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption))))
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -211,6 +221,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
+                        maybeSeed: Option[Int],
                         requestContext: RequestContext): Future[ProposalsSearchResult] = {
       query.filters.foreach(_.content.foreach { content =>
         maybeUserId match {
@@ -236,7 +247,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
         }
       })
-      elasticsearchProposalAPI.searchProposals(query)
+      elasticsearchProposalAPI.searchProposals(query, maybeSeed)
     }
 
     def mergeVoteResults(maybeUserId: Option[UserId],
@@ -254,9 +265,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def searchForUser(maybeUserId: Option[UserId],
                                query: SearchQuery,
-                               requestContext: RequestContext): Future[ProposalsResultResponse] = {
+                               seed: Option[Int],
+                               requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      search(maybeUserId, query, requestContext).flatMap { searchResult =>
+      search(maybeUserId, query, seed, requestContext).flatMap { searchResult =>
         maybeUserId match {
           case Some(userId) =>
             userHistoryCoordinatorService
@@ -269,6 +281,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
               .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
         }
+      }.map { proposalResultResponse =>
+        ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, seed)
       }
     }
 
@@ -382,6 +396,27 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    override def postponeProposal(proposalId: ProposalId,
+                                  moderator: UserId,
+                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
+
+      def postponedProposal = proposalCoordinatorService.postpone(
+        PostponeProposalCommand(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
+      )
+
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
+        for {
+          proposal: Proposal <- OptionT(postponedProposal)
+          author: User       <- OptionT(userService.getUser(proposal.author))
+        } yield (proposal, author)
+      ).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
+    }
+
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
                                requestContext: RequestContext): Future[ProposalsSearchResult] = {
@@ -436,7 +471,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): (Seq[SimilarDocResult[IndexedProposal]], Seq[IndexedProposal]) = {
       val corpus = Corpus(
         rawCorpus = candidates.filter(_.id != indexedProposal.id).map(_.content),
-        extractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption)))),
+        extractor = featureExtractor,
         lang = indexedProposal.language,
         maybeCorpusMeta = Some(candidates.filter(_.id != indexedProposal.id))
       )

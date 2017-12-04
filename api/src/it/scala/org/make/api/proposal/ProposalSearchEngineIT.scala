@@ -885,7 +885,7 @@ class ProposalSearchEngineIT
     val query = SearchQuery(
       Some(
         SearchFilters(
-          status = Some(StatusSearchFilter(ProposalStatus.Pending)),
+          status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending))),
           theme = None,
           tags = None,
           labels = None,
