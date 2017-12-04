@@ -37,6 +37,7 @@ class UserEmailConsumerActor(userService: UserService)
     implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
     implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
       at(identity)
+    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
   }
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
@@ -45,6 +46,7 @@ class UserEmailConsumerActor(userService: UserService)
       case event: UserRegisteredEvent        => handleUserRegisteredEventEvent(event)
       case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
       case _: UserConnectedEvent             => Future.successful {}
+      case _: UserUpdatedTagEvent            => Future.successful {}
       case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
     }
   }

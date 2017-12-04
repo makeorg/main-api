@@ -7,6 +7,8 @@ import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 
+import scala.util.Random
+
 final case class ProposeProposalRequest(content: String) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = BusinessConfig.defaultProposalMinLength
@@ -50,10 +52,20 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
                                trending: Option[String] = None,
                                content: Option[String] = None,
                                slug: Option[String] = None,
+                               seed: Option[Int] = None,
                                context: Option[ContextFilterRequest] = None,
                                sorts: Option[Seq[SortRequest]] = None,
                                limit: Option[Int] = None,
-                               skip: Option[Int] = None) {
+                               skip: Option[Int] = None,
+                               isRandom: Option[Boolean] = Some(false)) {
+
+  val randomScoreSeed: Option[Int] = isRandom.flatMap { randomise =>
+    if (randomise) {
+      Some(seed.getOrElse(Random.nextInt()))
+    } else {
+      None
+    }
+  }
   def toSearchQuery: SearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
@@ -79,7 +91,7 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
                                          trending: Option[String] = None,
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
-                                         status: Option[ProposalStatus] = None,
+                                         status: Option[Seq[ProposalStatus]] = None,
                                          sorts: Option[Seq[SortRequest]] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {

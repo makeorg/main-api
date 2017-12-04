@@ -38,12 +38,14 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       case event: ProposalProposed      => handleProposalProposed(event)
       case event: ProposalAccepted      => handleProposalAccepted(event)
       case event: ProposalRefused       => handleProposalRefused(event)
+      case event: ProposalPostponed     => handleProposalPostponed(event)
       case event: ProposalVoted         => handleVotedProposal(event)
       case event: ProposalUnvoted       => handleUnvotedProposal(event)
       case event: ProposalQualified     => handleQualifiedProposal(event)
       case event: ProposalUnqualified   => handleUnqualifiedProposal(event)
       case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
       case event: ProposalLocked        => handleLockedProposal(event)
+      case _: ProposalPatched           => Future.successful {}
     }
 
   }
@@ -54,12 +56,14 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
+    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
   }
 
   def handleVotedProposal(event: ProposalVoted): Future[Unit] = {
@@ -218,6 +222,11 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
 
   }
 
+  def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
+    Future.successful[Unit] {
+      log.debug(s"received $event")
+    }
+  }
 }
 
 object ProposalEmailConsumerActor {

@@ -28,7 +28,7 @@ trait ProposalSearchEngine {
   def findProposalsByIds(proposalIds: Seq[ProposalId],
                          size: Option[Int] = None,
                          random: Boolean = true): Future[Seq[IndexedProposal]]
-  def searchProposals(query: SearchQuery): Future[ProposalsSearchResult]
+  def searchProposals(query: SearchQuery, maybeSeed: Option[Int] = None): Future[ProposalsSearchResult]
   def countProposals(query: SearchQuery): Future[Int]
   def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
@@ -78,15 +78,20 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
+    override def searchProposals(searchQuery: SearchQuery,
+                                 maybeSeed: Option[Int] = None): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-
-      val request = search(proposalAlias)
+      var request: SearchDefinition = search(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
         .size(SearchFilters.getLimitSearch(searchQuery))
+
+      for {
+        seed  <- maybeSeed
+        query <- request.query
+      } yield request = request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
 
       logger.debug(client.show(request))
 

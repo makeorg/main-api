@@ -33,12 +33,14 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: ProposalProposed      => handleProposalProposed(event)
       case event: ProposalAccepted      => handleProposalAccepted(event)
       case event: ProposalRefused       => handleProposalRefused(event)
+      case event: ProposalPostponed     => handleProposalPostponed(event)
       case event: ProposalVoted         => handleProposalVoted(event)
       case event: ProposalUnvoted       => handleProposalUnvoted(event)
       case event: ProposalQualified     => handleProposalQualified(event)
       case event: ProposalUnqualified   => handleProposalUnqualified(event)
       case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
       case event: ProposalLocked        => handleProposalLocked(event)
+      case _: ProposalPatched           => Future.successful {}
     }
 
   }
@@ -49,12 +51,14 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
+    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
     implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
     implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
     implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
     implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
+    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
@@ -140,6 +144,16 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
         userId = event.moderator,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+      )
+    ).map(_ => {})
+  }
+
+  def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
+    (
+      userHistoryCoordinator ? LogPostponeProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
       )
     ).map(_ => {})
   }

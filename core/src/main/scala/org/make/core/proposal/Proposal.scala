@@ -66,6 +66,15 @@ object ProposalAction {
 
 }
 
+sealed trait ProposalActionType { val name: String }
+case object ProposalProposeAction extends ProposalActionType { override val name: String = "propose" }
+case object ProposalUpdateAction extends ProposalActionType { override val name: String = "update" }
+case object ProposalAcceptAction extends ProposalActionType { override val name: String = "accept" }
+case object ProposalVoteAction extends ProposalActionType { override val name: String = "vote" }
+case object ProposalUnvoteAction extends ProposalActionType { override val name: String = "unvote" }
+case object ProposalQualifyAction extends ProposalActionType { override val name: String = "qualify" }
+case object ProposalUnqualifyAction extends ProposalActionType { override val name: String = "unqualify" }
+
 sealed trait QualificationKey { val shortName: String }
 
 object QualificationKey extends StrictLogging {
@@ -183,6 +192,7 @@ object ProposalStatus {
   val statusMap: Map[String, ProposalStatus] =
     Map(
       Pending.shortName -> Pending,
+      Postponed.shortName -> Postponed,
       Accepted.shortName -> Accepted,
       Refused.shortName -> Refused,
       Archived.shortName -> Archived
@@ -193,8 +203,8 @@ object ProposalStatus {
   implicit lazy val proposalStatusDecoder: Decoder[ProposalStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {
-        case Some(profile) => Right(profile)
-        case None          => Left(s"$value is not a proposal status")
+        case Some(status) => Right(status)
+        case None         => Left(s"$value is not a proposal status")
       }
     }
 
@@ -219,6 +229,10 @@ object ProposalStatus {
 
   case object Refused extends ProposalStatus {
     override val shortName = "Refused"
+  }
+
+  case object Postponed extends ProposalStatus {
+    override val shortName = "Postponed"
   }
 
   case object Archived extends ProposalStatus {

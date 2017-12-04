@@ -385,7 +385,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "slug", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "include", paramType = "query", dataType = "list[string]", allowMultiple = true)
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
     )
   )
   @Path(value = "/sequences/{slug}")

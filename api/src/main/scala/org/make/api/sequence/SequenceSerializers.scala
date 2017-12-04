@@ -1,6 +1,6 @@
 package org.make.api.sequence
 
-import org.make.api.sequence.SequenceEvent._
+import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.core.SprayJsonFormatters
 import org.make.core.sequence.Sequence
 import stamina.V1
@@ -25,6 +25,9 @@ object SequenceSerializers extends SprayJsonFormatters {
   private val sequenceSerializer: JsonPersister[Sequence, V1] =
     persister[Sequence]("sequence")
 
+  private val sequencePatchedSerializer: JsonPersister[SequencePatched, V1] =
+    persister[SequencePatched]("sequence-tags-updated")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       sequenceCreatedSerializer,
@@ -32,6 +35,7 @@ object SequenceSerializers extends SprayJsonFormatters {
       sequenceProposalsRemovedSerializer,
       sequenceViewedSerializer,
       sequenceUpdatedSerializer,
-      sequenceSerializer
+      sequenceSerializer,
+      sequencePatchedSerializer
     )
 }
