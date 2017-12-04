@@ -44,6 +44,7 @@ object BusinessConfig {
     Tag("monde du travail"),
     Tag("monde medical"),
     Tag("agissements sexistes"),
+    Tag("violences sexuelles"),
     Tag("harcèlement"),
     Tag("agressions physiques"),
     Tag("violences sexuelles"),
@@ -52,7 +53,9 @@ object BusinessConfig {
     Tag("action publique"),
     Tag("prévention"),
     Tag("protection"),
-    Tag("réponses")
+    Tag("réponses"),
+    Tag("agression"),
+    Tag("monde médical")
   )
 }
 
