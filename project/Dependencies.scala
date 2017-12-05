@@ -7,8 +7,9 @@ object Dependencies {
   private val nettyVersion = "4.1.12.Final"
   private val kafkaVersion = "0.11.0.0"
   private val elastic4sVersion = "5.6.0"
-  private val kamonVersion = "0.6.8"
-  private val kamonScalaVersion = "0.6.7"
+  private val kamonVersion = "1.0.0-RC4"
+  private val kamonAkkaHttpVersion = "1.0.0-RC4-37344ef58d5ec7bdec47f2c09919ad3dc1a37dc3"
+  private val kamonScalaVersion = "1.0.0-RC4"
   private val circeVersion = "0.8.0"
   val aspectJVersion: String = "1.8.10"
   val swaggerUiVersion: String = "3.1.4"
@@ -43,14 +44,18 @@ object Dependencies {
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
-  val kamonAkka: ModuleID = "io.kamon" %% "kamon-akka-2.5" % kamonVersion
+  val kamonAkka: ModuleID = ("io.kamon" %% "kamon-akka-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkkaHttp: ModuleID =
-    ("io.kamon" %% "kamon-akka-http" % kamonVersion)
+    ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion)
       .exclude("com.typesafe.akka", "akka-http_2.12")
       .exclude("com.typesafe.akka", "akka-actor_2.12")
-  val kamonAkkaRemote: ModuleID = "io.kamon" %% "kamon-akka-remote-2.4" % kamonScalaVersion
-  val kamonJmx: ModuleID = "io.kamon"        %% "kamon-jmx"             % kamonScalaVersion
-  val kamonScala: ModuleID = "io.kamon"      %% "kamon-scala"           % kamonScalaVersion
+      .exclude("ch.qos.logback", "logback-classic")
+  val kamonAkkaRemote: ModuleID =
+    ("io.kamon"                          %% "kamon-akka-remote-2.4" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonScala: ModuleID = ("io.kamon" %% "kamon-scala"           % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonVersion
+
+  val kamonPrometheus: ModuleID = "io.kamon" %% "kamon-prometheus" % kamonVersion
 
   val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
   val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
@@ -104,5 +109,7 @@ object Dependencies {
   val gatling: ModuleID = "io.gatling"                      % "gatling-test-framework"    % "2.3.0" % "test"
 
   // Semantic
-  val semantic: ModuleID = "org.make" %% "semantic" % "0.1.5"
+  val semantic: ModuleID = ("org.make" %% "semantic" % "0.1.5")
+    .exclude("ch.qos.logback", "logback-core")
+    .exclude("ch.qos.logback", "logback-classic")
 }

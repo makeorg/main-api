@@ -22,11 +22,6 @@ dockerCommands := {
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
   "-Dlog4j.configurationFile=conf/log4j2.yaml",
-  "-Dcom.sun.management.jmxremote",
-  "-Dcom.sun.management.jmxremote.ssl=false",
-  "-Dcom.sun.management.jmxremote.authenticate=false",
-  "-Dcom.sun.management.jmxremote.port=4000",
-  "-Dcom.sun.management.rmi.jmxremote.port=4000",
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager",
   "-J-javaagent:/opt/docker/lib/org.aspectj.aspectjweaver-" + Dependencies.aspectJVersion + ".jar",
   "-J-Xms4G",
