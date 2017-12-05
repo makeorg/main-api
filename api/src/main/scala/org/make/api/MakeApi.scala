@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.StrictLogging
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
-import io.circe.generic.auto._
 import io.circe.syntax._
 import kamon.trace.Tracer
 import org.make.api.extensions._
@@ -44,7 +43,7 @@ import org.make.api.sessionhistory.{
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scalaoauth2.provider._
 
 trait MakeApi

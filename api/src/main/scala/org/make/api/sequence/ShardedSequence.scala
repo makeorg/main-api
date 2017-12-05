@@ -6,7 +6,7 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.core.DateHelper
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 object ShardedSequence {
   def props(dateHelper: DateHelper): Props = Props(new ShardedSequence(dateHelper = dateHelper))

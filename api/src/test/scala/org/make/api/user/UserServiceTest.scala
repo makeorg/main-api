@@ -19,7 +19,7 @@ import org.mockito.Mockito.{times, verify}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class UserServiceTest
     extends MakeUnitTest

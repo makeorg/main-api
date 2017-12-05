@@ -2,10 +2,13 @@ package org.make.core.sequence.indexed
 
 import java.time.ZonedDateTime
 
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto._
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{Tag, ThemeId, ThemeTranslation}
 import org.make.core.sequence._
+import org.make.core.CirceFormatters
 
 import scala.concurrent.Future
 
@@ -36,7 +39,17 @@ case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequen
 
 case class IndexedSequenceTheme(themeId: ThemeId, translation: Seq[ThemeTranslation])
 
+object IndexedSequenceTheme {
+  implicit val encoder: ObjectEncoder[IndexedSequenceTheme] = deriveEncoder[IndexedSequenceTheme]
+  implicit val decoder: Decoder[IndexedSequenceTheme] = deriveDecoder[IndexedSequenceTheme]
+}
+
 case class IndexedSequenceProposalId(proposalId: ProposalId)
+
+object IndexedSequenceProposalId {
+  implicit val encoder: ObjectEncoder[IndexedSequenceProposalId] = deriveEncoder[IndexedSequenceProposalId]
+  implicit val decoder: Decoder[IndexedSequenceProposalId] = deriveDecoder[IndexedSequenceProposalId]
+}
 
 case class IndexedSequence(id: SequenceId,
                            title: String,
@@ -51,12 +64,26 @@ case class IndexedSequence(id: SequenceId,
                            proposals: Seq[IndexedSequenceProposalId],
                            searchable: Boolean)
 
+object IndexedSequence extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[IndexedSequence] = deriveEncoder[IndexedSequence]
+  implicit val decoder: Decoder[IndexedSequence] = deriveDecoder[IndexedSequence]
+}
+
 final case class Context(operation: Option[String],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])
 
+object Context {
+  implicit val encoder: ObjectEncoder[Context] = deriveEncoder[Context]
+  implicit val decoder: Decoder[Context] = deriveDecoder[Context]
+}
+
 final case class SequencesSearchResult(total: Int, results: Seq[IndexedSequence])
+
+object SequencesSearchResult {
+  implicit val encoder: ObjectEncoder[SequencesSearchResult] = deriveEncoder[SequencesSearchResult]
+}
 
 final case class IndexedStartSequence(id: SequenceId,
                                       title: String,
@@ -65,3 +92,7 @@ final case class IndexedStartSequence(id: SequenceId,
                                       tags: Seq[Tag],
                                       themes: Seq[IndexedSequenceTheme],
                                       proposals: Seq[IndexedProposal])
+
+object IndexedStartSequence {
+  implicit val encoder: ObjectEncoder[IndexedStartSequence] = deriveEncoder[IndexedStartSequence]
+}

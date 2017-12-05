@@ -7,7 +7,8 @@ import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.auto._
+import io.circe.ObjectEncoder
+import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -197,4 +198,9 @@ object AuthenticationApi {
     )
 
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
+
+  object TokenResponse {
+    implicit val encoder: ObjectEncoder[TokenResponse] = deriveEncoder[TokenResponse]
+  }
+
 }

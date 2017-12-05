@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
-import io.circe.generic.auto._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse

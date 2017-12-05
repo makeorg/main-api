@@ -10,7 +10,7 @@ import org.make.core.user._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 trait UserHistoryCoordinatorComponent {
   def userHistoryCoordinator: ActorRef

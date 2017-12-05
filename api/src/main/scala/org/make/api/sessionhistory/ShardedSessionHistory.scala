@@ -6,7 +6,7 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.sessionhistory.ShardedSessionHistory.StopSessionHistory
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class ShardedSessionHistory(userHistoryCoordinator: ActorRef)
     extends SessionHistoryActor(userHistoryCoordinator)

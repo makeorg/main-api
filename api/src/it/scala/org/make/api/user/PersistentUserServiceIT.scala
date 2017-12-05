@@ -8,7 +8,7 @@ import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserServiceComponent {
 

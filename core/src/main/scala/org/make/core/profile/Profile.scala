@@ -3,8 +3,10 @@ package org.make.core.profile
 import java.time.LocalDate
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.generic.semiauto._
 import org.make.core.MakeSerializable
+import org.make.core.CirceFormatters
 
 sealed trait Gender {
   def shortName: String
@@ -57,7 +59,10 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    optInNewsletter: Boolean = true)
     extends MakeSerializable
 
-object Profile {
+object Profile extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[Profile] = deriveEncoder[Profile]
+  implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
+
   def isEmpty(profile: Profile): Boolean = profile match {
     case Profile(None, None, None, None, None, None, None, None, None, None, None, None, true) => true
     case _                                                                                     => false
