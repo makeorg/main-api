@@ -3,18 +3,13 @@ package org.make.api.extensions
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
-import org.make.api.Predef._
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.Duration
 
 class MakeSettings(config: Config) extends Extension {
 
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
-
-  object Sequence {
-    val batchSize: Int = config.getInt("sequence.batch-size")
-  }
 
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
@@ -50,34 +45,6 @@ class MakeSettings(config: Config) extends Extension {
   val newsletterUrl: String = config.getString("newsletter-url")
   val authorizedCorsUri: Seq[String] =
     config.getStringList("authorized-cors-uri").asScala
-
-  object Cluster {
-    val name: String = config.getString("cluster.name")
-
-    object Consul {
-      val httpUrl: String = config.getString("cluster.consul.http-url")
-    }
-
-    val heartbeatInterval: FiniteDuration = {
-      config.getDuration("cluster.heartbeat-interval").toScala
-    }
-    val sessionTimeout: FiniteDuration = {
-      config.getDuration("cluster.session-timeout").toScala
-    }
-    val sessionRenewInterval: FiniteDuration = {
-      config.getDuration("cluster.session-renew-interval").toScala
-    }
-    val retriesBeforeSeeding: Int = {
-      config.getInt("cluster.retries-before-seeding")
-    }
-    val nodeTimeout: FiniteDuration = {
-      config.getDuration("cluster.node-timeout").toScala
-    }
-    val cleanupInterval: FiniteDuration = {
-      config.getDuration("cluster.cleanup-interval").toScala
-    }
-
-  }
 
   object Authentication {
     val defaultClientId: String = config.getString("authentication.default-client-id")
