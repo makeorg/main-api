@@ -27,6 +27,7 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     case command: LogUserSearchProposalsEvent => persistEvent(command)
     case command: LogAcceptProposalEvent      => persistEvent(command)
     case command: LogRefuseProposalEvent      => persistEvent(command)
+    case command: LogPostponeProposalEvent    => persistEvent(command)
     case command: LogLockProposalEvent =>
       if (!state.events.exists {
             case LogLockProposalEvent(command.userId, _, _, _) => true

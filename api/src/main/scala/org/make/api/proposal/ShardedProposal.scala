@@ -5,7 +5,7 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 object ShardedProposal {
   def props(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef): Props =

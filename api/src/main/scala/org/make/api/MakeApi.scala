@@ -9,23 +9,25 @@ import com.typesafe.scalalogging.StrictLogging
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
-import io.circe.generic.auto._
 import io.circe.syntax._
-import kamon.trace.Tracer
 import org.make.api.extensions._
 import org.make.api.proposal._
-import org.make.api.sequence._
-import org.make.api.sequence.SequenceApi
+import org.make.api.sequence.{SequenceApi, _}
+import org.make.api.sessionhistory.{
+  DefaultSessionHistoryCoordinatorServiceComponent,
+  SessionHistoryCoordinator,
+  SessionHistoryCoordinatorComponent
+}
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
+import org.make.api.technical._
+import org.make.api.technical.auth._
+import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.elasticsearch.{
   DefaultElasticSearchComponent,
   ElasticSearchApi,
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.api.technical._
-import org.make.api.technical.auth._
-import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -36,15 +38,10 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.sessionhistory.{
-  DefaultSessionHistoryCoordinatorServiceComponent,
-  SessionHistoryCoordinator,
-  SessionHistoryCoordinatorComponent
-}
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scalaoauth2.provider._
 
 trait MakeApi
@@ -173,23 +170,23 @@ trait MakeApi
       }
     }
 
+  private lazy val documentation = new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes
+
   lazy val makeRoutes: Route =
-    makeDefaultHeadersAndHandlers() {
-      new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes ~
-        swagger ~
-        optionsCors ~
-        elasticsearchRoutes ~
-        userRoutes ~
-        tagRoutes ~
-        proposalRoutes ~
-        moderationProposalRoutes ~
-        sequenceRoutes ~
-        optionsAuthorized ~
-        buildRoutes ~
-        mailJetRoutes ~
-        authenticationRoutes ~
-        businessConfigRoutes
-    }
+    documentation ~
+      swagger ~
+      optionsCors ~
+      elasticsearchRoutes ~
+      userRoutes ~
+      tagRoutes ~
+      proposalRoutes ~
+      moderationProposalRoutes ~
+      sequenceRoutes ~
+      optionsAuthorized ~
+      buildRoutes ~
+      mailJetRoutes ~
+      authenticationRoutes ~
+      businessConfigRoutes
 
 }
 
@@ -202,12 +199,7 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
       |}
     """.stripMargin
 
-  private def getFromTrace(key: String, default: String = "<unknown>"): String =
-    Tracer.currentContext.tags.getOrElse(key, default)
-  def requestIdFromTrace: String = getFromTrace("id")
-  def routeIdFromTrace: String = Tracer.currentContext.name
-
-  val exceptionHandler = ExceptionHandler {
+  def exceptionHandler(routeName: String, requestId: String): ExceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegisteredException =>
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
@@ -218,11 +210,11 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
         )
       )
     case e =>
-      logger.error(s"Error on request ${MakeApi.routeIdFromTrace} with id ${MakeApi.requestIdFromTrace}", e)
+      logger.error(s"Error on request $routeName with id $requestId", e)
       complete(
         HttpResponse(
           status = StatusCodes.InternalServerError,
-          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(MakeApi.requestIdFromTrace))
+          entity = HttpEntity(ContentTypes.`application/json`, MakeApi.defaultError(requestId))
         )
       )
   }

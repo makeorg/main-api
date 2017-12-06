@@ -26,7 +26,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)

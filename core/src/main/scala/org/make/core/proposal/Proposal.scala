@@ -3,7 +3,8 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.generic.semiauto._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
@@ -134,6 +135,9 @@ object QualificationKey extends StrictLogging {
 final case class Qualification(key: QualificationKey, count: Int = 0)
 
 object Qualification {
+  implicit val encoder: ObjectEncoder[Qualification] = deriveEncoder[Qualification]
+  implicit val decoder: Decoder[Qualification] = deriveDecoder[Qualification]
+
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
     DefaultJsonProtocol.jsonFormat2(Qualification.apply)
 
@@ -142,6 +146,9 @@ object Qualification {
 final case class Vote(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification])
 
 object Vote {
+  implicit val encoder: ObjectEncoder[Vote] = deriveEncoder[Vote]
+  implicit val decoder: Decoder[Vote] = deriveDecoder[Vote]
+
   implicit val voteFormatter: RootJsonFormat[Vote] =
     DefaultJsonProtocol.jsonFormat3(Vote.apply)
 }

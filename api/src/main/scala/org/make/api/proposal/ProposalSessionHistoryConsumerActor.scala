@@ -9,7 +9,7 @@ import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor
 import shapeless.Poly1
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[ProposalEventWrapper]

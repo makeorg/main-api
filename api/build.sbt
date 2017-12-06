@@ -7,11 +7,12 @@ name := "make-api"
 libraryDependencies ++= Seq(
   Dependencies.commonsLoggingBridge,
   Dependencies.log4jJul,
-  Dependencies.kamonJmx,
   Dependencies.kamonAkka,
   Dependencies.kamonAkkaHttp,
   Dependencies.kamonAkkaRemote,
   Dependencies.kamonScala,
+  Dependencies.kamonPrometheus,
+  Dependencies.kamonSystemMetrics,
   Dependencies.aspectJWeaver,
   Dependencies.aspectJRt,
   Dependencies.akkaSlf4j,

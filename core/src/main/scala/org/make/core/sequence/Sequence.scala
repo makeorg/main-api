@@ -2,7 +2,8 @@ package org.make.core.sequence
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.generic.semiauto._
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.user.UserId
@@ -12,12 +13,17 @@ import spray.json.DefaultJsonProtocol._
 import org.make.core.SprayJsonFormatters._
 
 final case class SequenceTranslation(slug: String, title: String, language: String) extends MakeSerializable
+
 object SequenceTranslation {
+  implicit val encoder: ObjectEncoder[SequenceTranslation] = deriveEncoder[SequenceTranslation]
+  implicit val decoder: Decoder[SequenceTranslation] = deriveDecoder[SequenceTranslation]
+
   implicit val sequenceTranslationFormatter: RootJsonFormat[SequenceTranslation] =
     DefaultJsonProtocol.jsonFormat3(SequenceTranslation.apply)
 
 }
 final case class SequenceAction(date: ZonedDateTime, user: UserId, actionType: String, arguments: Map[String, String])
+
 object SequenceAction {
   implicit val sequenceActionFormatter: RootJsonFormat[SequenceAction] =
     DefaultJsonProtocol.jsonFormat4(SequenceAction.apply)

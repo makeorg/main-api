@@ -1,5 +1,8 @@
 package org.make.api.technical.businessconfig
 
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.make.core.reference.{Tag, Theme}
 
 sealed trait BusinessConfig {
@@ -60,6 +63,9 @@ object BusinessConfig {
 }
 
 object FrontConfiguration {
+  implicit val encoder: ObjectEncoder[FrontConfiguration] = deriveEncoder[FrontConfiguration]
+  implicit val decoder: Decoder[FrontConfiguration] = deriveDecoder[FrontConfiguration]
+
   val defaultNewVisitorCookieDefinition: String = "New user"
 
   def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
@@ -77,6 +83,9 @@ object FrontConfiguration {
 }
 
 object BackofficeConfiguration {
+  implicit val encoder: ObjectEncoder[BackofficeConfiguration] = deriveEncoder[BackofficeConfiguration]
+  implicit val decoder: Decoder[BackofficeConfiguration] = deriveDecoder[BackofficeConfiguration]
+
   val defaultNumberVotesTriggerConnexion: Int = 5
   val defaultNumberPendingProposalsTriggerEmailModerator: Int = 50
   val defaultMinProposalsPerSequence: Int = 3

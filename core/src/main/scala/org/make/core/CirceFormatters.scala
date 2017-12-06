@@ -3,7 +3,6 @@ package org.make.core
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.time.{LocalDate, ZonedDateTime}
-import java.util.UUID
 
 import io.circe._
 
@@ -44,15 +43,6 @@ trait CirceFormatters {
       }
     }
 
-  implicit lazy val uuidEncoder: Encoder[UUID] = (a: UUID) => Json.fromString(a.toString)
-  implicit lazy val uuidDecoder: Decoder[UUID] =
-    Decoder.decodeString.emap { uuid =>
-      Try(UUID.fromString(uuid)) match {
-        case Success(parsed) => Right(parsed)
-        case Failure(_)      => Left(s"$uuid is not a valid uuid")
-      }
-    }
-
 }
 
-object CirceFormatters extends CirceFormatters
+// object CirceFormatters extends CirceFormatters

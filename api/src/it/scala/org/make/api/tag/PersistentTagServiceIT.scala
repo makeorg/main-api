@@ -5,7 +5,7 @@ import org.make.core.reference.{Tag, TagId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServiceComponent {
 

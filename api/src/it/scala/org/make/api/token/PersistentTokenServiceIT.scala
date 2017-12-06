@@ -11,7 +11,7 @@ import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class PersistentTokenServiceIT

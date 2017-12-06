@@ -11,7 +11,7 @@ import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 trait ProposalCoordinatorComponent {

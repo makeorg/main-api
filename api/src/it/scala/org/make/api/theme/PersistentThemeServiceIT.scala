@@ -8,7 +8,7 @@ import org.make.core.SlugHelper
 import org.make.core.reference._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class PersistentThemeServiceIT
