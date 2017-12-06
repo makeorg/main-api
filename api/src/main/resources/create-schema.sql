@@ -95,6 +95,17 @@ CREATE TABLE IF NOT EXISTS theme_translation (
   PRIMARY KEY (theme_uuid, language)
 );
 %
+CREATE TABLE IF NOT EXISTS idea (
+  uuid  VARCHAR(256) PRIMARY KEY,
+  name STRING,
+  operation VARCHAR(256),
+  question VARCHAR(256),
+  country VARCHAR(3),
+  language VARCHAR(3),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+%
 INSERT into oauth_client
     (uuid, secret, allowed_grant_types)
     VALUES
