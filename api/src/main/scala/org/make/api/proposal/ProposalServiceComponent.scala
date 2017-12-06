@@ -20,7 +20,6 @@ import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
-import org.make.semantic.text.model.duplicate.SimilarDocResult
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -420,13 +419,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposalId)
         )
       )
-
       elasticsearchProposalAPI.findProposalById(proposalId).flatMap {
         case Some(indexedProposal) =>
           elasticsearchProposalAPI
             .searchProposals(
-              SearchQuery(
-                // TODO add language filter
+              SearchQuery( // TODO add language filter
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
@@ -436,44 +433,29 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 )
               )
             )
-            .flatMap({
-              response =>
-                // get proposal responses from indexed proposals to have access to a proposal's similar
-                val proposalIds = response.results.map(_.id)
-                Future
-                  .traverse(proposalIds)(
-                    proposalId => proposalCoordinatorService.viewProposal(proposalId, requestContext)
-                  )
-                  .map { maybeProposalResponses =>
-                    // get only proposals not similar to each other
-                    val uniqueProposalIds: Set[ProposalId] =
-                      DuplicateAlgorithm.getUniqueIdeas(maybeProposalResponses.flatten)
-                    // filter search space
-                    val filteredIndexedProposals = response.results.filter { p =>
-                      uniqueProposalIds.contains(p.id)
-                    }
-                    // do duplicate detection
-                    val (
-                      predictedResults: Seq[SimilarDocResult[IndexedProposal]],
-                      predictedDuplicates: Seq[IndexedProposal]
-                    ) = DuplicateAlgorithm.getPredictedDuplicateResults(
-                      indexedProposal,
-                      filteredIndexedProposals,
-                      duplicateDetectorConfiguration.maxResults
-                    )
-
+            .flatMap { response =>
+              DuplicateAlgorithm
+                .getDuplicates(
+                  indexedProposal,
+                  response.results,
+                  (proposalId: ProposalId) => {
+                    proposalCoordinatorService.viewProposal(proposalId, requestContext)
+                  },
+                  duplicateDetectorConfiguration.maxResults
+                )
+                .flatMap {
+                  case (duplicates: Seq[IndexedProposal], scores: Seq[Double]) =>
                     eventBusService.publish(
                       PredictDuplicate(
                         proposalId = proposalId,
-                        predictedDuplicates = predictedDuplicates.map(_.id),
-                        predictedScores = predictedResults.map(_.score),
+                        predictedDuplicates = duplicates.map(_.id),
+                        predictedScores = scores,
                         algoLabel = DuplicateAlgorithm.getModelName
                       )
                     )
-
-                    ProposalsSearchResult(predictedDuplicates.size, predictedDuplicates)
-                  }
-            })
+                    Future.successful(ProposalsSearchResult(duplicates.length, duplicates))
+                }
+            }
         case None => Future.successful(ProposalsSearchResult.empty)
       }
     }

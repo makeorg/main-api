@@ -10,7 +10,7 @@ class DuplicateAlgorithmTest extends MakeTest {
   feature("take a single proposal from each cluster") {
     scenario("when proposals list is empty") {
       val chosenProposals = DuplicateAlgorithm.getUniqueIdeas(proposals = Seq.empty)
-      chosenProposals should be(Set.empty)
+      chosenProposals should be(Seq.empty)
     }
 
     scenario("when proposal list is not empty") {
@@ -65,7 +65,62 @@ class DuplicateAlgorithmTest extends MakeTest {
         )
       )
       val chosenProposals = DuplicateAlgorithm.getUniqueIdeas(proposals = proposals)
-      chosenProposals.toSeq.map(_.value).mkString(",") should be("1,3")
+      chosenProposals.map(_.value).mkString(",") should be("3,1")
+    }
+  }
+
+  feature("get duplicates for a given proposal") {
+    scenario("given a target and a list of candidates") {
+      val proposals = Seq(
+        Proposal(
+          proposalId = ProposalId("1"),
+          author = UserId("0"),
+          content = "Bonjour,",
+          createdAt = None,
+          updatedAt = None,
+          slug = "this-is-a-proposal",
+          creationContext = RequestContext.empty,
+          labels = Seq(),
+          theme = None,
+          status = ProposalStatus.Pending,
+          tags = Seq(),
+          votes = Seq.empty,
+          events = List.empty,
+          similarProposals = Seq(ProposalId("2"))
+        ),
+        Proposal(
+          proposalId = ProposalId("2"),
+          author = UserId("0"),
+          content = "This is a proposal",
+          createdAt = None,
+          updatedAt = None,
+          slug = "this-is-a-proposal",
+          creationContext = RequestContext.empty,
+          labels = Seq(),
+          theme = None,
+          status = ProposalStatus.Pending,
+          tags = Seq(),
+          votes = Seq.empty,
+          events = List.empty,
+          similarProposals = Seq.empty
+        ),
+        Proposal(
+          proposalId = ProposalId("3"),
+          author = UserId("0"),
+          content = "This is a proposal",
+          createdAt = None,
+          updatedAt = None,
+          slug = "this-is-a-proposal",
+          creationContext = RequestContext.empty,
+          labels = Seq(),
+          theme = None,
+          status = ProposalStatus.Pending,
+          tags = Seq(),
+          votes = Seq.empty,
+          events = List.empty,
+          similarProposals = Seq.empty
+        )
+      )
     }
   }
 
