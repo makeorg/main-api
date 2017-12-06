@@ -71,7 +71,8 @@ object ContextFilterRequest {
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 
-final case class SearchRequest(themesIds: Option[Seq[String]] = None,
+final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
+                               themesIds: Option[Seq[String]] = None,
                                tagsIds: Option[Seq[String]] = None,
                                labelsIds: Option[Seq[String]] = None,
                                trending: Option[String] = None,
@@ -95,7 +96,8 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter.apply),
+        proposals = proposalIds.map(ProposalSearchFilter.apply),
+        themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
@@ -114,7 +116,8 @@ object SearchRequest {
   implicit val decoder: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
 }
 
-final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
+final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None,
+                                         themesIds: Option[Seq[String]] = None,
                                          tagsIds: Option[Seq[String]] = None,
                                          labelsIds: Option[Seq[String]] = None,
                                          trending: Option[String] = None,
@@ -128,7 +131,8 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter.apply),
+        proposals = proposalIds.map(ProposalSearchFilter.apply),
+        themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
