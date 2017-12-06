@@ -7,6 +7,8 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
+import kamon.prometheus.PrometheusReporter
+import kamon.system.SystemMetrics
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 
@@ -14,7 +16,8 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
-  Kamon.start()
+  Kamon.addReporter(new PrometheusReporter())
+  SystemMetrics.startCollecting()
 
   val envName: Option[String] = Option(System.getenv("ENV_NAME"))
 

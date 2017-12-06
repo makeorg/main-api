@@ -70,9 +70,7 @@ class UserApiTest
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
-    handleExceptions(MakeApi.exceptionHandler) {
-      userRoutes
-    }
+    userRoutes
   })
 
   val fakeUser = User(

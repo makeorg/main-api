@@ -33,11 +33,13 @@ class RejectionsTest
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
 
-  val route: Route = sealRoute(post {
-    path("test") {
-      decodeRequest {
-        entity(as[TestRequest]) { _ =>
-          complete(StatusCodes.OK)
+  val route: Route = sealRoute(handleExceptions(MakeApi.exceptionHandler("test", "123")) {
+    post {
+      path("test") {
+        decodeRequest {
+          entity(as[TestRequest]) { _ =>
+            complete(StatusCodes.OK)
+          }
         }
       }
     }
@@ -49,6 +51,7 @@ class RejectionsTest
       val invalidJson = "not a json"
       Post("/test", HttpEntity(ContentTypes.`application/json`, invalidJson)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
+        println(responseEntity.toString)
         entityAs[Seq[ValidationError]].size should be(1)
       }
     }
