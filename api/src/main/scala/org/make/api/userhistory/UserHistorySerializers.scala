@@ -19,6 +19,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logRefuseProposalEventSerializer: JsonPersister[LogRefuseProposalEvent, V1] =
     json.persister[LogRefuseProposalEvent]("user-history-refused-proposal")
 
+  private val logPostponeProposalEventSerializer: JsonPersister[LogPostponeProposalEvent, V1] =
+    json.persister[LogPostponeProposalEvent]("user-history-postponed-proposal")
+
   private val logLockProposalEventSerializer: JsonPersister[LogLockProposalEvent, V1] =
     json.persister[LogLockProposalEvent]("user-history-lock-proposal")
 
@@ -67,6 +70,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logSearchProposalsEventSerializer,
       logAcceptProposalEventSerializer,
       logRefuseProposalEventSerializer,
+      logPostponeProposalEventSerializer,
       logLockProposalEventSerializer,
       logUserProposalEventSerializer,
       logUserVoteEventSerializer,
