@@ -33,7 +33,7 @@ class ShardedSequence(dateHelper: DateHelper) extends SequenceActor(dateHelper) 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSequence)
     case StopSequence                  => context.stop(self)
-    case SaveSnapshotSuccess(_)        => log.info("Snapshot saved")
+    case SaveSnapshotSuccess(_)        => log.debug("Snapshot saved")
     case SaveSnapshotFailure(_, cause) => log.error("Error while saving snapshot", cause)
   }
 }
