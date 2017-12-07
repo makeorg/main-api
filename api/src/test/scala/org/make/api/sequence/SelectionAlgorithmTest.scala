@@ -17,7 +17,8 @@ import scala.util.Random
 
 class SelectionAlgorithmTest extends MakeTest with StrictLogging {
 
-  val defaultThreshold = 100
+  val defaultVoteThreshold = 100
+  val defaultEngagementThreshold = 0.9
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
 
@@ -28,7 +29,14 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         proposalIds.map(id => fakeProposal(id, Map.empty, Seq.empty))
 
       val selectedProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -43,7 +51,8 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultThreshold,
+        newProposalVoteCount = defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
 
@@ -66,7 +75,14 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -91,7 +107,8 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         defaultSize,
         proposals,
         Seq.empty,
-        defaultThreshold,
+        defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         Seq(ProposalId("included1"))
       )
 
@@ -110,7 +127,14 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
 
       val selectedProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -125,7 +149,8 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultThreshold,
+        newProposalVoteCount = defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
 
@@ -148,7 +173,14 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -173,7 +205,8 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         defaultSize,
         proposals,
         Seq.empty,
-        defaultThreshold,
+        defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         Seq(ProposalId("included1"))
       )
 
@@ -193,11 +226,23 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
 
       val proposals: Seq[Proposal] =
         proposalIds.map(
-          id => fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) { 200 } else { 50 })), Seq.empty)
+          id =>
+            fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) {
+                                                     200
+                                                   } else {
+                                                     50
+                                                   })), Seq.empty)
         )
 
       val selectedProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -209,14 +254,20 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
 
       val proposals: Seq[Proposal] =
         proposalIds.map(
-          id => fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) { 200 } else { 50 })), Seq.empty)
+          id =>
+            fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) {
+                                                     200
+                                                   } else {
+                                                     50
+                                                   })), Seq.empty)
         )
 
       val sequenceProposals = SelectionAlgorithm.newProposalsForSequence(
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultThreshold,
+        newProposalVoteCount = defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
 
@@ -240,15 +291,22 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
       val proposals: Seq[Proposal] =
         proposalIds.map(
           id =>
-            fakeProposal(
-              id,
-              Map(VoteKey.Agree -> (if (switch.getAndSwitch()) { 200 } else { 50 })),
-              duplicates.getOrElse(id, Seq.empty)
-          )
+            fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) {
+                                                     200
+                                                   } else {
+                                                     50
+                                                   })), duplicates.getOrElse(id, Seq.empty))
         )
 
       val sequenceProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -271,18 +329,19 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
       val proposals: Seq[Proposal] =
         proposalIds.map(
           id =>
-            fakeProposal(
-              id,
-              Map(VoteKey.Agree -> (if (switch.getAndSwitch()) { 200 } else { 50 })),
-              duplicates.getOrElse(id, Seq.empty)
-          )
+            fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) {
+                                                     200
+                                                   } else {
+                                                     50
+                                                   })), duplicates.getOrElse(id, Seq.empty))
         )
 
       val sequenceProposals = SelectionAlgorithm.newProposalsForSequence(
         defaultSize,
         proposals,
         Seq.empty,
-        defaultThreshold,
+        defaultVoteThreshold,
+        testedProposalEngagementThreshold = defaultEngagementThreshold,
         Seq(ProposalId("included1"))
       )
 
@@ -316,11 +375,15 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
       val proposals: Seq[Proposal] = newProposalsRandom ++ testedProposals
 
       val sequenceProposals =
-        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+        SelectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          proposals,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
 
-      logger.debug(sequenceProposals.map(_.value).sorted.mkString(", "))
-
-      sequenceProposals.size should be(defaultSize)
       sequenceProposals.size should be(defaultSize)
       sequenceProposals.contains(ProposalId("newProposal1")) should be(true)
       sequenceProposals.contains(ProposalId("newProposal2")) should be(true)
@@ -336,8 +399,47 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
       sequenceProposals.contains(ProposalId("newProposal12")) should be(false)
     }
 
-  }
+    scenario("check filtering based on engagement rate") {
 
+      val newProposalIds: Seq[ProposalId] = (1 to defaultSize).map(i    => ProposalId(s"newProposal$i"))
+      val testedProposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"testedProposal$i"))
+
+      val newProposals: Seq[Proposal] =
+        newProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 0), Seq.empty))
+
+      val testedProposals: Seq[Proposal] =
+        testedProposalIds.zipWithIndex.map {
+          case (id, i) =>
+            fakeProposal(id, Map(VoteKey.Agree -> 200, VoteKey.Neutral -> i * 10), Seq.empty)
+        }
+
+      val testedProposalsRandom = Random.shuffle(testedProposals)
+
+      val sequenceProposals =
+        SelectionAlgorithm.newProposalsForSequence(
+          8,
+          newProposals ++ testedProposalsRandom,
+          Seq.empty,
+          defaultVoteThreshold,
+          defaultEngagementThreshold,
+          Seq.empty
+        )
+
+      sequenceProposals.size should be(8)
+      sequenceProposals.contains(ProposalId("testedProposal1")) should be(true)
+      sequenceProposals.contains(ProposalId("testedProposal2")) should be(true)
+      sequenceProposals.contains(ProposalId("testedProposal3")) should be(true)
+      sequenceProposals.contains(ProposalId("testedProposal4")) should be(true)
+      sequenceProposals.contains(ProposalId("testedProposal5")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal6")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal7")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal8")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal9")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal10")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal11")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal12")) should be(false)
+    }
+  }
 }
 
 class Switch {

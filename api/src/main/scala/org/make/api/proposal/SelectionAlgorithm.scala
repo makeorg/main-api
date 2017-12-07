@@ -1,7 +1,7 @@
 package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
-import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
+import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus, VoteKey}
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -47,6 +47,7 @@ object SelectionAlgorithm extends StrictLogging {
     - the rest is 50/50 new proposals to test (less than newProposalVoteCount votes)
       and tested proposals (more than newProposalVoteCount votes)
     - new proposals are tested in a first-in first-out mode until they reach newProposalVoteCount votes
+    - tested proposals are filtered out if their engagement rate is too low
     - if there are not enough tested proposals to provide the requested number of proposals,
       the sequence is completed with new proposals
     - the candidates proposals are filtered such that only one proposal by ideas
@@ -57,6 +58,7 @@ object SelectionAlgorithm extends StrictLogging {
                               proposals: Seq[Proposal],
                               votedProposals: Seq[ProposalId],
                               newProposalVoteCount: Int,
+                              testedProposalEngagementThreshold: Double,
                               includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
     val includedProposals = proposals.filter(p           => includeList.contains(p.proposalId))
@@ -84,7 +86,8 @@ object SelectionAlgorithm extends StrictLogging {
 
     val testedProposals = availableProposals.filter { proposal =>
       val votes = proposal.votes.map(_.count).sum
-      votes >= newProposalVoteCount && !newProposalsSimilars.contains(proposal.proposalId)
+      val engagement_rate = computeEngagementRateEstimate(proposal)
+      votes >= newProposalVoteCount && !newProposalsSimilars.contains(proposal.proposalId) && engagement_rate > testedProposalEngagementThreshold
     }
     val testedProposalCount = proposalsToChoose - newIncludedProposals.size
     val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(testedProposals, testedProposalCount)
@@ -93,16 +96,33 @@ object SelectionAlgorithm extends StrictLogging {
       newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
     )
     if (sequence.size < targetLength) {
-      val excludeList =
-        (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
-
-      sequence ++ chooseNewProposals(
-        availableProposals.filter(p => !excludeList.contains(p.proposalId)),
-        targetLength - sequence.size
-      ).map(_.proposalId)
+      complementSequence(sequence, targetLength, proposals, availableProposals)
     } else {
       sequence
     }
+  }
+
+  /* uses Agresti-Coull estimate */
+  def computeEngagementRateEstimate(proposal: Proposal): Double = {
+    val votes = proposal.votes.map(_.count).sum
+    val forAgainst = proposal.votes.filter(v => v.key == VoteKey.Agree || v.key == VoteKey.Disagree).map(_.count).sum
+    val nn = (votes + 4).toDouble
+    val pp = (forAgainst + 2) / nn
+    val sd = Math.sqrt(pp * (1 - pp) / nn)
+    pp + 2 * sd
+  }
+
+  def complementSequence(sequence: Seq[ProposalId],
+                         targetLength: Int,
+                         proposals: Seq[Proposal],
+                         availableProposals: Seq[Proposal]): Seq[ProposalId] = {
+    val excludeList =
+      (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
+
+    sequence ++ chooseNewProposals(
+      availableProposals.filter(p => !excludeList.contains(p.proposalId)),
+      targetLength - sequence.size
+    ).map(_.proposalId)
   }
 
   def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
