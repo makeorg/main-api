@@ -22,6 +22,7 @@ trait PersistentIdeaService {
   def findOneByName(name: String): Future[Option[Idea]]
   def findAll(): Future[Seq[Idea]]
   def persist(idea: Idea): Future[Idea]
+  def modify(ideaId: IdeaId, name: String): Future[Int]
 }
 
 trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceComponent {
@@ -78,6 +79,20 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
             )
         }.execute().apply()
       }).map(_ => idea)
+    }
+
+    override def modify(ideaId: IdeaId, name: String): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentIdea)
+            .set(column.name -> name)
+            .where(
+              sqls
+                .eq(column.uuid, ideaId.value)
+            )
+        }.update().apply()
+      })
     }
   }
 }

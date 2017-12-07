@@ -1,6 +1,6 @@
 package org.make.api.idea
 
-import org.make.api.idea.IdeaExceptions.IdeaAlreadyExistsException
+import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.reference._
@@ -20,7 +20,7 @@ trait IdeaService extends ShortenedNames {
              country: Option[String],
              operation: Option[String],
              question: Option[String]): Future[Idea]
-  def update(name: String): Future[Idea]
+  def update(ideaId: IdeaId, name: String): Future[Int]
 }
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
@@ -52,6 +52,14 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
       }
     }
 
-    override def update(name: String): Future[Idea] = ???
+    override def update(ideaId: IdeaId, name: String): Future[Int] = {
+      persistentIdeaService.findOne(ideaId).flatMap { result =>
+        if (!result.isDefined) {
+          Future.failed(IdeaDoesnotExistsException(ideaId.value))
+        } else {
+          persistentIdeaService.modify(ideaId = ideaId, name = name)
+        }
+      }
+    }
   }
 }

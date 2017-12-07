@@ -9,8 +9,8 @@ import spray.json.{JsString, JsValue, JsonFormat}
 
 final case class Idea(ideaId: IdeaId,
                       name: String,
-                      language: Option[String],
-                      country: Option[String],
+                      language: Option[String] = None,
+                      country: Option[String] = None,
                       operation: Option[String] = None,
                       question: Option[String] = None)
     extends MakeSerializable

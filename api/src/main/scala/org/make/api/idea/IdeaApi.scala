@@ -19,7 +19,7 @@ import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Idea")
-@Path(value = "/")
+@Path(value = "/ideas")
 trait IdeaApi extends MakeAuthenticationDirectives {
   this: IdeaServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
@@ -39,9 +39,9 @@ trait IdeaApi extends MakeAuthenticationDirectives {
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.idea.CreateIdeaRequest"))
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
-  @Path(value = "/idea")
+  @Path(value = "/")
   def createIdea: Route = post {
-    path("idea") {
+    path("ideas") {
       makeTrace("CreateIdea") { requestContext =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           authorize(userAuth.user.roles.contains(RoleAdmin)) {
@@ -94,8 +94,8 @@ trait IdeaApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.idea.UpdateIdeaRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
-  @Path(value = "/ideas/{ideaId}")
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaId])))
+  @Path(value = "/{ideaId}")
   def updateIdea: Route = put {
     path("ideas" / ideaId) { ideaId =>
       makeTrace("UpdateIdea") { requestContext =>
@@ -103,8 +103,8 @@ trait IdeaApi extends MakeAuthenticationDirectives {
           requireAdminRole(auth.user) {
             decodeRequest {
               entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
-                provideAsync(ideaService.update(name = request.name)) { idea =>
-                  complete(idea)
+                onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
+                  complete(ideaId)
                 }
               }
             }
