@@ -1,5 +1,8 @@
 package org.make.api.sequence
 
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
+
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeTest
 import org.make.api.proposal.SelectionAlgorithm
@@ -10,8 +13,9 @@ import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
 
 import scala.concurrent.Future
+import scala.util.Random
 
-class SelectionAlgorithmTest extends MakeTest {
+class SelectionAlgorithmTest extends MakeTest with StrictLogging {
 
   val defaultThreshold = 100
   val defaultSize = 12
@@ -288,6 +292,50 @@ class SelectionAlgorithmTest extends MakeTest {
       sequenceProposals.contains(ProposalId("proposal1")) should be(false)
     }
 
+    scenario("check first in first out behavior") {
+
+      val newProposalIds: Seq[ProposalId] = (1 to defaultSize).map(i    => ProposalId(s"newProposal$i"))
+      val testedProposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"testedProposal$i"))
+
+      val newProposals: Seq[Proposal] =
+        newProposalIds.zipWithIndex.map {
+          case (id, i) =>
+            fakeProposal(
+              id,
+              Map(VoteKey.Agree -> 0),
+              Seq.empty,
+              ZonedDateTime.parse("2017-12-07T16:00:00Z").plus(i, ChronoUnit.MINUTES)
+            )
+        }
+
+      val newProposalsRandom = Random.shuffle(newProposals)
+
+      val testedProposals: Seq[Proposal] =
+        testedProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
+
+      val proposals: Seq[Proposal] = newProposalsRandom ++ testedProposals
+
+      val sequenceProposals =
+        SelectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, defaultThreshold, Seq.empty)
+
+      logger.debug(sequenceProposals.map(_.value).sorted.mkString(", "))
+
+      sequenceProposals.size should be(defaultSize)
+      sequenceProposals.size should be(defaultSize)
+      sequenceProposals.contains(ProposalId("newProposal1")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal2")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal3")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal4")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal5")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal6")) should be(true)
+      sequenceProposals.contains(ProposalId("newProposal7")) should be(false)
+      sequenceProposals.contains(ProposalId("newProposal8")) should be(false)
+      sequenceProposals.contains(ProposalId("newProposal9")) should be(false)
+      sequenceProposals.contains(ProposalId("newProposal10")) should be(false)
+      sequenceProposals.contains(ProposalId("newProposal11")) should be(false)
+      sequenceProposals.contains(ProposalId("newProposal12")) should be(false)
+    }
+
   }
 
 }
@@ -310,14 +358,17 @@ object SelectionAlgorithmTest extends StrictLogging {
     }
   }
 
-  def fakeProposal(id: ProposalId, votes: Map[VoteKey, Int], duplicates: Seq[ProposalId]): Proposal = {
+  def fakeProposal(id: ProposalId,
+                   votes: Map[VoteKey, Int],
+                   duplicates: Seq[ProposalId],
+                   createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
       author = UserId("fake"),
       content = "fake",
       slug = "fake",
       status = ProposalStatus.Accepted,
-      createdAt = Some(DateHelper.now()),
+      createdAt = Some(createdAt),
       updatedAt = None,
       votes = votes.map {
         case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)

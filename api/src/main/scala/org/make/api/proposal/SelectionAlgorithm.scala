@@ -131,8 +131,8 @@ object SelectionAlgorithm extends StrictLogging {
         proposals
           .sortWith((first, second) => {
             (for {
-              firstCreation  <- first.updatedAt
-              secondCreation <- second.updatedAt
+              firstCreation  <- first.createdAt
+              secondCreation <- second.createdAt
             } yield {
               firstCreation.isBefore(secondCreation)
             }).getOrElse(false)
