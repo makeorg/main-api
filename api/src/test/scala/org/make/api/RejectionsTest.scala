@@ -6,11 +6,13 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.knutwalker.akka.http.support.CirceHttpSupport
-import io.circe.generic.auto._
+import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.{CirceFormatters, ValidationError}
 import org.mockito.Mockito.when
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 
 class RejectionsTest
     extends MakeUnitTest
@@ -31,11 +33,13 @@ class RejectionsTest
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
 
-  val route: Route = sealRoute(post {
-    path("test") {
-      decodeRequest {
-        entity(as[TestRequest]) { _ =>
-          complete(StatusCodes.OK)
+  val route: Route = sealRoute(handleExceptions(MakeApi.exceptionHandler("test", "123")) {
+    post {
+      path("test") {
+        decodeRequest {
+          entity(as[TestRequest]) { _ =>
+            complete(StatusCodes.OK)
+          }
         }
       }
     }
@@ -47,6 +51,7 @@ class RejectionsTest
       val invalidJson = "not a json"
       Post("/test", HttpEntity(ContentTypes.`application/json`, invalidJson)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
+        println(responseEntity.toString)
         entityAs[Seq[ValidationError]].size should be(1)
       }
     }
@@ -96,3 +101,8 @@ class RejectionsTest
 }
 
 final case class TestRequest(field1: String, field2: Int, field3: LocalDate) {}
+
+object TestRequest extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[TestRequest] = deriveEncoder[TestRequest]
+  implicit val decoder: Decoder[TestRequest] = deriveDecoder[TestRequest]
+}

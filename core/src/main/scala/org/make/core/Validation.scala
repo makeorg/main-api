@@ -1,6 +1,8 @@
 package org.make.core
 
-import io.circe.generic.auto._
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 
 import scala.util.matching.Regex
@@ -142,3 +144,8 @@ case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception
 }
 
 case class ValidationError(field: String, message: Option[String])
+
+object ValidationError {
+  implicit val encoder: ObjectEncoder[ValidationError] = deriveEncoder[ValidationError]
+  implicit val decoder: Decoder[ValidationError] = deriveDecoder[ValidationError]
+}

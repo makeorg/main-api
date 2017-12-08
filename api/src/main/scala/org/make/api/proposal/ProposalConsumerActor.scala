@@ -26,7 +26,7 @@ import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class ProposalConsumerActor(proposalCoordinator: ActorRef,
                             userService: UserService,

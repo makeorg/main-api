@@ -9,10 +9,9 @@ import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQueryDefi
 import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, IdQueryDefinition}
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.auto._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
-import org.make.core.{CirceFormatters, DateHelper}
+import org.make.core.DateHelper
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 
@@ -38,7 +37,7 @@ object ProposalSearchEngine {
   val proposalIndexName: String = "proposal"
 }
 
-trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent with CirceFormatters {
+trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent =>
 
   override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {

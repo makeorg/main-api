@@ -75,8 +75,7 @@ trait AvroSerializers {
   implicit object SequenceStatusFromValue extends FromValue[SequenceStatus] {
     override def apply(value: Any, field: Field): SequenceStatus =
       SequenceStatus.statusMap
-        .get(value.toString)
-        .getOrElse(throw new IllegalArgumentException(s"$value is not a SequenceStatus"))
+        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a SequenceStatus"))
   }
 
 }

@@ -7,7 +7,6 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.auto._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent

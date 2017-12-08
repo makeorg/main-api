@@ -9,7 +9,5 @@ trait MakeApiTestUtils extends MakeUnitTest with ScalatestRouteTest with MakeDir
   this: IdGeneratorComponent with MakeSettingsComponent =>
 
   def sealRoute(route: Route): Route =
-    Route.seal(makeDefaultHeadersAndHandlers() {
-      route
-    })
+    Route.seal(handleRejections(MakeApi.rejectionHandler)(route))
 }

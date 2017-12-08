@@ -7,7 +7,7 @@ import io.gatling.http.protocol.HttpProtocolBuilder
 import org.make.fixtures.Proposal.proposalsByUsername
 import org.make.fixtures.User._
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
 class Core extends Simulation {

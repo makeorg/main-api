@@ -6,7 +6,7 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.core.DateHelper
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 object ShardedSequence {
   def props(dateHelper: DateHelper): Props = Props(new ShardedSequence(dateHelper = dateHelper))
@@ -33,7 +33,7 @@ class ShardedSequence(dateHelper: DateHelper) extends SequenceActor(dateHelper) 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSequence)
     case StopSequence                  => context.stop(self)
-    case SaveSnapshotSuccess(_)        => log.info("Snapshot saved")
+    case SaveSnapshotSuccess(_)        => log.debug("Snapshot saved")
     case SaveSnapshotFailure(_, cause) => log.error("Error while saving snapshot", cause)
   }
 }

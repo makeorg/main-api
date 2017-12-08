@@ -1,5 +1,8 @@
 package org.make.api.proposal
 
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
@@ -16,12 +19,20 @@ final case class ProposeProposalRequest(content: String) {
   validate(minLength("content", minProposalLength, content))
 }
 
+object ProposeProposalRequest {
+  implicit val decoder: Decoder[ProposeProposalRequest] = deriveDecoder[ProposeProposalRequest]
+}
+
 final case class UpdateProposalRequest(newContent: Option[String],
                                        theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId]) {
   validate(Validation.requireNonEmpty("tags", tags))
+}
+
+object UpdateProposalRequest {
+  implicit val decoder: Decoder[UpdateProposalRequest] = deriveDecoder[UpdateProposalRequest]
 }
 
 final case class ValidateProposalRequest(newContent: Option[String],
@@ -33,8 +44,18 @@ final case class ValidateProposalRequest(newContent: Option[String],
   validate(Validation.requireNonEmpty("tags", tags))
 }
 
+object ValidateProposalRequest {
+  implicit val decoder: Decoder[ValidateProposalRequest] = deriveDecoder[ValidateProposalRequest]
+  implicit val encoder: ObjectEncoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
+}
+
 final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {
   validate(Validation.mandatoryField("refusalReason", refusalReason))
+}
+
+object RefuseProposalRequest {
+  implicit val decoder: Decoder[RefuseProposalRequest] = deriveDecoder[RefuseProposalRequest]
+  implicit val encoder: ObjectEncoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
 }
 
 final case class ContextFilterRequest(operation: Option[String] = None,
@@ -46,7 +67,12 @@ final case class ContextFilterRequest(operation: Option[String] = None,
   }
 }
 
-final case class SearchRequest(themesIds: Option[Seq[String]] = None,
+object ContextFilterRequest {
+  implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
+}
+
+final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
+                               themesIds: Option[Seq[String]] = None,
                                tagsIds: Option[Seq[String]] = None,
                                labelsIds: Option[Seq[String]] = None,
                                trending: Option[String] = None,
@@ -70,7 +96,8 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter.apply),
+        proposals = proposalIds.map(ProposalSearchFilter.apply),
+        themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
@@ -85,7 +112,12 @@ final case class SearchRequest(themesIds: Option[Seq[String]] = None,
   }
 }
 
-final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
+object SearchRequest {
+  implicit val decoder: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
+}
+
+final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None,
+                                         themesIds: Option[Seq[String]] = None,
                                          tagsIds: Option[Seq[String]] = None,
                                          labelsIds: Option[Seq[String]] = None,
                                          trending: Option[String] = None,
@@ -99,7 +131,8 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
-        theme = themesIds.map(ThemeSearchFilter.apply),
+        proposals = proposalIds.map(ProposalSearchFilter.apply),
+        themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
@@ -112,6 +145,18 @@ final case class ExhaustiveSearchRequest(themesIds: Option[Seq[String]] = None,
   }
 }
 
+object ExhaustiveSearchRequest {
+  implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
+}
+
 final case class VoteProposalRequest(voteKey: VoteKey)
 
+object VoteProposalRequest {
+  implicit val decoder: Decoder[VoteProposalRequest] = deriveDecoder[VoteProposalRequest]
+}
+
 final case class QualificationProposalRequest(qualificationKey: QualificationKey, voteKey: VoteKey)
+
+object QualificationProposalRequest {
+  implicit val decoder: Decoder[QualificationProposalRequest] = deriveDecoder[QualificationProposalRequest]
+}

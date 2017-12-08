@@ -14,7 +14,7 @@ import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.KafkaConsumerActor.Consume
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global

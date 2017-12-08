@@ -20,14 +20,10 @@ import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
-import org.make.semantic.text.document.Corpus
-import org.make.semantic.text.feature.wordvec.WordVecOption
-import org.make.semantic.text.feature.{FeatureExtractor, WordVecFT}
-import org.make.semantic.text.model.duplicate.{DuplicateDetector, SimilarDocResult}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -127,10 +123,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
   override lazy val proposalService: ProposalService = new ProposalService {
 
     implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
-
-    private val duplicateDetector: DuplicateDetector[IndexedProposal] =
-      new DuplicateDetector(lang = "fr", 0.0)
-    private val featureExtractor: FeatureExtractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption))))
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -427,13 +419,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposalId)
         )
       )
-
       elasticsearchProposalAPI.findProposalById(proposalId).flatMap {
         case Some(indexedProposal) =>
           elasticsearchProposalAPI
             .searchProposals(
-              SearchQuery(
-                // TODO add language filter
+              SearchQuery( // TODO add language filter
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
@@ -443,46 +433,31 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 )
               )
             )
-            .map({ response =>
-              // do duplicate detection
-              val (
-                predictedResults: Seq[SimilarDocResult[IndexedProposal]],
-                predictedDuplicates: Seq[IndexedProposal]
-              ) = getPredictedDuplicateResults(indexedProposal, response.results)
-
-              eventBusService.publish(
-                PredictDuplicate(
-                  proposalId = proposalId,
-                  predictedDuplicates = predictedDuplicates.map(_.id),
-                  predictedScores = predictedResults.map(_.score),
-                  algoLabel = duplicateDetector.getClass.getSimpleName
+            .flatMap { response =>
+              DuplicateAlgorithm
+                .getDuplicates(
+                  indexedProposal,
+                  response.results,
+                  (proposalId: ProposalId) => {
+                    proposalCoordinatorService.viewProposal(proposalId, requestContext)
+                  },
+                  duplicateDetectorConfiguration.maxResults
                 )
-              )
-
-              ProposalsSearchResult(predictedDuplicates.size, predictedDuplicates)
-            })
+                .flatMap {
+                  case (duplicates: Seq[IndexedProposal], scores: Seq[Double]) =>
+                    eventBusService.publish(
+                      PredictDuplicate(
+                        proposalId = proposalId,
+                        predictedDuplicates = duplicates.map(_.id),
+                        predictedScores = scores,
+                        algoLabel = DuplicateAlgorithm.getModelName
+                      )
+                    )
+                    Future.successful(ProposalsSearchResult(duplicates.length, duplicates))
+                }
+            }
         case None => Future.successful(ProposalsSearchResult.empty)
       }
-    }
-
-    private def getPredictedDuplicateResults(
-      indexedProposal: IndexedProposal,
-      candidates: Seq[IndexedProposal]
-    ): (Seq[SimilarDocResult[IndexedProposal]], Seq[IndexedProposal]) = {
-      val corpus = Corpus(
-        rawCorpus = candidates.filter(_.id != indexedProposal.id).map(_.content),
-        extractor = featureExtractor,
-        lang = indexedProposal.language,
-        maybeCorpusMeta = Some(candidates.filter(_.id != indexedProposal.id))
-      )
-
-      val predictedResults: Seq[SimilarDocResult[IndexedProposal]] = duplicateDetector
-        .getSimilar(indexedProposal.content, corpus, duplicateDetectorConfiguration.maxResults)
-
-      val predictedDuplicates: Seq[IndexedProposal] =
-        predictedResults.flatMap(_.candidateDoc.document.meta)
-
-      (predictedResults, predictedDuplicates)
     }
 
     private def retrieveVoteHistory(proposalId: ProposalId,

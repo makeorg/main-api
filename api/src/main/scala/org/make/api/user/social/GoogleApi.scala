@@ -2,6 +2,7 @@ package org.make.api.user.social
 
 import java.nio.charset.Charset
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
@@ -12,7 +13,7 @@ import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 trait GoogleApiComponent {
   def googleApi: GoogleApi
@@ -26,7 +27,7 @@ trait DefaultGoogleApiComponent extends GoogleApiComponent {
   self: ActorSystemComponent =>
 
   override lazy val googleApi: GoogleApi = new GoogleApi with StrictLogging {
-    private implicit val system = actorSystem
+    private implicit val system: ActorSystem = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private val http: HttpExt = Http()
 

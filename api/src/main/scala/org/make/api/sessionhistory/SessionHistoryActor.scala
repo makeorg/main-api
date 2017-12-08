@@ -10,7 +10,7 @@ import org.make.core.session._
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._

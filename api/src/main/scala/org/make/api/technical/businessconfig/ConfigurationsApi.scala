@@ -3,7 +3,6 @@ package org.make.api.technical.businessconfig
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.server.Route
-import io.circe.generic.auto._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent

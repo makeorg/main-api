@@ -84,35 +84,36 @@ services:
         http.host: elasticsearch
         transport.host: localhost
   zookeeper:
-    image: zookeeper:3.4.10
-    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:4.0.0
     environment:
-      ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=localhost:2888:3888
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - 12181:2181
     networks:
       - makeapi
   kafka:
-    image: wurstmeister/kafka:0.11.0.0
-    hostname: kafka
+    image: confluentinc/cp-kafka:4.0.0
     environment:
-      KAFKA_ADVERTISED_HOST: kafka
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_BROKER_ID: 42
     ports:
       - 9092:9092
       - 18081:8081
+      - 10000:9000
     networks:
       - makeapi
+    restart: on-failure:2
   schema_registry:
-    image: cgswong/confluent-schema-registry:2.0.1
-    hostname: schema_registry
+    image: confluentinc/cp-schema-registry:4.0.0
     depends_on:
       - kafka
     networks:
       - makeapi
     environment:
-        ZOOKEEPER_PORT_2181_TCP_ADDR: zookeeper
-        ZOOKEEPER_PORT_2181_TCP_PORT: 2181
+        SCHEMA_REGISTRY_HOST_NAME: schema_registry
+        SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper:2181/kafka
+        SCHEMA_REGISTRY_LISTENERS: http://schema_registry:8081
     restart: on-failure:2
   cockroach:
     image: cockroachdb/cockroach:v1.1.0

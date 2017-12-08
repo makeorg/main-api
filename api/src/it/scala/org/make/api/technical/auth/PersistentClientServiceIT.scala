@@ -6,7 +6,7 @@ import org.make.api.DatabaseTest
 import org.make.core.auth.{Client, ClientId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClientServiceComponent {

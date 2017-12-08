@@ -4,7 +4,7 @@ import com.github.dockerjava.jaxrs.JerseyDockerCmdExecFactory
 import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}
 import com.whisk.docker.{DockerContainer, DockerFactory, DockerKit, DockerReadyChecker}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 trait DockerElasticsearchService extends DockerKit {
 

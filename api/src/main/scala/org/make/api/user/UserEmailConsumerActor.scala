@@ -11,7 +11,7 @@ import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 class UserEmailConsumerActor(userService: UserService)
     extends KafkaConsumerActor[UserEventWrapper]

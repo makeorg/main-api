@@ -5,8 +5,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
-import kamon.akka.http.KamonTraceDirectives
-import kamon.trace.Tracer
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
@@ -21,20 +19,12 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttpSupport with CirceFormatters {
+trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent with MakeSettingsComponent =>
 
   val sessionIdKey: String = "make-session-id"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
-
-  def startTimeFromTrace: Long = getFromTrace("start-time", "0").toLong
-
-  def routeNameFromTrace: String = getFromTrace("route-name")
-
-  def externalIdFromTrace: String = getFromTrace("external-id")
-
-  def requestIdFromTrace: String = getFromTrace("id")
 
   def requestId: Directive1[String] = BasicDirectives.provide(idGenerator.nextId())
 
@@ -43,22 +33,20 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
   def sessionId: Directive1[String] =
     optionalCookie(sessionIdKey).map(_.map(_.value).getOrElse(idGenerator.nextId()))
 
-  private def getFromTrace(key: String, default: String = "<unknown>"): String =
-    Tracer.currentContext.tags.getOrElse(key, default)
-
   def addMakeHeaders(requestId: String,
                      routeName: String,
                      sessionId: String,
                      startTime: Long,
                      addCookie: Boolean,
-                     externalId: String): Directive0 = {
-    mapResponseHeaders { (headers: immutable.Seq[HttpHeader]) =>
-      val mandatoryHeaders: immutable.Seq[HttpHeader] = headers ++ Seq(
+                     externalId: String,
+                     origin: Option[String]): Directive0 = {
+    respondWithDefaultHeaders {
+      val mandatoryHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
         RequestTimeHeader(startTime),
         RequestIdHeader(requestId),
         RouteNameHeader(routeName),
         ExternalIdHeader(externalId)
-      )
+      ) ++ defaultCorsHeaders(origin)
 
       if (addCookie) {
         mandatoryHeaders ++ Seq(
@@ -79,13 +67,18 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
     }
   }
 
-  def makeTrace(name: String, tags: Map[String, String] = Map.empty): Directive1[RequestContext] = {
+  def makeTrace(name: String): Directive1[RequestContext] = {
     for {
       maybeCookie        <- optionalCookie(sessionIdKey)
       requestId          <- requestId
       startTime          <- startTime
       sessionId          <- sessionId
       externalId         <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin             <- optionalHeaderValueByName(Origin.name)
+      _                  <- makeAuthCookieHandlers()
+      _                  <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
+      _                  <- handleExceptions(MakeApi.exceptionHandler(name, requestId))
+      _                  <- handleRejections(MakeApi.rejectionHandler)
       maybeTheme         <- optionalHeaderValueByName(ThemeIdHeader.name)
       maybeOperation     <- optionalHeaderValueByName(OperationHeader.name)
       maybeSource        <- optionalHeaderValueByName(SourceHeader.name)
@@ -96,17 +89,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
       maybeHostName      <- optionalHeaderValueByName(HostNameHeader.name)
       maybeIpAddress     <- extractClientIP
       maybeGetParameters <- optionalHeaderValueByName(GetParametersHeader.name)
-      _ <- traceName(
-        name,
-        tags ++ Map(
-          "id" -> requestId,
-          sessionIdKey -> sessionId,
-          "external-id" -> externalId,
-          "start-time" -> startTime.toString,
-          "route-name" -> name
-        )
-      )
-      _ <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId)
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -155,13 +137,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
       }
     }
 
-  def defaultHeadersFromTrace: immutable.Seq[HttpHeader] = immutable.Seq(
-    RequestIdHeader(requestIdFromTrace),
-    RequestTimeHeader(startTimeFromTrace),
-    RouteNameHeader(routeNameFromTrace),
-    ExternalIdHeader(externalIdFromTrace)
-  )
-
   def getMakeHttpOrigin(mayBeOriginValue: Option[String]): Option[HttpOrigin] = {
     mayBeOriginValue.flatMap { origin =>
       if (authorizedUris.contains(origin)) {
@@ -192,32 +167,6 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
 
   }
 
-  private def getHeaderFromRequest(request: HttpRequest): Option[String] = {
-    request.header[Origin].map { header =>
-      header.value()
-    }
-  }
-
-  def makeDefaultHeadersAndHandlers(): Directive0 =
-    mapInnerRoute { route =>
-      encodeResponse {
-        makeAuthCookieHandlers() {
-          extractRequest { request =>
-            val mayBeOriginHeaderValue: Option[String] = getHeaderFromRequest(request)
-            makeAuthCookieHandlers() {
-              respondWithDefaultHeaders(defaultHeadersFromTrace ++ defaultCorsHeaders(mayBeOriginHeaderValue)) {
-                handleExceptions(MakeApi.exceptionHandler) {
-                  handleRejections(MakeApi.rejectionHandler) {
-                    route
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
   def makeAuthCookieHandlers(): Directive0 =
     mapInnerRoute { route =>
       optionalCookie(sessionCookieName) {
@@ -231,8 +180,7 @@ trait MakeDirectives extends Directives with KamonTraceDirectives with CirceHttp
 
   def corsHeaders(): Directive0 =
     mapInnerRoute { route =>
-      extractRequest { request =>
-        val mayBeOriginHeaderValue: Option[String] = getHeaderFromRequest(request)
+      optionalHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
           optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
             case Some(requestHeader) =>
