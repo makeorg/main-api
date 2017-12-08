@@ -102,7 +102,14 @@ object SelectionAlgorithm extends StrictLogging {
     }
   }
 
-  /* uses Agresti-Coull estimate */
+  /*
+   * Returns the upper bound estimate for the engagement rate
+   * it uses Agresti-Coull estimate: "add 2 successes and 2 failures"
+   * https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Agresti–Coull_interval
+   * nn is the number of trials estimate
+   * pp is the probability estimate
+   * sd is the standard deviation estimate
+   * */
   def computeEngagementRateEstimate(proposal: Proposal): Double = {
     val votes = proposal.votes.map(_.count).sum
     val forAgainst = proposal.votes.filter(v => v.key == VoteKey.Agree || v.key == VoteKey.Disagree).map(_.count).sum
