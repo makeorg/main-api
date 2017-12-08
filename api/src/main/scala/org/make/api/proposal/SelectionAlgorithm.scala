@@ -61,10 +61,10 @@ object SelectionAlgorithm extends StrictLogging {
                               testedProposalEngagementThreshold: Double,
                               includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
-    val includedProposals = proposals.filter(p           => includeList.contains(p.proposalId))
-    val proposalsToExclude = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
+    val includedProposals: Seq[Proposal] = proposals.filter(p             => includeList.contains(p.proposalId))
+    val proposalsToExclude: Seq[ProposalId] = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
 
-    val availableProposals =
+    val availableProposals: Seq[Proposal] =
       proposals.filter(
         p =>
           !proposalsToExclude.contains(p.proposalId) &&
@@ -73,26 +73,28 @@ object SelectionAlgorithm extends StrictLogging {
             !p.similarProposals.exists(proposal => includeList.contains(proposal))
       )
 
-    val proposalsToChoose = targetLength - includeList.size
-    val targetNewProposalsCount = proposalsToChoose / 2
+    val proposalsToChoose: Int = targetLength - includeList.size
+    val targetNewProposalsCount: Int = proposalsToChoose / 2
 
-    val newProposals = availableProposals.filter { proposal =>
-      val votes = proposal.votes.map(_.count).sum
+    val newProposals: Seq[Proposal] = availableProposals.filter { proposal =>
+      val votes: Int = proposal.votes.map(_.count).sum
       votes < newProposalVoteCount
     }
 
-    val newIncludedProposals = chooseNewProposals(newProposals, targetNewProposalsCount)
-    val newProposalsSimilars = newIncludedProposals.flatMap(_.similarProposals) ++ newProposals.map(_.proposalId)
+    val newIncludedProposals: Seq[Proposal] = chooseNewProposals(newProposals, targetNewProposalsCount)
+    val newProposalsSimilars: Seq[ProposalId] = newIncludedProposals.flatMap(_.similarProposals) ++ newProposals.map(
+      _.proposalId
+    )
 
-    val testedProposals = availableProposals.filter { proposal =>
-      val votes = proposal.votes.map(_.count).sum
-      val engagement_rate = computeEngagementRateEstimate(proposal)
+    val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
+      val votes: Int = proposal.votes.map(_.count).sum
+      val engagement_rate: Double = computeEngagementRateEstimate(proposal)
       votes >= newProposalVoteCount && !newProposalsSimilars.contains(proposal.proposalId) && engagement_rate > testedProposalEngagementThreshold
     }
-    val testedProposalCount = proposalsToChoose - newIncludedProposals.size
+    val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
     val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(testedProposals, testedProposalCount)
 
-    val sequence = includeList ++ Random.shuffle(
+    val sequence: Seq[ProposalId] = includeList ++ Random.shuffle(
       newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
     )
     if (sequence.size < targetLength) {
@@ -124,7 +126,7 @@ object SelectionAlgorithm extends StrictLogging {
                          targetLength: Int,
                          proposals: Seq[Proposal],
                          availableProposals: Seq[Proposal]): Seq[ProposalId] = {
-    val excludeList =
+    val excludeList: Set[ProposalId] =
       (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
 
     sequence ++ chooseNewProposals(
@@ -137,7 +139,7 @@ object SelectionAlgorithm extends StrictLogging {
     if (proposals.isEmpty || count <= 0) {
       Seq.empty
     } else {
-      val chosen = algorithm(proposals)
+      val chosen: Proposal = algorithm(proposals)
       Seq(chosen) ++ chooseProposals(
         count = count - 1,
         proposals =
