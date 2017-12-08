@@ -12,15 +12,14 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Idea, IdeaId}
-import org.make.core.user.Role.RoleAdmin
 import org.make.core.{HttpCodes, Validation}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Idea")
-@Path(value = "/ideas")
-trait IdeaApi extends MakeAuthenticationDirectives {
+@Api(value = "Moderation Idea")
+@Path(value = "/moderation/ideas")
+trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   this: IdeaServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   @ApiOperation(
@@ -41,10 +40,10 @@ trait IdeaApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
   @Path(value = "/")
   def createIdea: Route = post {
-    path("ideas") {
+    path("moderation" / "ideas") {
       makeTrace("CreateIdea") { requestContext =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          authorize(userAuth.user.roles.contains(RoleAdmin)) {
+          requireAdminRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
                 provideAsync(ideaService.fetchOneByName(request.name)) { idea =>
@@ -97,7 +96,7 @@ trait IdeaApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaId])))
   @Path(value = "/{ideaId}")
   def updateIdea: Route = put {
-    path("ideas" / ideaId) { ideaId =>
+    path("moderation" / "ideas" / ideaId) { ideaId =>
       makeTrace("UpdateIdea") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {

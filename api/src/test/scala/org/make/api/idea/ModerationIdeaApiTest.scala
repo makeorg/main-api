@@ -21,9 +21,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-class IdeaApiTest
+class ModerationIdeaApiTest
     extends MakeApiTestUtils
-    with IdeaApi
+    with ModerationIdeaApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with IdeaServiceComponent
@@ -112,7 +112,7 @@ class IdeaApiTest
       Given("an un authenticated user")
       When("the user wants to create an idea")
       Then("he should get an unauthorized (401) return code")
-      Post("/ideas").withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}""")) ~>
+      Post("/moderation/ideas").withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}""")) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -123,7 +123,7 @@ class IdeaApiTest
       When("the user wants to create an idea")
       Then("he should get an forbidden (403) return code")
 
-      Post("/ideas")
+      Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -135,7 +135,7 @@ class IdeaApiTest
       When("the user wants to create an idea")
       Then("the idea should be saved if valid")
 
-      Post("/ideas")
+      Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -147,7 +147,7 @@ class IdeaApiTest
       When("the user wants to create an idea")
       Then("the idea should be saved if valid")
 
-      Post("/ideas")
+      Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -161,7 +161,7 @@ class IdeaApiTest
       When("the user wants to create an idea")
       Then("the idea should be saved if valid")
 
-      Post("/ideas")
+      Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"bibi": "$fooIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -174,7 +174,7 @@ class IdeaApiTest
       Given("an un authenticated user")
       When("the user wants to update an idea")
       Then("he should get an unauthorized (401) return code")
-      Put(s"/ideas/${fooIdeaId.value}")
+      Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}""")) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -186,7 +186,7 @@ class IdeaApiTest
       When("the user wants to update an idea")
       Then("he should get an forbidden (403) return code")
 
-      Put(s"/ideas/${fooIdeaId.value}")
+      Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -198,7 +198,7 @@ class IdeaApiTest
       When("the user wants to update an idea")
       Then("the idea should be saved if valid")
 
-      Put(s"/ideas/${fooIdeaId.value}")
+      Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -210,7 +210,7 @@ class IdeaApiTest
       When("the user wants to update an idea")
       Then("the idea should be saved if valid")
 
-      Put(s"/ideas/${fooIdeaId.value}")
+      Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)

@@ -39,7 +39,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
         withSQL {
           select
             .from(PersistentIdea.as(ideaAlias))
-            .where(sqls.eq(ideaAlias.uuid, ideaId.value))
+            .where(sqls.eq(ideaAlias.id, ideaId.value))
         }.map(PersistentIdea.apply()).single.apply
       })
 
@@ -68,7 +68,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
           insert
             .into(PersistentIdea)
             .namedValues(
-              column.uuid -> idea.ideaId.value,
+              column.id -> idea.ideaId.value,
               column.name -> idea.name,
               column.language -> idea.language,
               column.country -> idea.country,
@@ -89,7 +89,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
             .set(column.name -> name)
             .where(
               sqls
-                .eq(column.uuid, ideaId.value)
+                .eq(column.id, ideaId.value)
             )
         }.update().apply()
       })
@@ -99,7 +99,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
 object DefaultPersistentIdeaServiceComponent {
 
-  case class PersistentIdea(uuid: String,
+  case class PersistentIdea(id: String,
                             name: String,
                             language: Option[String],
                             country: Option[String],
@@ -109,7 +109,7 @@ object DefaultPersistentIdeaServiceComponent {
                             updatedAt: ZonedDateTime) {
     def toIdea: Idea =
       Idea(
-        ideaId = IdeaId(uuid),
+        ideaId = IdeaId(id),
         name = name,
         language = language,
         country = country,
@@ -121,7 +121,7 @@ object DefaultPersistentIdeaServiceComponent {
   object PersistentIdea extends SQLSyntaxSupport[PersistentIdea] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("uuid", "name", "language", "country", "operation", "question", "created_at", "updated_at")
+      Seq("id", "name", "language", "country", "operation", "question", "created_at", "updated_at")
 
     override val tableName: String = "idea"
 
@@ -131,7 +131,7 @@ object DefaultPersistentIdeaServiceComponent {
       ideaResultName: ResultName[PersistentIdea] = ideaAlias.resultName
     )(resultSet: WrappedResultSet): PersistentIdea = {
       PersistentIdea.apply(
-        uuid = resultSet.string(ideaResultName.uuid),
+        id = resultSet.string(ideaResultName.id),
         name = resultSet.string(ideaResultName.name),
         language = resultSet.stringOpt(ideaResultName.language),
         country = resultSet.stringOpt(ideaResultName.country),

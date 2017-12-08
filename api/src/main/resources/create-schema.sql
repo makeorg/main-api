@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS theme_translation (
 );
 %
 CREATE TABLE IF NOT EXISTS idea (
-  uuid  VARCHAR(256) PRIMARY KEY,
+  id  VARCHAR(256) PRIMARY KEY,
   name STRING,
   operation VARCHAR(256),
   question VARCHAR(256),
