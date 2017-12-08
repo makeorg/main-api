@@ -11,12 +11,12 @@ Configuration:
   Loggers:
     logger:
       - name: org.make
-        level: debug
+        level: info
         additivity: false
         AppenderRef:
           - ref: console
       - name: akka.event.slf4j
-        level: debug
+        level: info
         additivity: false
         AppenderRef:
           - ref: console
