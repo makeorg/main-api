@@ -111,11 +111,12 @@ object SelectionAlgorithm extends StrictLogging {
    * sd is the standard deviation estimate
    * */
   def computeEngagementRateEstimate(proposal: Proposal): Double = {
-    val votes = proposal.votes.map(_.count).sum
-    val forAgainst = proposal.votes.filter(v => v.key == VoteKey.Agree || v.key == VoteKey.Disagree).map(_.count).sum
-    val nn = (votes + 4).toDouble
-    val pp = (forAgainst + 2) / nn
-    val sd = Math.sqrt(pp * (1 - pp) / nn)
+    val votes: Int = proposal.votes.map(_.count).sum
+    val forAgainst: Int =
+      proposal.votes.filter(v => v.key == VoteKey.Agree || v.key == VoteKey.Disagree).map(_.count).sum
+    val nn: Double = (votes + 4).toDouble
+    val pp: Double = (forAgainst + 2) / nn
+    val sd: Double = Math.sqrt(pp * (1 - pp) / nn)
     pp + 2 * sd
   }
 
