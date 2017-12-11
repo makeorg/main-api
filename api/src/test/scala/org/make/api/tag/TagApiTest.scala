@@ -2,16 +2,17 @@ package org.make.api.tag
 
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.{RequestContext, ValidationError}
 import org.make.core.auth.UserRights
-import org.make.core.reference.Tag
-import org.make.core.user.Role.{RoleCitizen, RoleModerator}
+import org.make.core.reference.{Tag, TagId}
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
@@ -46,17 +47,22 @@ class TagApiTest
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
+  val validAdminAccessToken = "my-valid-admin-access-token"
 
   val tokenCreationDate = new Date()
   private val citizenAccessToken =
     AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
   private val moderatorAccessToken =
     AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
+  private val adminAccessToken =
+    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
 
   when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
     .thenReturn(Future.successful(Some(citizenAccessToken)))
   when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
     .thenReturn(Future.successful(Some(moderatorAccessToken)))
+  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
+    .thenReturn(Future.successful(Some(adminAccessToken)))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
     .thenReturn(
@@ -72,14 +78,46 @@ class TagApiTest
       )
     )
 
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
+    .thenReturn(
+      Future
+        .successful(Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin)), None, Some("admin"), None)))
+    )
+
   val validTagText: String = "tag"
+  val existingValidTagSlug: String = "existing-tag"
+  val existingValidTagText: String = "existing tag"
   val specificValidTagText: String = "taxes/fiscalité"
   val specificValidTagSlug: String = "taxes-fiscalite"
+  val helloWorldTagText: String = "hello world"
+  val helloWorldTagSlug: String = "hello-world"
+  val fakeTag: String = "fake-tag"
+  val newTagNameText: String = "new tag name"
+  val newTagNameSlug: String = "new-tag-name"
 
   when(tagService.createTag(ArgumentMatchers.eq(validTagText)))
     .thenReturn(Future.successful(Tag(validTagText)))
   when(tagService.createTag(ArgumentMatchers.eq(specificValidTagText)))
     .thenReturn(Future.successful(Tag(specificValidTagText)))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
+    .thenReturn(Future.successful(None))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(newTagNameSlug))))
+    .thenReturn(Future.successful(None))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
+    .thenReturn(Future.successful(Some(Tag(helloWorldTagText))))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(existingValidTagSlug))))
+    .thenReturn(Future.successful(Some(Tag(existingValidTagText))))
+  when(tagService.findAllEnabled())
+    .thenReturn(Future.successful(Seq(Tag("tag1"), Tag("tag2"))))
+
+  when(
+    tagService.updateTag(
+      slug = ArgumentMatchers.eq(TagId(existingValidTagSlug)),
+      newTagLabel = ArgumentMatchers.eq(newTagNameText),
+      requestContext = ArgumentMatchers.any[RequestContext],
+      connectedUserId = ArgumentMatchers.any[Option[UserId]]
+    )
+  ).thenReturn(Future.successful(Some(Tag(newTagNameText))))
 
   val routes: Route = sealRoute(tagRoutes)
 
@@ -131,5 +169,129 @@ class TagApiTest
         tag.tagId.value should be(specificValidTagSlug)
       }
     }
+  }
+
+  feature("get a tag") {
+
+    scenario("tag not exist") {
+      Given(s"a tag id '$fakeTag' that not exist")
+      When(s"i get a tag from id '$fakeTag'")
+      Then("i should get a not found response")
+
+      Get(s"/tags/$fakeTag") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("valid tag") {
+      Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
+      When(s"i get a tag from id '$helloWorldTagSlug'")
+      Then("i should get an ok response")
+      And(s"i should get a tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug")
+
+      Get("/tags/hello-world").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val tag: Tag = entityAs[Tag]
+        tag.label should be(helloWorldTagText)
+        tag.tagId.value should be(helloWorldTagSlug)
+      }
+    }
+
+    scenario("list tag") {
+      Given("some registered tags")
+      When("i get list tag")
+      Then("i get a list of all tags")
+
+      Get("/tags") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val tags: Seq[Tag] = entityAs[Seq[Tag]]
+        tags.size should be(2)
+        tags(1).tagId.value should be("tag2")
+        tags(0).tagId.value should be("tag1")
+      }
+    }
+
+    scenario("update tag with anonymous user") {
+      Given("unauthenticated user")
+      When(s"i update tag from id '$fakeTag")
+      Then("i get a unauthorized response")
+      Put(s"/tags/$fakeTag") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("update tag with citizen user") {
+      Given("an authenticated user with role citizen")
+      When(s"i update tag from id '$fakeTag")
+      Then("i get a forbidden response")
+      Put(s"/tags/$fakeTag").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("update tag with moderator user") {
+      Given("an authenticated user with role citizen")
+      When(s"i update tag from id '$fakeTag")
+      Then("i get a forbidden response")
+      Put(s"/tags/$fakeTag")
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("update tag with non existant tag id") {
+      Given("an authenticated user with role admin")
+      And(s"a tag id '$fakeTag' that not exist")
+      When(s"i update tag from id '$fakeTag")
+      Then("i get a not found response")
+      Put(s"/tags/$fakeTag")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "test"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("update tag with an invalid request") {
+      Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
+      When(s"i update tag from id '$fakeTag' with an invalid body")
+      Then("i get a bad request response")
+      Put(s"/tags/$fakeTag")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("update tag to already existing tag") {
+      Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
+      And(s"a registered tag with a label '$existingValidTagText' and an id '$existingValidTagSlug'")
+      When(s"i update tag label with id '$helloWorldTagSlug' to '$existingValidTagText'")
+      Then("i get a bad request response")
+      And("an error message 'New tag already exist. Duplicates are not allowed'")
+      Put(s"/tags/$helloWorldTagSlug")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$existingValidTagText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "label")
+        contentError should be(
+          Some(ValidationError("label", Some("New tag already exist. Duplicates are not allowed")))
+        )
+      }
+    }
+
+    scenario("update tag success") {
+      Given(s"a registered tag with a label '$existingValidTagText' and an id '$existingValidTagSlug'")
+      When(s"i update tag label with id '$existingValidTagSlug' to '$newTagNameText'")
+      Then("i get a success response")
+      Put(s"/tags/$existingValidTagSlug")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$newTagNameText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val tag: Tag = entityAs[Tag]
+        tag.label should be(newTagNameText)
+        tag.tagId.value should be(newTagNameSlug)
+      }
+    }
+
   }
 }
