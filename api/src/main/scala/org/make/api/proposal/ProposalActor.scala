@@ -552,7 +552,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 theme = command.theme,
                 labels = command.labels,
                 tags = command.tags,
-                similarProposals = command.similarProposals
+                similarProposals = command.similarProposals,
+                newIdea = command.newIdea
               )
             )
           )
@@ -817,8 +818,11 @@ object ProposalActor {
     val arguments: Map[String, String] = Map(
       "theme" -> event.theme.map(_.value).mkString(", "),
       "tags" -> event.tags.map(_.value).mkString(", "),
-      "labels" -> event.labels.map(_.value).mkString(", ")
-    ).filter(!_._2.isEmpty)
+      "labels" -> event.labels.map(_.value).mkString(", "),
+      "idea" -> event.newIdea.map(_.value).mkString
+    ).filter {
+      case (_, value) => !value.isEmpty
+    }
     val moderator: UserId = event.moderator.get
     val action =
       ProposalAction(
@@ -833,7 +837,8 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.proposal.events,
         updatedAt = Some(event.eventDate),
-        similarProposals = event.similarProposals
+        similarProposals = event.similarProposals,
+        idea = event.newIdea
       )
 
     proposal = event.edition match {

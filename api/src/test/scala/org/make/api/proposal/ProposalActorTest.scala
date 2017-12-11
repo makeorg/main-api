@@ -9,7 +9,7 @@ import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -728,7 +728,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         theme = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        similarProposals = Seq()
+        similarProposals = Seq(),
+        newIdea = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -775,7 +776,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         theme = Some(ThemeId("my theme")),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty
+        similarProposals = Seq.empty,
+        newIdea = Some(IdeaId("idea-id"))
       )
 
       Then("I should receive the updated proposal")
@@ -791,6 +793,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
       response.theme should be(Some(ThemeId("my theme")))
+      response.idea should be(Some(IdeaId("idea-id")))
     }
 
     scenario("Update a non validated Proposal") {
@@ -818,7 +821,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         theme = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        similarProposals = Seq.empty
+        similarProposals = Seq.empty,
+        newIdea = None
       )
 
       Then("I should receive a ValidationFailedError")

@@ -238,7 +238,8 @@ class ProposalApiTest
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now()),
           events = Nil,
-          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789"))
+          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
+          idea = None
         )
       )
     )
@@ -261,7 +262,8 @@ class ProposalApiTest
     language = "ar",
     themeId = None,
     tags = Seq.empty,
-    myProposal = false
+    myProposal = false,
+    idea = None
   )
   when(
     proposalService
@@ -297,7 +299,8 @@ class ProposalApiTest
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
-      similarProposals = Seq.empty
+      similarProposals = Seq.empty,
+      idea = None
     )
   }
 

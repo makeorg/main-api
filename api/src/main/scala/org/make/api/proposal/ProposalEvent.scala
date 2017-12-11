@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
@@ -145,7 +145,8 @@ object PublishedProposalEvent {
                                    theme: Option[ThemeId] = None,
                                    labels: Seq[LabelId] = Seq.empty,
                                    tags: Seq[TagId] = Seq.empty,
-                                   similarProposals: Seq[ProposalId] = Seq.empty)
+                                   similarProposals: Seq[ProposalId] = Seq.empty,
+                                   newIdea: Option[IdeaId] = None)
       extends PublishedProposalEvent
 
   object ProposalUpdated {
@@ -153,7 +154,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat11(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat12(ProposalUpdated.apply)
 
   }
 
