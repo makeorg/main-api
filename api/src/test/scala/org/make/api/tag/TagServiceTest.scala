@@ -80,9 +80,17 @@ class TagServiceTest
         .when(persistentTagService.get(TagId("new-tag")))
         .thenReturn(Future.successful(None))
 
-      tagService.createTag("new tag")
+      val tag = Tag(TagId("new-tag"), "new tag")
 
-      Mockito.verify(persistentTagService).persist(ArgumentMatchers.eq(Tag("new tag")))
+      Mockito
+        .when(persistentTagService.persist(tag))
+        .thenReturn(Future.successful(tag))
+
+      val newTag: Future[Tag] = tagService.createTag("new tag")
+
+      whenReady(newTag, Timeout(3.seconds)) { _ =>
+        Mockito.verify(persistentTagService).persist(tag)
+      }
 
     }
   }
@@ -189,7 +197,7 @@ class TagServiceTest
       )
 
       whenReady(futureTag) { tag =>
-        tag shouldBe (empty)
+        tag shouldBe empty
       }
     }
 

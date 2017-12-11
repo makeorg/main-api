@@ -20,8 +20,8 @@ object FacebookUserPicture {
 
 final case class UserInfo(id: String,
                           email: Option[String],
-                          firstName: String,
-                          lastName: String,
+                          firstName: Option[String],
+                          lastName: Option[String],
                           picture: FacebookUserPicture)
 
 object UserInfo {
