@@ -108,8 +108,8 @@ class UserServiceTest
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
-        firstName = "facebook",
-        lastName = "user",
+        firstName = Some("facebook"),
+        lastName = Some("user"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture")
@@ -135,8 +135,8 @@ class UserServiceTest
       val returnedUser = User(
         userId = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
-        firstName = Some(info.firstName),
-        lastName = Some(info.lastName),
+        firstName = info.firstName,
+        lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         enabled = true,
@@ -160,8 +160,8 @@ class UserServiceTest
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
         user.email should be(info.email.getOrElse(""))
-        user.firstName should be(Some(info.firstName))
-        user.lastName should be(Some(info.lastName))
+        user.firstName should be(info.firstName)
+        user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
         verify(eventBusService, times(2)).publish(any[UserValidatedAccountEvent])
       }
@@ -209,8 +209,8 @@ class UserServiceTest
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
-        firstName = "facebook",
-        lastName = "user",
+        firstName = Some("facebook"),
+        lastName = Some("user"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture")

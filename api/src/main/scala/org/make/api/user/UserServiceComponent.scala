@@ -168,8 +168,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           val user = User(
             userId = idGenerator.nextUserId(),
             email = lowerCasedEmail,
-            firstName = Some(userInfo.firstName),
-            lastName = Some(userInfo.lastName),
+            firstName = userInfo.firstName,
+            lastName = userInfo.lastName,
             lastIp = clientIp,
             hashedPassword = None,
             enabled = true,
