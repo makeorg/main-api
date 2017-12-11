@@ -13,7 +13,7 @@ trait IdeaServiceComponent {
 }
 
 trait IdeaService extends ShortenedNames {
-  def fetchAll(): Future[Seq[Idea]]
+  def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
   def insert(name: String,
              language: Option[String],
@@ -28,8 +28,8 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
 
   val ideaService = new IdeaService {
 
-    override def fetchAll(): Future[Seq[Idea]] = {
-      persistentIdeaService.findAll()
+    override def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
+      persistentIdeaService.findAll(ideaFilters)
     }
 
     override def fetchOneByName(name: String): Future[Option[Idea]] = {

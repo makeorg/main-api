@@ -23,6 +23,47 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   this: IdeaServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   @ApiOperation(
+    value = "list-ideas",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Idea]])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operation", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string")
+    )
+  )
+  @Path(value = "/")
+  def listIdeas: Route = {
+    get {
+      path("moderation" / "ideas") {
+        parameters('language.?, 'country.?, 'operation.?, 'question.?) { (language, country, operation, question) =>
+          makeTrace("Get all ideas") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireAdminRole(userAuth.user) {
+                val filters: IdeaFiltersRequest =
+                  IdeaFiltersRequest(language = language, country = country, operation = operation, question = question)
+                provideAsync(ideaService.fetchAll(filters)) { ideas =>
+                  complete(ideas)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
     value = "create-idea",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -113,20 +154,29 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val ideaRoutes: Route = createIdea ~ updateIdea
+  val ideaRoutes: Route = createIdea ~ updateIdea ~ listIdeas
 
   val ideaId: PathMatcher1[IdeaId] =
     Segment.flatMap(id => Try(IdeaId(id)).toOption)
 }
 
-case class CreateIdeaRequest(name: String)
+final case class CreateIdeaRequest(name: String)
 
 object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]
 }
 
-case class UpdateIdeaRequest(name: String)
+final case class UpdateIdeaRequest(name: String)
 
 object UpdateIdeaRequest {
   implicit val decoder: Decoder[UpdateIdeaRequest] = deriveDecoder[UpdateIdeaRequest]
+}
+
+final case class IdeaFiltersRequest(language: Option[String],
+                                    country: Option[String],
+                                    operation: Option[String],
+                                    question: Option[String])
+
+object IdeaFiltersRequest {
+  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None)
 }
