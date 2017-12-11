@@ -29,7 +29,7 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
                                        newIdea: Option[IdeaId]) {
-  validate(Validation.requireNonEmpty("tags", tags))
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
 }
 
 object UpdateProposalRequest {
@@ -41,8 +41,9 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          theme: Option[ThemeId],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
-                                         similarProposals: Seq[ProposalId]) {
-  validate(Validation.requireNonEmpty("tags", tags))
+                                         similarProposals: Seq[ProposalId],
+                                         newIdea: Option[IdeaId]) {
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
 }
 
 object ValidateProposalRequest {

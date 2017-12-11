@@ -167,7 +167,8 @@ object PublishedProposalEvent {
                                     theme: Option[ThemeId],
                                     labels: Seq[LabelId],
                                     tags: Seq[TagId],
-                                    similarProposals: Seq[ProposalId])
+                                    similarProposals: Seq[ProposalId],
+                                    newIdea: Option[IdeaId] = None)
       extends PublishedProposalEvent
 
   object ProposalAccepted {
@@ -175,7 +176,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
-      DefaultJsonProtocol.jsonFormat10(ProposalAccepted.apply)
+      DefaultJsonProtocol.jsonFormat11(ProposalAccepted.apply)
 
   }
 

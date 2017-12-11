@@ -345,7 +345,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           theme = request.theme,
           labels = request.labels,
           tags = request.tags,
-          similarProposals = request.similarProposals
+          similarProposals = request.similarProposals,
+          newIdea = request.newIdea
         )
       )
 

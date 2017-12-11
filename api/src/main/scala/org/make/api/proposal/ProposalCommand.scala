@@ -47,7 +47,8 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId])
+                                       similarProposals: Seq[ProposalId],
+                                       newIdea: Option[IdeaId])
     extends ProposalCommand
 
 final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,
