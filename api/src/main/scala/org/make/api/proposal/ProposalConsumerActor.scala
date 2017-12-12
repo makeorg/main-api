@@ -3,18 +3,18 @@ package org.make.api.proposal
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.proposal.ProposalIndexerActor.IndexProposal
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sequence
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -32,12 +32,11 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
                             sequenceService: SequenceService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
-    with DefaultProposalSearchEngineComponent
-    with ElasticsearchConfigurationExtension
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+  val indexerActor: ActorRef = context.actorOf(ProposalIndexerActor.props, ProposalIndexerActor.name)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -153,15 +152,8 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
   }
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
-    log.debug(s"Indexing $proposal")
-    elasticsearchProposalAPI
-      .findProposalById(proposal.id)
-      .flatMap {
-        case None    => elasticsearchProposalAPI.indexProposal(proposal)
-        case Some(_) => elasticsearchProposalAPI.updateProposal(proposal)
-      }
-      .map { _ =>
-        }
+    indexerActor ! IndexProposal(proposal)
+    Future.successful {}
   }
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {

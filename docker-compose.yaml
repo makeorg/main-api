@@ -14,6 +14,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_BROKER_ID: 42
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - 9092:9092
       - 18081:8081
