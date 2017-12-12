@@ -27,7 +27,7 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     extends PersistentActor
@@ -40,7 +40,11 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   private[this] var state: Option[ProposalState] = None
 
   override def receiveRecover: Receive = {
-    case e: ProposalEvent                          => state = applyEvent(e)
+    case e: ProposalEvent =>
+      Try(applyEvent(e)) match {
+        case Success(newState)  => state = newState
+        case Failure(exception) => log.error(exception, "Unable to apply event {}, ignoring it", e)
+      }
     case SnapshotOffer(_, snapshot: Proposal)      => state = Some(ProposalState(snapshot))
     case SnapshotOffer(_, snapshot: ProposalState) => state = Some(snapshot)
     case _                                         =>
