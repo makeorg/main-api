@@ -53,7 +53,7 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalConsumerActor.props(proposalCoordinator, userService, tagService, sequenceService),
+        ProposalConsumerActor.props(proposalCoordinatorService, userService, tagService, sequenceService),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)

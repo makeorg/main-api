@@ -3,8 +3,7 @@ package org.make.api.proposal
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.pattern.ask
+import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
@@ -17,7 +16,6 @@ import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.user.UserService
-import org.make.core.RequestContext
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Tag, TagId}
@@ -28,7 +26,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(proposalCoordinator: ActorRef,
+class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
                             tagService: TagService,
                             sequenceService: SequenceService)
@@ -92,7 +90,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   }
 
   def addToSequence(event: ProposalAccepted): Future[Unit] = {
-    (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
         if (proposal.creationContext.operation.nonEmpty) {
           sequenceService
@@ -119,7 +117,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   }
 
   def removeFromSequence(event: ProposalRefused): Future[Unit] = {
-    (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
         if (proposal.creationContext.operation.nonEmpty) {
           sequenceService
@@ -150,7 +148,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
     val allIds = Seq(proposalId) ++ newSimilarProposals
     newSimilarProposals.foreach { id =>
-      proposalCoordinator ! UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id))
+      proposalCoordinatorService.updateDuplicates(UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id)))
     }
   }
 
@@ -175,7 +173,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     }
 
     val maybeResult = for {
-      proposal <- OptionT((proposalCoordinator ? GetProposal(id, RequestContext.empty)).mapTo[Option[Proposal]])
+      proposal <- OptionT(proposalCoordinatorService.getProposal(id))
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
@@ -218,10 +216,10 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
 }
 
 object ProposalConsumerActor {
-  def props(proposalCoordinator: ActorRef,
+  def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
             tagService: TagService,
             sequenceService: SequenceService): Props =
-    Props(new ProposalConsumerActor(proposalCoordinator, userService, tagService, sequenceService))
+    Props(new ProposalConsumerActor(proposalCoordinatorService, userService, tagService, sequenceService))
   val name: String = "proposal-consumer"
 }
