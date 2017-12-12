@@ -8,7 +8,7 @@ import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 
 import scala.util.Random
 
@@ -27,8 +27,9 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId]) {
-  validate(Validation.requireNonEmpty("tags", tags))
+                                       similarProposals: Seq[ProposalId],
+                                       newIdea: Option[IdeaId]) {
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
 }
 
 object UpdateProposalRequest {
@@ -40,8 +41,9 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          theme: Option[ThemeId],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
-                                         similarProposals: Seq[ProposalId]) {
-  validate(Validation.requireNonEmpty("tags", tags))
+                                         similarProposals: Seq[ProposalId],
+                                         newIdea: Option[IdeaId]) {
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
 }
 
 object ValidateProposalRequest {
