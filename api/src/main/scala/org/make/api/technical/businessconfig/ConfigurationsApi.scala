@@ -35,7 +35,7 @@ trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  @Path(value = "back")
+  @Path(value = "backoffice")
   @ApiOperation(
     value = "backoffice-configuration",
     httpMethod = "GET",
