@@ -64,6 +64,36 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   }
 
   @ApiOperation(
+    value = "get-idea",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "ideaId", paramType = "path", dataType = "string")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
+  @Path(value = "/{ideaId}")
+  def getIdea: Route = {
+    get {
+      path("moderation" / "ideas" / ideaId) { ideaId =>
+        makeTrace("GetIdea") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
+                complete(idea)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
     value = "create-idea",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -154,7 +184,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val ideaRoutes: Route = createIdea ~ updateIdea ~ listIdeas
+  val ideaRoutes: Route = createIdea ~ updateIdea ~ listIdeas ~ getIdea
 
   val ideaId: PathMatcher1[IdeaId] =
     Segment.flatMap(id => Try(IdeaId(id)).toOption)

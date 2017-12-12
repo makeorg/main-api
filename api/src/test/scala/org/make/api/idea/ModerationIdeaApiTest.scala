@@ -219,4 +219,27 @@ class ModerationIdeaApiTest
       }
     }
   }
+
+  feature("get an idea ") {
+    scenario("unauthenticated") {
+      Given("an un authenticated user")
+      When("the user wants to get an idea")
+      Then("he should get an unauthorized (401) return code")
+      Get("/moderation/ideas") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated citizen") {
+      Given("an authenticated user with the citizen role")
+      When("the user wants to create an idea")
+      Then("he should get an forbidden (403) return code")
+
+      Get("/moderation/ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+  }
 }

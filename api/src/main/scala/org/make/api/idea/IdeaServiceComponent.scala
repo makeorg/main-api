@@ -14,6 +14,7 @@ trait IdeaServiceComponent {
 
 trait IdeaService extends ShortenedNames {
   def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]]
+  def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
   def insert(name: String,
              language: Option[String],
@@ -32,6 +33,9 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
       persistentIdeaService.findAll(ideaFilters)
     }
 
+    override def fetchOne(ideaId: IdeaId): Future[Option[Idea]] = {
+      persistentIdeaService.findOne(ideaId)
+    }
     override def fetchOneByName(name: String): Future[Option[Idea]] = {
       persistentIdeaService.findOneByName(name)
     }
