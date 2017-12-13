@@ -7,13 +7,19 @@ import org.make.api.sequence.SequenceActor.Snapshot
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
+import scala.util.{Failure, Success, Try}
+
 class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLogging {
   def sequenceId: SequenceId = SequenceId(self.path.name)
 
   private[this] var state: Option[Sequence] = None
 
   override def receiveRecover: Receive = {
-    case e: SequenceEvent                     => state = applyEvent(e)
+    case event: SequenceEvent =>
+      Try(applyEvent(event)) match {
+        case Success(newState) => state = newState
+        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
+      }
     case SnapshotOffer(_, snapshot: Sequence) => state = Some(snapshot)
     case _                                    =>
   }

@@ -4,20 +4,18 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.pattern.ask
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.proposal.ProposalIndexerActor.IndexProposal
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sequence
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.user.UserService
-import org.make.core.RequestContext
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Tag, TagId}
@@ -28,18 +26,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(proposalCoordinator: ActorRef,
+class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
                             tagService: TagService,
                             sequenceService: SequenceService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
-    with DefaultProposalSearchEngineComponent
-    with ElasticsearchConfigurationExtension
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+  val indexerActor: ActorRef = context.actorOf(ProposalIndexerActor.props, ProposalIndexerActor.name)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -92,7 +89,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   }
 
   def addToSequence(event: ProposalAccepted): Future[Unit] = {
-    (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
         if (proposal.creationContext.operation.nonEmpty) {
           sequenceService
@@ -119,7 +116,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   }
 
   def removeFromSequence(event: ProposalRefused): Future[Unit] = {
-    (proposalCoordinator ? GetProposal(event.id, RequestContext.empty)).mapTo[Option[Proposal]].flatMap {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
         if (proposal.creationContext.operation.nonEmpty) {
           sequenceService
@@ -150,20 +147,13 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
   def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
     val allIds = Seq(proposalId) ++ newSimilarProposals
     newSimilarProposals.foreach { id =>
-      proposalCoordinator ! UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id))
+      proposalCoordinatorService.updateDuplicates(UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id)))
     }
   }
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
-    log.debug(s"Indexing $proposal")
-    elasticsearchProposalAPI
-      .findProposalById(proposal.id)
-      .flatMap {
-        case None    => elasticsearchProposalAPI.indexProposal(proposal)
-        case Some(_) => elasticsearchProposalAPI.updateProposal(proposal)
-      }
-      .map { _ =>
-        }
+    indexerActor ! IndexProposal(proposal)
+    Future.successful {}
   }
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
@@ -175,7 +165,7 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
     }
 
     val maybeResult = for {
-      proposal <- OptionT((proposalCoordinator ? GetProposal(id, RequestContext.empty)).mapTo[Option[Proposal]])
+      proposal <- OptionT(proposalCoordinatorService.getProposal(id))
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
@@ -218,10 +208,10 @@ class ProposalConsumerActor(proposalCoordinator: ActorRef,
 }
 
 object ProposalConsumerActor {
-  def props(proposalCoordinator: ActorRef,
+  def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
             tagService: TagService,
             sequenceService: SequenceService): Props =
-    Props(new ProposalConsumerActor(proposalCoordinator, userService, tagService, sequenceService))
+    Props(new ProposalConsumerActor(proposalCoordinatorService, userService, tagService, sequenceService))
   val name: String = "proposal-consumer"
 }

@@ -10,6 +10,8 @@ import org.make.core.user._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
+import scala.util.{Failure, Success, Try}
+
 class UserHistoryActor extends PersistentActor with ActorLogging {
 
   def userId: UserId = UserId(self.path.name)
@@ -17,7 +19,11 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
   private var state: UserHistory = UserHistory(Nil)
 
   override def receiveRecover: Receive = {
-    case event: UserHistoryEvent[_]              => state = applyEvent(event)
+    case event: UserHistoryEvent[_] =>
+      Try(applyEvent(event)) match {
+        case Success(newState) => state = newState
+        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
+      }
     case SnapshotOffer(_, snapshot: UserHistory) => state = snapshot
     case _: RecoveryCompleted                    =>
   }
