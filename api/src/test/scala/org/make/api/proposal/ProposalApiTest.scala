@@ -17,7 +17,7 @@ import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -136,7 +136,8 @@ class ProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq()
+    similarProposals = Seq(),
+    newIdea = Some(IdeaId("becoming-king"))
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -238,7 +239,8 @@ class ProposalApiTest
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now()),
           events = Nil,
-          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789"))
+          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
+          idea = None
         )
       )
     )
@@ -261,7 +263,8 @@ class ProposalApiTest
     language = "ar",
     themeId = None,
     tags = Seq.empty,
-    myProposal = false
+    myProposal = false,
+    idea = None
   )
   when(
     proposalService
@@ -297,7 +300,8 @@ class ProposalApiTest
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
-      similarProposals = Seq.empty
+      similarProposals = Seq.empty,
+      idea = None
     )
   }
 
