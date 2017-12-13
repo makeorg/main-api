@@ -110,7 +110,13 @@ final case class RemoveSimilarProposalCommand(proposalId: ProposalId,
                                               requestContext: RequestContext)
     extends ProposalCommand
 
+final case class ReplaceProposalCommand(proposalId: ProposalId,
+                                        proposal: Proposal,
+                                        requestContext: RequestContext = RequestContext.empty)
+    extends ProposalCommand
+
 final case class PatchProposalCommand(proposalId: ProposalId,
-                                      proposal: Proposal,
-                                      requestContext: RequestContext = RequestContext.empty)
+                                      userId: UserId,
+                                      changes: PatchProposalRequest,
+                                      requestContext: RequestContext)
     extends ProposalCommand

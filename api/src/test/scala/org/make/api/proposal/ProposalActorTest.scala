@@ -10,6 +10,7 @@ import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.session.SessionId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -1166,4 +1167,115 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
+  feature("Patch a proposal") {
+    scenario("patch creation context") {
+      val proposalId = ProposalId("patched-context")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal"
+      )
+
+      expectMsg(proposalId)
+
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+
+      expectMsgType[Option[Proposal]]
+
+      coordinator ! PatchProposalCommand(
+        proposalId,
+        UserId("1234"),
+        PatchProposalRequest(
+          creationContext = Some(
+            PatchRequestContext(
+              currentTheme = Some(ThemeId("my-theme")),
+              requestId = Some("my-request-id"),
+              sessionId = Some(SessionId("session-id")),
+              externalId = Some("external-id"),
+              country = Some("BE"),
+              language = Some("nl"),
+              operation = Some("my-operation"),
+              source = Some("my-source"),
+              location = Some("my-location"),
+              question = Some("my-question"),
+              hostname = Some("my-hostname"),
+              ipAddress = Some("1.2.3.4"),
+              getParameters = Some(Map("parameter" -> "value")),
+              userAgent = Some("my-user-agent")
+            )
+          )
+        ),
+        RequestContext.empty
+      )
+
+      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+      proposal.creationContext should be(
+        RequestContext(
+          currentTheme = Some(ThemeId("my-theme")),
+          requestId = "my-request-id",
+          sessionId = SessionId("session-id"),
+          externalId = "external-id",
+          country = Some("BE"),
+          language = Some("nl"),
+          operation = Some("my-operation"),
+          source = Some("my-source"),
+          location = Some("my-location"),
+          question = Some("my-question"),
+          hostname = Some("my-hostname"),
+          ipAddress = Some("1.2.3.4"),
+          getParameters = Some(Map("parameter" -> "value")),
+          userAgent = Some("my-user-agent")
+        )
+      )
+    }
+
+    scenario("patch proposal information") {
+      val proposalId = ProposalId("patched-context")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal"
+      )
+
+      expectMsg(proposalId)
+
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+
+      expectMsgType[Option[Proposal]]
+
+      coordinator ! PatchProposalCommand(
+        proposalId,
+        UserId("1234"),
+        PatchProposalRequest(
+          creationContext = None,
+          slug = Some("some-custom-slug"),
+          content = Some("some content different from the slug"),
+          author = Some(UserId("the user id")),
+          labels = Some(Seq(LabelId("my-label"))),
+          theme = Some(ThemeId("my-theme")),
+          status = Some(Refused),
+          refusalReason = Some("I don't want"),
+          ideaId = Some(IdeaId("my-idea")),
+          tags = Some(Seq(TagId("my-tag")))
+        ),
+        RequestContext.empty
+      )
+
+      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+
+      proposal.slug should be("some-custom-slug")
+      proposal.content should be("some content different from the slug")
+      proposal.author should be(UserId("the user id"))
+      proposal.labels should be(Seq(LabelId("my-label")))
+      proposal.theme should be(Some(ThemeId("my-theme")))
+      proposal.status should be(Refused)
+      proposal.refusalReason should be(Some("I don't want"))
+      proposal.idea should be(Some(IdeaId("my-idea")))
+      proposal.tags should be(Seq(TagId("my-tag")))
+    }
+  }
 }

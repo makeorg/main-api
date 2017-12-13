@@ -8,6 +8,8 @@ import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.session.SessionId
+import org.make.core.user.UserId
 
 import scala.util.Random
 
@@ -160,4 +162,38 @@ final case class QualificationProposalRequest(qualificationKey: QualificationKey
 
 object QualificationProposalRequest {
   implicit val decoder: Decoder[QualificationProposalRequest] = deriveDecoder[QualificationProposalRequest]
+}
+
+final case class PatchProposalRequest(slug: Option[String] = None,
+                                      content: Option[String] = None,
+                                      ideaId: Option[IdeaId] = None,
+                                      author: Option[UserId] = None,
+                                      labels: Option[Seq[LabelId]] = None,
+                                      theme: Option[ThemeId] = None,
+                                      status: Option[ProposalStatus] = None,
+                                      refusalReason: Option[String] = None,
+                                      tags: Option[Seq[TagId]] = None,
+                                      creationContext: Option[PatchRequestContext] = None)
+
+object PatchProposalRequest {
+  implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]
+}
+
+final case class PatchRequestContext(currentTheme: Option[ThemeId] = None,
+                                     requestId: Option[String] = None,
+                                     sessionId: Option[SessionId] = None,
+                                     externalId: Option[String] = None,
+                                     country: Option[String] = None,
+                                     language: Option[String] = None,
+                                     operation: Option[String] = None,
+                                     source: Option[String] = None,
+                                     location: Option[String] = None,
+                                     question: Option[String] = None,
+                                     hostname: Option[String] = None,
+                                     ipAddress: Option[String] = None,
+                                     getParameters: Option[Map[String, String]] = None,
+                                     userAgent: Option[String] = None)
+
+object PatchRequestContext {
+  implicit val decoder: Decoder[PatchRequestContext] = deriveDecoder[PatchRequestContext]
 }

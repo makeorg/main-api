@@ -66,6 +66,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
     case command: RemoveSimilarProposalCommand     => onRemoveSimilarProposalCommand(command)
     case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
+    case command: ReplaceProposalCommand           => onReplaceProposalCommand(command)
     case command: PatchProposalCommand             => onPatchProposalCommand(command)
     case Snapshot                                  => state.foreach(saveSnapshot)
     case _: KillProposalShard                      => self ! PoisonPill
@@ -95,12 +96,59 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     }
   }
 
-  private def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
+  private def onReplaceProposalCommand(command: ReplaceProposalCommand): Unit = {
     if (state.isDefined) {
       persistAndPublishEvent(
         ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = command.proposal)
       ) { event =>
         state = applyEvent(event)
+      }
+    }
+  }
+
+  def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
+    state.map(_.proposal).foreach { proposal =>
+      val changes = command.changes
+      val modifiedContext =
+        changes.creationContext.map { contextChanges =>
+          proposal.creationContext.copy(
+            currentTheme = contextChanges.currentTheme.map(Some(_)).getOrElse(proposal.creationContext.currentTheme),
+            requestId = contextChanges.requestId.getOrElse(proposal.creationContext.requestId),
+            sessionId = contextChanges.sessionId.getOrElse(proposal.creationContext.sessionId),
+            externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
+            country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
+            language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
+            operation = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operation),
+            source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
+            location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
+            question = contextChanges.question.map(Some(_)).getOrElse(proposal.creationContext.question),
+            hostname = contextChanges.hostname.map(Some(_)).getOrElse(proposal.creationContext.hostname),
+            ipAddress = contextChanges.ipAddress.map(Some(_)).getOrElse(proposal.creationContext.ipAddress),
+            getParameters = contextChanges.getParameters.map(Some(_)).getOrElse(proposal.creationContext.getParameters),
+            userAgent = contextChanges.userAgent.map(Some(_)).getOrElse(proposal.creationContext.userAgent)
+          )
+        }.getOrElse(proposal.creationContext)
+
+      val modifiedProposal =
+        proposal.copy(
+          creationContext = modifiedContext,
+          slug = changes.slug.getOrElse(proposal.slug),
+          content = changes.content.getOrElse(proposal.content),
+          idea = changes.ideaId.map(Some(_)).getOrElse(proposal.idea),
+          author = changes.author.getOrElse(proposal.author),
+          labels = changes.labels.getOrElse(proposal.labels),
+          theme = changes.theme.map(Some(_)).getOrElse(proposal.theme),
+          status = changes.status.getOrElse(proposal.status),
+          refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
+          tags = changes.tags.getOrElse(proposal.tags),
+          updatedAt = Some(DateHelper.now())
+        )
+
+      persistAndPublishEvent(
+        ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = modifiedProposal)
+      ) { event =>
+        state = applyEvent(event)
+        sender() ! state.map(_.proposal)
       }
     }
   }

@@ -105,6 +105,11 @@ trait ProposalService {
   def removeProposalFromCluster(proposalId: ProposalId): Future[Done]
 
   def clearSimilarProposals(): Future[Done]
+
+  def patchProposal(proposalId: ProposalId,
+                    userId: UserId,
+                    requestContext: RequestContext,
+                    changes: PatchProposalRequest): Future[Option[ProposalResponse]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -576,6 +581,33 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
           )
       }
+    }
+
+    override def patchProposal(proposalId: ProposalId,
+                               userId: UserId,
+                               requestContext: RequestContext,
+                               changes: PatchProposalRequest): Future[Option[ProposalResponse]] = {
+
+      val patchResult = proposalCoordinatorService
+        .patch(
+          PatchProposalCommand(
+            proposalId = proposalId,
+            userId = userId,
+            changes = changes,
+            requestContext = requestContext
+          )
+        )
+
+      val futureMaybeProposalAuthor = (for {
+        proposal: Proposal <- OptionT(patchResult)
+        author: User       <- OptionT(userService.getUser(proposal.author))
+      } yield (proposal, author)).value
+
+      futureMaybeProposalAuthor.flatMap {
+        case Some((proposal, author)) => proposalResponse(proposal, author)
+        case None                     => Future.successful(None)
+      }
+
     }
   }
 
