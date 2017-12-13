@@ -3,24 +3,57 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeTest
-import org.make.api.proposal.SelectionAlgorithm
-import org.make.api.sequence.SelectionAlgorithmTest.fakeProposal
+import org.make.api.proposal.{InverseWeightedRandom, SelectionAlgorithm}
+import org.make.api.proposal.SelectionAlgorithm.chooseProposals
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
 
-import scala.concurrent.Future
+import scala.collection.mutable
 import scala.util.Random
 
-class SelectionAlgorithmTest extends MakeTest with StrictLogging {
+class Switch {
+  private var current = false
+
+  def getAndSwitch(): Boolean = {
+    val result = current
+    current = !current
+    result
+  }
+}
+
+class SelectionAlgorithmTest extends MakeTest {
 
   val defaultVoteThreshold = 100
   val defaultEngagementThreshold = 0.9
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
+
+  def fakeProposal(id: ProposalId,
+                   votes: Map[VoteKey, Int],
+                   duplicates: Seq[ProposalId],
+                   createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
+    proposal.Proposal(
+      proposalId = id,
+      author = UserId("fake"),
+      content = "fake",
+      slug = "fake",
+      status = ProposalStatus.Accepted,
+      createdAt = Some(createdAt),
+      updatedAt = None,
+      votes = votes.map {
+        case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)
+      }.toSeq,
+      labels = Seq.empty,
+      theme = None,
+      refusalReason = None,
+      tags = Seq.empty,
+      similarProposals = duplicates,
+      events = Nil,
+      creationContext = RequestContext.empty
+    )
+  }
 
   feature("proposal selection algorithm with new proposals") {
     scenario("no duplicates with enough proposals only new proposals") {
@@ -51,7 +84,7 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
@@ -149,7 +182,7 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
@@ -266,7 +299,7 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
@@ -440,48 +473,38 @@ class SelectionAlgorithmTest extends MakeTest with StrictLogging {
       sequenceProposals.contains(ProposalId("testedProposal12")) should be(false)
     }
   }
-}
 
-class Switch {
-  private var current = false
+  feature("allocate votes inversely proportional to current vote count") {
+    scenario("sequential vote counts") {
+      val testedProposals: Seq[Proposal] = (1 to 10).map { i =>
+        fakeProposal(ProposalId(s"testedProposal$i"), Map(VoteKey.Agree -> 100 * i), Seq.empty, DateHelper.now())
+      }
 
-  def getAndSwitch(): Boolean = {
-    val result = current
-    current = !current
-    result
-  }
-}
+      val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
 
-object SelectionAlgorithmTest extends StrictLogging {
+      val samples = 10000
+      for (a <- 1 to samples) {
+        chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.randomWeighted)
+          .foreach(p => counts(p.proposalId) += 1)
+      }
 
-  final case class GetSearchSpaceBuilder(proposals: Seq[IndexedProposal], proposalsByBatch: Int) {
-    def searchSpace(excluded: Seq[ProposalId]): Future[Seq[IndexedProposal]] = {
-      Future.successful(proposals.filter(p => !excluded.contains(p.id)).take(proposalsByBatch))
+      val proportions: mutable.Map[ProposalId, Double] = counts.map {
+        case (i, p) => (i, p.toDouble / samples)
+      }
+
+      InverseWeightedRandom.random = new Random(0)
+
+      val confidenceInterval: Double = 0.01
+      proportions(testedProposals(0).proposalId) should equal(0.34 +- confidenceInterval)
+      proportions(testedProposals(1).proposalId) should equal(0.17 +- confidenceInterval)
+      proportions(testedProposals(2).proposalId) should equal(0.11 +- confidenceInterval)
+      proportions(testedProposals(3).proposalId) should equal(0.09 +- confidenceInterval)
+      proportions(testedProposals(4).proposalId) should equal(0.07 +- confidenceInterval)
+      proportions(testedProposals(5).proposalId) should equal(0.06 +- confidenceInterval)
+      proportions(testedProposals(6).proposalId) should equal(0.05 +- confidenceInterval)
+      proportions(testedProposals(7).proposalId) should equal(0.04 +- confidenceInterval)
+      proportions(testedProposals(8).proposalId) should equal(0.04 +- confidenceInterval)
+      proportions(testedProposals(9).proposalId) should equal(0.03 +- confidenceInterval)
     }
-  }
-
-  def fakeProposal(id: ProposalId,
-                   votes: Map[VoteKey, Int],
-                   duplicates: Seq[ProposalId],
-                   createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
-    proposal.Proposal(
-      proposalId = id,
-      author = UserId("fake"),
-      content = "fake",
-      slug = "fake",
-      status = ProposalStatus.Accepted,
-      createdAt = Some(createdAt),
-      updatedAt = None,
-      votes = votes.map {
-        case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)
-      }.toSeq,
-      labels = Seq.empty,
-      theme = None,
-      refusalReason = None,
-      tags = Seq.empty,
-      similarProposals = duplicates,
-      events = Nil,
-      creationContext = RequestContext.empty
-    )
   }
 }
