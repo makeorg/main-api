@@ -8,33 +8,24 @@ import scala.util.Random
 
 object InverseWeightedRandom extends StrictLogging {
 
-  /** Returns the index result of a binary search to find @n in the discrete
-    * cdf array.
-    */
+  def proposalWeight(proposal: Proposal): Double = {
+    1 / (proposal.votes.map(_.count).sum + 1).toDouble
+  }
+
   @tailrec
-  def search(n: Int, cdf: Seq[Int], index: Int = 0): Int = {
-    if (n <= cdf.head) {
-      index
+  def search(proposals: Seq[Proposal], choice: Double, cumsum: Double = 0): Proposal = {
+    val cumsumNew = cumsum + proposalWeight(proposals.head)
+    if (choice <= cumsumNew) {
+      proposals.head
     } else {
-      search(n - cdf.head, cdf.tail, index + 1)
+      search(proposals.tail, choice, cumsumNew)
     }
   }
 
-  /** Returns the cumulative density function (CDF) of @list (in simple terms,
-    * the cumulative sums of the weights).
-    */
-  def cdf(list: Seq[Int]): Seq[Int] = {
-    var s = 0
-    list.map { d =>
-      s += d
-      s
-    }
-  }
-
-  def randomWeighted(list: Seq[Proposal]): Proposal = {
-    val maxCount = list.map(_.votes.map(_.count).sum).max
-    val transformedList = list.map(p => maxCount - p.votes.map(_.count).sum)
-    list(search(Random.nextInt(transformedList.sum + 1), cdf(transformedList)))
+  def randomWeighted(proposals: Seq[Proposal]): Proposal = {
+    val weightSum: Double = proposals.map(proposalWeight).sum
+    val choice: Double = Random.nextDouble() * weightSum
+    search(proposals, choice)
   }
 
 }
