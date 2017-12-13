@@ -2,15 +2,15 @@ package org.make.api.proposal
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
@@ -19,7 +19,7 @@ import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.{DateHelper, HttpCodes}
+import org.make.core.{DateHelper, HttpCodes, Validation}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -32,6 +32,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with IdGeneratorComponent
     with MakeSettingsComponent
     with UserServiceComponent
+    with IdeaServiceComponent
     with ThemeServiceComponent =>
 
   @ApiOperation(
@@ -237,16 +238,20 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(
-                    proposalService.update(
-                      proposalId = proposalId,
-                      moderator = userAuth.user.userId,
-                      requestContext = requestContext,
-                      updatedAt = DateHelper.now(),
-                      request = request
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
+                  provideAsync(ideaService.fetchOne(request.idea.get)) { idea =>
+                    Validation.validate(Validation.validateEntity("idea", Some("Selected Idea does not exist"), idea))
+
+                    provideAsyncOrNotFound(
+                      proposalService.update(
+                        proposalId = proposalId,
+                        moderator = userAuth.user.userId,
+                        requestContext = requestContext,
+                        updatedAt = DateHelper.now(),
+                        request = request
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
                   }
                 }
               }
@@ -291,15 +296,19 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsyncOrNotFound(
-                  proposalService.validateProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext,
-                    request = request
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
+                provideAsync(ideaService.fetchOne(request.idea.get)) { idea =>
+                  Validation.validate(Validation.validateEntity("idea", Some("Selected Idea does not exist"), idea))
+
+                  provideAsyncOrNotFound(
+                    proposalService.validateProposal(
+                      proposalId = proposalId,
+                      moderator = auth.user.userId,
+                      requestContext = requestContext,
+                      request = request
+                    )
+                  ) { proposalResponse: ProposalResponse =>
+                    complete(proposalResponse)
+                  }
                 }
               }
             }

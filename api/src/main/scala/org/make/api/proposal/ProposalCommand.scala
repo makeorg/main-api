@@ -30,7 +30,7 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       newIdea: Option[IdeaId])
+                                       idea: Option[IdeaId])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
@@ -48,7 +48,7 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       newIdea: Option[IdeaId])
+                                       idea: Option[IdeaId])
     extends ProposalCommand
 
 final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,

@@ -205,7 +205,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -240,7 +240,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive the accepted proposal with modified content")
@@ -287,7 +287,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive the accepted proposal")
@@ -335,7 +335,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive the accepted proposal")
@@ -380,7 +380,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
@@ -396,7 +396,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive an error")
@@ -435,7 +435,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = similarProposals,
-        newIdea = None
+        idea = None
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
@@ -481,7 +481,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        newIdea = Some(idea)
+        idea = Some(idea)
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
@@ -782,7 +782,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq.empty,
         similarProposals = Seq(),
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -815,7 +815,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        newIdea = None
+        idea = None
       )
 
       expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
@@ -831,7 +831,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        newIdea = Some(IdeaId("idea-id"))
+        idea = Some(IdeaId("idea-id"))
       )
 
       Then("I should receive the updated proposal")
@@ -876,7 +876,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq.empty,
         similarProposals = Seq.empty,
-        newIdea = None
+        idea = None
       )
 
       Then("I should receive a ValidationFailedError")

@@ -553,7 +553,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = command.similarProposals,
-                newIdea = command.newIdea
+                idea = command.idea
               )
             )
           )
@@ -602,7 +602,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = command.similarProposals,
-                newIdea = command.newIdea
+                idea = command.idea
               )
             )
           )
@@ -822,7 +822,7 @@ object ProposalActor {
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.newIdea.map(_.value).getOrElse("")
+      "idea" -> event.idea.map(_.value).getOrElse("")
     ).filter {
       case (_, value) => !value.isEmpty
     }
@@ -841,7 +841,7 @@ object ProposalActor {
         events = action :: state.proposal.events,
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
-        idea = event.newIdea
+        idea = event.idea
       )
 
     proposal = event.edition match {
@@ -860,7 +860,7 @@ object ProposalActor {
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.newIdea.map(_.value).getOrElse("")
+      "idea" -> event.idea.map(_.value).getOrElse("")
     ).filter {
       case (_, value) => !value.isEmpty
     }
@@ -879,7 +879,7 @@ object ProposalActor {
         status = Accepted,
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
-        idea = event.newIdea
+        idea = event.idea
       )
 
     proposal = event.edition match {

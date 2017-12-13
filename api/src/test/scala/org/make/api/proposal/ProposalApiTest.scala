@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Route
 import io.circe.syntax._
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -17,7 +18,7 @@ import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -32,6 +33,7 @@ class ProposalApiTest
     extends MakeApiTestUtils
     with ProposalApi
     with ModerationProposalApi
+    with IdeaServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with ProposalServiceComponent
@@ -56,8 +58,8 @@ class ProposalApiTest
   when(idGenerator.nextId()).thenReturn("next-id")
 
   override val userService: UserService = mock[UserService]
-
   override val themeService: ThemeService = mock[ThemeService]
+  override val ideaService: IdeaService = mock[IdeaService]
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -137,7 +139,7 @@ class ProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = Seq(),
-    newIdea = Some(IdeaId("becoming-king"))
+    idea = Some(IdeaId("becoming-king"))
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -304,6 +306,9 @@ class ProposalApiTest
       idea = None
     )
   }
+
+  when(ideaService.fetchOne(any[IdeaId]))
+    .thenReturn(Future.successful(Some(Idea(IdeaId("foo"), "Foo", None, None, None, None))))
 
   val routes: Route = sealRoute(proposalRoutes ~ moderationProposalRoutes)
 

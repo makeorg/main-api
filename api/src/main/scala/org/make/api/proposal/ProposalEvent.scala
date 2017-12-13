@@ -146,7 +146,7 @@ object PublishedProposalEvent {
                                    labels: Seq[LabelId] = Seq.empty,
                                    tags: Seq[TagId] = Seq.empty,
                                    similarProposals: Seq[ProposalId] = Seq.empty,
-                                   newIdea: Option[IdeaId] = None)
+                                   idea: Option[IdeaId] = None)
       extends PublishedProposalEvent
 
   object ProposalUpdated {
@@ -168,7 +168,7 @@ object PublishedProposalEvent {
                                     labels: Seq[LabelId],
                                     tags: Seq[TagId],
                                     similarProposals: Seq[ProposalId],
-                                    newIdea: Option[IdeaId] = None)
+                                    idea: Option[IdeaId] = None)
       extends PublishedProposalEvent
 
   object ProposalAccepted {

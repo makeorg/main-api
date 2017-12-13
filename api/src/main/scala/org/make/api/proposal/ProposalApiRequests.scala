@@ -1,8 +1,7 @@
 package org.make.api.proposal
 
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
@@ -28,8 +27,8 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       newIdea: Option[IdeaId]) {
-  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
+                                       idea: Option[IdeaId]) {
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
 object UpdateProposalRequest {
@@ -42,8 +41,8 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
                                          similarProposals: Seq[ProposalId],
-                                         newIdea: Option[IdeaId]) {
-  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("newIdea", newIdea))
+                                         idea: Option[IdeaId]) {
+  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
 object ValidateProposalRequest {

@@ -35,6 +35,7 @@ object ProposalElasticsearchFieldNames {
   val language: String = "language"
   val tags: String = "tags"
   val tagId: String = "tags.tagId"
+  val ideaId: String = "ideaId"
 }
 
 case class IndexedProposal(id: ProposalId,

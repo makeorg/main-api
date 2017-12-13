@@ -131,6 +131,12 @@ object Validation {
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
+  def validateEntity(fieldName: String,
+                     message: Option[String] = None,
+                     userValue: Option[MakeSerializable]): Requirement = {
+    validateField(fieldName, userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
+  }
+
   private def exists(value: Any): Boolean = {
     Option(value).isDefined
   }
