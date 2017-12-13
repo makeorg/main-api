@@ -482,6 +482,8 @@ class SelectionAlgorithmTest extends MakeTest {
 
       val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
 
+      InverseWeightedRandom.random = new Random(0)
+
       val samples = 10000
       for (a <- 1 to samples) {
         chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.randomWeighted)
@@ -492,9 +494,7 @@ class SelectionAlgorithmTest extends MakeTest {
         case (i, p) => (i, p.toDouble / samples)
       }
 
-      InverseWeightedRandom.random = new Random(0)
-
-      val confidenceInterval: Double = 0.01
+      val confidenceInterval: Double = 0.015
       proportions(testedProposals(0).proposalId) should equal(0.34 +- confidenceInterval)
       proportions(testedProposals(1).proposalId) should equal(0.17 +- confidenceInterval)
       proportions(testedProposals(2).proposalId) should equal(0.11 +- confidenceInterval)
