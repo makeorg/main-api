@@ -482,7 +482,7 @@ class SelectionAlgorithmTest extends MakeTest {
 
       val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
 
-      val samples = 1000
+      val samples = 10000
       for (a <- 1 to samples) {
         chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.randomWeighted)
           .foreach(p => counts(p.proposalId) += 1)
@@ -492,17 +492,19 @@ class SelectionAlgorithmTest extends MakeTest {
         case (i, p) => (i, p.toDouble / samples)
       }
 
-      val ci: Double = 0.01
-      proportions(testedProposals(0).proposalId) should equal(0.34 +- ci)
-      proportions(testedProposals(1).proposalId) should equal(0.17 +- ci)
-      proportions(testedProposals(2).proposalId) should equal(0.11 +- ci)
-      proportions(testedProposals(3).proposalId) should equal(0.09 +- ci)
-      proportions(testedProposals(4).proposalId) should equal(0.07 +- ci)
-      proportions(testedProposals(5).proposalId) should equal(0.06 +- ci)
-      proportions(testedProposals(6).proposalId) should equal(0.05 +- ci)
-      proportions(testedProposals(7).proposalId) should equal(0.04 +- ci)
-      proportions(testedProposals(8).proposalId) should equal(0.04 +- ci)
-      proportions(testedProposals(9).proposalId) should equal(0.03 +- ci)
+      InverseWeightedRandom.random = new Random(0)
+
+      val confidenceInterval: Double = 0.01
+      proportions(testedProposals(0).proposalId) should equal(0.34 +- confidenceInterval)
+      proportions(testedProposals(1).proposalId) should equal(0.17 +- confidenceInterval)
+      proportions(testedProposals(2).proposalId) should equal(0.11 +- confidenceInterval)
+      proportions(testedProposals(3).proposalId) should equal(0.09 +- confidenceInterval)
+      proportions(testedProposals(4).proposalId) should equal(0.07 +- confidenceInterval)
+      proportions(testedProposals(5).proposalId) should equal(0.06 +- confidenceInterval)
+      proportions(testedProposals(6).proposalId) should equal(0.05 +- confidenceInterval)
+      proportions(testedProposals(7).proposalId) should equal(0.04 +- confidenceInterval)
+      proportions(testedProposals(8).proposalId) should equal(0.04 +- confidenceInterval)
+      proportions(testedProposals(9).proposalId) should equal(0.03 +- confidenceInterval)
     }
   }
 }

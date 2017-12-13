@@ -7,13 +7,14 @@ import scala.annotation.tailrec
 import scala.util.Random
 
 object InverseWeightedRandom extends StrictLogging {
+  var random: Random = Random
 
   def proposalWeight(proposal: Proposal): Double = {
     1 / (proposal.votes.map(_.count).sum + 1).toDouble
   }
 
   @tailrec
-  def search(proposals: Seq[Proposal], choice: Double, cumsum: Double = 0): Proposal = {
+  final def search(proposals: Seq[Proposal], choice: Double, cumsum: Double = 0): Proposal = {
     val cumsumNew = cumsum + proposalWeight(proposals.head)
     if (choice <= cumsumNew) {
       proposals.head
@@ -24,7 +25,7 @@ object InverseWeightedRandom extends StrictLogging {
 
   def randomWeighted(proposals: Seq[Proposal]): Proposal = {
     val weightSum: Double = proposals.map(proposalWeight).sum
-    val choice: Double = Random.nextDouble() * weightSum
+    val choice: Double = random.nextDouble() * weightSum
     search(proposals, choice)
   }
 
