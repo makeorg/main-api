@@ -133,7 +133,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                   targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
                   proposals = allProposals,
                   votedProposals = votedProposals.keys.toSeq,
-                  newProposalVoteCount = BackofficeConfiguration.defaultProposalVotesThreshold,
+                  newProposalVoteThreshold = BackofficeConfiguration.defaultProposalVotesThreshold,
                   testedProposalEngagementThreshold = BackofficeConfiguration.defaultEngagementThreshold,
                   includeList = includedProposals
                 ),
