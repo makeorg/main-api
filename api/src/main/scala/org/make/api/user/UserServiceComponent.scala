@@ -10,6 +10,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.core.profile.Profile
 import org.make.api.userhistory.UserEvent.{UserRegisteredEvent, UserValidatedAccountEvent}
+import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -156,7 +157,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             Profile.parseProfile(
               facebookId = userInfo.facebookId,
               googleId = userInfo.googleId,
-              avatarUrl = userInfo.picture
+              avatarUrl = userInfo.picture,
+              gender = userInfo.gender.map {
+                case "male"   => Male
+                case "female" => Female
+                case _        => Other
+              },
+              genderName = userInfo.gender
             )
 
           // @todo: Add a unit test to check role by domain
