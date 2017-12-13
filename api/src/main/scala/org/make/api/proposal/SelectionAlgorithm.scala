@@ -49,7 +49,7 @@ object SelectionAlgorithm extends StrictLogging {
   def newProposalsForSequence(targetLength: Int,
                               proposals: Seq[Proposal],
                               votedProposals: Seq[ProposalId],
-                              newProposalVoteCount: Int,
+                              newProposalVoteThreshold: Int,
                               testedProposalEngagementThreshold: Double,
                               includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
@@ -73,7 +73,7 @@ object SelectionAlgorithm extends StrictLogging {
 
     // chooses new proposals
     val newIncludedProposals: Seq[Proposal] =
-      chooseNewProposals(availableProposals, newProposalVoteCount, targetNewProposalsCount)
+      chooseNewProposals(availableProposals, newProposalVoteThreshold, targetNewProposalsCount)
     val newProposalsSimilars: Seq[ProposalId] = newIncludedProposals.flatMap(_.similarProposals)
 
     // chooses tested proposals
@@ -81,7 +81,7 @@ object SelectionAlgorithm extends StrictLogging {
     val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(
       availableProposals,
       newProposalsSimilars,
-      newProposalVoteCount,
+      newProposalVoteThreshold,
       testedProposalEngagementThreshold,
       testedProposalCount
     )

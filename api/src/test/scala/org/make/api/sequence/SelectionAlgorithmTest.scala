@@ -84,7 +84,7 @@ class SelectionAlgorithmTest extends MakeTest {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
@@ -182,7 +182,7 @@ class SelectionAlgorithmTest extends MakeTest {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
@@ -299,7 +299,7 @@ class SelectionAlgorithmTest extends MakeTest {
         targetLength = defaultSize,
         proposals = proposals,
         votedProposals = Seq.empty,
-        newProposalVoteCount = defaultVoteThreshold,
+        newProposalVoteThreshold = defaultVoteThreshold,
         testedProposalEngagementThreshold = defaultEngagementThreshold,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
       )
