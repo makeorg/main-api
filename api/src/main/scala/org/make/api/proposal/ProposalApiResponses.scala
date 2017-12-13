@@ -11,7 +11,7 @@ import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference._
+import org.make.core.reference.{LabelId, Tag, TagId, ThemeId}
 import org.make.core.user.UserId
 
 final case class ProposalResponse(proposalId: ProposalId,
@@ -28,8 +28,7 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   createdAt: Option[ZonedDateTime],
                                   updatedAt: Option[ZonedDateTime],
                                   events: Seq[ProposalActionResponse],
-                                  similarProposals: Seq[ProposalId],
-                                  idea: Option[IdeaId])
+                                  similarProposals: Seq[ProposalId])
 
 object ProposalResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
@@ -68,8 +67,7 @@ final case class ProposalResult(id: ProposalId,
                                 language: String,
                                 themeId: Option[ThemeId],
                                 tags: Seq[Tag],
-                                myProposal: Boolean,
-                                idea: Option[IdeaId])
+                                myProposal: Boolean)
 
 object ProposalResult extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResult] = deriveEncoder[ProposalResult]
@@ -101,8 +99,7 @@ object ProposalResult extends CirceFormatters {
       language = indexedProposal.language,
       themeId = indexedProposal.themeId,
       tags = indexedProposal.tags,
-      myProposal = myProposal,
-      idea = indexedProposal.ideaId
+      myProposal = myProposal
     )
 }
 

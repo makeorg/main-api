@@ -13,7 +13,6 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.api.{DockerElasticsearchService, ItMakeTest}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.IdeaId
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -124,8 +123,7 @@ class ProposalSearchEngineIT
     labels = Seq(),
     country = "FR",
     language = "fr",
-    status = ProposalStatus.Refused,
-    ideaId = None
+    status = ProposalStatus.Refused
   )
 
   private def acceptedProposals: Seq[IndexedProposal] = Seq(
@@ -173,8 +171,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Craig"), postalCode = Some("92876"), age = Some(25)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id"))
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("9c468c22-1d1a-474b-9081-d79f1079f5e5"),
@@ -220,8 +217,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id"))
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
@@ -262,7 +258,6 @@ class ProposalSearchEngineIT
         )
       ),
       status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id")),
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -316,8 +311,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Jennifer"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = None
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("eac55aab-021e-495e-9664-bea941b8c51c"),
@@ -363,8 +357,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = None
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("5725e8fc-54a1-4b77-9246-d1de60a245c5"),
@@ -412,8 +405,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = None
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
@@ -459,8 +451,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = None
+      status = ProposalStatus.Accepted
     ),
     IndexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
@@ -506,8 +497,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Accepted,
-      ideaId = None
+      status = ProposalStatus.Accepted
     )
   )
 
@@ -558,8 +548,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Ronald"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
@@ -607,8 +596,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
@@ -656,8 +644,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Ronald"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
@@ -705,8 +692,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
@@ -752,8 +738,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Craig"), postalCode = Some("40734"), age = Some(23)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
@@ -799,8 +784,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Valerie"), postalCode = Some("92876"), age = Some(25)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     ),
     IndexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
@@ -846,8 +830,7 @@ class ProposalSearchEngineIT
       author = Author(firstName = Some("Craig"), postalCode = Some("41556"), age = Some(26)),
       themeId = None,
       tags = Seq(),
-      status = ProposalStatus.Pending,
-      ideaId = None
+      status = ProposalStatus.Pending
     )
   )
 

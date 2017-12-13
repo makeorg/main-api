@@ -552,8 +552,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 theme = command.theme,
                 labels = command.labels,
                 tags = command.tags,
-                similarProposals = command.similarProposals,
-                newIdea = command.newIdea
+                similarProposals = command.similarProposals
               )
             )
           )
@@ -565,7 +564,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     command: AcceptProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map {
-      case ProposalState(proposal, _) =>
+      case ProposalState(proposal, lock) =>
         if (proposal.status == ProposalStatus.Archived) {
           Left(
             ValidationFailedError(
@@ -601,8 +600,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 theme = command.theme,
                 labels = command.labels,
                 tags = command.tags,
-                similarProposals = command.similarProposals,
-                newIdea = command.newIdea
+                similarProposals = command.similarProposals
               )
             )
           )
@@ -799,14 +797,12 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 }
 
 object ProposalActor {
-
   case class ProposalState(proposal: Proposal, lock: Option[Lock] = None) extends MakeSerializable
 
   object ProposalState {
     implicit val proposalStateFormatter: RootJsonFormat[ProposalState] =
       DefaultJsonProtocol.jsonFormat2(ProposalState.apply)
   }
-
   case class Lock(moderatorId: UserId,
                   moderatorName: String,
                   expirationDate: ZonedDateTime = DateHelper.now().plus(15, ChronoUnit.SECONDS))
@@ -819,13 +815,10 @@ object ProposalActor {
   def applyProposalUpdated(state: ProposalState, event: ProposalUpdated): ProposalState = {
 
     val arguments: Map[String, String] = Map(
-      "theme" -> event.theme.map(_.value).getOrElse(""),
+      "theme" -> event.theme.map(_.value).mkString(", "),
       "tags" -> event.tags.map(_.value).mkString(", "),
-      "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.newIdea.map(_.value).getOrElse("")
-    ).filter {
-      case (_, value) => !value.isEmpty
-    }
+      "labels" -> event.labels.map(_.value).mkString(", ")
+    ).filter(!_._2.isEmpty)
     val moderator: UserId = event.moderator.get
     val action =
       ProposalAction(
@@ -840,8 +833,7 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.proposal.events,
         updatedAt = Some(event.eventDate),
-        similarProposals = event.similarProposals,
-        idea = event.newIdea
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
@@ -857,13 +849,10 @@ object ProposalActor {
 
   def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {
     val arguments: Map[String, String] = Map(
-      "theme" -> event.theme.map(_.value).getOrElse(""),
+      "theme" -> event.theme.map(_.value).mkString(", "),
       "tags" -> event.tags.map(_.value).mkString(", "),
-      "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.newIdea.map(_.value).getOrElse("")
-    ).filter {
-      case (_, value) => !value.isEmpty
-    }
+      "labels" -> event.labels.map(_.value).mkString(", ")
+    ).filter(!_._2.isEmpty)
     val action =
       ProposalAction(
         date = event.eventDate,
@@ -878,8 +867,7 @@ object ProposalActor {
         events = action :: state.proposal.events,
         status = Accepted,
         updatedAt = Some(event.eventDate),
-        similarProposals = event.similarProposals,
-        idea = event.newIdea
+        similarProposals = event.similarProposals
       )
 
     proposal = event.edition match {
@@ -895,9 +883,7 @@ object ProposalActor {
 
   def applyProposalRefused(state: ProposalState, event: ProposalRefused): ProposalState = {
     val arguments: Map[String, String] =
-      Map("refusalReason" -> event.refusalReason.getOrElse("")).filter {
-        case (_, value) => !value.isEmpty
-      }
+      Map("refusalReason" -> event.refusalReason.mkString).filter(!_._2.isEmpty)
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = arguments)
     state.copy(
@@ -977,9 +963,7 @@ object ProposalActor {
     state.lock match {
       case Some(Lock(moderatorId, _, _)) =>
         val arguments: Map[String, String] =
-          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
-            case (_, value) => !value.isEmpty
-          }
+          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter(!_._2.isEmpty)
         val action =
           ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
         val proposal = if (moderatorId != event.moderatorId) {
@@ -999,9 +983,7 @@ object ProposalActor {
         )
       case None =>
         val arguments: Map[String, String] =
-          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
-            case (_, value) => !value.isEmpty
-          }
+          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter(!_._2.isEmpty)
         val action =
           ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
         state.copy(
@@ -1016,5 +998,4 @@ object ProposalActor {
   }
 
   case object Snapshot
-
 }

@@ -11,7 +11,6 @@ import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
-import org.make.api.idea.{DefaultIdeaServiceComponent, DefaultPersistentIdeaServiceComponent, ModerationIdeaApi}
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -52,13 +51,11 @@ trait MakeApi
     with DefaultPersistentTagServiceComponent
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
-    with DefaultPersistentIdeaServiceComponent
     with DefaultSocialServiceComponent
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
     with DefaultUserServiceComponent
     with DefaultTagServiceComponent
-    with DefaultIdeaServiceComponent
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
     with DefaultSequenceServiceComponent
@@ -91,7 +88,6 @@ trait MakeApi
     with ConfigurationsApi
     with UserApi
     with TagApi
-    with ModerationIdeaApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -159,7 +155,6 @@ trait MakeApi
       classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi],
-      classOf[ModerationIdeaApi],
       classOf[ElasticSearchApi]
     )
 
@@ -191,8 +186,8 @@ trait MakeApi
       buildRoutes ~
       mailJetRoutes ~
       authenticationRoutes ~
-      businessConfigRoutes ~
-      ideaRoutes
+      businessConfigRoutes
+
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

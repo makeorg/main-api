@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
 
 sealed trait ProposalCommand {
@@ -29,8 +29,7 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
-                                       newIdea: Option[IdeaId])
+                                       similarProposals: Seq[ProposalId])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
@@ -47,8 +46,7 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
-                                       newIdea: Option[IdeaId])
+                                       similarProposals: Seq[ProposalId])
     extends ProposalCommand
 
 final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,

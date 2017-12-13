@@ -312,10 +312,6 @@
         "language": {
           "type": "keyword",
           "index": false
-        },
-        "ideaId": {
-          "type": "keyword",
-          "index": true
         }
       }
     }

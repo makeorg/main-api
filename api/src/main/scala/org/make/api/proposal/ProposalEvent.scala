@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct}
@@ -145,8 +145,7 @@ object PublishedProposalEvent {
                                    theme: Option[ThemeId] = None,
                                    labels: Seq[LabelId] = Seq.empty,
                                    tags: Seq[TagId] = Seq.empty,
-                                   similarProposals: Seq[ProposalId] = Seq.empty,
-                                   newIdea: Option[IdeaId] = None)
+                                   similarProposals: Seq[ProposalId] = Seq.empty)
       extends PublishedProposalEvent
 
   object ProposalUpdated {
@@ -154,7 +153,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat12(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat11(ProposalUpdated.apply)
 
   }
 
@@ -167,8 +166,7 @@ object PublishedProposalEvent {
                                     theme: Option[ThemeId],
                                     labels: Seq[LabelId],
                                     tags: Seq[TagId],
-                                    similarProposals: Seq[ProposalId],
-                                    newIdea: Option[IdeaId] = None)
+                                    similarProposals: Seq[ProposalId])
       extends PublishedProposalEvent
 
   object ProposalAccepted {
@@ -176,7 +174,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
-      DefaultJsonProtocol.jsonFormat11(ProposalAccepted.apply)
+      DefaultJsonProtocol.jsonFormat10(ProposalAccepted.apply)
 
   }
 

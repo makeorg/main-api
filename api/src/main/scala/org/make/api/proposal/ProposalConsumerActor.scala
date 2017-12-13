@@ -198,8 +198,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         country = proposal.creationContext.country.getOrElse("FR"),
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = tags,
-        ideaId = proposal.idea
+        tags = tags
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))
