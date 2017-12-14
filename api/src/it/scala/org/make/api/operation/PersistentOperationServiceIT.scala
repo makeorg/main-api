@@ -1,0 +1,159 @@
+package org.make.api.operation
+
+import java.time.{LocalDate, ZonedDateTime}
+import java.util.UUID
+
+import org.make.api.DatabaseTest
+import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.user.DefaultPersistentUserServiceComponent
+import org.make.core.DateHelper
+import org.make.core.operation._
+import org.make.core.profile.{Gender, Profile}
+import org.make.core.reference.Tag
+import org.make.core.sequence.SequenceId
+import org.make.core.user.{Role, User, UserId}
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+
+class PersistentOperationServiceIT
+    extends DatabaseTest
+    with DefaultPersistentOperationServiceComponent
+    with DefaultPersistentUserServiceComponent
+    with DefaultPersistentTagServiceComponent {
+
+  val profile = Profile(
+    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
+    avatarUrl = Some("https://www.example.com"),
+    profession = Some("profession"),
+    phoneNumber = Some("010101"),
+    twitterId = Some("@twitterid"),
+    facebookId = Some("facebookid"),
+    googleId = Some("googleId"),
+    gender = Some(Gender.Male),
+    genderName = Some("other"),
+    postalCode = Some("93"),
+    karmaLevel = Some(2),
+    locale = Some("FR_FR")
+  )
+  val userId: UserId = UserId(UUID.randomUUID().toString)
+  val johnDoe = User(
+    userId = userId,
+    email = "doe@example.com",
+    firstName = Some("John"),
+    lastName = Some("Doe"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    verified = true,
+    lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"),
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    profile = Some(profile)
+  )
+
+  val stark: Tag = Tag("Stark")
+  val targaryen: Tag = Tag("Targaryen")
+  val bolton: Tag = Tag("Bolton")
+  val greyjoy: Tag = Tag("Greyjoy")
+  val now: ZonedDateTime = DateHelper.now()
+  val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
+  val operationId: OperationId = OperationId(UUID.randomUUID().toString)
+
+  val simpleOperation = Operation(
+    operationId = operationId,
+    status = OperationStatus.Pending,
+    slug = "hello-operation",
+    translations = Seq(
+      OperationTranslation(title = "bonjour operation", language = "fr"),
+      OperationTranslation(title = "hello operation", language = "en")
+    ),
+    defaultLanguage = "fr",
+    sequenceLandingId = sequenceId,
+    events = List(
+      OperationAction(
+        date = now,
+        makeUserId = userId,
+        actionType = OperationCreateAction.name,
+        arguments = Map("arg1" -> "valueArg1")
+      )
+    ),
+    countriesConfiguration = Seq(
+      OperationCountryConfiguration(countryCode = "FR", tagIds = Seq(stark.tagId, targaryen.tagId)),
+      OperationCountryConfiguration(countryCode = "GB", tagIds = Seq(bolton.tagId, greyjoy.tagId))
+    )
+  )
+
+  feature("An operation can be persisted") {
+    scenario("Persist an operation and get the persisted operation") {
+      Given(s"""
+           |an operation "${simpleOperation.translations.head.title}" with
+           |titles =
+           |  fr -> "bonjour operation"
+           |  en -> "hello operation"
+           |status = Pending
+           |slug = "hello-operation"
+           |defaultLanguage = fr
+           |sequenceLandingId = ${sequenceId.value}
+           |countriesConfiguration =
+           |  FR -> ( tagIds -> ${stark.tagId.value}, ${targaryen.tagId.value} ),
+           |  GB -> ( tagIds -> ${bolton.tagId.value}, ${greyjoy.tagId.value} ),
+           |events =
+           |  OperationAction(date = ${now.toString}, makeUserId = ${userId.value}, actionType = create, arguments = (arg1 -> valueArg1))
+           |""".stripMargin)
+      When(s"""I persist "${simpleOperation.translations.head.title}"""")
+      And("I get the persisted operation")
+
+      val futureOperations: Future[Seq[Operation]] = for {
+        _ <- persistentTagService.persist(stark)
+        _ <- persistentTagService.persist(targaryen)
+        _ <- persistentUserService.persist(johnDoe)
+        operation <- persistentOperationService
+          .persist(operation = simpleOperation)
+          .flatMap(_ => persistentOperationService.findAll())(readExecutionContext)
+      } yield operation
+
+      whenReady(futureOperations, Timeout(3.seconds)) { operations =>
+        Then("operations should be an instance of Seq[Operation]")
+        operations shouldBe a[Seq[_]]
+        And("operations size should be 1")
+        operations.size should be(1)
+        And(s"operations should contain operation with operationId ${operationId.value}")
+        val operation: Operation = operations.filter(_.operationId.value == operationId.value).head
+        And("operation should be an instance of Operation")
+        operation shouldBe a[Operation]
+        And("""operation should contain title translations "bonjour operation" and "hello operation" """)
+        operation.translations.filter(_.language == "fr").head.title should be("bonjour operation")
+        operation.translations.filter(_.language == "en").head.title should be("hello operation")
+        And("""operation status should be Pending""")
+        operation.status.shortName should be("Pending")
+        And("""operation slug should be "hello-operation" """)
+        operation.slug should be("hello-operation")
+        And("""operation default translation should be "fr" """)
+        operation.defaultLanguage should be("fr")
+        And(s"""operation sequence landing id should be "${sequenceId.value}" """)
+        operation.sequenceLandingId.value should be(s"${sequenceId.value}")
+        And(s"""
+             |operation countries configuration should be
+             |  FR -> ( tagIds -> ${stark.tagId.value}, ${targaryen.tagId.value} )
+             |  GB -> ( tagIds -> ${bolton.tagId.value}, ${greyjoy.tagId.value} )
+             |""".stripMargin)
+        operation.countriesConfiguration.filter(_.countryCode == "FR").head.tagIds should contain(stark.tagId)
+        operation.countriesConfiguration.filter(_.countryCode == "FR").head.tagIds should contain(targaryen.tagId)
+        operation.countriesConfiguration.filter(_.countryCode == "GB").head.tagIds should contain(bolton.tagId)
+        operation.countriesConfiguration.filter(_.countryCode == "GB").head.tagIds should contain(greyjoy.tagId)
+        And("operation events should contain a create event")
+        val createEvent: OperationAction = operation.events.filter(_.actionType == "create").head
+        createEvent.date.toEpochSecond should be(now.toEpochSecond)
+        createEvent.makeUserId should be(userId)
+        createEvent.actionType should be("create")
+        createEvent.arguments should be(Map("arg1" -> "valueArg1"))
+      }
+
+    }
+  }
+}
