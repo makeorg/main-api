@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
+import org.make.api.technical.MakePersistentActor.Snapshot
 
 import scala.concurrent.duration.DurationInt
 
@@ -29,10 +30,12 @@ class ShardedProposal(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 
   import ShardedProposal._
 
-  context.setReceiveTimeout(2.minutes)
+  context.setReceiveTimeout(30.minutes)
 
   override def unhandled(msg: Any): Unit = msg match {
-    case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopProposal)
+    case ReceiveTimeout =>
+      self ! Snapshot
+      context.parent ! Passivate(stopMessage = StopProposal)
     case StopProposal                  => context.stop(self)
     case SaveSnapshotSuccess(snapshot) => log.debug(s"Snapshot saved: $snapshot")
     case SaveSnapshotFailure(_, cause) => log.error(cause, "Error while saving snapshot")

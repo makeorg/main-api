@@ -1,7 +1,8 @@
 package org.make.api.userhistory
 
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import org.make.api.technical.MakePersistentActor
+import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._
@@ -10,35 +11,25 @@ import org.make.core.user._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-import scala.util.{Failure, Success, Try}
-
-class UserHistoryActor extends PersistentActor with ActorLogging {
+class UserHistoryActor
+    extends MakePersistentActor(classOf[UserHistory], classOf[UserHistoryEvent[_]])
+    with ActorLogging {
 
   def userId: UserId = UserId(self.path.name)
 
-  private var state: UserHistory = UserHistory(Nil)
-
-  override def receiveRecover: Receive = {
-    case event: UserHistoryEvent[_] =>
-      Try(applyEvent(event)) match {
-        case Success(newState) => state = newState
-        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
-      }
-    case SnapshotOffer(_, snapshot: UserHistory) => state = snapshot
-    case _: RecoveryCompleted                    =>
-  }
-
   override def receiveCommand: Receive = {
-    case GetUserHistory(_)                    => sender() ! state
+    case GetUserHistory(_)                    => sender() ! state.getOrElse(UserHistory(Nil))
     case command: LogUserSearchProposalsEvent => persistEvent(command)
     case command: LogAcceptProposalEvent      => persistEvent(command)
     case command: LogRefuseProposalEvent      => persistEvent(command)
     case command: LogPostponeProposalEvent    => persistEvent(command)
     case command: LogLockProposalEvent =>
-      if (!state.events.exists {
-            case LogLockProposalEvent(command.userId, _, _, _) => true
-            case _                                             => false
-          }) {
+      if (!state.toSeq
+            .flatMap(_.events)
+            .exists {
+              case LogLockProposalEvent(command.userId, _, _, _) => true
+              case _                                             => false
+            }) {
         persistEvent(command)
       }
     case command: LogRegisterCitizenEvent             => persistEvent(command)
@@ -56,51 +47,59 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
     case command: LogGetProposalDuplicatesEvent       => persistEvent(command)
     case command: LogUserSearchSequencesEvent         => persistEvent(command)
     case command: LogUserStartSequenceEvent           => persistEvent(command)
+    case Snapshot                                     => saveSnapshot()
   }
 
   override def persistenceId: String = userId.value
 
   private def persistEvent(event: UserHistoryEvent[_]): Unit = {
+    if (state.isEmpty) {
+      state = Some(UserHistory(Nil))
+    }
     persist(event) { e: UserHistoryEvent[_] =>
       log.debug("Persisted event {} for user {}", e.toString, persistenceId)
-      state = applyEvent(e)
+      newEventAdded(e)
       sender() ! event
     }
   }
 
-  private def applyEvent(event: UserHistoryEvent[_]) = {
-    state.copy(events = event :: state.events)
+  override val applyEvent: PartialFunction[UserHistoryEvent[_], Option[UserHistory]] = {
+    case event => state.map(s => s.copy(events = event :: s.events))
   }
 
-  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.events.flatMap {
-    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey)))
-        if proposalIds.contains(proposalId) =>
-      Some(VoteAction(proposalId, date, voteKey))
-    case LogUserUnvoteEvent(_, _, UserAction(date, _, UserUnvote(proposalId, voteKey)))
-        if proposalIds.contains(proposalId) =>
-      Some(UnvoteAction(proposalId, date, voteKey))
-    case LogUserQualificationEvent(_, _, UserAction(date, _, UserQualification(proposalId, qualificationKey)))
-        if proposalIds.contains(proposalId) =>
-      Some(QualificationAction(proposalId, date, qualificationKey))
-    case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey)))
-        if proposalIds.contains(proposalId) =>
-      Some(UnqualificationAction(proposalId, date, qualificationKey))
-    case _ => None
+  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = {
+    state.toSeq.flatMap(_.events).flatMap {
+      case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey)))
+          if proposalIds.contains(proposalId) =>
+        Some(VoteAction(proposalId, date, voteKey))
+      case LogUserUnvoteEvent(_, _, UserAction(date, _, UserUnvote(proposalId, voteKey)))
+          if proposalIds.contains(proposalId) =>
+        Some(UnvoteAction(proposalId, date, voteKey))
+      case LogUserQualificationEvent(_, _, UserAction(date, _, UserQualification(proposalId, qualificationKey)))
+          if proposalIds.contains(proposalId) =>
+        Some(QualificationAction(proposalId, date, qualificationKey))
+      case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey)))
+          if proposalIds.contains(proposalId) =>
+        Some(UnqualificationAction(proposalId, date, qualificationKey))
+      case _ => None
+    }
   }
 
-  private def voteActions(): Seq[VoteRelatedAction] = state.events.flatMap {
-    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey))) =>
-      Some(VoteAction(proposalId, date, voteKey))
-    case LogUserUnvoteEvent(_, _, UserAction(date, _, UserUnvote(proposalId, voteKey))) =>
-      Some(UnvoteAction(proposalId, date, voteKey))
-    case LogUserQualificationEvent(_, _, UserAction(date, _, UserQualification(proposalId, qualificationKey))) =>
-      Some(QualificationAction(proposalId, date, qualificationKey))
-    case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey))) =>
-      Some(UnqualificationAction(proposalId, date, qualificationKey))
-    case _ => None
+  private def voteActions(): Seq[VoteRelatedAction] = {
+    state.toSeq.flatMap(_.events).flatMap {
+      case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey))) =>
+        Some(VoteAction(proposalId, date, voteKey))
+      case LogUserUnvoteEvent(_, _, UserAction(date, _, UserUnvote(proposalId, voteKey))) =>
+        Some(UnvoteAction(proposalId, date, voteKey))
+      case LogUserQualificationEvent(_, _, UserAction(date, _, UserQualification(proposalId, qualificationKey))) =>
+        Some(QualificationAction(proposalId, date, qualificationKey))
+      case LogUserUnqualificationEvent(_, _, UserAction(date, _, UserUnqualification(proposalId, qualificationKey))) =>
+        Some(UnqualificationAction(proposalId, date, qualificationKey))
+      case _ => None
+    }
   }
 
-  private def voteByProposalId(actions: Seq[VoteRelatedAction]) =
+  private def voteByProposalId(actions: Seq[VoteRelatedAction]) = {
     actions.filter {
       case _: GenericVoteAction => true
       case _                    => false
@@ -115,8 +114,9 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
       .map {
         case (proposalId, action) => proposalId -> action.asInstanceOf[VoteAction].key
       }
+  }
 
-  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Seq[QualificationKey]] =
+  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Seq[QualificationKey]] = {
     actions.filter {
       case _: GenericQualificationAction => true
       case _                             => false
@@ -141,6 +141,7 @@ class UserHistoryActor extends PersistentActor with ActorLogging {
             case (_, key) => key
           }
       }
+  }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)
