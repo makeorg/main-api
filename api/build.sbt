@@ -86,7 +86,6 @@ fork in IntegrationTest := true
 
 javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
 javaOptions in run ++= Seq(
-  "-Dconfig.resource=default-application.conf",
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
 )
 

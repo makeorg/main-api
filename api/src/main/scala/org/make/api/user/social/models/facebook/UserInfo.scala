@@ -20,11 +20,12 @@ object FacebookUserPicture {
 
 final case class UserInfo(id: String,
                           email: Option[String],
-                          firstName: String,
-                          lastName: String,
+                          firstName: Option[String],
+                          lastName: Option[String],
+                          gender: Option[String],
                           picture: FacebookUserPicture)
 
 object UserInfo {
   implicit val decoder: Decoder[UserInfo] =
-    Decoder.forProduct5("id", "email", "first_name", "last_name", "picture")(UserInfo.apply)
+    Decoder.forProduct6("id", "email", "first_name", "last_name", "gender", "picture")(UserInfo.apply)
 }

@@ -1,8 +1,9 @@
 package org.make.api.user.social.models
 
 final case class UserInfo(email: Option[String] = None,
-                          firstName: String,
-                          lastName: String,
+                          firstName: Option[String],
+                          lastName: Option[String],
+                          gender: Option[String] = None,
                           googleId: Option[String] = None,
                           facebookId: Option[String] = None,
                           picture: Option[String] = None,

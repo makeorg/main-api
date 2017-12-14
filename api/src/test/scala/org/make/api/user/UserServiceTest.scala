@@ -9,6 +9,7 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.models.UserInfo
 import org.make.api.userhistory.UserEvent.UserValidatedAccountEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.core.profile.Gender.Female
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -108,8 +109,9 @@ class UserServiceTest
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
-        firstName = "facebook",
-        lastName = "user",
+        firstName = Some("facebook"),
+        lastName = Some("user"),
+        gender = None,
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture")
@@ -135,8 +137,8 @@ class UserServiceTest
       val returnedUser = User(
         userId = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
-        firstName = Some(info.firstName),
-        lastName = Some(info.lastName),
+        firstName = info.firstName,
+        lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         enabled = true,
@@ -160,10 +162,78 @@ class UserServiceTest
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
         user.email should be(info.email.getOrElse(""))
-        user.firstName should be(Some(info.firstName))
-        user.lastName should be(Some(info.lastName))
+        user.firstName should be(info.firstName)
+        user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
         verify(eventBusService, times(2)).publish(any[UserValidatedAccountEvent])
+      }
+    }
+
+    scenario("successful register user from social with gender") {
+      Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(None))
+
+      val infoWithGender = UserInfo(
+        email = Some("facebook@make.org"),
+        firstName = Some("facebook"),
+        lastName = Some("user"),
+        gender = Some("female"),
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture")
+      )
+
+      val returnedProfileWithGender = Profile(
+        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+        avatarUrl = Some("facebook.com/picture"),
+        profession = None,
+        phoneNumber = None,
+        twitterId = None,
+        facebookId = Some("444444"),
+        googleId = None,
+        gender = Some(Female),
+        genderName = Some("female"),
+        postalCode = None,
+        karmaLevel = None,
+        locale = None
+      )
+
+      val returnedUserWithGender = User(
+        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+        email = infoWithGender.email.getOrElse(""),
+        firstName = infoWithGender.firstName,
+        lastName = infoWithGender.lastName,
+        lastIp = Some("127.0.0.1"),
+        hashedPassword = Some("passpass"),
+        enabled = true,
+        verified = true,
+        lastConnection = DateHelper.now(),
+        verificationToken = Some("Token"),
+        verificationTokenExpiresAt = Some(DateHelper.now()),
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq(RoleCitizen),
+        profile = Some(returnedProfileWithGender)
+      )
+
+      Mockito
+        .when(
+          persistentUserService
+            .persist(any[User])
+        )
+        .thenReturn(Future.successful(returnedUserWithGender))
+
+      val futureUserWithGender =
+        userService.getOrCreateUserFromSocial(infoWithGender, Some("127.0.0.1"), RequestContext.empty)
+
+      whenReady(futureUserWithGender, Timeout(2.seconds)) { user =>
+        user shouldBe a[User]
+        user.email should be(infoWithGender.email.getOrElse(""))
+        user.firstName should be(infoWithGender.firstName)
+        user.lastName should be(infoWithGender.lastName)
+        user.profile.get.facebookId should be(infoWithGender.facebookId)
+        user.profile.get.gender should be(Some(Female))
+        user.profile.get.genderName should be(Some("female"))
+        verify(eventBusService, times(3)).publish(any[UserValidatedAccountEvent])
       }
     }
 
@@ -209,8 +279,9 @@ class UserServiceTest
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
-        firstName = "facebook",
-        lastName = "user",
+        firstName = Some("facebook"),
+        lastName = Some("user"),
+        gender = None,
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture")
@@ -219,7 +290,7 @@ class UserServiceTest
       val futureUserSocial = userService.getOrCreateUserFromSocial(info, None, RequestContext.empty)
 
       whenReady(futureUserSocial, Timeout(3.seconds)) { _ =>
-        verify(eventBusService, times(2)).publish(any[UserValidatedAccountEvent])
+        verify(eventBusService, times(3)).publish(any[UserValidatedAccountEvent])
       }
     }
   }

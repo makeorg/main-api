@@ -19,7 +19,8 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 question: Option[String],
                                 hostname: Option[String] = None,
                                 ipAddress: Option[String] = None,
-                                getParameters: Option[Map[String, String]] = None)
+                                getParameters: Option[Map[String, String]] = None,
+                                userAgent: Option[String] = None)
 
 object RequestContext {
   implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]
@@ -29,6 +30,6 @@ object RequestContext {
     RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, None, None, None)
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat13(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat14(RequestContext.apply)
 
 }

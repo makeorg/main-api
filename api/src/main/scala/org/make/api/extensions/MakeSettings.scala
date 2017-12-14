@@ -22,20 +22,6 @@ class MakeSettings(config: Config) extends Extension {
     val refreshTokenLifetime: Int = config.getInt("oauth.refresh-token-lifetime")
   }
 
-  val useEmbeddedElasticSearch: Boolean =
-    if (config.hasPath("dev.embedded-elasticsearch")) {
-      config.getBoolean("dev.embedded-elasticsearch")
-    } else {
-      false
-    }
-
-  val sendTestData: Boolean =
-    if (config.hasPath("dev.send-test-data")) {
-      config.getBoolean("dev.send-test-data")
-    } else {
-      false
-    }
-
   object Http {
     val host: String = config.getString("http.host")
     val port: Int = config.getInt("http.port")

@@ -31,7 +31,10 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
 
   def sessionId: Directive1[String] =
-    optionalCookie(sessionIdKey).map(_.map(_.value).getOrElse(idGenerator.nextId()))
+    for {
+      maybeCookieSessionId <- optionalCookie(sessionIdKey)
+      maybeSessionId       <- optionalHeaderValueByName(SessionIdHeader.name)
+    } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
   def addMakeHeaders(requestId: String,
                      routeName: String,
@@ -45,7 +48,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         RequestTimeHeader(startTime),
         RequestIdHeader(requestId),
         RouteNameHeader(routeName),
-        ExternalIdHeader(externalId)
+        ExternalIdHeader(externalId),
+        SessionIdHeader(sessionId)
       ) ++ defaultCorsHeaders(origin)
 
       if (addCookie) {
@@ -89,6 +93,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeHostName      <- optionalHeaderValueByName(HostNameHeader.name)
       maybeIpAddress     <- extractClientIP
       maybeGetParameters <- optionalHeaderValueByName(GetParametersHeader.name)
+      maybeUserAgent     <- optionalHeaderValueByType[`User-Agent`](())
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -111,7 +116,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
               case Array(key)        => key -> ""
             }
             .toMap
-        )
+        ),
+        userAgent = maybeUserAgent.map(_.toString)
       )
     }
   }
@@ -160,10 +166,19 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         HttpMethods.PATCH,
         HttpMethods.DELETE
       ),
-      `Access-Control-Allow-Credentials`(true)
+      `Access-Control-Allow-Credentials`(true),
+      `Access-Control-Expose-Headers`(
+        immutable.Seq(
+          RequestIdHeader.name,
+          RouteNameHeader.name,
+          RequestTimeHeader.name,
+          ExternalIdHeader.name,
+          SessionIdHeader.name
+        )
+      )
     ) ++ mayBeOriginValue.map { httpOrigin =>
-      immutable.Seq(`Access-Control-Allow-Origin`(origin = httpOrigin))
-    }.getOrElse(immutable.Seq())
+      `Access-Control-Allow-Origin`(origin = httpOrigin)
+    }
 
   }
 
@@ -390,4 +405,18 @@ object GetParametersHeader extends ModeledCustomHeaderCompanion[GetParametersHea
   override val name: String = "x-get-parameters"
 
   override def parse(value: String): Try[GetParametersHeader] = Success(new GetParametersHeader(value))
+}
+
+final case class SessionIdHeader(override val value: String) extends ModeledCustomHeader[SessionIdHeader] {
+  override def companion: ModeledCustomHeaderCompanion[SessionIdHeader] = SessionIdHeader
+
+  override def renderInRequests: Boolean = true
+
+  override def renderInResponses: Boolean = true
+}
+
+object SessionIdHeader extends ModeledCustomHeaderCompanion[SessionIdHeader] {
+  override val name: String = "x-session-id"
+
+  override def parse(value: String): Try[SessionIdHeader] = Success(new SessionIdHeader(value))
 }

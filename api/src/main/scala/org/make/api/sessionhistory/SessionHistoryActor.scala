@@ -16,7 +16,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentActor with ActorLogging {
@@ -28,7 +28,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
   private var state: SessionHistory = SessionHistory(Nil)
 
   override def receiveRecover: Receive = {
-    case event: SessionHistoryEvent[_]              => state = applyEvent(event)
+    case event: SessionHistoryEvent[_] =>
+      Try(applyEvent(event)) match {
+        case Success(newState) => state = newState
+        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
+      }
     case SnapshotOffer(_, snapshot: SessionHistory) => state = snapshot
     case _: RecoveryCompleted                       =>
   }

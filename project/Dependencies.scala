@@ -60,8 +60,9 @@ object Dependencies {
   val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
   val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
 
-  val constructr: ModuleID = "de.heikoseeberger"                 %% "constructr"                        % "0.18.0"
-  val constructrZookeeper: ModuleID = "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.0"
+  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.18.0"
+  val constructrZookeeper: ModuleID =
+    ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.0").exclude("log4j", "log4j")
 
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.3.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.0"
