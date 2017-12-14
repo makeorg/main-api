@@ -227,7 +227,8 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         country = proposal.creationContext.country.getOrElse("FR"),
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = tags
+        tags = tags,
+        ideaId = proposal.idea
       )
     }
 

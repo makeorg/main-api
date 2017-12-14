@@ -6,7 +6,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto._
 import org.make.core.CirceFormatters
 import org.make.core.proposal._
-import org.make.core.reference.{Tag, ThemeId}
+import org.make.core.reference.{IdeaId, Tag, ThemeId}
 import org.make.core.user.UserId
 
 object ProposalElasticsearchFieldNames {
@@ -35,6 +35,7 @@ object ProposalElasticsearchFieldNames {
   val language: String = "language"
   val tags: String = "tags"
   val tagId: String = "tags.tagId"
+  val ideaId: String = "ideaId"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -52,7 +53,8 @@ case class IndexedProposal(id: ProposalId,
                            country: String,
                            language: String,
                            themeId: Option[ThemeId],
-                           tags: Seq[Tag])
+                           tags: Seq[Tag],
+                           ideaId: Option[IdeaId])
 
 object IndexedProposal extends CirceFormatters {
   implicit val encoder: ObjectEncoder[IndexedProposal] = deriveEncoder[IndexedProposal]

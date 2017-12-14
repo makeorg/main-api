@@ -104,11 +104,11 @@ object Validation {
   }
 
   def requireEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should not be empty"))
+    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
   def requireNotPresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should not be empty"))
+    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
   def validChoices(fieldName: String,
@@ -129,6 +129,12 @@ object Validation {
       userValue.equals(expectedValue)
     }
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+  }
+
+  def validateEntity(fieldName: String,
+                     message: Option[String] = None,
+                     userValue: Option[MakeSerializable]): Requirement = {
+    validateField(fieldName, userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
   }
 
   private def exists(value: Any): Boolean = {
