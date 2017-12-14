@@ -91,7 +91,7 @@ object BackofficeConfiguration {
   val defaultMinProposalsPerSequence: Int = 3
   val defaultMaxProposalsPerSequence: Int = 12
   val defaultProposalVotesThreshold: Int = 100
-  val defaultEngagementThreshold: Double = 0.9
+  val defaultEngagementThreshold: Double = 0.85
   //TODO: redefine it with team product
   val defaultReasonsForRefusal: Seq[String] =
     Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "MultipleIdeas", "Other")
