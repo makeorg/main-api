@@ -19,7 +19,7 @@ import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.{DateHelper, HttpCodes, Validation}
+import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -238,20 +238,16 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsync(ideaService.fetchOne(request.idea.get)) { idea =>
-                    Validation.validate(Validation.validateEntity("idea", Some("Selected Idea does not exist"), idea))
-
-                    provideAsyncOrNotFound(
-                      proposalService.update(
-                        proposalId = proposalId,
-                        moderator = userAuth.user.userId,
-                        requestContext = requestContext,
-                        updatedAt = DateHelper.now(),
-                        request = request
-                      )
-                    ) { proposalResponse: ProposalResponse =>
-                      complete(proposalResponse)
-                    }
+                  provideAsyncOrNotFound(
+                    proposalService.update(
+                      proposalId = proposalId,
+                      moderator = userAuth.user.userId,
+                      requestContext = requestContext,
+                      updatedAt = DateHelper.now(),
+                      request = request
+                    )
+                  ) { proposalResponse: ProposalResponse =>
+                    complete(proposalResponse)
                   }
                 }
               }
@@ -296,19 +292,15 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsync(ideaService.fetchOne(request.idea.get)) { idea =>
-                  Validation.validate(Validation.validateEntity("idea", Some("Selected Idea does not exist"), idea))
-
-                  provideAsyncOrNotFound(
-                    proposalService.validateProposal(
-                      proposalId = proposalId,
-                      moderator = auth.user.userId,
-                      requestContext = requestContext,
-                      request = request
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
-                  }
+                provideAsyncOrNotFound(
+                  proposalService.validateProposal(
+                    proposalId = proposalId,
+                    moderator = auth.user.userId,
+                    requestContext = requestContext,
+                    request = request
+                  )
+                ) { proposalResponse: ProposalResponse =>
+                  complete(proposalResponse)
                 }
               }
             }
