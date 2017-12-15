@@ -54,6 +54,8 @@ trait ProposalCoordinatorService {
   def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]]
   def lock(command: LockProposalCommand): Future[Option[UserId]]
   def updateDuplicates(command: UpdateDuplicatedProposalsCommand): Unit
+  def patch(command: PatchProposalCommand): Future[Option[Proposal]]
+
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -207,11 +209,15 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
             case other    => other
           }
           val modifiedProposal = proposal.copy(tags = newTags)
-          proposalCoordinator ! PatchProposalCommand(proposalId = proposalId, proposal = modifiedProposal)
+          proposalCoordinator ! ReplaceProposalCommand(proposalId = proposalId, proposal = modifiedProposal)
         case Failure(e) => logger.error("", e)
         case _          =>
       }
 
+    }
+
+    override def patch(command: PatchProposalCommand): Future[Option[Proposal]] = {
+      (proposalCoordinator ? command).mapTo[Option[Proposal]]
     }
   }
 }
