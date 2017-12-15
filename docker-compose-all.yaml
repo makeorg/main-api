@@ -1,89 +1,90 @@
 version: '3'
 services:
   api1:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:master-latest
     hostname: api1
     ports:
       - 9000:9000
+      - 4000:4000
     environment:
       - TCP_HOST=api1
       - KAFKA_URI=kafka:9092
-      - AVRO_REGISTRY_URL=http://schema_registry:8081
-      - ES_HOST=elasticsearch
+      - AVRO_REGISTRY_URL=http://schema-registry:8081
+      - ES_URL=elasticsearch:9200
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
-      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
+      - zookeeper
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
-      - consul
   api2:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:master-latest
     hostname: api2
     ports:
       - 19000:9000
+      - 14000:4000
     environment:
       - TCP_HOST=api2
       - KAFKA_URI=kafka:9092
-      - AVRO_REGISTRY_URL=http://schema_registry:8081
-      - ES_HOST=elasticsearch
+      - AVRO_REGISTRY_URL=http://schema-registry:8081
+      - ES_URL=elasticsearch:9200
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
-      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
-      - consul
+      - zookeeper
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
       - api1
-      - consul
   api3:
-    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:0.0.1-SNAPSHOT
+    image: nexus.prod.makeorg.tech/repository/docker-dev/make-api:master-latest
     hostname: api3
     ports:
       - 29000:9000
+      - 24000:4000
     environment:
       - TCP_HOST=api3
-      - CONSUL_URL=http://consul:8500
       - KAFKA_URI=kafka:9092
-      - AVRO_REGISTRY_URL=http://schema_registry:8081
-      - ES_HOST=elasticsearch
+      - AVRO_REGISTRY_URL=http://schema-registry:8081
+      - ES_URL=elasticsearch:9200
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
+      - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
-      - CONSUL_URL=http://consul:8500
     networks:
       - makeapi
     depends_on:
-      - consul
+      - zookeeper
       - kafka
       - cockroach
       - elasticsearch
       - cassandra
-      - consul
       - api2
   elasticsearch:
     build:
-        context: .
-        dockerfile: ./infra/elasticsearch/Dockerfile
-      hostname: elasticsearch
-      ports:
-        - 9200:9200
-        - 9300:9300
-      networks:
-        - makeapi
-      environment:
-        ES_JAVA_OPTS: '-Xms256M -Xmx256M'
-        xpack.security.enabled: "false"
-        http.host: elasticsearch
-        transport.host: localhost
+      context: .
+      dockerfile: ./infra/elasticsearch/Dockerfile
+    hostname: elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - makeapi
+    environment:
+      ES_JAVA_OPTS: '-Xms256M -Xmx256M'
+      xpack.security.enabled: "false"
+      http.host: elasticsearch
+      transport.host: localhost
   zookeeper:
+    hostname: zookeeper
     image: confluentinc/cp-zookeeper:4.0.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -95,7 +96,8 @@ services:
     image: confluentinc/cp-kafka:4.0.0
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_BROKER_ID: 42
     ports:
       - 9092:9092
@@ -104,17 +106,20 @@ services:
     networks:
       - makeapi
     restart: on-failure:2
-  schema_registry:
+    depends_on:
+      - zookeeper
+  schema-registry:
+    hostname: schema-registry
     image: confluentinc/cp-schema-registry:4.0.0
     depends_on:
       - kafka
     networks:
       - makeapi
     environment:
-        SCHEMA_REGISTRY_HOST_NAME: schema_registry
+        SCHEMA_REGISTRY_HOST_NAME: schema-registry
         SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper:2181/kafka
-        SCHEMA_REGISTRY_LISTENERS: http://schema_registry:8081
-    restart: on-failure:2
+        SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+    restart: on-failure:3
   cockroach:
     image: cockroachdb/cockroach:v1.1.0
     hostname: cockroach
@@ -133,16 +138,6 @@ services:
       JVM_OPTS: '-Xms256M -Xmx256M'
     networks:
       - makeapi
-  consul:
-      image: consul:0.8.3
-      networks:
-        - makeapi
-      ports:
-        - 8300:8300
-        - 8301:8301
-        - 8302:8302
-        - 8500:8500
-        - 8600:8600
 networks:
   makeapi:
     ipam:
