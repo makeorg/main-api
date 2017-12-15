@@ -2,15 +2,15 @@ package org.make.api.proposal
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
@@ -32,6 +32,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with IdGeneratorComponent
     with MakeSettingsComponent
     with UserServiceComponent
+    with IdeaServiceComponent
     with ThemeServiceComponent =>
 
   @ApiOperation(

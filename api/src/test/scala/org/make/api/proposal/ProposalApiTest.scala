@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Route
 import io.circe.syntax._
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -17,7 +18,7 @@ import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -32,6 +33,7 @@ class ProposalApiTest
     extends MakeApiTestUtils
     with ProposalApi
     with ModerationProposalApi
+    with IdeaServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with ProposalServiceComponent
@@ -56,8 +58,8 @@ class ProposalApiTest
   when(idGenerator.nextId()).thenReturn("next-id")
 
   override val userService: UserService = mock[UserService]
-
   override val themeService: ThemeService = mock[ThemeService]
+  override val ideaService: IdeaService = mock[IdeaService]
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -136,7 +138,8 @@ class ProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq()
+    similarProposals = Seq(),
+    idea = Some(IdeaId("becoming-king"))
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -238,7 +241,8 @@ class ProposalApiTest
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now()),
           events = Nil,
-          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789"))
+          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
+          idea = None
         )
       )
     )
@@ -261,7 +265,8 @@ class ProposalApiTest
     language = "ar",
     themeId = None,
     tags = Seq.empty,
-    myProposal = false
+    myProposal = false,
+    idea = None
   )
   when(
     proposalService
@@ -297,9 +302,13 @@ class ProposalApiTest
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
-      similarProposals = Seq.empty
+      similarProposals = Seq.empty,
+      idea = None
     )
   }
+
+  when(ideaService.fetchOne(any[IdeaId]))
+    .thenReturn(Future.successful(Some(Idea(IdeaId("foo"), "Foo", None, None, None, None))))
 
   val routes: Route = sealRoute(proposalRoutes ~ moderationProposalRoutes)
 
