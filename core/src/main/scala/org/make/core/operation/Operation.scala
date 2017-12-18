@@ -2,13 +2,12 @@ package org.make.core.operation
 
 import java.time.ZonedDateTime
 
-import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
-import org.make.core.{MakeSerializable, StringValue}
+import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
@@ -19,7 +18,16 @@ final case class Operation(status: OperationStatus,
                            defaultLanguage: String,
                            sequenceLandingId: SequenceId,
                            events: List[OperationAction],
+                           override val createdAt: Option[ZonedDateTime],
+                           override val updatedAt: Option[ZonedDateTime],
                            countriesConfiguration: Seq[OperationCountryConfiguration])
+    extends MakeSerializable
+    with Timestamped
+
+object Operation {
+  implicit val operationFormatter: RootJsonFormat[Operation] =
+    DefaultJsonProtocol.jsonFormat10(Operation.apply)
+}
 
 final case class OperationId(value: String) extends StringValue
 
@@ -44,21 +52,21 @@ object OperationId {
 final case class OperationCountryConfiguration(countryCode: String, tagIds: Seq[TagId])
 
 object OperationCountryConfiguration {
-  implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
-  implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
+  implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =
+    DefaultJsonProtocol.jsonFormat2(OperationCountryConfiguration.apply)
 }
 
 final case class OperationTranslation(title: String, language: String) extends MakeSerializable
 
 object OperationTranslation {
-  implicit val encoder: ObjectEncoder[OperationTranslation] = deriveEncoder[OperationTranslation]
-  implicit val decoder: Decoder[OperationTranslation] = deriveDecoder[OperationTranslation]
+  implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
+    DefaultJsonProtocol.jsonFormat2(OperationTranslation.apply)
 }
 
-final case class OperationAction(date: ZonedDateTime,
+final case class OperationAction(date: ZonedDateTime = DateHelper.now(),
                                  makeUserId: UserId,
                                  actionType: String,
-                                 arguments: Map[String, String])
+                                 arguments: Map[String, String] = Map.empty)
 
 object OperationAction {
   implicit val operationActionFormatter: RootJsonFormat[OperationAction] =

@@ -66,6 +66,8 @@ class PersistentOperationServiceIT
 
   val simpleOperation = Operation(
     operationId = operationId,
+    createdAt = None,
+    updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
     translations = Seq(
@@ -153,7 +155,116 @@ class PersistentOperationServiceIT
         createEvent.actionType should be("create")
         createEvent.arguments should be(Map("arg1" -> "valueArg1"))
       }
+    }
 
+    scenario("get a persisted operation by id") {
+
+      val operationIdForGetById: OperationId = OperationId(UUID.randomUUID().toString)
+      val operationForGetById: Operation = simpleOperation.copy(
+        operationId = operationIdForGetById,
+        slug = "get-by-id-operation",
+        translations = Seq(
+          OperationTranslation(title = "get by id operation", language = "fr"),
+          OperationTranslation(title = "get by id operation", language = "en")
+        ),
+        countriesConfiguration = Seq.empty
+      )
+      Given(s""" a persisted operation "${operationForGetById.translations.head.title}" """)
+      When("i get the persisted operation by id")
+      Then(" the call success")
+
+      val futureMaybeOperation: Future[Option[Operation]] =
+        persistentOperationService.persist(operation = operationForGetById).flatMap { operation =>
+          persistentOperationService.getById(operation.operationId)
+        }
+
+      whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
+        maybeOperation should not be None
+        maybeOperation.get shouldBe a[Operation]
+      }
+    }
+
+    scenario("modify a persisted operation") {
+
+      val operationIdForModify: OperationId = OperationId(UUID.randomUUID().toString)
+      val operationForModify: Operation = simpleOperation.copy(
+        operationId = operationIdForModify,
+        slug = "modify-operation",
+        countriesConfiguration = Seq.empty
+      )
+      Given(s""" a persisted operation "${operationForModify.translations.head.title}" """)
+      When("i get the modify operation")
+      Then("the modification success")
+
+      val futurePersistedOperation: Future[Operation] =
+        persistentOperationService.persist(operation = operationForModify)
+
+      whenReady(futurePersistedOperation, Timeout(3.seconds)) { initialOperation =>
+        val waitingTime = 1000
+        Thread.sleep(waitingTime) // needed to test updatedAt
+        val futureMaybeOperation: Future[Option[Operation]] =
+          persistentOperationService
+            .modify(
+              initialOperation.copy(
+                status = OperationStatus.Active,
+                sequenceLandingId = SequenceId("updatedSequenceId"),
+                defaultLanguage = "br",
+                slug = "newSlug",
+                translations = Seq(
+                  OperationTranslation(title = "modify operation", language = "en"),
+                  OperationTranslation(title = "modify operation br", language = "br"),
+                  OperationTranslation(title = "modify operation it", language = "it")
+                ),
+                events = List(
+                  OperationAction(
+                    date = initialOperation.events.head.date,
+                    makeUserId = userId,
+                    actionType = OperationCreateAction.name,
+                    arguments = Map("arg1" -> "valueArg1")
+                  ),
+                  OperationAction(
+                    date = now,
+                    makeUserId = userId,
+                    actionType = OperationUpdateAction.name,
+                    arguments = Map("arg2" -> "valueArg2")
+                  )
+                ),
+                countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "BR", tagIds = Seq.empty))
+              )
+            )
+            .flatMap { operation =>
+              persistentOperationService.getById(operation.operationId)
+            }
+
+        whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
+          val operation: Operation = maybeOperation.get
+          operation should not be None
+          operation shouldBe a[Operation]
+          operation.operationId.value should be(operationForModify.operationId.value)
+          operation.translations.length should be(3)
+          operation.translations.filter(translation => translation.language == "en").head.title should be(
+            "modify operation"
+          )
+          operation.translations.filter(translation => translation.language == "it").head.title should be(
+            "modify operation it"
+          )
+          operation.translations.filter(translation => translation.language == "br").head.title should be(
+            "modify operation br"
+          )
+          operation.events.length should be(2)
+          operation.events.filter(event => event.actionType == OperationUpdateAction.name).head.arguments should be(
+            Map("arg2" -> "valueArg2")
+          )
+          operation.slug should be("newSlug")
+          operation.sequenceLandingId should be(SequenceId("updatedSequenceId"))
+          operation.defaultLanguage should be("br")
+          initialOperation.createdAt.get.toEpochSecond should be(operation.createdAt.get.toEpochSecond)
+          initialOperation.updatedAt.get.toEpochSecond should be < operation.updatedAt.get.toEpochSecond
+          operation.countriesConfiguration.size should be(1)
+          operation.countriesConfiguration.head.tagIds.size should be(0)
+          operation.status.shortName should be(OperationStatus.Active.shortName)
+        }
+      }
     }
   }
 }

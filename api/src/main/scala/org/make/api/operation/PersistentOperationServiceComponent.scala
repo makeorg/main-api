@@ -30,7 +30,9 @@ trait PersistentOperationServiceComponent {
 
 trait PersistentOperationService {
   def findAll(): Future[Seq[Operation]]
+  def getById(operationId: OperationId): Future[Option[Operation]]
   def persist(operation: Operation): Future[Operation]
+  def modify(operation: Operation): Future[Operation]
   def addTranslationToOperation(translation: OperationTranslation, operation: Operation): Future[Boolean]
   def addActionToOperation(action: OperationAction, operation: Operation): Future[Boolean]
   def addCountryConfigurationToOperation(countryConfiguration: OperationCountryConfiguration,
@@ -40,7 +42,8 @@ trait PersistentOperationService {
 trait DefaultPersistentOperationServiceComponent extends PersistentOperationServiceComponent {
   this: MakeDBExecutionContextComponent with DefaultPersistentTagServiceComponent =>
 
-  override lazy val persistentOperationService = new PersistentOperationService with ShortenedNames with StrictLogging {
+  override lazy val persistentOperationService: PersistentOperationService = new PersistentOperationService
+  with ShortenedNames with StrictLogging {
 
     private val operationAlias = PersistentOperation.operationAlias
     private val operationTranslationAlias = PersistentOperationTranslation.operationTranslationAlias
@@ -51,21 +54,22 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     private val operationTranslationColumn = PersistentOperationTranslation.column
     private val operationActionColumn = PersistentOperationAction.column
     private val operationCountryConfigurationColumn = PersistentOperationCountryConfiguration.column
+    private val baseSelect = select
+      .from(PersistentOperation.as(operationAlias))
+      .leftJoin(PersistentOperationTranslation.as(operationTranslationAlias))
+      .on(operationAlias.uuid, operationTranslationAlias.operationUuid)
+      .leftJoin(PersistentOperationAction.as(operationActionAlias))
+      .on(operationAlias.uuid, operationActionAlias.operationUuid)
+      .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
+      .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
     override def findAll(): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL {
-            select
-              .from(PersistentOperation.as(operationAlias))
-              .leftJoin(PersistentOperationTranslation.as(operationTranslationAlias))
-              .on(operationAlias.uuid, operationTranslationAlias.operationUuid)
-              .leftJoin(PersistentOperationAction.as(operationActionAlias))
-              .on(operationAlias.uuid, operationActionAlias.operationUuid)
-              .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
-              .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
-
+            baseSelect
+              .copy()
           }.one(PersistentOperation.apply())
             .toManies(
               resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
@@ -92,6 +96,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
     override def persist(operation: Operation): Future[Operation] = {
       implicit val context: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
@@ -102,27 +107,106 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage,
               column.sequenceLandingId -> operation.sequenceLandingId.value,
-              column.createdAt -> DateHelper.now(),
-              column.updatedAt -> DateHelper.now()
+              column.createdAt -> nowDate,
+              column.updatedAt -> nowDate
             )
         }.execute().apply()
-      }).flatMap(
-          _ =>
-            Future.traverse(operation.translations)(
-              translation => addTranslationToOperation(translation = translation, operation = operation)
+      }).flatMap { _ =>
+        for {
+          resultTranslation <- Future.traverse(operation.translations)(
+            translation => addTranslationToOperation(translation = translation, operation = operation)
           )
-        )
-        .flatMap(
-          _ => Future.traverse(operation.events)(event => addActionToOperation(action = event, operation = operation))
-        )
-        .flatMap(
-          _ =>
-            Future.traverse(operation.countriesConfiguration)(
-              countryConfiguration =>
-                addCountryConfigurationToOperation(countryConfiguration = countryConfiguration, operation = operation)
+          resultAction <- Future.traverse(operation.events)(
+            event => addActionToOperation(action = event, operation = operation)
           )
-        )
-        .map(_ => operation)
+          resultCountryConfiguration <- Future.traverse(operation.countriesConfiguration)(
+            countryConfiguration =>
+              addCountryConfigurationToOperation(countryConfiguration = countryConfiguration, operation = operation)
+          )
+        } yield (resultTranslation ++ resultAction ++ resultCountryConfiguration).reduce(_ & _)
+
+      }.map(_ => operation.copy(createdAt = Some(nowDate), updatedAt = Some(nowDate)))
+    }
+
+    override def getById(operationId: OperationId): Future[Option[Operation]] = {
+      implicit val context: EC = readExecutionContext
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+            baseSelect
+              .copy()
+              .where(sqls.eq(operationAlias.uuid, operationId.value))
+          }.one(PersistentOperation.apply())
+            .toManies(
+              resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
+              resultSet => PersistentOperationAction.opt(operationActionAlias)(resultSet),
+              resultSet => PersistentOperationCountryConfiguration.opt(operationCountryConfigurationAlias)(resultSet)
+            )
+            .map {
+              (operation: PersistentOperation,
+               translations: Seq[PersistentOperationTranslation],
+               actions: Seq[PersistentOperationAction],
+               countryConfigurations: Seq[PersistentOperationCountryConfiguration]) =>
+                operation.copy(
+                  operationActions = actions,
+                  operationTranslations = translations,
+                  operationCountryConfigurations = countryConfigurations
+                )
+            }
+            .single
+            .apply()
+      })
+
+      futureMaybePersistentOperation.map(_.map(_.toOperation))
+    }
+
+    override def modify(operation: Operation): Future[Operation] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentOperation)
+            .set(
+              column.status -> operation.status.shortName,
+              column.slug -> operation.slug,
+              column.defaultLanguage -> operation.defaultLanguage,
+              column.sequenceLandingId -> operation.sequenceLandingId.value,
+              column.updatedAt -> nowDate
+            )
+            .where(
+              sqls
+                .eq(column.uuid, operation.operationId.value)
+            )
+        }.executeUpdate().apply()
+      }).flatMap {
+        case 1 =>
+          for {
+            updatedTranslationCount          <- updateTranslationsOfOperation(operation = operation)
+            updatedActionCount               <- updateActionOfOperation(operation = operation)
+            updatedCountryConfigurationCount <- updateCountryConfigurationOfOperation(operation = operation)
+          } yield (updatedTranslationCount, updatedActionCount, updatedCountryConfigurationCount)
+        case 0 =>
+          logger.error(s"Operation '${operation.operationId.value}' not found")
+          Future.successful(false)
+        case _ =>
+          logger.error(s"update of operation '${operation.operationId.value}' failed - not found")
+          Future.successful(false)
+      }.map {
+        case (updatedTranslationCount, updatedActionCount, updatedCountryConfigurationCount) =>
+          if (updatedTranslationCount != operation.translations.size) {
+            throw new Exception(
+              s"""Expected ${operation.translations.size} translations updated and get $updatedTranslationCount"""
+            )
+          }
+          if (updatedActionCount != operation.events.size) {
+            throw new Exception(s"""Expected ${operation.events.size} events updated and get $updatedActionCount""")
+          }
+          if (updatedCountryConfigurationCount != operation.countriesConfiguration.size) {
+            throw new Exception(s"""Expected ${operation.countriesConfiguration.size}
+                 | events updated and get $updatedCountryConfigurationCount""".stripMargin)
+          }
+          operation.copy(updatedAt = Some(nowDate))
+      }
     }
 
     override def addActionToOperation(action: OperationAction, operation: Operation): Future[Boolean] = {
@@ -177,6 +261,63 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       })
     }
 
+    private def updateTranslationsOfOperation(operation: Operation): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentOperationTranslation)
+            .where(
+              sqls
+                .eq(operationTranslationColumn.operationUuid, operation.operationId.value)
+            )
+        }.execute().apply()
+      }).flatMap(
+          _ =>
+            Future.traverse(operation.translations)(
+              translation => addTranslationToOperation(translation = translation, operation = operation)
+          )
+        )
+        .map(_.size)
+    }
+
+    private def updateActionOfOperation(operation: Operation): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentOperationAction)
+            .where(
+              sqls
+                .eq(operationActionColumn.operationUuid, operation.operationId.value)
+            )
+        }.execute().apply()
+      }).flatMap(
+          _ => Future.traverse(operation.events)(action => addActionToOperation(action = action, operation = operation))
+        )
+        .map(_.size)
+    }
+
+    private def updateCountryConfigurationOfOperation(operation: Operation): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(PersistentOperationCountryConfiguration)
+            .where(
+              sqls
+                .eq(operationCountryConfigurationColumn.operationUuid, operation.operationId.value)
+            )
+        }.execute().apply()
+      }).flatMap(
+          _ =>
+            Future.traverse(operation.countriesConfiguration)(
+              countryConfiguration =>
+                addCountryConfigurationToOperation(countryConfiguration = countryConfiguration, operation = operation)
+          )
+        )
+        .map(_.size)
+    }
   }
 }
 
@@ -215,6 +356,8 @@ object DefaultPersistentOperationServiceComponent {
 
       Operation(
         operationId = OperationId(uuid),
+        createdAt = Some(createdAt),
+        updatedAt = Some(updatedAt),
         status = OperationStatus.statusMap(status),
         slug = slug,
         defaultLanguage = defaultLanguage,
@@ -238,6 +381,7 @@ object DefaultPersistentOperationServiceComponent {
                 .getOrElse("")
                 .split(PersistentOperationCountryConfiguration.TAG_SEPARATOR)
                 .map(tagId => TagId(tagId))
+                .filter(value => value != TagId(""))
           )
         ),
         translations =
