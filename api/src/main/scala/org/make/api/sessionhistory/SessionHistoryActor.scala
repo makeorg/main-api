@@ -1,44 +1,32 @@
 package org.make.api.sessionhistory
 
-import akka.actor.{ActorLogging, ActorRef}
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.actor.ActorRef
+import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.technical.MakePersistentActor
+import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
-
-import scala.concurrent.duration.DurationInt
-import akka.pattern.ask
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
-class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentActor with ActorLogging {
+class SessionHistoryActor(userHistoryCoordinator: ActorRef)
+    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]]) {
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = defaultTimeout
 
   def sessionId: SessionId = SessionId(self.path.name)
 
-  private var state: SessionHistory = SessionHistory(Nil)
-
-  override def receiveRecover: Receive = {
-    case event: SessionHistoryEvent[_] =>
-      Try(applyEvent(event)) match {
-        case Success(newState) => state = newState
-        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
-      }
-    case SnapshotOffer(_, snapshot: SessionHistory) => state = snapshot
-    case _: RecoveryCompleted                       =>
-  }
-
   override def receiveCommand: Receive = {
-    case GetSessionHistory(_)                     => sender() ! state
+    case GetSessionHistory(_)                     => sender() ! state.getOrElse(SessionHistory(Nil))
     case command: LogSessionVoteEvent             => persistEvent(command)()
     case command: LogSessionUnvoteEvent           => persistEvent(command)()
     case command: LogSessionQualificationEvent    => persistEvent(command)()
@@ -48,6 +36,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
     case RequestSessionVotedProposals(_)          => retrieveVotedProposals()
     case UserConnected(_, userId)                 => transformSession(userId)
     case UserCreated(_, userId)                   => transformSession(userId)
+    case Snapshot                                 => saveSnapshot()
   }
 
   private def transformSession(userId: UserId): Unit = {
@@ -55,7 +44,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
       "Transforming session {} to user {} with events {}",
       persistenceId,
       userId.value,
-      state.events.map(_.toString).mkString(", ")
+      state.toSeq.flatMap(_.events).map(_.toString).mkString(", ")
     )
     persistEvent(
       SessionTransformed(
@@ -64,7 +53,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
         action = SessionAction(date = DateHelper.now(), actionType = "transformSession", arguments = userId)
       )
     ) { event =>
-      val events = state.events
+      val events = state.toSeq.flatMap(_.events)
       val originalSender = sender()
       Future
         .traverse(events) {
@@ -78,16 +67,16 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
             userHistoryCoordinator ? event.toUserHistoryEvent(userId)
           case event: LogSessionSearchProposalsEvent =>
             userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case other =>
+          case _ =>
             Future.successful {}
         }
         .onComplete {
           case Success(_) => originalSender ! event
           case Failure(e) => log.error(e, "error while transforming session")
         }
-      state = state.copy(events = Nil)
+      state = state.map(_.copy(events = Nil))
       // We need a snapshot here since we don't want to be able to replay a session transformation event
-      saveSnapshot(state)
+      state.foreach(saveSnapshot)
     }
 
   }
@@ -109,7 +98,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
     sender() ! voteAndQualifications
   }
 
-  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.events.flatMap {
+  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
     case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey)))
         if proposalIds.contains(proposalId) =>
       Some(VoteAction(proposalId, date, voteKey))
@@ -128,7 +117,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
     case _ => None
   }
 
-  private def voteActions(): Seq[VoteRelatedAction] = state.events.flatMap {
+  private def voteActions(): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
     case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey))) =>
       Some(VoteAction(proposalId, date, voteKey))
     case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey))) =>
@@ -148,7 +137,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
     case _ => None
   }
 
-  private def voteByProposalId(actions: Seq[VoteRelatedAction]) =
+  private def voteByProposalId(actions: Seq[VoteRelatedAction]) = {
     actions.filter {
       case _: GenericVoteAction => true
       case _                    => false
@@ -163,8 +152,9 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
       .map {
         case (proposalId, action) => proposalId -> action.asInstanceOf[VoteAction].key
       }
+  }
 
-  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Seq[QualificationKey]] =
+  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Seq[QualificationKey]] = {
     actions.filter {
       case _: GenericQualificationAction => true
       case _                             => false
@@ -189,20 +179,24 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef) extends PersistentAc
             case (_, key) => key
           }
       }
+  }
 
   override def persistenceId: String = sessionId.value
 
   private def persistEvent(event: SessionHistoryEvent[_])(andThen: SessionHistoryEvent[_] => Unit = { e =>
     sender() ! e
   }): Unit = {
+    if (state.isEmpty) {
+      state = Some(SessionHistory(Nil))
+    }
     persist(event) { e: SessionHistoryEvent[_] =>
       state = applyEvent(e)
       andThen(e)
     }
   }
 
-  private def applyEvent(event: SessionHistoryEvent[_]) = {
-    state.copy(events = event :: state.events)
+  override val applyEvent: PartialFunction[SessionHistoryEvent[_], Option[SessionHistory]] = {
+    case event => state.map(s => s.copy(events = event :: s.events))
   }
 }
 
