@@ -40,8 +40,10 @@ merge-to-prod:
     - preproduction
   allow_failure: false
   script:
+    - git config --global user.email "$GITLAB_USER_EMAIL"
+    - git config --global user.name "$GITLAB_USER_NAME"
     - git checkout production
-    - git merge --ff origin/preproduction
+    - git merge --ff-only origin/preproduction
     - git push origin/production
 
 deploy-preproduction:
