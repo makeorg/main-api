@@ -40,12 +40,19 @@ merge-to-prod:
     - preproduction
   allow_failure: false
   script:
+    - mkdir -p ~/.ssh/
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa gitlab.com > ~/.ssh/known_hosts
+    - echo "${DEPLOY_PRIVATE_KEY}" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - export CI_PUSH_REPO=`echo $CI_REPOSITORY_URL | perl -pe 's#.*@(.+?(\:\d+)?)/#git@\1:#'`
+    - echo "Target repo is ${CI_PUSH_REPO}"
     - git config --global user.email "${GITLAB_USER_EMAIL}"
     - git config --global user.name "${GITLAB_USER_NAME}"
-    - git remote set-url --push origin "${CI_PUSH_REPO}"
+    - git remote set-url origin "${CI_PUSH_REPO}"
     - git checkout production
     - git merge --ff-only origin/preproduction
-    - git push origin production
+    - git push origin production:production
 
 deploy-preproduction:
   stage: deploy
