@@ -12,6 +12,11 @@ import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
 import org.make.api.idea.{DefaultIdeaServiceComponent, DefaultPersistentIdeaServiceComponent, ModerationIdeaApi}
+import org.make.api.operation.{
+  DefaultOperationServiceComponent,
+  DefaultPersistentOperationServiceComponent,
+  OperationApi
+}
 import org.make.api.proposal.{SelectionAlgorithmConfiguration, _}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -53,6 +58,7 @@ trait MakeApi
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentIdeaServiceComponent
+    with DefaultPersistentOperationServiceComponent
     with DefaultSocialServiceComponent
     with DefaultGoogleApiComponent
     with DefaultFacebookApiComponent
@@ -75,6 +81,7 @@ trait MakeApi
     with DefaultUserHistoryCoordinatorServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultProposalCoordinatorServiceComponent
+    with DefaultOperationServiceComponent
     with DefaultSequenceCoordinatorServiceComponent
     with DefaultSequenceSearchEngineComponent
     with DefaultReadJournalComponent
@@ -85,6 +92,7 @@ trait MakeApi
     with SessionHistoryCoordinatorComponent
     with DefaultElasticSearchComponent
     with ElasticSearchApi
+    with OperationApi
     with ProposalApi
     with ModerationProposalApi
     with SequenceApi
@@ -160,12 +168,13 @@ trait MakeApi
       classOf[AuthenticationApi],
       classOf[UserApi],
       classOf[TagApi],
-      classOf[ProposalApi],
+      classOf[OperationApi],
       classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi],
       classOf[ModerationIdeaApi],
-      classOf[ElasticSearchApi]
+      classOf[ElasticSearchApi],
+      classOf[ProposalApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -197,7 +206,8 @@ trait MakeApi
       mailJetRoutes ~
       authenticationRoutes ~
       businessConfigRoutes ~
-      ideaRoutes
+      ideaRoutes ~
+      operationRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

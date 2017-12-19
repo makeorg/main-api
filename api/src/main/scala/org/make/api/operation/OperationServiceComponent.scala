@@ -16,7 +16,7 @@ trait OperationServiceComponent {
 }
 
 trait OperationService extends ShortenedNames {
-  def findAll(): Future[Seq[Operation]]
+  def findAll(slug: Option[String] = None): Future[Seq[Operation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def create(userId: UserId,
              slug: String,
@@ -41,8 +41,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
   val operationService: OperationService = new OperationService {
 
-    override def findAll(): Future[Seq[Operation]] = {
-      persistentOperationService.findAll()
+    override def findAll(slug: Option[String] = None): Future[Seq[Operation]] = {
+      persistentOperationService.findAll(slug = slug)
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {

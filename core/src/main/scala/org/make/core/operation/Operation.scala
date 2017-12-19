@@ -2,7 +2,8 @@ package org.make.core.operation
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
@@ -54,6 +55,9 @@ final case class OperationCountryConfiguration(countryCode: String, tagIds: Seq[
 object OperationCountryConfiguration {
   implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =
     DefaultJsonProtocol.jsonFormat2(OperationCountryConfiguration.apply)
+
+  implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
+  implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
 }
 
 final case class OperationTranslation(title: String, language: String) extends MakeSerializable
@@ -61,6 +65,9 @@ final case class OperationTranslation(title: String, language: String) extends M
 object OperationTranslation {
   implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
     DefaultJsonProtocol.jsonFormat2(OperationTranslation.apply)
+
+  implicit val encoder: ObjectEncoder[OperationTranslation] = deriveEncoder[OperationTranslation]
+  implicit val decoder: Decoder[OperationTranslation] = deriveDecoder[OperationTranslation]
 }
 
 final case class OperationAction(date: ZonedDateTime = DateHelper.now(),

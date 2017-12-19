@@ -29,7 +29,7 @@ trait PersistentOperationServiceComponent {
 }
 
 trait PersistentOperationService {
-  def findAll(): Future[Seq[Operation]]
+  def findAll(slug: Option[String] = None): Future[Seq[Operation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def persist(operation: Operation): Future[Operation]
   def modify(operation: Operation): Future[Operation]
@@ -63,13 +63,14 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
-    override def findAll(): Future[Seq[Operation]] = {
+    override def findAll(slug: Option[String] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL {
             baseSelect
               .copy()
+              .where(sqls.toAndConditionOpt(slug.map(slug => sqls.eq(operationAlias.slug, slug))))
           }.one(PersistentOperation.apply())
             .toManies(
               resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
