@@ -5,13 +5,15 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.pattern.ask
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.SnapshotOffer
 import akka.util.Timeout
 import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sessionhistory._
+import org.make.api.technical.MakePersistentActor
+import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
@@ -26,29 +28,20 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
-    extends PersistentActor
+    extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  override def receiveRecover: Receive = {
+    case SnapshotOffer(_, snapshot: Proposal) => state = Some(ProposalState(snapshot))
+    case other                                => super.receiveRecover(other)
+  }
+
+  implicit val timeout: Timeout = defaultTimeout
 
   def proposalId: ProposalId = ProposalId(self.path.name)
-
-  private[this] var state: Option[ProposalState] = None
-
-  override def receiveRecover: Receive = {
-    case e: ProposalEvent =>
-      Try(applyEvent(e)) match {
-        case Success(newState)  => state = newState
-        case Failure(exception) => log.error(exception, "Unable to apply event {}, ignoring it", e)
-      }
-    case SnapshotOffer(_, snapshot: Proposal)      => state = Some(ProposalState(snapshot))
-    case SnapshotOffer(_, snapshot: ProposalState) => state = Some(snapshot)
-    case _                                         =>
-  }
 
   override def receiveCommand: Receive = {
     case GetProposal(_, _)                         => sender() ! state.map(_.proposal)
@@ -66,8 +59,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
     case command: RemoveSimilarProposalCommand     => onRemoveSimilarProposalCommand(command)
     case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
+    case command: ReplaceProposalCommand           => onReplaceProposalCommand(command)
     case command: PatchProposalCommand             => onPatchProposalCommand(command)
-    case Snapshot                                  => state.foreach(saveSnapshot)
+    case Snapshot                                  => saveSnapshot()
     case _: KillProposalShard                      => self ! PoisonPill
   }
 
@@ -79,10 +73,12 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           proposalToRemove = command.similarToRemove,
           requestContext = command.requestContext
         )
-      )(event => state = applyEvent(event))
+      ) { event =>
+        newEventAdded(event)
+      }
     } else if (command.similarToRemove == this.proposalId) {
       persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext))(
-        event => state = applyEvent(event)
+        event => newEventAdded(event)
       )
     }
   }
@@ -90,17 +86,64 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   private def onClearSimilarProposalsCommand(command: ClearSimilarProposalsCommand): Unit = {
     if (state.exists(_.proposal.similarProposals.nonEmpty)) {
       persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext)) { event =>
-        state = applyEvent(event)
+        newEventAdded(event)
       }
     }
   }
 
-  private def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
-    if (state.isDefined) {
+  private def onReplaceProposalCommand(command: ReplaceProposalCommand): Unit = {
+    state.foreach { _ =>
       persistAndPublishEvent(
         ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = command.proposal)
+      ) { _ =>
+        {}
+      }
+    }
+  }
+
+  def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
+    state.map(_.proposal).foreach { proposal =>
+      val changes = command.changes
+      val modifiedContext =
+        changes.creationContext.map { contextChanges =>
+          proposal.creationContext.copy(
+            currentTheme = contextChanges.currentTheme.map(Some(_)).getOrElse(proposal.creationContext.currentTheme),
+            requestId = contextChanges.requestId.getOrElse(proposal.creationContext.requestId),
+            sessionId = contextChanges.sessionId.getOrElse(proposal.creationContext.sessionId),
+            externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
+            country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
+            language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
+            operation = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operation),
+            source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
+            location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
+            question = contextChanges.question.map(Some(_)).getOrElse(proposal.creationContext.question),
+            hostname = contextChanges.hostname.map(Some(_)).getOrElse(proposal.creationContext.hostname),
+            ipAddress = contextChanges.ipAddress.map(Some(_)).getOrElse(proposal.creationContext.ipAddress),
+            getParameters = contextChanges.getParameters.map(Some(_)).getOrElse(proposal.creationContext.getParameters),
+            userAgent = contextChanges.userAgent.map(Some(_)).getOrElse(proposal.creationContext.userAgent)
+          )
+        }.getOrElse(proposal.creationContext)
+
+      val modifiedProposal =
+        proposal.copy(
+          creationContext = modifiedContext,
+          slug = changes.slug.getOrElse(proposal.slug),
+          content = changes.content.getOrElse(proposal.content),
+          idea = changes.ideaId.map(Some(_)).getOrElse(proposal.idea),
+          author = changes.author.getOrElse(proposal.author),
+          labels = changes.labels.getOrElse(proposal.labels),
+          theme = changes.theme.map(Some(_)).getOrElse(proposal.theme),
+          status = changes.status.getOrElse(proposal.status),
+          refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
+          tags = changes.tags.getOrElse(proposal.tags),
+          updatedAt = Some(DateHelper.now())
+        )
+
+      persistAndPublishEvent(
+        ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = modifiedProposal)
       ) { event =>
         state = applyEvent(event)
+        sender() ! state.map(_.proposal)
       }
     }
   }
@@ -444,7 +487,6 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
       )
     ) { _ =>
       sender() ! proposalId
-      self ! Snapshot
     }
 
   }
@@ -702,7 +744,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 
   override def persistenceId: String = proposalId.value
 
-  private val applyEvent: PartialFunction[ProposalEvent, Option[ProposalState]] = {
+  override val applyEvent: PartialFunction[ProposalEvent, Option[ProposalState]] = {
     case e: ProposalProposed =>
       Some(
         ProposalState(
@@ -778,22 +820,6 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     case e: ProposalPatched =>
       state.map(_.copy(proposal = e.proposal))
     case _ => state
-  }
-
-  private def persistAndPublishEvent[T <: ProposalEvent](event: T)(andThen: T => Unit): Unit = {
-    persist(event) { e: T =>
-      state = applyEvent(e)
-      context.system.eventStream.publish(e)
-      andThen(e)
-    }
-  }
-
-  private def persistAndPublishEvents(events: immutable.Seq[ProposalEvent])(andThen: ProposalEvent => Unit): Unit = {
-    persistAll(events) { event: ProposalEvent =>
-      state = applyEvent(event)
-      context.system.eventStream.publish(event)
-      andThen(event)
-    }
   }
 
 }
@@ -1014,7 +1040,5 @@ object ProposalActor {
   def applySimilarProposalsAdded(state: ProposalState, event: SimilarProposalsAdded): ProposalState = {
     state.copy(proposal = state.proposal.copy(similarProposals = event.similarProposals.toSeq))
   }
-
-  case object Snapshot
 
 }

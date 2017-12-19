@@ -494,6 +494,48 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "patch-proposal",
+    httpMethod = "PATCH",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.proposal.PatchProposalRequest")
+    )
+  )
+  @Path(value = "/{proposalId}")
+  def patchProposal: Route = {
+    patch {
+      path("moderation" / "proposals" / moderationProposalId) { id =>
+        makeTrace("PatchProposal") { context =>
+          makeOAuth2 { auth =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[PatchProposalRequest]) { patch =>
+                  provideAsyncOrNotFound(proposalService.patchProposal(id, auth.user.userId, context, patch)) {
+                    proposal =>
+                      complete(proposal)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
@@ -504,7 +546,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       exportProposals ~
       removeProposalFromClusters ~
       removeClusters ~
-      lock
+      lock ~
+      patchProposal
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

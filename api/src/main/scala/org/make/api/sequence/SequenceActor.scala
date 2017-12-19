@@ -1,28 +1,14 @@
 package org.make.api.sequence
 
-import akka.actor.{ActorLogging, PoisonPill}
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.actor.PoisonPill
 import org.make.api.sequence.PublishedSequenceEvent._
-import org.make.api.sequence.SequenceActor.Snapshot
+import org.make.api.technical.MakePersistentActor
+import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
-import scala.util.{Failure, Success, Try}
-
-class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLogging {
+class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[Sequence], classOf[SequenceEvent]) {
   def sequenceId: SequenceId = SequenceId(self.path.name)
-
-  private[this] var state: Option[Sequence] = None
-
-  override def receiveRecover: Receive = {
-    case event: SequenceEvent =>
-      Try(applyEvent(event)) match {
-        case Success(newState) => state = newState
-        case Failure(e)        => log.error(e, "Unable to apply event {}, ignoring it", event)
-      }
-    case SnapshotOffer(_, snapshot: Sequence) => state = Some(snapshot)
-    case _                                    =>
-  }
 
   override def receiveCommand: Receive = {
     case GetSequence(_, _)                       => sender() ! state
@@ -32,14 +18,14 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
     case command: RemoveProposalsSequenceCommand => onProposalsRemovedSequence(command)
     case command: AddProposalsSequenceCommand    => onProposalsAddedSequence(command)
     case command: PatchSequenceCommand           => onPatchSequenceCommand(command)
-    case Snapshot                                => state.foreach(saveSnapshot)
+    case Snapshot                                => saveSnapshot()
     case _: KillSequenceShard                    => self ! PoisonPill
   }
 
   private def onViewSequenceCommand(command: ViewSequenceCommand): Unit = {
     persistAndPublishEvent(
       SequenceViewed(id = sequenceId, eventDate = dateHelper.now(), requestContext = command.requestContext)
-    ) {
+    ) { _ =>
       sender() ! state
     }
   }
@@ -54,9 +40,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         userId = userId
       )
-    ) {
+    ) { _ =>
       sender() ! state
-      self ! Snapshot
     }
   }
   private def onProposalsRemovedSequence(command: RemoveProposalsSequenceCommand): Unit = {
@@ -69,9 +54,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         eventDate = dateHelper.now(),
         userId = userId
       )
-    ) {
+    ) { _ =>
       sender() ! state
-      self ! Snapshot
     }
   }
 
@@ -89,9 +73,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         tagIds = command.tagIds,
         searchable = command.searchable
       )
-    ) {
+    ) { _ =>
       sender() ! sequenceId
-      self ! Snapshot
     }
 
   }
@@ -110,9 +93,8 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
         themeIds = command.themeIds,
         tagIds = command.tagIds
       )
-    ) {
+    ) { _ =>
       sender() ! state
-      self ! Snapshot
     }
   }
 
@@ -120,16 +102,15 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
     if (state.exists(_.tagIds.nonEmpty)) {
       persistAndPublishEvent(
         SequencePatched(id = command.sequenceId, requestContext = command.requestContext, sequence = command.sequence)
-      ) {
+      ) { _ =>
         sender() ! state
-        self ! Snapshot
       }
     }
   }
 
   override def persistenceId: String = sequenceId.value
 
-  private val applyEvent: PartialFunction[SequenceEvent, Option[Sequence]] = {
+  override val applyEvent: PartialFunction[SequenceEvent, Option[Sequence]] = {
     case e: SequenceCreated =>
       Some(
         Sequence(
@@ -184,17 +165,4 @@ class SequenceActor(dateHelper: DateHelper) extends PersistentActor with ActorLo
     case _ => state
   }
 
-  private def persistAndPublishEvent(event: SequenceEvent)(andThen: => Unit): Unit = {
-    persist(event) { e: SequenceEvent =>
-      state = applyEvent(e)
-      context.system.eventStream.publish(e)
-      andThen
-    }
-  }
-
-}
-
-object SequenceActor {
-
-  case object Snapshot
 }
