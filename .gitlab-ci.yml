@@ -3,10 +3,11 @@ image: makeorg/docker-sbt-coursier
 variables:
   CI_BUILD: "true"
   SBT_OPTS: "-Xms2G -Xmx2G"
-  IMAGE: "/repository/docker-dev/make-api"
+  IMAGE: "/make-api"
 
 stages:
   - build
+  - merge
   - deploy
 
 build:
@@ -14,23 +15,50 @@ build:
   tags:
     - docker
   before_script:
+    - export IMAGE_VERSION=`git rev-parse --short HEAD`
     - mkdir -p /var/lib/docker
     - mount -t tmpfs -o size=12G tmpfs /var/lib/docker
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=overlay2 dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
-    - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
+    - echo $(docker pull $NEXUS_URL$IMAGE:$IMAGE_VERSION)
   script:
-    - export IMAGE_VERSION=`date +"%Y-%m-%d"`-`git rev-parse --short HEAD`
-    - sbt clean coverage test it:test
-    - sbt coverageReport coverageAggregate
-    - sbt clean publishLocal
-    - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-$IMAGE_VERSION
-    - docker tag $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
+    - >
+      if [[ -z $(docker images -q $NEXUS_URL$IMAGE:$IMAGE_VERSION) ]];then
+        sbt clean coverage test it:test
+        sbt coverageReport coverageAggregate
+        sbt clean publishLocal
+        docker push $NEXUS_URL$IMAGE:$IMAGE_VERSION
+      fi
+    - docker tag $NEXUS_URL$IMAGE:$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
     - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
 
-deploy:
+merge-to-preprod:
+  stage: merge
+  when: manual
+  only:
+    - master
+  allow_failure: false
+  script:
+    - git checkout preproduction
+    - git merge --ff origin/master
+    - git push origin/preproduction
+
+merge-to-prod:
+  stage: merge
+  when: manual
+  only:
+    - preproduction
+  allow_failure: false
+  script:
+    - git checkout production
+    - git merge --ff origin/preproduction
+    - git push origin/production
+
+deploy-preproduction:
   stage: deploy
+  environment:
+    name: preproduction
   only:
     - preproduction
   script:
@@ -41,3 +69,19 @@ deploy:
       -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
       --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
       https://rundeck.preprod.makeorg.tech/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
+
+deploy-production:
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - production
+  when: manual
+  script:
+    - >
+      curl -D - -X "POST"
+      -H "Accept: application/json"
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
+      --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
+      https://rundeck.prod.makeorg.tech/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
