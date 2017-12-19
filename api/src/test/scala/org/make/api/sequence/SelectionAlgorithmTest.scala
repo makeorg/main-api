@@ -3,8 +3,9 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
+import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeTest
-import org.make.api.proposal.{InverseWeightedRandom, SelectionAlgorithm}
+import org.make.api.proposal.{InverseWeightedRandom, ProposalScorer, SelectionAlgorithm}
 import org.make.api.proposal.SelectionAlgorithm.chooseProposals
 import org.make.core.proposal._
 import org.make.core.user.UserId
@@ -44,6 +45,34 @@ class SelectionAlgorithmTest extends MakeTest {
       updatedAt = None,
       votes = votes.map {
         case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)
+      }.toSeq,
+      labels = Seq.empty,
+      theme = None,
+      refusalReason = None,
+      tags = Seq.empty,
+      similarProposals = duplicates,
+      events = Nil,
+      creationContext = RequestContext.empty
+    )
+  }
+
+  def fakeProposalQualif(id: ProposalId,
+                         votes: Map[VoteKey, (Int, Map[QualificationKey, Int])],
+                         duplicates: Seq[ProposalId],
+                         createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
+    proposal.Proposal(
+      proposalId = id,
+      author = UserId("fake"),
+      content = "fake",
+      slug = "fake",
+      status = ProposalStatus.Accepted,
+      createdAt = Some(createdAt),
+      updatedAt = None,
+      votes = votes.map {
+        case (key, (amount, qualifs)) =>
+          Vote(key = key, count = amount, qualifications = qualifs.map {
+            case (key, count) => Qualification(key = key, count = count)
+          }.toSeq)
       }.toSeq,
       labels = Seq.empty,
       theme = None,
@@ -505,6 +534,31 @@ class SelectionAlgorithmTest extends MakeTest {
       proportions(testedProposals(7).proposalId) should equal(0.04 +- confidenceInterval)
       proportions(testedProposals(8).proposalId) should equal(0.04 +- confidenceInterval)
       proportions(testedProposals(9).proposalId) should equal(0.03 +- confidenceInterval)
+    }
+  }
+
+  feature("allocate vote with bandit algorithm within idea") {
+    scenario("check proposal scorer") {
+      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+        VoteKey.Agree -> Tuple2(50, Map(QualificationKey.LikeIt -> 20, QualificationKey.PlatitudeAgree -> 10)),
+        VoteKey.Disagree -> Tuple2(20, Map(QualificationKey.NoWay -> 10, QualificationKey.PlatitudeDisagree -> 5)),
+        VoteKey.Neutral -> Tuple2(30, Map(QualificationKey.DoNotCare -> 10))
+      )
+
+      val testProposal = fakeProposalQualif(ProposalId("tested"), votes, Seq.empty)
+      val testProposalScore = ProposalScorer.score(testProposal)
+
+      ProposalScorer.random = new MersenneTwister(0)
+      val samples = (1 to 100).map(i => ProposalScorer.sampleScore(testProposal))
+
+      testProposal.votes.map(_.count).sum should be(100)
+      samples.max should be > testProposalScore + 0.1
+      samples.min should be < testProposalScore - 0.1
+      samples.sum / 100 should be(testProposalScore +- 0.01)
+    }
+
+    scenario("check bandit chooser for similars") {
+      1 should be(1)
     }
   }
 }

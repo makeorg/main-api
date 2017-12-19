@@ -1,10 +1,15 @@
 package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
-import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus, VoteKey}
+import org.make.core.proposal._
 
 import scala.annotation.tailrec
 import scala.util.Random
+import scala.math.ceil
+import org.apache.commons.math3.distribution.BetaDistribution
+import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
+import org.make.core.proposal.QualificationKey._
+import org.make.core.proposal.VoteKey._
 
 object InverseWeightedRandom extends StrictLogging {
   var random: Random = Random
@@ -29,6 +34,88 @@ object InverseWeightedRandom extends StrictLogging {
     search(proposals, choice)
   }
 
+}
+
+object UniformRandom extends StrictLogging {
+  var random: Random = Random
+
+  def randomUniform(proposals: Seq[Proposal]): Proposal = {
+    proposals(random.nextInt(proposals.length))
+  }
+
+}
+
+object ProposalScorer extends StrictLogging {
+  var random: RandomGenerator = new MersenneTwister()
+
+  def score(proposal: Proposal): Double = {
+    val votes: Int = proposal.votes.map(_.count).sum
+    val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
+    val platitudeAgreeCount: Int = proposal.votes
+      .filter(_.key == Agree)
+      .map(_.qualifications.filter(_.key == PlatitudeAgree).map(_.count).sum)
+      .sum
+    val platitudeDisagreeCount: Int = proposal.votes
+      .filter(_.key == Disagree)
+      .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
+      .sum
+
+    val engagementScore: Double = (1
+      - neutralCount / votes.toDouble
+      - platitudeAgreeCount / votes.toDouble
+      - platitudeDisagreeCount / votes.toDouble)
+
+    val loveCount: Int = proposal.votes
+      .filter(_.key == Agree)
+      .map(_.qualifications.filter(_.key == LikeIt).map(_.count).sum)
+      .sum
+    val hateCount: Int = proposal.votes
+      .filter(_.key == Disagree)
+      .map(_.qualifications.filter(_.key == NoWay).map(_.count).sum)
+      .sum
+
+    val adhesionScore: Double = (
+      loveCount / (votes - neutralCount).toDouble
+        - hateCount / (votes - neutralCount).toDouble
+    )
+
+    engagementScore + adhesionScore
+  }
+
+  def sampleScore(proposal: Proposal): Double = {
+    val votes: Int = proposal.votes.map(_.count).sum
+    val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
+    val platitudeAgreeCount: Int = proposal.votes
+      .filter(_.key == Agree)
+      .map(_.qualifications.filter(_.key == PlatitudeAgree).map(_.count).sum)
+      .sum
+    val platitudeDisagreeCount: Int = proposal.votes
+      .filter(_.key == Disagree)
+      .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
+      .sum
+
+    val dist = new BetaDistribution(random, neutralCount, votes)
+    dist.sample()
+
+    val engagementScore: Double = (1
+      - new BetaDistribution(random, neutralCount, votes - neutralCount).sample()
+      - new BetaDistribution(random, platitudeAgreeCount, votes - platitudeAgreeCount).sample()
+      - new BetaDistribution(random, platitudeDisagreeCount, votes - platitudeDisagreeCount).sample())
+
+    val loveCount: Int = proposal.votes
+      .filter(_.key == Agree)
+      .map(_.qualifications.filter(_.key == LikeIt).map(_.count).sum)
+      .sum
+    val hateCount: Int = proposal.votes
+      .filter(_.key == Disagree)
+      .map(_.qualifications.filter(_.key == NoWay).map(_.count).sum)
+      .sum
+
+    val adhesionScore: Double = (new BetaDistribution(random, loveCount, votes - neutralCount - loveCount).sample()
+      - new BetaDistribution(random, hateCount, votes - neutralCount - hateCount).sample())
+
+    engagementScore + adhesionScore
+  }
 }
 
 object SelectionAlgorithm extends StrictLogging {
@@ -109,7 +196,7 @@ object SelectionAlgorithm extends StrictLogging {
   def computeEngagementRateEstimate(proposal: Proposal): Double = {
     val votes: Int = proposal.votes.map(_.count).sum
     val forAgainst: Int =
-      proposal.votes.filter(v => v.key == VoteKey.Agree || v.key == VoteKey.Disagree).map(_.count).sum
+      proposal.votes.filter(v => v.key == Agree || v.key == Disagree).map(_.count).sum
     val nn: Double = (votes + 4).toDouble
     val pp: Double = (forAgainst + 2) / nn
     val sd: Double = Math.sqrt(pp * (1 - pp) / nn)
@@ -153,6 +240,34 @@ object SelectionAlgorithm extends StrictLogging {
     chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = chooseNewProposalAlgorithm)
   }
 
+  case class ScoredProposal(proposal: Proposal, score: Double)
+
+  /*
+   * Chooses the top quartile proposals of each cluster according to the bandit algorithm
+   */
+  def chooseBanditProposalsSimilars(similarProposals: Seq[Proposal], count: Int): Seq[Proposal] = {
+    val similarProposalsScored: Seq[ScoredProposal] =
+      similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
+
+    similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
+  }
+
+  def chooseBanditProposals(proposals: Seq[Proposal]): Seq[Proposal] = {
+    if (proposals.isEmpty) {
+      Seq.empty
+    } else {
+      val currentProposal: Proposal = proposals.head
+      val similarProposals: Seq[Proposal] =
+        proposals.filter(p => currentProposal.similarProposals.contains(p.proposalId))
+      val topQuartile: Int = ceil(proposals.length / 4.0).toInt
+
+      val chosen = chooseBanditProposalsSimilars(similarProposals, topQuartile)
+      val similarProposalIds = similarProposals.map(p => p.proposalId)
+
+      chosen ++ chooseBanditProposals(proposals = proposals.filter(p => !similarProposalIds.contains(p.proposalId)))
+    }
+  }
+
   def chooseTestedProposals(availableProposals: Seq[Proposal],
                             newProposalVoteCount: Int,
                             testedProposalEngagementThreshold: Double,
@@ -163,11 +278,8 @@ object SelectionAlgorithm extends StrictLogging {
       (votes >= newProposalVoteCount
       && engagement_rate > testedProposalEngagementThreshold)
     }
-    chooseProposals(
-      proposals = testedProposals,
-      count = testedProposalCount,
-      algorithm = InverseWeightedRandom.randomWeighted
-    )
+    val banditProposals: Seq[Proposal] = chooseBanditProposals(testedProposals)
+    chooseProposals(proposals = banditProposals, count = testedProposalCount, algorithm = UniformRandom.randomUniform)
   }
 
   def complementSequence(sequence: Seq[ProposalId],
