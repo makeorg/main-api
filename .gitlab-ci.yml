@@ -7,8 +7,8 @@ variables:
 
 stages:
   - build
-  - merge
   - deploy
+  - merge
 
 build:
   stage: build
@@ -32,17 +32,6 @@ build:
       fi
     - docker tag $NEXUS_URL$IMAGE:$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
     - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
-
-merge-to-preprod:
-  stage: merge
-  when: manual
-  only:
-    - master
-  allow_failure: false
-  script:
-    - git checkout preproduction
-    - git merge --ff origin/master
-    - git push origin/preproduction
 
 merge-to-prod:
   stage: merge
