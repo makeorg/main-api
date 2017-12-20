@@ -5,8 +5,14 @@ import java.time.temporal.ChronoUnit
 
 import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeTest
-import org.make.api.proposal.{InverseWeightedRandom, ProposalScorer, SelectionAlgorithm}
-import org.make.api.proposal.SelectionAlgorithm.chooseProposals
+import org.make.api.proposal.{InverseWeightedRandom, ProposalScorer, SelectionAlgorithm, UniformRandom}
+import org.make.api.proposal.SelectionAlgorithm.{
+  chooseBanditProposals,
+  chooseBanditProposalsSimilars,
+  chooseProposals,
+  chooseTestedProposals,
+  ScoredProposal
+}
 import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
@@ -515,7 +521,7 @@ class SelectionAlgorithmTest extends MakeTest {
 
       val samples = 10000
       for (a <- 1 to samples) {
-        chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.randomWeighted)
+        chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.choose)
           .foreach(p => counts(p.proposalId) += 1)
       }
 
@@ -549,16 +555,131 @@ class SelectionAlgorithmTest extends MakeTest {
       val testProposalScore = ProposalScorer.score(testProposal)
 
       ProposalScorer.random = new MersenneTwister(0)
-      val samples = (1 to 100).map(i => ProposalScorer.sampleScore(testProposal))
+      val trials = 1000
+      val samples = (1 to trials).map(i => ProposalScorer.sampleScore(testProposal))
 
       testProposal.votes.map(_.count).sum should be(100)
       samples.max should be > testProposalScore + 0.1
       samples.min should be < testProposalScore - 0.1
-      samples.sum / 100 should be(testProposalScore +- 0.01)
+      samples.sum / trials should be(testProposalScore +- 0.01)
+    }
+
+    scenario("check proposal scorer with pathological proposal") {
+      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+        VoteKey.Agree -> Tuple2(0, Map.empty),
+        VoteKey.Disagree -> Tuple2(0, Map.empty),
+        VoteKey.Neutral -> Tuple2(0, Map.empty)
+      )
+      val testProposal: Proposal = fakeProposalQualif(ProposalId("tested"), votes, Seq.empty)
+
+      val testProposalScore: Double = ProposalScorer.score(testProposal)
+      val testProposalScoreSample: Double = ProposalScorer.sampleScore(testProposal)
+
+      testProposalScore should be > 0.0
+      testProposalScoreSample should be > 0.0
     }
 
     scenario("check bandit chooser for similars") {
-      1 should be(1)
+      val random = new Random(0)
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = random.nextInt(100) + 1
+        val d = random.nextInt(100) + 1
+        val n = random.nextInt(100) + 1
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> Tuple2(
+            a,
+            Map(QualificationKey.LikeIt -> random.nextInt(a), QualificationKey.PlatitudeAgree -> random.nextInt(a))
+          ),
+          VoteKey.Disagree -> Tuple2(
+            d,
+            Map(QualificationKey.NoWay -> random.nextInt(d), QualificationKey.PlatitudeDisagree -> random.nextInt(d))
+          ),
+          VoteKey.Neutral -> Tuple2(n, Map(QualificationKey.DoNotCare -> random.nextInt(n)))
+        )
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, Seq.empty)
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val sortedProposals: Seq[ProposalId] = (testedProposals
+        .map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
+        .sortWith(_.score > _.score)
+        .map(sp => sp.proposal.proposalId))
+
+      val chosenCounts: Seq[ProposalId] =
+        (1 to 1000)
+          .map(i => Tuple2(chooseBanditProposalsSimilars(testedProposals).proposalId, 1))
+          .groupBy(_._1)
+          .mapValues(_.map(_._2).sum)
+          .toSeq
+          .sortWith(_._2 > _._2)
+          .map(_._1)
+
+      chosenCounts(0) should be(sortedProposals(0))
+      chosenCounts.slice(0, 3).contains(sortedProposals(1)) should be(true)
+      chosenCounts.slice(0, 5).contains(sortedProposals(2)) should be(true)
+      chosenCounts.slice(0, 5).contains(sortedProposals(19)) should be(false)
+    }
+
+    scenario("check global bandit chooser") {
+      val random = new Random(0)
+      val similars: Seq[Seq[ProposalId]] =
+        (1 to 4).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = random.nextInt(100) + 1
+        val d = random.nextInt(100) + 1
+        val n = random.nextInt(100) + 1
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> Tuple2(
+            a,
+            Map(QualificationKey.LikeIt -> random.nextInt(a), QualificationKey.PlatitudeAgree -> random.nextInt(a))
+          ),
+          VoteKey.Disagree -> Tuple2(
+            d,
+            Map(QualificationKey.NoWay -> random.nextInt(d), QualificationKey.PlatitudeDisagree -> random.nextInt(d))
+          ),
+          VoteKey.Neutral -> Tuple2(n, Map(QualificationKey.DoNotCare -> random.nextInt(n)))
+        )
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val chosen: Seq[Proposal] = chooseBanditProposals(testedProposals)
+
+      chosen.length should be(4)
+    }
+
+    scenario("check tested proposal chooser") {
+      val random = new Random(0)
+      val similars: Seq[Seq[ProposalId]] =
+        (1 to 20).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
+      val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
+        val a = random.nextInt(100) + 1
+        val d = random.nextInt(100) + 1
+        val n = random.nextInt(100) + 1
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> Tuple2(
+            a,
+            Map(QualificationKey.LikeIt -> random.nextInt(a), QualificationKey.PlatitudeAgree -> random.nextInt(a))
+          ),
+          VoteKey.Disagree -> Tuple2(
+            d,
+            Map(QualificationKey.NoWay -> random.nextInt(d), QualificationKey.PlatitudeDisagree -> random.nextInt(d))
+          ),
+          VoteKey.Neutral -> Tuple2(n, Map(QualificationKey.DoNotCare -> random.nextInt(n)))
+        )
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val chosen: Seq[Proposal] = chooseTestedProposals(testedProposals, 100, 0.5, 10)
+
+      chosen.length should be(10)
     }
   }
 }
