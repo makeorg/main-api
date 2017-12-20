@@ -123,6 +123,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                         requestContext = requestContext,
                         createdAt = DateHelper.now(),
                         content = request.content,
+                        operation = request.operation,
                         theme = requestContext.currentTheme
                       )
                   ) { proposalId =>

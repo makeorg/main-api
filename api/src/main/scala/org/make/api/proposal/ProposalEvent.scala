@@ -3,6 +3,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
@@ -100,6 +101,7 @@ object PublishedProposalEvent {
                                     userId: UserId,
                                     eventDate: ZonedDateTime,
                                     content: String,
+                                    operation: Option[OperationId] = None,
                                     theme: Option[ThemeId] = None)
       extends PublishedProposalEvent
 
@@ -107,7 +109,7 @@ object PublishedProposalEvent {
     val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
-      DefaultJsonProtocol.jsonFormat8(ProposalProposed.apply)
+      DefaultJsonProtocol.jsonFormat9(ProposalProposed.apply)
 
   }
 

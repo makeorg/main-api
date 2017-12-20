@@ -14,7 +14,7 @@ import org.make.core.user.UserId
 
 import scala.util.Random
 
-final case class ProposeProposalRequest(content: String) {
+final case class ProposeProposalRequest(content: String, operation: Option[OperationId]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = BusinessConfig.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
@@ -75,10 +75,11 @@ object ContextFilterRequest {
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 
-final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
-                               themesIds: Option[Seq[String]] = None,
-                               tagsIds: Option[Seq[String]] = None,
-                               labelsIds: Option[Seq[String]] = None,
+final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
+                               themesIds: Option[Seq[ThemeId]] = None,
+                               tagsIds: Option[Seq[TagId]] = None,
+                               labelsIds: Option[Seq[LabelId]] = None,
+                               operationId: Option[OperationId] = None,
                                trending: Option[String] = None,
                                content: Option[String] = None,
                                slug: Option[String] = None,
@@ -104,6 +105,7 @@ final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
         themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
+        operation = operationId.map(OperationSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text => {
           ContentSearchFilter(text, Some(fuzziness))
@@ -120,10 +122,11 @@ object SearchRequest {
   implicit val decoder: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
 }
 
-final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None,
-                                         themesIds: Option[Seq[String]] = None,
-                                         tagsIds: Option[Seq[String]] = None,
-                                         labelsIds: Option[Seq[String]] = None,
+final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
+                                         themesIds: Option[Seq[ThemeId]] = None,
+                                         tagsIds: Option[Seq[TagId]] = None,
+                                         labelsIds: Option[Seq[LabelId]] = None,
+                                         operationId: Option[OperationId] = None,
                                          trending: Option[String] = None,
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
@@ -139,6 +142,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None
         themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
+        operation = operationId.map(OperationSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),

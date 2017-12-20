@@ -20,6 +20,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
+import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
@@ -112,8 +113,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     proposalService.search(
                       userId = Some(auth.user.userId),
                       query = ExhaustiveSearchRequest(
-                        themesIds = themeId,
-                        tagsIds = tags,
+                        themesIds = themeId.map(_.map(ThemeId(_))),
+                        tagsIds = tags.map(_.map(TagId(_))),
                         content = content,
                         context = Some(
                           ContextFilterRequest(

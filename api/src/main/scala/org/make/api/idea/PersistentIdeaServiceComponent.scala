@@ -123,7 +123,6 @@ object DefaultPersistentIdeaServiceComponent {
                             name: String,
                             language: Option[String],
                             country: Option[String],
-                            @Deprecated operation: Option[String],
                             question: Option[String],
                             operationId: Option[String],
                             createdAt: ZonedDateTime,
@@ -134,7 +133,7 @@ object DefaultPersistentIdeaServiceComponent {
         name = name,
         language = language,
         country = country,
-        operation = operation.map(operation => OperationId(operation)),
+        operation = operationId.map(operationId => OperationId(operationId)),
         question = question,
         operationId = operationId.map(operationId => OperationId(operationId))
       )
@@ -157,7 +156,6 @@ object DefaultPersistentIdeaServiceComponent {
         name = resultSet.string(ideaResultName.name),
         language = resultSet.stringOpt(ideaResultName.language),
         country = resultSet.stringOpt(ideaResultName.country),
-        operation = resultSet.stringOpt(ideaResultName.operation),
         question = resultSet.stringOpt(ideaResultName.question),
         operationId = resultSet.stringOpt(ideaResultName.operationId),
         createdAt = resultSet.zonedDateTime(ideaResultName.createdAt),

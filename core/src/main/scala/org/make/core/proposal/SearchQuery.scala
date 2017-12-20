@@ -9,6 +9,7 @@ import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -43,6 +44,7 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          theme: Option[ThemeSearchFilter] = None,
                          tags: Option[TagsSearchFilter] = None,
                          labels: Option[LabelsSearchFilter] = None,
+                         operation: Option[OperationSearchFilter] = None,
                          trending: Option[TrendingSearchFilter] = None,
                          content: Option[ContentSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
@@ -53,12 +55,13 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat10(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat11(SearchFilters.apply)
 
   def parse(proposals: Option[ProposalSearchFilter] = None,
             themes: Option[ThemeSearchFilter] = None,
             tags: Option[TagsSearchFilter] = None,
             labels: Option[LabelsSearchFilter] = None,
+            operation: Option[OperationSearchFilter] = None,
             trending: Option[TrendingSearchFilter] = None,
             content: Option[ContentSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
@@ -66,10 +69,10 @@ object SearchFilters extends ElasticDsl {
             context: Option[ContextSearchFilter] = None,
             idea: Option[IdeaSearchFilter] = None): Option[SearchFilters] = {
 
-    (proposals, themes, tags, labels, trending, content, status, slug, context, idea) match {
-      case (None, None, None, None, None, None, None, None, None, None) => None
+    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea) match {
+      case (None, None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
-        Some(SearchFilters(proposals, themes, tags, labels, trending, content, status, context, slug, idea))
+        Some(SearchFilters(proposals, themes, tags, labels, operation, trending, content, status, context, slug, idea))
     }
   }
 
@@ -85,6 +88,7 @@ object SearchFilters extends ElasticDsl {
       buildThemeSearchFilter(searchQuery),
       buildTagsSearchFilter(searchQuery),
       buildLabelsSearchFilter(searchQuery),
+      buildOperationSearchFilter(searchQuery),
       buildTrendingSearchFilter(searchQuery),
       buildContentSearchFilter(searchQuery),
       buildStatusSearchFilter(searchQuery),
@@ -153,6 +157,16 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildOperationSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    val operationFilter: Option[QueryDefinition] = for {
+      filters   <- searchQuery.filters
+      operation <- filters.operation
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId)
+
+    operationFilter
+  }
+
   def buildTrendingSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
     searchQuery.filters.flatMap {
       _.trending match {
@@ -283,14 +297,14 @@ object SearchFilters extends ElasticDsl {
   }
 }
 
-case class ProposalSearchFilter(proposalIds: Seq[String])
+case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
 
 object ProposalSearchFilter {
   implicit val proposalSearchFilterFormatted: RootJsonFormat[ProposalSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(ProposalSearchFilter.apply)
 }
 
-case class ThemeSearchFilter(themeIds: Seq[String]) {
+case class ThemeSearchFilter(themeIds: Seq[ThemeId]) {
   validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
 }
 
@@ -299,7 +313,7 @@ object ThemeSearchFilter {
     DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
 }
 
-case class TagsSearchFilter(tagIds: Seq[String]) {
+case class TagsSearchFilter(tagIds: Seq[TagId]) {
   validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
@@ -308,13 +322,20 @@ object TagsSearchFilter {
     DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
 }
 
-case class LabelsSearchFilter(labelIds: Seq[String]) {
+case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
   validate(validateField("labelIds", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
 object LabelsSearchFilter {
   implicit val labelsSearchFilterFormatted: RootJsonFormat[LabelsSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(LabelsSearchFilter.apply)
+}
+
+case class OperationSearchFilter(operationId: OperationId)
+
+object OperationSearchFilter {
+  implicit val operationSearchFilterFormatted: RootJsonFormat[OperationSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(OperationSearchFilter.apply)
 }
 
 case class TrendingSearchFilter(trending: String) {

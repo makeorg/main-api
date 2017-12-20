@@ -16,6 +16,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.{IdeaId, ThemeId}
@@ -56,6 +57,7 @@ trait ProposalService {
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
               content: String,
+              operation: Option[OperationId],
               theme: Option[ThemeId]): Future[ProposalId]
 
   // toDo: add theme
@@ -313,6 +315,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          requestContext: RequestContext,
                          createdAt: ZonedDateTime,
                          content: String,
+                         operation: Option[OperationId],
                          theme: Option[ThemeId]): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
@@ -322,6 +325,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           user = user,
           createdAt = createdAt,
           content = content,
+          operation = operation,
           theme = theme
         )
       )
@@ -460,7 +464,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
-                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId.value))),
+                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
                     context = requestContext.operationId.map(ope    => ContextSearchFilter(operation = Some(ope)))
                   )
                 )

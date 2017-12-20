@@ -51,9 +51,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         addToSequence(event)
         onSimilarProposalsUpdated(event.id, event.similarProposals)
         onCreateOrUpdate(event)
-      case event: ProposalRefused =>
-        removeFromSequence(event)
-        onCreateOrUpdate(event)
+      case event: ProposalRefused     => onCreateOrUpdate(event)
       case event: ProposalPostponed   => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)

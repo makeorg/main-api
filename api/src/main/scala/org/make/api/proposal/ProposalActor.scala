@@ -483,6 +483,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
         userId = user.userId,
         eventDate = command.createdAt,
         content = command.content,
+        operation = command.operation,
         theme = command.theme
       )
     ) { _ =>
@@ -783,7 +784,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               )
             ),
             similarProposals = Seq.empty,
-            operation = e.requestContext.operationId,
+            operation = e.operation,
             events = List(
               ProposalAction(
                 date = e.eventDate,

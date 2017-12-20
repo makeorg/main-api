@@ -15,6 +15,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
@@ -168,7 +169,14 @@ class ProposalApiTest
 
   when(
     proposalService
-      .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Option[ThemeId]])
+      .propose(
+        any[User],
+        any[RequestContext],
+        any[ZonedDateTime],
+        matches(validProposalText),
+        any[Option[OperationId]],
+        any[Option[ThemeId]]
+      )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   val proposalResult = ProposalResult(

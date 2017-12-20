@@ -6,15 +6,16 @@ import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
 class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
-  val themeValue = "Theme"
+  val themeValue = ThemeId("Theme")
   val themeFilter = ThemeSearchFilter(Seq(themeValue))
-  val tagValue = "Tag1"
+  val tagValue = TagId("Tag1")
   val tagsFilter = TagsSearchFilter(Seq(tagValue))
-  val labelValue = "Label"
+  val labelValue = LabelId("Label")
   val labelsFilter = LabelsSearchFilter(Seq(labelValue))
   val trendingValue = "Trending"
   val trendingFilter = TrendingSearchFilter(trendingValue)
