@@ -2,9 +2,9 @@ package org.make.core.reference
 
 import java.util.UUID
 
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.{MakeSerializable, StringValue}
-import io.circe.generic.semiauto._
 import spray.json.{JsString, JsValue, JsonFormat}
 
 final case class Idea(ideaId: IdeaId,

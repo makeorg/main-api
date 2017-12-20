@@ -242,7 +242,8 @@ class ProposalApiTest
           updatedAt = Some(DateHelper.now()),
           events = Nil,
           similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
-          idea = None
+          idea = None,
+          ideaProposals = Seq.empty
         )
       )
     )
@@ -303,7 +304,8 @@ class ProposalApiTest
       updatedAt = Some(DateHelper.now()),
       events = Nil,
       similarProposals = Seq.empty,
-      idea = None
+      idea = None,
+      ideaProposals = Seq.empty
     )
   }
 

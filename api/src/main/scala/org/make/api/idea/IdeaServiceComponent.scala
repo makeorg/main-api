@@ -1,7 +1,6 @@
 package org.make.api.idea
 
 import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
-import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.reference._
 
@@ -25,9 +24,9 @@ trait IdeaService extends ShortenedNames {
 }
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
-  this: PersistentIdeaServiceComponent with ProposalSearchEngineComponent =>
+  this: PersistentIdeaServiceComponent =>
 
-  val ideaService = new IdeaService {
+  override val ideaService: IdeaService = new IdeaService {
 
     override def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
       persistentIdeaService.findAll(ideaFilters)
@@ -36,6 +35,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
     override def fetchOne(ideaId: IdeaId): Future[Option[Idea]] = {
       persistentIdeaService.findOne(ideaId)
     }
+
     override def fetchOneByName(name: String): Future[Option[Idea]] = {
       persistentIdeaService.findOneByName(name)
     }
@@ -58,7 +58,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
 
     override def update(ideaId: IdeaId, name: String): Future[Int] = {
       persistentIdeaService.findOne(ideaId).flatMap { result =>
-        if (!result.isDefined) {
+        if (result.isEmpty) {
           Future.failed(IdeaDoesnotExistsException(ideaId.value))
         } else {
           persistentIdeaService.modify(ideaId = ideaId, name = name)

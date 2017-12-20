@@ -130,10 +130,10 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                     ideaService
                       .insert(
                         name = request.name,
-                        language = requestContext.language,
-                        country = requestContext.country,
-                        operation = requestContext.operation,
-                        question = requestContext.question
+                        language = request.language.orElse(requestContext.language),
+                        country = request.country.orElse(requestContext.country),
+                        operation = request.operation.orElse(requestContext.operation),
+                        question = request.question.orElse(requestContext.question)
                       )
                   ) { idea =>
                     complete(StatusCodes.Created -> idea)
@@ -168,7 +168,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   @Path(value = "/{ideaId}")
   def updateIdea: Route = put {
     path("moderation" / "ideas" / ideaId) { ideaId =>
-      makeTrace("UpdateIdea") { requestContext =>
+      makeTrace("UpdateIdea") { _ =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             decodeRequest {
@@ -190,7 +190,11 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
     Segment.flatMap(id => Try(IdeaId(id)).toOption)
 }
 
-final case class CreateIdeaRequest(name: String)
+final case class CreateIdeaRequest(name: String,
+                                   language: Option[String],
+                                   country: Option[String],
+                                   operation: Option[String],
+                                   question: Option[String])
 
 object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]

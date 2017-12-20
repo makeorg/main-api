@@ -14,6 +14,8 @@ import org.make.core.proposal.indexed._
 import org.make.core.reference._
 import org.make.core.user.UserId
 
+final case class ModerationProposalResponse(indexedProposal: IndexedProposal, ideaProposals: Seq[IndexedProposal])
+
 final case class ProposalResponse(proposalId: ProposalId,
                                   slug: String,
                                   content: String,
@@ -29,7 +31,8 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   updatedAt: Option[ZonedDateTime],
                                   events: Seq[ProposalActionResponse],
                                   similarProposals: Seq[ProposalId],
-                                  idea: Option[IdeaId])
+                                  idea: Option[IdeaId],
+                                  ideaProposals: Seq[IndexedProposal])
 
 object ProposalResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
