@@ -67,7 +67,7 @@ deploy-preproduction:
       -H "Content-Type: application/x-www-form-urlencoded"
       -H "X-Rundeck-Auth-Token: $RUNDECK_TOKEN"
       --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
-      https://rundeck.preprod.makeorg.tech/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
+      $RUNDECK_PREPROD_URL/api/16/job/$RUNDECK_PREPROD_JOB_ID/run
 
 deploy-production:
   stage: deploy
@@ -83,4 +83,4 @@ deploy-production:
       -H "Content-Type: application/x-www-form-urlencoded"
       -H "X-Rundeck-Auth-Token: $RUNDECK_PROD_TOKEN"
       --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
-      https://rundeck.prod.makeorg.tech/api/16/job/9132ebc2-19fb-452a-b6ee-3ac316fe053f/run
+      $RUNDECK_PROD_URL/api/16/job/$RUNDECK_PROD_JOB_ID/run
