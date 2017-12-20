@@ -165,36 +165,47 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
       val futureEventsUsers: Future[Seq[UserResponse]] =
         userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
+      val futureIdeaProposals =
+        proposal.idea match {
+          case Some(ideaId) =>
+            elasticsearchProposalAPI
+              .searchProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value))))))
+              .map(_.results.filter(ideaProposal => proposal.proposalId.value != ideaProposal.id.value))
+          case None => Future.successful(Seq.empty)
+        }
 
-      futureEventsUsers.map { eventsUsers =>
-        val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
-          ProposalActionResponse(
-            date = action.date,
-            user = eventsUsers.find(_.userId.value == action.user.value),
-            actionType = action.actionType,
-            arguments = action.arguments
+      futureEventsUsers.flatMap { eventsUsers =>
+        futureIdeaProposals.map { ideaProposals =>
+          val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
+            ProposalActionResponse(
+              date = action.date,
+              user = eventsUsers.find(_.userId.value == action.user.value),
+              actionType = action.actionType,
+              arguments = action.arguments
+            )
+          }
+          Some(
+            ProposalResponse(
+              proposalId = proposal.proposalId,
+              slug = proposal.slug,
+              content = proposal.content,
+              author = UserResponse(author),
+              labels = proposal.labels,
+              theme = proposal.theme,
+              status = proposal.status,
+              refusalReason = proposal.refusalReason,
+              tags = proposal.tags,
+              votes = proposal.votes,
+              context = proposal.creationContext,
+              createdAt = proposal.createdAt,
+              updatedAt = proposal.updatedAt,
+              events = events,
+              similarProposals = proposal.similarProposals,
+              idea = proposal.idea,
+              ideaProposals = ideaProposals
+            )
           )
         }
-        Some(
-          ProposalResponse(
-            proposalId = proposal.proposalId,
-            slug = proposal.slug,
-            content = proposal.content,
-            author = UserResponse(author),
-            labels = proposal.labels,
-            theme = proposal.theme,
-            status = proposal.status,
-            refusalReason = proposal.refusalReason,
-            tags = proposal.tags,
-            votes = proposal.votes,
-            context = proposal.creationContext,
-            createdAt = proposal.createdAt,
-            updatedAt = proposal.updatedAt,
-            events = events,
-            similarProposals = proposal.similarProposals,
-            idea = proposal.idea
-          )
-        )
       }
     }
 

@@ -14,7 +14,7 @@ import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{Proposal, ProposalId}
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.{IdeaId, TagId, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
 import org.make.core.user._
@@ -102,46 +102,41 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   includedProposals: Seq[ProposalId] = Seq.empty,
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
+      logStartSequenceUserHisory(slug, maybeUserId, requestContext)
+
       val futureMaybeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
-      maybeUserId.foreach { userId =>
-        userHistoryCoordinatorService.logHistory(
-          LogUserStartSequenceEvent(
-            userId,
-            requestContext,
-            UserAction(DateHelper.now(), LogUserStartSequenceEvent.action, StartSequenceParameters(slug))
-          )
-        )
-      }
 
-      val futureSequenceWithProposals = futureMaybeSequence.flatMap {
-        case None => Future.successful(None)
-        case Some(sequence) =>
-          val allProposals: Future[Seq[Proposal]] = Future
-            .traverse(sequence.proposals) { id =>
-              proposalCoordinatorService.getProposal(id.proposalId)
-            }
-            .map(_.flatten)
+      val futureSequenceWithProposals
+        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] =
+        futureMaybeSequence.flatMap {
+          case None => Future.successful(None)
+          case Some(sequence) =>
+            val allProposals: Future[Seq[Proposal]] = Future
+              .traverse(sequence.proposals) { id =>
+                proposalCoordinatorService.getProposal(id.proposalId)
+              }
+              .map(_.flatten)
 
-          for {
-            allProposals   <- allProposals
-            votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-          } yield {
-            Some(
-              (
-                sequence,
-                SelectionAlgorithm.newProposalsForSequence(
-                  targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                  proposals = allProposals,
-                  votedProposals = votedProposals.keys.toSeq,
-                  newProposalVoteThreshold = BackofficeConfiguration.defaultProposalVotesThreshold,
-                  testedProposalEngagementThreshold = BackofficeConfiguration.defaultEngagementThreshold,
-                  includeList = includedProposals
-                ),
-                votedProposals
+            for {
+              allProposals   <- allProposals
+              votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+            } yield {
+              Some(
+                (
+                  sequence,
+                  SelectionAlgorithm.newProposalsForSequence(
+                    targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+                    votedProposals = votedProposals.keys.toSeq,
+                    newProposalVoteThreshold = BackofficeConfiguration.defaultProposalVotesThreshold,
+                    testedProposalEngagementThreshold = BackofficeConfiguration.defaultEngagementThreshold,
+                    includeList = includedProposals
+                  ),
+                  votedProposals
+                )
               )
-            )
-          }
-      }
+            }
+        }
 
       futureSequenceWithProposals.flatMap {
         case None => Future.successful(None)
@@ -157,6 +152,43 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               )
             )
           }
+      }
+    }
+
+    /**
+      * This method take proposals as parameters, group proposals by idea and update
+      * similar Proposals
+      *
+      * @param proposals Seq[Prposal]
+      *
+      * @return Seq[Prposal]
+      */
+    private def prepareSimilarProposalsForAlgorithm(proposals: Seq[Proposal]): Seq[Proposal] = {
+      val proposalsByIdea: Map[Option[IdeaId], Seq[Proposal]] = proposals.filter(p => p.idea.isDefined).groupBy(_.idea)
+      proposals.map { proposal =>
+        proposal.idea match {
+          case Some(idea) =>
+            proposal.copy(
+              similarProposals = proposalsByIdea(Some(idea))
+                .map(_.proposalId)
+                .filterNot(_ == proposal.proposalId)
+            )
+          case None => proposal
+        }
+      }
+    }
+
+    private def logStartSequenceUserHisory(sequenceSlug: String,
+                                           maybeUserId: Option[UserId],
+                                           requestContext: RequestContext) = {
+      maybeUserId.foreach { userId =>
+        userHistoryCoordinatorService.logHistory(
+          LogUserStartSequenceEvent(
+            userId,
+            requestContext,
+            UserAction(DateHelper.now(), LogUserStartSequenceEvent.action, StartSequenceParameters(sequenceSlug))
+          )
+        )
       }
     }
 

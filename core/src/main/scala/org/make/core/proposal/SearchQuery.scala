@@ -46,12 +46,13 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          content: Option[ContentSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
                          context: Option[ContextSearchFilter] = None,
-                         slug: Option[SlugSearchFilter] = None)
+                         slug: Option[SlugSearchFilter] = None,
+                         idea: Option[IdeaSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat9(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat10(SearchFilters.apply)
 
   def parse(proposals: Option[ProposalSearchFilter] = None,
             themes: Option[ThemeSearchFilter] = None,
@@ -61,12 +62,13 @@ object SearchFilters extends ElasticDsl {
             content: Option[ContentSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
             slug: Option[SlugSearchFilter] = None,
-            context: Option[ContextSearchFilter] = None): Option[SearchFilters] = {
+            context: Option[ContextSearchFilter] = None,
+            idea: Option[IdeaSearchFilter] = None): Option[SearchFilters] = {
 
-    (proposals, themes, tags, labels, trending, content, status, slug, context) match {
-      case (None, None, None, None, None, None, None, None, None) => None
+    (proposals, themes, tags, labels, trending, content, status, slug, context, idea) match {
+      case (None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
-        Some(SearchFilters(proposals, themes, tags, labels, trending, content, status, context, slug))
+        Some(SearchFilters(proposals, themes, tags, labels, trending, content, status, context, slug, idea))
     }
   }
 
@@ -89,7 +91,8 @@ object SearchFilters extends ElasticDsl {
       buildContextSourceSearchFilter(searchQuery),
       buildContextLocationSearchFilter(searchQuery),
       buildContextQuestionSearchFilter(searchQuery),
-      buildSlugSearchFilter(searchQuery)
+      buildSlugSearchFilter(searchQuery),
+      buildIdeaSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
@@ -267,6 +270,16 @@ object SearchFilters extends ElasticDsl {
       case _ => query
     }
   }
+
+  def buildIdeaSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.idea match {
+        case Some(IdeaSearchFilter(idea)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea))
+        case _ => None
+      }
+    }
+  }
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[String])
@@ -341,6 +354,13 @@ case class SlugSearchFilter(slug: String)
 object SlugSearchFilter {
   implicit val format: RootJsonFormat[SlugSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(SlugSearchFilter.apply)
+}
+
+case class IdeaSearchFilter(ideaId: String)
+
+object IdeaSearchFilter {
+  implicit val format: RootJsonFormat[IdeaSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(IdeaSearchFilter.apply)
 }
 
 case class Limit(value: Int)

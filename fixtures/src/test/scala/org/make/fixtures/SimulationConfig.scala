@@ -45,6 +45,7 @@ trait SimulationConfig {
   val proposalFeederPath: String = getRequiredString("feeder.proposals")
   val vffUserFeederPath: String = getRequiredString("feeder.users-vff")
   val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
+  val ideaProposalFeederPath: String = getRequiredString("feeder.idea-proposal")
 
   val defaultUserAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
@@ -81,4 +82,12 @@ object MakeServicesBuilder {
     http("POST_validate_proposal")
       .post("/moderation/proposals/${proposalId}/accept")
       .header("Content-Type", "application/json")
+
+  val createIdeaBuilder: HttpRequestBuilder = http("POST_idea")
+    .post("/moderation/ideas")
+    .header("Content-Type", "application/json")
+
+  val addProposalToIdeaBuilder: HttpRequestBuilder = http("PATCH_proposal_idea")
+    .patch("/moderation/proposals/${proposalId}")
+    .header("Content-Type", "application/json")
 }

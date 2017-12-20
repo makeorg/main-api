@@ -58,4 +58,12 @@ object ProposalChainBuilder {
         .check(status.is(statusOk))
     )
   }
+
+  val addProposalIdea: ChainBuilder = {
+    exec(
+      MakeServicesBuilder.addProposalToIdeaBuilder
+        .body(ElFileBody("jsonModel/addProposalIdea.json"))
+        .check(status.is(statusOk))
+    )
+  }
 }
