@@ -1,6 +1,7 @@
 package org.make.api.idea
 
 import org.make.api.DatabaseTest
+import org.make.core.operation.OperationId
 import org.make.core.reference.{Idea, IdeaId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -15,7 +16,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     name = "barIdea",
     language = Some("fr"),
     country = Some("FR"),
-    operation = Some("operation"),
+    operation = Some(OperationId("operation")),
     question = Some("question")
   )
 

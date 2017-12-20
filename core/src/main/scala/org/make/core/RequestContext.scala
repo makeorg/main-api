@@ -4,6 +4,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.reference.ThemeId
 import org.make.core.session.SessionId
 import io.circe.generic.semiauto._
+import org.make.core.operation.OperationId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -13,7 +14,8 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 externalId: String,
                                 country: Option[String],
                                 language: Option[String],
-                                operation: Option[String],
+                                @Deprecated operation: Option[String] = None,
+                                operationId: Option[OperationId] = None,
                                 source: Option[String],
                                 location: Option[String],
                                 question: Option[String],
@@ -30,6 +32,6 @@ object RequestContext {
     RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, None, None, None)
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat14(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat15(RequestContext.apply)
 
 }

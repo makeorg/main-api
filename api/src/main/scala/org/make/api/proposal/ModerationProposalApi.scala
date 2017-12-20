@@ -16,6 +16,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
@@ -114,8 +115,13 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                         themesIds = themeId,
                         tagsIds = tags,
                         content = content,
-                        context =
-                          Some(ContextFilterRequest(operation = operation, source = source, question = question)),
+                        context = Some(
+                          ContextFilterRequest(
+                            operation = operation.map(OperationId(_)),
+                            source = source,
+                            question = question
+                          )
+                        ),
                         status = Some(Seq(Accepted)),
                         limit = Some(5000) //TODO get limit value for export into config files
                       ).toSearchQuery,

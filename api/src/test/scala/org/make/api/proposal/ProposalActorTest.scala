@@ -7,6 +7,7 @@ import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
@@ -1196,7 +1197,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
               externalId = Some("external-id"),
               country = Some("BE"),
               language = Some("nl"),
-              operation = Some("my-operation"),
+              operation = Some(OperationId("my-operation")),
               source = Some("my-source"),
               location = Some("my-location"),
               question = Some("my-question"),
@@ -1219,7 +1220,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           externalId = "external-id",
           country = Some("BE"),
           language = Some("nl"),
-          operation = Some("my-operation"),
+          operationId = Some(OperationId("my-operation")),
           source = Some("my-source"),
           location = Some("my-location"),
           question = Some("my-question"),

@@ -126,7 +126,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
 
-      val operation = event.requestContext.operation.getOrElse("core")
+      val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
@@ -148,7 +148,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
                   "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/proposal/${proposal.slug}",
                   "proposal_text" -> proposal.content,
                   "firstname" -> user.firstName.getOrElse(""),
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")
@@ -176,7 +176,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       // OptionT[Future, Unit] is some kind of monad wrapper to be able to unwrap options with no boilerplate
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
-      val operation = event.requestContext.operation.getOrElse("core")
+      val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
@@ -198,8 +198,8 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
                   "proposal_text" -> proposal.content,
                   "firstname" -> user.fullName.getOrElse(""),
                   "refusal_reason" -> proposal.refusalReason.getOrElse(""),
-                  "registration_context" -> event.requestContext.operation.getOrElse(""),
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "registration_context" -> event.requestContext.operationId.map(_.value).getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")

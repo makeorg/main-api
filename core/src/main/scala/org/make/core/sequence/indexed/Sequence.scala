@@ -2,13 +2,14 @@ package org.make.core.sequence.indexed
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, ObjectEncoder}
+import org.make.core.CirceFormatters
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{Tag, ThemeId, ThemeTranslation}
 import org.make.core.sequence._
-import org.make.core.CirceFormatters
 
 import scala.concurrent.Future
 
@@ -32,6 +33,7 @@ object SequenceElasticsearchFieldNames {
   val contextSource: String = "context.source"
   val contextLocation: String = "context.location"
   val contextQuestion: String = "context.question"
+  val operationId: String = "operationId"
   val searchable: String = "searchable"
 }
 
@@ -61,6 +63,7 @@ case class IndexedSequence(id: SequenceId,
                            context: Option[Context],
                            tags: Seq[Tag],
                            themes: Seq[IndexedSequenceTheme],
+                           operationId: Option[OperationId],
                            proposals: Seq[IndexedSequenceProposalId],
                            searchable: Boolean)
 
@@ -69,7 +72,7 @@ object IndexedSequence extends CirceFormatters {
   implicit val decoder: Decoder[IndexedSequence] = deriveDecoder[IndexedSequence]
 }
 
-final case class Context(operation: Option[String],
+final case class Context(operation: Option[OperationId],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])

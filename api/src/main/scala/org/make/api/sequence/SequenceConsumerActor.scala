@@ -104,7 +104,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
         updatedAt = sequence.updatedAt.get,
         context = Some(
           Context(
-            operation = sequence.creationContext.operation,
+            operation = sequence.creationContext.operationId,
             source = sequence.creationContext.source,
             location = sequence.creationContext.location,
             question = sequence.creationContext.question
@@ -112,6 +112,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
         ),
         tags = tags,
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
+        operationId = sequence.operationId,
         proposals = sequence.proposalIds.map(IndexedSequenceProposalId.apply),
         searchable = sequence.searchable
       )

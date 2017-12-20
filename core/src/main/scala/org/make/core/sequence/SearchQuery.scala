@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.Sort
+import org.make.core.operation.OperationId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.indexed.SequenceElasticsearchFieldNames
 import spray.json.DefaultJsonProtocol._
@@ -256,7 +257,7 @@ object StatusSearchFilter {
 
 }
 
-case class ContextSearchFilter(operation: Option[String],
+case class ContextSearchFilter(operation: Option[OperationId],
                                source: Option[String],
                                location: Option[String],
                                question: Option[String])

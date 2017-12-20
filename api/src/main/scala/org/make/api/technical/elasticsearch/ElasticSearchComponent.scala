@@ -209,7 +209,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         votes = proposal.votes.map(IndexedVote.apply),
         context = Some(
           ProposalContext(
-            operation = proposal.creationContext.operation,
+            operation = proposal.creationContext.operationId,
             source = proposal.creationContext.source,
             location = proposal.creationContext.location,
             question = proposal.creationContext.question
@@ -228,7 +228,8 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
         tags = tags,
-        ideaId = proposal.idea
+        ideaId = proposal.idea,
+        operationId = proposal.operation
       )
     }
 
@@ -255,7 +256,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         updatedAt = sequence.updatedAt.get,
         context = Some(
           SequenceContext(
-            operation = sequence.creationContext.operation,
+            operation = sequence.creationContext.operationId,
             source = sequence.creationContext.source,
             location = sequence.creationContext.location,
             question = sequence.creationContext.question
@@ -263,6 +264,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         ),
         tags = tags,
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
+        operationId = sequence.operationId,
         proposals = sequence.proposalIds.map(IndexedSequenceProposalId.apply),
         searchable = sequence.searchable
       )

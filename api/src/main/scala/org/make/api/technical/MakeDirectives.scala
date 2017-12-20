@@ -10,6 +10,7 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
 import org.make.core.session.SessionId
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -100,7 +101,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         requestId = requestId,
         sessionId = SessionId(sessionId),
         externalId = externalId,
-        operation = maybeOperation,
+        operationId = maybeOperation.map(OperationId(_)),
         source = maybeSource,
         location = maybeLocation,
         question = maybeQuestion,

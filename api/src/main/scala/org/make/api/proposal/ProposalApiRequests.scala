@@ -6,6 +6,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.session.SessionId
@@ -61,7 +62,7 @@ object RefuseProposalRequest {
   implicit val encoder: ObjectEncoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[String] = None,
+final case class ContextFilterRequest(operation: Option[OperationId] = None,
                                       source: Option[String] = None,
                                       location: Option[String] = None,
                                       question: Option[String] = None) {
@@ -185,7 +186,7 @@ final case class PatchRequestContext(currentTheme: Option[ThemeId] = None,
                                      externalId: Option[String] = None,
                                      country: Option[String] = None,
                                      language: Option[String] = None,
-                                     operation: Option[String] = None,
+                                     operation: Option[OperationId] = None,
                                      source: Option[String] = None,
                                      location: Option[String] = None,
                                      question: Option[String] = None,

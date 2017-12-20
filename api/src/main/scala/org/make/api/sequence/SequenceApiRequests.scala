@@ -4,6 +4,7 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
@@ -87,7 +88,7 @@ object ExhaustiveSearchRequest {
   implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[String] = None,
+final case class ContextFilterRequest(operation: Option[OperationId] = None,
                                       source: Option[String] = None,
                                       location: Option[String] = None,
                                       question: Option[String] = None) {

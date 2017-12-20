@@ -4,6 +4,7 @@ import java.util.UUID
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import org.make.core.operation.OperationId
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -11,8 +12,9 @@ final case class Idea(ideaId: IdeaId,
                       name: String,
                       language: Option[String] = None,
                       country: Option[String] = None,
-                      operation: Option[String] = None,
-                      question: Option[String] = None)
+                      @Deprecated operation: Option[OperationId] = None,
+                      question: Option[String] = None,
+                      operationId: Option[OperationId] = None)
     extends MakeSerializable
 
 object Idea {
@@ -22,15 +24,15 @@ object Idea {
   def apply(name: String,
             language: Option[String],
             country: Option[String],
-            operation: Option[String],
-            question: Option[String]): Idea =
+            question: Option[String],
+            operationId: Option[OperationId]): Idea =
     Idea(
       ideaId = IdeaId(UUID.randomUUID().toString),
       name = name,
       language = language,
       country = country,
-      operation = operation,
-      question = question
+      question = question,
+      operationId = operationId
     )
 }
 

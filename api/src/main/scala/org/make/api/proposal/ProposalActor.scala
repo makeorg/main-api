@@ -113,7 +113,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
             country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
             language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
-            operation = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operation),
+            operationId = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operationId),
             source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
             location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
             question = contextChanges.question.map(Some(_)).getOrElse(proposal.creationContext.question),
@@ -783,6 +783,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               )
             ),
             similarProposals = Seq.empty,
+            operation = e.requestContext.operationId,
             events = List(
               ProposalAction(
                 date = e.eventDate,

@@ -91,13 +91,13 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
   def addToSequence(event: ProposalAccepted): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
-        if (proposal.creationContext.operation.nonEmpty) {
+        if (proposal.creationContext.operationId.nonEmpty) {
           sequenceService
             .search(
               Some(event.moderator),
               sequence
                 .ExhaustiveSearchRequest(
-                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operation)),
+                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operationId)),
                   limit = Some(1)
                 )
                 .toSearchQuery,
@@ -118,13 +118,13 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
   def removeFromSequence(event: ProposalRefused): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
       case Some(proposal) =>
-        if (proposal.creationContext.operation.nonEmpty) {
+        if (proposal.creationContext.operationId.nonEmpty) {
           sequenceService
             .search(
               Some(event.moderator),
               sequence
                 .ExhaustiveSearchRequest(
-                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operation)),
+                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operationId)),
                   limit = Some(1)
                 )
                 .toSearchQuery,
@@ -180,7 +180,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         votes = proposal.votes.map(IndexedVote.apply),
         context = Some(
           Context(
-            operation = proposal.creationContext.operation,
+            operation = proposal.creationContext.operationId,
             source = proposal.creationContext.source,
             location = proposal.creationContext.location,
             question = proposal.creationContext.question
@@ -199,7 +199,8 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
         tags = tags,
-        ideaId = proposal.idea
+        ideaId = proposal.idea,
+        operationId = proposal.operation
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))

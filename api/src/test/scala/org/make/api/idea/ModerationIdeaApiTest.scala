@@ -10,6 +10,7 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.reference.{Idea, IdeaId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -95,7 +96,7 @@ class ModerationIdeaApiTest
       ArgumentMatchers.eq(fooIdeaText),
       ArgumentMatchers.any[Option[String]],
       ArgumentMatchers.any[Option[String]],
-      ArgumentMatchers.any[Option[String]],
+      ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[String]]
     )
   ).thenReturn(Future.successful(fooIdea))

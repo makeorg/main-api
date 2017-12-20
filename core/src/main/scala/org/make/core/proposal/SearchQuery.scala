@@ -7,6 +7,7 @@ import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
+import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -339,7 +340,7 @@ object StatusSearchFilter {
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 }
 
-case class ContextSearchFilter(operation: Option[String] = None,
+case class ContextSearchFilter(operation: Option[OperationId] = None,
                                source: Option[String] = None,
                                location: Option[String] = None,
                                question: Option[String] = None)
