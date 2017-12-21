@@ -1,14 +1,15 @@
 package org.make.fixtures
 
 import io.gatling.core.Predef._
-import io.gatling.core.feeder.RecordSeqFeederBuilder
+import io.gatling.core.feeder.{Record, RecordSeqFeederBuilder}
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.http.Predef.{jsonPath, status}
 import org.make.fixtures.Proposal.ideaProposalFeederPath
 
 object Idea {
   val ideaProposalFeeder: RecordSeqFeederBuilder[Any] = ssv(ideaProposalFeederPath, '"', '\\').records
-  val ideas: IndexedSeq[String] = ssv(ideaProposalFeederPath, '"', '\\').records.map(_("ideaName")).distinct
+  val proposalsByIdea: Map[String, IndexedSeq[Record[String]]] =
+    ssv(ideaProposalFeederPath, '"', '\\').records.groupBy(_("ideaName"))
 }
 
 object IdeaChainBuilder extends SimulationConfig {
