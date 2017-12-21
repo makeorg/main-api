@@ -48,7 +48,14 @@ object UniformRandom extends StrictLogging {
 object ProposalScorer extends StrictLogging {
   var random: RandomGenerator = new MersenneTwister()
 
-  def score(proposal: Proposal): Double = {
+  case class ScoreCounts(votes: Int,
+                         neutralCount: Int,
+                         platitudeAgreeCount: Int,
+                         platitudeDisagreeCount: Int,
+                         loveCount: Int,
+                         hateCount: Int)
+
+  def scoreCounts(proposal: Proposal): ScoreCounts = {
     val votes: Int = proposal.votes.map(_.count).sum
     val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
     val platitudeAgreeCount: Int = proposal.votes
@@ -59,12 +66,6 @@ object ProposalScorer extends StrictLogging {
       .filter(_.key == Disagree)
       .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
       .sum
-
-    val engagementScore: Double = (1
-      - (neutralCount + 0.33) / (votes.toDouble + 1)
-      - (platitudeAgreeCount + 0.01) / (votes.toDouble + 1)
-      - (platitudeDisagreeCount + 0.01) / (votes.toDouble + 1))
-
     val loveCount: Int = proposal.votes
       .filter(_.key == Agree)
       .map(_.qualifications.filter(_.key == LikeIt).map(_.count).sum)
@@ -74,46 +75,89 @@ object ProposalScorer extends StrictLogging {
       .map(_.qualifications.filter(_.key == NoWay).map(_.count).sum)
       .sum
 
-    val adhesionScore: Double = (
-      (loveCount + 0.01) / (votes - neutralCount + 1).toDouble
-        - (hateCount + 0.01) / (votes - neutralCount + 1).toDouble
-    )
+    ScoreCounts(votes, neutralCount, platitudeAgreeCount, platitudeDisagreeCount, loveCount, hateCount)
+  }
 
-    engagementScore + adhesionScore
+  def engagement(counts: ScoreCounts): Double = {
+    (1
+      - (counts.neutralCount + 0.33) / (counts.votes.toDouble + 1)
+      - (counts.platitudeAgreeCount + 0.01) / (counts.votes.toDouble + 1)
+      - (counts.platitudeDisagreeCount + 0.01) / (counts.votes.toDouble + 1))
+  }
+
+  def engagement(proposal: Proposal): Double = {
+    engagement(scoreCounts(proposal))
+  }
+
+  def adhesion(counts: ScoreCounts): Double = {
+    ((counts.loveCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
+      - (counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
+  }
+
+  def adhesion(proposal: Proposal): Double = {
+    adhesion(scoreCounts(proposal))
+  }
+
+  def score(proposal: Proposal): Double = {
+    val counts = scoreCounts(proposal)
+    engagement(counts) + adhesion(counts)
+  }
+
+  /*
+   * Samples are taken from a beta distribution, which is the bayesian companion distribution for the binomial distribution
+   * Each rate is sampled from its own beta distribution with a prior at 0.33 for votes and 0.01 for qualifications
+   */
+  def sampleRate(successes: Int, trials: Int, prior: Double): Double = {
+    new BetaDistribution(random, successes + prior, trials + 1).sample()
+  }
+
+  def sampleEngagement(counts: ScoreCounts): Double = {
+    (1
+      - sampleRate(counts.neutralCount, counts.votes - counts.neutralCount, 0.33)
+      - sampleRate(counts.platitudeAgreeCount, counts.votes - counts.platitudeAgreeCount, 0.01)
+      - sampleRate(counts.platitudeDisagreeCount, counts.votes - counts.platitudeDisagreeCount, 0.01))
+  }
+
+  def sampleAdhesion(counts: ScoreCounts): Double = {
+    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount - counts.loveCount, 0.01)
+      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount - counts.hateCount, 0.01))
   }
 
   def sampleScore(proposal: Proposal): Double = {
-    val votes: Int = proposal.votes.map(_.count).sum
-    val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
-    val platitudeAgreeCount: Int = proposal.votes
-      .filter(_.key == Agree)
-      .map(_.qualifications.filter(_.key == PlatitudeAgree).map(_.count).sum)
-      .sum
-    val platitudeDisagreeCount: Int = proposal.votes
-      .filter(_.key == Disagree)
-      .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
-      .sum
-
-    val engagementScore: Double = (1
-      - new BetaDistribution(random, neutralCount + 0.33, votes - neutralCount + 1).sample()
-      - new BetaDistribution(random, platitudeAgreeCount + 0.01, votes - platitudeAgreeCount + 1).sample()
-      - new BetaDistribution(random, platitudeDisagreeCount + 0.01, votes - platitudeDisagreeCount + 1).sample())
-
-    val loveCount: Int = proposal.votes
-      .filter(_.key == Agree)
-      .map(_.qualifications.filter(_.key == LikeIt).map(_.count).sum)
-      .sum
-    val hateCount: Int = proposal.votes
-      .filter(_.key == Disagree)
-      .map(_.qualifications.filter(_.key == NoWay).map(_.count).sum)
-      .sum
-
-    val adhesionScore: Double = (new BetaDistribution(random, loveCount + 0.01, votes - neutralCount - loveCount + 1)
-      .sample()
-      - new BetaDistribution(random, hateCount + 0.01, votes - neutralCount - hateCount + 1).sample())
-
-    engagementScore + adhesionScore
+    val counts = scoreCounts(proposal)
+    sampleEngagement(counts) + sampleAdhesion(counts)
   }
+
+  /*
+   * Returns the rate estimate and standard error
+   * it uses Agresti-Coull estimate: "add 2 successes and 2 failures"
+   * https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Agresti–Coull_interval
+   * nn is the number of trials estimate
+   * pp is the probability estimate
+   * sd is the standard deviation estimate
+   * */
+  case class RateEstimate(rate: Double, sd: Double)
+
+  def rateEstimate(successes: Int, trials: Int): RateEstimate = {
+    val nn: Double = (trials + 4).toDouble
+    val pp: Double = (successes + 2) / nn
+    val sd: Double = Math.sqrt(pp * (1 - pp) / nn)
+
+    RateEstimate(pp, sd)
+  }
+
+  def engagementUpperBound(proposal: Proposal): Double = {
+    val counts = scoreCounts(proposal)
+
+    val neutralEstimate: RateEstimate = rateEstimate(counts.neutralCount, counts.votes)
+    val platitudeAgreeEstimate: RateEstimate = rateEstimate(counts.platitudeAgreeCount, counts.votes)
+    val platitudeDisagreeEstimate: RateEstimate = rateEstimate(counts.platitudeDisagreeCount, counts.votes)
+
+    (1 - neutralEstimate.rate + 2 * neutralEstimate.sd
+      - platitudeAgreeEstimate.rate + 2 * platitudeAgreeEstimate.sd
+      - platitudeDisagreeEstimate.rate + 2 * platitudeDisagreeEstimate.sd)
+  }
+
 }
 
 object SelectionAlgorithm extends StrictLogging {
@@ -181,48 +225,6 @@ object SelectionAlgorithm extends StrictLogging {
     } else {
       sequence
     }
-  }
-
-  /*
-   * Returns the rate estimate and standard error
-   * it uses Agresti-Coull estimate: "add 2 successes and 2 failures"
-   * https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Agresti–Coull_interval
-   * nn is the number of trials estimate
-   * pp is the probability estimate
-   * sd is the standard deviation estimate
-   * */
-  case class RateEstimate(rate: Double, sd: Double)
-
-  def computeRateEstimate(successes: Int, trials: Int): RateEstimate = {
-    val nn: Double = (trials + 4).toDouble
-    val pp: Double = (successes + 2) / nn
-    val sd: Double = Math.sqrt(pp * (1 - pp) / nn)
-
-    RateEstimate(pp, sd)
-  }
-
-  def computeEngagementRateUpperBound(proposal: Proposal): Double = {
-    val votes: Int = proposal.votes.map(_.count).sum
-    val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
-    val platitudeAgreeCount: Int = proposal.votes
-      .filter(_.key == Agree)
-      .map(_.qualifications.filter(_.key == PlatitudeAgree).map(_.count).sum)
-      .sum
-    val platitudeDisagreeCount: Int = proposal.votes
-      .filter(_.key == Disagree)
-      .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
-      .sum
-
-    val neutralEstimate: RateEstimate = computeRateEstimate(neutralCount, votes)
-    val platitudeAgreeEstimate: RateEstimate = computeRateEstimate(platitudeAgreeCount, votes)
-    val platitudeDisagreeEstimate: RateEstimate = computeRateEstimate(platitudeDisagreeCount, votes)
-
-    1 - neutralEstimate.rate + 2 * neutralEstimate.sd
-    /*
-    (1 - neutralEstimate.rate + 2 * neutralEstimate.sd
-      - platitudeAgreeEstimate.rate + 2 * platitudeAgreeEstimate.sd
-      - platitudeDisagreeEstimate.rate + 2 * platitudeDisagreeEstimate.sd)
-   */
   }
 
   def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
@@ -308,7 +310,7 @@ object SelectionAlgorithm extends StrictLogging {
                             testedProposalCount: Int): Seq[Proposal] = {
     val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
       val votes: Int = proposal.votes.map(_.count).sum
-      val engagement_rate: Double = computeEngagementRateUpperBound(proposal)
+      val engagement_rate: Double = ProposalScorer.engagementUpperBound(proposal)
       (votes >= newProposalVoteCount
       && engagement_rate > testedProposalEngagementThreshold)
     }
