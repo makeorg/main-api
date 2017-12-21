@@ -12,7 +12,7 @@ import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
 import org.make.api.idea.{DefaultIdeaServiceComponent, DefaultPersistentIdeaServiceComponent, ModerationIdeaApi}
-import org.make.api.proposal._
+import org.make.api.proposal.{SelectionAlgorithmConfiguration, _}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
@@ -62,6 +62,8 @@ trait MakeApi
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
     with DefaultSequenceServiceComponent
+    with SelectionAlgorithmConfigurationComponent
+    with DefaultSelectionAlgorithmComponent
     with DuplicateDetectorConfigurationComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
@@ -106,6 +108,9 @@ trait MakeApi
   override lazy val duplicateDetectorConfiguration: DuplicateDetectorConfiguration = DuplicateDetectorConfiguration(
     actorSystem
   )
+
+  override lazy val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration =
+    new SelectionAlgorithmConfiguration(actorSystem.settings.config.getConfig("make-api.selection-algorithm"))
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem

@@ -1,5 +1,6 @@
 package org.make.api.proposal
 
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.make.core.proposal._
 
@@ -157,11 +158,39 @@ object ProposalScorer extends StrictLogging {
       - platitudeAgreeEstimate.rate + 2 * platitudeAgreeEstimate.sd
       - platitudeDisagreeEstimate.rate + 2 * platitudeDisagreeEstimate.sd)
   }
-
 }
 
-object SelectionAlgorithm extends StrictLogging {
-  /*
+class SelectionAlgorithmConfiguration(config: Config) {
+  val newProposalsRatio: Double = config.getDouble("new-proposals-ratio")
+  val newProposalsVoteThreshold: Int = config.getInt("new-proposals-vote-threshold")
+  val testedProposalsEngagementThreshold: Double = config.getDouble("tested-proposals-engagement-threshold")
+  val banditMinCount: Int = config.getInt("bandit-min-count")
+  val banditProposalsRatio: Double = config.getDouble("bandit-proposals-ratio")
+}
+
+trait SelectionAlgorithmConfigurationComponent {
+  val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration
+}
+
+trait SelectionAlgorithmComponent {
+  val selectionAlgorithm: SelectionAlgorithm
+}
+
+trait SelectionAlgorithm {
+  def newProposalsForSequence(targetLength: Int,
+                              proposals: Seq[Proposal],
+                              votedProposals: Seq[ProposalId],
+                              includeList: Seq[ProposalId]): Seq[ProposalId]
+}
+
+trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
+
+  this: SelectionAlgorithmConfigurationComponent =>
+
+  override val selectionAlgorithm: DefaultSelectionAlgorithm = new DefaultSelectionAlgorithm
+
+  class DefaultSelectionAlgorithm extends SelectionAlgorithm {
+    /*
     Returns the list of proposal to display in the sequence
     The proposals are chosen such that:
     - if they are imposed proposals (includeList) they will appear first
@@ -174,161 +203,157 @@ object SelectionAlgorithm extends StrictLogging {
     - the candidates proposals are filtered such that only one proposal by ideas
       (cluster of similar proposals) can appear in each sequence
     - the non imposed proposals are ordered randomly
-   */
-  def newProposalsForSequence(targetLength: Int,
-                              proposals: Seq[Proposal],
-                              votedProposals: Seq[ProposalId],
-                              newProposalVoteThreshold: Int,
-                              testedProposalEngagementThreshold: Double,
-                              includeList: Seq[ProposalId]): Seq[ProposalId] = {
+     */
+    def newProposalsForSequence(targetLength: Int,
+                                proposals: Seq[Proposal],
+                                votedProposals: Seq[ProposalId],
+                                includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
-    // fetch included proposals and exclude similars
-    val includedProposals: Seq[Proposal] = proposals.filter(p             => includeList.contains(p.proposalId))
-    val proposalsToExclude: Seq[ProposalId] = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
+      // fetch included proposals and exclude similars
+      val includedProposals: Seq[Proposal] = proposals.filter(p             => includeList.contains(p.proposalId))
+      val proposalsToExclude: Seq[ProposalId] = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
 
-    // fetch available proposals for user
-    val availableProposals: Seq[Proposal] = proposals.filter(
-      p =>
-        p.status == ProposalStatus.Accepted &&
-          !proposalsToExclude.contains(p.proposalId) &&
-          !votedProposals.contains(p.proposalId) &&
-          !p.similarProposals.exists(proposal => includeList.contains(proposal))
-    )
-
-    // balance proposals between new and tested
-    val proposalsToChoose: Int = targetLength - includeList.size
-    val targetNewProposalsCount: Int = proposalsToChoose / 2
-
-    // chooses new proposals
-    val newIncludedProposals: Seq[Proposal] =
-      chooseNewProposals(availableProposals, newProposalVoteThreshold, targetNewProposalsCount)
-    val newProposalsToExclude: Seq[ProposalId] =
-      newIncludedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
-
-    // chooses tested proposals
-    val remainingProposals: Seq[Proposal] =
-      availableProposals.filter(p => !newProposalsToExclude.contains(p.proposalId))
-    val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
-    val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(
-      remainingProposals,
-      newProposalVoteThreshold,
-      testedProposalEngagementThreshold,
-      testedProposalCount
-    )
-
-    // build sequence
-    val sequence: Seq[ProposalId] = includeList ++ Random.shuffle(
-      newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
-    )
-    if (sequence.size < targetLength) {
-      complementSequence(sequence, targetLength, proposals, availableProposals)
-    } else {
-      sequence
-    }
-  }
-
-  def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
-    if (proposals.isEmpty || count <= 0) {
-      Seq.empty
-    } else {
-      val chosen: Proposal = algorithm(proposals)
-      Seq(chosen) ++ chooseProposals(
-        count = count - 1,
-        proposals =
-          proposals.filter(p => p.proposalId != chosen.proposalId && !chosen.similarProposals.contains(p.proposalId)),
-        algorithm = algorithm
+      // fetch available proposals for user
+      val availableProposals: Seq[Proposal] = proposals.filter(
+        p =>
+          p.status == ProposalStatus.Accepted &&
+            !proposalsToExclude.contains(p.proposalId) &&
+            !votedProposals.contains(p.proposalId) &&
+            !p.similarProposals.exists(proposal => includeList.contains(proposal))
       )
-    }
-  }
 
-  def chooseNewProposalAlgorithm(proposals: Seq[Proposal]): Proposal = {
-    proposals
-      .sortWith((first, second) => {
-        (for {
-          firstCreation  <- first.createdAt
-          secondCreation <- second.createdAt
-        } yield {
-          firstCreation.isBefore(secondCreation)
-        }).getOrElse(false)
-      })
-      .head
-  }
+      // balance proposals between new and tested
+      val proposalsToChoose: Int = targetLength - includeList.size
+      val targetNewProposalsCount: Int =
+        math.ceil(proposalsToChoose * selectionAlgorithmConfiguration.newProposalsRatio).toInt
 
-  def chooseNewProposals(availableProposals: Seq[Proposal],
-                         newProposalVoteCount: Int,
-                         targetNewProposalsCount: Int): Seq[Proposal] = {
-    val newProposals: Seq[Proposal] = availableProposals.filter { proposal =>
-      val votes: Int = proposal.votes.map(_.count).sum
-      votes < newProposalVoteCount
-    }
-    chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = chooseNewProposalAlgorithm)
-  }
+      // chooses new proposals
+      val newIncludedProposals: Seq[Proposal] =
+        chooseNewProposals(availableProposals, targetNewProposalsCount)
+      val newProposalsToExclude: Seq[ProposalId] =
+        newIncludedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
 
-  case class ScoredProposal(proposal: Proposal, score: Double)
+      // chooses tested proposals
+      val remainingProposals: Seq[Proposal] =
+        availableProposals.filter(p => !newProposalsToExclude.contains(p.proposalId))
+      val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
+      val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(remainingProposals, testedProposalCount)
 
-  /*
-   * Chooses the top proposals of each cluster according to the bandit algorithm
-   * Keep at least 3 proposals per ideas
-   * Then keep the top quartile
-   */
-  def chooseBanditProposalsSimilars(similarProposals: Seq[Proposal]): Proposal = {
-
-    val similarProposalsScored: Seq[ScoredProposal] =
-      similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
-
-    val shortList = similarProposals.length match {
-      case l if l < 3  => similarProposals
-      case l if l < 12 => similarProposalsScored.sortWith(_.score > _.score).take(3).map(sp => sp.proposal)
-      case _ => {
-        val quartile = ceil(similarProposals.length / 4.0).toInt
-        similarProposalsScored.sortWith(_.score > _.score).take(quartile).map(sp => sp.proposal)
+      // build sequence
+      val sequence: Seq[ProposalId] = includeList ++ Random.shuffle(
+        newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
+      )
+      if (sequence.size < targetLength) {
+        complementSequence(sequence, targetLength, proposals, availableProposals)
+      } else {
+        sequence
       }
     }
 
-    UniformRandom.choose(shortList)
-  }
+    def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
+      if (proposals.isEmpty || count <= 0) {
+        Seq.empty
+      } else {
+        val chosen: Proposal = algorithm(proposals)
+        Seq(chosen) ++ chooseProposals(
+          count = count - 1,
+          proposals =
+            proposals.filter(p => p.proposalId != chosen.proposalId && !chosen.similarProposals.contains(p.proposalId)),
+          algorithm = algorithm
+        )
+      }
+    }
 
-  def chooseBanditProposals(proposals: Seq[Proposal]): Seq[Proposal] = {
-    if (proposals.isEmpty) {
-      Seq.empty
-    } else {
-      val currentProposal: Proposal = proposals.head
-      val similarProposals: Seq[Proposal] =
-        proposals.filter(p => currentProposal.similarProposals.contains(p.proposalId)) ++ Seq(currentProposal)
-      val chosen = chooseBanditProposalsSimilars(similarProposals)
-      val similarProposalIds = similarProposals.map(p => p.proposalId)
+    def chooseNewProposalAlgorithm(proposals: Seq[Proposal]): Proposal = {
+      proposals
+        .sortWith((first, second) => {
+          (for {
+            firstCreation  <- first.createdAt
+            secondCreation <- second.createdAt
+          } yield {
+            firstCreation.isBefore(secondCreation)
+          }).getOrElse(false)
+        })
+        .head
+    }
 
-      Seq(chosen) ++ chooseBanditProposals(
-        proposals = proposals.filter(p => !similarProposalIds.contains(p.proposalId))
+    def chooseNewProposals(availableProposals: Seq[Proposal], targetNewProposalsCount: Int): Seq[Proposal] = {
+      val newProposals: Seq[Proposal] = availableProposals.filter { proposal =>
+        val votes: Int = proposal.votes.map(_.count).sum
+        votes < selectionAlgorithmConfiguration.newProposalsVoteThreshold
+      }
+      chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = chooseNewProposalAlgorithm)
+    }
+
+    case class ScoredProposal(proposal: Proposal, score: Double)
+
+    /*
+     * Chooses the top proposals of each cluster according to the bandit algorithm
+     * Keep at least 3 proposals per ideas
+     * Then keep the top quartile
+     */
+    def chooseBanditProposalsSimilars(similarProposals: Seq[Proposal]): Proposal = {
+
+      val similarProposalsScored: Seq[ScoredProposal] =
+        similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
+
+      val shortList = similarProposals.length match {
+        case l if l <= selectionAlgorithmConfiguration.banditMinCount => similarProposals
+        case l => {
+          val count = math.max(
+            selectionAlgorithmConfiguration.banditMinCount,
+            ceil(similarProposals.length * selectionAlgorithmConfiguration.banditProposalsRatio).toInt
+          )
+          similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
+        }
+      }
+
+      UniformRandom.choose(shortList)
+    }
+
+    def chooseBanditProposals(proposals: Seq[Proposal]): Seq[Proposal] = {
+      if (proposals.isEmpty) {
+        Seq.empty
+      } else {
+        val currentProposal: Proposal = proposals.head
+        val similarProposals: Seq[Proposal] =
+          proposals.filter(p => currentProposal.similarProposals.contains(p.proposalId)) ++ Seq(currentProposal)
+        val chosen = chooseBanditProposalsSimilars(similarProposals)
+        val similarProposalIds = similarProposals.map(p => p.proposalId)
+
+        Seq(chosen) ++ chooseBanditProposals(
+          proposals = proposals.filter(p => !similarProposalIds.contains(p.proposalId))
+        )
+      }
+    }
+
+    def chooseTestedProposals(availableProposals: Seq[Proposal], testedProposalCount: Int): Seq[Proposal] = {
+      val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
+        val votes: Int = proposal.votes.map(_.count).sum
+        val engagement_rate: Double = ProposalScorer.engagementUpperBound(proposal)
+        (votes >= selectionAlgorithmConfiguration.newProposalsVoteThreshold
+        && engagement_rate > selectionAlgorithmConfiguration.testedProposalsEngagementThreshold)
+      }
+      val banditProposals: Seq[Proposal] = chooseBanditProposals(testedProposals)
+      chooseProposals(
+        proposals = banditProposals,
+        count = testedProposalCount,
+        algorithm = InverseWeightedRandom.choose
       )
     }
-  }
 
-  def chooseTestedProposals(availableProposals: Seq[Proposal],
-                            newProposalVoteCount: Int,
-                            testedProposalEngagementThreshold: Double,
-                            testedProposalCount: Int): Seq[Proposal] = {
-    val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
-      val votes: Int = proposal.votes.map(_.count).sum
-      val engagement_rate: Double = ProposalScorer.engagementUpperBound(proposal)
-      (votes >= newProposalVoteCount
-      && engagement_rate > testedProposalEngagementThreshold)
+    def complementSequence(sequence: Seq[ProposalId],
+                           targetLength: Int,
+                           proposals: Seq[Proposal],
+                           availableProposals: Seq[Proposal]): Seq[ProposalId] = {
+      val excludeList: Set[ProposalId] =
+        (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
+
+      sequence ++ chooseProposals(
+        availableProposals.filter(p => !excludeList.contains(p.proposalId)),
+        targetLength - sequence.size,
+        chooseNewProposalAlgorithm
+      ).map(_.proposalId)
     }
-    val banditProposals: Seq[Proposal] = chooseBanditProposals(testedProposals)
-    chooseProposals(proposals = banditProposals, count = testedProposalCount, algorithm = InverseWeightedRandom.choose)
-  }
-
-  def complementSequence(sequence: Seq[ProposalId],
-                         targetLength: Int,
-                         proposals: Seq[Proposal],
-                         availableProposals: Seq[Proposal]): Seq[ProposalId] = {
-    val excludeList: Set[ProposalId] =
-      (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
-
-    sequence ++ chooseProposals(
-      availableProposals.filter(p => !excludeList.contains(p.proposalId)),
-      targetLength - sequence.size,
-      chooseNewProposalAlgorithm
-    ).map(_.proposalId)
   }
 }

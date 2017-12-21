@@ -76,6 +76,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with EventBusServiceComponent
     with UserServiceComponent
     with MakeSettingsComponent
+    with SelectionAlgorithmComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
@@ -117,23 +118,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               }
               .map(_.flatten)
 
-            for {
-              allProposals   <- allProposals
-              votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-            } yield {
-              Some(
-                (
-                  sequence,
-                  SelectionAlgorithm.newProposalsForSequence(
-                    targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
-                    votedProposals = votedProposals.keys.toSeq,
-                    newProposalVoteThreshold = BackofficeConfiguration.defaultProposalVotesThreshold,
-                    testedProposalEngagementThreshold = BackofficeConfiguration.defaultEngagementThreshold,
-                    includeList = includedProposals
-                  ),
-                  votedProposals
-                )
+          for {
+            allProposals   <- allProposals
+            votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+          } yield {
+            Some(
+              (
+                sequence,
+                selectionAlgorithm.newProposalsForSequence(
+                  targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                  proposals = allProposals,
+                  votedProposals = votedProposals.keys.toSeq,
+                  includeList = includedProposals
+                ),
+                votedProposals
               )
             }
         }
