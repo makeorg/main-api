@@ -168,6 +168,7 @@ class SelectionAlgorithmConfiguration(config: Config) {
   val newProposalsRatio: Double = config.getDouble("new-proposals-ratio")
   val newProposalsVoteThreshold: Int = config.getInt("new-proposals-vote-threshold")
   val testedProposalsEngagementThreshold: Double = config.getDouble("tested-proposals-engagement-threshold")
+  val banditEnabled: Boolean = config.getBoolean("bandit-enabled")
   val banditMinCount: Int = config.getInt("bandit-min-count")
   val banditProposalsRatio: Double = config.getDouble("bandit-proposals-ratio")
 }
@@ -337,12 +338,15 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         (votes >= selectionAlgorithmConfiguration.newProposalsVoteThreshold
         && engagement_rate > selectionAlgorithmConfiguration.testedProposalsEngagementThreshold)
       }
-      val banditProposals: Seq[Proposal] = chooseBanditProposals(testedProposals)
-      chooseProposals(
-        proposals = banditProposals,
-        count = testedProposalCount,
-        algorithm = InverseWeightedRandom.choose
-      )
+
+      val proposalPool =
+        if (selectionAlgorithmConfiguration.banditEnabled) {
+          chooseBanditProposals(testedProposals)
+        } else {
+          testedProposals
+        }
+
+      chooseProposals(proposals = proposalPool, count = testedProposalCount, algorithm = InverseWeightedRandom.choose)
     }
 
     def complementSequence(sequence: Seq[ProposalId],

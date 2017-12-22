@@ -33,6 +33,7 @@ class SelectionAlgorithmTest
   Mockito.when(selectionAlgorithmConfiguration.newProposalsRatio).thenReturn(0.5)
   Mockito.when(selectionAlgorithmConfiguration.newProposalsVoteThreshold).thenReturn(100)
   Mockito.when(selectionAlgorithmConfiguration.testedProposalsEngagementThreshold).thenReturn(0.9)
+  Mockito.when(selectionAlgorithmConfiguration.banditEnabled).thenReturn(true)
   Mockito.when(selectionAlgorithmConfiguration.banditMinCount).thenReturn(3)
   Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(1.0 / 3)
 
