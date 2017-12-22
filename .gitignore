@@ -1,4 +1,5 @@
 /.idea
 target
 ddata*
-org/*
+# for apache math3 annotations
+/org
