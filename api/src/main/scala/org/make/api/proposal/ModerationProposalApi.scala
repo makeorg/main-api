@@ -450,6 +450,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
   @Path(value = "/similars/{proposalId}")
+  @Deprecated
   def removeProposalFromClusters: Route = delete {
     path("moderation" / "proposals" / "similars" / moderationProposalId) { proposalId =>
       makeTrace("RemoveFromSimilars") { context =>
@@ -480,6 +481,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
   @Path(value = "/similars")
+  @Deprecated
   def removeClusters: Route = delete {
     path("moderation" / "proposals" / "similars") {
       makeTrace("RemoveClusters") { context =>
