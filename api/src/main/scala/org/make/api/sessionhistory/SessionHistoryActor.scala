@@ -19,7 +19,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class SessionHistoryActor(userHistoryCoordinator: ActorRef)
-    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]], autoSnapshot = false) {
+    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]]) {
 
   implicit val timeout: Timeout = defaultTimeout
 

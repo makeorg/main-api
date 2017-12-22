@@ -49,24 +49,25 @@ object UserHistoryEvent {
     new RootJsonFormat[UserHistoryEvent[_]] {
       override def read(json: JsValue): UserHistoryEvent[_] = {
         json.asJsObject.getFields("type") match {
-          case Seq(JsString("LogUserSearchProposalsEvent"))         => json.convertTo[LogUserSearchProposalsEvent]
-          case Seq(JsString("LogUserVoteEvent"))                    => json.convertTo[LogUserVoteEvent]
-          case Seq(JsString("LogUserUnvoteEvent"))                  => json.convertTo[LogUserUnvoteEvent]
-          case Seq(JsString("LogUserQualificationEvent"))           => json.convertTo[LogUserQualificationEvent]
-          case Seq(JsString("LogUserUnqualificationEvent"))         => json.convertTo[LogUserUnqualificationEvent]
-          case Seq(JsString("LogRegisterCitizenEvent"))             => json.convertTo[LogRegisterCitizenEvent]
-          case Seq(JsString("LogUserProposalEvent"))                => json.convertTo[LogUserProposalEvent]
-          case Seq(JsString("LogAcceptProposalEvent"))              => json.convertTo[LogAcceptProposalEvent]
-          case Seq(JsString("LogRefuseProposalEvent"))              => json.convertTo[LogRefuseProposalEvent]
-          case Seq(JsString("LogPostponeProposalEvent"))            => json.convertTo[LogPostponeProposalEvent]
-          case Seq(JsString("LogLockProposalEvent"))                => json.convertTo[LogLockProposalEvent]
-          case Seq(JsString("LogGetProposalDuplicatesEvent"))       => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserAddProposalsSequenceEvent"))    => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserCreateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserUpdateSequenceEvent"))          => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserSearchSequencesEvent"))         => json.convertTo[LogGetProposalDuplicatesEvent]
-          case Seq(JsString("LogUserStartSequenceEvent"))           => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserSearchProposalsEvent"))      => json.convertTo[LogUserSearchProposalsEvent]
+          case Seq(JsString("LogUserVoteEvent"))                 => json.convertTo[LogUserVoteEvent]
+          case Seq(JsString("LogUserUnvoteEvent"))               => json.convertTo[LogUserUnvoteEvent]
+          case Seq(JsString("LogUserQualificationEvent"))        => json.convertTo[LogUserQualificationEvent]
+          case Seq(JsString("LogUserUnqualificationEvent"))      => json.convertTo[LogUserUnqualificationEvent]
+          case Seq(JsString("LogRegisterCitizenEvent"))          => json.convertTo[LogRegisterCitizenEvent]
+          case Seq(JsString("LogUserProposalEvent"))             => json.convertTo[LogUserProposalEvent]
+          case Seq(JsString("LogAcceptProposalEvent"))           => json.convertTo[LogAcceptProposalEvent]
+          case Seq(JsString("LogRefuseProposalEvent"))           => json.convertTo[LogRefuseProposalEvent]
+          case Seq(JsString("LogPostponeProposalEvent"))         => json.convertTo[LogPostponeProposalEvent]
+          case Seq(JsString("LogLockProposalEvent"))             => json.convertTo[LogLockProposalEvent]
+          case Seq(JsString("LogGetProposalDuplicatesEvent"))    => json.convertTo[LogGetProposalDuplicatesEvent]
+          case Seq(JsString("LogUserAddProposalsSequenceEvent")) => json.convertTo[LogUserAddProposalsSequenceEvent]
+          case Seq(JsString("LogUserCreateSequenceEvent"))       => json.convertTo[LogUserCreateSequenceEvent]
+          case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) =>
+            json.convertTo[LogUserRemoveProposalsSequenceEvent]
+          case Seq(JsString("LogUserUpdateSequenceEvent"))  => json.convertTo[LogUserUpdateSequenceEvent]
+          case Seq(JsString("LogUserSearchSequencesEvent")) => json.convertTo[LogUserSearchSequencesEvent]
+          case Seq(JsString("LogUserStartSequenceEvent"))   => json.convertTo[LogUserStartSequenceEvent]
         }
       }
 

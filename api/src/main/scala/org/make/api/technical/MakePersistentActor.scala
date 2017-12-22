@@ -32,10 +32,8 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
       eventsCount = 0
       state = Some(stateClass.cast(snapshot))
     case RecoveryCompleted =>
-      if (eventsCount >= snapshotThreshold) {
-        if (autoSnapshot) {
-          self ! Snapshot
-        }
+      if (autoSnapshot && eventsCount >= snapshotThreshold) {
+        self ! Snapshot
       }
     case _ =>
   }
