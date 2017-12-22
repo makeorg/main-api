@@ -165,14 +165,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
       val futureEventsUsers: Future[Seq[UserResponse]] =
         userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
-      val futureIdeaProposals =
-        proposal.idea match {
-          case Some(ideaId) =>
-            elasticsearchProposalAPI
-              .searchProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value))))))
-              .map(_.results.filter(ideaProposal => proposal.proposalId.value != ideaProposal.id.value))
-          case None => Future.successful(Seq.empty)
-        }
+      val futureIdeaProposals: Future[Seq[IndexedProposal]] = getIdeaProposals(proposal)
 
       futureEventsUsers.flatMap { eventsUsers =>
         futureIdeaProposals.map { ideaProposals =>
@@ -206,6 +199,25 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
           )
         }
+      }
+    }
+
+    private def getIdeaProposals(proposal: Proposal): Future[Seq[IndexedProposal]] = {
+      proposal.idea match {
+        case Some(ideaId) =>
+          elasticsearchProposalAPI
+            .countProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value))))))
+            .flatMap { countProposals =>
+              elasticsearchProposalAPI
+                .searchProposals(
+                  SearchQuery(
+                    filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value)))),
+                    limit = Some(countProposals)
+                  )
+                )
+                .map(_.results.filter(ideaProposal => proposal.proposalId.value != ideaProposal.id.value))
+            }
+        case None => Future.successful(Seq.empty)
       }
     }
 
