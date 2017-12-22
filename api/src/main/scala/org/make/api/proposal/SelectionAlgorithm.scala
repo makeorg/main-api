@@ -302,14 +302,14 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val similarProposalsScored: Seq[ScoredProposal] =
         similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
 
-      val shortList = similarProposals.length match {
-        case l if l <= selectionAlgorithmConfiguration.banditMinCount => similarProposals
-        case _ =>
-          val count = math.max(
-            selectionAlgorithmConfiguration.banditMinCount,
-            ceil(similarProposals.length * selectionAlgorithmConfiguration.banditProposalsRatio).toInt
-          )
-          similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
+      val shortList = if (similarProposals.length < selectionAlgorithmConfiguration.banditMinCount) {
+        similarProposals
+      } else {
+        val count = math.max(
+          selectionAlgorithmConfiguration.banditMinCount,
+          ceil(similarProposals.length * selectionAlgorithmConfiguration.banditProposalsRatio).toInt
+        )
+        similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
       }
 
       UniformRandom.choose(shortList)
