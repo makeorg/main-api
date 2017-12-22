@@ -131,7 +131,7 @@ object ProposalScorer extends StrictLogging {
 
   def score(proposal: Proposal): Double = {
     val counts = scoreCounts(proposal)
-    engagement(counts) + adhesion(counts) + realistic(proposal)
+    engagement(counts) + adhesion(counts) + realistic(counts)
   }
 
   /*
