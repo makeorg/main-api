@@ -29,7 +29,7 @@ class SelectionAlgorithmTest
     with DefaultSelectionAlgorithmComponent
     with SelectionAlgorithmConfigurationComponent {
 
-  override val selectionAlgorithmConfiguration = mock[SelectionAlgorithmConfiguration]
+  override val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration = mock[SelectionAlgorithmConfiguration]
   Mockito.when(selectionAlgorithmConfiguration.newProposalsRatio).thenReturn(0.5)
   Mockito.when(selectionAlgorithmConfiguration.newProposalsVoteThreshold).thenReturn(100)
   Mockito.when(selectionAlgorithmConfiguration.testedProposalsEngagementThreshold).thenReturn(0.9)
@@ -80,7 +80,7 @@ class SelectionAlgorithmTest
       votes = votes.map {
         case (key, (amount, qualifs)) =>
           Vote(key = key, count = amount, qualifications = qualifs.map {
-            case (key, count) => Qualification(key = key, count = count)
+            case (qualifKey, count) => Qualification(key = qualifKey, count = count)
           }.toSeq)
       }.toSeq,
       labels = Seq.empty,
