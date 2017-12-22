@@ -79,11 +79,13 @@ object ProposalScorer extends StrictLogging {
     ScoreCounts(votes, neutralCount, platitudeAgreeCount, platitudeDisagreeCount, loveCount, hateCount)
   }
 
+  /*
+   * platitude qualifications counts as neutral votes
+   */
   def engagement(counts: ScoreCounts): Double = {
-    (1
-      - (counts.neutralCount + 0.33) / (counts.votes.toDouble + 1)
-      - (counts.platitudeAgreeCount + 0.01) / (counts.votes.toDouble + 1)
-      - (counts.platitudeDisagreeCount + 0.01) / (counts.votes.toDouble + 1))
+    1 -
+      (counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount + 0.33) /
+        (counts.votes + 1).toDouble
   }
 
   def engagement(proposal: Proposal): Double = {
@@ -109,19 +111,24 @@ object ProposalScorer extends StrictLogging {
    * Each rate is sampled from its own beta distribution with a prior at 0.33 for votes and 0.01 for qualifications
    */
   def sampleRate(successes: Int, trials: Int, prior: Double): Double = {
-    new BetaDistribution(random, successes + prior, trials + 1).sample()
+    new BetaDistribution(random, successes + prior, trials - successes + 1).sample()
   }
 
   def sampleEngagement(counts: ScoreCounts): Double = {
-    (1
-      - sampleRate(counts.neutralCount, counts.votes - counts.neutralCount, 0.33)
-      - sampleRate(counts.platitudeAgreeCount, counts.votes - counts.platitudeAgreeCount, 0.01)
-      - sampleRate(counts.platitudeDisagreeCount, counts.votes - counts.platitudeDisagreeCount, 0.01))
+    1 - sampleRate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes, 0.33)
+  }
+
+  def sampleEngagement(proposal: Proposal): Double = {
+    sampleEngagement(scoreCounts(proposal))
   }
 
   def sampleAdhesion(counts: ScoreCounts): Double = {
-    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount - counts.loveCount, 0.01)
-      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount - counts.hateCount, 0.01))
+    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount, 0.01)
+      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount, 0.01))
+  }
+
+  def sampleAdhesion(proposal: Proposal): Double = {
+    sampleAdhesion(scoreCounts(proposal))
   }
 
   def sampleScore(proposal: Proposal): Double = {
@@ -150,13 +157,10 @@ object ProposalScorer extends StrictLogging {
   def engagementUpperBound(proposal: Proposal): Double = {
     val counts = scoreCounts(proposal)
 
-    val neutralEstimate: RateEstimate = rateEstimate(counts.neutralCount, counts.votes)
-    val platitudeAgreeEstimate: RateEstimate = rateEstimate(counts.platitudeAgreeCount, counts.votes)
-    val platitudeDisagreeEstimate: RateEstimate = rateEstimate(counts.platitudeDisagreeCount, counts.votes)
+    val engagementEstimate: RateEstimate =
+      rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
 
-    (1 - neutralEstimate.rate + 2 * neutralEstimate.sd
-      - platitudeAgreeEstimate.rate + 2 * platitudeAgreeEstimate.sd
-      - platitudeDisagreeEstimate.rate + 2 * platitudeDisagreeEstimate.sd)
+    1 - engagementEstimate.rate + 2 * engagementEstimate.sd
   }
 }
 
@@ -299,13 +303,12 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
       val shortList = similarProposals.length match {
         case l if l <= selectionAlgorithmConfiguration.banditMinCount => similarProposals
-        case l => {
+        case _ =>
           val count = math.max(
             selectionAlgorithmConfiguration.banditMinCount,
             ceil(similarProposals.length * selectionAlgorithmConfiguration.banditProposalsRatio).toInt
           )
           similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
-        }
       }
 
       UniformRandom.choose(shortList)
