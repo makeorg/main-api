@@ -26,13 +26,26 @@ class Dec17_SimilarProposalsToIdea extends Simulation {
   setUp(
     scenario("Create idea and set idea to proposals")
       .exec(UserChainBuilder.authenticateAsAdmin)
-      .exec(_.set("ideas", Idea.ideas))
-      .foreach("${ideas}", "idea")(exec { session =>
-        val idea = session("idea").as[String]
-        session.set("ideaName", idea)
-      }.exec(IdeaChainBuilder.createIdea))
-      .feed(Idea.ideaProposalFeeder)
-      .exec(ProposalChainBuilder.addProposalIdea)
+      .exec(_.set("ideas", Idea.proposalsByIdea.keys.toSeq))
+      .foreach("${ideas}", "idea") {
+        exec { session =>
+          val idea = session("idea").as[String]
+          session.set("ideaName", idea)
+        }.exec(IdeaChainBuilder.createIdea)
+          .exec { session =>
+            session("ideaName").validate[String].map { ideaName =>
+              Idea.proposalsByIdea
+                .get(ideaName)
+                .map { proposalsIds =>
+                  session.set("proposalsIds", proposalsIds.map(_("proposalId")))
+                }
+                .getOrElse(session)
+            }
+          }
+          .foreach("${proposalsIds}", "proposalId") {
+            exec(ProposalChainBuilder.addProposalIdea)
+          }
+      }
       .inject(heavisideUsers(maxClients).over(15.minutes))
       .protocols(httpConf)
   )
