@@ -540,9 +540,6 @@ class SelectionAlgorithmTest
           .sortWith(_._2 > _._2)
           .map(_._1)
 
-      logger.debug(sortedProposals.mkString(" :: "))
-      logger.debug(chosenCounts.mkString(" :: "))
-
       chosenCounts.slice(0, 2).contains(sortedProposals(0)) should be(true)
       chosenCounts.slice(0, 5).contains(sortedProposals(1)) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(2)) should be(true)
