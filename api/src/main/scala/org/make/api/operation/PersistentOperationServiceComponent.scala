@@ -29,8 +29,9 @@ trait PersistentOperationServiceComponent {
 }
 
 trait PersistentOperationService {
-  def findAll(slug: Option[String] = None): Future[Seq[Operation]]
+  def find(slug: Option[String] = None): Future[Seq[Operation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
+  def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: Operation): Future[Operation]
   def modify(operation: Operation): Future[Operation]
   def addTranslationToOperation(translation: OperationTranslation, operation: Operation): Future[Boolean]
@@ -63,7 +64,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
-    override def findAll(slug: Option[String] = None): Future[Seq[Operation]] = {
+    override def find(slug: Option[String] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
@@ -137,6 +138,38 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             baseSelect
               .copy()
               .where(sqls.eq(operationAlias.uuid, operationId.value))
+          }.one(PersistentOperation.apply())
+            .toManies(
+              resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
+              resultSet => PersistentOperationAction.opt(operationActionAlias)(resultSet),
+              resultSet => PersistentOperationCountryConfiguration.opt(operationCountryConfigurationAlias)(resultSet)
+            )
+            .map {
+              (operation: PersistentOperation,
+               translations: Seq[PersistentOperationTranslation],
+               actions: Seq[PersistentOperationAction],
+               countryConfigurations: Seq[PersistentOperationCountryConfiguration]) =>
+                operation.copy(
+                  operationActions = actions,
+                  operationTranslations = translations,
+                  operationCountryConfigurations = countryConfigurations
+                )
+            }
+            .single
+            .apply()
+      })
+
+      futureMaybePersistentOperation.map(_.map(_.toOperation))
+    }
+
+    override def getBySlug(slug: String): Future[Option[Operation]] = {
+      implicit val context: EC = readExecutionContext
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+            baseSelect
+              .copy()
+              .where(sqls.eq(operationAlias.slug, slug))
           }.one(PersistentOperation.apply())
             .toManies(
               resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),

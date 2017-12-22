@@ -116,7 +116,7 @@ class PersistentOperationServiceIT
         _ <- persistentUserService.persist(johnDoe)
         operation <- persistentOperationService
           .persist(operation = simpleOperation)
-          .flatMap(_ => persistentOperationService.findAll())(readExecutionContext)
+          .flatMap(_ => persistentOperationService.find())(readExecutionContext)
       } yield operation
 
       whenReady(futureOperations, Timeout(3.seconds)) { operations =>
@@ -181,6 +181,34 @@ class PersistentOperationServiceIT
       whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
         maybeOperation should not be None
         maybeOperation.get shouldBe a[Operation]
+      }
+    }
+
+    scenario("get a persisted operation by slug") {
+
+      val operationIdForGetBySlug: OperationId = OperationId(UUID.randomUUID().toString)
+      val operationForGetBySlug: Operation = simpleOperation.copy(
+        operationId = operationIdForGetBySlug,
+        slug = "get-by-slug-operation",
+        translations = Seq(
+          OperationTranslation(title = "get by slug operation", language = "fr"),
+          OperationTranslation(title = "get by slug operation", language = "en")
+        ),
+        countriesConfiguration = Seq.empty
+      )
+      Given(s""" a persisted operation "${operationForGetBySlug.translations.head.title}" """)
+      When("i get the persisted operation by slug")
+      Then(" the call success")
+
+      val futureMaybeOperation: Future[Option[Operation]] =
+        persistentOperationService.persist(operation = operationForGetBySlug).flatMap { operation =>
+          persistentOperationService.getBySlug(operation.slug)
+        }
+
+      whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
+        maybeOperation should not be None
+        maybeOperation.get shouldBe a[Operation]
+        maybeOperation.get.slug shouldBe "get-by-slug-operation"
       }
     }
 

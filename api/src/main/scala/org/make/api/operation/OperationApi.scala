@@ -33,7 +33,7 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging {
       path("operations") {
         parameters('slug.?) { (slug) =>
           makeTrace("GetOperations") { _ =>
-            provideAsync(operationService.findAll(slug = slug)) { result =>
+            provideAsync(operationService.find(slug = slug)) { result =>
               complete(result.map(operation => OperationResponse(operation)))
             }
           }

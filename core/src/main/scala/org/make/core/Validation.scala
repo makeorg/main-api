@@ -1,5 +1,6 @@
 package org.make.core
 
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -8,7 +9,7 @@ import io.circe.syntax._
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
-object Validation {
+object Validation extends StrictLogging {
 
   // Taken from https://emailregex.com/ a more simple one might be needed
   val emailRegex: Regex =
@@ -103,6 +104,16 @@ object Validation {
     validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
   }
 
+  def requireValidSlug(fieldName: String,
+                       fieldValue: => Option[String],
+                       message: Option[String] = None): Requirement = {
+    validateField(
+      fieldName,
+      fieldValue.getOrElse("") == SlugHelper.apply(fieldValue.getOrElse("")),
+      message.getOrElse(s"$fieldName should not be empty")
+    )
+  }
+
   def requireEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
     validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
@@ -123,8 +134,8 @@ object Validation {
 
   def validateEquals(fieldName: String,
                      message: Option[String] = None,
-                     userValue: AnyVal,
-                     expectedValue: AnyVal): Requirement = {
+                     userValue: Any,
+                     expectedValue: Any): Requirement = {
     val condition: () => Boolean = () => {
       userValue.equals(expectedValue)
     }

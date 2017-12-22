@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
@@ -11,6 +12,8 @@ import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+
+import scala.annotation.meta.field
 
 final case class Operation(status: OperationStatus,
                            operationId: OperationId,
@@ -49,8 +52,9 @@ object OperationId {
     }
   }
 }
-
-final case class OperationCountryConfiguration(countryCode: String, tagIds: Seq[TagId])
+@ApiModel
+final case class OperationCountryConfiguration(countryCode: String,
+                                               @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId])
 
 object OperationCountryConfiguration {
   implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =

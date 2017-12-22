@@ -368,6 +368,8 @@ CREATE TABLE IF NOT EXISTS operation (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 %
+CREATE UNIQUE index IF NOT EXISTS operation_slug_unique_index ON operation (slug);
+%
 CREATE TABLE IF NOT EXISTS operation_translation (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
   language VARCHAR(3),
@@ -394,7 +396,7 @@ CREATE TABLE IF NOT EXISTS operation_action (
   arguments STRING
 );
 %
-CREATE INDEX operation_action_operation_id_index ON operation_action (operation_uuid);
+CREATE INDEX IF NOT EXISTS operation_action_operation_id_index ON operation_action (operation_uuid);
 %
-CREATE INDEX operation_action_user_id_index ON make_user_uuid (operation_uuid);
+CREATE INDEX IF NOT EXISTS operation_action_user_id_index ON make_user (uuid);
 %

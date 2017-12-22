@@ -92,9 +92,9 @@ class OperationApiTest
 
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.findAll(None)).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(operationService.findAll(Some("second-operation"))).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.findAll(Some("first-operation"))).thenReturn(Future.successful(Seq(firstOperation)))
+  when(operationService.find(None)).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.find(Some("second-operation"))).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(Some("first-operation"))).thenReturn(Future.successful(Seq(firstOperation)))
 
   feature("get operations") {
     scenario("get all operations") {

@@ -15,6 +15,7 @@ import org.make.api.idea.{DefaultIdeaServiceComponent, DefaultPersistentIdeaServ
 import org.make.api.operation.{
   DefaultOperationServiceComponent,
   DefaultPersistentOperationServiceComponent,
+  ModerationOperationApi,
   OperationApi
 }
 import org.make.api.proposal.{SelectionAlgorithmConfiguration, _}
@@ -93,6 +94,7 @@ trait MakeApi
     with DefaultElasticSearchComponent
     with ElasticSearchApi
     with OperationApi
+    with ModerationOperationApi
     with ProposalApi
     with ModerationProposalApi
     with SequenceApi
@@ -168,7 +170,9 @@ trait MakeApi
       classOf[AuthenticationApi],
       classOf[UserApi],
       classOf[TagApi],
+      classOf[ProposalApi],
       classOf[OperationApi],
+      classOf[ModerationOperationApi],
       classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi],
@@ -207,7 +211,8 @@ trait MakeApi
       authenticationRoutes ~
       businessConfigRoutes ~
       ideaRoutes ~
-      operationRoutes
+      operationRoutes ~
+      moderationOperationRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
