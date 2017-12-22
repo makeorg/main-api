@@ -54,29 +54,41 @@ object ProposalScorer extends StrictLogging {
                          platitudeAgreeCount: Int,
                          platitudeDisagreeCount: Int,
                          loveCount: Int,
-                         hateCount: Int)
+                         hateCount: Int,
+                         doableCount: Int,
+                         impossibleCount: Int)
+
+  def voteCounts(proposal: Proposal, voteKey: VoteKey): Int = {
+    proposal.votes.filter(_.key == voteKey).map(_.count).sum
+  }
+
+  def qualificationCounts(proposal: Proposal, voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
+    proposal.votes
+      .filter(_.key == voteKey)
+      .map(_.qualifications.filter(_.key == qualificationKey).map(_.count).sum)
+      .sum
+  }
 
   def scoreCounts(proposal: Proposal): ScoreCounts = {
     val votes: Int = proposal.votes.map(_.count).sum
-    val neutralCount: Int = proposal.votes.filter(_.key == Neutral).map(_.count).sum
-    val platitudeAgreeCount: Int = proposal.votes
-      .filter(_.key == Agree)
-      .map(_.qualifications.filter(_.key == PlatitudeAgree).map(_.count).sum)
-      .sum
-    val platitudeDisagreeCount: Int = proposal.votes
-      .filter(_.key == Disagree)
-      .map(_.qualifications.filter(_.key == PlatitudeDisagree).map(_.count).sum)
-      .sum
-    val loveCount: Int = proposal.votes
-      .filter(_.key == Agree)
-      .map(_.qualifications.filter(_.key == LikeIt).map(_.count).sum)
-      .sum
-    val hateCount: Int = proposal.votes
-      .filter(_.key == Disagree)
-      .map(_.qualifications.filter(_.key == NoWay).map(_.count).sum)
-      .sum
+    val neutralCount: Int = voteCounts(proposal, Neutral)
+    val platitudeAgreeCount: Int = qualificationCounts(proposal, Agree, PlatitudeAgree)
+    val platitudeDisagreeCount: Int = qualificationCounts(proposal, Disagree, PlatitudeDisagree)
+    val loveCount: Int = qualificationCounts(proposal, Agree, LikeIt)
+    val hateCount: Int = qualificationCounts(proposal, Disagree, NoWay)
+    val doableCount: Int = qualificationCounts(proposal, Agree, Doable)
+    val impossibleCount: Int = qualificationCounts(proposal, Agree, Impossible)
 
-    ScoreCounts(votes, neutralCount, platitudeAgreeCount, platitudeDisagreeCount, loveCount, hateCount)
+    ScoreCounts(
+      votes,
+      neutralCount,
+      platitudeAgreeCount,
+      platitudeDisagreeCount,
+      loveCount,
+      hateCount,
+      doableCount,
+      impossibleCount
+    )
   }
 
   /*
@@ -101,9 +113,18 @@ object ProposalScorer extends StrictLogging {
     adhesion(scoreCounts(proposal))
   }
 
+  def realistic(counts: ScoreCounts): Double = {
+    ((counts.doableCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
+      - (counts.impossibleCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
+  }
+
+  def realistic(proposal: Proposal): Double = {
+    realistic(scoreCounts(proposal))
+  }
+
   def score(proposal: Proposal): Double = {
     val counts = scoreCounts(proposal)
-    engagement(counts) + adhesion(counts)
+    engagement(counts) + adhesion(counts) + realistic(counts)
   }
 
   /*
@@ -131,9 +152,18 @@ object ProposalScorer extends StrictLogging {
     sampleAdhesion(scoreCounts(proposal))
   }
 
+  def sampleRealistic(counts: ScoreCounts): Double = {
+    (sampleRate(counts.doableCount, counts.votes - counts.neutralCount, 0.01)
+      - sampleRate(counts.impossibleCount, counts.votes - counts.neutralCount, 0.01))
+  }
+
+  def sampleRealistic(proposal: Proposal): Double = {
+    sampleRealistic(scoreCounts(proposal))
+  }
+
   def sampleScore(proposal: Proposal): Double = {
     val counts = scoreCounts(proposal)
-    sampleEngagement(counts) + sampleAdhesion(counts)
+    sampleEngagement(counts) + sampleAdhesion(counts) + sampleRealistic(counts)
   }
 
   /*

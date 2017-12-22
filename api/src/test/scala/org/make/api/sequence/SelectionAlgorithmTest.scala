@@ -29,7 +29,7 @@ class SelectionAlgorithmTest
     with DefaultSelectionAlgorithmComponent
     with SelectionAlgorithmConfigurationComponent {
 
-  override val selectionAlgorithmConfiguration = mock[SelectionAlgorithmConfiguration]
+  override val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration = mock[SelectionAlgorithmConfiguration]
   Mockito.when(selectionAlgorithmConfiguration.newProposalsRatio).thenReturn(0.5)
   Mockito.when(selectionAlgorithmConfiguration.newProposalsVoteThreshold).thenReturn(100)
   Mockito.when(selectionAlgorithmConfiguration.testedProposalsEngagementThreshold).thenReturn(0.9)
@@ -80,7 +80,7 @@ class SelectionAlgorithmTest
       votes = votes.map {
         case (key, (amount, qualifs)) =>
           Vote(key = key, count = amount, qualifications = qualifs.map {
-            case (key, count) => Qualification(key = key, count = count)
+            case (qualifKey, count) => Qualification(key = qualifKey, count = count)
           }.toSeq)
       }.toSeq,
       labels = Seq.empty,
@@ -526,10 +526,10 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val sortedProposals: Seq[ProposalId] = (testedProposals
+      val sortedProposals: Seq[ProposalId] = testedProposals
         .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorer.sampleScore(p)))
         .sortWith(_.score > _.score)
-        .map(sp => sp.proposal.proposalId))
+        .map(sp => sp.proposal.proposalId)
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 1000)
@@ -542,8 +542,8 @@ class SelectionAlgorithmTest
 
       chosenCounts.slice(0, 2).contains(sortedProposals(0)) should be(true)
       chosenCounts.slice(0, 5).contains(sortedProposals(1)) should be(true)
-      chosenCounts.slice(0, 5).contains(sortedProposals(2)) should be(true)
-      chosenCounts.slice(0, 5).contains(sortedProposals(19)) should be(false)
+      chosenCounts.slice(0, 10).contains(sortedProposals(2)) should be(true)
+      chosenCounts.slice(0, 10).contains(sortedProposals(19)) should be(false)
     }
 
     scenario("check global bandit chooser") {
