@@ -76,6 +76,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with EventBusServiceComponent
     with UserServiceComponent
     with MakeSettingsComponent
+    with SelectionAlgorithmComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
@@ -124,12 +125,10 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               Some(
                 (
                   sequence,
-                  SelectionAlgorithm.newProposalsForSequence(
+                  selectionAlgorithm.newProposalsForSequence(
                     targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+                    proposals = allProposals,
                     votedProposals = votedProposals.keys.toSeq,
-                    newProposalVoteThreshold = BackofficeConfiguration.defaultProposalVotesThreshold,
-                    testedProposalEngagementThreshold = BackofficeConfiguration.defaultEngagementThreshold,
                     includeList = includedProposals
                   ),
                   votedProposals

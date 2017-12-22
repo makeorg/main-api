@@ -113,4 +113,7 @@ object Dependencies {
   val semantic: ModuleID = ("org.make" %% "semantic" % "0.1.5")
     .exclude("ch.qos.logback", "logback-core")
     .exclude("ch.qos.logback", "logback-classic")
+
+  // apache math
+  val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.5"
 }

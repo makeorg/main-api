@@ -46,7 +46,8 @@ libraryDependencies ++= Seq(
   Dependencies.jerseyServer,
   Dependencies.jaxRsApi,
   Dependencies.wireMock,
-  Dependencies.semantic
+  Dependencies.semantic,
+  Dependencies.apacheMath
 )
 
 libraryDependencies += {
