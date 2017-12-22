@@ -526,10 +526,10 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val sortedProposals: Seq[ProposalId] = (testedProposals
+      val sortedProposals: Seq[ProposalId] = testedProposals
         .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorer.sampleScore(p)))
         .sortWith(_.score > _.score)
-        .map(sp => sp.proposal.proposalId))
+        .map(sp => sp.proposal.proposalId)
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 1000)
@@ -540,10 +540,13 @@ class SelectionAlgorithmTest
           .sortWith(_._2 > _._2)
           .map(_._1)
 
+      logger.debug(sortedProposals.mkString(" :: "))
+      logger.debug(chosenCounts.mkString(" :: "))
+
       chosenCounts.slice(0, 2).contains(sortedProposals(0)) should be(true)
       chosenCounts.slice(0, 5).contains(sortedProposals(1)) should be(true)
-      chosenCounts.slice(0, 5).contains(sortedProposals(2)) should be(true)
-      chosenCounts.slice(0, 5).contains(sortedProposals(19)) should be(false)
+      chosenCounts.slice(0, 10).contains(sortedProposals(2)) should be(true)
+      chosenCounts.slice(0, 10).contains(sortedProposals(19)) should be(false)
     }
 
     scenario("check global bandit chooser") {
