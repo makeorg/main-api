@@ -12,7 +12,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 class UserHistoryActor
-    extends MakePersistentActor(classOf[UserHistory], classOf[UserHistoryEvent[_]])
+    extends MakePersistentActor(classOf[UserHistory], classOf[UserHistoryEvent[_]], autoSnapshot = false)
     with ActorLogging {
 
   def userId: UserId = UserId(self.path.name)

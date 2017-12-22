@@ -1,7 +1,7 @@
 package org.make.api.technical
 
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.util.Timeout
 import org.make.api.technical.MakePersistentActor.Snapshot
 
@@ -9,7 +9,9 @@ import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[State], eventClass: Class[Event])
+abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[State],
+                                                           eventClass: Class[Event],
+                                                           autoSnapshot: Boolean = true)
     extends PersistentActor
     with ActorLogging {
 
@@ -29,6 +31,12 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
     case SnapshotOffer(_, snapshot) if stateClass.isAssignableFrom(snapshot.getClass) =>
       eventsCount = 0
       state = Some(stateClass.cast(snapshot))
+    case RecoveryCompleted =>
+      if (eventsCount >= snapshotThreshold) {
+        if (autoSnapshot) {
+          self ! Snapshot
+        }
+      }
     case _ =>
   }
 
@@ -42,7 +50,7 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
   protected def newEventAdded(event: Event): Unit = {
     state = applyEvent(event)
     eventsCount += 1
-    if (eventsCount >= snapshotThreshold) {
+    if (autoSnapshot && eventsCount >= snapshotThreshold) {
       self ! Snapshot
     }
   }
