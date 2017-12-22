@@ -4,6 +4,7 @@ import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
+import com.sksamuel.elastic4s.http.search.SumAggregationResult
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQueryDefinition
 import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, IdQueryDefinition}
@@ -27,8 +28,9 @@ trait ProposalSearchEngine {
   def findProposalsByIds(proposalIds: Seq[ProposalId],
                          size: Option[Int] = None,
                          random: Boolean = true): Future[Seq[IndexedProposal]]
-  def searchProposals(query: SearchQuery, maybeSeed: Option[Int] = None): Future[ProposalsSearchResult]
-  def countProposals(query: SearchQuery): Future[Int]
+  def searchProposals(searchQuery: SearchQuery, maybeSeed: Option[Int] = None): Future[ProposalsSearchResult]
+  def countProposals(searchQuery: SearchQuery): Future[Int]
+  def countVoteProposals(searchQuery: SearchQuery): Future[Int]
   def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
@@ -118,6 +120,25 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
 
     }
+
+    override def countVoteProposals(searchQuery: SearchQuery): Future[Int] = {
+      // parse json string to build search query
+      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
+      val request = search(proposalAlias)
+        .bool(BoolQueryDefinition(must = searchFilters))
+        .aggs {
+          sumAgg("total_votes", "votes.count")
+        }
+
+      client.execute {
+        request
+      }.map { response =>
+        val totalVoteAggregations: SumAggregationResult = response.sumAgg("total_votes")
+        totalVoteAggregations.value.toInt
+      }
+    }
+
     override def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = mayBeIndex.getOrElse(proposalAlias)
       logger.debug(s"$index -> Saving in Elasticsearch: $record")

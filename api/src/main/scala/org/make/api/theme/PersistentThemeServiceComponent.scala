@@ -132,6 +132,7 @@ object DefaultPersistentThemeServiceComponent {
         ),
         actionsCount = actionsCount,
         proposalsCount = proposalsCount,
+        votesCount = 0,
         country = country,
         color = color,
         gradient = for {

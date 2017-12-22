@@ -13,7 +13,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.api.{DockerElasticsearchService, ItMakeTest}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.IdeaId
+import org.make.core.reference.{IdeaId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -171,7 +171,7 @@ class ProposalSearchEngineIT
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Craig"), postalCode = Some("92876"), age = Some(25)),
-      themeId = None,
+      themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id"))
@@ -218,7 +218,7 @@ class ProposalSearchEngineIT
       trending = None,
       labels = Seq(),
       author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
-      themeId = None,
+      themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id"))
@@ -943,6 +943,26 @@ class ProposalSearchEngineIT
     scenario("should return done") {
       whenReady(elasticsearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
         result should be(Done)
+      }
+    }
+  }
+
+  feature("count proposal with theme filter") {
+    val query = SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq("foo-theme"))))))
+
+    ignore("should return the number of proposals") {
+      whenReady(elasticsearchProposalAPI.countProposals(query), Timeout(10.seconds)) { result =>
+        result should be(2)
+      }
+    }
+  }
+
+  feature("count vote with theme filter") {
+    val query = SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq("foo-theme"))))))
+
+    ignore("should return the number of votes of proposals") {
+      whenReady(elasticsearchProposalAPI.countVoteProposals(query), Timeout(10.seconds)) { result =>
+        result should be(597)
       }
     }
   }
