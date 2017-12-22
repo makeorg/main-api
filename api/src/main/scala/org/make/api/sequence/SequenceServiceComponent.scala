@@ -118,20 +118,21 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               }
               .map(_.flatten)
 
-          for {
-            allProposals   <- allProposals
-            votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-          } yield {
-            Some(
-              (
-                sequence,
-                selectionAlgorithm.newProposalsForSequence(
-                  targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                  proposals = allProposals,
-                  votedProposals = votedProposals.keys.toSeq,
-                  includeList = includedProposals
-                ),
-                votedProposals
+            for {
+              allProposals   <- allProposals
+              votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+            } yield {
+              Some(
+                (
+                  sequence,
+                  selectionAlgorithm.newProposalsForSequence(
+                    targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                    proposals = allProposals,
+                    votedProposals = votedProposals.keys.toSeq,
+                    includeList = includedProposals
+                  ),
+                  votedProposals
+                )
               )
             }
         }

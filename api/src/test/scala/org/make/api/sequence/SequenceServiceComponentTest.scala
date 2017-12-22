@@ -32,6 +32,7 @@ class SequenceServiceComponentTest
     with EventBusServiceComponent
     with UserServiceComponent
     with MakeSettingsComponent
+    with SelectionAlgorithmComponent
     with StrictLogging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -47,6 +48,7 @@ class SequenceServiceComponentTest
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]
   override val makeSettings: MakeSettings = mock[MakeSettings]
+  override val selectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
