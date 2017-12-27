@@ -127,7 +127,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                   sequence,
                   selectionAlgorithm.newProposalsForSequence(
                     targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                    proposals = allProposals,
+                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
                     votedProposals = votedProposals.keys.toSeq,
                     includeList = includedProposals
                   ),
