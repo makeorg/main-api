@@ -3,6 +3,7 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
@@ -95,6 +96,7 @@ object PublishedSequenceEvent {
                                    title: String,
                                    themeIds: Seq[ThemeId],
                                    tagIds: Seq[TagId],
+                                   operationId: Option[OperationId] = None,
                                    searchable: Boolean)
       extends PublishedSequenceEvent
 
@@ -103,7 +105,7 @@ object PublishedSequenceEvent {
     val actionType: String = "sequence-created"
 
     implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
-      DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
+      DefaultJsonProtocol.jsonFormat10(SequenceCreated.apply)
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)
@@ -122,7 +124,8 @@ object PublishedSequenceEvent {
                                    requestContext: RequestContext,
                                    title: Option[String],
                                    status: Option[SequenceStatus],
-                                   operation: Option[String] = None,
+                                   @Deprecated operation: Option[String] = None,
+                                   operationId: Option[OperationId] = None,
                                    themeIds: Seq[ThemeId],
                                    tagIds: Seq[TagId])
       extends PublishedSequenceEvent
@@ -132,7 +135,7 @@ object PublishedSequenceEvent {
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
-      DefaultJsonProtocol.jsonFormat9(SequenceUpdated.apply)
+      DefaultJsonProtocol.jsonFormat10(SequenceUpdated.apply)
   }
 
   final case class SequenceEdition(oldVersion: String, newVersion: String)

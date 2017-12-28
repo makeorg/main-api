@@ -55,7 +55,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                   IdeaFiltersRequest(
                     language = language,
                     country = country,
-                    operation = operation.map(OperationId(_)),
+                    operationId = operation.map(OperationId(_)),
                     question = question
                   )
                 provideAsync(ideaService.fetchAll(filters)) { ideas =>
@@ -214,7 +214,7 @@ object UpdateIdeaRequest {
 
 final case class IdeaFiltersRequest(language: Option[String],
                                     country: Option[String],
-                                    operation: Option[OperationId],
+                                    operationId: Option[OperationId],
                                     question: Option[String])
 
 object IdeaFiltersRequest {

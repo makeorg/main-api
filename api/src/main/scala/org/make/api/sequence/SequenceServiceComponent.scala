@@ -13,6 +13,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{IdeaId, TagId, ThemeId}
 import org.make.core.sequence._
@@ -43,13 +44,14 @@ trait SequenceService {
              title: String,
              tagIds: Seq[TagId] = Seq.empty,
              themeIds: Seq[ThemeId] = Seq.empty,
+             operationId: Option[OperationId],
              searchable: Boolean): Future[Option[SequenceResponse]]
   def update(sequenceId: SequenceId,
              moderatorId: UserId,
              requestContext: RequestContext,
              title: Option[String],
              status: Option[SequenceStatus],
-             operation: Option[String],
+             operationId: Option[OperationId],
              themeIds: Seq[ThemeId],
              tagIds: Seq[TagId]): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
@@ -208,6 +210,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         title: String,
                         tagIds: Seq[TagId],
                         themeIds: Seq[ThemeId],
+                        operationId: Option[OperationId],
                         searchable: Boolean): Future[Option[SequenceResponse]] = {
       sequenceCoordinatorService
         .create(
@@ -219,6 +222,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             moderatorId = userId,
             tagIds = tagIds,
             themeIds = themeIds,
+            operationId = operationId,
             status = SequenceStatus.Published,
             searchable = searchable
           )
@@ -269,7 +273,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         requestContext: RequestContext,
                         title: Option[String],
                         status: Option[SequenceStatus],
-                        operation: Option[String],
+                        operationId: Option[OperationId],
                         themeIds: Seq[ThemeId],
                         tagIds: Seq[TagId]): Future[Option[SequenceResponse]] = {
 
@@ -281,7 +285,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             requestContext = requestContext,
             title = title,
             status = status,
-            operation = operation,
+            operationId = operationId,
             themeIds = themeIds,
             tagIds = tagIds
           )

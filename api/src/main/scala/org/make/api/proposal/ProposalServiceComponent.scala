@@ -199,7 +199,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               events = events,
               similarProposals = proposal.similarProposals,
               idea = proposal.idea,
-              ideaProposals = ideaProposals
+              ideaProposals = ideaProposals,
+              operationId = proposal.operation
             )
           )
         }
@@ -210,12 +211,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       proposal.idea match {
         case Some(ideaId) =>
           elasticsearchProposalAPI
-            .countProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value))))))
+            .countProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId))))))
             .flatMap { countProposals =>
               elasticsearchProposalAPI
                 .searchProposals(
                   SearchQuery(
-                    filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value)))),
+                    filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId)))),
                     limit = Some(countProposals)
                   )
                 )

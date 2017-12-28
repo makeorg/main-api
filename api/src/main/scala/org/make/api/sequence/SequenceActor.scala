@@ -72,6 +72,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         title = command.title,
         themeIds = command.themeIds,
         tagIds = command.tagIds,
+        operationId = command.operationId,
         searchable = command.searchable
       )
     ) { _ =>
@@ -89,7 +90,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         requestContext = command.requestContext,
         title = command.title,
         status = command.status,
-        operation = command.operation,
+        operationId = command.operationId,
         userId = userId,
         themeIds = command.themeIds,
         tagIds = command.tagIds
@@ -122,7 +123,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
           title = e.title,
           status = SequenceStatus.Unpublished,
           themeIds = e.themeIds,
-          operationId = e.requestContext.operationId,
+          operationId = e.operationId,
           creationContext = e.requestContext,
           tagIds = e.tagIds,
           events = List(
@@ -150,7 +151,8 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
             slug = SlugHelper(e.title.getOrElse(state.title)),
             status = e.status.getOrElse(state.status),
             themeIds = e.themeIds,
-            tagIds = e.tagIds
+            tagIds = e.tagIds,
+            operationId = e.operationId
         )
       )
     case e: SequenceProposalsAdded =>

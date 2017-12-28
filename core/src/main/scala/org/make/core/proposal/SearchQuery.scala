@@ -9,9 +9,7 @@ import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.make.core.reference.{LabelId, TagId, ThemeId}
-import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 
 /**
   * The class holding the entire search query
@@ -25,11 +23,6 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
                        sorts: Seq[IndexedSort] = Seq.empty,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None)
-
-object SearchQuery {
-  implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
-    DefaultJsonProtocol.jsonFormat4(SearchQuery.apply)
-}
 
 /**
   * The class holding the filters
@@ -53,9 +46,6 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          idea: Option[IdeaSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
-
-  implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat11(SearchFilters.apply)
 
   def parse(proposals: Option[ProposalSearchFilter] = None,
             themes: Option[ThemeSearchFilter] = None,
@@ -116,9 +106,9 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.proposal match {
         case Some(ProposalSearchFilter(Seq(proposalId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId.value))
         case Some(ProposalSearchFilter(proposalIds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.id, proposalIds))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.id, proposalIds.map(_.value)))
         case _ => None
       }
     }
@@ -128,9 +118,9 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.theme match {
         case Some(ThemeSearchFilter(Seq(themeId))) =>
-          Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.themeId, themeId))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId.value))
         case Some(ThemeSearchFilter(themeIds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themeIds))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themeIds.map(_.value)))
         case _ => None
       }
     }
@@ -140,9 +130,9 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.tags match {
         case Some(TagsSearchFilter(Seq(tagId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagId))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagId.value))
         case Some(TagsSearchFilter(tags)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, tags))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, tags.map(_.value)))
         case _ => None
       }
     }
@@ -152,7 +142,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.labels match {
         case Some(LabelsSearchFilter(labels)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels.map(_.value)))
         case _ => None
       }
     }
@@ -162,7 +152,7 @@ object SearchFilters extends ElasticDsl {
     val operationFilter: Option[QueryDefinition] = for {
       filters   <- searchQuery.filters
       operation <- filters.operation
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId.value)
 
     operationFilter
   }
@@ -182,7 +172,7 @@ object SearchFilters extends ElasticDsl {
       filters   <- searchQuery.filters
       context   <- filters.context
       operation <- context.operation
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextOperation, operation)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextOperation, operation.value)
 
     operationFilter
   }
@@ -290,7 +280,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.idea match {
         case Some(IdeaSearchFilter(idea)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea.value))
         case _ => None
       }
     }
@@ -299,102 +289,37 @@ object SearchFilters extends ElasticDsl {
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
 
-object ProposalSearchFilter {
-  implicit val proposalSearchFilterFormatted: RootJsonFormat[ProposalSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(ProposalSearchFilter.apply)
-}
-
 case class ThemeSearchFilter(themeIds: Seq[ThemeId]) {
   validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
-}
-
-object ThemeSearchFilter {
-  implicit val themeSearchFilterFormatted: RootJsonFormat[ThemeSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(ThemeSearchFilter.apply)
 }
 
 case class TagsSearchFilter(tagIds: Seq[TagId]) {
   validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
-object TagsSearchFilter {
-  implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
-}
-
 case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
   validate(validateField("labelIds", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
-object LabelsSearchFilter {
-  implicit val labelsSearchFilterFormatted: RootJsonFormat[LabelsSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(LabelsSearchFilter.apply)
-}
-
 case class OperationSearchFilter(operationId: OperationId)
-
-object OperationSearchFilter {
-  implicit val operationSearchFilterFormatted: RootJsonFormat[OperationSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(OperationSearchFilter.apply)
-}
 
 case class TrendingSearchFilter(trending: String) {
   validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))
 }
 
-object TrendingSearchFilter {
-  implicit val trendingSearchFilterFormatted: RootJsonFormat[TrendingSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(TrendingSearchFilter.apply)
-}
-
 case class ContentSearchFilter(text: String, fuzzy: Option[String] = None)
 
-object ContentSearchFilter {
-  implicit val contentSearchFilterFormatted: RootJsonFormat[ContentSearchFilter] =
-    DefaultJsonProtocol.jsonFormat2(ContentSearchFilter.apply)
-}
-
 case class StatusSearchFilter(status: Seq[ProposalStatus])
-
-object StatusSearchFilter {
-  implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
-}
 
 case class ContextSearchFilter(operation: Option[OperationId] = None,
                                source: Option[String] = None,
                                location: Option[String] = None,
                                question: Option[String] = None)
 
-object ContextSearchFilter {
-  implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
-    DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
-}
-
 case class SlugSearchFilter(slug: String)
 
-object SlugSearchFilter {
-  implicit val format: RootJsonFormat[SlugSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(SlugSearchFilter.apply)
-}
-
-case class IdeaSearchFilter(ideaId: String)
-
-object IdeaSearchFilter {
-  implicit val format: RootJsonFormat[IdeaSearchFilter] =
-    DefaultJsonProtocol.jsonFormat1(IdeaSearchFilter.apply)
-}
+case class IdeaSearchFilter(ideaId: IdeaId)
 
 case class Limit(value: Int)
 
-object Limit {
-  implicit val limitFormatted: RootJsonFormat[Limit] =
-    DefaultJsonProtocol.jsonFormat1(Limit.apply)
-}
-
 case class Skip(value: Int)
-
-object Skip {
-  implicit val skipFormatted: RootJsonFormat[Skip] =
-    DefaultJsonProtocol.jsonFormat1(Skip.apply)
-}

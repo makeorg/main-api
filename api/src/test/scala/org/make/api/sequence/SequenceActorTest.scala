@@ -132,7 +132,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderatorId = user.userId,
         title = Some("An updated content"),
         status = Some(SequenceStatus.Published),
-        operation = None,
+        operationId = None,
         themeIds = Seq.empty,
         tagIds = Seq.empty
       )
@@ -165,7 +165,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderatorId = user.userId,
         requestContext = RequestContext.empty,
         title = Some("An updated content"),
-        operation = None,
+        operationId = None,
         status = Some(SequenceStatus.Published),
         themeIds = Seq.empty,
         tagIds = Seq.empty

@@ -8,6 +8,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference._
@@ -31,7 +32,8 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   events: Seq[ProposalActionResponse],
                                   similarProposals: Seq[ProposalId],
                                   idea: Option[IdeaId],
-                                  ideaProposals: Seq[IndexedProposal])
+                                  ideaProposals: Seq[IndexedProposal],
+                                  operationId: Option[OperationId])
 
 object ProposalResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]

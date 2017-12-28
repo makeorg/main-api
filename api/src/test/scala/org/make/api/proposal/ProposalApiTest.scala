@@ -22,7 +22,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 
@@ -179,6 +179,84 @@ class ProposalApiTest
       )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("nop")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.failed(ValidationFailedError(Seq())))
+
+  when(
+    proposalService
+      .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+
+  when(
+    proposalService
+      .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
+  ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
+
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
+  ).thenReturn(Future.successful(Some(tyrion.userId)))
+
+  when(
+    proposalService
+      .getModerationProposalById(matches(ProposalId("sim-123")))
+  ).thenReturn(
+    Future.successful(
+      Some(
+        ProposalResponse(
+          proposalId = ProposalId("sim-123"),
+          slug = "a-song-of-fire-and-ice",
+          content = "A song of fire and ice",
+          author = UserResponse(
+            UserId("Georges RR Martin"),
+            email = "g@rr.martin",
+            firstName = Some("Georges"),
+            lastName = Some("Martin"),
+            enabled = true,
+            verified = true,
+            lastConnection = DateHelper.now(),
+            roles = Seq.empty,
+            None
+          ),
+          labels = Seq(),
+          theme = None,
+          status = Accepted,
+          tags = Seq(),
+          votes = Seq(
+            Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+            Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+            Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+          ),
+          context = RequestContext.empty,
+          createdAt = Some(DateHelper.now()),
+          updatedAt = Some(DateHelper.now()),
+          events = Nil,
+          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
+          idea = None,
+          ideaProposals = Seq.empty,
+          operationId = None
+        )
+      )
+    )
+  )
+
   val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
@@ -235,7 +313,8 @@ class ProposalApiTest
       events = Nil,
       similarProposals = Seq.empty,
       idea = None,
-      ideaProposals = Seq.empty
+      ideaProposals = Seq.empty,
+      operationId = None
     )
   }
 

@@ -1,6 +1,7 @@
 package org.make.api.sequence
 
 import org.make.core.RequestContext
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
@@ -16,6 +17,7 @@ final case class CreateSequenceCommand(sequenceId: SequenceId,
                                        slug: String,
                                        tagIds: Seq[TagId] = Seq.empty,
                                        themeIds: Seq[ThemeId] = Seq.empty,
+                                       operationId: Option[OperationId] = None,
                                        requestContext: RequestContext,
                                        moderatorId: UserId,
                                        status: SequenceStatus,
@@ -27,7 +29,7 @@ final case class UpdateSequenceCommand(sequenceId: SequenceId,
                                        moderatorId: UserId,
                                        title: Option[String],
                                        status: Option[SequenceStatus],
-                                       operation: Option[String],
+                                       operationId: Option[OperationId] = None,
                                        themeIds: Seq[ThemeId],
                                        tagIds: Seq[TagId])
     extends SequenceCommand

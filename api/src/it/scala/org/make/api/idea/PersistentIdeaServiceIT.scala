@@ -17,7 +17,8 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     language = Some("fr"),
     country = Some("FR"),
     operation = Some(OperationId("operation")),
-    question = Some("question")
+    question = Some("question"),
+    operationId = Some(OperationId("operation"))
   )
 
   feature("Can persist and retrieve ideas") {

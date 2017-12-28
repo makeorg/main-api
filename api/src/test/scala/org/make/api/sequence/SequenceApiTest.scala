@@ -8,11 +8,13 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
@@ -35,7 +37,8 @@ class SequenceApiTest
     with SequenceServiceComponent
     with MakeSettingsComponent
     with ThemeServiceComponent
-    with TagServiceComponent {
+    with TagServiceComponent
+    with OperationServiceComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -43,6 +46,7 @@ class SequenceApiTest
   override val sequenceService: SequenceService = mock[SequenceService]
   override val themeService: ThemeService = mock[ThemeService]
   override val tagService: TagService = mock[TagService]
+  override val operationService: OperationService = mock[OperationService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
@@ -206,6 +210,7 @@ class SequenceApiTest
         any[String],
         any[Seq[TagId]],
         any[Seq[ThemeId]],
+        any[Option[OperationId]],
         matches(true)
       )
   ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("43")))))
