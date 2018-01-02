@@ -538,6 +538,40 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "duplicates",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @Path(value = "/{proposalId}/duplicates")
+  def getDuplicates: Route = {
+    get {
+      path("moderation" / "proposals" / moderationProposalId / "duplicates") { proposalId =>
+        makeTrace("Duplicates") { requestContext =>
+          makeOAuth2 { auth =>
+            requireModerationRole(auth.user) {
+              provideAsync(
+                proposalService.getDuplicates(userId = auth.user.userId, proposalId = proposalId, requestContext)
+              ) { proposals =>
+                complete(proposals)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
@@ -549,7 +583,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       removeProposalFromClusters ~
       removeClusters ~
       lock ~
-      patchProposal
+      patchProposal ~
+      getDuplicates
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

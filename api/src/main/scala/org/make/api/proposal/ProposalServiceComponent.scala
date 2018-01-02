@@ -9,6 +9,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
+import org.make.api.idea.IdeaServiceComponent
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
@@ -17,7 +18,7 @@ import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{IdeaId, ThemeId}
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 
@@ -39,7 +40,7 @@ trait ProposalService {
 
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
-                    requestContext: RequestContext): Future[ProposalsSearchResult]
+                    requestContext: RequestContext): Future[Seq[DuplicateResult]]
 
   def search(userId: Option[UserId],
              query: SearchQuery,
@@ -123,7 +124,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with EventBusServiceComponent
     with ReadJournalComponent
     with ActorSystemComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with IdeaServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
 
@@ -442,7 +444,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
-                               requestContext: RequestContext): Future[ProposalsSearchResult] = {
+                               requestContext: RequestContext): Future[Seq[DuplicateResult]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -484,10 +486,29 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         algoLabel = DuplicateAlgorithm.getModelName
                       )
                     )
-                    Future.successful(ProposalsSearchResult(duplicates.length, duplicates))
+                    formatDuplicateResults(duplicates, scores)
                 }
             }
-        case None => Future.successful(ProposalsSearchResult.empty)
+        case None => Future.successful(Seq.empty)
+      }
+    }
+
+    private def formatDuplicateResult(proposal: IndexedProposal, score: Double): Future[DuplicateResult] = {
+      proposal.ideaId match {
+        case Some(ideaId) =>
+          ideaService.fetchOne(ideaId).map {
+            case Some(idea) => DuplicateResult(idea.ideaId, idea.name, proposal.id, proposal.content, score)
+            case None       => DuplicateResult(IdeaId("Not found"), "Not found", proposal.id, proposal.content, score)
+          }
+        case None =>
+          Future.successful(DuplicateResult(IdeaId("No Idea"), "No Idea", proposal.id, proposal.content, score))
+      }
+    }
+
+    private def formatDuplicateResults(duplicates: Seq[IndexedProposal],
+                                       scores: Seq[Double]): Future[Seq[DuplicateResult]] = {
+      Future.traverse(duplicates.zip(scores)) {
+        case (duplicate, score) => formatDuplicateResult(duplicate, score)
       }
     }
 

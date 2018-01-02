@@ -14,7 +14,6 @@ import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
@@ -83,39 +82,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  @ApiOperation(
-    value = "duplicates",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @Path(value = "/{proposalId}/duplicates")
-  def getDuplicates: Route = {
-    get {
-      path("proposals" / proposalId / "duplicates") { proposalId =>
-        makeTrace("Duplicates") { requestContext =>
-          makeOAuth2 { userAuth =>
-            authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
-              provideAsync(
-                proposalService.getDuplicates(userId = userAuth.user.userId, proposalId = proposalId, requestContext)
-              ) { proposals =>
-                complete(proposals)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
   @ApiOperation(
     value = "propose-proposal",
     httpMethod = "POST",
@@ -313,8 +279,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   }
 
   val proposalRoutes: Route =
-    getDuplicates ~
-      postProposal ~
+    postProposal ~
       getProposal ~
       search ~
       vote ~
