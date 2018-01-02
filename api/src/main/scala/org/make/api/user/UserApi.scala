@@ -11,17 +11,22 @@ import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{
+  EventBusServiceComponent,
+  IdGeneratorComponent,
+  MakeAuthenticationDirectives,
+  ReadJournalComponent
+}
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
@@ -45,6 +50,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     with PersistentUserServiceComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ReadJournalComponent
     with ActorSystemComponent =>
 
   @Path(value = "/{userId}")
@@ -210,7 +217,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/:userId/validate/:verificationToken")
-  @ApiImplicitParams(value = Array())
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def validateAccountRoute: Route = {
     post {
       path("user" / userId / "validate" / Segment) { (userId: UserId, verificationToken: String) =>
@@ -274,7 +281,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/reset-password/check-validity/:userId/:resetToken")
-  @ApiImplicitParams(value = Array())
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def resetPasswordCheckRoute: Route = {
     post {
       path("user" / "reset-password" / "check-validity" / userId / Segment) { (userId: UserId, resetToken: String) =>
@@ -295,7 +302,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @Path(value = "/reset-password/change-password/:userId")
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPassword"))
+    value = Array(
+      new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPassword"),
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")
+    )
   )
   def resetPasswordRoute: Route = {
     post {
@@ -325,8 +335,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/:userId/resend-validation-email")
-  @ApiImplicitParams(value = Array())
+  @Path(value = "/{userId}/resend-validation-email")
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
       makeTrace("ResendValidateEmail") { requestContext =>
@@ -390,10 +400,75 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @ApiOperation(
+    value = "reload-history",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok", response = classOf[Unit])))
+  @Path(value = "/{userId}/reload-history")
+  def rebuildUserHistory: Route = post {
+    path("user" / userId / "reload-history") { userId =>
+      makeTrace("ReloadUserHistory") { _ =>
+        makeOAuth2 { userAuth =>
+          requireAdminRole(userAuth.user) {
+            userHistoryCoordinatorService.reloadHistory(userId)
+            complete(StatusCodes.NoContent)
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "reload-all-users-history",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok", response = classOf[Unit])))
+  @Path(value = "/reload-history")
+  def rebuildAllUsersHistory: Route = post {
+    path("user" / "reload-history") {
+      makeTrace("ReloadAllUsersHistory") { _ =>
+        makeOAuth2 { userAuth =>
+          requireAdminRole(userAuth.user) {
+            implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+            readJournal
+              .currentPersistenceIds()
+              .runForeach(id => userHistoryCoordinatorService.reloadHistory(UserId(id)))
+
+            complete(StatusCodes.NoContent)
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
     socialLogin ~
+    rebuildAllUsersHistory ~
+    rebuildUserHistory ~
     resetPasswordRequestRoute ~
     resetPasswordCheckRoute ~
     resetPasswordRoute ~

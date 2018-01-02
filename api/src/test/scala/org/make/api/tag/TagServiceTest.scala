@@ -3,12 +3,12 @@ package org.make.api.tag
 import java.sql.SQLIntegrityConstraintViolationException
 
 import akka.actor.ActorSystem
-import akka.persistence.query.scaladsl.{CurrentPersistenceIdsQuery, ReadJournal}
 import akka.stream.scaladsl.Source
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalCoordinatorService
 import org.make.api.sequence.SequenceCoordinatorService
 import org.make.api.tag.TagExceptions.TagAlreadyExistsException
+import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical.{EventBusService, EventBusServiceComponent}
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
 import org.make.core.RequestContext
@@ -33,8 +33,7 @@ class TagServiceTest
   override val actorSystem: ActorSystem = ActorSystem()
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val readJournal: ReadJournal with CurrentPersistenceIdsQuery =
-    mock[ReadJournal with CurrentPersistenceIdsQuery]
+  override val readJournal: MakeReadJournal = mock[MakeReadJournal]
 
   feature("get tag") {
     scenario("get tag from TagId") {
