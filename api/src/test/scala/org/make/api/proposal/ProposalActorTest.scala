@@ -6,19 +6,24 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
+import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.ProposalState
-import org.make.core.operation.OperationId
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.sequence.{Sequence, SequenceId}
 import org.make.core.session.SessionId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+
+import scala.concurrent.Future
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -36,17 +41,79 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val userHistoryController: Controller = new Controller
   val sessionHistoryController: Controller = new Controller
+  val sequenceController: Controller = new Controller
 
   val userHistoryActor: ActorRef = system.actorOf(Props(new ControllableActor(userHistoryController)), "user-history")
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
+  val sequenceActor: ActorRef = system.actorOf(Props(new ControllableActor(sequenceController)), "sequence")
+
+  val operationService: OperationService = mock[OperationService]
+  val sequence1: Sequence = Sequence(
+    SequenceId("sequence1"),
+    "sequence 1",
+    "sequence-1",
+    themeIds = Seq.empty,
+    createdAt = None,
+    updatedAt = None,
+    creationContext = RequestContext.empty,
+    events = List.empty,
+    searchable = false
+  )
+  val sequence2: Sequence = Sequence(
+    SequenceId("sequence2"),
+    "sequence 2",
+    "sequence-2",
+    themeIds = Seq.empty,
+    createdAt = None,
+    updatedAt = None,
+    creationContext = RequestContext.empty,
+    events = List.empty,
+    searchable = false
+  )
+  val operation1: Operation = Operation(
+    OperationStatus.Active,
+    OperationId("operation1"),
+    "operation-1",
+    Seq.empty,
+    "en",
+    sequence1.sequenceId,
+    List.empty,
+    None,
+    None,
+    Seq.empty
+  )
+  val operation2: Operation = Operation(
+    OperationStatus.Active,
+    OperationId("operation2"),
+    "operation-2",
+    Seq.empty,
+    "en",
+    sequence2.sequenceId,
+    List.empty,
+    None,
+    None,
+    Seq.empty
+  )
+
+  Mockito
+    .when(operationService.findOne(ArgumentMatchers.eq(operation1.operationId)))
+    .thenReturn(Future.successful(Some(operation1)))
+  Mockito
+    .when(operationService.findOne(ArgumentMatchers.eq(operation2.operationId)))
+    .thenReturn(Future.successful(Some(operation2)))
 
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val THREAD_SLEEP_MICROSECONDS: Int = 100
 
   val coordinator: ActorRef =
     system.actorOf(
-      ProposalCoordinator.props(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor),
+      ProposalCoordinator.props(
+        userHistoryActor = userHistoryActor,
+        sessionHistoryActor = sessionHistoryActor,
+        sequenceActor = sequenceActor,
+        operationService = operationService
+      ),
       ProposalCoordinator.name
     )
 
@@ -207,7 +274,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -242,7 +310,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive the accepted proposal with modified content")
@@ -289,7 +358,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive the accepted proposal")
@@ -337,7 +407,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive the accepted proposal")
@@ -382,7 +453,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
@@ -398,7 +470,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive an error")
@@ -437,7 +510,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = similarProposals,
-        idea = None
+        idea = None,
+        operation = None
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
@@ -483,7 +557,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        idea = Some(idea)
+        idea = Some(idea),
+        operation = None
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
@@ -784,7 +859,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq.empty,
         similarProposals = Seq(),
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -817,7 +893,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        idea = None
+        idea = None,
+        operation = None
       )
 
       expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
@@ -833,7 +910,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         similarProposals = Seq.empty,
-        idea = Some(IdeaId("idea-id"))
+        idea = Some(IdeaId("idea-id")),
+        operation = None
       )
 
       Then("I should receive the updated proposal")
@@ -878,13 +956,23 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq.empty,
         tags = Seq.empty,
         similarProposals = Seq.empty,
-        idea = None
+        idea = None,
+        operation = None
       )
 
       Then("I should receive a ValidationFailedError")
       val error = expectMsgType[ValidationFailedError]
       error.errors.head.field should be("proposalId")
       error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
+    }
+
+    ignore("Update a new operation") {
+      // Change operation and check sequenceActor is getting commanded by Remove and Add
+    }
+
+    ignore("Update no operation") {
+      // Change operation for none and check sequenceActor is getting commanded by Remove only.
+      // Update with no operation must remove the prop from sequence operation
     }
   }
 
@@ -1197,7 +1285,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
               externalId = Some("external-id"),
               country = Some("BE"),
               language = Some("nl"),
-              operation = Some(OperationId("my-operation")),
+              operation = None /*Some("my-operation")*/, // TODO: use Operation
               source = Some("my-source"),
               location = Some("my-location"),
               question = Some("my-question"),
@@ -1220,7 +1308,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           externalId = "external-id",
           country = Some("BE"),
           language = Some("nl"),
-          operationId = Some(OperationId("my-operation")),
+          operation = None /*Some("my-operation")*/,
           source = Some("my-source"),
           location = Some("my-location"),
           question = Some("my-question"),
@@ -1277,6 +1365,15 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.refusalReason should be(Some("I don't want"))
       proposal.idea should be(Some(IdeaId("my-idea")))
       proposal.tags should be(Seq(TagId("my-tag")))
+    }
+
+    ignore("patch a new operation") {
+      // Change operation and check sequenceActor is getting commanded by Remove and Add
+    }
+
+    ignore("patch no operation") {
+      // Change operation for none and check sequenceActor is getting commanded by nothing.
+      // Patch must not alter if nothing is inquired
     }
   }
 }
