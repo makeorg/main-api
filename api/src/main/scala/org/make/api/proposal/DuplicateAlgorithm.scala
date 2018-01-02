@@ -93,10 +93,17 @@ object DuplicateAlgorithm {
       chosen.reverse
     } else {
       val nextProposal = proposals.head
-      val excludeSet = Set(nextProposal.proposalId) ++ nextProposal.similarProposals.toSet
-      getUniqueIdeas(chosen = chosen ++ Set(nextProposal.proposalId), proposals = proposals.filter { p =>
-        !excludeSet.contains(p.proposalId)
-      })
+      nextProposal.idea match {
+        case Some(ideaId) =>
+          val excludeSet = Set(nextProposal.proposalId) ++ nextProposal.similarProposals.toSet
+          getUniqueIdeas(chosen = chosen ++ Set(nextProposal.proposalId), proposals = proposals.filter { p =>
+            p.idea != nextProposal.idea
+          })
+        case None =>
+          getUniqueIdeas(chosen = chosen, proposals = proposals.filter { p =>
+            p != nextProposal
+          })
+      }
     }
   }
 
