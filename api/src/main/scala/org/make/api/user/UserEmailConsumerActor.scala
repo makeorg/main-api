@@ -100,7 +100,7 @@ class UserEmailConsumerActor(userService: UserService)
 
         if (registration.enabled) {
           val url = s"${mailJetTemplateConfiguration
-            .getFrontUrl(operation)}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+            .getFrontUrl()}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
             s"?operation=$operation&language=$language&country=$country"
 
           eventBusService.publish(
@@ -187,7 +187,7 @@ class UserEmailConsumerActor(userService: UserService)
 
         if (resendAccountValidationLink.enabled) {
           val url = s"${mailJetTemplateConfiguration
-            .getFrontUrl(operation)}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+            .getFrontUrl()}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
             s"?operation=$operation&language=$language&country=$country"
           eventBusService.publish(
             SendEmail(
