@@ -65,7 +65,6 @@ final case class ProposalAction(date: ZonedDateTime, user: UserId, actionType: S
 object ProposalAction {
   implicit val proposalActionFormatter: RootJsonFormat[ProposalAction] =
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
-
 }
 
 sealed trait ProposalActionType { val name: String }

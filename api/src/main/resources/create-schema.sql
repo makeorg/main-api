@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS theme (
 CREATE TABLE IF NOT EXISTS theme_translation (
   theme_uuid VARCHAR(256) NOT NULL REFERENCES theme,
   language VARCHAR(3),
-  title VARCHAR(256),
+  title VARCHAR(1024),
   slug VARCHAR(256),
   PRIMARY KEY (theme_uuid, language)
 );
@@ -357,4 +357,46 @@ INSERT INTO make_user
 VALUES
 ('11111111-1111-1111-1111-111111111111','2017-09-15 08:43:30','2017-09-15 08:43:30','#adminemail#','#adminfirstname#',NULL,NULL,'#adminencryptedpassword#',true,false,'2017-09-15 08:43:30',NULL,'2017-10-15 08:43:30',NULL,NULL,'ROLE_ADMIN,ROLE_CITIZEN',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,false)
 ON CONFLICT (uuid) DO NOTHING
+%
+CREATE TABLE IF NOT EXISTS operation (
+  uuid VARCHAR(256) PRIMARY KEY,
+  status VARCHAR(20) NOT NULL,
+  slug VARCHAR(256) NOT NULL,
+  default_language VARCHAR(3) NOT NULL,
+  sequence_landing_id VARCHAR(256),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+%
+CREATE UNIQUE index IF NOT EXISTS operation_slug_unique_index ON operation (slug);
+%
+CREATE TABLE IF NOT EXISTS operation_translation (
+  operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
+  language VARCHAR(3),
+  title VARCHAR(256),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (operation_uuid, language)
+);
+%
+CREATE TABLE IF NOT EXISTS operation_country_configuration (
+  operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
+  country VARCHAR(3),
+  tag_ids VARCHAR(2048),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (operation_uuid, country)
+);
+%
+CREATE TABLE IF NOT EXISTS operation_action (
+  operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
+  make_user_uuid VARCHAR(256) NOT NULL REFERENCES make_user,
+  action_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  action_type VARCHAR(256) NOT NULL,
+  arguments STRING
+);
+%
+CREATE INDEX IF NOT EXISTS operation_action_operation_id_index ON operation_action (operation_uuid);
+%
+CREATE INDEX IF NOT EXISTS operation_action_user_id_index ON make_user (uuid);
 %
