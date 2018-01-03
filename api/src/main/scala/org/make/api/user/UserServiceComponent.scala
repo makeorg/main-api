@@ -24,8 +24,7 @@ trait UserServiceComponent {
 }
 
 trait UserService extends ShortenedNames {
-  def getUser(uuid: UserId): Future[Option[User]]
-  def getUser(uuid: String): Future[Option[User]]
+  def getUser(id: UserId): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def getOrCreateUserFromSocial(userInfo: UserInfo,
@@ -56,12 +55,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     val validationTokenExpiresIn: Long = 30.days.toSeconds
     val resetTokenExpiresIn: Long = 1.days.toSeconds
 
-    override def getUser(uuid: UserId): Future[Option[User]] = {
-      persistentUserService.get(uuid)
-    }
-
-    override def getUser(uuid: String): Future[Option[User]] = {
-      persistentUserService.get(UserId(uuid))
+    override def getUser(userId: UserId): Future[Option[User]] = {
+      persistentUserService.get(userId)
     }
 
     override def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {

@@ -1,8 +1,10 @@
 package org.make.api.userhistory
 
 import akka.actor.ActorLogging
-import org.make.api.technical.MakePersistentActor
+import akka.persistence.query.EventEnvelope
+import akka.stream.ActorMaterializer
 import org.make.api.technical.MakePersistentActor.Snapshot
+import org.make.api.technical.{ActorReadJournalComponent, MakePersistentActor}
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._
@@ -11,9 +13,13 @@ import org.make.core.user._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 class UserHistoryActor
     extends MakePersistentActor(classOf[UserHistory], classOf[UserHistoryEvent[_]])
-    with ActorLogging {
+    with ActorLogging
+    with ActorReadJournalComponent {
 
   def userId: UserId = UserId(self.path.name)
 
@@ -47,8 +53,11 @@ class UserHistoryActor
     case command: LogGetProposalDuplicatesEvent       => persistEvent(command)
     case command: LogUserSearchSequencesEvent         => persistEvent(command)
     case command: LogUserStartSequenceEvent           => persistEvent(command)
+    case _: ReloadState                               => reloadState()
     case Snapshot                                     => saveSnapshot()
   }
+
+  override def onRecoveryCompleted(): Unit = {}
 
   override def persistenceId: String = userId.value
 
@@ -65,6 +74,18 @@ class UserHistoryActor
 
   override val applyEvent: PartialFunction[UserHistoryEvent[_], Option[UserHistory]] = {
     case event => state.map(s => s.copy(events = event :: s.events))
+  }
+
+  def applyEventFromState(currentState: Option[UserHistory],
+                          event: Option[UserHistoryEvent[_]]): Option[UserHistory] = {
+    if (event.isEmpty) {
+      state
+    } else {
+      for {
+        s <- currentState
+        e <- event
+      } yield s.copy(events = e :: s.events)
+    }
   }
 
   private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = {
@@ -159,6 +180,24 @@ class UserHistoryActor
   private def retrieveUserVotedProposals(): Unit = {
     sender ! voteByProposalId(voteActions()).keys.toSeq
   }
+
+  def reloadState(): Unit = {
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+    val newState: Option[UserHistory] = Some(UserHistory(Nil))
+    val futureState = readJournal
+      .currentEventsByPersistenceId(this.persistenceId, 0, Long.MaxValue)
+      .map {
+        case EventEnvelope(_, _, _, event: UserHistoryEvent[_]) => Some(event)
+        case _                                                  => None
+      }
+      .runFold(newState)(applyEventFromState)
+
+    // This will block the actor to make sure there won't be other events in between
+    state = Await.result(futureState, 3.seconds)
+    if (state.toSeq.flatMap(_.events).nonEmpty) {
+      saveSnapshot()
+    }
+  }
 }
 
 object UserHistoryActor {
@@ -170,5 +209,7 @@ object UserHistoryActor {
 
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId]) extends UserRelatedEvent
   final case class RequestUserVotedProposals(userId: UserId) extends UserRelatedEvent
+
+  case class ReloadState(userId: UserId) extends UserRelatedEvent
 
 }

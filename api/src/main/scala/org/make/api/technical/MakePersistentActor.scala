@@ -35,14 +35,19 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
       if (autoSnapshot && eventsCount >= snapshotThreshold) {
         self ! Snapshot
       }
+      onRecoveryCompleted()
     case _ =>
   }
+
+  def onRecoveryCompleted(): Unit = {}
 
   def applyEvent: PartialFunction[Event, Option[State]]
 
   protected def saveSnapshot(): Unit = {
-    state.foreach(saveSnapshot)
-    eventsCount = 0
+    state.foreach { s =>
+      saveSnapshot(s)
+      eventsCount = 0
+    }
   }
 
   protected def newEventAdded(event: Event): Unit = {
