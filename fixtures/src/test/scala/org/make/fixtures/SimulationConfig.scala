@@ -90,4 +90,17 @@ object MakeServicesBuilder {
   val addProposalToIdeaBuilder: HttpRequestBuilder = http("PATCH_proposal_idea")
     .patch("/moderation/proposals/${proposalId}")
     .header("Content-Type", "application/json")
+
+  val createOperationBuilder: HttpRequestBuilder = http("POST_operation")
+    .post("/moderation/operations")
+    .header("Content-Type", "application/json")
+
+  val searchSequenceBuilder: HttpRequestBuilder = http("POST_search_sequence")
+    .post("/moderation/sequences/search")
+    .header("Content-Type", "application/json")
+
+  val createSequenceBuilder: HttpRequestBuilder = http("POST_sequence")
+    .post("/moderation/sequences")
+    .header("Content-Type", "application/json")
+
 }
