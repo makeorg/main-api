@@ -34,7 +34,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
             }
 
           elasticsearchProposalAPI
-            .countVoteProposals(
+            .countVotedProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
             )
             .map { votesCount =>

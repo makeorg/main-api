@@ -23,7 +23,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future}
 import scala.io.Source
-import scala.util.Failure
+import scala.util.{Failure, Success}
 
 class ProposalSearchEngineIT
     extends ItMakeTest
@@ -37,6 +37,7 @@ class ProposalSearchEngineIT
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$defaultElasticsearchPortExposed")
+  Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(defaultElasticsearchIndex)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchIndex)
 
   override protected def beforeAll(): Unit = {
@@ -48,19 +49,26 @@ class ProposalSearchEngineIT
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     implicit val materializer: ActorMaterializer = ActorMaterializer()
-    val databaseEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
+    val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
 
     // register index
     val proposalMapping = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$databaseEndpoint/$defaultElasticsearchIndex",
+          uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )
       )
     Await.result(responseFuture, 5.seconds)
+    responseFuture.onComplete {
+      case Failure(e) => {
+        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
+        fail(e)
+      }
+      case Success(_) => logger.debug("Elasticsearch mapped successfully.")
+    }
 
     // inserting data
     val insertFutures: Future[Seq[HttpResponse]] = Future.sequence(proposals.map { proposal: IndexedProposal =>
@@ -68,7 +76,7 @@ class ProposalSearchEngineIT
 
       Http().singleRequest(
         HttpRequest(
-          uri = s"$databaseEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
+          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposal.asJson.toString)
         )
@@ -77,8 +85,11 @@ class ProposalSearchEngineIT
 
     Await.result(insertFutures, 150.seconds)
     insertFutures.onComplete {
-      case Failure(e) => fail(e)
-      case _          =>
+      case Failure(e) => {
+        logger.error(s"Cannot index proposal: ${e.getStackTrace.mkString("\n")}")
+        fail(e)
+      }
+      case Success(_) => logger.debug("Proposal indexed successfully.")
     }
   }
 
@@ -855,7 +866,7 @@ class ProposalSearchEngineIT
 
   feature("get proposal by id") {
     val proposalId = proposals.head.id
-    ignore("should return a proposal") {
+    scenario("should return a proposal") {
       whenReady(elasticsearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
         case Some(proposal) =>
           proposal.id should equal(proposalId)
@@ -880,7 +891,7 @@ class ProposalSearchEngineIT
         )
       )
 
-    ignore("should return a list of proposals") {
+    scenario("should return a list of proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 0
       }
@@ -890,7 +901,7 @@ class ProposalSearchEngineIT
   feature("empty query returns accepted proposals only") {
     Given("searching without query")
     val query = SearchQuery()
-    ignore("should return a list of accepted proposals") {
+    scenario("should return a list of accepted proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
       }
@@ -911,7 +922,7 @@ class ProposalSearchEngineIT
         )
       )
     )
-    ignore("should return a list of pending proposals") {
+    scenario("should return a list of pending proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
@@ -920,7 +931,7 @@ class ProposalSearchEngineIT
   }
 
   feature("search proposals by slug") {
-    ignore("searching a non-existing slug") {
+    scenario("searching a non-existing slug") {
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -950,7 +961,7 @@ class ProposalSearchEngineIT
   feature("count proposal with theme filter") {
     val query = SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq("foo-theme"))))))
 
-    ignore("should return the number of proposals") {
+    scenario("should return the number of proposals") {
       whenReady(elasticsearchProposalAPI.countProposals(query), Timeout(10.seconds)) { result =>
         result should be(2)
       }
@@ -960,8 +971,8 @@ class ProposalSearchEngineIT
   feature("count vote with theme filter") {
     val query = SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq("foo-theme"))))))
 
-    ignore("should return the number of votes of proposals") {
-      whenReady(elasticsearchProposalAPI.countVoteProposals(query), Timeout(10.seconds)) { result =>
+    scenario("should return the number of votes of proposals") {
+      whenReady(elasticsearchProposalAPI.countVotedProposals(query), Timeout(10.seconds)) { result =>
         result should be(597)
       }
     }

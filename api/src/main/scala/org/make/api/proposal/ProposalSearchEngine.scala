@@ -30,7 +30,7 @@ trait ProposalSearchEngine {
                          random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery, maybeSeed: Option[Int] = None): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Int]
-  def countVoteProposals(searchQuery: SearchQuery): Future[Int]
+  def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
@@ -121,7 +121,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def countVoteProposals(searchQuery: SearchQuery): Future[Int] = {
+    override def countVotedProposals(searchQuery: SearchQuery): Future[Int] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
@@ -130,6 +130,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .aggs {
           sumAgg("total_votes", "votes.count")
         }
+
+      logger.debug(client.show(request))
+
 
       client.execute {
         request
