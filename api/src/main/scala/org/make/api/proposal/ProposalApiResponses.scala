@@ -183,13 +183,13 @@ object QualificationResponse {
     )
 }
 
-final case class DuplicateResult(ideaId: IdeaId,
-                                 ideaName: String,
-                                 proposalId: ProposalId,
-                                 proposalContent: String,
-                                 score: Double)
+final case class DuplicateResponse(ideaId: IdeaId,
+                                   ideaName: String,
+                                   proposalId: ProposalId,
+                                   proposalContent: String,
+                                   score: Double)
 
-object DuplicateResult {
-  implicit val encoder: ObjectEncoder[DuplicateResult] = deriveEncoder[DuplicateResult]
-  implicit val decoder: Decoder[DuplicateResult] = deriveDecoder[DuplicateResult]
+object DuplicateResponse {
+  implicit val encoder: ObjectEncoder[DuplicateResponse] = deriveEncoder[DuplicateResponse]
+  implicit val decoder: Decoder[DuplicateResponse] = deriveDecoder[DuplicateResponse]
 }

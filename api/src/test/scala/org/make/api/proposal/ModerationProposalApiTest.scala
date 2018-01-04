@@ -316,8 +316,8 @@ class ModerationProposalApiTest
     .thenReturn(
       Future.successful(
         Seq(
-          DuplicateResult(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
-          DuplicateResult(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
+          DuplicateResponse(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
+          DuplicateResponse(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
         )
       )
     )
@@ -449,7 +449,7 @@ class ModerationProposalApiTest
       Get("/moderation/proposals/123456/duplicates")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val results: Seq[DuplicateResult] = entityAs[Seq[DuplicateResult]]
+        val results: Seq[DuplicateResponse] = entityAs[Seq[DuplicateResponse]]
         results.length should be(2)
         results(0).ideaId should be(IdeaId("Idea 1"))
         results(1).ideaName should be("Idea Two")

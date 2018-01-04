@@ -40,7 +40,7 @@ trait ProposalService {
 
   def getDuplicates(userId: UserId,
                     proposalId: ProposalId,
-                    requestContext: RequestContext): Future[Seq[DuplicateResult]]
+                    requestContext: RequestContext): Future[Seq[DuplicateResponse]]
 
   def search(userId: Option[UserId],
              query: SearchQuery,
@@ -444,7 +444,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
-                               requestContext: RequestContext): Future[Seq[DuplicateResult]] = {
+                               requestContext: RequestContext): Future[Seq[DuplicateResponse]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -477,38 +477,59 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   duplicateDetectorConfiguration.maxResults
                 )
                 .flatMap {
-                  case (duplicates: Seq[IndexedProposal], scores: Seq[Double]) =>
+                  case duplicates: Seq[DuplicateResult] =>
                     eventBusService.publish(
                       PredictDuplicate(
                         proposalId = proposalId,
-                        predictedDuplicates = duplicates.map(_.id),
-                        predictedScores = scores,
+                        predictedDuplicates = duplicates.map(_.proposal.proposalId),
+                        predictedScores = duplicates.map(_.score),
                         algoLabel = DuplicateAlgorithm.getModelName
                       )
                     )
-                    formatDuplicateResults(duplicates, scores)
+                    formatDuplicateResults(duplicates)
                 }
             }
         case None => Future.successful(Seq.empty)
       }
     }
 
-    private def formatDuplicateResult(proposal: IndexedProposal, score: Double): Future[DuplicateResult] = {
-      proposal.ideaId match {
+    private def formatDuplicateResult(duplicateResult: DuplicateResult): Future[DuplicateResponse] = {
+      duplicateResult.proposal.idea match {
         case Some(ideaId) =>
           ideaService.fetchOne(ideaId).map {
-            case Some(idea) => DuplicateResult(idea.ideaId, idea.name, proposal.id, proposal.content, score)
-            case None       => DuplicateResult(IdeaId("Not found"), "Not found", proposal.id, proposal.content, score)
+            case Some(idea) =>
+              DuplicateResponse(
+                idea.ideaId,
+                idea.name,
+                duplicateResult.proposal.proposalId,
+                duplicateResult.proposal.content,
+                duplicateResult.score
+              )
+            case None =>
+              DuplicateResponse(
+                IdeaId("Not found"),
+                "Not found",
+                duplicateResult.proposal.proposalId,
+                duplicateResult.proposal.content,
+                duplicateResult.score
+              )
           }
         case None =>
-          Future.successful(DuplicateResult(IdeaId("No Idea"), "No Idea", proposal.id, proposal.content, score))
+          Future.successful(
+            DuplicateResponse(
+              IdeaId("No Idea"),
+              "No Idea",
+              duplicateResult.proposal.proposalId,
+              duplicateResult.proposal.content,
+              duplicateResult.score
+            )
+          )
       }
     }
 
-    private def formatDuplicateResults(duplicates: Seq[IndexedProposal],
-                                       scores: Seq[Double]): Future[Seq[DuplicateResult]] = {
-      Future.traverse(duplicates.zip(scores)) {
-        case (duplicate, score) => formatDuplicateResult(duplicate, score)
+    private def formatDuplicateResults(duplicates: Seq[DuplicateResult]): Future[Seq[DuplicateResponse]] = {
+      Future.traverse(duplicates) {
+        case duplicate => formatDuplicateResult(duplicate)
       }
     }
 
