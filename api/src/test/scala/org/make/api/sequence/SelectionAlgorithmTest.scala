@@ -643,5 +643,41 @@ class SelectionAlgorithmTest
 
       Mockito.when(selectionAlgorithmConfiguration.banditEnabled).thenReturn(true)
     }
+
+    scenario("check tested proposal chooser with strict config") {
+      Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(0.0)
+
+      val random = new Random(0)
+      val similars: Seq[Seq[ProposalId]] =
+        (1 to 20).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
+      val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
+        val a = random.nextInt(100) + 100
+        val d = random.nextInt(100) + 100
+        val n = random.nextInt(10) + 1
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> Tuple2(
+            a,
+            Map(QualificationKey.LikeIt -> random.nextInt(a), QualificationKey.PlatitudeAgree -> random.nextInt(a / 10))
+          ),
+          VoteKey.Disagree -> Tuple2(
+            d,
+            Map(
+              QualificationKey.NoWay -> random.nextInt(d),
+              QualificationKey.PlatitudeDisagree -> random.nextInt(d / 10)
+            )
+          ),
+          VoteKey.Neutral -> Tuple2(n, Map(QualificationKey.DoNotCare -> random.nextInt(n)))
+        )
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(testedProposals, 10)
+      chosen.length should be(10)
+
+      Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(1 / 3.0)
+    }
   }
 }
