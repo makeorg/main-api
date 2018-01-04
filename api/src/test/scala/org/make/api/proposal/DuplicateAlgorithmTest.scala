@@ -10,11 +10,17 @@ class DuplicateAlgorithmTest extends MakeTest {
 
   feature("take a single proposal from each cluster") {
     scenario("when proposals list is empty") {
+      Given("A empty list of proposals")
+      When("An user wants to get a list of unique ideas")
+      Then("the returned list should be empty")
       val chosenProposals = DuplicateAlgorithm.getUniqueIdeas(proposals = Seq.empty)
       chosenProposals should be(Seq.empty)
     }
 
     scenario("when proposal list is not empty") {
+      Given("A list of proposals")
+      When("An user wants to get a list of unique ideas")
+      Then("the returned list should contains only one proposal per idea")
       val proposals = Seq(
         Proposal(
           proposalId = ProposalId("1"),
@@ -74,6 +80,9 @@ class DuplicateAlgorithmTest extends MakeTest {
   }
 
   scenario("when ideas are null") {
+    Given("A list of proposals with no idea assigned")
+    When("An user wants to get a list of unique ideas")
+    Then("the returned list should be empy")
     val proposals = Seq(
       Proposal(
         proposalId = ProposalId("1"),
@@ -132,7 +141,13 @@ class DuplicateAlgorithmTest extends MakeTest {
   }
 
   feature("get duplicates for a given proposal") {
+
+    /* Todo: this test is not implemented */
     scenario("given a target and a list of candidates") {
+      Given("A list of proposals")
+      When("An user wants to get a list of suggested proposals")
+      Then("the returned list shoud be a sorted list of matching proposals")
+
       val proposals = Seq(
         Proposal(
           proposalId = ProposalId("1"),
