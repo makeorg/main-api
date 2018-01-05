@@ -10,10 +10,12 @@ import org.make.semantic.text.model.duplicate.{DuplicateDetector, SimilarDocResu
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+case class DuplicateResult(proposal: Proposal, score: Double)
+
 object DuplicateAlgorithm {
-  private val duplicateDetector: DuplicateDetector[Proposal] =
+  val duplicateDetector: DuplicateDetector[Proposal] =
     new DuplicateDetector(lang = "fr", decisionThreshold = 0.0) // Currently do not have notion of multiple languages
-  private val featureExtractor: FeatureExtractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption))))
+  val featureExtractor: FeatureExtractor = new FeatureExtractor(Seq((WordVecFT, Some(WordVecOption))))
 
   def getModelName: String = duplicateDetector.getClass.getSimpleName
 
@@ -28,32 +30,20 @@ object DuplicateAlgorithm {
   def getDuplicates(indexedProposal: IndexedProposal,
                     potentialIndexedCandidates: Seq[IndexedProposal],
                     getEventSourceProposalById: ProposalId => Future[Option[Proposal]],
-                    maxResults: Int): Future[(Seq[IndexedProposal], Seq[Double])] = {
+                    maxResults: Int): Future[Seq[DuplicateResult]] = {
 
     getEventSourceProposalById(indexedProposal.id).flatMap {
       case Some(targetProposal) =>
         Future.traverse(potentialIndexedCandidates.map(_.id))(getEventSourceProposalById).map {
           maybePotentialCandidates =>
             val potentialCandidates = maybePotentialCandidates.flatten
-            val duplicateResults: Seq[SimilarDocResult[Proposal]] = getPredictedDuplicateResults(
+            val duplicateResults: Seq[DuplicateResult] = getPredictedDuplicateResults(
               target = targetProposal,
               candidates = potentialCandidates,
               maxResults = 100000 // filtering is done after removing duplicate ideas
-            )
+            ).map(similarDoc => DuplicateResult(similarDoc.candidateDoc.document.meta.get, similarDoc.score))
 
-            val uniqueDuplicateIdeas: Seq[ProposalId] =
-              getUniqueIdeas(duplicateResults.flatMap(_.candidateDoc.document.meta)).take(maxResults)
-
-            (
-              uniqueDuplicateIdeas.flatMap(proposalId => potentialIndexedCandidates.find(_.id == proposalId)),
-              uniqueDuplicateIdeas
-                .flatMap(
-                  proposalId =>
-                    duplicateResults
-                      .find(result => result.candidateDoc.document.meta.getOrElse(ProposalId("NotFound")) == proposalId)
-                )
-                .map(_.score)
-            )
+            getUniqueDuplicateIdeas(duplicateResults).take(maxResults)
         }
       case _ => Future.failed(new IllegalArgumentException(s"Target proposal not found by id: ${indexedProposal.id}"))
     }
@@ -84,19 +74,26 @@ object DuplicateAlgorithm {
 
   /**
     * Get only proposals that are not similar to each other
-    * @param proposals list of proposals
+    * @param duplicates list of proposals
     * @param chosen set of chosen proposal ids
     * @return set of final chosen proposal ids
     */
-  def getUniqueIdeas(proposals: Seq[Proposal], chosen: Seq[ProposalId] = Seq.empty): Seq[ProposalId] = {
-    if (proposals.isEmpty) {
+  def getUniqueDuplicateIdeas(duplicates: Seq[DuplicateResult],
+                              chosen: Seq[DuplicateResult] = Seq.empty): Seq[DuplicateResult] = {
+    if (duplicates.isEmpty) {
       chosen.reverse
     } else {
-      val nextProposal = proposals.head
-      val excludeSet = Set(nextProposal.proposalId) ++ nextProposal.similarProposals.toSet
-      getUniqueIdeas(chosen = chosen ++ Set(nextProposal.proposalId), proposals = proposals.filter { p =>
-        !excludeSet.contains(p.proposalId)
-      })
+      val nextDuplicate: DuplicateResult = duplicates.head
+      nextDuplicate.proposal.idea match {
+        case Some(_) =>
+          getUniqueDuplicateIdeas(chosen = chosen ++ Set(nextDuplicate), duplicates = duplicates.filter { p =>
+            p.proposal.idea != nextDuplicate.proposal.idea
+          })
+        case None =>
+          getUniqueDuplicateIdeas(chosen = chosen, duplicates = duplicates.filter { p =>
+            p != nextDuplicate
+          })
+      }
     }
   }
 

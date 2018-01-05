@@ -21,7 +21,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 
@@ -29,9 +29,10 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-class ProposalApiTest
+class ModerationProposalApiTest
     extends MakeApiTestUtils
     with ProposalApi
+    with ModerationProposalApi
     with IdeaServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
@@ -171,6 +172,83 @@ class ProposalApiTest
       .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Option[ThemeId]])
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+
+  when(
+    proposalService
+      .validateProposal(matches(ProposalId("nop")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+  ).thenReturn(Future.failed(ValidationFailedError(Seq())))
+
+  when(
+    proposalService
+      .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+
+  when(
+    proposalService
+      .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
+  ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
+
+  when(
+    proposalService
+      .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
+  ).thenReturn(Future.successful(Some(tyrion.userId)))
+
+  when(
+    proposalService
+      .getModerationProposalById(matches(ProposalId("sim-123")))
+  ).thenReturn(
+    Future.successful(
+      Some(
+        ProposalResponse(
+          proposalId = ProposalId("sim-123"),
+          slug = "a-song-of-fire-and-ice",
+          content = "A song of fire and ice",
+          author = UserResponse(
+            UserId("Georges RR Martin"),
+            email = "g@rr.martin",
+            firstName = Some("Georges"),
+            lastName = Some("Martin"),
+            enabled = true,
+            verified = true,
+            lastConnection = DateHelper.now(),
+            roles = Seq.empty,
+            None
+          ),
+          labels = Seq(),
+          theme = None,
+          status = Accepted,
+          tags = Seq(),
+          votes = Seq(
+            Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+            Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+            Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+          ),
+          context = RequestContext.empty,
+          createdAt = Some(DateHelper.now()),
+          updatedAt = Some(DateHelper.now()),
+          events = Nil,
+          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
+          idea = None,
+          ideaProposals = Seq.empty
+        )
+      )
+    )
+  )
+
   val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
@@ -234,73 +312,150 @@ class ProposalApiTest
   when(ideaService.fetchOne(any[IdeaId]))
     .thenReturn(Future.successful(Some(Idea(IdeaId("foo"), "Foo", None, None, None, None))))
 
-  val routes: Route = sealRoute(proposalRoutes)
+  when(proposalService.getDuplicates(any[UserId], matches(ProposalId("123456")), any[RequestContext]))
+    .thenReturn(
+      Future.successful(
+        Seq(
+          DuplicateResponse(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
+          DuplicateResponse(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
+        )
+      )
+    )
 
-  feature("proposing") {
-    scenario("unauthenticated proposal") {
-      Given("an un authenticated user")
-      When("the user wants to propose")
-      Then("he should get an unauthorized (401) return code")
-      Post("/proposals").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+  val routes: Route = sealRoute(moderationProposalRoutes)
+
+  feature("proposal validation") {
+    scenario("unauthenticated validation") {
+      Post("/moderation/proposals/123456/accept") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated proposal") {
-      Given("an authenticated user")
-      When("the user wants to propose")
-      Then("the proposal should be saved if valid")
-
-      Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText"}"""))
+    scenario("validation with user role") {
+      Post("/moderation/proposals/123456/accept")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
+        status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("invalid proposal due to max length") {
-      Given("an authenticated user")
-      When("the user wants to propose a long proposal")
-      Then("the proposal should be rejected if invalid")
+    scenario("validation with moderation role") {
 
-      Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMaxLengthProposalText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "content")
-        contentError should be(Some(ValidationError("content", Some("content should not be longer than 140"))))
+      Post("/moderation/proposals/123456/accept")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
       }
     }
 
-    scenario("invalid proposal due to min length") {
-      Given("an authenticated user")
-      When("the user wants to propose a short proposal")
-      Then("the proposal should be rejected if invalid")
+    scenario("validation with admin role") {
+      Post("/moderation/proposals/987654/accept")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
 
-      Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMinLengthProposalText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+    scenario("validation of non existing with admin role") {
+      Post("/moderation/proposals/nop/accept")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "content")
-        contentError should be(Some(ValidationError("content", Some("content should not be shorter than 12"))))
+      }
+    }
+
+    // Todo: implement this test
+    scenario("validation of proposal without Tag: this test should be done") {}
+  }
+
+  feature("proposal refuse") {
+    scenario("unauthenticated refuse") {
+      Post("/moderation/proposals/123456/refuse") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("refuse with user role") {
+      Post("/moderation/proposals/123456/refuse")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("refusing with moderation role") {
+      Post("/moderation/proposals/123456/refuse")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("refusing with admin role") {
+      Post("/moderation/proposals/987654/refuse")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    // Todo: implement this test
+    scenario("refusing proposal without reason with admin role: this test should be done") {}
+  }
+
+  // Todo: implement this test suite. Test the behaviour of the service.
+  feature("get proposal for moderation") {
+    scenario("moderator get proposal by id") {
+      Get("/moderation/proposals/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val proposalResponse: ProposalResponse = entityAs[ProposalResponse]
+        proposalResponse.similarProposals.length should be(2)
+        proposalResponse.similarProposals should be(Seq(ProposalId("sim-456"), ProposalId("sim-789")))
+      }
+    }
+
+    scenario("get new proposal without history") {}
+    scenario("get validated proposal gives history with moderator") {}
+  }
+
+  feature("lock proposal") {
+    scenario("moderator can lock an unlocked proposal") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("moderator can expand the time a proposal is locked by itself") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("user cannot lock an unlocked proposal") {
+      Post("/moderation/proposals/123456/lock")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
       }
     }
   }
 
-  feature("search proposal from front") {
-    scenario("search and get results + total") {
-      Post("/proposals/search")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-                  | "content": "faut",
-                  | "limit": 10,
-                  | "skip": 0
-                  |}""".stripMargin)) ~> routes ~> check {
+  feature("get duplicates") {
+    scenario("moderator can fetch duplicate ideas") {
+      Get("/moderation/proposals/123456/duplicates")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val proposalResults: ProposalsResultResponse = entityAs[ProposalsResultResponse]
-        proposalResults.total should be(1)
-        proposalResults.results should be(Seq(proposalResult))
+        val results: Seq[DuplicateResponse] = entityAs[Seq[DuplicateResponse]]
+        results.length should be(2)
+        results(0).ideaId should be(IdeaId("Idea 1"))
+        results(1).ideaName should be("Idea Two")
+        results(0).score should be(1.23456)
+        results(1).proposalId should be(ProposalId("Proposal 2"))
+        results(0).proposalContent should be("Proposal One")
       }
     }
   }
