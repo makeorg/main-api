@@ -1,0 +1,17 @@
+{
+  "slug": "${operationSlug}",
+  "translations": [
+    {
+      "title": "${operationTitle}",
+      "language": "fr"
+    }
+  ],
+  "defaultLanguage": "fr",
+  "sequenceLandingId": "${sequenceId}",
+  "countriesConfiguration": [
+    {
+      "countryCode": "FR",
+      "tagIds": []
+    }
+  ]
+}
