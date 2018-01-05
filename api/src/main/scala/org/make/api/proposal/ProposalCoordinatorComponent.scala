@@ -5,6 +5,7 @@ import akka.pattern.{ask, AskTimeoutException}
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.ActorTimeoutException
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.TagId
 import org.make.core.user.UserId
@@ -55,6 +56,7 @@ trait ProposalCoordinatorService {
   def lock(command: LockProposalCommand): Future[Option[UserId]]
   def updateDuplicates(command: UpdateDuplicatedProposalsCommand): Unit
   def patch(command: PatchProposalCommand): Future[Option[Proposal]]
+  def setOperationIdFromContext(proposalId: ProposalId): Unit
 
 }
 
@@ -68,6 +70,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
   override lazy val proposalCoordinatorService: ProposalCoordinatorService = new ProposalCoordinatorService {
 
     implicit val timeout: Timeout = Timeout(3.seconds)
+
     def recover[T](command: Any): PartialFunction[Throwable, Future[T]] = {
       case e: AskTimeoutException => Future.failed(ActorTimeoutException(command, e))
       case other                  => Future.failed(other)
@@ -219,5 +222,16 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
     override def patch(command: PatchProposalCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command).mapTo[Option[Proposal]]
     }
+
+    override def setOperationIdFromContext(proposalId: ProposalId): Unit = {
+      getProposal(proposalId).onComplete {
+        case Success(Some(proposal)) =>
+          val modifiedProposal = proposal.copy(operation = proposal.creationContext.operation.map(OperationId(_)))
+          proposalCoordinator ! ReplaceProposalCommand(proposalId = proposalId, proposal = modifiedProposal)
+        case Failure(e) => logger.error("", e)
+        case _          =>
+      }
+    }
   }
+
 }

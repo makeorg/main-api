@@ -4,13 +4,15 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
@@ -30,7 +32,10 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeSettingsComponent
     with ThemeServiceComponent
     with TagServiceComponent
-    with OperationServiceComponent =>
+    with OperationServiceComponent
+    with SequenceCoordinatorServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent =>
 
   @ApiOperation(
     value = "moderation-get-sequence",
@@ -419,8 +424,39 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                   complete(sequences)
                 }
               }
-
             }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "update-sequences-operation",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @Path(value = "/moderation/sequences/migrate-operation")
+  def migrateSequenceOperation: Route = post {
+    path("moderation" / "sequences" / "migrate-operation") {
+      makeTrace("update sequence operation") { _ =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+            readJournal
+              .currentPersistenceIds()
+              .runForeach(id => sequenceCoordinatorService.setOperationIdFromContext(SequenceId(id)))
+
+            complete(StatusCodes.NoContent)
           }
         }
       }
@@ -434,7 +470,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       startSequenceBySlug ~
       postAddProposalSequence ~
       postRemoveProposalSequence ~
-      patchSequence
+      patchSequence ~
+      migrateSequenceOperation
 
   val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
   val sequenceSlug: PathMatcher1[String] = Segment

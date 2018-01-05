@@ -5,6 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.core.RequestContext
+import org.make.core.operation.OperationId
 import org.make.core.reference.TagId
 import org.make.core.sequence._
 
@@ -41,6 +42,7 @@ trait SequenceCoordinatorService {
   def removeProposals(command: RemoveProposalsSequenceCommand): Future[Option[Sequence]]
   def addProposals(command: AddProposalsSequenceCommand): Future[Option[Sequence]]
   def updateSequenceTag(sequenceId: SequenceId, oldTag: TagId, newTag: TagId): Unit
+  def setOperationIdFromContext(sequenceId: SequenceId): Unit
   // toDo:
   // def publish(command: PublishSequenceCommand): Future[Option[Sequence]]
   // def unpublish(command: UnpublishSequenceCommand): Future[Option[Sequence]]
@@ -53,7 +55,7 @@ trait SequenceCoordinatorServiceComponent {
 trait DefaultSequenceCoordinatorServiceComponent extends SequenceCoordinatorServiceComponent with StrictLogging {
   self: SequenceCoordinatorComponent =>
 
-  override def sequenceCoordinatorService: SequenceCoordinatorService = new SequenceCoordinatorService {
+  override lazy val sequenceCoordinatorService: SequenceCoordinatorService = new SequenceCoordinatorService {
 
     implicit val timeout: Timeout = Timeout(3.seconds)
 
@@ -93,6 +95,16 @@ trait DefaultSequenceCoordinatorServiceComponent extends SequenceCoordinatorServ
         case _          =>
       }
 
+    }
+
+    override def setOperationIdFromContext(sequenceId: SequenceId): Unit = {
+      getSequence(sequenceId).onComplete {
+        case Success(Some(sequence)) =>
+          val modifiedSequence = sequence.copy(operationId = sequence.creationContext.operation.map(OperationId(_)))
+          sequenceCoordinator ! PatchSequenceCommand(sequenceId = sequenceId, sequence = modifiedSequence)
+        case Failure(e) => logger.error("", e)
+        case _          =>
+      }
     }
 
   }
