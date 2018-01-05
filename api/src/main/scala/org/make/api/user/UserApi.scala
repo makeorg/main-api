@@ -385,13 +385,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
               )
             )
             logger.debug(s"Subscribe newsletter request: ${httpRequest.toString}")
+            implicit val meterializer: ActorMaterializer = ActorMaterializer()(actorSystem)
             val futureHttpResponse: Future[HttpResponse] =
-              Http(actorSystem).singleRequest(httpRequest)(ActorMaterializer()(actorSystem))
+              Http(actorSystem).singleRequest(httpRequest)
 
             onSuccess(futureHttpResponse) { httpResponse =>
               httpResponse.status match {
                 case StatusCodes.OK => complete(StatusCodes.NoContent)
-                case status         => complete(StatusCodes.ServiceUnavailable)
+                case _              => complete(StatusCodes.ServiceUnavailable)
               }
             }
           }
