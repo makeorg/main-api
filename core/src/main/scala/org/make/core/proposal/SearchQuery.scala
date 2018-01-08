@@ -123,7 +123,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.theme match {
         case Some(ThemeSearchFilter(Seq(themeId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId))
+          Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.themeId, themeId))
         case Some(ThemeSearchFilter(themeIds)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themeIds))
         case _ => None
@@ -258,7 +258,7 @@ object SearchFilters extends ElasticDsl {
     val query: Option[QueryDefinition] = searchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(proposalStatus)) =>
-          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
+          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
         case StatusSearchFilter(proposalStatuses) =>
           ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.shortName))
       }

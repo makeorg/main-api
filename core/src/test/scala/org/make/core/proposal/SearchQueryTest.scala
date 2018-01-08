@@ -67,7 +67,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       Given("a searchFilter")
       When("call buildThemeSearchFilter with SearchQuery")
       val themeSearchFilterResult = SearchFilters.buildThemeSearchFilter(searchQuery)
-      themeSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeValue))
+      themeSearchFilterResult shouldBe Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.themeId, themeValue))
     }
 
     scenario("build TagsSearchFilter from Search filter") {
@@ -114,7 +114,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       When("call buildStatusSearchFilter with SearchQuery")
       val statusSearchFilterResult = SearchFilters.buildStatusSearchFilter(searchQuery)
       statusSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
+        ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
       )
     }
     scenario("build SlugSearchFilter from Search filter") {
