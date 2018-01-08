@@ -1,6 +1,6 @@
 package org.make.api
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
@@ -9,6 +9,7 @@ import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
+import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -26,7 +27,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
   Kamon.addReporter(new PrometheusReporter())
   SystemMetrics.startCollecting()
 
-  override implicit val actorSystem: ActorSystem = ActorSystem.apply("make-api")
+  override implicit val actorSystem: ExtendedActorSystem =
+    ActorSystem.apply("make-api").asInstanceOf[ExtendedActorSystem]
 
   actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)
@@ -39,6 +41,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
     ),
     MakeGuardian.name
   )
+  actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
+  actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
