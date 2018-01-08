@@ -245,7 +245,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
       }).map(_.filter { persistentUser =>
-        password.isBcrypted(persistentUser.hashedPassword)
+        persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword)
       })
 
       futurePersistentUser.map(_.map(_.toUser))
