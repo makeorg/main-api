@@ -45,6 +45,7 @@ trait SimulationConfig {
   val proposalFeederPath: String = getRequiredString("feeder.proposals")
   val vffUserFeederPath: String = getRequiredString("feeder.users-vff")
   val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
+  val cpProposalFeederPath: String = getRequiredString("feeder.proposals-cp")
   val ideaProposalFeederPath: String = getRequiredString("feeder.idea-proposal")
 
   val defaultUserAgent =
