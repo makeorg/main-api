@@ -25,21 +25,23 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>
         Future.traverse(themes) { theme =>
-          elasticsearchProposalAPI
+          val maybeProposalsCount = elasticsearchProposalAPI
             .countProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
             )
-            .map { count =>
-              theme.copy(proposalsCount = count)
-            }
 
-          elasticsearchProposalAPI
+          val maybeVotesCount = elasticsearchProposalAPI
             .countVotedProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
             )
-            .map { votesCount =>
-              theme.copy(votesCount = votesCount)
-            }
+
+          for {
+            proposalsCount <- maybeProposalsCount
+            votesCount <- maybeVotesCount
+
+          } yield
+            theme.copy(proposalsCount = proposalsCount, votesCount = votesCount)
+
         }
       }
     }
