@@ -507,7 +507,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             case None =>
               DuplicateResponse(
-                IdeaId("Not found"),
+                ideaId,
                 "Not found",
                 duplicateResult.proposal.proposalId,
                 duplicateResult.proposal.content,

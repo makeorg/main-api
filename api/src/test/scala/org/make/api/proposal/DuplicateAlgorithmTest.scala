@@ -164,7 +164,6 @@ class DuplicateAlgorithmTest extends MakeTest {
 
   feature("get duplicates for a given proposal") {
 
-    /* Todo: this test is not implemented */
     scenario("given a target and a list of candidates") {
       Given("A list of proposals")
       When("An user wants to get a list of suggested proposals")
