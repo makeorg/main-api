@@ -493,7 +493,8 @@ case class RegisterUserRequest(email: String,
     mandatoryField("email", email),
     validateEmail("email", email),
     mandatoryField("password", password),
-    validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters")
+    validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters"),
+    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
   )
 }
 
