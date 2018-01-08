@@ -9,7 +9,7 @@ import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
-import org.make.api.technical.ClusterShardingMonitor
+import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -42,6 +42,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
     MakeGuardian.name
   )
   actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
+  actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
