@@ -122,8 +122,6 @@ class PersistentOperationServiceIT
       whenReady(futureOperations, Timeout(3.seconds)) { operations =>
         Then("operations should be an instance of Seq[Operation]")
         operations shouldBe a[Seq[_]]
-        And("operations size should be 1")
-        operations.size should be(1)
         And(s"operations should contain operation with operationId ${operationId.value}")
         val operation: Operation = operations.filter(_.operationId.value == operationId.value).head
         And("operation should be an instance of Operation")

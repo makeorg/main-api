@@ -1,6 +1,5 @@
 package org.make.migrations
 
-
 import io.gatling.core.Predef._
 import io.gatling.core.scenario.Simulation
 import io.gatling.core.structure.ScenarioBuilder
@@ -11,7 +10,7 @@ import org.make.fixtures.{MakeServicesBuilder, UserChainBuilder}
 
 import scala.concurrent.duration.DurationInt
 
-class InitOperations extends Simulation{
+class InitOperations extends Simulation {
   val maxClients = 1
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
@@ -25,36 +24,42 @@ class InitOperations extends Simulation{
     .header("x-make-question", "")
     .disableCaching
 
-  val vffScenario: ScenarioBuilder = scenario("create Vff operation")
+  val vffScenario: ScenarioBuilder = scenario("update Vff operation")
     .exec(UserChainBuilder.authenticateAsAdmin)
     .exec(
       MakeServicesBuilder.searchSequenceBuilder
-        .body(StringBody("""{"tagIds": [], "themeIds": [], "slug": "comment-lutter-contre-les-violences-faites-aux-femmes", "sorts": []}"""))
+        .body(
+          StringBody(
+            """{"tagIds": [], "themeIds": [], "slug": "comment-lutter-contre-les-violences-faites-aux-femmes", "sorts": []}"""
+          )
+        )
         .asJSON
         .check(jsonPath("$.results[0].id").saveAs("sequenceId"))
-
     )
     .exec(session => {
       session
         .set("operationTitle", "Stop aux violences faites aux femmes")
-        .set("operationSlug", "vff")
+        .set("operationId", "vff")
 
     })
     .exec(
-      MakeServicesBuilder.createOperationBuilder
-        .body(ElFileBody("jsonModel/createOperation.json"))
+      MakeServicesBuilder.updateOperationBuilder
+        .body(ElFileBody("jsonModel/updateOperation.json"))
         .asJSON
-        .check(status.is(201))
+        .check(status.is(200))
     )
 
   val climatParisScenario: ScenarioBuilder = scenario("create Climat Paris operation")
     .exec(UserChainBuilder.authenticateAsAdmin)
     .exec(
       MakeServicesBuilder.createSequenceBuilder
-        .body(StringBody("""{"title": "Comment lutter contre le changement climatique à Paris ?", "themeIds": [], "tagIds": [], "searchable": false}"""))
+        .body(
+          StringBody(
+            """{"title": "Comment lutter contre le changement climatique à Paris ?", "themeIds": [], "tagIds": [], "searchable": false}"""
+          )
+        )
         .asJSON
         .check(jsonPath("$.sequenceId").saveAs("sequenceId"))
-
     )
     .exec(session => {
       session

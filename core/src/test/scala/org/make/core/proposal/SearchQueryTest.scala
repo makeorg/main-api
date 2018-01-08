@@ -101,7 +101,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       val operationSearchFilterResult = SearchFilters.buildOperationSearchFilter(searchQuery)
       Then("result is a matchQuery")
       operationSearchFilterResult shouldBe Some(
-        ElasticApi.matchQuery(ProposalElasticsearchFieldNames.operationId, operationValue)
+        ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationValue)
       )
     }
 
@@ -138,9 +138,10 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       val statusSearchFilterResult = SearchFilters.buildStatusSearchFilter(searchQuery)
       Then("result is a termQuery")
       statusSearchFilterResult shouldBe Some(
-        ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
+        ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
       )
     }
+
     scenario("build SlugSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildSlugSearchFilter with SearchQuery")
