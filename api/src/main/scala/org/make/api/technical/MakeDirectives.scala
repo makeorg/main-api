@@ -102,6 +102,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         sessionId = SessionId(sessionId),
         externalId = externalId,
         operationId = maybeOperation.map(OperationId(_)),
+        operation = maybeOperation,
         source = maybeSource,
         location = maybeLocation,
         question = maybeQuestion,

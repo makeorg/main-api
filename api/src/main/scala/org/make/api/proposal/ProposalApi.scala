@@ -7,6 +7,7 @@ import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.theme.ThemeServiceComponent
@@ -16,6 +17,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.{DateHelper, HttpCodes}
 
+import scala.concurrent.Future
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
@@ -27,7 +29,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with OperationServiceComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -116,18 +119,21 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                 provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                  onSuccess(
-                    proposalService
-                      .propose(
-                        user = user,
-                        requestContext = requestContext,
-                        createdAt = DateHelper.now(),
-                        content = request.content,
-                        operation = request.operationId,
-                        theme = requestContext.currentTheme
-                      )
-                  ) { proposalId =>
-                    complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
+                  provideAsync(request.operationId.map(operationService.findOne(_)).getOrElse(Future.successful(None))) {
+                    operation =>
+                      onSuccess(
+                        proposalService
+                          .propose(
+                            user = user,
+                            requestContext = requestContext,
+                            createdAt = DateHelper.now(),
+                            content = request.content,
+                            operation = operation.map(_.operationId),
+                            theme = requestContext.currentTheme
+                          )
+                      ) { proposalId =>
+                        complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
+                      }
                   }
                 }
               }

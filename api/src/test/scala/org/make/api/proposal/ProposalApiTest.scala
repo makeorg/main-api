@@ -10,6 +10,7 @@ import io.circe.syntax._
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -39,7 +40,8 @@ class ProposalApiTest
     with ProposalServiceComponent
     with MakeSettingsComponent
     with UserServiceComponent
-    with ThemeServiceComponent {
+    with ThemeServiceComponent
+    with OperationServiceComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
@@ -60,6 +62,7 @@ class ProposalApiTest
   override val userService: UserService = mock[UserService]
   override val themeService: ThemeService = mock[ThemeService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val operationService: OperationService = mock[OperationService]
 
   private val john = User(
     userId = UserId("my-user-id"),

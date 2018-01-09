@@ -940,7 +940,7 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation
+        operation = event.operation.orElse(state.proposal.creationContext.operationId)
       )
 
     proposal = event.edition match {
@@ -980,7 +980,7 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation
+        operation = event.operation.orElse(state.proposal.creationContext.operationId)
       )
 
     proposal = event.edition match {

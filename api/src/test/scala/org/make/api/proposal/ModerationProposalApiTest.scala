@@ -11,6 +11,7 @@ import io.circe.syntax._
 import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -42,6 +43,7 @@ class ModerationProposalApiTest
     with MakeSettingsComponent
     with UserServiceComponent
     with ThemeServiceComponent
+    with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent
     with ActorSystemComponent {
@@ -64,6 +66,7 @@ class ModerationProposalApiTest
 
   override val userService: UserService = mock[UserService]
   override val themeService: ThemeService = mock[ThemeService]
+  override val operationService: OperationService = mock[OperationService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val actorSystem: ActorSystem = mock[ActorSystem]
