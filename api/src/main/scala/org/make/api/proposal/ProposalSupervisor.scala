@@ -2,7 +2,7 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
-import org.make.api.sequence.SequenceService
+import org.make.api.operation.OperationService
 import org.make.api.tag.TagService
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
@@ -11,7 +11,8 @@ class ProposalSupervisor(userService: UserService,
                          userHistoryCoordinator: ActorRef,
                          sessionHistoryCoordinator: ActorRef,
                          tagService: TagService,
-                         sequenceService: SequenceService)
+                         sequenceCoordinator: ActorRef,
+                         operationService: OperationService)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -22,7 +23,12 @@ class ProposalSupervisor(userService: UserService,
     context.watch(
       context.actorOf(
         ProposalCoordinator
-          .props(userHistoryActor = userHistoryCoordinator, sessionHistoryActor = sessionHistoryCoordinator),
+          .props(
+            userHistoryActor = userHistoryCoordinator,
+            sessionHistoryActor = sessionHistoryCoordinator,
+            sequenceActor = sequenceCoordinator,
+            operationService = operationService
+          ),
         ProposalCoordinator.name
       )
     )
@@ -53,7 +59,7 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalConsumerActor.props(proposalCoordinatorService, userService, tagService, sequenceService),
+        ProposalConsumerActor.props(proposalCoordinatorService, userService, tagService),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)
@@ -73,14 +79,16 @@ object ProposalSupervisor {
             userHistoryCoordinator: ActorRef,
             sessionHistoryCoordinator: ActorRef,
             tagService: TagService,
-            sequenceService: SequenceService): Props =
+            sequenceCoordinator: ActorRef,
+            operationService: OperationService): Props =
     Props(
       new ProposalSupervisor(
         userService,
         userHistoryCoordinator,
         sessionHistoryCoordinator,
         tagService,
-        sequenceService
+        sequenceCoordinator,
+        operationService
       )
     )
 }

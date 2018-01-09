@@ -147,7 +147,8 @@ class ModerationProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king"))
+    idea = Some(IdeaId("becoming-king")),
+    operation = None
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =

@@ -1,8 +1,9 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
+import org.make.api.operation.OperationService
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.{SequenceService, SequenceSupervisor}
+import org.make.api.sequence.SequenceSupervisor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -14,7 +15,7 @@ import org.make.api.userhistory.UserHistoryCoordinator
 class MakeGuardian(userService: UserService,
                    tagService: TagService,
                    themeService: ThemeService,
-                   sequenceService: SequenceService)
+                   operationService: OperationService)
     extends Actor
     with ActorLogging {
 
@@ -39,20 +40,27 @@ class MakeGuardian(userService: UserService,
       context.actorOf(props, name)
     }
 
-    context.watch(
-      context.actorOf(
-        ProposalSupervisor
-          .props(userService, userHistoryCoordinator, sessionHistoryCoordinator, tagService, sequenceService),
-        ProposalSupervisor.name
-      )
-    )
-    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
-    context.watch(
+    val sequenceCoordinator = context.watch(
       context.actorOf(
         SequenceSupervisor.props(userService, userHistoryCoordinator, tagService, themeService),
         SequenceSupervisor.name
       )
     )
+    context.watch(
+      context.actorOf(
+        ProposalSupervisor
+          .props(
+            userService,
+            userHistoryCoordinator,
+            sessionHistoryCoordinator,
+            tagService,
+            sequenceCoordinator,
+            operationService
+          ),
+        ProposalSupervisor.name
+      )
+    )
+    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
@@ -76,6 +84,6 @@ object MakeGuardian {
   def props(userService: UserService,
             tagService: TagService,
             themeService: ThemeService,
-            sequenceService: SequenceService): Props =
-    Props(new MakeGuardian(userService, tagService, themeService, sequenceService))
+            operationService: OperationService): Props =
+    Props(new MakeGuardian(userService, tagService, themeService, operationService))
 }

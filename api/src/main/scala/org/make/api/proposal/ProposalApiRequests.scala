@@ -30,7 +30,8 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId]) {
+                                       idea: Option[IdeaId],
+                                       operation: Option[OperationId]) {
   validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
@@ -44,7 +45,8 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
                                          similarProposals: Seq[ProposalId],
-                                         idea: Option[IdeaId]) {
+                                         idea: Option[IdeaId],
+                                         operation: Option[OperationId]) {
   validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
@@ -178,7 +180,8 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       status: Option[ProposalStatus] = None,
                                       refusalReason: Option[String] = None,
                                       tags: Option[Seq[TagId]] = None,
-                                      creationContext: Option[PatchRequestContext] = None)
+                                      creationContext: Option[PatchRequestContext] = None,
+                                      operation: Option[OperationId] = None)
 
 object PatchProposalRequest {
   implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]

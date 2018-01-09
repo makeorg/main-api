@@ -349,7 +349,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           labels = request.labels,
           tags = request.tags,
           similarProposals = request.similarProposals,
-          idea = request.idea
+          idea = request.idea,
+          operation = request.operation
         )
       )
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
@@ -381,7 +382,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           labels = request.labels,
           tags = request.tags,
           similarProposals = request.similarProposals,
-          idea = request.idea
+          idea = request.idea,
+          operation = request.operation
         )
       )
 
