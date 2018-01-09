@@ -6,7 +6,7 @@ import org.make.api.DatabaseTest
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
+import com.github.t3hnar.bcrypt._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -72,6 +72,42 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastName = Some("Dee"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    verified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin),
+    profile = None
+  )
+
+  val passwordUser = User(
+    userId = UserId("4"),
+    email = "password@example.com",
+    firstName = Some("user-with"),
+    lastName = Some("Password"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("123456".bcrypt),
+    enabled = true,
+    verified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin),
+    profile = None
+  )
+
+  val socialUser = User(
+    userId = UserId("5"),
+    email = "social@example.com",
+    firstName = Some("Social"),
+    lastName = Some("User"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = None,
     enabled = true,
     verified = true,
     lastConnection = before,
@@ -206,6 +242,36 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(futureUserId, Timeout(3.seconds)) { result =>
         Then("result should be None")
         result shouldBe None
+      }
+    }
+  }
+
+  feature("checking user password (findByEmailAndPassword)") {
+    scenario("return valid user") {
+
+      whenReady(persistentUserService.persist(passwordUser), Timeout(3.seconds)) { user =>
+        whenReady(persistentUserService.findByEmailAndPassword(user.email, "123456"), Timeout(3.seconds)) { maybeUser =>
+          maybeUser.isDefined should be(true)
+          maybeUser.map(_.userId) should be(Some(user.userId))
+        }
+
+      }
+    }
+    scenario("return empty on invalid email") {
+      whenReady(
+        persistentUserService.findByEmailAndPassword("not-a-known-password@fake.org", "123456"),
+        Timeout(3.seconds)
+      ) { maybeUser =>
+        maybeUser should be(None)
+      }
+
+    }
+    scenario("return empty if password is null") {
+      whenReady(persistentUserService.persist(socialUser), Timeout(3.seconds)) { user =>
+        whenReady(persistentUserService.findByEmailAndPassword(user.email, "123456"), Timeout(3.seconds)) { maybeUser =>
+          maybeUser should be(None)
+        }
+
       }
     }
   }
