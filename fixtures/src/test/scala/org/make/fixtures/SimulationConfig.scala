@@ -95,6 +95,10 @@ object MakeServicesBuilder {
     .post("/moderation/operations")
     .header("Content-Type", "application/json")
 
+  val updateOperationBuilder: HttpRequestBuilder = http("PUT_operation")
+    .put("/moderation/operations/${operationId}")
+    .header("Content-Type", "application/json")
+
   val searchSequenceBuilder: HttpRequestBuilder = http("POST_search_sequence")
     .post("/moderation/sequences/search")
     .header("Content-Type", "application/json")

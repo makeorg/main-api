@@ -402,3 +402,8 @@ CREATE INDEX IF NOT EXISTS operation_action_operation_id_index ON operation_acti
 %
 CREATE INDEX IF NOT EXISTS operation_action_user_id_index ON make_user (uuid);
 %
+INSERT INTO operation
+    (uuid, status, slug, default_language)
+    VALUES
+    ('vff', 'Active', 'vff', 'fr')
+    ON CONFLICT (uuid) DO NOTHING

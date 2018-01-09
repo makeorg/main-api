@@ -152,7 +152,7 @@ object SearchFilters extends ElasticDsl {
     val operationFilter: Option[QueryDefinition] = for {
       filters   <- searchQuery.filters
       operation <- filters.operation
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId.value)
+    } yield ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId.value)
 
     operationFilter
   }
@@ -263,7 +263,7 @@ object SearchFilters extends ElasticDsl {
     val query: Option[QueryDefinition] = searchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(proposalStatus)) =>
-          ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
+          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
         case StatusSearchFilter(proposalStatuses) =>
           ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.shortName))
       }
@@ -271,7 +271,7 @@ object SearchFilters extends ElasticDsl {
 
     query match {
       case None =>
-        Some(ElasticApi.matchQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.shortName))
+        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.shortName))
       case _ => query
     }
   }

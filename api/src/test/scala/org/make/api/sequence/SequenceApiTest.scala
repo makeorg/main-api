@@ -3,15 +3,16 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 import java.util.Date
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
+import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
@@ -38,7 +39,10 @@ class SequenceApiTest
     with MakeSettingsComponent
     with ThemeServiceComponent
     with TagServiceComponent
-    with OperationServiceComponent {
+    with OperationServiceComponent
+    with SequenceCoordinatorServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -47,6 +51,9 @@ class SequenceApiTest
   override val themeService: ThemeService = mock[ThemeService]
   override val tagService: TagService = mock[TagService]
   override val operationService: OperationService = mock[OperationService]
+  override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
+  override val actorSystem: ActorSystem = mock[ActorSystem]
+  override val readJournal: ReadJournalComponent.MakeReadJournal = mock[ReadJournalComponent.MakeReadJournal]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]

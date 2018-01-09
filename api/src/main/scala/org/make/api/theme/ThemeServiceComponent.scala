@@ -32,7 +32,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
 
           val maybeVotesCount = elasticsearchProposalAPI
             .countVotedProposals(
-              SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId.value))))))
+              SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
           for {
