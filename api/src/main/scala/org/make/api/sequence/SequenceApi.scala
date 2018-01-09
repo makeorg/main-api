@@ -420,6 +420,45 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       includedProposals = includes.toSeq.map(ProposalId(_)),
                       requestContext = requestContext
                     )
+                ) { sequence =>
+                  complete(sequence)
+                }
+              }
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "start-sequence-by-id", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "id", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
+    )
+  )
+  @Path(value = "/sequences/start/{id}")
+  def startSequenceById: Route = {
+    get {
+      path("sequences" / "start" / sequenceId) { sequenceId =>
+        parameters('include.*) { (includes) =>
+          makeTrace("Search") { requestContext =>
+            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+              decodeRequest {
+                provideAsyncOrNotFound(
+                  sequenceService
+                    .startNewSequence(
+                      maybeUserId = userAuth.map(_.user.userId),
+                      sequenceId = sequenceId,
+                      includedProposals = includes.toSeq.map(ProposalId(_)),
+                      requestContext = requestContext
+                    )
                 ) { sequences =>
                   complete(sequences)
                 }
@@ -468,6 +507,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       postSequence ~
       searchAllSequences ~
       startSequenceBySlug ~
+      startSequenceById ~
       postAddProposalSequence ~
       postRemoveProposalSequence ~
       patchSequence ~

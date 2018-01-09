@@ -23,6 +23,7 @@ import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 
@@ -315,6 +316,34 @@ class SequenceApiTest
     )
   )
 
+  when(
+    sequenceService.startNewSequence(
+      any[Option[UserId]],
+      ArgumentMatchers.eq(SequenceId("start-sequence-by-id")),
+      any[Seq[ProposalId]],
+      any[RequestContext]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        SequenceResult(
+          id = SequenceId("start-sequence-by-id"),
+          title = "sequence search",
+          slug = "start-sequence-by-id",
+          proposals = Seq.empty
+        )
+      )
+    )
+  )
+  when(
+    sequenceService.startNewSequence(
+      any[Option[UserId]],
+      ArgumentMatchers.eq(SequenceId("non-existing-sequence")),
+      any[Seq[ProposalId]],
+      any[RequestContext]
+    )
+  ).thenReturn(Future.successful(None))
+
   feature("creating") {
     scenario("unauthenticated user") {
       Given("an un authenticated user")
@@ -506,6 +535,27 @@ class SequenceApiTest
       Get("/sequences/start-sequence")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("sequence start by id") {
+    scenario("unauthenticated user") {
+      Get("/sequences/start/start-sequence-by-id") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("valid request") {
+      Get("/sequences/start/start-sequence-by-id")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("non existing sequence") {
+      Get("/sequences/start/non-existing-sequence") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
       }
     }
   }
