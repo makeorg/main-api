@@ -14,7 +14,7 @@ import org.make.core.user.UserId
 
 import scala.util.Random
 
-final case class ProposeProposalRequest(content: String, operation: Option[OperationId]) {
+final case class ProposeProposalRequest(content: String, operationId: Option[OperationId]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = BusinessConfig.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))

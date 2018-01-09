@@ -826,7 +826,7 @@ class ProposalActor(userHistoryActor: ActorRef,
             updatedAt = None,
             content = e.content,
             status = ProposalStatus.Pending,
-            theme = if (e.theme.isEmpty) e.requestContext.currentTheme else e.theme,
+            theme = e.theme.orElse(e.requestContext.currentTheme),
             creationContext = e.requestContext,
             labels = Seq.empty,
             votes = Seq(
@@ -853,7 +853,7 @@ class ProposalActor(userHistoryActor: ActorRef,
               )
             ),
             similarProposals = Seq.empty,
-            operation = e.operation,
+            operation = e.operation.orElse(e.requestContext.operationId),
             events = List(
               ProposalAction(
                 date = e.eventDate,
