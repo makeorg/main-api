@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.circe.generic.semiauto._
 import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
@@ -25,6 +26,7 @@ final case class Proposal(proposalId: ProposalId,
                           creationContext: RequestContext,
                           similarProposals: Seq[ProposalId] = Seq.empty,
                           idea: Option[IdeaId] = None,
+                          operation: Option[OperationId] = None,
                           override val createdAt: Option[ZonedDateTime],
                           override val updatedAt: Option[ZonedDateTime],
                           events: List[ProposalAction])
@@ -33,7 +35,7 @@ final case class Proposal(proposalId: ProposalId,
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat16(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat17(Proposal.apply)
 
 }
 

@@ -54,7 +54,7 @@ class UserEmailConsumerActor(userService: UserService)
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val operation = event.requestContext.operation.getOrElse("core")
+        val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
 
@@ -73,7 +73,7 @@ class UserEmailConsumerActor(userService: UserService)
                 Map(
                   "firstname" -> user.firstName.getOrElse(""),
                   "registration_context" -> operation,
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")
@@ -91,7 +91,7 @@ class UserEmailConsumerActor(userService: UserService)
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val operation = event.requestContext.operation.getOrElse("core")
+        val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
 
@@ -114,7 +114,7 @@ class UserEmailConsumerActor(userService: UserService)
                 Map(
                   "firstname" -> user.firstName.getOrElse(""),
                   "email_validation_url" -> url,
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")
@@ -132,7 +132,7 @@ class UserEmailConsumerActor(userService: UserService)
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val operation = event.requestContext.operation.getOrElse("core")
+        val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
 
@@ -155,7 +155,7 @@ class UserEmailConsumerActor(userService: UserService)
                 Map(
                   "firstname" -> user.firstName.getOrElse(""),
                   "forgotten_password_url" -> url,
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")
@@ -178,7 +178,7 @@ class UserEmailConsumerActor(userService: UserService)
   private def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val operation = event.requestContext.operation.getOrElse("core")
+        val operation = event.requestContext.operationId.map(_.value).getOrElse("core")
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
 
@@ -200,7 +200,7 @@ class UserEmailConsumerActor(userService: UserService)
                 Map(
                   "firstname" -> user.firstName.getOrElse(""),
                   "email_validation_url" -> url,
-                  "operation" -> event.requestContext.operation.getOrElse(""),
+                  "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                   "question" -> event.requestContext.question.getOrElse(""),
                   "location" -> event.requestContext.location.getOrElse(""),
                   "source" -> event.requestContext.source.getOrElse("")

@@ -138,6 +138,10 @@
             }
           }
         },
+        "operationId": {
+          "type": "keyword",
+          "index": true
+        },
         "proposals": {
           "type": "object",
           "properties": {
@@ -314,6 +318,10 @@
           "index": false
         },
         "ideaId": {
+          "type": "keyword",
+          "index": true
+        },
+        "operationId": {
           "type": "keyword",
           "index": true
         }

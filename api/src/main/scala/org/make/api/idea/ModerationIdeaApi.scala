@@ -11,6 +11,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.reference.{Idea, IdeaId}
 import org.make.core.{HttpCodes, Validation}
 
@@ -51,7 +52,12 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val filters: IdeaFiltersRequest =
-                  IdeaFiltersRequest(language = language, country = country, operation = operation, question = question)
+                  IdeaFiltersRequest(
+                    language = language,
+                    country = country,
+                    operationId = operation.map(OperationId(_)),
+                    question = question
+                  )
                 provideAsync(ideaService.fetchAll(filters)) { ideas =>
                   complete(ideas)
                 }
@@ -132,7 +138,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                         name = request.name,
                         language = request.language.orElse(requestContext.language),
                         country = request.country.orElse(requestContext.country),
-                        operation = request.operation.orElse(requestContext.operation),
+                        operationId = request.operation.orElse(requestContext.operationId),
                         question = request.question.orElse(requestContext.question)
                       )
                   ) { idea =>
@@ -193,7 +199,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
 final case class CreateIdeaRequest(name: String,
                                    language: Option[String],
                                    country: Option[String],
-                                   operation: Option[String],
+                                   operation: Option[OperationId],
                                    question: Option[String])
 
 object CreateIdeaRequest {
@@ -208,7 +214,7 @@ object UpdateIdeaRequest {
 
 final case class IdeaFiltersRequest(language: Option[String],
                                     country: Option[String],
-                                    operation: Option[String],
+                                    operationId: Option[OperationId],
                                     question: Option[String])
 
 object IdeaFiltersRequest {

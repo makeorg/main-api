@@ -2,6 +2,7 @@ package org.make.api.idea
 
 import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
 import org.make.api.technical.ShortenedNames
+import org.make.core.operation.OperationId
 import org.make.core.reference._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,7 +19,7 @@ trait IdeaService extends ShortenedNames {
   def insert(name: String,
              language: Option[String],
              country: Option[String],
-             operation: Option[String],
+             operationId: Option[OperationId],
              question: Option[String]): Future[Idea]
   def update(ideaId: IdeaId, name: String): Future[Int]
 }
@@ -43,10 +44,10 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
     override def insert(name: String,
                         language: Option[String],
                         country: Option[String],
-                        operation: Option[String],
+                        operationId: Option[OperationId],
                         question: Option[String]): Future[Idea] = {
       val idea: Idea =
-        Idea(name = name, language = language, country = country, operation = operation, question = question)
+        Idea(name = name, language = language, country = country, question = question, operationId = operationId)
       persistentIdeaService.findOneByName(name).flatMap { result =>
         if (result.isDefined) {
           Future.failed(IdeaAlreadyExistsException(idea.name))

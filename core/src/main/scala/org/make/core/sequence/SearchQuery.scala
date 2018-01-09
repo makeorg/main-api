@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.Sort
+import org.make.core.operation.OperationId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.indexed.SequenceElasticsearchFieldNames
 import spray.json.DefaultJsonProtocol._
@@ -45,12 +46,13 @@ case class SearchFilters(tags: Option[TagsSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
                          searchable: Option[Boolean] = None,
-                         context: Option[ContextSearchFilter] = None)
+                         context: Option[ContextSearchFilter] = None,
+                         operationId: Option[OperationSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat7(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat8(SearchFilters.apply)
 
   def parse(tags: Option[TagsSearchFilter] = None,
             themes: Option[ThemesSearchFilter] = None,
@@ -58,11 +60,12 @@ object SearchFilters extends ElasticDsl {
             slug: Option[SlugSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
             searchable: Option[Boolean] = None,
-            context: Option[ContextSearchFilter] = None): Option[SearchFilters] = {
+            context: Option[ContextSearchFilter] = None,
+            operationId: Option[OperationSearchFilter] = None): Option[SearchFilters] = {
 
-    (tags, themes, title, slug, status, searchable, context) match {
-      case (None, None, None, None, None, None, None) => None
-      case _                                          => Some(SearchFilters(tags, themes, title, slug, status, searchable, context))
+    (tags, themes, title, slug, status, searchable, context, operationId) match {
+      case (None, None, None, None, None, None, None, None) => None
+      case _                                                => Some(SearchFilters(tags, themes, title, slug, status, searchable, context, operationId))
     }
   }
 
@@ -83,6 +86,7 @@ object SearchFilters extends ElasticDsl {
       buildContextSourceSearchFilter(searchQuery),
       buildContextLocationSearchFilter(searchQuery),
       buildContextQuestionSearchFilter(searchQuery),
+      buildOperationSearchFilter(searchQuery),
       buildSearchableFilter(searchQuery)
     ).flatten
 
@@ -128,6 +132,15 @@ object SearchFilters extends ElasticDsl {
       context   <- filters.context
       operation <- context.operation
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.contextOperation, operation)
+
+    operationFilter
+  }
+
+  def buildOperationSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    val operationFilter: Option[QueryDefinition] = for {
+      filters     <- searchQuery.filters
+      operationId <- filters.operationId
+    } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.operationId, operationId)
 
     operationFilter
   }
@@ -256,7 +269,7 @@ object StatusSearchFilter {
 
 }
 
-case class ContextSearchFilter(operation: Option[String],
+case class ContextSearchFilter(operation: Option[OperationId],
                                source: Option[String],
                                location: Option[String],
                                question: Option[String])
@@ -265,6 +278,12 @@ object ContextSearchFilter {
   implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =
     DefaultJsonProtocol.jsonFormat4(ContextSearchFilter.apply)
 
+}
+
+case class OperationSearchFilter(operationId: OperationId)
+object OperationSearchFilter {
+  implicit val operationSearchFilterFormatted: RootJsonFormat[OperationSearchFilter] =
+    DefaultJsonProtocol.jsonFormat1(OperationSearchFilter.apply)
 }
 
 case class Limit(value: Int)

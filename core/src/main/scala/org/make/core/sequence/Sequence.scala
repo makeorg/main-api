@@ -11,6 +11,7 @@ import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
 import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 
 final case class SequenceTranslation(slug: String, title: String, language: String) extends MakeSerializable
 
@@ -35,6 +36,7 @@ case class Sequence(sequenceId: SequenceId,
                     tagIds: Seq[TagId] = Seq.empty,
                     proposalIds: Seq[ProposalId] = Seq.empty,
                     themeIds: Seq[ThemeId],
+                    operationId: Option[OperationId] = None,
                     override val createdAt: Option[ZonedDateTime],
                     override val updatedAt: Option[ZonedDateTime],
                     status: SequenceStatus = SequenceStatus.Unpublished,
@@ -47,7 +49,7 @@ case class Sequence(sequenceId: SequenceId,
 
 object Sequence {
   implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat13(Sequence.apply)
+    DefaultJsonProtocol.jsonFormat14(Sequence.apply)
 }
 
 final case class SequenceId(value: String) extends StringValue

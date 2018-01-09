@@ -6,6 +6,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.session.SessionId
@@ -13,7 +14,7 @@ import org.make.core.user.UserId
 
 import scala.util.Random
 
-final case class ProposeProposalRequest(content: String) {
+final case class ProposeProposalRequest(content: String, operationId: Option[OperationId]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = BusinessConfig.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
@@ -29,7 +30,8 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId]) {
+                                       idea: Option[IdeaId],
+                                       operation: Option[OperationId]) {
   validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
@@ -43,7 +45,8 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
                                          similarProposals: Seq[ProposalId],
-                                         idea: Option[IdeaId]) {
+                                         idea: Option[IdeaId],
+                                         operation: Option[OperationId]) {
   validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
 }
 
@@ -61,7 +64,7 @@ object RefuseProposalRequest {
   implicit val encoder: ObjectEncoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[String] = None,
+final case class ContextFilterRequest(operation: Option[OperationId] = None,
                                       source: Option[String] = None,
                                       location: Option[String] = None,
                                       question: Option[String] = None) {
@@ -74,10 +77,11 @@ object ContextFilterRequest {
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 
-final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
-                               themesIds: Option[Seq[String]] = None,
-                               tagsIds: Option[Seq[String]] = None,
-                               labelsIds: Option[Seq[String]] = None,
+final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
+                               themesIds: Option[Seq[ThemeId]] = None,
+                               tagsIds: Option[Seq[TagId]] = None,
+                               labelsIds: Option[Seq[LabelId]] = None,
+                               operationId: Option[OperationId] = None,
                                trending: Option[String] = None,
                                content: Option[String] = None,
                                slug: Option[String] = None,
@@ -103,6 +107,7 @@ final case class SearchRequest(proposalIds: Option[Seq[String]] = None,
         themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
+        operation = operationId.map(OperationSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text => {
           ContentSearchFilter(text, Some(fuzziness))
@@ -119,10 +124,11 @@ object SearchRequest {
   implicit val decoder: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
 }
 
-final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None,
-                                         themesIds: Option[Seq[String]] = None,
-                                         tagsIds: Option[Seq[String]] = None,
-                                         labelsIds: Option[Seq[String]] = None,
+final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
+                                         themesIds: Option[Seq[ThemeId]] = None,
+                                         tagsIds: Option[Seq[TagId]] = None,
+                                         labelsIds: Option[Seq[LabelId]] = None,
+                                         operationId: Option[OperationId] = None,
                                          trending: Option[String] = None,
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
@@ -138,6 +144,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[String]] = None
         themes = themesIds.map(ThemeSearchFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
+        operation = operationId.map(OperationSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),
@@ -173,7 +180,8 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       status: Option[ProposalStatus] = None,
                                       refusalReason: Option[String] = None,
                                       tags: Option[Seq[TagId]] = None,
-                                      creationContext: Option[PatchRequestContext] = None)
+                                      creationContext: Option[PatchRequestContext] = None,
+                                      operation: Option[OperationId] = None)
 
 object PatchProposalRequest {
   implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]
@@ -185,7 +193,7 @@ final case class PatchRequestContext(currentTheme: Option[ThemeId] = None,
                                      externalId: Option[String] = None,
                                      country: Option[String] = None,
                                      language: Option[String] = None,
-                                     operation: Option[String] = None,
+                                     operation: Option[OperationId] = None,
                                      source: Option[String] = None,
                                      location: Option[String] = None,
                                      question: Option[String] = None,

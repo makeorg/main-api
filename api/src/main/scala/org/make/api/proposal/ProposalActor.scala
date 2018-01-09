@@ -7,16 +7,19 @@ import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
+import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.sequence.{AddProposalsSequenceCommand, RemoveProposalsSequenceCommand}
 import org.make.api.sessionhistory._
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
@@ -30,7 +33,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
+class ProposalActor(userHistoryActor: ActorRef,
+                    sessionHistoryActor: ActorRef,
+                    sequenceActor: ActorRef,
+                    operationService: OperationService)
     extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
@@ -113,7 +119,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
             country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
             language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
-            operation = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operation),
+            operationId = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operationId),
             source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
             location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
             question = contextChanges.question.map(Some(_)).getOrElse(proposal.creationContext.question),
@@ -136,13 +142,22 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           status = changes.status.getOrElse(proposal.status),
           refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
           tags = changes.tags.getOrElse(proposal.tags),
-          updatedAt = Some(DateHelper.now())
+          updatedAt = Some(DateHelper.now()),
+          operation = changes.operation.orElse(proposal.operation)
         )
 
       persistAndPublishEvent(
         ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = modifiedProposal)
       ) { event =>
         state = applyEvent(event)
+        if (command.changes.operation.isDefined && command.changes.operation != proposal.operation) {
+          changeSequence(
+            currentOperation = proposal.operation,
+            newOperation = command.changes.operation,
+            requestContext = command.requestContext,
+            moderatorId = command.userId
+          )
+        }
         sender() ! state.map(_.proposal)
       }
     }
@@ -483,6 +498,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
         userId = user.userId,
         eventDate = command.createdAt,
         content = command.content,
+        operation = command.operation,
         theme = command.theme
       )
     ) { _ =>
@@ -491,11 +507,63 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
 
   }
 
+  private def changeSequence(currentOperation: Option[OperationId],
+                             newOperation: Option[OperationId],
+                             requestContext: RequestContext,
+                             moderatorId: UserId): Unit = {
+    // Remove from previous operation sequence if any
+    val currentOp: Option[(OperationId, ProposalId)] = for {
+      operationId <- currentOperation
+      proposalId  <- state.map(_.proposal.proposalId)
+    } yield (operationId, proposalId)
+    currentOp.foreach {
+      case (operationId, proposalId) =>
+        operationService.findOne(operationId).map { maybeOperation =>
+          maybeOperation.foreach { operation =>
+            sequenceActor ! RemoveProposalsSequenceCommand(
+              operation.sequenceLandingId,
+              Seq(proposalId),
+              requestContext,
+              moderatorId
+            )
+          }
+        }
+    }
+
+    // Add to new operation sequence if any
+    val newOp = for {
+      operationId <- newOperation
+      proposalId  <- state.map(_.proposal.proposalId)
+    } yield (operationId, proposalId)
+    newOp.foreach {
+      case (operationId, proposalId) =>
+        operationService.findOne(operationId).map { maybeOperation =>
+          maybeOperation.foreach { operation =>
+            sequenceActor ! AddProposalsSequenceCommand(
+              operation.sequenceLandingId,
+              Seq(proposalId),
+              requestContext,
+              moderatorId
+            )
+          }
+        }
+    }
+  }
+
   private def onUpdateProposalCommand(command: UpdateProposalCommand): Unit = {
     val maybeEvent = validateUpdateCommand(command)
+    val proposal: Option[Proposal] = state.map(_.proposal)
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
+          if (command.operation != proposal.flatMap(_.operation)) {
+            changeSequence(
+              currentOperation = proposal.flatMap(_.operation),
+              newOperation = command.operation,
+              requestContext = command.requestContext,
+              moderatorId = command.moderator
+            )
+          }
           sender() ! state.map(_.proposal)
         }
       case Right(None) => sender() ! None
@@ -595,7 +663,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = command.similarProposals,
-                idea = command.idea
+                idea = command.idea,
+                operation = command.operation
               )
             )
           )
@@ -644,7 +713,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = command.similarProposals,
-                idea = command.idea
+                idea = command.idea,
+                operation = command.operation
               )
             )
           )
@@ -756,7 +826,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             updatedAt = None,
             content = e.content,
             status = ProposalStatus.Pending,
-            theme = if (e.theme.isEmpty) e.requestContext.currentTheme else e.theme,
+            theme = e.theme.orElse(e.requestContext.currentTheme),
             creationContext = e.requestContext,
             labels = Seq.empty,
             votes = Seq(
@@ -783,6 +853,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
               )
             ),
             similarProposals = Seq.empty,
+            operation = e.operation.orElse(e.requestContext.operationId),
             events = List(
               ProposalAction(
                 date = e.eventDate,
@@ -848,7 +919,8 @@ object ProposalActor {
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.idea.map(_.value).getOrElse("")
+      "idea" -> event.idea.map(_.value).getOrElse(""),
+      "operation" -> event.operation.map(_.value).getOrElse("")
     ).filter {
       case (_, value) => !value.isEmpty
     }
@@ -867,7 +939,8 @@ object ProposalActor {
         events = action :: state.proposal.events,
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
-        idea = event.idea
+        idea = event.idea,
+        operation = event.operation
       )
 
     proposal = event.edition match {
@@ -886,7 +959,8 @@ object ProposalActor {
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
-      "idea" -> event.idea.map(_.value).getOrElse("")
+      "idea" -> event.idea.map(_.value).getOrElse(""),
+      "operation" -> event.operation.map(_.value).getOrElse("")
     ).filter {
       case (_, value) => !value.isEmpty
     }
@@ -905,7 +979,8 @@ object ProposalActor {
         status = Accepted,
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
-        idea = event.idea
+        idea = event.idea,
+        operation = event.operation
       )
 
     proposal = event.edition match {

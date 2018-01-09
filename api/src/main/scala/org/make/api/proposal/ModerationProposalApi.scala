@@ -6,19 +6,23 @@ import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositi
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
+import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
+import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.{DateHelper, HttpCodes}
 
 import scala.util.Try
@@ -33,7 +37,10 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with MakeSettingsComponent
     with UserServiceComponent
     with IdeaServiceComponent
-    with ThemeServiceComponent =>
+    with ThemeServiceComponent
+    with ProposalCoordinatorServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent =>
 
   @ApiOperation(
     value = "get-moderation-proposal",
@@ -111,11 +118,16 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     proposalService.search(
                       userId = Some(auth.user.userId),
                       query = ExhaustiveSearchRequest(
-                        themesIds = themeId,
-                        tagsIds = tags,
+                        themesIds = themeId.map(_.map(ThemeId(_))),
+                        tagsIds = tags.map(_.map(TagId(_))),
                         content = content,
-                        context =
-                          Some(ContextFilterRequest(operation = operation, source = source, question = question)),
+                        context = Some(
+                          ContextFilterRequest(
+                            operation = operation.map(OperationId(_)),
+                            source = source,
+                            question = question
+                          )
+                        ),
                         status = Some(Seq(Accepted)),
                         limit = Some(5000) //TODO get limit value for export into config files
                       ).toSearchQuery,
@@ -572,6 +584,38 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "update-proposals-operation",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @Path(value = "/migrate-operation")
+  def migrateProposalOperation: Route = post {
+    path("moderation" / "proposals" / "migrate-operation") {
+      makeTrace("update proposal operation") { _ =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+            readJournal
+              .currentPersistenceIds()
+              .runForeach(id => proposalCoordinatorService.setOperationIdFromContext(ProposalId(id)))
+
+            complete(StatusCodes.NoContent)
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
@@ -584,7 +628,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       removeClusters ~
       lock ~
       patchProposal ~
-      getDuplicates
+      getDuplicates ~
+      migrateProposalOperation
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

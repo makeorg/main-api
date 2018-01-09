@@ -11,15 +11,12 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.proposal.ProposalIndexerActor.IndexProposal
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.sequence
-import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Tag, TagId}
-import org.make.core.sequence.indexed.IndexedSequenceProposalId
 import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,8 +25,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
-                            tagService: TagService,
-                            sequenceService: SequenceService)
+                            tagService: TagService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with ActorLogging {
@@ -48,12 +44,9 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         onCreateOrUpdate(event)
       case event: ProposalProposed => onCreateOrUpdate(event)
       case event: ProposalAccepted =>
-        addToSequence(event)
         onSimilarProposalsUpdated(event.id, event.similarProposals)
         onCreateOrUpdate(event)
-      case event: ProposalRefused =>
-        removeFromSequence(event)
-        onCreateOrUpdate(event)
+      case event: ProposalRefused     => onCreateOrUpdate(event)
       case event: ProposalPostponed   => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
       case event: ProposalUnvoted     => onCreateOrUpdate(event)
@@ -86,62 +79,6 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
     retrieveAndShapeProposal(event.id).flatMap(indexOrUpdate)
-  }
-
-  def addToSequence(event: ProposalAccepted): Future[Unit] = {
-    proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
-        if (proposal.creationContext.operation.nonEmpty) {
-          sequenceService
-            .search(
-              Some(event.moderator),
-              sequence
-                .ExhaustiveSearchRequest(
-                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operation)),
-                  limit = Some(1)
-                )
-                .toSearchQuery,
-              event.requestContext
-            )
-            .map { sequenceResult =>
-              sequenceResult.results.map(sequence => {
-                sequenceService.addProposals(sequence.id, event.moderator, event.requestContext, Seq(event.id))
-              })
-            }
-        } else {
-          Future.successful[Unit] {}
-        }
-      case None => Future.successful[Unit] {}
-    }
-  }
-
-  def removeFromSequence(event: ProposalRefused): Future[Unit] = {
-    proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
-        if (proposal.creationContext.operation.nonEmpty) {
-          sequenceService
-            .search(
-              Some(event.moderator),
-              sequence
-                .ExhaustiveSearchRequest(
-                  context = Some(sequence.ContextFilterRequest(operation = proposal.creationContext.operation)),
-                  limit = Some(1)
-                )
-                .toSearchQuery,
-              event.requestContext
-            )
-            .map { sequenceResult =>
-              sequenceResult.results.map(sequence => {
-                if (sequence.proposals.contains(IndexedSequenceProposalId(proposal.proposalId))) {
-                  sequenceService.removeProposals(sequence.id, event.moderator, event.requestContext, Seq(event.id))
-                }
-              })
-            }
-        } else {
-          Future.successful[Unit] {}
-        }
-      case None => Future.successful[Unit] {}
-    }
   }
 
   def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
@@ -180,7 +117,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         votes = proposal.votes.map(IndexedVote.apply),
         context = Some(
           Context(
-            operation = proposal.creationContext.operation,
+            operation = proposal.creationContext.operationId,
             source = proposal.creationContext.source,
             location = proposal.creationContext.location,
             question = proposal.creationContext.question
@@ -199,7 +136,8 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         language = proposal.creationContext.language.getOrElse("fr"),
         themeId = proposal.theme,
         tags = tags,
-        ideaId = proposal.idea
+        ideaId = proposal.idea,
+        operationId = proposal.operation
       )
     }
     maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))
@@ -211,8 +149,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 object ProposalConsumerActor {
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
-            tagService: TagService,
-            sequenceService: SequenceService): Props =
-    Props(new ProposalConsumerActor(proposalCoordinatorService, userService, tagService, sequenceService))
+            tagService: TagService): Props =
+    Props(new ProposalConsumerActor(proposalCoordinatorService, userService, tagService))
   val name: String = "proposal-consumer"
 }

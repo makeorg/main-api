@@ -4,6 +4,7 @@ import akka.actor.PoisonPill
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
+import org.make.core.operation.OperationId
 import org.make.core.sequence._
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -71,6 +72,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         title = command.title,
         themeIds = command.themeIds,
         tagIds = command.tagIds,
+        operationId = command.operationId,
         searchable = command.searchable
       )
     ) { _ =>
@@ -88,7 +90,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         requestContext = command.requestContext,
         title = command.title,
         status = command.status,
-        operation = command.operation,
+        operationId = command.operationId,
         userId = userId,
         themeIds = command.themeIds,
         tagIds = command.tagIds
@@ -121,6 +123,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
           title = e.title,
           status = SequenceStatus.Unpublished,
           themeIds = e.themeIds,
+          operationId = e.operationId,
           creationContext = e.requestContext,
           tagIds = e.tagIds,
           events = List(
@@ -142,13 +145,14 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
       state.map(
         state =>
           state.copy(
-            creationContext = state.creationContext.copy(operation = e.operation),
+            creationContext = state.creationContext.copy(operationId = e.operation.map(OperationId(_))),
             title = e.title.getOrElse(state.title),
             updatedAt = Some(e.eventDate),
             slug = SlugHelper(e.title.getOrElse(state.title)),
             status = e.status.getOrElse(state.status),
             themeIds = e.themeIds,
-            tagIds = e.tagIds
+            tagIds = e.tagIds,
+            operationId = e.operationId
         )
       )
     case e: SequenceProposalsAdded =>

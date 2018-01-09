@@ -5,6 +5,7 @@ import java.time.ZonedDateTime
 import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto._
 import org.make.core.CirceFormatters
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{IdeaId, Tag, ThemeId}
 import org.make.core.user.UserId
@@ -36,6 +37,7 @@ object ProposalElasticsearchFieldNames {
   val tags: String = "tags"
   val tagId: String = "tags.tagId"
   val ideaId: String = "ideaId"
+  val operationId: String = "operationId"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -54,14 +56,15 @@ case class IndexedProposal(id: ProposalId,
                            language: String,
                            themeId: Option[ThemeId],
                            tags: Seq[Tag],
-                           ideaId: Option[IdeaId])
+                           ideaId: Option[IdeaId],
+                           operationId: Option[OperationId])
 
 object IndexedProposal extends CirceFormatters {
   implicit val encoder: ObjectEncoder[IndexedProposal] = deriveEncoder[IndexedProposal]
   implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
 }
 
-final case class Context(operation: Option[String],
+final case class Context(operation: Option[OperationId],
                          source: Option[String],
                          location: Option[String],
                          question: Option[String])

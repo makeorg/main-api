@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS idea (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 %
+ALTER TABLE IF EXISTS idea RENAME COLUMN operation TO operation_id
+%
 INSERT into oauth_client
     (uuid, secret, allowed_grant_types)
     VALUES
@@ -400,3 +402,8 @@ CREATE INDEX IF NOT EXISTS operation_action_operation_id_index ON operation_acti
 %
 CREATE INDEX IF NOT EXISTS operation_action_user_id_index ON make_user (uuid);
 %
+INSERT INTO operation
+    (uuid, status, slug, default_language)
+    VALUES
+    ('vff', 'Active', 'vff', 'fr')
+    ON CONFLICT (uuid) DO NOTHING

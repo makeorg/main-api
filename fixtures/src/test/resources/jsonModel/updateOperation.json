@@ -1,0 +1,18 @@
+{
+  "slug": "vff",
+  "status": "Active",
+  "translations": [
+    {
+      "title": "${operationTitle}",
+      "language": "fr"
+    }
+  ],
+  "defaultLanguage": "fr",
+  "sequenceLandingId": "${sequenceId}",
+  "countriesConfiguration": [
+    {
+      "countryCode": "FR",
+      "tagIds": []
+    }
+  ]
+}

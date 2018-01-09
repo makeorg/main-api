@@ -8,6 +8,7 @@ import org.make.api.idea.DefaultPersistentIdeaServiceComponent.PersistentIdea
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
+import org.make.core.operation.OperationId
 import org.make.core.reference.{Idea, IdeaId}
 import scalikejdbc._
 
@@ -68,10 +69,10 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
             .from(PersistentIdea.as(ideaAlias))
             .where(
               sqls.toAndConditionOpt(
-                ideaFilters.language.map(language   => sqls.eq(ideaAlias.language, language)),
-                ideaFilters.country.map(country     => sqls.eq(ideaAlias.country, country)),
-                ideaFilters.operation.map(operation => sqls.eq(ideaAlias.operation, operation)),
-                ideaFilters.question.map(question   => sqls.eq(ideaAlias.question, question))
+                ideaFilters.language.map(language     => sqls.eq(ideaAlias.language, language)),
+                ideaFilters.country.map(country       => sqls.eq(ideaAlias.country, country)),
+                ideaFilters.operationId.map(operation => sqls.eq(ideaAlias.operationId, operation.value)),
+                ideaFilters.question.map(question     => sqls.eq(ideaAlias.question, question))
               )
             )
         }.map(PersistentIdea.apply()).list.apply
@@ -91,8 +92,8 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.name -> idea.name,
               column.language -> idea.language,
               column.country -> idea.country,
-              column.operation -> idea.operation,
               column.question -> idea.question,
+              column.operationId -> idea.operationId.map(_.value),
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
             )
@@ -122,8 +123,8 @@ object DefaultPersistentIdeaServiceComponent {
                             name: String,
                             language: Option[String],
                             country: Option[String],
-                            operation: Option[String],
                             question: Option[String],
+                            operationId: Option[String],
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime) {
     def toIdea: Idea =
@@ -132,15 +133,16 @@ object DefaultPersistentIdeaServiceComponent {
         name = name,
         language = language,
         country = country,
-        operation = operation,
-        question = question
+        operation = operationId.map(operationId => OperationId(operationId)),
+        question = question,
+        operationId = operationId.map(operationId => OperationId(operationId))
       )
   }
 
   object PersistentIdea extends SQLSyntaxSupport[PersistentIdea] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("id", "name", "language", "country", "operation", "question", "created_at", "updated_at")
+      Seq("id", "name", "language", "country", "operation_id", "question", "created_at", "updated_at")
 
     override val tableName: String = "idea"
 
@@ -154,8 +156,8 @@ object DefaultPersistentIdeaServiceComponent {
         name = resultSet.string(ideaResultName.name),
         language = resultSet.stringOpt(ideaResultName.language),
         country = resultSet.stringOpt(ideaResultName.country),
-        operation = resultSet.stringOpt(ideaResultName.operation),
         question = resultSet.stringOpt(ideaResultName.question),
+        operationId = resultSet.stringOpt(ideaResultName.operationId),
         createdAt = resultSet.zonedDateTime(ideaResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(ideaResultName.updatedAt)
       )

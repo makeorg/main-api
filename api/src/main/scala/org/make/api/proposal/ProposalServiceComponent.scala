@@ -16,6 +16,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.{IdeaId, ThemeId}
@@ -56,6 +57,7 @@ trait ProposalService {
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
               content: String,
+              operation: Option[OperationId],
               theme: Option[ThemeId]): Future[ProposalId]
 
   // toDo: add theme
@@ -197,7 +199,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               events = events,
               similarProposals = proposal.similarProposals,
               idea = proposal.idea,
-              ideaProposals = ideaProposals
+              ideaProposals = ideaProposals,
+              operationId = proposal.operation
             )
           )
         }
@@ -208,12 +211,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       proposal.idea match {
         case Some(ideaId) =>
           elasticsearchProposalAPI
-            .countProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value))))))
+            .countProposals(SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId))))))
             .flatMap { countProposals =>
               elasticsearchProposalAPI
                 .searchProposals(
                   SearchQuery(
-                    filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId.value)))),
+                    filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId)))),
                     limit = Some(countProposals)
                   )
                 )
@@ -313,6 +316,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          requestContext: RequestContext,
                          createdAt: ZonedDateTime,
                          content: String,
+                         operation: Option[OperationId],
                          theme: Option[ThemeId]): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
@@ -322,6 +326,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           user = user,
           createdAt = createdAt,
           content = content,
+          operation = operation,
           theme = theme
         )
       )
@@ -344,7 +349,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           labels = request.labels,
           tags = request.tags,
           similarProposals = request.similarProposals,
-          idea = request.idea
+          idea = request.idea,
+          operation = request.operation
         )
       )
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
@@ -376,7 +382,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           labels = request.labels,
           tags = request.tags,
           similarProposals = request.similarProposals,
-          idea = request.idea
+          idea = request.idea,
+          operation = request.operation
         )
       )
 
@@ -460,8 +467,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
-                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId.value))),
-                    context = requestContext.operation.map(ope      => ContextSearchFilter(operation = Some(ope)))
+                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
+                    context = requestContext.operationId.map(ope    => ContextSearchFilter(operation = Some(ope)))
                   )
                 )
               )

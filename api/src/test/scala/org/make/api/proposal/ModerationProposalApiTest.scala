@@ -3,18 +3,20 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.Date
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
-import org.make.api.MakeApiTestUtils
+import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
@@ -39,7 +41,10 @@ class ModerationProposalApiTest
     with ProposalServiceComponent
     with MakeSettingsComponent
     with UserServiceComponent
-    with ThemeServiceComponent {
+    with ThemeServiceComponent
+    with ProposalCoordinatorServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
@@ -60,6 +65,9 @@ class ModerationProposalApiTest
   override val userService: UserService = mock[UserService]
   override val themeService: ThemeService = mock[ThemeService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
+  override val actorSystem: ActorSystem = mock[ActorSystem]
+  override val readJournal: ReadJournalComponent.MakeReadJournal = mock[ReadJournalComponent.MakeReadJournal]
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -139,7 +147,8 @@ class ModerationProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king"))
+    idea = Some(IdeaId("becoming-king")),
+    operation = None
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -169,7 +178,14 @@ class ModerationProposalApiTest
 
   when(
     proposalService
-      .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Option[ThemeId]])
+      .propose(
+        any[User],
+        any[RequestContext],
+        any[ZonedDateTime],
+        matches(validProposalText),
+        any[Option[OperationId]],
+        any[Option[ThemeId]]
+      )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   when(
@@ -243,7 +259,8 @@ class ModerationProposalApiTest
           events = Nil,
           similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
           idea = None,
-          ideaProposals = Seq.empty
+          ideaProposals = Seq.empty,
+          operationId = None
         )
       )
     )
@@ -305,7 +322,8 @@ class ModerationProposalApiTest
       events = Nil,
       similarProposals = Seq.empty,
       idea = None,
-      ideaProposals = Seq.empty
+      ideaProposals = Seq.empty,
+      operationId = None
     )
   }
 
@@ -451,11 +469,11 @@ class ModerationProposalApiTest
         status should be(StatusCodes.OK)
         val results: Seq[DuplicateResponse] = entityAs[Seq[DuplicateResponse]]
         results.length should be(2)
-        results(0).ideaId should be(IdeaId("Idea 1"))
+        results.head.ideaId should be(IdeaId("Idea 1"))
         results(1).ideaName should be("Idea Two")
-        results(0).score should be(1.23456)
+        results.head.score should be(1.23456)
         results(1).proposalId should be(ProposalId("Proposal 2"))
-        results(0).proposalContent should be("Proposal One")
+        results.head.proposalContent should be("Proposal One")
       }
     }
   }

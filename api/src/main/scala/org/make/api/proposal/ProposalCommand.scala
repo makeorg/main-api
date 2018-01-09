@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
 import org.make.core.user.{User, UserId}
@@ -18,6 +19,7 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 user: User,
                                 createdAt: ZonedDateTime,
                                 content: String,
+                                operation: Option[OperationId] = None,
                                 theme: Option[ThemeId] = None)
     extends ProposalCommand
 
@@ -30,7 +32,8 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId])
+                                       idea: Option[IdeaId],
+                                       operation: Option[OperationId])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
@@ -48,7 +51,8 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId])
+                                       idea: Option[IdeaId],
+                                       operation: Option[OperationId])
     extends ProposalCommand
 
 final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,

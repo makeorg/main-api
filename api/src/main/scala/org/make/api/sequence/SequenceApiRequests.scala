@@ -4,6 +4,7 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence._
@@ -15,6 +16,7 @@ import scala.annotation.meta.field
 final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma séquence") title: String,
                                        @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId],
                                        @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
+                                       operationId: Option[OperationId],
                                        searchable: Boolean)
 
 object CreateSequenceRequest {
@@ -43,7 +45,7 @@ object RemoveProposalSequenceRequest {
 final case class UpdateSequenceRequest(
   title: Option[String],
   status: Option[String],
-  operation: Option[String],
+  operation: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]],
   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Option[Seq[TagId]]
 )
@@ -59,6 +61,7 @@ final case class ExhaustiveSearchRequest(
   title: Option[String] = None,
   slug: Option[String] = None,
   context: Option[ContextFilterRequest] = None,
+  operationId: Option[OperationId] = None,
   status: Option[SequenceStatus] = None,
   searchable: Option[Boolean] = None,
   sorts: Seq[SortRequest] = Seq.empty,
@@ -75,6 +78,7 @@ final case class ExhaustiveSearchRequest(
         themes = themesFilter,
         title = title.map(text => TitleSearchFilter(text)),
         context = context.map(_.toContext),
+        operationId = operationId.map(OperationSearchFilter.apply),
         status = status.map(StatusSearchFilter.apply),
         searchable = searchable
       )
@@ -87,7 +91,7 @@ object ExhaustiveSearchRequest {
   implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[String] = None,
+final case class ContextFilterRequest(operation: Option[OperationId] = None,
                                       source: Option[String] = None,
                                       location: Option[String] = None,
                                       question: Option[String] = None) {

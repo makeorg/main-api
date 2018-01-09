@@ -37,7 +37,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       userService = userService,
       tagService = tagService,
       themeService = themeService,
-      sequenceService = sequenceService
+      operationService = operationService
     ),
     MakeGuardian.name
   )
