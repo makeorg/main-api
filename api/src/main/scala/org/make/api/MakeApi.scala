@@ -36,6 +36,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfigurationComponent
 }
 import org.make.api.technical.mailjet.MailJetApi
+import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -107,6 +108,7 @@ trait MakeApi
     with UserApi
     with TagApi
     with ModerationIdeaApi
+    with TrackingApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -185,7 +187,8 @@ trait MakeApi
       classOf[SequenceApi],
       classOf[ModerationIdeaApi],
       classOf[ElasticSearchApi],
-      classOf[ProposalApi]
+      classOf[ProposalApi],
+      classOf[TrackingApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -219,7 +222,8 @@ trait MakeApi
       businessConfigRoutes ~
       ideaRoutes ~
       operationRoutes ~
-      moderationOperationRoutes
+      moderationOperationRoutes ~
+      trackingRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
