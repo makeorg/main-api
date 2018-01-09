@@ -139,6 +139,48 @@ class UserApiTest
       }
     }
 
+    scenario("successful register user from proposal context") {
+      Mockito
+        .when(
+          userService
+            .register(any[UserRegisterData], any[RequestContext])
+        )
+        .thenReturn(Future.successful(fakeUser))
+      val request =
+        """
+          |{
+          | "email": "foo@bar.com",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "1997-12-02",
+          | "postalCode": "75011",
+          | "profession": "football player"
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        status should be(StatusCodes.Created)
+        verify(userService).register(
+          matches(
+            UserRegisterData(
+              email = "foo@bar.com",
+              firstName = Some("olive"),
+              lastName = Some("tom"),
+              password = Some("mypassss"),
+              lastIp = Some("192.0.0.1"),
+              dateOfBirth = Some(LocalDate.parse("1997-12-02")),
+              postalCode = Some("75011"),
+              profession = Some("football player")
+            )
+          ),
+          any[RequestContext]
+        )
+      }
+    }
+
     scenario("validation failed for existing email") {
       Mockito
         .when(
@@ -183,6 +225,29 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
         emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+      }
+    }
+
+    scenario("validation failed for postal code too long") {
+      val request =
+        """
+          |{
+          | "email": "foo@bar.com",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "1997-12-02",
+          | "postalCode": "123456789azertyuiop"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val emailError = errors.find(_.field == "postalCode")
+        emailError should be(
+          Some(ValidationError("postalCode", Some("postal code cannot be longer than 10 characters")))
+        )
       }
     }
 
