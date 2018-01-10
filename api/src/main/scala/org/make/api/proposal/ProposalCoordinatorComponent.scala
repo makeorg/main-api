@@ -226,7 +226,11 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
     override def setOperationIdFromContext(proposalId: ProposalId): Unit = {
       getProposal(proposalId).onComplete {
         case Success(Some(proposal)) =>
-          val modifiedProposal = proposal.copy(operation = proposal.creationContext.operation.map(OperationId(_)))
+          val modifiedProposal = proposal.copy(
+            operation = proposal.creationContext.operation.map(OperationId(_)),
+            creationContext =
+              proposal.creationContext.copy(operationId = proposal.creationContext.operation.map(OperationId(_)))
+          )
           proposalCoordinator ! ReplaceProposalCommand(proposalId = proposalId, proposal = modifiedProposal)
         case Failure(e) => logger.error("", e)
         case _          =>
