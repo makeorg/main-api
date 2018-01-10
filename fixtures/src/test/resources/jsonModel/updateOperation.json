@@ -12,7 +12,7 @@
   "countriesConfiguration": [
     {
       "countryCode": "FR",
-      "tagIds": []
+      "tagIds": ${tags}
     }
   ]
 }
