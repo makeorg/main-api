@@ -35,7 +35,11 @@ trait SequenceService {
              requestContext: RequestContext): Future[SequencesSearchResult]
   def startNewSequence(maybeUserId: Option[UserId],
                        slug: String,
-                       includedProposals: Seq[ProposalId] = Seq.empty,
+                       includedProposals: Seq[ProposalId],
+                       requestContext: RequestContext): Future[Option[SequenceResult]]
+  def startNewSequence(maybeUserId: Option[UserId],
+                       sequenceId: SequenceId,
+                       includedProposals: Seq[ProposalId],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
   def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]]
   def create(userId: UserId,
@@ -102,42 +106,61 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
     override def startNewSequence(maybeUserId: Option[UserId],
                                   slug: String,
-                                  includedProposals: Seq[ProposalId] = Seq.empty,
+                                  includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
-      logStartSequenceUserHisory(slug, maybeUserId, requestContext)
+      logStartSequenceUserHisory(Some(slug), None, maybeUserId, requestContext)
 
-      val futureMaybeSequence: Future[Option[IndexedSequence]] = elasticsearchSequenceAPI.findSequenceBySlug(slug)
-
-      val futureSequenceWithProposals
-        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] =
-        futureMaybeSequence.flatMap {
+      elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap {
           case None => Future.successful(None)
           case Some(sequence) =>
-            val allProposals: Future[Seq[Proposal]] = Future
-              .traverse(sequence.proposals) { id =>
-                proposalCoordinatorService.getProposal(id.proposalId)
-              }
-              .map(_.flatten)
+            startSequence(maybeUserId, sequence, includedProposals, requestContext)
+      }
+    }
 
-            for {
-              allProposals   <- allProposals
-              votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-            } yield {
-              Some(
-                (
-                  sequence,
-                  selectionAlgorithm.newProposalsForSequence(
-                    targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
-                    votedProposals = votedProposals.keys.toSeq,
-                    includeList = includedProposals
-                  ),
-                  votedProposals
-                )
-              )
-            }
+    override def startNewSequence(maybeUserId: Option[UserId],
+                                  sequenceId: SequenceId,
+                                  includedProposals: Seq[ProposalId],
+                                  requestContext: RequestContext): Future[Option[SequenceResult]] = {
+      logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, requestContext)
+
+      elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap {
+        case None => Future.successful(None)
+        case Some(sequence) =>
+          startSequence(maybeUserId, sequence, includedProposals, requestContext)
+      }
+    }
+
+    private def startSequence(maybeUserId: Option[UserId],
+                              sequence: IndexedSequence,
+                              includedProposals: Seq[ProposalId] = Seq.empty,
+                              requestContext: RequestContext): Future[Option[SequenceResult]] = {
+      val futureSequenceWithProposals
+        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] = {
+        val allProposals: Future[Seq[Proposal]] = Future
+          .traverse(sequence.proposals) { id =>
+            proposalCoordinatorService.getProposal(id.proposalId)
+          }
+          .map(_.flatten)
+
+        for {
+          allProposals <- allProposals
+          votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+        } yield {
+          Some(
+            (
+              sequence,
+              selectionAlgorithm.newProposalsForSequence(
+                targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+                votedProposals = votedProposals.keys.toSeq,
+                includeList = includedProposals
+              ),
+              votedProposals
+            )
+          )
         }
+      }
 
       futureSequenceWithProposals.flatMap {
         case None => Future.successful(None)
@@ -179,15 +202,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def logStartSequenceUserHisory(sequenceSlug: String,
+    private def logStartSequenceUserHisory(sequenceSlug: Option[String],
+                                           sequenceId: Option[SequenceId],
                                            maybeUserId: Option[UserId],
-                                           requestContext: RequestContext) = {
+                                           requestContext: RequestContext): Unit = {
       maybeUserId.foreach { userId =>
         userHistoryCoordinatorService.logHistory(
           LogUserStartSequenceEvent(
             userId,
             requestContext,
-            UserAction(DateHelper.now(), LogUserStartSequenceEvent.action, StartSequenceParameters(sequenceSlug))
+            UserAction(
+              date = DateHelper.now(),
+              actionType = LogUserStartSequenceEvent.action,
+              arguments = StartSequenceParameters(sequenceSlug, sequenceId)
+            )
           )
         )
       }

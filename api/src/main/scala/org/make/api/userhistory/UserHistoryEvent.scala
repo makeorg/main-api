@@ -17,7 +17,7 @@ import org.make.api.sequence.PublishedSequenceEvent.{
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.ThemeId
-import org.make.core.sequence.{SearchQuery => SequenceSearchQuery}
+import org.make.core.sequence.{SequenceId, SearchQuery => SequenceSearchQuery}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
@@ -110,10 +110,10 @@ object SearchSequenceParameters {
     DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
 }
 
-final case class StartSequenceParameters(slug: String)
+final case class StartSequenceParameters(slug: Option[String], sequenceId: Option[SequenceId])
 object StartSequenceParameters {
   implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
-    DefaultJsonProtocol.jsonFormat1(StartSequenceParameters.apply)
+    DefaultJsonProtocol.jsonFormat2(StartSequenceParameters.apply)
 }
 
 final case class UserRegistered(email: String,
