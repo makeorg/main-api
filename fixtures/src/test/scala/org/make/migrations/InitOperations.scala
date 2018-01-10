@@ -1,6 +1,7 @@
 package org.make.migrations
 
 import io.gatling.core.Predef._
+import io.gatling.core.json.Json
 import io.gatling.core.scenario.Simulation
 import io.gatling.core.structure.ScenarioBuilder
 import io.gatling.http.Predef._
@@ -40,6 +41,33 @@ class InitOperations extends Simulation {
       session
         .set("operationTitle", "Stop aux violences faites aux femmes")
         .set("operationId", "vff")
+        .set(
+          "tags",
+          Json.stringify(
+            Seq(
+              "signalement",
+              "police-justice",
+              "education-sensibilisation",
+              "image-des-femmes",
+              "independance-financiere",
+              "soutien-psychologique",
+              "hebergement",
+              "transports",
+              "monde-du-travail",
+              "monde-medical",
+              "agissements-sexistes",
+              "violences-sexuelles",
+              "harcelement",
+              "agressions-physiques",
+              "violences-conjugales",
+              "traditions-nefastes-mutilations",
+              "action-publique",
+              "prevention",
+              "protection",
+              "reponses"
+            )
+          )
+        )
 
     })
     .exec(
@@ -65,6 +93,33 @@ class InitOperations extends Simulation {
       session
         .set("operationTitle", "Climat Paris")
         .set("operationSlug", "climatparis")
+        .set(
+          "tags",
+          Json.stringify(
+            Seq(
+              "pollution",
+              "entreprises-emploi",
+              "qualite-de-vie",
+              "alimentation",
+              "energies-renouvelables",
+              "bio",
+              "sante",
+              "agriculture",
+              "circuits-courts",
+              "recyclage-zero-dechets",
+              "consommation-responsable",
+              "energies-traditionnelles",
+              "nouvelles-technologies",
+              "urbanisme-habitat",
+              "transports",
+              "fiscalite-subventions",
+              "sensibilisation-education",
+              "solidarite",
+              "action-publique",
+              "participation-citoyenne"
+            )
+          )
+        )
 
     })
     .exec(
