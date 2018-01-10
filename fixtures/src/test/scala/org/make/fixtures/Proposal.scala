@@ -38,9 +38,10 @@ object ProposalChainBuilder {
     )
   }
 
-  val createProposalVFF: ChainBuilder = {
+  val createProposalOperation: ChainBuilder = {
     exec(
       MakeServicesBuilder.createProposalBuilder
+        .header("x-make-operation", "${operationId}")
         .body(ElFileBody("jsonModel/createProposal.json"))
         .asJSON
         .check(jsonPath("$.proposalId").saveAs("proposalId"))
@@ -56,7 +57,7 @@ object ProposalChainBuilder {
     )
   }
 
-  val acceptProposalVFF: ChainBuilder = {
+  val acceptProposalOperation: ChainBuilder = {
     exec(
       MakeServicesBuilder.acceptProposalBuilder
         .body(ElFileBody("jsonModel/validateProposalVFF.json"))

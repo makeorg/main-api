@@ -54,12 +54,13 @@ class Vff extends Simulation {
             .set("content", proposal("content"))
             .set("tags", tags)
             .set("labels", Json.stringify(Seq.empty))
+            .set("operationId", "vff")
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
-          ProposalChainBuilder.createProposalVFF,
+          ProposalChainBuilder.createProposalOperation,
           UserChainBuilder.authenticateAsAdmin,
-          ProposalChainBuilder.acceptProposalVFF
+          ProposalChainBuilder.acceptProposalOperation
         )
       }
       .inject(heavisideUsers(maxClients).over(2.minutes))

@@ -3,7 +3,7 @@ package org.make.fixtures
 import io.gatling.core.Predef._
 import io.gatling.core.feeder.Record
 import io.gatling.core.json.Json
-import io.gatling.http.Predef.http
+import io.gatling.http.Predef.{http, jsonPath}
 import io.gatling.http.protocol.HttpProtocolBuilder
 import org.make.fixtures.Proposal.cpProposalsByUsername
 import org.make.fixtures.User._
@@ -11,7 +11,7 @@ import org.make.fixtures.User._
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-class Cp extends Simulation {
+class ClimatParis extends Simulation {
   val maxClients = 1
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
@@ -19,7 +19,6 @@ class Cp extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
-    .header("x-make-operation", "climatparis")
     .header("x-make-source", "core")
     .header("x-make-location", "")
     .header("x-make-question", "")
@@ -50,6 +49,12 @@ class Cp extends Simulation {
             }.getOrElse(session)
         }
       )
+      .exec(
+        MakeServicesBuilder.searchOperationBuilder("climatparis")
+          .asJSON
+          .check(jsonPath("$[0].operationId").saveAs("operationId"))
+
+      )
       .foreach("${proposals}", "proposal") {
 
         exec(session => {
@@ -64,9 +69,8 @@ class Cp extends Simulation {
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
-          ProposalChainBuilder.createProposalVFF,
-          UserChainBuilder.authenticateAsAdmin,
-          ProposalChainBuilder.acceptProposalVFF
+          ProposalChainBuilder.createProposalOperation,
+          UserChainBuilder.authenticateAsAdmin
         )
       }
       .inject(heavisideUsers(maxClients).over(2.minutes))
