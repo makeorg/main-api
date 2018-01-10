@@ -111,8 +111,10 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
       logStartSequenceUserHisory(Some(slug), None, maybeUserId, requestContext)
 
-      elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap { maybeSequence =>
-        startSequence(maybeUserId, maybeSequence, includedProposals, requestContext)
+      elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap {
+          case None => Future.successful(None)
+          case Some(sequence) =>
+            startSequence(maybeUserId, sequence, includedProposals, requestContext)
       }
     }
 
@@ -120,47 +122,45 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   sequenceId: SequenceId,
                                   includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-
       logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, requestContext)
 
-      elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap { maybeSequence =>
-        startSequence(maybeUserId, maybeSequence, includedProposals, requestContext)
+      elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap {
+        case None => Future.successful(None)
+        case Some(sequence) =>
+          startSequence(maybeUserId, sequence, includedProposals, requestContext)
       }
     }
 
     private def startSequence(maybeUserId: Option[UserId],
-                              maybeSequence: Option[IndexedSequence],
+                              sequence: IndexedSequence,
                               includedProposals: Seq[ProposalId] = Seq.empty,
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
       val futureSequenceWithProposals
-        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] =
-        maybeSequence match {
-          case None => Future.successful(None)
-          case Some(sequence) =>
-            val allProposals: Future[Seq[Proposal]] = Future
-              .traverse(sequence.proposals) { id =>
-                proposalCoordinatorService.getProposal(id.proposalId)
-              }
-              .map(_.flatten)
+        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] = {
+        val allProposals: Future[Seq[Proposal]] = Future
+          .traverse(sequence.proposals) { id =>
+            proposalCoordinatorService.getProposal(id.proposalId)
+          }
+          .map(_.flatten)
 
-            for {
-              allProposals   <- allProposals
-              votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-            } yield {
-              Some(
-                (
-                  sequence,
-                  selectionAlgorithm.newProposalsForSequence(
-                    targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                    proposals = prepareSimilarProposalsForAlgorithm(allProposals),
-                    votedProposals = votedProposals.keys.toSeq,
-                    includeList = includedProposals
-                  ),
-                  votedProposals
-                )
-              )
-            }
+        for {
+          allProposals <- allProposals
+          votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+        } yield {
+          Some(
+            (
+              sequence,
+              selectionAlgorithm.newProposalsForSequence(
+                targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+                proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+                votedProposals = votedProposals.keys.toSeq,
+                includeList = includedProposals
+              ),
+              votedProposals
+            )
+          )
         }
+      }
 
       futureSequenceWithProposals.flatMap {
         case None => Future.successful(None)
