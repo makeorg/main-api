@@ -45,6 +45,7 @@ trait SimulationConfig {
   val proposalFeederPath: String = getRequiredString("feeder.proposals")
   val vffUserFeederPath: String = getRequiredString("feeder.users-vff")
   val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
+  val cpProposalFeederPath: String = getRequiredString("feeder.proposals-cp")
   val ideaProposalFeederPath: String = getRequiredString("feeder.idea-proposal")
 
   val defaultUserAgent =
@@ -105,6 +106,10 @@ object MakeServicesBuilder {
 
   val createSequenceBuilder: HttpRequestBuilder = http("POST_sequence")
     .post("/moderation/sequences")
+    .header("Content-Type", "application/json")
+
+  def searchOperationBuilder(operationSlug: String): HttpRequestBuilder = http("GET_sequence")
+    .get(s"/operations?slug=${operationSlug}")
     .header("Content-Type", "application/json")
 
 }

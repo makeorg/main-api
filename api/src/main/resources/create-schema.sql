@@ -320,7 +320,11 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('vegetarien', e'végétarien', true),
 	('vie-rurale', e'vie rurale', true),
 	('violences-conjugales', e'violences conjugales', true),
-	('violences-sexuelles', e'violences-sexuelles', true)
+	('violences-sexuelles', e'violences-sexuelles', true),
+	('pollution', e'pollution', true),
+	('entreprises-emploi', e'entreprises & emploi', true),
+	('qualite-de-vie', e'qualité de vie', true),
+	('alimentation', e'alimentation', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme

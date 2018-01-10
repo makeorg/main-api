@@ -3,37 +3,43 @@ package org.make.fixtures
 import io.gatling.core.Predef._
 import io.gatling.core.feeder.Record
 import io.gatling.core.json.Json
-import io.gatling.http.Predef.http
+import io.gatling.http.Predef.{http, jsonPath}
 import io.gatling.http.protocol.HttpProtocolBuilder
-import org.make.fixtures.Proposal.vffProposalsByUsername
+import org.make.fixtures.Proposal.cpProposalsByUsername
 import org.make.fixtures.User._
 
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-class Vff extends Simulation {
-  val maxClients = 10
+class ClimatParis extends Simulation {
+  val maxClients = 1
   val httpConf: HttpProtocolBuilder = http
     .baseURL(baseURL)
     .acceptHeader("*/*")
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
-    .header("x-make-operation", "vff")
     .header("x-make-source", "core")
     .header("x-make-location", "")
     .header("x-make-question", "")
     .disableCaching
 
   setUp(
-    scenario("Register Vff user and create proposal")
-      .feed(User.vffUserFeeder)
+    scenario("Register CP user and create proposals")
+      .exec(session => {
+        session
+          .set("username", "yopmail+mairie-paris-cp@make.org")
+          .set("dateOfBirth", "null")
+          .set("firstName", "Mairie de Paris")
+          .set("password", "U93XCRtH")
+
+      })
       .exec(UserChainBuilder.createUser)
       .exec(
         session =>
           session("username").validate[String].map { username: String =>
             val mayBeProposals: Option[IndexedSeq[Record[String]]] =
-              Try(Some(vffProposalsByUsername(username))) match {
+              Try(Some(cpProposalsByUsername(username))) match {
                 case Success(indexedSeqOption) => indexedSeqOption
                 case Failure(_)                => None
               }
@@ -42,6 +48,12 @@ class Vff extends Simulation {
               session.set("proposals", proposals)
             }.getOrElse(session)
         }
+      )
+      .exec(
+        MakeServicesBuilder.searchOperationBuilder("climatparis")
+          .asJSON
+          .check(jsonPath("$[0].operationId").saveAs("operationId"))
+
       )
       .foreach("${proposals}", "proposal") {
 
@@ -54,13 +66,11 @@ class Vff extends Simulation {
             .set("content", proposal("content"))
             .set("tags", tags)
             .set("labels", Json.stringify(Seq.empty))
-            .set("operationId", "vff")
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
           ProposalChainBuilder.createProposalOperation,
-          UserChainBuilder.authenticateAsAdmin,
-          ProposalChainBuilder.acceptProposalOperation
+          UserChainBuilder.authenticateAsAdmin
         )
       }
       .inject(heavisideUsers(maxClients).over(2.minutes))
