@@ -34,10 +34,12 @@ trait SequenceService {
              query: SearchQuery,
              requestContext: RequestContext): Future[SequencesSearchResult]
   def startNewSequence(maybeUserId: Option[UserId],
+                       sequenceConfiguration: SequenceConfiguration,
                        slug: String,
                        includedProposals: Seq[ProposalId],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
   def startNewSequence(maybeUserId: Option[UserId],
+                       sequenceConfiguration: SequenceConfiguration,
                        sequenceId: SequenceId,
                        includedProposals: Seq[ProposalId],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
@@ -83,6 +85,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with UserServiceComponent
     with MakeSettingsComponent
     with SelectionAlgorithmComponent
+    with SequenceConfigurationComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
@@ -105,20 +108,21 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     }
 
     override def startNewSequence(maybeUserId: Option[UserId],
+                                  sequenceConfiguration: SequenceConfiguration,
                                   slug: String,
                                   includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-
       logStartSequenceUserHisory(Some(slug), None, maybeUserId, requestContext)
 
       elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap {
-          case None => Future.successful(None)
-          case Some(sequence) =>
-            startSequence(maybeUserId, sequence, includedProposals, requestContext)
+        case None => Future.successful(None)
+        case Some(sequence) =>
+          startSequence(maybeUserId, sequenceConfiguration, sequence, includedProposals, requestContext)
       }
     }
 
     override def startNewSequence(maybeUserId: Option[UserId],
+                                  sequenceConfiguration: SequenceConfiguration,
                                   sequenceId: SequenceId,
                                   includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
@@ -127,55 +131,45 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap {
         case None => Future.successful(None)
         case Some(sequence) =>
-          startSequence(maybeUserId, sequence, includedProposals, requestContext)
+          startSequence(maybeUserId, sequenceConfiguration, sequence, includedProposals, requestContext)
       }
     }
 
     private def startSequence(maybeUserId: Option[UserId],
+                              sequenceConfiguration: SequenceConfiguration,
                               sequence: IndexedSequence,
                               includedProposals: Seq[ProposalId] = Seq.empty,
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      val futureSequenceWithProposals
-        : Future[Option[(IndexedSequence, Seq[ProposalId], Map[ProposalId, VoteAndQualifications])]] = {
-        val allProposals: Future[Seq[Proposal]] = Future
-          .traverse(sequence.proposals) { id =>
-            proposalCoordinatorService.getProposal(id.proposalId)
-          }
-          .map(_.flatten)
-
-        for {
-          allProposals <- allProposals
-          votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-        } yield {
-          Some(
-            (
-              sequence,
-              selectionAlgorithm.newProposalsForSequence(
-                targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
-                proposals = prepareSimilarProposalsForAlgorithm(allProposals),
-                votedProposals = votedProposals.keys.toSeq,
-                includeList = includedProposals
-              ),
-              votedProposals
-            )
-          )
+      val allProposals: Future[Seq[Proposal]] = Future
+        .traverse(sequence.proposals) { id =>
+          proposalCoordinatorService.getProposal(id.proposalId)
         }
-      }
+        .map(_.flatten)
 
-      futureSequenceWithProposals.flatMap {
-        case None => Future.successful(None)
-        case Some((sequence, proposals, votes)) =>
-          elasticsearchProposalAPI.findProposalsByIds(proposals, random = false).map { indexedProposals =>
-            Some(
-              SequenceResult(
-                id = sequence.id,
-                title = sequence.title,
-                slug = sequence.slug,
-                proposals = indexedProposals
-                  .map(indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), votes.get(indexed.id)))
+      for {
+        allProposals   <- allProposals
+        votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
+        selectedProposals: Seq[ProposalId] = selectionAlgorithm
+          .newProposalsForSequence(
+            targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
+            sequenceConfiguration = sequenceConfiguration,
+            proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+            votedProposals = votedProposals.keys.toSeq,
+            includeList = includedProposals
+          )
+        indexedProposals <- elasticsearchProposalAPI.findProposalsByIds(selectedProposals, random = false)
+      } yield {
+        Some(
+          SequenceResult(
+            id = sequence.id,
+            title = sequence.title,
+            slug = sequence.slug,
+            proposals = indexedProposals
+              .map(
+                indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), votedProposals.get(indexed.id))
               )
-            )
-          }
+          )
+        )
       }
     }
 

@@ -1,16 +1,16 @@
 package org.make.api.proposal
 
-import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import org.apache.commons.math3.distribution.BetaDistribution
+import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
+import org.make.api.sequence.SequenceConfiguration
+import org.make.core.proposal.QualificationKey._
+import org.make.core.proposal.VoteKey._
 import org.make.core.proposal._
 
 import scala.annotation.tailrec
-import scala.util.Random
 import scala.math.ceil
-import org.apache.commons.math3.distribution.BetaDistribution
-import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
-import org.make.core.proposal.QualificationKey._
-import org.make.core.proposal.VoteKey._
+import scala.util.Random
 
 object InverseWeightedRandom extends StrictLogging {
   var random: Random = Random
@@ -194,33 +194,19 @@ object ProposalScorer extends StrictLogging {
   }
 }
 
-class SelectionAlgorithmConfiguration(config: Config) {
-  val newProposalsRatio: Double = config.getDouble("new-proposals-ratio")
-  val newProposalsVoteThreshold: Int = config.getInt("new-proposals-vote-threshold")
-  val testedProposalsEngagementThreshold: Double = config.getDouble("tested-proposals-engagement-threshold")
-  val banditEnabled: Boolean = config.getBoolean("bandit-enabled")
-  val banditMinCount: Int = config.getInt("bandit-min-count")
-  val banditProposalsRatio: Double = config.getDouble("bandit-proposals-ratio")
-}
-
-trait SelectionAlgorithmConfigurationComponent {
-  val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration
-}
-
 trait SelectionAlgorithmComponent {
   val selectionAlgorithm: SelectionAlgorithm
 }
 
 trait SelectionAlgorithm {
   def newProposalsForSequence(targetLength: Int,
+                              sequenceConfiguration: SequenceConfiguration,
                               proposals: Seq[Proposal],
                               votedProposals: Seq[ProposalId],
                               includeList: Seq[ProposalId]): Seq[ProposalId]
 }
 
 trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
-
-  this: SelectionAlgorithmConfigurationComponent =>
 
   override val selectionAlgorithm: DefaultSelectionAlgorithm = new DefaultSelectionAlgorithm
 
@@ -240,6 +226,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     - the non imposed proposals are ordered randomly
      */
     def newProposalsForSequence(targetLength: Int,
+                                sequenceConfiguration: SequenceConfiguration,
                                 proposals: Seq[Proposal],
                                 votedProposals: Seq[ProposalId],
                                 includeList: Seq[ProposalId]): Seq[ProposalId] = {
@@ -260,11 +247,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // balance proposals between new and tested
       val proposalsToChoose: Int = targetLength - includeList.size
       val targetNewProposalsCount: Int =
-        math.ceil(proposalsToChoose * selectionAlgorithmConfiguration.newProposalsRatio).toInt
+        math.ceil(proposalsToChoose * sequenceConfiguration.newProposalsRatio).toInt
 
       // chooses new proposals
       val newIncludedProposals: Seq[Proposal] =
-        chooseNewProposals(availableProposals, targetNewProposalsCount)
+        chooseNewProposals(sequenceConfiguration, availableProposals, targetNewProposalsCount)
       val newProposalsToExclude: Seq[ProposalId] =
         newIncludedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
 
@@ -272,7 +259,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val remainingProposals: Seq[Proposal] =
         availableProposals.filter(p => !newProposalsToExclude.contains(p.proposalId))
       val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
-      val testedIncludedProposals: Seq[Proposal] = chooseTestedProposals(remainingProposals, testedProposalCount)
+      val testedIncludedProposals: Seq[Proposal] =
+        chooseTestedProposals(sequenceConfiguration, remainingProposals, testedProposalCount)
 
       // build sequence
       val sequence: Seq[ProposalId] = includeList ++ Random.shuffle(
@@ -312,10 +300,12 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         .head
     }
 
-    def chooseNewProposals(availableProposals: Seq[Proposal], targetNewProposalsCount: Int): Seq[Proposal] = {
+    def chooseNewProposals(sequenceConfiguration: SequenceConfiguration,
+                           availableProposals: Seq[Proposal],
+                           targetNewProposalsCount: Int): Seq[Proposal] = {
       val newProposals: Seq[Proposal] = availableProposals.filter { proposal =>
         val votes: Int = proposal.votes.map(_.count).sum
-        votes < selectionAlgorithmConfiguration.newProposalsVoteThreshold
+        votes < sequenceConfiguration.newProposalsVoteThreshold
       }
       chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = chooseNewProposalAlgorithm)
     }
@@ -327,17 +317,18 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
      * Keep at least 3 proposals per ideas
      * Then keep the top quartile
      */
-    def chooseBanditProposalsSimilars(similarProposals: Seq[Proposal]): Proposal = {
+    def chooseBanditProposalsSimilars(sequenceConfiguration: SequenceConfiguration,
+                                      similarProposals: Seq[Proposal]): Proposal = {
 
       val similarProposalsScored: Seq[ScoredProposal] =
         similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
 
-      val shortList = if (similarProposals.length < selectionAlgorithmConfiguration.banditMinCount) {
+      val shortList = if (similarProposals.length < sequenceConfiguration.banditMinCount) {
         similarProposals
       } else {
         val count = math.max(
-          selectionAlgorithmConfiguration.banditMinCount,
-          ceil(similarProposals.length * selectionAlgorithmConfiguration.banditProposalsRatio).toInt
+          sequenceConfiguration.banditMinCount,
+          ceil(similarProposals.length * sequenceConfiguration.banditProposalsRatio).toInt
         )
         similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
       }
@@ -345,33 +336,36 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       UniformRandom.choose(shortList)
     }
 
-    def chooseBanditProposals(proposals: Seq[Proposal]): Seq[Proposal] = {
+    def chooseBanditProposals(sequenceConfiguration: SequenceConfiguration, proposals: Seq[Proposal]): Seq[Proposal] = {
       if (proposals.isEmpty) {
         Seq.empty
       } else {
         val currentProposal: Proposal = proposals.head
         val similarProposals: Seq[Proposal] =
           proposals.filter(p => currentProposal.similarProposals.contains(p.proposalId)) ++ Seq(currentProposal)
-        val chosen = chooseBanditProposalsSimilars(similarProposals)
+        val chosen = chooseBanditProposalsSimilars(sequenceConfiguration, similarProposals)
         val similarProposalIds = similarProposals.map(p => p.proposalId)
 
         Seq(chosen) ++ chooseBanditProposals(
+          sequenceConfiguration = sequenceConfiguration,
           proposals = proposals.filter(p => !similarProposalIds.contains(p.proposalId))
         )
       }
     }
 
-    def chooseTestedProposals(availableProposals: Seq[Proposal], testedProposalCount: Int): Seq[Proposal] = {
+    def chooseTestedProposals(sequenceConfiguration: SequenceConfiguration,
+                              availableProposals: Seq[Proposal],
+                              testedProposalCount: Int): Seq[Proposal] = {
       val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
         val votes: Int = proposal.votes.map(_.count).sum
         val engagement_rate: Double = ProposalScorer.engagementUpperBound(proposal)
-        (votes >= selectionAlgorithmConfiguration.newProposalsVoteThreshold
-        && engagement_rate > selectionAlgorithmConfiguration.testedProposalsEngagementThreshold)
+        (votes >= sequenceConfiguration.newProposalsVoteThreshold
+        && engagement_rate > sequenceConfiguration.testedProposalsEngagementThreshold)
       }
 
       val proposalPool =
-        if (selectionAlgorithmConfiguration.banditEnabled) {
-          chooseBanditProposals(testedProposals)
+        if (sequenceConfiguration.banditEnabled) {
+          chooseBanditProposals(sequenceConfiguration, testedProposals)
         } else {
           testedProposals
         }

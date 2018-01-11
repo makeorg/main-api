@@ -20,6 +20,7 @@ class SequenceServiceComponentTest
     extends MakeTest
     with PrivateMethodTester
     with DefaultSequenceServiceComponent
+    with SequenceConfigurationComponent
     with IdGeneratorComponent
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -49,6 +50,7 @@ class SequenceServiceComponentTest
   override val userService: UserService = mock[UserService]
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val selectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
+  override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))

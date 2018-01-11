@@ -34,6 +34,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   actorSystem.registerExtension(ElasticsearchConfiguration)
   actorSystem.actorOf(
     MakeGuardian.props(
+      makeDBExecutionContextComponent = this,
       userService = userService,
       tagService = tagService,
       themeService = themeService,
