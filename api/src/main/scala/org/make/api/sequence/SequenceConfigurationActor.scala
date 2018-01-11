@@ -1,15 +1,10 @@
 package org.make.api.sequence
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
-import akka.pattern.{Backoff, BackoffSupervisor}
-import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.sequence.SequenceConfigurationActor.{
-  GetSequenceConfiguration,
-  ReloadSequenceConfiguration,
-  SetSequenceConfiguration,
-  UpdateSequenceConfiguration
-}
+import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.core.sequence.SequenceId
+import akka.pattern.{pipe, Backoff, BackoffSupervisor}
+import org.make.api.extensions.MakeDBExecutionContextComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
@@ -58,8 +53,12 @@ class SequenceConfigurationActor(makeDBExecutionContextComponent: MakeDBExecutio
   override def receive: Receive = {
     case ReloadSequenceConfiguration                 => refreshCache()
     case UpdateSequenceConfiguration(configurations) => updateConfiguration(configurations)
-    case GetSequenceConfiguration(sequenceId)        => sender() ! configCache.getOrElse(sequenceId, defaultConfiguration)
-    case SetSequenceConfiguration(configuration)     => persistentSequenceConfigService.persist(configuration)
+    case GetSequenceConfiguration(sequenceId) =>
+      sender() ! configCache.getOrElse(sequenceId, defaultConfiguration)
+    case SetSequenceConfiguration(configuration) =>
+      pipe(persistentSequenceConfigService.persist(configuration)).to(sender())
+    case GetPersistentSequenceConfiguration(sequenceId) =>
+      pipe(persistentSequenceConfigService.findOne(sequenceId)).to(sender())
   }
 
 }
@@ -69,6 +68,7 @@ object SequenceConfigurationActor {
   case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
   case class GetSequenceConfiguration(sequenceId: SequenceId)
   case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
+  case class GetPersistentSequenceConfiguration(sequenceId: SequenceId)
 
   val name = "sequence-configuration-backoff"
   val internalName = "sequence-configuration-backoff"

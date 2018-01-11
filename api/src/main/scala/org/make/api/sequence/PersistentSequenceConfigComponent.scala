@@ -20,7 +20,7 @@ trait PersistentSequenceConfigComponent {
 trait PersistentSequenceConfigService {
   def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
   def findAll(): Future[Seq[SequenceConfiguration]]
-  def persist(sequenceConfiguration: SequenceConfiguration): Future[SequenceConfiguration]
+  def persist(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
 }
 
 trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequenceConfigComponent {
@@ -58,7 +58,7 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
         futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
       }
 
-      def insertConfig(sequenceConfig: SequenceConfiguration): Future[SequenceConfiguration] = {
+      def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
         implicit val context: EC = writeExecutionContext
         Future(NamedDB('WRITE).retryableTx { implicit session =>
           withSQL {
@@ -76,34 +76,40 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
                 column.updatedAt -> DateHelper.now
               )
           }.execute().apply()
-        }).map(_ => sequenceConfig)
+        })
       }
 
-      def updateConfig(sequenceConfig: SequenceConfiguration): Future[SequenceConfiguration] = {
+      def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
         implicit val context: EC = writeExecutionContext
         Future(NamedDB('WRITE).retryableTx { implicit session =>
           withSQL {
             update(PersistentSequenceConfig)
-              .set(column.newProposalsRatio -> sequenceConfig.newProposalsRatio)
-              .set(column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold)
-              .set(column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold)
-              .set(column.banditEnabled -> sequenceConfig.banditEnabled)
-              .set(column.banditMinCount -> sequenceConfig.banditMinCount)
-              .set(column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio)
-              .set(column.updatedAt -> DateHelper.now)
+              .set(
+                column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
+                column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
+                column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
+                column.banditEnabled -> sequenceConfig.banditEnabled,
+                column.banditMinCount -> sequenceConfig.banditMinCount,
+                column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio,
+                column.updatedAt -> DateHelper.now
+              )
               .where(
                 sqls
                   .eq(column.sequenceId, sequenceConfig.sequenceId.value)
               )
           }.update().apply()
-        }).map(_ => sequenceConfig)
+        })
       }
 
-      override def persist(sequenceConfig: SequenceConfiguration): Future[SequenceConfiguration] = {
+      override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
+        implicit val context: EC = readExecutionContext
         findOne(sequenceConfig.sequenceId).flatMap {
           case Some(configuration) => updateConfig(sequenceConfig)
           case None                => insertConfig(sequenceConfig)
-        }.map(_ => sequenceConfig)
+        }.map {
+          case result: Boolean => result
+          case result: Int     => (result == 1)
+        }
       }
     }
 }
@@ -139,20 +145,20 @@ object DefaultPersistentSequenceConfigServiceComponent {
     override val columnNames: Seq[String] =
       Seq(
         "sequence_id",
-        "newProposalsRatio",
-        "newProposalsVoteThreshold",
-        "testedProposalsEngagementThreshold",
-        "banditEnabled",
-        "banditMinCount",
-        "banditProposalsRatio",
+        "new_proposals_ratio",
+        "new_proposals_vote_threshold",
+        "tested_proposals_engagement_threshold",
+        "bandit_enabled",
+        "bandit_min_count",
+        "bandit_proposals_ratio",
         "created_at",
         "updated_at"
       )
 
-    override val tableName: String = "sequence_config"
+    override val tableName: String = "sequence_configuration"
 
     lazy val alias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentSequenceConfig], PersistentSequenceConfig] =
-      syntax("sequence_config")
+      syntax("sequence_configuration")
 
     def apply(
       resultName: ResultName[PersistentSequenceConfig] = alias.resultName

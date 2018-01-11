@@ -7,7 +7,11 @@ import akka.util.Timeout
 import io.circe.{Decoder, Encoder}
 
 import scala.concurrent.duration.DurationInt
-import org.make.api.sequence.SequenceConfigurationActor.GetSequenceConfiguration
+import org.make.api.sequence.SequenceConfigurationActor.{
+  GetPersistentSequenceConfiguration,
+  GetSequenceConfiguration,
+  SetSequenceConfiguration
+}
 import io.circe.generic.semiauto._
 
 import scala.concurrent.Future
@@ -27,6 +31,8 @@ object SequenceConfiguration {
 
 trait SequenceConfigurationService {
   def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration]
+  def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
+  def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
 }
 
 trait SequenceConfigurationComponent {
@@ -38,8 +44,17 @@ trait DefaultSequenceConfigurationComponent extends SequenceConfigurationCompone
 
   implicit val timeout: Timeout = Timeout(3.seconds)
 
-  override lazy val sequenceConfigurationService: SequenceConfigurationService =
-    (sequenceId: SequenceId) => {
+  override lazy val sequenceConfigurationService: SequenceConfigurationService = new SequenceConfigurationService {
+    override def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration] = {
       (sequenceConfigurationActor ? GetSequenceConfiguration(sequenceId)).mapTo[SequenceConfiguration]
     }
+
+    override def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean] = {
+      (sequenceConfigurationActor ? SetSequenceConfiguration(sequenceConfiguration)).mapTo[Boolean]
+    }
+
+    override def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
+      (sequenceConfigurationActor ? GetPersistentSequenceConfiguration(sequenceId)).mapTo[Option[SequenceConfiguration]]
+    }
+  }
 }

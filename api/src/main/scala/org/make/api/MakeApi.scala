@@ -148,7 +148,7 @@ trait MakeApi
     atMost = 2.seconds
   )
 
-  override val sequenceConfigurationActor: ActorRef = Await.result(
+  override lazy val sequenceConfigurationActor: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SequenceConfigurationActor.name)
       .resolveOne()(Timeout(2.seconds)),

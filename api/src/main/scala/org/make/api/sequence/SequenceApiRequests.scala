@@ -119,3 +119,26 @@ final case class SearchStartSequenceRequest(slug: String) {
 object SearchStartSequenceRequest {
   implicit val decoder: Decoder[SearchStartSequenceRequest] = deriveDecoder[SearchStartSequenceRequest]
 }
+
+final case class SequenceConfigurationRequest(newProposalsRatio: Double,
+                                              newProposalsVoteThreshold: Int,
+                                              testedProposalsEngagementThreshold: Double,
+                                              banditEnabled: Boolean,
+                                              banditMinCount: Int,
+                                              banditProposalsRatio: Double) {
+  def toSequenceConfiguration(sequenceId: SequenceId): SequenceConfiguration = {
+    SequenceConfiguration(
+      sequenceId = sequenceId,
+      newProposalsRatio = newProposalsRatio,
+      newProposalsVoteThreshold = newProposalsVoteThreshold,
+      testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
+      banditEnabled = banditEnabled,
+      banditMinCount = banditMinCount,
+      banditProposalsRatio = banditProposalsRatio
+    )
+  }
+}
+
+object SequenceConfigurationRequest {
+  implicit val decoder: Decoder[SequenceConfigurationRequest] = deriveDecoder[SequenceConfigurationRequest]
+}
