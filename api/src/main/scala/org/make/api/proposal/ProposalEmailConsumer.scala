@@ -33,19 +33,21 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed        => handleProposalViewed(event)
-      case event: ProposalUpdated       => handleProposalUpdated(event)
-      case event: ProposalProposed      => handleProposalProposed(event)
-      case event: ProposalAccepted      => handleProposalAccepted(event)
-      case event: ProposalRefused       => handleProposalRefused(event)
-      case event: ProposalPostponed     => handleProposalPostponed(event)
-      case event: ProposalVoted         => handleVotedProposal(event)
-      case event: ProposalUnvoted       => handleUnvotedProposal(event)
-      case event: ProposalQualified     => handleQualifiedProposal(event)
-      case event: ProposalUnqualified   => handleUnqualifiedProposal(event)
-      case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
-      case event: ProposalLocked        => handleLockedProposal(event)
-      case _: ProposalPatched           => Future.successful {}
+      case event: ProposalViewed           => handleProposalViewed(event)
+      case event: ProposalUpdated          => handleProposalUpdated(event)
+      case event: ProposalProposed         => handleProposalProposed(event)
+      case event: ProposalAccepted         => handleProposalAccepted(event)
+      case event: ProposalRefused          => handleProposalRefused(event)
+      case event: ProposalPostponed        => handleProposalPostponed(event)
+      case event: ProposalVoted            => handleVotedProposal(event)
+      case event: ProposalUnvoted          => handleUnvotedProposal(event)
+      case event: ProposalQualified        => handleQualifiedProposal(event)
+      case event: ProposalUnqualified      => handleUnqualifiedProposal(event)
+      case event: SimilarProposalsAdded    => handleSimilarProposalsAdded(event)
+      case event: ProposalLocked           => handleLockedProposal(event)
+      case _: ProposalPatched              => Future.successful {}
+      case _: ProposalAddedToOperation     => Future.successful {}
+      case _: ProposalRemovedFromOperation => Future.successful {}
     }
 
   }
@@ -64,6 +66,9 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
     implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
+    implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
+    implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
+      at(identity)
   }
 
   def handleVotedProposal(event: ProposalVoted): Future[Unit] = {

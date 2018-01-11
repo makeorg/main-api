@@ -24,19 +24,21 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed        => handleProposalViewed(event)
-      case event: ProposalUpdated       => handleProposalUpdated(event)
-      case event: ProposalProposed      => handleProposalProposed(event)
-      case event: ProposalAccepted      => handleProposalAccepted(event)
-      case event: ProposalRefused       => handleProposalRefused(event)
-      case event: ProposalPostponed     => handleProposalPostponed(event)
-      case event: ProposalVoted         => handleProposalVoted(event)
-      case event: ProposalUnvoted       => handleProposalUnvoted(event)
-      case event: ProposalQualified     => handleProposalQualified(event)
-      case event: ProposalUnqualified   => handleProposalUnqualified(event)
-      case event: SimilarProposalsAdded => handleSimilarProposalsAdded(event)
-      case event: ProposalLocked        => handleProposalLocked(event)
-      case _: ProposalPatched           => Future.successful {}
+      case event: ProposalViewed           => handleProposalViewed(event)
+      case event: ProposalUpdated          => handleProposalUpdated(event)
+      case event: ProposalProposed         => handleProposalProposed(event)
+      case event: ProposalAccepted         => handleProposalAccepted(event)
+      case event: ProposalRefused          => handleProposalRefused(event)
+      case event: ProposalPostponed        => handleProposalPostponed(event)
+      case event: ProposalVoted            => handleProposalVoted(event)
+      case event: ProposalUnvoted          => handleProposalUnvoted(event)
+      case event: ProposalQualified        => handleProposalQualified(event)
+      case event: ProposalUnqualified      => handleProposalUnqualified(event)
+      case event: SimilarProposalsAdded    => handleSimilarProposalsAdded(event)
+      case event: ProposalLocked           => handleProposalLocked(event)
+      case _: ProposalPatched              => Future.successful {}
+      case _: ProposalAddedToOperation     => Future.successful {}
+      case _: ProposalRemovedFromOperation => Future.successful {}
     }
 
   }
@@ -55,6 +57,9 @@ class ProposalSessionHistoryConsumerActor(sessionHistoryCoordinator: ActorRef)
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
     implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
+    implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
+    implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
+      at(identity)
   }
 
   def handleProposalViewed(event: ProposalViewed): Future[Unit] = {

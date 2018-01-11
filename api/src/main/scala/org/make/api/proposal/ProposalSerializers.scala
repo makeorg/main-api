@@ -63,6 +63,12 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V1] =
     persister[ProposalPatched]("proposal-tags-updated")
 
+  private val proposalAddedToOperationSerializer: JsonPersister[ProposalAddedToOperation, V1] =
+    persister[ProposalAddedToOperation]("proposal-added-to-operation")
+
+  private val proposalRemovedFromOperationSerializer: JsonPersister[ProposalRemovedFromOperation, V1] =
+    persister[ProposalRemovedFromOperation]("proposal-removed-from-operation")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       proposalProposedSerializer,
@@ -81,6 +87,8 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalSerializer,
       similarProposalRemovedSerializer,
       similarProposalsClearedSerializer,
-      proposalPatchedSerializer
+      proposalPatchedSerializer,
+      proposalAddedToOperationSerializer,
+      proposalRemovedFromOperationSerializer
     )
 }

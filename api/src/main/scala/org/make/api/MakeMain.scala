@@ -9,8 +9,8 @@ import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
-import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
+import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -37,6 +37,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       userService = userService,
       tagService = tagService,
       themeService = themeService,
+      sequenceService = sequenceService,
       operationService = operationService
     ),
     MakeGuardian.name

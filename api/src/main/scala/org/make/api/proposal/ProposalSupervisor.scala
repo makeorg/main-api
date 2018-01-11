@@ -3,6 +3,7 @@ package org.make.api.proposal
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
 import org.make.api.operation.OperationService
+import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
@@ -11,7 +12,7 @@ class ProposalSupervisor(userService: UserService,
                          userHistoryCoordinator: ActorRef,
                          sessionHistoryCoordinator: ActorRef,
                          tagService: TagService,
-                         sequenceCoordinator: ActorRef,
+                         sequenceService: SequenceService,
                          operationService: OperationService)
     extends Actor
     with ActorLogging
@@ -26,7 +27,6 @@ class ProposalSupervisor(userService: UserService,
           .props(
             userHistoryActor = userHistoryCoordinator,
             sessionHistoryActor = sessionHistoryCoordinator,
-            sequenceActor = sequenceCoordinator,
             operationService = operationService
           ),
         ProposalCoordinator.name
@@ -59,7 +59,8 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalConsumerActor.props(proposalCoordinatorService, userService, tagService),
+        ProposalConsumerActor
+          .props(proposalCoordinatorService, userService, tagService, sequenceService, operationService),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)
@@ -79,7 +80,7 @@ object ProposalSupervisor {
             userHistoryCoordinator: ActorRef,
             sessionHistoryCoordinator: ActorRef,
             tagService: TagService,
-            sequenceCoordinator: ActorRef,
+            sequenceService: SequenceService,
             operationService: OperationService): Props =
     Props(
       new ProposalSupervisor(
@@ -87,7 +88,7 @@ object ProposalSupervisor {
         userHistoryCoordinator,
         sessionHistoryCoordinator,
         tagService,
-        sequenceCoordinator,
+        sequenceService,
         operationService
       )
     )

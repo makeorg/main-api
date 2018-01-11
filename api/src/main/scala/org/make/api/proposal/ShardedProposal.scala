@@ -10,15 +10,11 @@ import org.make.api.technical.MakePersistentActor.Snapshot
 import scala.concurrent.duration.DurationInt
 
 object ShardedProposal {
-  def props(userHistoryActor: ActorRef,
-            sessionHistoryActor: ActorRef,
-            sequenceActor: ActorRef,
-            operationService: OperationService): Props =
+  def props(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, operationService: OperationService): Props =
     Props(
       new ShardedProposal(
         userHistoryActor = userHistoryActor,
         sessionHistoryActor = sessionHistoryActor,
-        sequenceActor = sequenceActor,
         operationService = operationService
       )
     )
@@ -36,14 +32,10 @@ object ShardedProposal {
   }
 }
 
-class ShardedProposal(userHistoryActor: ActorRef,
-                      sessionHistoryActor: ActorRef,
-                      sequenceActor: ActorRef,
-                      operationService: OperationService)
+class ShardedProposal(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, operationService: OperationService)
     extends ProposalActor(
       userHistoryActor = userHistoryActor,
       sessionHistoryActor = sessionHistoryActor,
-      sequenceActor = sequenceActor,
       operationService = operationService
     ) {
 

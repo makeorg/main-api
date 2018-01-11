@@ -9,8 +9,10 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalIndexerActor.IndexProposal
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
@@ -25,7 +27,9 @@ import scala.concurrent.duration.DurationInt
 
 class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
-                            tagService: TagService)
+                            tagService: TagService,
+                            sequenceService: SequenceService,
+                            operationService: OperationService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with ActorLogging {
@@ -53,7 +57,13 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
       case event: ProposalQualified   => onCreateOrUpdate(event)
       case event: ProposalUnqualified => onCreateOrUpdate(event)
       case event: ProposalPatched     => onCreateOrUpdate(event)
-      case _: ProposalLocked          => Future.successful {}
+      case event: ProposalAddedToOperation =>
+        addToOperation(event)
+        onCreateOrUpdate(event)
+      case event: ProposalRemovedFromOperation =>
+        removeFromOperation(event)
+        onCreateOrUpdate(event)
+      case _: ProposalLocked => Future.successful {}
       case event: SimilarProposalsAdded =>
         onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
         Future.successful {}
@@ -75,10 +85,39 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
     implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
     implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
     implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
+    implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
+    implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
+      at(identity)
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
     retrieveAndShapeProposal(event.id).flatMap(indexOrUpdate)
+  }
+
+  def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
+      case Some(proposal) =>
+        operationService.findOne(event.operationId).map { maybeOperation =>
+          maybeOperation.foreach { operation =>
+            sequenceService
+              .addProposals(operation.sequenceLandingId, event.moderatorId, event.requestContext, Seq(event.id))
+          }
+        }
+      case None => Future.successful[Unit] {}
+    }
+  }
+
+  def removeFromOperation(event: ProposalRemovedFromOperation): Future[Unit] = {
+    proposalCoordinatorService.getProposal(event.id).flatMap {
+      case Some(proposal) =>
+        operationService.findOne(event.operationId).map { maybeOperation =>
+          maybeOperation.foreach { operation =>
+            sequenceService
+              .removeProposals(operation.sequenceLandingId, event.moderatorId, event.requestContext, Seq(event.id))
+          }
+        }
+      case None => Future.successful[Unit] {}
+    }
   }
 
   def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
@@ -149,7 +188,11 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 object ProposalConsumerActor {
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
-            tagService: TagService): Props =
-    Props(new ProposalConsumerActor(proposalCoordinatorService, userService, tagService))
+            tagService: TagService,
+            sequenceService: SequenceService,
+            operationService: OperationService): Props =
+    Props(
+      new ProposalConsumerActor(proposalCoordinatorService, userService, tagService, sequenceService, operationService)
+    )
   val name: String = "proposal-consumer"
 }
