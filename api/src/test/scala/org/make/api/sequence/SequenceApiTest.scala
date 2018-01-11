@@ -313,13 +313,7 @@ class SequenceApiTest
 
   when(
     sequenceService
-      .startNewSequence(
-        any[Option[UserId]],
-        any[SequenceConfiguration],
-        matches("start-sequence"),
-        any[Seq[ProposalId]],
-        any[RequestContext]
-      )
+      .startNewSequence(any[Option[UserId]], matches("start-sequence"), any[Seq[ProposalId]], any[RequestContext])
   ).thenReturn(
     Future.successful(
       Some(
@@ -336,7 +330,6 @@ class SequenceApiTest
   when(
     sequenceService.startNewSequence(
       any[Option[UserId]],
-      any[SequenceConfiguration],
       ArgumentMatchers.eq(SequenceId("start-sequence-by-id")),
       any[Seq[ProposalId]],
       any[RequestContext]
@@ -357,7 +350,6 @@ class SequenceApiTest
   when(
     sequenceService.startNewSequence(
       any[Option[UserId]],
-      any[SequenceConfiguration],
       ArgumentMatchers.eq(SequenceId("non-existing-sequence")),
       any[Seq[ProposalId]],
       any[RequestContext]
