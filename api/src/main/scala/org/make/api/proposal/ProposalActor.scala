@@ -12,7 +12,6 @@ import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.sequence.{AddProposalsSequenceCommand, RemoveProposalsSequenceCommand}
 import org.make.api.sessionhistory._
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
@@ -33,10 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ProposalActor(userHistoryActor: ActorRef,
-                    sessionHistoryActor: ActorRef,
-                    sequenceActor: ActorRef,
-                    operationService: OperationService)
+class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, operationService: OperationService)
     extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
@@ -152,6 +148,7 @@ class ProposalActor(userHistoryActor: ActorRef,
         state = applyEvent(event)
         if (command.changes.operation.isDefined && command.changes.operation != proposal.operation) {
           changeSequence(
+            command.proposalId,
             currentOperation = proposal.operation,
             newOperation = command.changes.operation,
             requestContext = command.requestContext,
@@ -507,46 +504,41 @@ class ProposalActor(userHistoryActor: ActorRef,
 
   }
 
-  private def changeSequence(currentOperation: Option[OperationId],
+  private def addToNewOperation(proposalId: ProposalId,
+                                operation: OperationId,
+                                requestContext: RequestContext,
+                                moderatorId: UserId): Unit = {
+    persistAndPublishEvent(
+      ProposalAddedToOperation(proposalId, operation, moderatorId, requestContext = requestContext)
+    ) { _ =>
+      ()
+    }
+  }
+
+  private def removeFromOperation(proposalId: ProposalId,
+                                  operation: OperationId,
+                                  requestContext: RequestContext,
+                                  moderatorId: UserId): Unit = {
+    persistAndPublishEvent(
+      ProposalRemovedFromOperation(proposalId, operation, moderatorId, requestContext = requestContext)
+    ) { _ =>
+      ()
+    }
+  }
+
+  private def changeSequence(proposalId: ProposalId,
+                             currentOperation: Option[OperationId],
                              newOperation: Option[OperationId],
                              requestContext: RequestContext,
                              moderatorId: UserId): Unit = {
     // Remove from previous operation sequence if any
-    val currentOp: Option[(OperationId, ProposalId)] = for {
-      operationId <- currentOperation
-      proposalId  <- state.map(_.proposal.proposalId)
-    } yield (operationId, proposalId)
-    currentOp.foreach {
-      case (operationId, proposalId) =>
-        operationService.findOne(operationId).map { maybeOperation =>
-          maybeOperation.foreach { operation =>
-            sequenceActor ! RemoveProposalsSequenceCommand(
-              operation.sequenceLandingId,
-              Seq(proposalId),
-              requestContext,
-              moderatorId
-            )
-          }
-        }
+    currentOperation.foreach { operation =>
+      removeFromOperation(proposalId, operation, requestContext, moderatorId)
     }
 
     // Add to new operation sequence if any
-    val newOp = for {
-      operationId <- newOperation
-      proposalId  <- state.map(_.proposal.proposalId)
-    } yield (operationId, proposalId)
-    newOp.foreach {
-      case (operationId, proposalId) =>
-        operationService.findOne(operationId).map { maybeOperation =>
-          maybeOperation.foreach { operation =>
-            sequenceActor ! AddProposalsSequenceCommand(
-              operation.sequenceLandingId,
-              Seq(proposalId),
-              requestContext,
-              moderatorId
-            )
-          }
-        }
+    newOperation.foreach { operation =>
+      addToNewOperation(proposalId, operation, requestContext, moderatorId)
     }
   }
 
@@ -558,6 +550,7 @@ class ProposalActor(userHistoryActor: ActorRef,
         persistAndPublishEvent(event) { _ =>
           if (command.operation != proposal.flatMap(_.operation)) {
             changeSequence(
+              command.proposalId,
               currentOperation = proposal.flatMap(_.operation),
               newOperation = command.operation,
               requestContext = command.requestContext,
@@ -576,6 +569,9 @@ class ProposalActor(userHistoryActor: ActorRef,
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
+          command.operation.foreach { operationId =>
+            addToNewOperation(command.proposalId, operationId, command.requestContext, command.moderator)
+          }
           sender() ! state.map(_.proposal)
         }
       case Right(None) => sender() ! None

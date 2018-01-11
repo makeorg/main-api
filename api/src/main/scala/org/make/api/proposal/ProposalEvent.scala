@@ -55,7 +55,8 @@ object PublishedProposalEvent {
   type AnyProposalEvent =
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
       ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
-      SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+: CNil
+      SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+: ProposalAddedToOperation :+:
+      ProposalRemovedFromOperation :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -66,19 +67,21 @@ object PublishedProposalEvent {
 
   object ProposalEventWrapper {
     def wrapEvent(event: PublishedProposalEvent): AnyProposalEvent = event match {
-      case e: ProposalProposed      => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAccepted      => Coproduct[AnyProposalEvent](e)
-      case e: ProposalRefused       => Coproduct[AnyProposalEvent](e)
-      case e: ProposalPostponed     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalViewed        => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUpdated       => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVoted         => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnvoted       => Coproduct[AnyProposalEvent](e)
-      case e: ProposalQualified     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnqualified   => Coproduct[AnyProposalEvent](e)
-      case e: SimilarProposalsAdded => Coproduct[AnyProposalEvent](e)
-      case e: ProposalLocked        => Coproduct[AnyProposalEvent](e)
-      case e: ProposalPatched       => Coproduct[AnyProposalEvent](e)
+      case e: ProposalProposed             => Coproduct[AnyProposalEvent](e)
+      case e: ProposalAccepted             => Coproduct[AnyProposalEvent](e)
+      case e: ProposalRefused              => Coproduct[AnyProposalEvent](e)
+      case e: ProposalPostponed            => Coproduct[AnyProposalEvent](e)
+      case e: ProposalViewed               => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUpdated              => Coproduct[AnyProposalEvent](e)
+      case e: ProposalVoted                => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnvoted              => Coproduct[AnyProposalEvent](e)
+      case e: ProposalQualified            => Coproduct[AnyProposalEvent](e)
+      case e: ProposalUnqualified          => Coproduct[AnyProposalEvent](e)
+      case e: SimilarProposalsAdded        => Coproduct[AnyProposalEvent](e)
+      case e: ProposalLocked               => Coproduct[AnyProposalEvent](e)
+      case e: ProposalPatched              => Coproduct[AnyProposalEvent](e)
+      case e: ProposalAddedToOperation     => Coproduct[AnyProposalEvent](e)
+      case e: ProposalRemovedFromOperation => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -313,6 +316,32 @@ object PublishedProposalEvent {
     implicit val formatter: RootJsonFormat[ProposalLocked] =
       DefaultJsonProtocol.jsonFormat5(ProposalLocked.apply)
 
+  }
+
+  final case class ProposalAddedToOperation(id: ProposalId,
+                                            operationId: OperationId,
+                                            moderatorId: UserId,
+                                            eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                            requestContext: RequestContext = RequestContext.empty)
+      extends PublishedProposalEvent
+  object ProposalAddedToOperation {
+    val version: Int = MakeSerializable.V1
+
+    implicit val formatter: RootJsonFormat[ProposalAddedToOperation] =
+      DefaultJsonProtocol.jsonFormat5(ProposalAddedToOperation.apply)
+  }
+
+  final case class ProposalRemovedFromOperation(id: ProposalId,
+                                                operationId: OperationId,
+                                                moderatorId: UserId,
+                                                eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                                requestContext: RequestContext = RequestContext.empty)
+      extends PublishedProposalEvent
+  object ProposalRemovedFromOperation {
+    val version: Int = MakeSerializable.V1
+
+    implicit val formatter: RootJsonFormat[ProposalRemovedFromOperation] =
+      DefaultJsonProtocol.jsonFormat5(ProposalRemovedFromOperation.apply)
   }
 
 }

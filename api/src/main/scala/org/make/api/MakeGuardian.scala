@@ -3,7 +3,7 @@ package org.make.api
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.operation.OperationService
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.SequenceSupervisor
+import org.make.api.sequence.{SequenceService, SequenceSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -15,6 +15,7 @@ import org.make.api.userhistory.UserHistoryCoordinator
 class MakeGuardian(userService: UserService,
                    tagService: TagService,
                    themeService: ThemeService,
+                   sequenceService: SequenceService,
                    operationService: OperationService)
     extends Actor
     with ActorLogging {
@@ -54,7 +55,7 @@ class MakeGuardian(userService: UserService,
             userHistoryCoordinator,
             sessionHistoryCoordinator,
             tagService,
-            sequenceCoordinator,
+            sequenceService,
             operationService
           ),
         ProposalSupervisor.name
@@ -84,6 +85,7 @@ object MakeGuardian {
   def props(userService: UserService,
             tagService: TagService,
             themeService: ThemeService,
+            sequenceService: SequenceService,
             operationService: OperationService): Props =
-    Props(new MakeGuardian(userService, tagService, themeService, operationService))
+    Props(new MakeGuardian(userService, tagService, themeService, sequenceService, operationService))
 }

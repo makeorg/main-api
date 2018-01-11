@@ -3,12 +3,11 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import akka.actor.{Actor, ActorRef, Props}
-import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.ProposalState
-import org.make.api.sequence.{AddProposalsSequenceCommand, RemoveProposalsSequenceCommand, SequenceCommand}
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
@@ -24,7 +23,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
@@ -47,7 +45,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val userHistoryActor: ActorRef = system.actorOf(Props(new ControllableActor(userHistoryController)), "user-history")
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
-  val sequenceProbe: TestProbe = TestProbe()
 
   val operationService: OperationService = mock[OperationService]
   val sequence1: Sequence = Sequence(
@@ -112,7 +109,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       ProposalCoordinator.props(
         userHistoryActor = userHistoryActor,
         sessionHistoryActor = sessionHistoryActor,
-        sequenceActor = sequenceProbe.ref,
         operationService = operationService
       ),
       ProposalCoordinator.name
@@ -966,206 +962,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       error.errors.head.field should be("proposalId")
       error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
     }
-
-    scenario("Update a new operation") {
-      // Change operation and check sequenceActor is getting commanded by Remove and Add
-      val proposalId = ProposalId("update-new-operation")
-      Given("a newly proposed Proposal with no operation")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        operation = None
-      )
-
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
-
-      And("I accept the proposal")
-      coordinator ! AcceptProposalCommand(
-        proposalId = proposalId,
-        moderator = UserId("some moderator"),
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = true,
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = None
-      )
-
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
-
-      When("I update the proposal with a new operation")
-      coordinator ! UpdateProposalCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        updatedAt = mainUpdatedAt.get,
-        moderator = UserId("some moderator"),
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq.empty,
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = Some(operation1.operationId)
-      )
-
-      Then("I should receive the updated proposal")
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
-
-      response.proposalId should be(ProposalId("update-new-operation"))
-      response.content should be("This is a proposal")
-      response.operation should be(Some(operation1.operationId))
-
-      And("I should also receive a AddProposalsSequenceCommand to operation2")
-      val sequenceAdd = sequenceProbe.expectMsgType[AddProposalsSequenceCommand]
-      sequenceAdd.sequenceId should be(operation1.sequenceLandingId)
-
-    }
-
-    scenario("Update a change of operation") {
-      // Change operation and check sequenceActor is getting commanded by Remove and Add
-      val proposalId = ProposalId("update-change-operation")
-      Given("a newly proposed Proposal with an operation")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
-
-      And("I accept the proposal")
-      coordinator ! AcceptProposalCommand(
-        proposalId = proposalId,
-        moderator = UserId("some moderator"),
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = true,
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
-
-      When("I update the proposal with a new operation")
-      coordinator ! UpdateProposalCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        updatedAt = mainUpdatedAt.get,
-        moderator = UserId("some moderator"),
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq.empty,
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = Some(operation2.operationId)
-      )
-
-      Then("I should receive the updated proposal")
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
-
-      response.proposalId should be(ProposalId("update-change-operation"))
-      response.content should be("This is a proposal")
-      response.operation should be(Some(operation2.operationId))
-
-      And("I should receive a RemoveProposalsSequenceCommand to operation1")
-      And("I should also receive a AddProposalsSequenceCommand to operation2")
-      val commands: Seq[SequenceCommand] = sequenceProbe.expectMsgAllClassOf(
-        1.second,
-        classOf[RemoveProposalsSequenceCommand],
-        classOf[AddProposalsSequenceCommand]
-      )
-      commands.foreach {
-        case c: RemoveProposalsSequenceCommand => c.sequenceId should be(operation1.sequenceLandingId)
-        case c: AddProposalsSequenceCommand    => c.sequenceId should be(operation2.sequenceLandingId)
-        case c                                 => fail(s"unexpected command on sequence actor: $c")
-      }
-    }
-
-    scenario("Update no operation") {
-      // Change operation for none and check sequenceActor is getting commanded by Remove only.
-      // Update with no operation must remove the prop from sequence operation
-      val proposalId = ProposalId("update-no-operation")
-      Given("a newly proposed Proposal with an operation")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
-
-      And("I accept the proposal")
-      coordinator ! AcceptProposalCommand(
-        proposalId = proposalId,
-        moderator = UserId("some moderator"),
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = true,
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
-
-      When("I update the proposal with no operation")
-      coordinator ! UpdateProposalCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        updatedAt = mainUpdatedAt.get,
-        moderator = UserId("some moderator"),
-        newContent = None,
-        theme = None,
-        labels = Seq.empty,
-        tags = Seq.empty,
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = None
-      )
-
-      Then("I should receive the updated proposal")
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
-
-      response.proposalId should be(ProposalId("update-no-operation"))
-      response.content should be("This is a proposal")
-      response.operation should be(None)
-
-      And("I should receive a RemoveProposalsSequenceCommand to operation1")
-      val commandRemove = sequenceProbe.expectMsgType[RemoveProposalsSequenceCommand]
-      commandRemove.sequenceId should be(operation1.sequenceLandingId)
-
-      And("I should not receive any message")
-      //TODO: check that the probe actually receive no message
-    }
   }
 
   feature("Lock a proposal") {
@@ -1557,86 +1353,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.refusalReason should be(Some("I don't want"))
       proposal.idea should be(Some(IdeaId("my-idea")))
       proposal.tags should be(Seq(TagId("my-tag")))
-    }
-
-    scenario("patch a new operation") {
-      // Change operation and check sequenceActor is getting commanded by Remove and Add
-      Given("a newly proposed Proposal with an operation")
-      val proposalId = ProposalId("patched-new-operation")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsg(proposalId)
-
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-
-      expectMsgType[Option[Proposal]]
-
-      When("I patch the proposal with a new operation")
-      coordinator ! PatchProposalCommand(
-        proposalId,
-        UserId("1234"),
-        PatchProposalRequest(operation = Some(operation2.operationId)),
-        RequestContext.empty
-      )
-
-      Then("I should receive the patched proposal")
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
-      proposal.operation should be(Some(operation2.operationId))
-
-      And("I should receive a RemoveProposalsSequenceCommand to operation1")
-      And("I should also receive a AddProposalsSequenceCommand to operation2")
-      val commands: Seq[SequenceCommand] = sequenceProbe.expectMsgAllClassOf(
-        1.second,
-        classOf[RemoveProposalsSequenceCommand],
-        classOf[AddProposalsSequenceCommand]
-      )
-      commands.foreach {
-        case c: RemoveProposalsSequenceCommand => c.sequenceId should be(operation1.sequenceLandingId)
-        case c: AddProposalsSequenceCommand    => c.sequenceId should be(operation2.sequenceLandingId)
-        case c                                 => fail(s"unexpected command on sequence actor: $c")
-      }
-    }
-
-    scenario("patch no operation") {
-      // Change operation for none and check sequenceActor is getting commanded by nothing.
-      // Patch must not alter if nothing is inquired
-      Given("a newly proposed Proposal with an operation")
-      val proposalId = ProposalId("patched-no-operation")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is a proposal",
-        operation = Some(operation1.operationId)
-      )
-
-      expectMsg(proposalId)
-
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-
-      expectMsgType[Option[Proposal]]
-
-      When("I patch the proposal with no operation")
-      coordinator ! PatchProposalCommand(
-        proposalId,
-        UserId("1234"),
-        PatchProposalRequest(operation = None),
-        RequestContext.empty
-      )
-
-      Then("I should receive the patched proposal with no changes")
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
-      proposal.operation should be(Some(operation1.operationId))
-
-      And("I should not receive any message on the sequence actor")
     }
   }
 }
