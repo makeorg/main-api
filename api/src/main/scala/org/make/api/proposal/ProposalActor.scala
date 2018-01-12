@@ -568,11 +568,13 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
     val maybeEvent = validateAcceptCommand(command)
     maybeEvent match {
       case Right(Some(event)) =>
-        persistAndPublishEvent(event) { _ =>
-          command.operation.foreach { operationId =>
-            addToNewOperation(command.proposalId, operationId, command.requestContext, command.moderator)
-          }
-          sender() ! state.map(_.proposal)
+        persistAndPublishEvent(event) {
+          case e: ProposalAccepted =>
+            e.operation.foreach { operationId =>
+              addToNewOperation(e.id, operationId, e.requestContext, e.moderator)
+            }
+            sender() ! state.map(_.proposal)
+          case _ => sender() ! state.map(_.proposal)
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -660,7 +662,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 tags = command.tags,
                 similarProposals = command.similarProposals,
                 idea = command.idea,
-                operation = command.operation
+                operation = command.operation.orElse(proposal.operation).orElse(proposal.creationContext.operationId)
               )
             )
           )
@@ -710,7 +712,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 tags = command.tags,
                 similarProposals = command.similarProposals,
                 idea = command.idea,
-                operation = command.operation
+                operation = command.operation.orElse(proposal.operation).orElse(proposal.creationContext.operationId)
               )
             )
           )
@@ -936,7 +938,7 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation.orElse(state.proposal.creationContext.operationId)
+        operation = event.operation
       )
 
     proposal = event.edition match {
@@ -976,7 +978,7 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation.orElse(state.proposal.creationContext.operationId)
+        operation = event.operation
       )
 
     proposal = event.edition match {
