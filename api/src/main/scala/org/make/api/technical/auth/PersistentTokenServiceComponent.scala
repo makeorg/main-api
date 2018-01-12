@@ -34,11 +34,8 @@ trait PersistentTokenService {
   def deleteByUserId(userId: UserId): Future[Int]
 }
 
-trait DefaultPersistentTokenServiceComponent
-    extends PersistentTokenServiceComponent
-    with MakeDBExecutionContextComponent
-    with PersistentUserServiceComponent
-    with PersistentClientServiceComponent {
+trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceComponent {
+  self: MakeDBExecutionContextComponent with PersistentUserServiceComponent with PersistentClientServiceComponent =>
 
   case class PersistentToken(accessToken: String,
                              refreshToken: Option[String],

@@ -34,6 +34,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     with TagServiceComponent
     with OperationServiceComponent
     with SequenceCoordinatorServiceComponent
+    with SequenceConfigurationComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
 
@@ -228,6 +229,87 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                     }
                   }
 
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+  @ApiOperation(
+    value = "moderation-get-sequence-config",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceConfiguration]))
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "sequenceId", paramType = "path", dataType = "string")))
+  @Path(value = "/moderation/sequences/{sequenceId}/configuration")
+  def getModerationSequenceConfiguration: Route = {
+    get {
+      path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
+        makeTrace("GetModerationSequenceConfiguration") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              provideAsyncOrNotFound[SequenceConfiguration](
+                sequenceConfigurationService.getPersistentSequenceConfiguration(sequenceId)
+              ) { complete(_) }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(
+    value = "moderation-update-sequence-configuration",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Boolean])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.sequence.SequenceConfigurationRequest"
+      ),
+      new ApiImplicitParam(name = "sequenceId", paramType = "path", required = true, value = "", dataType = "string")
+    )
+  )
+  @Path(value = "/moderation/sequences/{sequenceId}/configuration")
+  def putSequenceConfiguration: Route =
+    put {
+      path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
+        makeTrace("PostSequenceConfiguration") { requestContext =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              decodeRequest {
+                entity(as[SequenceConfigurationRequest]) { sequenceConfigurationRequest: SequenceConfigurationRequest =>
+                  provideAsync[Boolean](
+                    sequenceConfigurationService
+                      .setSequenceConfiguration(sequenceConfigurationRequest.toSequenceConfiguration(sequenceId))
+                  ) { complete(_) }
                 }
               }
             }
@@ -511,7 +593,9 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       postAddProposalSequence ~
       postRemoveProposalSequence ~
       patchSequence ~
-      migrateSequenceOperation
+      migrateSequenceOperation ~
+      getModerationSequenceConfiguration ~
+      putSequenceConfiguration
 
   val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
   val sequenceSlug: PathMatcher1[String] = Segment

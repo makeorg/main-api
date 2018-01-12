@@ -42,6 +42,7 @@ class SequenceApiTest
     with TagServiceComponent
     with OperationServiceComponent
     with SequenceCoordinatorServiceComponent
+    with SequenceConfigurationComponent
     with ReadJournalComponent
     with ActorSystemComponent {
 
@@ -53,6 +54,7 @@ class SequenceApiTest
   override val tagService: TagService = mock[TagService]
   override val operationService: OperationService = mock[OperationService]
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
+  override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val actorSystem: ActorSystem = mock[ActorSystem]
   override val readJournal: ReadJournalComponent.MakeReadJournal = mock[ReadJournalComponent.MakeReadJournal]
 
@@ -207,6 +209,15 @@ class SequenceApiTest
       |}
     """.stripMargin
 
+  val setSequenceConfigurationPayload: String = """{
+                                          |  "newProposalsRatio": 0.666,
+                                          |  "newProposalsVoteThreshold": 100,
+                                          |  "testedProposalsEngagementThreshold": 0.5,
+                                          |  "banditEnabled": false,
+                                          |  "banditMinCount": 3,
+                                          |  "banditProposalsRatio": 0.3
+                                          |}""".stripMargin
+
   val routes: Route = sealRoute(sequenceRoutes)
 
   when(
@@ -335,6 +346,7 @@ class SequenceApiTest
       )
     )
   )
+
   when(
     sequenceService.startNewSequence(
       any[Option[UserId]],
@@ -343,6 +355,28 @@ class SequenceApiTest
       any[RequestContext]
     )
   ).thenReturn(Future.successful(None))
+
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("unknownSequence"))))
+    .thenReturn(Future.successful(None))
+
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("mySequence")))).thenReturn(
+    Future.successful(
+      Some(
+        SequenceConfiguration(
+          sequenceId = SequenceId("mySequence"),
+          newProposalsRatio = 0.5,
+          newProposalsVoteThreshold = 100,
+          testedProposalsEngagementThreshold = 0.8,
+          banditEnabled = true,
+          banditMinCount = 3,
+          banditProposalsRatio = .3
+        )
+      )
+    )
+  )
+
+  when(sequenceConfigurationService.setSequenceConfiguration(any[SequenceConfiguration]))
+    .thenReturn(Future.successful(true))
 
   feature("creating") {
     scenario("unauthenticated user") {
@@ -625,6 +659,48 @@ class SequenceApiTest
     scenario("valid request") {
       Patch("/moderation/sequences/moderationSequence1")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"title": "newSequenceTitle"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("get sequence configuration") {
+    scenario("set sequence config as user") {
+      Get("/moderation/sequences/mySequence/configuration")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("set sequence config as moderator") {
+      Get("/moderation/sequences/mySequence/configuration")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("get unknown sequence config as moderator") {
+      Get("/moderation/sequences/unknownSequence/configuration")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+  }
+
+  feature("set sequence configuration") {
+    scenario("set sequence config as user") {
+      Put("/moderation/sequences/mySequence/configuration")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("set sequence config as moderator") {
+      Put("/moderation/sequences/mySequence/configuration")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }

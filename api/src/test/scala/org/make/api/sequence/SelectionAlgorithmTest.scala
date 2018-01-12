@@ -7,9 +7,9 @@ import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeTest
 import org.make.api.proposal._
 import org.make.core.proposal._
+import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
-import org.mockito.Mockito
 
 import scala.collection.mutable
 import scala.util.Random
@@ -24,18 +24,17 @@ class Switch {
   }
 }
 
-class SelectionAlgorithmTest
-    extends MakeTest
-    with DefaultSelectionAlgorithmComponent
-    with SelectionAlgorithmConfigurationComponent {
+class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComponent {
 
-  override val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration = mock[SelectionAlgorithmConfiguration]
-  Mockito.when(selectionAlgorithmConfiguration.newProposalsRatio).thenReturn(0.5)
-  Mockito.when(selectionAlgorithmConfiguration.newProposalsVoteThreshold).thenReturn(100)
-  Mockito.when(selectionAlgorithmConfiguration.testedProposalsEngagementThreshold).thenReturn(0.9)
-  Mockito.when(selectionAlgorithmConfiguration.banditEnabled).thenReturn(true)
-  Mockito.when(selectionAlgorithmConfiguration.banditMinCount).thenReturn(3)
-  Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(1.0 / 3)
+  val sequenceConfiguration = SequenceConfiguration(
+    sequenceId = SequenceId("test-sequence"),
+    newProposalsRatio = 0.5,
+    newProposalsVoteThreshold = 100,
+    testedProposalsEngagementThreshold = 0.8,
+    banditEnabled = true,
+    banditMinCount = 3,
+    banditProposalsRatio = 1.0 / 3.0
+  )
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
@@ -100,7 +99,7 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map.empty, Seq.empty))
 
       val selectedProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -113,6 +112,7 @@ class SelectionAlgorithmTest
 
       val sequenceProposals = selectionAlgorithm.newProposalsForSequence(
         targetLength = defaultSize,
+        sequenceConfiguration = sequenceConfiguration,
         proposals = proposals,
         votedProposals = Seq.empty,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
@@ -137,7 +137,7 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -159,7 +159,13 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq(ProposalId("included1")))
+        selectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          sequenceConfiguration,
+          proposals,
+          Seq.empty,
+          Seq(ProposalId("included1"))
+        )
 
       sequenceProposals.size should be(defaultSize)
       sequenceProposals.size should be(defaultSize)
@@ -176,7 +182,7 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
 
       val selectedProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -189,6 +195,7 @@ class SelectionAlgorithmTest
 
       val sequenceProposals = selectionAlgorithm.newProposalsForSequence(
         targetLength = defaultSize,
+        sequenceConfiguration = sequenceConfiguration,
         proposals = proposals,
         votedProposals = Seq.empty,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
@@ -213,7 +220,7 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -235,7 +242,13 @@ class SelectionAlgorithmTest
         proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.getOrElse(id, Seq.empty)))
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq(ProposalId("included1")))
+        selectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          sequenceConfiguration,
+          proposals,
+          Seq.empty,
+          Seq(ProposalId("included1"))
+        )
 
       sequenceProposals.size should be(defaultSize)
       sequenceProposals.size should be(defaultSize)
@@ -262,7 +275,7 @@ class SelectionAlgorithmTest
         )
 
       val selectedProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       selectedProposals.size should be(defaultSize)
       selectedProposals.toSet.size should be(defaultSize)
@@ -284,6 +297,7 @@ class SelectionAlgorithmTest
 
       val sequenceProposals = selectionAlgorithm.newProposalsForSequence(
         targetLength = defaultSize,
+        sequenceConfiguration = sequenceConfiguration,
         proposals = proposals,
         votedProposals = Seq.empty,
         includeList = Seq(ProposalId("Included 1"), ProposalId("Included 2"), ProposalId("Included 3"))
@@ -317,7 +331,7 @@ class SelectionAlgorithmTest
         )
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       sequenceProposals.size should be(defaultSize - 1)
       sequenceProposals.toSet.size should be(defaultSize - 1)
@@ -348,7 +362,13 @@ class SelectionAlgorithmTest
         )
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq(ProposalId("included1")))
+        selectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          sequenceConfiguration,
+          proposals,
+          Seq.empty,
+          Seq(ProposalId("included1"))
+        )
 
       sequenceProposals.size should be(defaultSize)
       sequenceProposals.size should be(defaultSize)
@@ -380,7 +400,7 @@ class SelectionAlgorithmTest
       val proposals: Seq[Proposal] = newProposalsRandom ++ testedProposals
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(defaultSize, proposals, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(defaultSize, sequenceConfiguration, proposals, Seq.empty, Seq.empty)
 
       sequenceProposals.size should be(defaultSize)
       sequenceProposals.contains(ProposalId("newProposal1")) should be(true)
@@ -408,21 +428,27 @@ class SelectionAlgorithmTest
       val testedProposals: Seq[Proposal] =
         testedProposalIds.zipWithIndex.map {
           case (id, i) =>
-            fakeProposal(id, Map(VoteKey.Agree -> 200, VoteKey.Neutral -> i * 10), Seq.empty)
+            fakeProposal(id, Map(VoteKey.Agree -> (200 - i * 10), VoteKey.Neutral -> i * 10), Seq.empty)
         }
 
       val testedProposalsRandom = Random.shuffle(testedProposals)
 
       val sequenceProposals =
-        selectionAlgorithm.newProposalsForSequence(8, newProposals ++ testedProposalsRandom, Seq.empty, Seq.empty)
+        selectionAlgorithm.newProposalsForSequence(
+          defaultSize,
+          sequenceConfiguration,
+          newProposals ++ testedProposalsRandom,
+          Seq.empty,
+          Seq.empty
+        )
 
-      sequenceProposals.size should be(8)
+      sequenceProposals.size should be(12)
       sequenceProposals.contains(ProposalId("testedProposal1")) should be(true)
       sequenceProposals.contains(ProposalId("testedProposal2")) should be(true)
       sequenceProposals.contains(ProposalId("testedProposal3")) should be(true)
       sequenceProposals.contains(ProposalId("testedProposal4")) should be(true)
-      sequenceProposals.contains(ProposalId("testedProposal5")) should be(false)
-      sequenceProposals.contains(ProposalId("testedProposal6")) should be(false)
+      sequenceProposals.contains(ProposalId("testedProposal5")) should be(true)
+      sequenceProposals.contains(ProposalId("testedProposal6")) should be(true)
       sequenceProposals.contains(ProposalId("testedProposal7")) should be(false)
       sequenceProposals.contains(ProposalId("testedProposal8")) should be(false)
       sequenceProposals.contains(ProposalId("testedProposal9")) should be(false)
@@ -443,7 +469,7 @@ class SelectionAlgorithmTest
       InverseWeightedRandom.random = new Random(0)
 
       val samples = 10000
-      for (a <- 1 to samples) {
+      for (_ <- 1 to samples) {
         selectionAlgorithm
           .chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom.choose)
           .foreach(p => counts(p.proposalId) += 1)
@@ -533,7 +559,13 @@ class SelectionAlgorithmTest
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 1000)
-          .map(i => Tuple2(selectionAlgorithm.chooseBanditProposalsSimilars(testedProposals).proposalId, 1))
+          .map(
+            i =>
+              Tuple2(
+                selectionAlgorithm.chooseBanditProposalsSimilars(sequenceConfiguration, testedProposals).proposalId,
+                1
+            )
+          )
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
           .toSeq
@@ -571,7 +603,7 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val chosen: Seq[Proposal] = selectionAlgorithm.chooseBanditProposals(testedProposals)
+      val chosen: Seq[Proposal] = selectionAlgorithm.chooseBanditProposals(sequenceConfiguration, testedProposals)
 
       chosen.length should be(4)
     }
@@ -604,12 +636,20 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(testedProposals, 10)
+      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(sequenceConfiguration, testedProposals, 10)
       chosen.length should be(10)
     }
 
     scenario("check tested proposal chooser without bandit") {
-      Mockito.when(selectionAlgorithmConfiguration.banditEnabled).thenReturn(false)
+      val noBanditConfiguration = SequenceConfiguration(
+        sequenceId = SequenceId("test-sequence"),
+        newProposalsRatio = 0.5,
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = 0.8,
+        banditEnabled = false,
+        banditMinCount = 3,
+        banditProposalsRatio = 1.0 / 3.0
+      )
 
       val random = new Random(0)
       val similars: Seq[Seq[ProposalId]] =
@@ -638,14 +678,20 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(testedProposals, 10)
+      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(noBanditConfiguration, testedProposals, 10)
       chosen.length should be(10)
-
-      Mockito.when(selectionAlgorithmConfiguration.banditEnabled).thenReturn(true)
     }
 
     scenario("check tested proposal chooser with strict config") {
-      Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(0.0)
+      val noBanditRatioConfiguration = SequenceConfiguration(
+        sequenceId = SequenceId("test-sequence"),
+        newProposalsRatio = 0.5,
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = 0.8,
+        banditEnabled = true,
+        banditMinCount = 3,
+        banditProposalsRatio = 0.0
+      )
 
       val random = new Random(0)
       val similars: Seq[Seq[ProposalId]] =
@@ -674,10 +720,9 @@ class SelectionAlgorithmTest
       UniformRandom.random = new Random(0)
       ProposalScorer.random = new MersenneTwister(0)
 
-      val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(testedProposals, 10)
+      val chosen: Seq[Proposal] =
+        selectionAlgorithm.chooseTestedProposals(noBanditRatioConfiguration, testedProposals, 10)
       chosen.length should be(10)
-
-      Mockito.when(selectionAlgorithmConfiguration.banditProposalsRatio).thenReturn(1 / 3.0)
     }
   }
 }

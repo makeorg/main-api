@@ -18,7 +18,7 @@ import org.make.api.operation.{
   ModerationOperationApi,
   OperationApi
 }
-import org.make.api.proposal.{SelectionAlgorithmConfiguration, _}
+import org.make.api.proposal._
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
@@ -69,7 +69,9 @@ trait MakeApi
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
     with DefaultSequenceServiceComponent
-    with SelectionAlgorithmConfigurationComponent
+    with DefaultSequenceConfigurationComponent
+    with DefaultPersistentSequenceConfigurationServiceComponent
+    with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
     with DuplicateDetectorConfigurationComponent
     with DefaultMakeDataHandlerComponent
@@ -92,6 +94,7 @@ trait MakeApi
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with DefaultElasticSearchComponent
+    with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with OperationApi
     with ModerationOperationApi
@@ -119,9 +122,6 @@ trait MakeApi
     actorSystem
   )
 
-  override lazy val selectionAlgorithmConfiguration: SelectionAlgorithmConfiguration =
-    new SelectionAlgorithmConfiguration(actorSystem.settings.config.getConfig("make-api.selection-algorithm"))
-
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
@@ -146,6 +146,13 @@ trait MakeApi
   override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SessionHistoryCoordinator.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
+  )
+
+  override lazy val sequenceConfigurationActor: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / SequenceConfigurationActor.name)
       .resolveOne()(Timeout(2.seconds)),
     atMost = 2.seconds
   )

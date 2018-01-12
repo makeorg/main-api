@@ -3,7 +3,12 @@ package org.make.api
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.operation.OperationService
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.{SequenceService, SequenceSupervisor}
+import org.make.api.sequence.{
+  PersistentSequenceConfigurationService,
+  SequenceConfigurationActor,
+  SequenceService,
+  SequenceSupervisor
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -12,7 +17,8 @@ import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(userService: UserService,
+class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
+                   userService: UserService,
                    tagService: TagService,
                    themeService: ThemeService,
                    sequenceService: SequenceService,
@@ -40,6 +46,14 @@ class MakeGuardian(userService: UserService,
         )
       context.actorOf(props, name)
     }
+
+    context.watch(
+      context
+        .actorOf(
+          SequenceConfigurationActor.props(persistentSequenceConfigurationService),
+          SequenceConfigurationActor.name
+        )
+    )
 
     val sequenceCoordinator = context.watch(
       context.actorOf(
@@ -82,10 +96,20 @@ class MakeGuardian(userService: UserService,
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(userService: UserService,
+  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
+            userService: UserService,
             tagService: TagService,
             themeService: ThemeService,
             sequenceService: SequenceService,
             operationService: OperationService): Props =
-    Props(new MakeGuardian(userService, tagService, themeService, sequenceService, operationService))
+    Props(
+      new MakeGuardian(
+        persistentSequenceConfigurationService,
+        userService,
+        tagService,
+        themeService,
+        sequenceService,
+        operationService
+      )
+    )
 }

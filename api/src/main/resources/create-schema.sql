@@ -410,4 +410,16 @@ INSERT INTO operation
     (uuid, status, slug, default_language)
     VALUES
     ('vff', 'Active', 'vff', 'fr')
-    ON CONFLICT (uuid) DO NOTHING
+    ON CONFLICT (uuid) DO NOTHING;
+%
+CREATE TABLE IF NOT EXISTS sequence_configuration (
+  sequence_id VARCHAR(256) PRIMARY KEY,
+  new_proposals_ratio DECIMAL DEFAULT 0.5,
+  new_proposals_vote_threshold INTEGER DEFAULT 100,
+  tested_proposals_engagement_threshold DECIMAL DEFAULT 0.8,
+  bandit_enabled BOOL DEFAULT TRUE,
+  bandit_min_count INTEGER DEFAULT 3,
+  bandit_proposals_ratio DECIMAL DEFAULT 0.3,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
