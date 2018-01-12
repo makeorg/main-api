@@ -70,6 +70,7 @@ trait MakeApi
     with DefaultProposalServiceComponent
     with DefaultSequenceServiceComponent
     with DefaultSequenceConfigurationComponent
+    with DefaultPersistentSequenceConfigurationServiceComponent
     with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
     with DuplicateDetectorConfigurationComponent
@@ -93,6 +94,7 @@ trait MakeApi
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with DefaultElasticSearchComponent
+    with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with OperationApi
     with ModerationOperationApi

@@ -1,10 +1,14 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
-import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.OperationService
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.{SequenceConfigurationActor, SequenceService, SequenceSupervisor}
+import org.make.api.sequence.{
+  PersistentSequenceConfigurationService,
+  SequenceConfigurationActor,
+  SequenceService,
+  SequenceSupervisor
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -13,7 +17,7 @@ import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(makeDBExecutionContextComponent: MakeDBExecutionContextComponent,
+class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
                    userService: UserService,
                    tagService: TagService,
                    themeService: ThemeService,
@@ -45,7 +49,10 @@ class MakeGuardian(makeDBExecutionContextComponent: MakeDBExecutionContextCompon
 
     context.watch(
       context
-        .actorOf(SequenceConfigurationActor.props(makeDBExecutionContextComponent), SequenceConfigurationActor.name)
+        .actorOf(
+          SequenceConfigurationActor.props(persistentSequenceConfigurationService),
+          SequenceConfigurationActor.name
+        )
     )
 
     val sequenceCoordinator = context.watch(
@@ -89,7 +96,7 @@ class MakeGuardian(makeDBExecutionContextComponent: MakeDBExecutionContextCompon
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(makeDBExecutionContextComponent: MakeDBExecutionContextComponent,
+  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
             userService: UserService,
             tagService: TagService,
             themeService: ThemeService,
@@ -97,7 +104,7 @@ object MakeGuardian {
             operationService: OperationService): Props =
     Props(
       new MakeGuardian(
-        makeDBExecutionContextComponent,
+        persistentSequenceConfigurationService,
         userService,
         tagService,
         themeService,

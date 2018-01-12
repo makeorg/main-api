@@ -1,23 +1,18 @@
 package org.make.api.sequence
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
+import akka.pattern.{pipe, Backoff, BackoffSupervisor}
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.core.sequence.SequenceId
-import akka.pattern.{pipe, Backoff, BackoffSupervisor}
-import org.make.api.extensions.MakeDBExecutionContextComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class SequenceConfigurationActor(makeDBExecutionContextComponent: MakeDBExecutionContextComponent)
+class SequenceConfigurationActor(persistentSequenceConfigurationService: PersistentSequenceConfigurationService)
     extends Actor
-    with DefaultPersistentSequenceConfigServiceComponent
-    with MakeDBExecutionContextComponent
     with ActorLogging {
-  override def readExecutionContext: ExecutionContext = makeDBExecutionContextComponent.readExecutionContext
-  override def writeExecutionContext: ExecutionContext = makeDBExecutionContextComponent.writeExecutionContext
   val defaultConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default"),
     newProposalsRatio = 0.5,
@@ -31,7 +26,7 @@ class SequenceConfigurationActor(makeDBExecutionContextComponent: MakeDBExecutio
   var configCache: Map[SequenceId, SequenceConfiguration] = Map.empty
 
   def refreshCache(): Unit = {
-    val futureConfigs: Future[Seq[SequenceConfiguration]] = persistentSequenceConfigService.findAll()
+    val futureConfigs: Future[Seq[SequenceConfiguration]] = persistentSequenceConfigurationService.findAll()
     futureConfigs.onComplete {
       case Success(configs) => self ! UpdateSequenceConfiguration(configs)
       case Failure(e) =>
@@ -56,9 +51,9 @@ class SequenceConfigurationActor(makeDBExecutionContextComponent: MakeDBExecutio
     case GetSequenceConfiguration(sequenceId) =>
       sender() ! configCache.getOrElse(sequenceId, defaultConfiguration)
     case SetSequenceConfiguration(configuration) =>
-      pipe(persistentSequenceConfigService.persist(configuration)).to(sender())
+      pipe(persistentSequenceConfigurationService.persist(configuration)).to(sender())
     case GetPersistentSequenceConfiguration(sequenceId) =>
-      pipe(persistentSequenceConfigService.findOne(sequenceId)).to(sender())
+      pipe(persistentSequenceConfigurationService.findOne(sequenceId)).to(sender())
   }
 
 }
@@ -73,10 +68,10 @@ object SequenceConfigurationActor {
   val name = "sequence-configuration-backoff"
   val internalName = "sequence-configuration-backoff"
 
-  def props(makeDBExecutionContextComponent: MakeDBExecutionContextComponent): Props =
+  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props =
     BackoffSupervisor.props(
       Backoff.onStop(
-        Props(new SequenceConfigurationActor(makeDBExecutionContextComponent)),
+        Props(new SequenceConfigurationActor(persistentSequenceConfigurationService)),
         childName = internalName,
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,

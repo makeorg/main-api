@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.sequence.DefaultPersistentSequenceConfigServiceComponent.PersistentSequenceConfig
+import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
@@ -13,33 +13,33 @@ import scalikejdbc._
 
 import scala.concurrent.Future
 
-trait PersistentSequenceConfigComponent {
-  def persistentSequenceConfigService: PersistentSequenceConfigService
+trait PersistentSequenceConfigurationComponent {
+  def persistentSequenceConfigurationService: PersistentSequenceConfigurationService
 }
 
-trait PersistentSequenceConfigService {
+trait PersistentSequenceConfigurationService {
   def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
   def findAll(): Future[Seq[SequenceConfiguration]]
   def persist(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
 }
 
-trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequenceConfigComponent {
+trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentSequenceConfigurationComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentSequenceConfigService: PersistentSequenceConfigService =
-    new PersistentSequenceConfigService with ShortenedNames with StrictLogging {
+  override lazy val persistentSequenceConfigurationService: PersistentSequenceConfigurationService =
+    new PersistentSequenceConfigurationService with ShortenedNames with StrictLogging {
 
-      private val alias = PersistentSequenceConfig.alias
-      private val column = PersistentSequenceConfig.column
+      private val alias = PersistentSequenceConfiguration.alias
+      private val column = PersistentSequenceConfiguration.column
 
       override def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
         implicit val context: EC = readExecutionContext
         val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL {
             select
-              .from(PersistentSequenceConfig.as(alias))
+              .from(PersistentSequenceConfiguration.as(alias))
               .where(sqls.eq(alias.sequenceId, sequenceId.value))
-          }.map(PersistentSequenceConfig.apply()).single.apply
+          }.map(PersistentSequenceConfiguration.apply()).single.apply
         })
 
         futurePersistentTag.map(_.map(_.toSequenceConfiguration))
@@ -51,8 +51,8 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
         val futurePersistentSequenceConfig = Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL {
             select
-              .from(PersistentSequenceConfig.as(alias))
-          }.map(PersistentSequenceConfig.apply()).list.apply
+              .from(PersistentSequenceConfiguration.as(alias))
+          }.map(PersistentSequenceConfiguration.apply()).list.apply
         })
 
         futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
@@ -63,7 +63,7 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
         Future(NamedDB('WRITE).retryableTx { implicit session =>
           withSQL {
             insert
-              .into(PersistentSequenceConfig)
+              .into(PersistentSequenceConfiguration)
               .namedValues(
                 column.sequenceId -> sequenceConfig.sequenceId.value,
                 column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
@@ -83,7 +83,7 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
         implicit val context: EC = writeExecutionContext
         Future(NamedDB('WRITE).retryableTx { implicit session =>
           withSQL {
-            update(PersistentSequenceConfig)
+            update(PersistentSequenceConfiguration)
               .set(
                 column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
                 column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
@@ -114,17 +114,17 @@ trait DefaultPersistentSequenceConfigServiceComponent extends PersistentSequence
     }
 }
 
-object DefaultPersistentSequenceConfigServiceComponent {
+object DefaultPersistentSequenceConfigurationServiceComponent {
 
-  case class PersistentSequenceConfig(sequenceId: String,
-                                      newProposalsRatio: Double,
-                                      newProposalsVoteThreshold: Int,
-                                      testedProposalsEngagementThreshold: Double,
-                                      banditEnabled: Boolean,
-                                      banditMinCount: Int,
-                                      banditProposalsRatio: Double,
-                                      createdAt: ZonedDateTime,
-                                      updatedAt: ZonedDateTime) {
+  case class PersistentSequenceConfiguration(sequenceId: String,
+                                             newProposalsRatio: Double,
+                                             newProposalsVoteThreshold: Int,
+                                             testedProposalsEngagementThreshold: Double,
+                                             banditEnabled: Boolean,
+                                             banditMinCount: Int,
+                                             banditProposalsRatio: Double,
+                                             createdAt: ZonedDateTime,
+                                             updatedAt: ZonedDateTime) {
     def toSequenceConfiguration: SequenceConfiguration =
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
@@ -137,8 +137,8 @@ object DefaultPersistentSequenceConfigServiceComponent {
       )
   }
 
-  object PersistentSequenceConfig
-      extends SQLSyntaxSupport[PersistentSequenceConfig]
+  object PersistentSequenceConfiguration
+      extends SQLSyntaxSupport[PersistentSequenceConfiguration]
       with ShortenedNames
       with StrictLogging {
 
@@ -157,13 +157,14 @@ object DefaultPersistentSequenceConfigServiceComponent {
 
     override val tableName: String = "sequence_configuration"
 
-    lazy val alias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentSequenceConfig], PersistentSequenceConfig] =
+    lazy val alias
+      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentSequenceConfiguration], PersistentSequenceConfiguration] =
       syntax("sequence_configuration")
 
     def apply(
-      resultName: ResultName[PersistentSequenceConfig] = alias.resultName
-    )(resultSet: WrappedResultSet): PersistentSequenceConfig = {
-      PersistentSequenceConfig.apply(
+      resultName: ResultName[PersistentSequenceConfiguration] = alias.resultName
+    )(resultSet: WrappedResultSet): PersistentSequenceConfiguration = {
+      PersistentSequenceConfiguration.apply(
         sequenceId = resultSet.string(resultName.sequenceId),
         newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
         newProposalsVoteThreshold = resultSet.int(resultName.newProposalsVoteThreshold),
