@@ -52,7 +52,7 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService),
+        ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService, operationService),
         ProposalEmailConsumerActor.name
       )
       context.actorOf(props, name)

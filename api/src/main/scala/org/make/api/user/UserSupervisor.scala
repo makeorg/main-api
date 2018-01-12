@@ -3,9 +3,10 @@ package org.make.api.user
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.operation.OperationService
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 
-class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
+class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef, operationService: OperationService)
     extends Actor
     with ActorLogging
     with AvroSerializers
@@ -20,7 +21,7 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(UserEmailConsumerActor.props(userService), UserEmailConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(UserEmailConsumerActor.props(userService, operationService), UserEmailConsumerActor.name)
       context.actorOf(props, name)
     }
 
@@ -43,6 +44,6 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef)
 object UserSupervisor {
 
   val name: String = "users"
-  def props(userService: UserService, userHistoryCoordinator: ActorRef): Props =
-    Props(new UserSupervisor(userService, userHistoryCoordinator))
+  def props(userService: UserService, userHistoryCoordinator: ActorRef, operationService: OperationService): Props =
+    Props(new UserSupervisor(userService, userHistoryCoordinator, operationService))
 }

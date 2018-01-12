@@ -61,7 +61,7 @@ class MakeGuardian(userService: UserService,
         ProposalSupervisor.name
       )
     )
-    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator), UserSupervisor.name))
+    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator, operationService), UserSupervisor.name))
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
