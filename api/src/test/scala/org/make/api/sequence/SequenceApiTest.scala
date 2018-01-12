@@ -690,16 +690,16 @@ class SequenceApiTest
   }
 
   feature("set sequence configuration") {
-    scenario("get sequence config as user") {
-      Post("/moderation/sequences/mySequence/configuration")
+    scenario("set sequence config as user") {
+      Put("/moderation/sequences/mySequence/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("get sequence config as moderator") {
-      Post("/moderation/sequences/mySequence/configuration")
+    scenario("set sequence config as moderator") {
+      Put("/moderation/sequences/mySequence/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
