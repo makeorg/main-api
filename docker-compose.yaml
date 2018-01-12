@@ -3,6 +3,7 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:4.0.0
     environment:
+      KAFKA_HEAP_OPTS: '-Xms128M -Xmx128M'
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
       - 12181:2181
@@ -11,6 +12,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:4.0.0
     environment:
+      KAFKA_HEAP_OPTS: '-Xms256M -Xmx256M'
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_BROKER_ID: 42
@@ -28,6 +30,7 @@ services:
       - kafka
     network_mode: service:kafka
     environment:
+        SCHEMA_REGISTRY_HEAP_OPTS: '-Xms128M -Xmx128M'
         SCHEMA_REGISTRY_HOST_NAME: schema_registry
         SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper:2181/kafka
         SCHEMA_REGISTRY_LISTENERS: http://kafka:8081
@@ -46,7 +49,7 @@ services:
       - 7000:7000
       - 9042:9042
     environment:
-      JVM_OPTS: '-Xms256M -Xmx256M'
+      JVM_OPTS: '-Xms128M -Xmx128M'
     networks:
       - makeapi
   elasticsearch:
@@ -60,7 +63,7 @@ services:
     networks:
       - makeapi
     environment:
-      ES_JAVA_OPTS: '-Xms256M -Xmx256M'
+      ES_JAVA_OPTS: '-Xms128M -Xmx128M'
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost
