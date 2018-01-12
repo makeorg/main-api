@@ -274,7 +274,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(
     value = "moderation-update-sequence-configuration",
-    httpMethod = "POST",
+    httpMethod = "PUT",
     code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
@@ -298,8 +298,8 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     )
   )
   @Path(value = "/moderation/sequences/{sequenceId}/configuration")
-  def postSequenceConfiguration: Route =
-    post {
+  def putSequenceConfiguration: Route =
+    put {
       path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
         makeTrace("PostSequenceConfiguration") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -595,7 +595,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       patchSequence ~
       migrateSequenceOperation ~
       getModerationSequenceConfiguration ~
-      postSequenceConfiguration
+      putSequenceConfiguration
 
   val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
   val sequenceSlug: PathMatcher1[String] = Segment
