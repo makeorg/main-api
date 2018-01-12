@@ -117,7 +117,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
           if (registration.enabled) {
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
-              s"?operation=$operationSlug&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
 
             eventBusService.publish(
               SendEmail(
@@ -164,7 +164,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
           if (forgottenPassword.enabled) {
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}/#/password-recovery/${user.userId.value}/${user.resetToken.get}" +
-              s"?operation=$operationSlug&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
 
             context.system.eventStream.publish(
               SendEmail(
@@ -220,7 +220,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               mailJetTemplateConfiguration
                 .getFrontUrl()
             }/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
-              s"?operation=$operationSlug&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
             eventBusService.publish(
               SendEmail(
                 templateId = Some(resendAccountValidationLink.templateId),
