@@ -20,7 +20,18 @@ import org.make.core.{reference, HttpCodes, Validation}
 
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Moderation Operation")
+@Api(
+  value = "Moderation Operation",
+  authorizations = Array(
+    new Authorization(
+      value = "MakeApi",
+      scopes = Array(
+        new AuthorizationScope(scope = "admin", description = "BO Admin"),
+        new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+      )
+    )
+  )
+)
 @Path(value = "/moderation/operations")
 trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLogging {
   this: OperationServiceComponent
