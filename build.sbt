@@ -35,8 +35,6 @@ lazy val commonSettings = Seq(
       Some("Sonatype Releases Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-releases/"))
     }
   },
-  resolvers += "Confluent Releases".at("http://packages.confluent.io/maven/"),
-  resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"),
   resolvers += "Sonatype Nexus Repository Manager".at("https://nexus.prod.makeorg.tech/repository/maven-public/"),
   scalastyleFailOnError := true,
   scalacOptions ++= Seq(
