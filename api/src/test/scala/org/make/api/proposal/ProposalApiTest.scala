@@ -3,7 +3,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
@@ -16,11 +16,12 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationId
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference._
+import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -327,6 +328,26 @@ class ProposalApiTest
 
   val routes: Route = sealRoute(proposalRoutes)
 
+  when(operationService.findOne(matches(OperationId("1234-1234")))).thenReturn(
+    Future.successful(
+      Some(
+        Operation(
+          status = OperationStatus.Pending,
+          operationId = OperationId("1234-1234"),
+          slug = "my-operation",
+          translations = Seq.empty,
+          defaultLanguage = "FR",
+          sequenceLandingId = SequenceId("operation-sequence"),
+          events = List.empty,
+          createdAt = None,
+          updatedAt = None,
+          countriesConfiguration = Seq.empty
+        )
+      )
+    )
+  )
+  when(operationService.findOne(matches(OperationId("fake")))).thenReturn(Future.successful(None))
+
   feature("proposing") {
     scenario("unauthenticated proposal") {
       Given("an un authenticated user")
@@ -376,6 +397,40 @@ class ProposalApiTest
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "content")
         contentError should be(Some(ValidationError("content", Some("content should not be shorter than 12"))))
+      }
+    }
+
+    scenario("invalid proposal due to bad operation") {
+      Given("an authenticated user")
+      And("a bad operationId")
+      When("the user want to propose in an operation context")
+      Then("the proposal should be rejected")
+      Post("/proposals")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake"}""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "1234-1234")) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "operationId")
+        contentError should be(Some(ValidationError("operationId", Some("Invalid operationId"))))
+      }
+    }
+
+    scenario("valid proposal with operation") {
+      Given("an authenticated user")
+      And("a valid operationId")
+      When("the user want to propose in an operation context")
+      Then("the proposal should be saved")
+      Post("/proposals")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$validProposalText", "operationId": "1234-1234"} """
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "fake")) ~> routes ~> check {
+        status should be(StatusCodes.Created)
       }
     }
   }
