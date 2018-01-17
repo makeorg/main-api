@@ -9,9 +9,10 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.DateHelper
 import org.make.core.auth.UserRights
+import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Idea, IdeaId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -86,10 +87,20 @@ class ModerationIdeaApiTest
 
   val fooIdeaText: String = "fooIdea"
   val fooIdeaId: IdeaId = IdeaId("fooIdeaId")
-  val fooIdea: Idea = Idea(fooIdeaId, fooIdeaText)
+  val fooIdea: Idea = Idea(
+    ideaId = fooIdeaId,
+    name = fooIdeaText,
+    createdAt = Some(DateHelper.now),
+    updatedAt = Some(DateHelper.now())
+  )
   val barIdeaText: String = "barIdea"
   val barIdeaId: IdeaId = IdeaId("barIdeaId")
-  val barIdea: Idea = Idea(barIdeaId, barIdeaText)
+  val barIdea: Idea = Idea(
+    ideaId = barIdeaId,
+    name = barIdeaText,
+    createdAt = Some(DateHelper.now),
+    updatedAt = Some(DateHelper.now())
+  )
 
   when(
     ideaService.insert(

@@ -8,10 +8,11 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.ProposalState
+import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.sequence.{Sequence, SequenceId}
 import org.make.core.session.SessionId
 import org.make.core.user.Role.RoleCitizen

@@ -5,9 +5,10 @@ import java.time.ZonedDateTime
 import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto._
 import org.make.core.CirceFormatters
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{IdeaId, Tag, ThemeId}
+import org.make.core.reference.{Tag, ThemeId}
 import org.make.core.user.UserId
 
 object ProposalElasticsearchFieldNames {

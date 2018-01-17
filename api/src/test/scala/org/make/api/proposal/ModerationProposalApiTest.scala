@@ -17,6 +17,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalCom
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
+import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
@@ -331,7 +332,7 @@ class ModerationProposalApiTest
   }
 
   when(ideaService.fetchOne(any[IdeaId]))
-    .thenReturn(Future.successful(Some(Idea(IdeaId("foo"), "Foo", None, None, None, None))))
+    .thenReturn(Future.successful(Some(Idea(ideaId = IdeaId("foo"), name = "Foo", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now())))))
 
   when(proposalService.getDuplicates(any[UserId], matches(ProposalId("123456")), any[RequestContext]))
     .thenReturn(

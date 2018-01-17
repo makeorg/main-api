@@ -15,6 +15,7 @@ import com.sksamuel.elastic4s.http.index.admin.IndicesAliasResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
+import org.make.api.idea._
 import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
@@ -22,15 +23,11 @@ import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.DateHelper
+import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
-import org.make.core.sequence.indexed.{
-  IndexedSequence,
-  IndexedSequenceProposalId,
-  IndexedSequenceTheme,
-  Context => SequenceContext
-}
+import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, IndexedSequenceTheme, Context => SequenceContext}
 import org.make.core.sequence.{Sequence, SequenceId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,7 +53,11 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     with TagServiceComponent
     with ThemeServiceComponent
     with ProposalSearchEngineComponent
-    with SequenceSearchEngineComponent =>
+    with ProposalSearchEngineComponent
+    with SequenceSearchEngineComponent
+    with IdeaSearchEngineComponent
+    with IdeaServiceComponent =>
+
   override lazy val elasticSearch: ElasticSearch = new ElasticSearch {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -75,11 +76,12 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
         _      <- executeCreateIndex(newIndexName)
         _      <- executeIndexProposals(newIndexName)
         _      <- executeIndexSequences(newIndexName)
+        _      <- executeIndexIdeas(newIndexName)
         result <- executeSetAlias(newIndexName)
       } yield result
     }
 
-    def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[IndicesAliasResponse] = {
+    private def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[IndicesAliasResponse] = {
 
       if (indexes.isEmpty) {
         logger.error("indexes with alias is empty")
@@ -92,7 +94,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
       }
     }
 
-    def executeSetAlias(newIndexName: String): Future[Done] = {
+    private def executeSetAlias(newIndexName: String): Future[Done] = {
       val futureAliasies: Future[GetAliasResponse] = client.execute {
         getAlias(Seq(elasticsearchConfiguration.aliasName))
       }
@@ -106,13 +108,13 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
       Future.successful(Done)
     }
 
-    def executeCreateIndex(newIndexName: String): Future[CreateIndexResponse] = {
+    private def executeCreateIndex(newIndexName: String): Future[CreateIndexResponse] = {
       elasticsearchConfiguration.client.execute {
         createIndex(newIndexName).source(elasticsearchConfiguration.elasticsearchMapping)
       }
     }
 
-    def executeIndexProposals(newIndexName: String): Future[Done] = {
+    private def executeIndexProposals(newIndexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
       val parallelism = 5
       val result = readJournal
@@ -143,7 +145,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
       result
     }
 
-    def executeIndexSequences(newIndexName: String): Future[Done] = {
+    private def executeIndexSequences(newIndexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val parallelism = 5
@@ -174,6 +176,32 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
 
       result
     }
+  }
+
+  private def executeIndexIdeas(newIndexName: String): Future[Done] = {
+    val start = System.currentTimeMillis()
+
+    val result = ideaService
+      .fetchAll(IdeaFiltersRequest.empty)
+      .map { ideas =>
+        logger.info(s"Idea to index: ${ideas.size}")
+        ideas.foreach { idea =>
+          elasticsearchIdeaAPI
+            .indexIdea(IndexedIdea.createFromIdea(idea), Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
+            .recoverWith {
+              case e =>
+                logger.error("indexing idea failed", e)
+                Future.successful(Done)
+            }
+        }
+      }
+
+    result.onComplete {
+      case Success(_) => logger.info("Idea indexation success in {} ms", System.currentTimeMillis() - start)
+      case Failure(e) => logger.error(s"Idea indexation failed in ${System.currentTimeMillis() - start} ms", e)
+    }
+
+    Future.successful(Done)
   }
 
   private def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {

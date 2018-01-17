@@ -6,8 +6,9 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.circe.generic.semiauto._
 import org.make.core.SprayJsonFormatters._
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._

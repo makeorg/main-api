@@ -2,8 +2,8 @@ package org.make.api.proposal
 
 import org.make.api.MakeTest
 import org.make.core.RequestContext
+import org.make.core.idea.IdeaId
 import org.make.core.proposal._
-import org.make.core.reference.IdeaId
 import org.make.core.user.UserId
 import org.make.semantic.text.document.{Document, FeatureDocument}
 import org.make.semantic.text.feature.wordvec.WordVecFeature

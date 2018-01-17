@@ -11,9 +11,10 @@ import akka.stream.ActorMaterializer
 import io.circe.syntax._
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.{DockerElasticsearchService, ItMakeTest}
+import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{IdeaId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito

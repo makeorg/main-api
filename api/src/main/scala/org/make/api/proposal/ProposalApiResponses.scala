@@ -8,6 +8,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
