@@ -753,7 +753,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 requestContext = command.requestContext,
                 moderator = command.moderator,
                 sendRefuseEmail = command.sendNotificationEmail,
-                refusalReason = command.refusalReason
+                refusalReason = command.refusalReason,
+                operation = proposal.operation.orElse(proposal.creationContext.operation.map(OperationId.apply))
               )
             )
           )
