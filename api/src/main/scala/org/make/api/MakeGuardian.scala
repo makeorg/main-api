@@ -91,7 +91,15 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
       context.actorOf(props, name)
     }
 
-    context.watch(context.actorOf(IdeaProducerActor.props, IdeaProducerActor.name))
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          IdeaProducerActor.props,
+          IdeaProducerActor.name
+        )
+
+      context.actorOf(props, name)
+    }
 
     context.watch {
       val (props, name) =

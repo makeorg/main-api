@@ -30,6 +30,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
 
   feature("Can persist and retrieve ideas") {
     scenario("Persist a simple idea") {
+      Given(s"""an idea with the id "${simpleIdea.ideaId.value}"""")
       When(s"""I persist the idea "${simpleIdea.name}"""")
       val futureIdea: Future[Idea] = persistentIdeaService.persist(simpleIdea)
 
@@ -46,6 +47,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     }
 
     scenario("Persist a complete idea") {
+      Given(s"""an idea with the id "${completeIdea.ideaId.value}"""")
       When(s"""I persist the idea "${completeIdea.name}"""")
       val futureIdea: Future[Idea] = persistentIdeaService.persist(completeIdea)
 
@@ -62,8 +64,8 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     }
 
     scenario("Get a list of all ideas") {
-
-      When("""I retrieve the idea list""")
+      Given("I ve persisted two idea")
+      When("I retrieve the idea list")
       val futureIdeasLists: Future[Seq[Idea]] = persistentIdeaService.findAll(IdeaFiltersRequest.empty)
 
       whenReady(futureIdeasLists, Timeout(3.seconds)) { ideas =>

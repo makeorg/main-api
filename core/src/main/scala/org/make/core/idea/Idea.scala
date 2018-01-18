@@ -15,7 +15,6 @@ final case class Idea(ideaId: IdeaId,
                       name: String,
                       language: Option[String] = None,
                       country: Option[String] = None,
-                      @Deprecated operation: Option[OperationId] = None,
                       question: Option[String] = None,
                       operationId: Option[OperationId] = None,
                       status: IdeaStatus = IdeaStatus.Activated,
@@ -27,7 +26,7 @@ final case class Idea(ideaId: IdeaId,
 object Idea extends CirceFormatters {
 
   implicit val ideaFormatter: RootJsonFormat[Idea] =
-    DefaultJsonProtocol.jsonFormat10(Idea.apply)
+    DefaultJsonProtocol.jsonFormat9(Idea.apply)
 
     implicit val encoder: Encoder[Idea] = deriveEncoder[Idea]
     implicit val decoder: Decoder[Idea] = deriveDecoder[Idea]

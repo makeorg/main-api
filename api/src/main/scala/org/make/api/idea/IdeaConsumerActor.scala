@@ -2,8 +2,6 @@ package org.make.api.idea
 
 import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
-import cats.data.OptionT
-import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaEventWrapper, IdeaUpdatedEvent}
@@ -58,15 +56,10 @@ class IdeaConsumerActor(ideaService: IdeaService)
   }
 
   private def retrieveAndShapeIdea(id: IdeaId): Future[IndexedIdea] = {
-
-
-    val maybeResult = for {
-      idea <- OptionT(ideaService.fetchOne(id))
-    } yield {
-      IndexedIdea.createFromIdea(idea)
+    ideaService.fetchOne(id).flatMap {
+      case None => Future.failed(new IllegalArgumentException(s"Idea ${id.value} doesn't exist"))
+      case Some(idea) => Future.successful(IndexedIdea.createFromIdea(idea))
     }
-
-    maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Idea ${id.value} doesn't exist")))
   }
 
   override val groupId = "idea-consumer"

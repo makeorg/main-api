@@ -67,9 +67,9 @@ trait DefaultIdeaSearchEngineComponent
       }
     }
 
-    override def indexIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+    override def indexIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
       logger.debug(s"Saving in Elasticsearch: $record")
-      val index = mayBeIndex.getOrElse(ideaAlias)
+      val index = maybeIndex.getOrElse(ideaAlias)
       client.execute {
         indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
       }.map { _ =>
@@ -77,8 +77,8 @@ trait DefaultIdeaSearchEngineComponent
       }
     }
 
-    override def updateIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
-      val index = mayBeIndex.getOrElse(ideaAlias)
+    override def updateIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val index = maybeIndex.getOrElse(ideaAlias)
       logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
         .execute((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))

@@ -8,7 +8,6 @@ import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 
 /**
   * The class holding the entire search query
@@ -74,7 +73,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
   def getSort(ideaSearchQuery: IdeaSearchQuery): Seq[FieldSortDefinition] =
     ideaSearchQuery.sorts
-      .map(sort => FieldSortDefinition(field = sort.field.get, order = sort.mode.getOrElse(SortOrder.ASC)))
+      .map(sort => FieldSortDefinition(field = sort.field.getOrElse("createdAt"), order = sort.mode.getOrElse(SortOrder.ASC)))
 
   def getSkipSearch(ideaSearchQuery: IdeaSearchQuery): Int =
     ideaSearchQuery.skip
@@ -160,9 +159,9 @@ object IdeaSearchFilters extends ElasticDsl {
 
   def buildLanguageSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
     ideaSearchQuery.filters.flatMap {
-      _.country match {
-        case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.country, country))
+      _.language match {
+        case Some(LanguageSearchFilter(language)) =>
+          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.language, language))
         case _ => None
       }
     }
@@ -172,9 +171,9 @@ object IdeaSearchFilters extends ElasticDsl {
     val query: Option[QueryDefinition] = ideaSearchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(status)) =>
-          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, status.shortName)
-        case StatusSearchFilter(proposalStatuses) =>
-          ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.shortName))
+          ElasticApi.termQuery(IdeaElasticsearchFieldNames.status, status.shortName)
+        case StatusSearchFilter(status) =>
+          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, status.map(_.shortName))
       }
     }
 

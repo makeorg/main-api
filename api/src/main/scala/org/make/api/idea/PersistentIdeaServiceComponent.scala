@@ -106,7 +106,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
-            .set(column.name -> name)
+            .set(column.name -> name, column.updatedAt -> DateHelper.now)
             .where(
               sqls
                 .eq(column.id, ideaId.value)
@@ -133,7 +133,6 @@ object DefaultPersistentIdeaServiceComponent {
         name = name,
         language = language,
         country = country,
-        operation = operationId.map(operationId => OperationId(operationId)),
         question = question,
         operationId = operationId.map(operationId => OperationId(operationId)),
         createdAt = Some(createdAt),
