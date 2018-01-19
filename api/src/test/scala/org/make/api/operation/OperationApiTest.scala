@@ -164,6 +164,5 @@ class OperationApiTest
         status should be(StatusCodes.NotFound)
       }
     }
-
   }
 }
