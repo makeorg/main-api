@@ -192,7 +192,8 @@ object PublishedProposalEvent {
                                    requestContext: RequestContext,
                                    moderator: UserId,
                                    sendRefuseEmail: Boolean,
-                                   refusalReason: Option[String])
+                                   refusalReason: Option[String],
+                                   operation: Option[OperationId] = None)
       extends PublishedProposalEvent
 
   object ProposalRefused {
@@ -200,7 +201,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-refused"
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
-      DefaultJsonProtocol.jsonFormat6(ProposalRefused.apply)
+      DefaultJsonProtocol.jsonFormat7(ProposalRefused.apply)
 
   }
 

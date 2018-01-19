@@ -19,7 +19,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService: ProposalCoordinatorService, operationService: OperationService)
+class ProposalEmailConsumer(userService: UserService,
+                            proposalCoordinatorService: ProposalCoordinatorService,
+                            operationService: OperationService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with MakeSettingsExtension
     with ActorEventBusServiceComponent
@@ -135,7 +137,6 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
-
       val futureOperationSlug: Future[String] = event.requestContext.operationId match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
@@ -144,7 +145,7 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       futureOperationSlug.map { operationSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
           proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
-          user: User <- OptionT(userService.getUser(proposal.author))
+          user: User         <- OptionT(userService.getUser(proposal.author))
         } yield {
           val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
@@ -153,14 +154,17 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
                 templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(
                     "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.firstName.getOrElse(""),
-                    "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
+                    "operation" -> event.operation.orElse(event.requestContext.operationId).map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
                     "source" -> event.requestContext.source.getOrElse("")
@@ -193,14 +197,12 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
-
       val futureOperationSlug: Future[String] = event.requestContext.operationId match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
       }
 
       futureOperationSlug.map { operationSlug =>
-
         val maybePublish: OptionT[Future, Unit] = for {
           proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user: User         <- OptionT(userService.getUser(proposal.author))
@@ -212,7 +214,10 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
                 templateId = Some(proposalRefused.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(
@@ -253,6 +258,8 @@ class ProposalEmailConsumer(userService: UserService, proposalCoordinatorService
 
 object ProposalEmailConsumerActor {
   val name: String = "proposal-events-emails-consumer"
-  def props(userService: UserService, proposalCoordinatorService: ProposalCoordinatorService, operationService: OperationService): Props =
+  def props(userService: UserService,
+            proposalCoordinatorService: ProposalCoordinatorService,
+            operationService: OperationService): Props =
     Props(new ProposalEmailConsumer(userService, proposalCoordinatorService, operationService))
 }
