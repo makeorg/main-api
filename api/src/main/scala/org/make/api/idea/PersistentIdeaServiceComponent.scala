@@ -71,7 +71,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               sqls.toAndConditionOpt(
                 ideaFilters.language.map(language     => sqls.eq(ideaAlias.language, language)),
                 ideaFilters.country.map(country       => sqls.eq(ideaAlias.country, country)),
-                ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId.value)),
+                ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId)),
                 ideaFilters.question.map(question     => sqls.eq(ideaAlias.question, question))
               )
             )

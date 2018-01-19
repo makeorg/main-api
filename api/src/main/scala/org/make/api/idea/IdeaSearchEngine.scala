@@ -54,7 +54,6 @@ trait DefaultIdeaSearchEngineComponent
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
       val request = search(ideaAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
-        .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
 

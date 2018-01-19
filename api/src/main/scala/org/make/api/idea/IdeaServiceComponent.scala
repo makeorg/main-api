@@ -6,7 +6,8 @@ import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaUpdatedEvent}
 import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
 import org.make.api.technical.{EventBusServiceComponent, ShortenedNames}
 import org.make.core.DateHelper
-import org.make.core.idea.{Idea, IdeaId}
+import org.make.core.idea.indexed.IdeaSearchResult
+import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +18,7 @@ trait IdeaServiceComponent {
 }
 
 trait IdeaService extends ShortenedNames {
-  def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]]
+  def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult]
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
   def insert(name: String,
@@ -30,12 +31,13 @@ trait IdeaService extends ShortenedNames {
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
   this: PersistentIdeaServiceComponent
-  with EventBusServiceComponent =>
+  with EventBusServiceComponent
+  with IdeaSearchEngineComponent =>
 
   override val ideaService: IdeaService = new IdeaService {
 
-    override def fetchAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
-      persistentIdeaService.findAll(ideaFilters)
+    override def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
+      elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery)
     }
 
     override def fetchOne(ideaId: IdeaId): Future[Option[Idea]] = {

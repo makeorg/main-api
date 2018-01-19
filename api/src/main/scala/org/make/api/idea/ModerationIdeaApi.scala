@@ -11,7 +11,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.idea.{Idea, IdeaId}
+import org.make.core.idea._
 import org.make.core.operation.OperationId
 import org.make.core.{HttpCodes, Validation}
 
@@ -37,28 +37,42 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Idea]])))
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operation", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")
   def listIdeas: Route = {
     get {
       path("moderation" / "ideas") {
-        parameters('language.?, 'country.?, 'operation.?, 'question.?) { (language, country, operation, question) =>
+        parameters(
+          'name.?,
+          'language.?,
+          'country.?,
+          'operationId.?,
+          'question.?,
+          'limit.as[Int].?,
+          'skip.as[Int].?
+        ) { (name, language, country, operationId, question, limit, skip) =>
           makeTrace("Get all ideas") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val filters: IdeaFiltersRequest =
                   IdeaFiltersRequest(
+                    name = name,
                     language = language,
                     country = country,
-                    operationId = operation.map(OperationId(_)),
-                    question = question
+                    operationId = operationId,
+                    question = question,
+                    limit = limit,
+                    skip = skip
                   )
-                provideAsync(ideaService.fetchAll(filters)) { ideas =>
+                provideAsync(ideaService.fetchAll(filters.toSearchQuery)) { ideas =>
                   complete(ideas)
                 }
               }
@@ -212,11 +226,31 @@ object UpdateIdeaRequest {
   implicit val decoder: Decoder[UpdateIdeaRequest] = deriveDecoder[UpdateIdeaRequest]
 }
 
-final case class IdeaFiltersRequest(language: Option[String],
+final case class IdeaFiltersRequest(name: Option[String],
+                                    language: Option[String],
                                     country: Option[String],
-                                    operationId: Option[OperationId],
-                                    question: Option[String])
+                                    operationId: Option[String],
+                                    question: Option[String],
+                                    limit: Option[Int],
+                                    skip: Option[Int]) {
+  def toSearchQuery: IdeaSearchQuery = {
+    val fuzziness = "AUTO"
+    val filters: Option[IdeaSearchFilters] =
+      IdeaSearchFilters.parse(
+        name = name.map(text => {
+          NameSearchFilter(text, Some(fuzziness))
+        }),
+        language = language.map(language => LanguageSearchFilter(language)),
+        country = country.map(country => CountrySearchFilter(country)),
+        operationId = operationId.map(operationId => OperationIdSearchFilter(OperationId(operationId))),
+        question = question.map(question => QuestionSearchFilter(question))
+      )
+
+    IdeaSearchQuery(filters = filters, limit = limit, skip = skip)
+
+  }
+}
 
 object IdeaFiltersRequest {
-  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None)
+  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None)
 }
