@@ -1,6 +1,6 @@
 package org.make.api.extensions
 
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.github.t3hnar.bcrypt._
@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.dbcp2.BasicDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
+import scala.concurrent.ExecutionContext
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
@@ -35,9 +35,11 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setMaxTotal(configuration.getInt("database.pools.read.max-total"))
   readDatasource.setMaxIdle(configuration.getInt("database.pools.read.max-idle"))
 
-  val readThreadPool: ExecutionContextExecutorService =
-    ExecutionContext.fromExecutorService(
-      Executors.newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
+  val readThreadPool: MonitorableExecutionContext =
+    new MonitorableExecutionContext(
+      Executors
+        .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
+        .asInstanceOf[ThreadPoolExecutor]
     )
 
   private val writeDatasource = new BasicDataSource()
@@ -49,9 +51,11 @@ class DatabaseConfiguration(override protected val configuration: Config)
   writeDatasource.setMaxTotal(configuration.getInt("database.pools.write.max-total"))
   writeDatasource.setMaxIdle(configuration.getInt("database.pools.write.max-idle"))
 
-  val writeThreadPool: ExecutionContextExecutorService =
-    ExecutionContext.fromExecutorService(
-      Executors.newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
+  val writeThreadPool: MonitorableExecutionContext =
+    new MonitorableExecutionContext(
+      Executors
+        .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
+        .asInstanceOf[ThreadPoolExecutor]
     )
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
@@ -103,4 +107,16 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
 
   override def get(system: ActorSystem): DatabaseConfiguration =
     super.get(system)
+}
+
+class MonitorableExecutionContext(executorService: ThreadPoolExecutor) extends ExecutionContext {
+  private val executionContext = ExecutionContext.fromExecutorService(executorService)
+
+  override def execute(runnable: Runnable): Unit = executionContext.execute(runnable)
+  override def reportFailure(cause: Throwable): Unit = executionContext.reportFailure(cause)
+
+  def activeTasks: Int = executorService.getActiveCount
+  def currentTasks: Int = executorService.getPoolSize
+  def maxTasks: Int = executorService.getMaximumPoolSize
+  def waitingTasks: Int = executorService.getQueue.size()
 }

@@ -9,7 +9,6 @@ libraryDependencies ++= Seq(
   Dependencies.log4jJul,
   Dependencies.kamonAkka,
   Dependencies.kamonAkkaHttp,
-  Dependencies.kamonAkkaRemote,
   Dependencies.kamonScala,
   Dependencies.kamonPrometheus,
   Dependencies.kamonSystemMetrics,

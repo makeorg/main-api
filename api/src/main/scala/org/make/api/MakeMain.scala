@@ -8,7 +8,8 @@ import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
-import org.make.api.extensions.{DatabaseConfiguration, MakeSettings}
+import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
+import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
@@ -30,7 +31,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   override implicit val actorSystem: ExtendedActorSystem =
     ActorSystem.apply("make-api").asInstanceOf[ExtendedActorSystem]
 
-  actorSystem.registerExtension(DatabaseConfiguration)
+  val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)
   actorSystem.actorOf(
     MakeGuardian.props(
@@ -45,6 +46,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
   )
   actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
+  val threadPoolMonitor = actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readThreadPool, "db-read-pool")
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeThreadPool, "db-write-pool")
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
