@@ -207,11 +207,11 @@ class ProposalEmailConsumer(userService: UserService,
           proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user: User         <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val proposalRefused = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
-          if (user.verified && proposalRefused.enabled) {
+          val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
+          if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail(
-                templateId = Some(proposalRefused.templateId),
+                templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
                   Recipient(
@@ -225,14 +225,14 @@ class ProposalEmailConsumer(userService: UserService,
                     "firstname" -> user.fullName.getOrElse(""),
                     "refusal_reason" -> proposal.refusalReason.getOrElse(""),
                     "registration_context" -> event.requestContext.operationId.map(_.value).getOrElse(""),
-                    "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
+                    "operation" -> event.operation.orElse(event.requestContext.operationId).map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(proposalRefused.customCampaign),
-                monitoringCategory = Some(proposalRefused.monitoringCategory)
+                customCampaign = Some(templateConfiguration.customCampaign),
+                monitoringCategory = Some(templateConfiguration.monitoringCategory)
               )
             )
           }
