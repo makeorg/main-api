@@ -54,6 +54,7 @@ final case class IdeaSearchResult(total: Int, results: Seq[IndexedIdea])
 
 object IdeaSearchResult{
   implicit val encoder: ObjectEncoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]
+  implicit val decoder: Decoder[IdeaSearchResult] = deriveDecoder[IdeaSearchResult]
 
   def empty: IdeaSearchResult = IdeaSearchResult(0, Seq.empty)
 }
