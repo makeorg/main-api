@@ -10,8 +10,8 @@ import com.typesafe.scalalogging.StrictLogging
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.CirceFormatters
-import org.make.core.idea.{IdeaId, _}
 import org.make.core.idea.indexed.{IdeaSearchResult, IndexedIdea}
+import org.make.core.idea.{IdeaId, _}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -54,6 +54,7 @@ trait DefaultIdeaSearchEngineComponent
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
       val request = search(ideaAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
+        .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
 

@@ -184,7 +184,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     val result = ideaService
       .fetchAll(IdeaSearchQuery(None, None, None))
       .map { ideas =>
-        logger.info(s"Idea to index: ${ideas.total}")
+        logger.info(s"Ideas to index: ${ideas.total}")
         ideas.results.foreach { idea =>
           elasticsearchIdeaAPI
             .indexIdea(idea, Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))

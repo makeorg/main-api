@@ -43,7 +43,9 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")
@@ -57,8 +59,10 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
           'operationId.?,
           'question.?,
           'limit.as[Int].?,
-          'skip.as[Int].?
-        ) { (name, language, country, operationId, question, limit, skip) =>
+          'skip.as[Int].?,
+          'sort.?,
+          'order.?
+        ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
           makeTrace("Get all ideas") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
@@ -70,7 +74,9 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                     operationId = operationId,
                     question = question,
                     limit = limit,
-                    skip = skip
+                    skip = skip,
+                    sort = sort,
+                    order = order
                   )
                 provideAsync(ideaService.fetchAll(filters.toSearchQuery)) { ideas =>
                   complete(ideas)
@@ -232,7 +238,9 @@ final case class IdeaFiltersRequest(name: Option[String],
                                     operationId: Option[String],
                                     question: Option[String],
                                     limit: Option[Int],
-                                    skip: Option[Int]) {
+                                    skip: Option[Int],
+                                    sort: Option[String],
+                                    order: Option[String]) {
   def toSearchQuery: IdeaSearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[IdeaSearchFilters] =
@@ -246,11 +254,11 @@ final case class IdeaFiltersRequest(name: Option[String],
         question = question.map(question => QuestionSearchFilter(question))
       )
 
-    IdeaSearchQuery(filters = filters, limit = limit, skip = skip)
+    IdeaSearchQuery(filters = filters, limit = limit, skip = skip, sort = sort, order = order)
 
   }
 }
 
 object IdeaFiltersRequest {
-  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None)
+  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None, None, None)
 }

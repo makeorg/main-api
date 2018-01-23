@@ -3,6 +3,8 @@ package org.make.core.idea
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
+import org.elasticsearch.search.sort.SortOrder
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
 
@@ -14,8 +16,10 @@ import org.make.core.operation.OperationId
   * @param skip    number of items to skip
   */
 case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
-                       limit: Option[Int] = None,
-                       skip: Option[Int] = None)
+                           limit: Option[Int] = None,
+                           skip: Option[Int] = None,
+                           sort: Option[String] = None,
+                           order: Option[String] = None)
 
 /**
   * The class holding the filters
@@ -27,10 +31,11 @@ case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
   * @param language    Language to filter
   */
 case class IdeaSearchFilters(name: Option[NameSearchFilter] = None,
-                         operationId: Option[OperationIdSearchFilter] = None,
-                         question: Option[QuestionSearchFilter] = None,
-                         country: Option[CountrySearchFilter] = None,
-                         language: Option[LanguageSearchFilter] = None)
+                             operationId: Option[OperationIdSearchFilter] = None,
+                             question: Option[QuestionSearchFilter] = None,
+                             country: Option[CountrySearchFilter] = None,
+                             language: Option[LanguageSearchFilter] = None,
+                             status: Option[StatusSearchFilter] = None)
 
 object IdeaSearchFilters extends ElasticDsl {
 
@@ -60,7 +65,8 @@ object IdeaSearchFilters extends ElasticDsl {
       buildOperationIdSearchFilter(ideaSearchQuery),
       buildQuestionSearchFilter(ideaSearchQuery),
       buildCountrySearchFilter(ideaSearchQuery),
-      buildLanguageSearchFilter(ideaSearchQuery)
+      buildLanguageSearchFilter(ideaSearchQuery),
+      buildStatusSearchFilter(ideaSearchQuery)
     ).flatten
 
   def getSkipSearch(ideaSearchQuery: IdeaSearchQuery): Int =
@@ -70,6 +76,17 @@ object IdeaSearchFilters extends ElasticDsl {
   def getLimitSearch(ideaSearchQuery: IdeaSearchQuery): Int =
     ideaSearchQuery.limit
       .getOrElse(-1) // TODO get default value from configurations
+
+  def getSort(ideaSearchQuery: IdeaSearchQuery): FieldSortDefinition = {
+    val order = ideaSearchQuery.order.map {
+      case asc if asc .toLowerCase == "asc"   => SortOrder.ASC
+      case desc if desc.toLowerCase == "desc" => SortOrder.DESC
+    }
+
+    ideaSearchQuery.sort.map{
+      sort => FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
+    }.getOrElse(FieldSortDefinition(field = "createdAt", order = SortOrder.ASC))
+  }
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
 
@@ -154,6 +171,25 @@ object IdeaSearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildStatusSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
+    val query: Option[QueryDefinition] = ideaSearchQuery.filters.flatMap {
+      _.status.map {
+        case StatusSearchFilter(Seq(status)) =>
+          ElasticApi.termQuery(IdeaElasticsearchFieldNames.status, status.shortName)
+        case StatusSearchFilter(status) =>
+          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, status.map(_.shortName))
+        case _ =>
+          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, IdeaStatus.Activated.shortName)
+      }
+    }
+
+    query match {
+      case None => None
+      case _ => query
+    }
+  }
+
 }
 
 case class NameSearchFilter(text: String, fuzzy: Option[String] = None)
