@@ -114,6 +114,8 @@ trait ProposalService {
                     userId: UserId,
                     requestContext: RequestContext,
                     changes: PatchProposalRequest): Future[Option[ProposalResponse]]
+
+  def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -661,7 +663,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                requestContext: RequestContext,
                                changes: PatchProposalRequest): Future[Option[ProposalResponse]] = {
 
-      val patchResult = proposalCoordinatorService
+      val patchResult: Future[Option[Proposal]] = proposalCoordinatorService
         .patch(
           PatchProposalCommand(
             proposalId = proposalId,
@@ -671,7 +673,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           )
         )
 
-      val futureMaybeProposalAuthor = (for {
+      val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (for {
         proposal: Proposal <- OptionT(patchResult)
         author: User       <- OptionT(userService.getUser(proposal.author))
       } yield (proposal, author)).value
@@ -681,6 +683,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case None                     => Future.successful(None)
       }
 
+    }
+
+    override def changeProposalsIdea(proposalIds: Seq[ProposalId],
+                                     moderatorId: UserId,
+                                     ideaId: IdeaId): Future[Seq[Proposal]] = {
+      Future
+        .sequence(proposalIds.map { proposalId =>
+          proposalCoordinatorService.patch(
+            PatchProposalCommand(
+              proposalId = proposalId,
+              userId = moderatorId,
+              changes = PatchProposalRequest(ideaId = Some(ideaId)),
+              requestContext = RequestContext.empty
+            )
+          )
+        })
+        .map(_.flatten)
     }
   }
 

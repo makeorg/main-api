@@ -1,6 +1,5 @@
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
 import java.util.Date
 
 import akka.actor.ActorSystem
@@ -8,7 +7,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
-import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
@@ -16,9 +14,9 @@ import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
+import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
@@ -161,84 +159,90 @@ class ModerationProposalApiTest
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(UserRights(john.userId, john.roles), None, Some("user"), None))))
-
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future.successful(Some(AuthInfo(UserRights(userId = daenerys.userId, roles = daenerys.roles), None, None, None)))
     )
-
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
-
-  val validProposalText: String = "Il faut que tout le monde respecte les conventions de code"
-  val invalidMaxLengthProposalText: String =
-    "Il faut que le texte de la proposition n'exède pas une certaine limite, par exemple 140 caractères car sinon, " +
-      "ça fait vraiment troooooop long. D'un autre côté on en dit peu en 140 caractères..."
-
-  val invalidMinLengthProposalText: String = "Il faut"
-
-  when(
-    proposalService
-      .propose(
-        any[User],
-        any[RequestContext],
-        any[ZonedDateTime],
-        matches(validProposalText),
-        any[Option[OperationId]],
-        any[Option[ThemeId]]
-      )
-  ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   when(
     proposalService
       .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
-
   when(
     proposalService
       .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
-
   when(
     proposalService
       .validateProposal(matches(ProposalId("nop")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
-
   when(
     proposalService
       .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
-
   when(
     proposalService
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
-
   when(
     proposalService
       .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
   ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
-
   when(
     proposalService
       .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
   ).thenReturn(Future.successful(Some(tyrion.userId)))
 
+  val proposalSim123: Proposal = Proposal(
+    proposalId = ProposalId("sim-123"),
+    slug = "a-song-of-fire-and-ice",
+    content = "A song of fire and ice",
+    author = UserId("Georges RR Martin"),
+    labels = Seq.empty,
+    votes = Seq(
+      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+    ),
+    creationContext = RequestContext.empty,
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now()),
+    events = Nil
+  )
+
+  val proposalSim124: Proposal = Proposal(
+    proposalId = ProposalId("sim-124"),
+    slug = "a-song-of-fire-and-ice-2",
+    content = "A song of fire and ice 2",
+    author = UserId("Georges RR Martin"),
+    labels = Seq.empty,
+    votes = Seq(
+      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+    ),
+    creationContext = RequestContext.empty,
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now()),
+    events = Nil
+  )
+
   when(
     proposalService
-      .getModerationProposalById(matches(ProposalId("sim-123")))
+      .getModerationProposalById(matches(proposalSim123.proposalId))
   ).thenReturn(
     Future.successful(
       Some(
         ProposalResponse(
-          proposalId = ProposalId("sim-123"),
-          slug = "a-song-of-fire-and-ice",
-          content = "A song of fire and ice",
+          proposalId = proposalSim123.proposalId,
+          slug = proposalSim123.slug,
+          content = proposalSim123.content,
           author = UserResponse(
-            UserId("Georges RR Martin"),
+            proposalSim123.author,
             email = "g@rr.martin",
             firstName = Some("Georges"),
             lastName = Some("Martin"),
@@ -248,18 +252,14 @@ class ModerationProposalApiTest
             roles = Seq.empty,
             None
           ),
-          labels = Seq(),
+          labels = proposalSim123.labels,
           theme = None,
           status = Accepted,
           tags = Seq(),
-          votes = Seq(
-            Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-            Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-            Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
-          ),
-          context = RequestContext.empty,
-          createdAt = Some(DateHelper.now()),
-          updatedAt = Some(DateHelper.now()),
+          votes = proposalSim123.votes,
+          context = proposalSim123.creationContext,
+          createdAt = proposalSim123.createdAt,
+          updatedAt = proposalSim123.updatedAt,
           events = Nil,
           similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
           idea = None,
@@ -269,6 +269,54 @@ class ModerationProposalApiTest
       )
     )
   )
+
+  when(
+    proposalService
+      .getModerationProposalById(matches(proposalSim124.proposalId))
+  ).thenReturn(
+    Future.successful(
+      Some(
+        ProposalResponse(
+          proposalId = proposalSim124.proposalId,
+          slug = proposalSim124.slug,
+          content = proposalSim124.content,
+          author = UserResponse(
+            proposalSim124.author,
+            email = "g@rr.martin",
+            firstName = Some("Georges"),
+            lastName = Some("Martin"),
+            enabled = true,
+            verified = true,
+            lastConnection = DateHelper.now(),
+            roles = Seq.empty,
+            None
+          ),
+          labels = proposalSim124.labels,
+          theme = None,
+          status = Accepted,
+          tags = Seq(),
+          votes = proposalSim124.votes,
+          context = proposalSim124.creationContext,
+          createdAt = proposalSim124.createdAt,
+          updatedAt = proposalSim124.updatedAt,
+          events = Nil,
+          similarProposals = Seq(ProposalId("sim-111"), ProposalId("sim-222")),
+          idea = None,
+          ideaProposals = Seq.empty,
+          operationId = None
+        )
+      )
+    )
+  )
+
+  when(
+    proposalService
+      .getModerationProposalById(matches(ProposalId("fake")))
+  ).thenReturn(Future.successful(None))
+  when(
+    proposalService
+      .getModerationProposalById(matches(ProposalId("fake2")))
+  ).thenReturn(Future.successful(None))
 
   val proposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
@@ -290,6 +338,7 @@ class ModerationProposalApiTest
     myProposal = false,
     idea = None
   )
+
   when(
     proposalService
       .searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext])
@@ -331,8 +380,47 @@ class ModerationProposalApiTest
     )
   }
 
-  when(ideaService.fetchOne(any[IdeaId]))
-    .thenReturn(Future.successful(Some(Idea(ideaId = IdeaId("foo"), name = "Foo", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now())))))
+  when(ideaService.fetchOne(matches(IdeaId("fake"))))
+    .thenReturn(Future.successful(None))
+  when(ideaService.fetchOne(matches(IdeaId("Idea 1"))))
+    .thenReturn(
+      Future.successful(
+        Some(
+          Idea(
+            ideaId = IdeaId("Idea 1"),
+            name = "Idea 1",
+            createdAt = Some(DateHelper.now()),
+            updatedAt = Some(DateHelper.now())
+          )
+        )
+      )
+    )
+  when(ideaService.fetchOne(matches(IdeaId("Idea 2"))))
+    .thenReturn(
+      Future.successful(
+        Some(
+          Idea(
+            ideaId = IdeaId("Idea 2"),
+            name = "Idea 2",
+            createdAt = Some(DateHelper.now()),
+            updatedAt = Some(DateHelper.now())
+          )
+        )
+      )
+    )
+  when(ideaService.fetchOne(matches(IdeaId("Idea 3"))))
+    .thenReturn(
+      Future.successful(
+        Some(
+          Idea(
+            ideaId = IdeaId("Idea 3"),
+            name = "Idea1",
+            createdAt = Some(DateHelper.now()),
+            updatedAt = Some(DateHelper.now())
+          )
+        )
+      )
+    )
 
   when(proposalService.getDuplicates(any[UserId], matches(ProposalId("123456")), any[RequestContext]))
     .thenReturn(
@@ -343,6 +431,15 @@ class ModerationProposalApiTest
         )
       )
     )
+
+  when(
+    proposalService
+      .changeProposalsIdea(
+        matches(Seq(proposalSim123.proposalId, proposalSim124.proposalId)),
+        any[UserId],
+        matches(IdeaId("Idea 3"))
+      )
+  ).thenReturn(Future.successful(Seq(proposalSim123, proposalSim124)))
 
   val routes: Route = sealRoute(moderationProposalRoutes)
 
@@ -480,5 +577,86 @@ class ModerationProposalApiTest
         results.head.proposalContent should be("Proposal One")
       }
     }
+  }
+
+  feature("change idea of a proposal list") {
+    scenario("unauthenticated user") {
+      Given("an un authenticated user")
+      When("the user change idea of proposals")
+      Then("he should get an unauthorized (401) return code")
+      Post("/moderation/proposals/change-idea").withEntity(
+        HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
+      ) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated user with citizen role") {
+      Given("an authenticated user with citizen role")
+      When("the user change idea of proposals")
+      Then("he should get an forbidden (403) return code")
+
+      Post("/moderation/proposals/change-idea")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("change success") {
+      Given("an authenticated user with moderator role")
+      When("the user change idea of proposals")
+      Then("he should get an success (201) return code")
+
+      Post("/moderation/proposals/change-idea")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("invalid idea id") {
+      Given("an authenticated user with moderator role")
+      And("an invalid ideaId")
+      When("the user change idea of proposals using invalid ideaId")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/proposals/change-idea")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"fake" }""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "ideaId")
+        contentError should be(Some(ValidationError("ideaId", Some("Invalid idea id"))))
+      }
+    }
+
+    scenario("invalid proposal id") {
+      Given("an authenticated user with moderator role")
+      And("an invalid ideaId")
+      When("the user change idea of proposals using invalid ideaId")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/proposals/change-idea")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"proposalIds": ["sim-123", "sim-124", "fake", "fake2"], "ideaId":"Idea 3" }"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "proposalIds")
+        contentError should be(Some(ValidationError("proposalIds", Some("Some proposal ids are invalid: fake, fake2"))))
+      }
+    }
+
   }
 }
