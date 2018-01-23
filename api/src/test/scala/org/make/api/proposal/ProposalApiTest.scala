@@ -22,7 +22,6 @@ import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference._
-import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -351,7 +350,6 @@ class ProposalApiTest
           slug = "my-operation",
           translations = Seq.empty,
           defaultLanguage = "FR",
-          sequenceLandingId = SequenceId("operation-sequence"),
           events = List.empty,
           createdAt = None,
           updatedAt = None,

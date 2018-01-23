@@ -17,7 +17,9 @@ import org.make.core.operation._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
 import org.make.core.{reference, HttpCodes, Validation}
+import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.Future
 import scalaoauth2.provider.AuthInfo
 
 @Api(
@@ -64,11 +66,21 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
               decodeRequest {
                 entity(as[ModerationCreateOperationRequest]) { request: ModerationCreateOperationRequest =>
                   provideAsync(tagService.findByTagIds(request.countriesConfiguration.flatMap(_.tagIds))) { tags =>
-                    provideAsync(sequenceService.getModerationSequenceById(request.sequenceLandingId)) { sequence =>
-                      Validation.validate(
-                        sequenceLandingIdValidation(request.sequenceLandingId, sequence),
-                        tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
+                    provideAsync(
+                      Future.traverse(request.countriesConfiguration.map(_.landingSequenceId))(
+                        sequenceService.getModerationSequenceById
                       )
+                    ) { sequences =>
+                      sequences.zipWithIndex.foreach {
+                        case (sequence, idx) =>
+                          Validation.validate(
+                            sequenceLandingIdValidation(
+                              request.countriesConfiguration(idx).landingSequenceId,
+                              sequence
+                            ),
+                            tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
+                          )
+                      }
                       provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
                         Validation.validate(
                           Validation
@@ -80,7 +92,6 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                             slug = request.slug,
                             translations = request.translations,
                             defaultLanguage = request.defaultLanguage,
-                            sequenceLandingId = request.sequenceLandingId,
                             countriesConfiguration = request.countriesConfiguration
                           )
                         ) { operationId =>
@@ -122,11 +133,21 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                 decodeRequest {
                   entity(as[ModerationUpdateOperationRequest]) { request: ModerationUpdateOperationRequest =>
                     provideAsync(tagService.findByTagIds(request.countriesConfiguration.flatMap(_.tagIds))) { tags =>
-                      provideAsync(sequenceService.getModerationSequenceById(request.sequenceLandingId)) { sequence =>
-                        Validation.validate(
-                          sequenceLandingIdValidation(request.sequenceLandingId, sequence),
-                          tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
+                      provideAsync(
+                        Future.traverse(request.countriesConfiguration.map(_.landingSequenceId))(
+                          sequenceService.getModerationSequenceById
                         )
+                      ) { sequences =>
+                        sequences.zipWithIndex.foreach {
+                          case (sequence, idx) =>
+                            Validation.validate(
+                              sequenceLandingIdValidation(
+                                request.countriesConfiguration(idx).landingSequenceId,
+                                sequence
+                              ),
+                              tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
+                            )
+                        }
                         provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
                           maybeOperation.foreach { operation =>
                             Validation.validate(
@@ -141,7 +162,6 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                               status = OperationStatus.statusMap.get(request.status),
                               translations = Some(request.translations),
                               defaultLanguage = Some(request.defaultLanguage),
-                              sequenceLandingId = Some(request.sequenceLandingId),
                               countriesConfiguration = Some(request.countriesConfiguration)
                             )
                           ) { operationId =>
@@ -186,12 +206,15 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
   def moderationGetOperation: Route = {
     get {
       path("moderation" / "operations" / operationId) { operationId =>
-        makeTrace("ModerationGetOperation") { _ =>
+        makeTrace("ModerationGetOperation") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
                 provideAsync(userService.getUsersByUserIds(operation.events.map(_.makeUserId))) { users =>
-                  complete(ModerationOperationResponse.apply(operation = operation, operationActionUsers = users))
+                  complete(
+                    ModerationOperationResponse
+                      .apply(operation = operation, operationActionUsers = users, countryCode = requestContext.country)
+                  )
                 }
               }
             }
@@ -213,7 +236,7 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
     get {
       path("moderation" / "operations") {
         parameters('slug.?) { (slug) =>
-          makeTrace("ModerationGetOperations") { _ =>
+          makeTrace("ModerationGetOperations") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
                 provideAsync(operationService.find()) { operations =>
@@ -224,7 +247,9 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                         case _           => operations
                       }
                       val operationResponses: Seq[ModerationOperationResponse] =
-                        filteredOperation.map(operation => ModerationOperationResponse(operation, users))
+                        filteredOperation.map(
+                          operation => ModerationOperationResponse(operation, users, requestContext.country)
+                        )
                       val result: ModerationOperationListResponse =
                         ModerationOperationListResponse(operationResponses.length, operationResponses)
                       complete(result)

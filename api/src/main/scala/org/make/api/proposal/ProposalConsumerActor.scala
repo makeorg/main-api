@@ -19,6 +19,7 @@ import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Tag, TagId}
+import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -79,8 +80,13 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
       case Some(_) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
+            //TODO: potential incorrect behaviour. Adjust it on the moderation related story.
+            val sequenceId: SequenceId = operation.countriesConfiguration
+              .find(conf => event.requestContext.country.contains(conf.countryCode))
+              .getOrElse(operation.countriesConfiguration.head)
+              .landingSequenceId
             sequenceService
-              .addProposals(operation.sequenceLandingId, event.moderatorId, event.requestContext, Seq(event.id))
+              .addProposals(sequenceId, event.moderatorId, event.requestContext, Seq(event.id))
           }
         }
       case None => Future.successful[Unit] {}
@@ -92,8 +98,13 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
       case Some(_) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
+            //TODO: potential incorrect behaviour. Adjust it on the moderation related story.
+            val sequenceId: SequenceId = operation.countriesConfiguration
+              .find(conf => event.requestContext.country.contains(conf.countryCode))
+              .getOrElse(operation.countriesConfiguration.head)
+              .landingSequenceId
             sequenceService
-              .removeProposals(operation.sequenceLandingId, event.moderatorId, event.requestContext, Seq(event.id))
+              .removeProposals(sequenceId, event.moderatorId, event.requestContext, Seq(event.id))
           }
         }
       case None => Future.successful[Unit] {}

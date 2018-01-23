@@ -72,7 +72,6 @@ class OperationServiceIT
       OperationTranslation(title = "hello operation", language = "en")
     ),
     defaultLanguage = "fr",
-    sequenceLandingId = sequenceId,
     events = List.empty,
     countriesConfiguration = Seq.empty
   )
@@ -87,7 +86,6 @@ class OperationServiceIT
                |status = Pending
                |slug = "hello-operation"
                |defaultLanguage = fr
-               |sequenceLandingId = ${sequenceId.value}
                |countriesConfiguration = Seq.empty
                |events = List.empty
                |""".stripMargin)
@@ -102,7 +100,6 @@ class OperationServiceIT
           slug = simpleOperation.slug,
           translations = simpleOperation.translations,
           defaultLanguage = simpleOperation.defaultLanguage,
-          sequenceLandingId = simpleOperation.sequenceLandingId,
           countriesConfiguration = simpleOperation.countriesConfiguration
         )
         _ <- operationService.update(
@@ -136,8 +133,7 @@ class OperationServiceIT
             |  "countriesConfiguration" : "",
             |  "operationId" : "${operation.operationId.value}",
             |  "status" : "Pending",
-            |  "defaultLanguage" : "fr",
-            |  "sequenceLandingId" : "${sequenceId.value}"
+            |  "defaultLanguage" : "fr"
             |})""".stripMargin)
         And("operations events should contain an update event")
         operation.events
@@ -150,8 +146,7 @@ class OperationServiceIT
             |  "countriesConfiguration" : "",
             |  "operationId" : "${operation.operationId.value}",
             |  "status" : "Pending",
-            |  "defaultLanguage" : "pt",
-            |  "sequenceLandingId" : "${sequenceId.value}"
+            |  "defaultLanguage" : "pt"
             |})""".stripMargin)
       }
     }

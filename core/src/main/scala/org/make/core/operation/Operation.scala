@@ -20,7 +20,6 @@ final case class Operation(status: OperationStatus,
                            slug: String,
                            translations: Seq[OperationTranslation] = Seq.empty,
                            defaultLanguage: String,
-                           sequenceLandingId: SequenceId,
                            events: List[OperationAction],
                            override val createdAt: Option[ZonedDateTime],
                            override val updatedAt: Option[ZonedDateTime],
@@ -30,7 +29,7 @@ final case class Operation(status: OperationStatus,
 
 object Operation {
   implicit val operationFormatter: RootJsonFormat[Operation] =
-    DefaultJsonProtocol.jsonFormat10(Operation.apply)
+    DefaultJsonProtocol.jsonFormat9(Operation.apply)
 }
 
 final case class OperationId(value: String) extends StringValue
@@ -54,11 +53,12 @@ object OperationId {
 }
 @ApiModel
 final case class OperationCountryConfiguration(countryCode: String,
-                                               @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId])
+                                               @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
+                                               landingSequenceId: SequenceId)
 
 object OperationCountryConfiguration {
   implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =
-    DefaultJsonProtocol.jsonFormat2(OperationCountryConfiguration.apply)
+    DefaultJsonProtocol.jsonFormat3(OperationCountryConfiguration.apply)
 
   implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]

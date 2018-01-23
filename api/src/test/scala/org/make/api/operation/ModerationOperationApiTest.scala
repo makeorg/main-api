@@ -121,7 +121,6 @@ class ModerationOperationApiTest
       OperationTranslation(title = "first operation", language = "en")
     ),
     defaultLanguage = "fr",
-    sequenceLandingId = SequenceId("first-sequence-id"),
     events = List(
       OperationAction(
         date = now,
@@ -132,7 +131,13 @@ class ModerationOperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "BR", tagIds = Seq.empty))
+    countriesConfiguration = Seq(
+      OperationCountryConfiguration(
+        countryCode = "BR",
+        tagIds = Seq.empty,
+        landingSequenceId = SequenceId("first-sequence-id")
+      )
+    )
   )
 
   val secondOperation: Operation = Operation(
@@ -144,7 +149,6 @@ class ModerationOperationApiTest
       OperationTranslation(title = "second operation", language = "en")
     ),
     defaultLanguage = "it",
-    sequenceLandingId = SequenceId("second-sequence-id"),
     events = List(
       OperationAction(
         date = now,
@@ -155,7 +159,13 @@ class ModerationOperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "IT", tagIds = Seq.empty))
+    countriesConfiguration = Seq(
+      OperationCountryConfiguration(
+        countryCode = "IT",
+        tagIds = Seq.empty,
+        landingSequenceId = SequenceId("second-sequence-id")
+      )
+    )
   )
 
   val validCreateJson: String =
@@ -169,13 +179,13 @@ class ModerationOperationApiTest
       |    }
       |  ],
       |  "defaultLanguage": "fr",
-      |  "sequenceLandingId": "29625b5a-56da-4539-b195-15303187c20b",
       |  "countriesConfiguration": [
       |    {
       |      "countryCode": "FR",
       |      "tagIds": [
       |        "hello"
-      |      ]
+      |      ],
+      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
       |  ]
       |}
@@ -193,13 +203,13 @@ class ModerationOperationApiTest
       |    }
       |  ],
       |  "defaultLanguage": "fr",
-      |  "sequenceLandingId": "29625b5a-56da-4539-b195-15303187c20b",
       |  "countriesConfiguration": [
       |    {
       |      "countryCode": "FR",
       |      "tagIds": [
       |        "hello"
-      |      ]
+      |      ],
+      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
       |  ]
       |}
@@ -272,8 +282,13 @@ class ModerationOperationApiTest
       slug = "my-create-operation",
       translations = Seq(OperationTranslation(title = "first create operation", language = "fr")),
       defaultLanguage = "fr",
-      sequenceLandingId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
-      countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "FR", tagIds = Seq(TagId("hello"))))
+      countriesConfiguration = Seq(
+        OperationCountryConfiguration(
+          countryCode = "FR",
+          tagIds = Seq(TagId("hello")),
+          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+        )
+      )
     )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
@@ -286,9 +301,15 @@ class ModerationOperationApiTest
       slug = Some("my-update-operation"),
       translations = Some(Seq(OperationTranslation(title = "first update operation", language = "fr"))),
       defaultLanguage = Some("fr"),
-      sequenceLandingId = Some(SequenceId("29625b5a-56da-4539-b195-15303187c20b")),
-      countriesConfiguration =
-        Some(Seq(OperationCountryConfiguration(countryCode = "FR", tagIds = Seq(TagId("hello")))))
+      countriesConfiguration = Some(
+        Seq(
+          OperationCountryConfiguration(
+            countryCode = "FR",
+            tagIds = Seq(TagId("hello")),
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+          )
+        )
+      )
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
   when(
@@ -299,9 +320,15 @@ class ModerationOperationApiTest
       slug = Some("existing-operation-slug-second"),
       translations = Some(Seq(OperationTranslation(title = "first update operation", language = "fr"))),
       defaultLanguage = Some("fr"),
-      sequenceLandingId = Some(SequenceId("29625b5a-56da-4539-b195-15303187c20b")),
-      countriesConfiguration =
-        Some(Seq(OperationCountryConfiguration(countryCode = "FR", tagIds = Seq(TagId("hello")))))
+      countriesConfiguration = Some(
+        Seq(
+          OperationCountryConfiguration(
+            countryCode = "FR",
+            tagIds = Seq(TagId("hello")),
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+          )
+        )
+      )
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
 

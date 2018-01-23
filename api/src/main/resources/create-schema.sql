@@ -370,12 +370,13 @@ CREATE TABLE IF NOT EXISTS operation (
   status VARCHAR(20) NOT NULL,
   slug VARCHAR(256) NOT NULL,
   default_language VARCHAR(3) NOT NULL,
-  sequence_landing_id VARCHAR(256),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 %
 CREATE UNIQUE index IF NOT EXISTS operation_slug_unique_index ON operation (slug);
+%
+ALTER TABLE IF EXISTS operation DROP COLUMN sequence_landing_id;
 %
 CREATE TABLE IF NOT EXISTS operation_translation (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
@@ -390,6 +391,7 @@ CREATE TABLE IF NOT EXISTS operation_country_configuration (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
   country VARCHAR(3),
   tag_ids VARCHAR(2048),
+  landing_sequence_id VARCHAR NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (operation_uuid, country)
