@@ -263,7 +263,7 @@ class ProposalApiTest
     )
   )
 
-  val proposalResult = ProposalResult(
+  val proposalResult: ProposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
     content = "il faut fou",
@@ -281,7 +281,8 @@ class ProposalApiTest
     themeId = None,
     tags = Seq.empty,
     myProposal = false,
-    idea = None
+    idea = None,
+    operationId = None
   )
   when(
     proposalService

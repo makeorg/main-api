@@ -1297,7 +1297,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           externalId = "external-id",
           country = Some("BE"),
           language = Some("nl"),
-          operation = None /*Some("my-operation")*/,
+          operationId = None,
           source = Some("my-source"),
           location = Some("my-location"),
           question = Some("my-question"),

@@ -4,7 +4,6 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
@@ -552,38 +551,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  @ApiOperation(
-    value = "update-sequences-operation",
-    httpMethod = "POST",
-    code = HttpCodes.NoContent,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @Path(value = "/moderation/sequences/migrate-operation")
-  def migrateSequenceOperation: Route = post {
-    path("moderation" / "sequences" / "migrate-operation") {
-      makeTrace("update sequence operation") { _ =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-            readJournal
-              .currentPersistenceIds()
-              .runForeach(id => sequenceCoordinatorService.setOperationIdFromContext(SequenceId(id)))
-
-            complete(StatusCodes.NoContent)
-          }
-        }
-      }
-    }
-  }
-
   val sequenceRoutes: Route =
     getModerationSequence ~
       postSequence ~
@@ -593,7 +560,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       postAddProposalSequence ~
       postRemoveProposalSequence ~
       patchSequence ~
-      migrateSequenceOperation ~
       getModerationSequenceConfiguration ~
       putSequenceConfiguration
 

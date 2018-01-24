@@ -662,7 +662,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 tags = command.tags,
                 similarProposals = command.similarProposals,
                 idea = command.idea,
-                operation = command.operation.orElse(proposal.operation).orElse(proposal.creationContext.operationId)
+                operation = command.operation.orElse(proposal.operation)
               )
             )
           )
@@ -712,7 +712,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 tags = command.tags,
                 similarProposals = command.similarProposals,
                 idea = command.idea,
-                operation = command.operation.orElse(proposal.operation).orElse(proposal.creationContext.operationId)
+                operation = command.operation.orElse(proposal.operation)
               )
             )
           )
@@ -754,7 +754,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
                 moderator = command.moderator,
                 sendRefuseEmail = command.sendNotificationEmail,
                 refusalReason = command.refusalReason,
-                operation = proposal.operation.orElse(proposal.creationContext.operation.map(OperationId.apply))
+                operation = proposal.operation
               )
             )
           )
@@ -852,7 +852,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
               )
             ),
             similarProposals = Seq.empty,
-            operation = e.operation.orElse(e.requestContext.operationId),
+            operation = e.operation,
             events = List(
               ProposalAction(
                 date = e.eventDate,

@@ -470,8 +470,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
-                    theme = requestContext.currentTheme.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
-                    context = requestContext.operationId.map(ope    => ContextSearchFilter(operation = Some(ope)))
+                    theme = indexedProposal.themeId.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
+                    operation = indexedProposal.operationId
+                      .map(operationId => OperationSearchFilter(operationId = operationId))
                   )
                 )
               )

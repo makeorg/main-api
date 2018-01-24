@@ -14,7 +14,6 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 externalId: String,
                                 country: Option[String],
                                 language: Option[String],
-                                @Deprecated operation: Option[String] = None,
                                 operationId: Option[OperationId] = None,
                                 source: Option[String],
                                 location: Option[String],
@@ -32,6 +31,6 @@ object RequestContext {
     RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, None, None, None)
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat15(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat14(RequestContext.apply)
 
 }

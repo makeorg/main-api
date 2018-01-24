@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositi
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
-import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -587,38 +586,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   }
 
   @ApiOperation(
-    value = "update-proposals-operation",
-    httpMethod = "POST",
-    code = HttpCodes.NoContent,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @Path(value = "/migrate-operation")
-  def migrateProposalOperation: Route = post {
-    path("moderation" / "proposals" / "migrate-operation") {
-      makeTrace("update proposal operation") { _ =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-            readJournal
-              .currentPersistenceIds()
-              .runForeach(id => proposalCoordinatorService.setOperationIdFromContext(ProposalId(id)))
-
-            complete(StatusCodes.NoContent)
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
     value = "update-proposals-to-idea",
     httpMethod = "POST",
     code = HttpCodes.NoContent,
@@ -699,8 +666,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       lock ~
       patchProposal ~
       getDuplicates ~
-      migrateProposalOperation ~
       changeProposalsIdea
+  getDuplicates
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)

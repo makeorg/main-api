@@ -74,7 +74,8 @@ final case class ProposalResult(id: ProposalId,
                                 themeId: Option[ThemeId],
                                 tags: Seq[Tag],
                                 myProposal: Boolean,
-                                idea: Option[IdeaId])
+                                idea: Option[IdeaId],
+                                operationId: Option[OperationId])
 
 object ProposalResult extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResult] = deriveEncoder[ProposalResult]
@@ -107,7 +108,8 @@ object ProposalResult extends CirceFormatters {
       themeId = indexedProposal.themeId,
       tags = indexedProposal.tags,
       myProposal = myProposal,
-      idea = indexedProposal.ideaId
+      idea = indexedProposal.ideaId,
+      operationId = indexedProposal.operationId
     )
 }
 
