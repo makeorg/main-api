@@ -8,7 +8,6 @@ import org.make.api.operation.OperationService
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
 import org.make.api.userhistory.UserEvent._
-import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,21 +26,6 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
   implicit val timeout: Timeout = Timeout(3.seconds)
 
-
-  /*
-   * Add an implicit for each event to manage
-   */
-  object HandledMessages extends Poly1 {
-    implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
-    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] =
-      at(identity)
-    implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
-    implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
-    implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
-      at(identity)
-    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
-  }
-
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
       case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
@@ -56,10 +40,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
-
 
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
@@ -67,7 +49,6 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         }
 
         futureOperationSlug.map { operationSlug =>
-
           val templateConfiguration = mailJetTemplateConfiguration
             .welcome(operation = operationSlug, country = country, language = language)
 
@@ -77,7 +58,10 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(
@@ -124,7 +108,10 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 templateId = Some(registration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(
@@ -159,7 +146,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
         futureOperationSlug.map { operationSlug =>
           val forgottenPassword =
-            mailJetTemplateConfiguration.forgottenPassword(operation = operationSlug, country = country, language = language)
+            mailJetTemplateConfiguration
+              .forgottenPassword(operation = operationSlug, country = country, language = language)
 
           if (forgottenPassword.enabled) {
             val url = s"${mailJetTemplateConfiguration
@@ -171,7 +159,10 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 templateId = Some(forgottenPassword.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(
@@ -201,7 +192,6 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   private def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
 
@@ -211,22 +201,22 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         }
 
         futureOperationSlug.map { operationSlug =>
-
           val resendAccountValidationLink = mailJetTemplateConfiguration
             .resendAccountValidationLink(operation = operationSlug, country = country, language = language)
 
           if (resendAccountValidationLink.enabled) {
-            val url = s"${
-              mailJetTemplateConfiguration
-                .getFrontUrl()
-            }/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+            val url = s"${mailJetTemplateConfiguration
+              .getFrontUrl()}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
             eventBusService.publish(
               SendEmail(
                 templateId = Some(resendAccountValidationLink.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
-                  Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
                 ),
                 variables = Some(
                   Map(

@@ -17,7 +17,6 @@ import org.make.core.RequestContext
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed._
-import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -47,15 +46,6 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
       case event: SequenceProposalsRemoved => onCreateOrUpdate(event)
       case event: SequencePatched          => onCreateOrUpdate(event)
     }
-  }
-
-  object ToSequenceEvent extends Poly1 {
-    implicit val atSequenceViewed: Case.Aux[SequenceViewed, SequenceViewed] = at(identity)
-    implicit val atSequenceUpdated: Case.Aux[SequenceUpdated, SequenceUpdated] = at(identity)
-    implicit val atSequenceCreated: Case.Aux[SequenceCreated, SequenceCreated] = at(identity)
-    implicit val atSequenceProposalsAdded: Case.Aux[SequenceProposalsAdded, SequenceProposalsAdded] = at(identity)
-    implicit val atSequenceProposalsRemoved: Case.Aux[SequenceProposalsRemoved, SequenceProposalsRemoved] = at(identity)
-    implicit val atSequencePatched: Case.Aux[SequencePatched, SequencePatched] = at(identity)
   }
 
   def onCreateOrUpdate(event: SequenceEvent): Future[Unit] = {

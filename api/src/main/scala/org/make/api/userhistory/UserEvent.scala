@@ -4,7 +4,7 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, RequestContext}
-import shapeless.{:+:, CNil, Coproduct}
+import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
   def userId: UserId
@@ -44,6 +44,20 @@ object UserEvent {
         case e: UserRegisteredEvent        => Coproduct[AnyUserEvent](e)
         case e: UserValidatedAccountEvent  => Coproduct[AnyUserEvent](e)
       }
+  }
+
+  /*
+   * Add an implicit for each event to manage
+   */
+  object HandledMessages extends Poly1 {
+    implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
+    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] =
+      at(identity)
+    implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
+    implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
+    implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
+      at(identity)
+    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
   }
 
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,

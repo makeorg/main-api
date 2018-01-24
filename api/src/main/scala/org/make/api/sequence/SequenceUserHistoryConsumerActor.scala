@@ -8,7 +8,6 @@ import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.userhistory._
-import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,15 +34,6 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: SequenceProposalsAdded   => handleSequenceProposalsAdded(event)
       case event: SequencePatched          => Future.successful {}
     }
-  }
-
-  object ToSequenceEvent extends Poly1 {
-    implicit val atSequenceViewed: Case.Aux[SequenceViewed, SequenceViewed] = at(identity)
-    implicit val atSequenceUpdated: Case.Aux[SequenceUpdated, SequenceUpdated] = at(identity)
-    implicit val atSequenceCreated: Case.Aux[SequenceCreated, SequenceCreated] = at(identity)
-    implicit val atSequenceProposalsAdded: Case.Aux[SequenceProposalsAdded, SequenceProposalsAdded] = at(identity)
-    implicit val atSequenceProposalsRemoved: Case.Aux[SequenceProposalsRemoved, SequenceProposalsRemoved] = at(identity)
-    implicit val atSequencePatched: Case.Aux[SequencePatched, SequencePatched] = at(identity)
   }
 
   def handleSequenceViewed(event: SequenceViewed): Future[Unit] = {

@@ -9,7 +9,7 @@ import org.make.core.reference.{TagId, ThemeId}
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
-import shapeless.{:+:, CNil, Coproduct}
+import shapeless.{:+:, CNil, Coproduct, Poly1}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -45,6 +45,15 @@ object PublishedSequenceEvent {
       case e: SequenceProposalsRemoved => Coproduct[AnySequenceEvent](e)
       case e: SequencePatched          => Coproduct[AnySequenceEvent](e)
     }
+  }
+
+  object ToSequenceEvent extends Poly1 {
+    implicit val atSequenceViewed: Case.Aux[SequenceViewed, SequenceViewed] = at(identity)
+    implicit val atSequenceUpdated: Case.Aux[SequenceUpdated, SequenceUpdated] = at(identity)
+    implicit val atSequenceCreated: Case.Aux[SequenceCreated, SequenceCreated] = at(identity)
+    implicit val atSequenceProposalsAdded: Case.Aux[SequenceProposalsAdded, SequenceProposalsAdded] = at(identity)
+    implicit val atSequenceProposalsRemoved: Case.Aux[SequenceProposalsRemoved, SequenceProposalsRemoved] = at(identity)
+    implicit val atSequencePatched: Case.Aux[SequencePatched, SequencePatched] = at(identity)
   }
 
   final case class SequencePatched(id: SequenceId,

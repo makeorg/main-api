@@ -7,13 +7,12 @@ import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.operation.OperationService
+import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.user.UserService
 import org.make.core.proposal.Proposal
-import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.user._
-import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -53,25 +52,6 @@ class ProposalEmailConsumer(userService: UserService,
       case _: ProposalRemovedFromOperation => Future.successful {}
     }
 
-  }
-
-  object ToProposalEvent extends Poly1 {
-    implicit val atProposalViewed: Case.Aux[ProposalViewed, ProposalViewed] = at(identity)
-    implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
-    implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
-    implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
-    implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
-    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
-    implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
-    implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
-    implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
-    implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
-    implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
-    implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
-    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
-    implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
-    implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
-      at(identity)
   }
 
   def handleVotedProposal(event: ProposalVoted): Future[Unit] = {

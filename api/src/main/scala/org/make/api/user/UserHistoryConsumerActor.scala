@@ -6,9 +6,8 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
-import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 import org.make.api.userhistory.UserEvent._
-import shapeless.Poly1
+import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -25,20 +24,6 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   override val groupId = "user-history"
 
   implicit val timeout: Timeout = Timeout(3.seconds)
-
-  /*
-   * Add an implicit for each event to manage
-   */
-  object HandledMessages extends Poly1 {
-    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] =
-      at(identity)
-    implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
-    implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
-    implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
-    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
-    implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
-      at(identity)
-  }
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
