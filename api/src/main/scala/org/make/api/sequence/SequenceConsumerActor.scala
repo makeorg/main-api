@@ -39,7 +39,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
 
   override def handleMessage(message: SequenceEventWrapper): Future[Unit] = {
     message.event.fold(ToSequenceEvent) match {
-      case _: SequenceViewed               => Future.successful {}
+      case event: SequenceViewed           => doNothing(event)
       case event: SequenceUpdated          => onCreateOrUpdate(event)
       case event: SequenceCreated          => onCreateOrUpdate(event)
       case event: SequenceProposalsAdded   => onCreateOrUpdate(event)

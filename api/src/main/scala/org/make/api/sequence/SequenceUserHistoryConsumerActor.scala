@@ -27,18 +27,12 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: SequenceEventWrapper): Future[Unit] = {
     message.event.fold(ToSequenceEvent) match {
-      case event: SequenceViewed           => handleSequenceViewed(event)
+      case event: SequenceViewed           => doNothing(event)
       case event: SequenceUpdated          => handleSequenceUpdated(event)
       case event: SequenceCreated          => handleSequenceCreated(event)
       case event: SequenceProposalsRemoved => handleSequenceProposalsRemoved(event)
       case event: SequenceProposalsAdded   => handleSequenceProposalsAdded(event)
-      case event: SequencePatched          => Future.successful {}
-    }
-  }
-
-  def handleSequenceViewed(event: SequenceViewed): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
+      case event: SequencePatched          => doNothing(event)
     }
   }
 

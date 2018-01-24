@@ -45,13 +45,6 @@ class ProposalSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalSessionHistoryConsumerActor.props(sessionHistoryCoordinator),
-        ProposalSessionHistoryConsumerActor.name
-      )
-      context.actorOf(props, name)
-    }
-    context.watch {
-      val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService, operationService),
         ProposalEmailConsumerActor.name
       )

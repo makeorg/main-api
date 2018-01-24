@@ -35,77 +35,23 @@ class ProposalEmailConsumer(userService: UserService,
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed           => handleProposalViewed(event)
-      case event: ProposalUpdated          => handleProposalUpdated(event)
-      case event: ProposalProposed         => handleProposalProposed(event)
-      case event: ProposalAccepted         => handleProposalAccepted(event)
-      case event: ProposalRefused          => handleProposalRefused(event)
-      case event: ProposalPostponed        => handleProposalPostponed(event)
-      case event: ProposalVoted            => handleVotedProposal(event)
-      case event: ProposalUnvoted          => handleUnvotedProposal(event)
-      case event: ProposalQualified        => handleQualifiedProposal(event)
-      case event: ProposalUnqualified      => handleUnqualifiedProposal(event)
-      case event: SimilarProposalsAdded    => handleSimilarProposalsAdded(event)
-      case event: ProposalLocked           => handleLockedProposal(event)
-      case _: ProposalPatched              => Future.successful {}
-      case _: ProposalAddedToOperation     => Future.successful {}
-      case _: ProposalRemovedFromOperation => Future.successful {}
+      case event: ProposalAccepted             => handleProposalAccepted(event)
+      case event: ProposalRefused              => handleProposalRefused(event)
+      case event: ProposalPostponed            => handleProposalPostponed(event)
+      case event: ProposalViewed               => doNothing(event)
+      case event: ProposalUpdated              => doNothing(event)
+      case event: ProposalProposed             => doNothing(event)
+      case event: ProposalVoted                => doNothing(event)
+      case event: ProposalUnvoted              => doNothing(event)
+      case event: ProposalQualified            => doNothing(event)
+      case event: ProposalUnqualified          => doNothing(event)
+      case event: SimilarProposalsAdded        => doNothing(event)
+      case event: ProposalLocked               => doNothing(event)
+      case event: ProposalPatched              => doNothing(event)
+      case event: ProposalAddedToOperation     => doNothing(event)
+      case event: ProposalRemovedFromOperation => doNothing(event)
     }
 
-  }
-
-  def handleVotedProposal(event: ProposalVoted): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleSimilarProposalsAdded(event: SimilarProposalsAdded): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleUnvotedProposal(event: ProposalUnvoted): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleQualifiedProposal(event: ProposalQualified): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleUnqualifiedProposal(event: ProposalUnqualified): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleLockedProposal(event: ProposalLocked): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleProposalViewed(event: ProposalViewed): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleProposalUpdated(event: ProposalUpdated): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
-  }
-
-  def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
-    }
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {

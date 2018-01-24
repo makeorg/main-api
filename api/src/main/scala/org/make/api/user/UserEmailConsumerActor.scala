@@ -31,8 +31,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
       case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
       case event: UserRegisteredEvent        => handleUserRegisteredEventEvent(event)
       case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
-      case _: UserConnectedEvent             => Future.successful {}
-      case _: UserUpdatedTagEvent            => Future.successful {}
+      case event: UserConnectedEvent         => doNothing(event)
+      case event: UserUpdatedTagEvent        => doNothing(event)
       case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
     }
   }

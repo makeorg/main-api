@@ -30,6 +30,11 @@ abstract class KafkaConsumerActor[T]
 
   protected val kafkaTopic: String
   protected val format: RecordFormat[T]
+  final def doNothing(event: Any): Future[Unit] = {
+    Future.successful {
+      log.debug(s"received $event")
+    }
+  }
 
   def handleMessage(message: T): Future[Unit]
   def groupId: String
