@@ -1,4 +1,5 @@
-package org.make.api
+package org.make.api.docker
+
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientConfig}
 import com.github.dockerjava.jaxrs.JerseyDockerCmdExecFactory
 import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}

@@ -1,4 +1,4 @@
-package org.make.api
+package org.make.api.docker
 
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientConfig}
 import com.github.dockerjava.jaxrs.JerseyDockerCmdExecFactory
@@ -22,6 +22,5 @@ trait DockerCockroachService extends DockerKit {
   private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
 
   private val client: Docker = new Docker(dockerClientConfig, new JerseyDockerCmdExecFactory())
-  // new NettyDockerCmdExecFactory())
   override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
 }

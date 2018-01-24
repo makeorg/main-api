@@ -9,8 +9,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import io.circe.syntax._
+import org.make.api.ItMakeTest
+import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
-import org.make.api.{DockerElasticsearchService, ItMakeTest}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -20,8 +21,7 @@ import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.{Failure, Success}
