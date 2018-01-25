@@ -19,7 +19,8 @@ case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
                            limit: Option[Int] = None,
                            skip: Option[Int] = None,
                            sort: Option[String] = None,
-                           order: Option[String] = None)
+                           order: Option[String] = None,
+                           language: Option[String] = None)
 
 /**
   * The class holding the filters
@@ -79,49 +80,46 @@ object IdeaSearchFilters extends ElasticDsl {
 
   def getSort(ideaSearchQuery: IdeaSearchQuery): FieldSortDefinition = {
     val order = ideaSearchQuery.order.map {
-      case asc if asc .toLowerCase == "asc"   => SortOrder.ASC
+      case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
       case desc if desc.toLowerCase == "desc" => SortOrder.DESC
     }
 
-    ideaSearchQuery.sort.map{
-      sort => FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
+    ideaSearchQuery.sort.map { sort =>
+      FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
     }.getOrElse(FieldSortDefinition(field = "name.keyword", order = SortOrder.ASC))
   }
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
+    def languageOmission(boostedLanguage: String): Float =
+      if (ideaSearchQuery.language.contains(boostedLanguage)) 1 else 0
 
     val query: Option[QueryDefinition] = for {
-      filters                               <- ideaSearchQuery.filters
+      filters                            <- ideaSearchQuery.filters
       NameSearchFilter(text, maybeFuzzy) <- filters.name
     } yield {
+      val fieldsBoosts = Map(
+        IdeaElasticsearchFieldNames.name -> 3F,
+        IdeaElasticsearchFieldNames.nameFr -> 2F * languageOmission("fr"),
+        IdeaElasticsearchFieldNames.nameEn -> 2F * languageOmission("en"),
+        IdeaElasticsearchFieldNames.nameIt -> 2F * languageOmission("it"),
+        IdeaElasticsearchFieldNames.nameGeneral -> 1F
+      ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
         case Some(fuzzy) =>
           ElasticApi
             .should(
               multiMatchQuery(text)
-                .fields(
-                  Map(
-                    IdeaElasticsearchFieldNames.name -> 2F,
-                    IdeaElasticsearchFieldNames.nameStemmed -> 1F
-                  )
-                )
+                .fields(fieldsBoosts)
                 .boost(2F),
               multiMatchQuery(text)
-                .fields(
-                  Map(
-                    IdeaElasticsearchFieldNames.name -> 2F,
-                    IdeaElasticsearchFieldNames.nameStemmed -> 1F
-                  )
-                )
+                .fields(fieldsBoosts)
                 .fuzziness(fuzzy)
                 .boost(1F)
             )
         case None =>
           ElasticApi
             .multiMatchQuery(text)
-            .fields(
-              Map(IdeaElasticsearchFieldNames.name -> 2F, IdeaElasticsearchFieldNames.nameStemmed -> 1F)
-            )
+            .fields(fieldsBoosts)
       }
     }
 
@@ -130,7 +128,6 @@ object IdeaSearchFilters extends ElasticDsl {
       case _    => query
     }
   }
-
 
   def buildOperationIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
     ideaSearchQuery.filters.flatMap {
@@ -186,7 +183,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
     query match {
       case None => None
-      case _ => query
+      case _    => query
     }
   }
 

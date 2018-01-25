@@ -11,7 +11,10 @@ import org.make.core.operation.OperationId
 object IdeaElasticsearchFieldNames {
   val ideaId: String = "ideaId"
   val name: String = "name"
-  val nameStemmed: String = "name.stemmed"
+  val nameFr: String = "name.fr"
+  val nameEn: String = "name.en"
+  val nameIt: String = "name.it"
+  val nameGeneral: String = "name.general"
   val operationId: String = "operationId"
   val question: String = "question"
   val country: String = "country"

@@ -111,9 +111,10 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                   'content.?,
                   'operation.?,
                   'source.?,
-                  'question.?
+                  'question.?,
+                  'language.?
                 )
-              ) { (_, fileName, themeId, tags, content, operation, source, question) =>
+              ) { (_, fileName, themeId, tags, content, operation, source, question, language) =>
                 provideAsync(themeService.findAll()) { themes =>
                   provideAsync(
                     proposalService.search(
@@ -129,9 +130,10 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                             question = question
                           )
                         ),
+                        language = language,
                         status = Some(Seq(Accepted)),
                         limit = Some(5000) //TODO get limit value for export into config files
-                      ).toSearchQuery,
+                      ).toSearchQuery(requestContext),
                       maybeSeed = None,
                       requestContext = requestContext
                     )
@@ -199,7 +201,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                   provideAsync(
                     proposalService.search(
                       userId = Some(userAuth.user.userId),
-                      query = request.toSearchQuery,
+                      query = request.toSearchQuery(requestContext),
                       maybeSeed = None,
                       requestContext = requestContext
                     )

@@ -7,7 +7,7 @@ import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{LabelId, TagId, ThemeId}
@@ -23,7 +23,8 @@ import org.make.core.reference.{LabelId, TagId, ThemeId}
 case class SearchQuery(filters: Option[SearchFilters] = None,
                        sorts: Seq[IndexedSort] = Seq.empty,
                        limit: Option[Int] = None,
-                       skip: Option[Int] = None)
+                       skip: Option[Int] = None,
+                       language: Option[String] = None)
 
 /**
   * The class holding the filters
@@ -33,6 +34,7 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
   * @param labels  List of Tags to filters
   * @param content Text to search into the proposal
   * @param status  The Status of proposal
+  * @param language Language of the proposal.
   */
 case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          theme: Option[ThemeSearchFilter] = None,
@@ -44,7 +46,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
                          context: Option[ContextSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
-                         idea: Option[IdeaSearchFilter] = None)
+                         idea: Option[IdeaSearchFilter] = None,
+                         language: Option[LanguageSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -58,12 +61,28 @@ object SearchFilters extends ElasticDsl {
             status: Option[StatusSearchFilter] = None,
             slug: Option[SlugSearchFilter] = None,
             context: Option[ContextSearchFilter] = None,
-            idea: Option[IdeaSearchFilter] = None): Option[SearchFilters] = {
+            idea: Option[IdeaSearchFilter] = None,
+            language: Option[LanguageSearchFilter] = None): Option[SearchFilters] = {
 
-    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea) match {
-      case (None, None, None, None, None, None, None, None, None, None, None) => None
-      case _ =>
-        Some(SearchFilters(proposals, themes, tags, labels, operation, trending, content, status, context, slug, idea))
+    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea, language) match {
+      case (None, None, None, None, None, None, None, None, None, None, None, None) => None
+      case params =>
+        Some(
+          SearchFilters(
+            proposals,
+            themes,
+            tags,
+            labels,
+            operation,
+            trending,
+            content,
+            status,
+            context,
+            slug,
+            idea,
+            language
+          )
+        )
     }
   }
 
@@ -88,7 +107,8 @@ object SearchFilters extends ElasticDsl {
       buildContextLocationSearchFilter(searchQuery),
       buildContextQuestionSearchFilter(searchQuery),
       buildSlugSearchFilter(searchQuery),
-      buildIdeaSearchFilter(searchQuery)
+      buildIdeaSearchFilter(searchQuery),
+      buildLanguageSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
@@ -218,39 +238,33 @@ object SearchFilters extends ElasticDsl {
   }
 
   def buildContentSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    def languageOmission(boostedLanguage: String): Float =
+      if (searchQuery.language.contains(boostedLanguage)) 1 else 0
 
     val query: Option[QueryDefinition] = for {
       filters                               <- searchQuery.filters
       ContentSearchFilter(text, maybeFuzzy) <- filters.content
     } yield {
+      val fieldsBoosts =
+        Map(
+          ProposalElasticsearchFieldNames.content -> 3F,
+          ProposalElasticsearchFieldNames.contentFr -> 2F * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5F * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentEn -> 2F * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5F * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentIt -> 2F * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5F * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentGeneral -> 1F
+        ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
         case Some(fuzzy) =>
           ElasticApi
             .should(
-              multiMatchQuery(text)
-                .fields(
-                  Map(
-                    ProposalElasticsearchFieldNames.content -> 2F,
-                    ProposalElasticsearchFieldNames.contentStemmed -> 1F
-                  )
-                )
-                .boost(2F),
-              multiMatchQuery(text)
-                .fields(
-                  Map(
-                    ProposalElasticsearchFieldNames.content -> 2F,
-                    ProposalElasticsearchFieldNames.contentStemmed -> 1F
-                  )
-                )
-                .fuzziness(fuzzy)
-                .boost(1F)
+              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
+              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
             )
         case None =>
-          ElasticApi
-            .multiMatchQuery(text)
-            .fields(
-              Map(ProposalElasticsearchFieldNames.content -> 2F, ProposalElasticsearchFieldNames.contentStemmed -> 1F)
-            )
+          multiMatchQuery(text).fields(fieldsBoosts)
       }
     }
 
@@ -282,6 +296,16 @@ object SearchFilters extends ElasticDsl {
       _.idea match {
         case Some(IdeaSearchFilter(idea)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea.value))
+        case _ => None
+      }
+    }
+  }
+
+  def buildLanguageSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.language match {
+        case Some(LanguageSearchFilter(language)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.language, language))
         case _ => None
       }
     }

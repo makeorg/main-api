@@ -22,7 +22,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future}
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.{Failure, Success}
 
 class ProposalSearchEngineIT
@@ -51,7 +51,7 @@ class ProposalSearchEngineIT
     val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
 
     // register index
-    val proposalMapping = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
+    val proposalMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
@@ -86,7 +86,7 @@ class ProposalSearchEngineIT
       case Failure(e) =>
         logger.error(s"Cannot index proposal: ${e.getStackTrace.mkString("\n")}")
         fail(e)
-      case Success(_) => logger.debug("Proposal indexed successfully.")
+      case Success(seq) => logger.debug("Proposal indexed successfully.")
     }
   }
 
@@ -137,7 +137,7 @@ class ProposalSearchEngineIT
     operationId = None
   )
 
-  private def acceptedProposals: Seq[IndexedProposal] = Seq(
+  private val acceptedProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
       country = "FR",
@@ -528,7 +528,7 @@ class ProposalSearchEngineIT
     )
   )
 
-  private def pendingProposals: Seq[IndexedProposal] = Seq(
+  private val pendingProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
       country = "FR",
@@ -894,7 +894,7 @@ class ProposalSearchEngineIT
       SearchQuery(
         filters = Some(
           SearchFilters(
-            content = Some(ContentSearchFilter(text = "Il faut que")),
+            content = Some(ContentSearchFilter(text = "Il faut qu'il/elle")),
             theme = None,
             tags = None,
             labels = None,

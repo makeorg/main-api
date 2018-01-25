@@ -374,6 +374,8 @@ CREATE TABLE IF NOT EXISTS operation (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 %
+ALTER TABLE IF EXISTS operation DROP COLUMN sequence_landing_id;
+%
 CREATE UNIQUE index IF NOT EXISTS operation_slug_unique_index ON operation (slug);
 %
 ALTER TABLE IF EXISTS operation DROP COLUMN sequence_landing_id;

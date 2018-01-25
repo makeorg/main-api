@@ -33,8 +33,8 @@ class IdeaServiceTest
         .when(elasticsearchIdeaAPI.searchIdeas(any[IdeaSearchQuery]))
         .thenReturn(Future.successful(IdeaSearchResult.empty))
 
-
-      val futureIdeas = ideaService.fetchAll(IdeaSearchQuery(filters = None, limit = None, skip = None))
+      val futureIdeas =
+        ideaService.fetchAll(IdeaSearchQuery(filters = None, limit = None, skip = None, language = Some("en")))
 
       whenReady(futureIdeas, Timeout(3.seconds)) { ideas =>
         ideas.total shouldBe 0
@@ -48,15 +48,12 @@ class IdeaServiceTest
       When("i fetch the idea")
       Then("Persistent Idea service will be called")
 
-      val persistentIdea = Idea(
-        IdeaId("foo-idea"), "fooIdea", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now())
-      )
+      val persistentIdea =
+        Idea(IdeaId("foo-idea"), "fooIdea", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
 
       Mockito
         .when(persistentIdeaService.findOne(any[IdeaId]))
-        .thenReturn(
-          Future.successful(Some(persistentIdea))
-        )
+        .thenReturn(Future.successful(Some(persistentIdea)))
 
       val futureIdea = ideaService.fetchOne(IdeaId("foo-idea"))
 
