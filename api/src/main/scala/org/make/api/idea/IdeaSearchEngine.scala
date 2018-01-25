@@ -31,9 +31,7 @@ object IdeaSearchEngine {
   val ideaIndexName = "idea"
 }
 
-trait DefaultIdeaSearchEngineComponent
-    extends IdeaSearchEngineComponent
-    with CirceFormatters {
+trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent =>
 
   override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new IdeaSearchEngine with StrictLogging {
@@ -42,8 +40,7 @@ trait DefaultIdeaSearchEngineComponent
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    private val ideaAlias
-      : IndexAndType = elasticsearchConfiguration.aliasName / IdeaSearchEngine.ideaIndexName
+    private val ideaAlias: IndexAndType = elasticsearchConfiguration.aliasName / IdeaSearchEngine.ideaIndexName
 
     override def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]] = {
       client.execute(get(id = ideaId.value).from(ideaAlias)).map(_.toOpt[IndexedIdea])
@@ -71,7 +68,7 @@ trait DefaultIdeaSearchEngineComponent
       logger.debug(s"Saving in Elasticsearch: $record")
       val index = maybeIndex.getOrElse(ideaAlias)
       client.execute {
-        indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
+        indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.ideaId.value)
       }.map { _ =>
         Done
       }
@@ -81,7 +78,7 @@ trait DefaultIdeaSearchEngineComponent
       val index = maybeIndex.getOrElse(ideaAlias)
       logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
-        .execute((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
+        .execute((update(id = record.ideaId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)
     }
   }
