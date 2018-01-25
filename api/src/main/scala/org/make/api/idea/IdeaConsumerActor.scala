@@ -16,7 +16,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class IdeaConsumerActor(ideaService: IdeaService)
-  extends KafkaConsumerActor[IdeaEventWrapper]
+    extends KafkaConsumerActor[IdeaEventWrapper]
     with KafkaConfigurationExtension
     with DefaultIdeaSearchEngineComponent
     with ElasticsearchConfigurationExtension
@@ -46,18 +46,18 @@ class IdeaConsumerActor(ideaService: IdeaService)
   def indexOrUpdate(idea: IndexedIdea): Future[Unit] = {
     log.debug(s"Indexing $idea")
     elasticsearchIdeaAPI
-      .findIdeaById(idea.id)
+      .findIdeaById(idea.ideaId)
       .flatMap {
         case None    => elasticsearchIdeaAPI.indexIdea(idea)
         case Some(_) => elasticsearchIdeaAPI.updateIdea(idea)
       }
       .map { _ =>
-      }
+        }
   }
 
   private def retrieveAndShapeIdea(id: IdeaId): Future[IndexedIdea] = {
     ideaService.fetchOne(id).flatMap {
-      case None => Future.failed(new IllegalArgumentException(s"Idea ${id.value} doesn't exist"))
+      case None       => Future.failed(new IllegalArgumentException(s"Idea ${id.value} doesn't exist"))
       case Some(idea) => Future.successful(IndexedIdea.createFromIdea(idea))
     }
   }
