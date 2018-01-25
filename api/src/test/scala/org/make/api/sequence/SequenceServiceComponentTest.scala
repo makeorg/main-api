@@ -10,10 +10,10 @@ import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHis
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.core.idea.IdeaId
 import org.make.core.proposal._
-import org.make.core.reference.IdeaId
 import org.make.core.user.UserId
-import org.make.core.{proposal, DateHelper, RequestContext}
+import org.make.core.{DateHelper, RequestContext, proposal}
 import org.scalatest.PrivateMethodTester
 
 class SequenceServiceComponentTest

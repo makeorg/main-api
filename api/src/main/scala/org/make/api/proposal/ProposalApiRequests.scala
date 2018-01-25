@@ -6,9 +6,10 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
 

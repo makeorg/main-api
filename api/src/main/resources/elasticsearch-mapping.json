@@ -60,7 +60,7 @@
               "ignore_above": 256
             },
             "french": {
-              "type":     "text",
+              "type": "text",
               "analyzer": "french"
             }
           }
@@ -129,7 +129,6 @@
                   "type": "keyword",
                   "index": true
                 }
-
               }
             },
             "themeId": {
@@ -204,7 +203,7 @@
           "analyzer": "french_std",
           "fields": {
             "stemmed": {
-              "type":     "text",
+              "type": "text",
               "analyzer": "french_full"
             }
           }
@@ -230,14 +229,29 @@
         "votes": {
           "type": "object",
           "properties": {
-            "key": { "type": "keyword", "index": true },
-            "count": { "type": "integer", "index": true },
-            "selected": { "type": "boolean", "index": true },
+            "key": {
+              "type": "keyword",
+              "index": true
+            },
+            "count": {
+              "type": "integer",
+              "index": true
+            },
+            "selected": {
+              "type": "boolean",
+              "index": true
+            },
             "qualifications": {
               "type": "object",
               "properties": {
-                "key": { "type": "keyword", "index": true },
-                "count": { "type": "integer", "index": true }
+                "key": {
+                  "type": "keyword",
+                  "index": true
+                },
+                "count": {
+                  "type": "integer",
+                  "index": true
+                }
               }
             }
           }
@@ -276,7 +290,7 @@
           "index": true
         },
         "author": {
-         "type": "object",
+          "type": "object",
           "properties": {
             "firstName": {
               "type": "text",
@@ -322,6 +336,56 @@
           "index": true
         },
         "operationId": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    },
+    "idea": {
+      "dynamic": "strict",
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "french": {
+              "type": "text",
+              "analyzer": "french"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "date_time"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "date_time"
+        },
+        "operationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "question": {
+          "type": "keyword",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": false
+        },
+        "country": {
+          "type": "keyword",
+          "index": false
+        },
+        "status": {
           "type": "keyword",
           "index": true
         }

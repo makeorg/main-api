@@ -3,9 +3,10 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.SprayJsonFormatters._
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.{IdeaId, LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}

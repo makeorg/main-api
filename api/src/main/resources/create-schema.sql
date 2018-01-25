@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS idea (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 %
-ALTER TABLE IF EXISTS idea RENAME COLUMN operation TO operation_id
+ALTER TABLE IF EXISTS idea RENAME COLUMN operation TO operation_id;
+ALTER TABLE IF EXISTS idea ADD COLUMN status VARCHAR(20);
 %
 INSERT into oauth_client
     (uuid, secret, allowed_grant_types)

@@ -1,14 +1,10 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
+import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor, IdeaService}
 import org.make.api.operation.OperationService
 import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.{
-  PersistentSequenceConfigurationService,
-  SequenceConfigurationActor,
-  SequenceService,
-  SequenceSupervisor
-}
+import org.make.api.sequence.{PersistentSequenceConfigurationService, SequenceConfigurationActor, SequenceService, SequenceSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -23,7 +19,8 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
                    tagService: TagService,
                    themeService: ThemeService,
                    sequenceService: SequenceService,
-                   operationService: OperationService)
+                   operationService: OperationService,
+                   ideaService: IdeaService)
     extends Actor
     with ActorLogging {
 
@@ -93,6 +90,25 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
       val (props, name) = MakeBackoffSupervisor.propsAndName(TrackingProducerActor.props, TrackingProducerActor.name)
       context.actorOf(props, name)
     }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          IdeaProducerActor.props,
+          IdeaProducerActor.name
+        )
+
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          IdeaConsumerActor.props(ideaService),
+          IdeaConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
   }
 
   override def receive: Receive = {
@@ -107,7 +123,8 @@ object MakeGuardian {
             tagService: TagService,
             themeService: ThemeService,
             sequenceService: SequenceService,
-            operationService: OperationService): Props =
+            operationService: OperationService,
+            ideaService: IdeaService): Props =
     Props(
       new MakeGuardian(
         persistentSequenceConfigurationService,
@@ -115,7 +132,8 @@ object MakeGuardian {
         tagService,
         themeService,
         sequenceService,
-        operationService
+        operationService,
+        ideaService
       )
     )
 }

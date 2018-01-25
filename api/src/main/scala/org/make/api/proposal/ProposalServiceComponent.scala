@@ -16,10 +16,11 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.reference.{IdeaId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 

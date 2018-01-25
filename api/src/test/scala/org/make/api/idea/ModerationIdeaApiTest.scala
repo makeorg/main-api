@@ -9,9 +9,11 @@ import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.DateHelper
 import org.make.core.auth.UserRights
+import org.make.core.idea.indexed.IdeaSearchResult
+import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Idea, IdeaId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -86,10 +88,25 @@ class ModerationIdeaApiTest
 
   val fooIdeaText: String = "fooIdea"
   val fooIdeaId: IdeaId = IdeaId("fooIdeaId")
-  val fooIdea: Idea = Idea(fooIdeaId, fooIdeaText)
+  val fooIdea: Idea = Idea(
+    ideaId = fooIdeaId,
+    name = fooIdeaText,
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
+  )
   val barIdeaText: String = "barIdea"
   val barIdeaId: IdeaId = IdeaId("barIdeaId")
-  val barIdea: Idea = Idea(barIdeaId, barIdeaText)
+  val barIdea: Idea = Idea(
+    ideaId = barIdeaId,
+    name = barIdeaText,
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
+  )
+
+  when(
+    ideaService.fetchAll(
+      ArgumentMatchers.any[IdeaSearchQuery])
+  ).thenReturn(Future.successful(IdeaSearchResult.empty))
 
   when(
     ideaService.insert(
@@ -113,7 +130,8 @@ class ModerationIdeaApiTest
       Given("an un authenticated user")
       When("the user wants to create an idea")
       Then("he should get an unauthorized (401) return code")
-      Post("/moderation/ideas").withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}""")) ~>
+      Post("/moderation/ideas")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}""")) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -226,6 +244,29 @@ class ModerationIdeaApiTest
       Given("an un authenticated user")
       When("the user wants to get an idea")
       Then("he should get an unauthorized (401) return code")
+      Get("/moderation/ideas/foo-idea") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated citizen") {
+      Given("an authenticated user with the citizen role")
+      When("the user wants to create an idea")
+      Then("he should get an forbidden (403) return code")
+
+      Get("/moderation/ideas/foo-idea")
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+  }
+
+  feature("get a list of ideas") {
+    scenario("unauthenticated") {
+      Given("an un authenticated user")
+      When("the user wants to get a list of ideas")
+      Then("he should get an unauthorized (401) return code")
       Get("/moderation/ideas") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -242,5 +283,19 @@ class ModerationIdeaApiTest
       }
     }
 
+    scenario("authenticated admin") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to get list of ideas")
+      Then("the result should be a IdeaSearchResult")
+
+      Get("/moderation/ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val ideas: IdeaSearchResult = entityAs[IdeaSearchResult]
+        ideas should be(IdeaSearchResult.empty)
+        ideas.total should be(0)
+        ideas.results.size should be(0)
+      }
+    }
   }
 }

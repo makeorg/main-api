@@ -8,8 +8,8 @@ import org.make.api.idea.DefaultPersistentIdeaServiceComponent.PersistentIdea
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
+import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Idea, IdeaId}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -71,7 +71,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               sqls.toAndConditionOpt(
                 ideaFilters.language.map(language     => sqls.eq(ideaAlias.language, language)),
                 ideaFilters.country.map(country       => sqls.eq(ideaAlias.country, country)),
-                ideaFilters.operationId.map(operation => sqls.eq(ideaAlias.operationId, operation.value)),
+                ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId)),
                 ideaFilters.question.map(question     => sqls.eq(ideaAlias.question, question))
               )
             )
@@ -106,7 +106,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
-            .set(column.name -> name)
+            .set(column.name -> name, column.updatedAt -> DateHelper.now)
             .where(
               sqls
                 .eq(column.id, ideaId.value)
@@ -133,9 +133,10 @@ object DefaultPersistentIdeaServiceComponent {
         name = name,
         language = language,
         country = country,
-        operation = operationId.map(operationId => OperationId(operationId)),
         question = question,
-        operationId = operationId.map(operationId => OperationId(operationId))
+        operationId = operationId.map(operationId => OperationId(operationId)),
+        createdAt = Some(createdAt),
+        updatedAt = Some(updatedAt)
       )
   }
 

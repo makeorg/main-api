@@ -1,8 +1,9 @@
 package org.make.api.idea
 
 import org.make.api.DatabaseTest
+import org.make.core.DateHelper
+import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Idea, IdeaId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -10,19 +11,26 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaServiceComponent {
 
-  val simpleIdea: Idea = Idea(IdeaId("foo-idea"), "fooIdea")
+  val simpleIdea: Idea = Idea(
+    IdeaId("foo-idea"),
+    "fooIdea",
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
+  )
   val completeIdea: Idea = Idea(
     ideaId = IdeaId("bar-idea"),
     name = "barIdea",
     language = Some("fr"),
     country = Some("FR"),
-    operation = Some(OperationId("operation")),
+    operationId = Some(OperationId("operation")),
     question = Some("question"),
-    operationId = Some(OperationId("operation"))
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
   )
 
   feature("Can persist and retrieve ideas") {
     scenario("Persist a simple idea") {
+      Given(s"""an idea with the id "${simpleIdea.ideaId.value}"""")
       When(s"""I persist the idea "${simpleIdea.name}"""")
       val futureIdea: Future[Idea] = persistentIdeaService.persist(simpleIdea)
 
@@ -39,6 +47,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     }
 
     scenario("Persist a complete idea") {
+      Given(s"""an idea with the id "${completeIdea.ideaId.value}"""")
       When(s"""I persist the idea "${completeIdea.name}"""")
       val futureIdea: Future[Idea] = persistentIdeaService.persist(completeIdea)
 
@@ -54,15 +63,14 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
       }
     }
 
-    scenario("Get a list of all enabled ideas") {
-
-      When("""I retrieve the idea list""")
+    scenario("Get a list of all ideas") {
+      Given("I ve persisted two idea")
+      When("I retrieve the idea list")
       val futureIdeasLists: Future[Seq[Idea]] = persistentIdeaService.findAll(IdeaFiltersRequest.empty)
 
       whenReady(futureIdeasLists, Timeout(3.seconds)) { ideas =>
-        Then("result should contain a list of ideas of foo and bar.")
-        ideas.contains(simpleIdea) should be(true)
-        ideas.contains(completeIdea) should be(true)
+        Then("result size should be two")
+        ideas.size should be(2)
       }
     }
   }
