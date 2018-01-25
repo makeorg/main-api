@@ -23,7 +23,7 @@ import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.DateHelper
-import org.make.core.idea.IdeaSearchQuery
+import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
@@ -56,7 +56,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     with ProposalSearchEngineComponent
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
-    with IdeaServiceComponent =>
+    with DefaultPersistentIdeaServiceComponent =>
 
   override lazy val elasticSearch: ElasticSearch = new ElasticSearch {
 
@@ -181,13 +181,12 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
   private def executeIndexIdeas(newIndexName: String): Future[Done] = {
     val start = System.currentTimeMillis()
 
-    val result = ideaService
-      .fetchAll(IdeaSearchQuery(None, None, None))
+    val result = persistentIdeaService.findAll(IdeaFiltersRequest.empty)
       .map { ideas =>
-        logger.info(s"Ideas to index: ${ideas.total}")
-        ideas.results.foreach { idea =>
+        logger.info(s"Ideas to index: ${ideas.size}")
+        ideas.foreach { idea =>
           elasticsearchIdeaAPI
-            .indexIdea(idea, Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
+            .indexIdea(IndexedIdea.createFromIdea(idea), Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
             .recoverWith {
               case e =>
                 logger.error("indexing idea failed", e)
