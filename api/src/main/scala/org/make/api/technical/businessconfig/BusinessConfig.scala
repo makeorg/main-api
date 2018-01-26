@@ -8,11 +8,19 @@ sealed trait BusinessConfig {
   val proposalMinLength: Int
   val proposalMaxLength: Int
   val themes: Seq[Theme]
+  val supportedCountries: Seq[CountryConfiguration]
+}
+
+case class CountryConfiguration(countryCode: String, defaultLanguage: String, supportedLanguages: Seq[String])
+object CountryConfiguration {
+  implicit val encoder: ObjectEncoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
+  implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
 
 case class BackofficeConfiguration(override val proposalMinLength: Int,
                                    override val proposalMaxLength: Int,
                                    override val themes: Seq[Theme],
+                                   override val supportedCountries: Seq[CountryConfiguration],
                                    nVotesTriggerConnexion: Int,
                                    nPendingProposalsTriggerEmailModerator: Int,
                                    minProposalsPerSequence: Int,
@@ -22,13 +30,19 @@ case class BackofficeConfiguration(override val proposalMinLength: Int,
 
 case class FrontConfiguration(override val proposalMinLength: Int,
                               override val proposalMaxLength: Int,
-                              override val themes: Seq[Theme])
+                              override val themes: Seq[Theme],
+                              override val supportedCountries: Seq[CountryConfiguration])
     extends BusinessConfig
 
 object BusinessConfig {
   val defaultProposalMinLength: Int = 12
   val defaultProposalMaxLength: Int = 140
   val themes: Seq[Theme] = Seq.empty
+  val supportedCountries = Seq(
+    CountryConfiguration("FR", "fr", Seq("fr")),
+    CountryConfiguration("IT", "it", Seq("it")),
+    CountryConfiguration("GB", "en", Seq("en"))
+  )
 }
 
 object FrontConfiguration {
@@ -37,8 +51,14 @@ object FrontConfiguration {
 
   def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
               proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
-              themes: Seq[Theme] = BusinessConfig.themes): FrontConfiguration =
-    FrontConfiguration(proposalMinLength = proposalMinLength, proposalMaxLength = proposalMaxLength, themes = themes)
+              themes: Seq[Theme] = BusinessConfig.themes,
+              supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries): FrontConfiguration =
+    FrontConfiguration(
+      proposalMinLength = proposalMinLength,
+      proposalMaxLength = proposalMaxLength,
+      themes = themes,
+      supportedCountries = supportedCountries
+    )
 }
 
 object BackofficeConfiguration {
@@ -52,14 +72,17 @@ object BackofficeConfiguration {
   val defaultReasonsForRefusal: Seq[String] =
     Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "MultipleIdeas", "Other")
 
-  def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
-              proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
-              themes: Seq[Theme] = BusinessConfig.themes,
-              nVotesTriggerConnexion: Int = defaultNumberVotesTriggerConnexion,
-              nPendingProposalsTriggerEmailModerator: Int = defaultNumberPendingProposalsTriggerEmailModerator,
-              minProposalsPerSequence: Int = defaultMinProposalsPerSequence,
-              maxProposalsPerSequence: Int = defaultMaxProposalsPerSequence,
-              reasonsForRefusal: Seq[String] = defaultReasonsForRefusal): BackofficeConfiguration =
+  def default(
+    proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
+    proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
+    themes: Seq[Theme] = BusinessConfig.themes,
+    nVotesTriggerConnexion: Int = defaultNumberVotesTriggerConnexion,
+    nPendingProposalsTriggerEmailModerator: Int = defaultNumberPendingProposalsTriggerEmailModerator,
+    minProposalsPerSequence: Int = defaultMinProposalsPerSequence,
+    maxProposalsPerSequence: Int = defaultMaxProposalsPerSequence,
+    reasonsForRefusal: Seq[String] = defaultReasonsForRefusal,
+    supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries
+  ): BackofficeConfiguration =
     BackofficeConfiguration(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
@@ -68,6 +91,7 @@ object BackofficeConfiguration {
       nVotesTriggerConnexion = nVotesTriggerConnexion,
       nPendingProposalsTriggerEmailModerator = nPendingProposalsTriggerEmailModerator,
       minProposalsPerSequence = minProposalsPerSequence,
-      maxProposalsPerSequence = maxProposalsPerSequence
+      maxProposalsPerSequence = maxProposalsPerSequence,
+      supportedCountries = supportedCountries
     )
 }
