@@ -344,7 +344,7 @@
     "idea": {
       "dynamic": "strict",
       "properties": {
-        "id": {
+        "ideaId": {
           "type": "keyword",
           "index": true
         },

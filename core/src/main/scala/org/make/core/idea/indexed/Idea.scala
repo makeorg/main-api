@@ -9,7 +9,7 @@ import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 
 object IdeaElasticsearchFieldNames {
-  val id: String = "id"
+  val ideaId: String = "ideaId"
   val name: String = "name"
   val nameStemmed: String = "name.stemmed"
   val operationId: String = "operationId"
