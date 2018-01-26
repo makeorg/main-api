@@ -12,6 +12,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea._
+import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.operation.OperationId
 import org.make.core.{HttpCodes, Validation}
 
@@ -34,7 +35,9 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Idea]])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IdeaSearchResult]]))
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
@@ -248,10 +251,10 @@ final case class IdeaFiltersRequest(name: Option[String],
         name = name.map(text => {
           NameSearchFilter(text, Some(fuzziness))
         }),
-        language = language.map(language => LanguageSearchFilter(language)),
-        country = country.map(country => CountrySearchFilter(country)),
+        language = language.map(language          => LanguageSearchFilter(language)),
+        country = country.map(country             => CountrySearchFilter(country)),
         operationId = operationId.map(operationId => OperationIdSearchFilter(OperationId(operationId))),
-        question = question.map(question => QuestionSearchFilter(question))
+        question = question.map(question          => QuestionSearchFilter(question))
       )
 
     IdeaSearchQuery(filters = filters, limit = limit, skip = skip, sort = sort, order = order)
