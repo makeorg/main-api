@@ -9,7 +9,7 @@ import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 
 object IdeaElasticsearchFieldNames {
-  val id: String = "id"
+  val ideaId: String = "ideaId"
   val name: String = "name"
   val nameStemmed: String = "name.stemmed"
   val operationId: String = "operationId"
@@ -21,7 +21,7 @@ object IdeaElasticsearchFieldNames {
   val updatedAt: String = "updatedAt"
 }
 
-case class IndexedIdea(id: IdeaId,
+case class IndexedIdea(ideaId: IdeaId,
                        name: String,
                        operationId: Option[OperationId],
                        question: Option[String],
@@ -37,7 +37,7 @@ object IndexedIdea extends CirceFormatters {
 
   def createFromIdea(idea: Idea): IndexedIdea = {
     IndexedIdea(
-      id = idea.ideaId,
+      ideaId = idea.ideaId,
       name = idea.name,
       operationId = idea.operationId,
       question = idea.question,
@@ -52,7 +52,7 @@ object IndexedIdea extends CirceFormatters {
 
 final case class IdeaSearchResult(total: Int, results: Seq[IndexedIdea])
 
-object IdeaSearchResult{
+object IdeaSearchResult {
   implicit val encoder: ObjectEncoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]
   implicit val decoder: Decoder[IdeaSearchResult] = deriveDecoder[IdeaSearchResult]
 
