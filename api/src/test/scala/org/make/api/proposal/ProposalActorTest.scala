@@ -455,7 +455,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         operation = None
       )
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       When("I re-validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -692,7 +692,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         refusalReason = Some("my reason")
       )
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       When("I re-refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -784,7 +784,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         refusalReason = Some("good reason")
       )
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       When("I try to postpone the proposal")
       coordinator ! PostponeProposalCommand(
@@ -823,7 +823,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty
       )
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       When("I try to re-postpone the proposal")
       coordinator ! PostponeProposalCommand(

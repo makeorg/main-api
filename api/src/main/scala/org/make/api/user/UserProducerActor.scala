@@ -6,7 +6,7 @@ import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.api.userhistory.UserEvent
 import org.make.api.userhistory.UserEvent._
 
-class UserProducerActor extends ProducerActor {
+class UserProducerActor extends ProducerActor[UserEventWrapper] {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
   override protected lazy val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override protected lazy val schema: SchemaFor[UserEventWrapper] = SchemaFor[UserEventWrapper]
@@ -25,7 +25,7 @@ class UserProducerActor extends ProducerActor {
   }
 
   def onUserRegisteredEvent(event: UserRegisteredEvent): Unit = {
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = UserRegisteredEvent.version,
         id = event.userId.value,
@@ -33,13 +33,12 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onResetPassword(event: ResetPasswordEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = ResetPasswordEvent.version,
         id = event.userId.value,
@@ -47,13 +46,12 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onResendValidationEmail(event: ResendValidationEmailEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = ResendValidationEmailEvent.version,
         id = event.userId.value,
@@ -61,13 +59,12 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onUserConnectedEvent(event: UserConnectedEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = UserConnectedEvent.version,
         id = event.userId.value,
@@ -75,13 +72,12 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onUserUpdatedTagEvent(event: UserUpdatedTagEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = UserUpdatedTagEvent.version,
         id = event.userId.value,
@@ -89,13 +85,12 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 
   def onUserValidatedAccountEvent(event: UserValidatedAccountEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       UserEventWrapper(
         version = UserValidatedAccountEvent.version,
         id = event.userId.value,
@@ -103,7 +98,6 @@ class UserProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = UserEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.userId.value, record)
   }
 

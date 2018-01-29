@@ -6,7 +6,7 @@ import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 import org.make.core.DateHelper
 
-class SequenceProducerActor extends ProducerActor {
+class SequenceProducerActor extends ProducerActor[SequenceEventWrapper] {
   override protected lazy val eventClass: Class[SequenceEvent] = classOf[SequenceEvent]
   override protected lazy val format: RecordFormat[SequenceEventWrapper] = RecordFormat[SequenceEventWrapper]
   override protected lazy val schema: SchemaFor[SequenceEventWrapper] = SchemaFor[SequenceEventWrapper]
@@ -26,7 +26,7 @@ class SequenceProducerActor extends ProducerActor {
 
   private def onEventSequence(event: PublishedSequenceEvent, version: Int): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       SequenceEventWrapper(
         version = version,
         id = event.id.value,
@@ -34,7 +34,6 @@ class SequenceProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = SequenceEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.id.value, record)
   }
 }

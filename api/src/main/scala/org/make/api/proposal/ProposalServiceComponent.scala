@@ -4,7 +4,6 @@ import java.time.ZonedDateTime
 
 import akka.Done
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
 import cats.data.OptionT
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
@@ -26,7 +25,6 @@ import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -133,8 +131,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with IdeaServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
-
-    implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
@@ -487,17 +483,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   },
                   duplicateDetectorConfiguration.maxResults
                 )
-                .flatMap {
-                  case duplicates: Seq[DuplicateResult] =>
-                    eventBusService.publish(
-                      PredictDuplicate(
-                        proposalId = proposalId,
-                        predictedDuplicates = duplicates.map(_.proposal.proposalId),
-                        predictedScores = duplicates.map(_.score),
-                        algoLabel = DuplicateAlgorithm.getModelName
-                      )
+                .flatMap { duplicates: Seq[DuplicateResult] =>
+                  eventBusService.publish(
+                    PredictDuplicate(
+                      proposalId = proposalId,
+                      predictedDuplicates = duplicates.map(_.proposal.proposalId),
+                      predictedScores = duplicates.map(_.score),
+                      algoLabel = DuplicateAlgorithm.getModelName
                     )
-                    formatDuplicateResults(duplicates)
+                  )
+                  formatDuplicateResults(duplicates)
                 }
             }
         case None => Future.successful(Seq.empty)
@@ -539,8 +534,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     private def formatDuplicateResults(duplicates: Seq[DuplicateResult]): Future[Seq[DuplicateResponse]] = {
-      Future.traverse(duplicates) {
-        case duplicate => formatDuplicateResult(duplicate)
+      Future.traverse(duplicates) { duplicate =>
+        formatDuplicateResult(duplicate)
       }
     }
 

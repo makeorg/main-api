@@ -6,7 +6,7 @@ import org.make.api.technical.ProducerActor
 
 import scala.util.Try
 
-class MailJetProducerActor extends ProducerActor {
+class MailJetProducerActor extends ProducerActor[SendEmail] {
 
   override protected lazy val eventClass: Class[SendEmail] = classOf[SendEmail]
   override protected lazy val format: RecordFormat[SendEmail] = RecordFormat[SendEmail]
@@ -22,8 +22,7 @@ class MailJetProducerActor extends ProducerActor {
 
   private def onEvent(event: SendEmail): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(event)
-    sendRecord(kafkaTopic, record)
+    sendRecord(kafkaTopic, event)
   }
 
   override def postStop(): Unit = {

@@ -2,7 +2,6 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
-import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
@@ -24,7 +23,6 @@ import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 trait SequenceServiceComponent {
   def sequenceService: SequenceService
@@ -89,8 +87,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
   override lazy val sequenceService: SequenceService = new SequenceService {
 
-    implicit private val defaultTimeout: Timeout = new Timeout(5.seconds)
-
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
                         requestContext: RequestContext): Future[SequencesSearchResult] = {
@@ -134,7 +130,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
     private def startSequence(maybeUserId: Option[UserId],
                               sequence: IndexedSequence,
-                              includedProposals: Seq[ProposalId] = Seq.empty,
+                              includedProposals: Seq[ProposalId],
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
       val allProposals: Future[Seq[Proposal]] = Future
         .traverse(sequence.proposals) { id =>

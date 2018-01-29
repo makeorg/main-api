@@ -49,7 +49,7 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
         )
     )
 
-    val sequenceCoordinator = context.watch(
+    context.watch(
       context.actorOf(
         SequenceSupervisor.props(userService, userHistoryCoordinator, tagService, themeService),
         SequenceSupervisor.name

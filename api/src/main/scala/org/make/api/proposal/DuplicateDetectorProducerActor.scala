@@ -4,7 +4,7 @@ import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.ProducerActor
 
-class DuplicateDetectorProducerActor extends ProducerActor {
+class DuplicateDetectorProducerActor extends ProducerActor[PredictDuplicate] {
 
   override protected lazy val eventClass: Class[PredictDuplicate] = classOf[PredictDuplicate]
   override protected lazy val format: RecordFormat[PredictDuplicate] = RecordFormat[PredictDuplicate]
@@ -19,8 +19,7 @@ class DuplicateDetectorProducerActor extends ProducerActor {
 
   private def onPredictedDuplicate(event: PredictDuplicate): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(event)
-    sendRecord(kafkaTopic, event.proposalId.value, record)
+    sendRecord(kafkaTopic, event.proposalId.value, event)
   }
 }
 

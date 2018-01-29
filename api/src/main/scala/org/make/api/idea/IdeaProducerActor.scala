@@ -5,7 +5,7 @@ import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.idea.IdeaEvent._
 import org.make.api.technical.{ProducerActor, ProducerActorCompanion}
 
-class IdeaProducerActor extends ProducerActor {
+class IdeaProducerActor extends ProducerActor[IdeaEventWrapper] {
   override protected lazy val eventClass: Class[IdeaEvent] = classOf[IdeaEvent]
   override protected lazy val format: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
   override protected lazy val schema: SchemaFor[IdeaEventWrapper] = SchemaFor[IdeaEventWrapper]
@@ -14,14 +14,14 @@ class IdeaProducerActor extends ProducerActor {
     kafkaConfiguration.topics(IdeaProducerActor.topicKey)
 
   override def receive: Receive = {
-    case event: IdeaCreatedEvent  => onIdeaCreatedEvent(event)
-    case event: IdeaUpdatedEvent  => onIdeaUpdatedEvent(event)
-    case other                    => log.warning("Unknown event {}", other)
+    case event: IdeaCreatedEvent => onIdeaCreatedEvent(event)
+    case event: IdeaUpdatedEvent => onIdeaUpdatedEvent(event)
+    case other                   => log.warning("Unknown event {}", other)
   }
 
   def onIdeaCreatedEvent(event: IdeaCreatedEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       IdeaEventWrapper(
         version = IdeaCreatedEvent.version,
         id = event.ideaId.value,
@@ -29,13 +29,12 @@ class IdeaProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = IdeaEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.ideaId.value, record)
   }
 
   def onIdeaUpdatedEvent(event: IdeaUpdatedEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(
+    val record =
       IdeaEventWrapper(
         version = IdeaUpdatedEvent.version,
         id = event.ideaId.value,
@@ -43,12 +42,10 @@ class IdeaProducerActor extends ProducerActor {
         eventType = event.getClass.getSimpleName,
         event = IdeaEventWrapper.wrapEvent(event)
       )
-    )
     sendRecord(kafkaTopic, event.ideaId.value, record)
   }
 
 }
-
 
 object IdeaProducerActor extends ProducerActorCompanion {
   val props: Props = Props[IdeaProducerActor]

@@ -6,7 +6,7 @@ import org.make.api.technical.ProducerActor
 
 import scala.util.Try
 
-class TrackingProducerActor extends ProducerActor {
+class TrackingProducerActor extends ProducerActor[TrackingEvent] {
   override protected lazy val eventClass: Class[TrackingEvent] = classOf[TrackingEvent]
   override protected lazy val format: RecordFormat[TrackingEvent] = RecordFormat[TrackingEvent]
   override protected lazy val schema: SchemaFor[TrackingEvent] = SchemaFor[TrackingEvent]
@@ -18,10 +18,9 @@ class TrackingProducerActor extends ProducerActor {
     case other                => log.warning(s"Unknown event $other")
   }
 
-  private def onEvent(event: TrackingEvent) = {
+  private def onEvent(event: TrackingEvent): Unit = {
     log.debug(s"Received event $event")
-    val record = format.to(event)
-    sendRecord(kafkaTopic, record)
+    sendRecord(kafkaTopic, event)
   }
 
   override def postStop(): Unit = {
