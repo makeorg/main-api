@@ -23,10 +23,12 @@ import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.reference.{TagId, ThemeId}
-import org.make.core.{DateHelper, HttpCodes}
+import org.make.core.{DateHelper, HttpCodes, Validation}
 
+import scala.concurrent.Future
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -616,6 +618,74 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     }
   }
 
+  @ApiOperation(
+    value = "update-proposals-to-idea",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "moderator", description = "BO Moderator"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.PatchProposalsIdeaRequest"
+      )
+    )
+  )
+  @Path(value = "/change-idea")
+  def changeProposalsIdea: Route = post {
+    path("moderation" / "proposals" / "change-idea") {
+      makeTrace("change proposals idea") { _ =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireModerationRole(auth.user) {
+            decodeRequest {
+              entity(as[PatchProposalsIdeaRequest]) { changes =>
+                provideAsync(ideaService.fetchOne(changes.ideaId)) { maybeIdea =>
+                  Validation.validate(
+                    Validation
+                      .requirePresent(fieldValue = maybeIdea, fieldName = "ideaId", message = Some("Invalid idea id"))
+                  )
+                  provideAsync(Future.sequence(changes.proposalIds.map(proposalService.getModerationProposalById))) {
+                    proposals =>
+                      val invalidProposalIdValues: Seq[String] =
+                        changes.proposalIds.map(_.value).diff(proposals.flatten.map(_.proposalId.value))
+                      val invalidProposalIdValuesString: String = invalidProposalIdValues.mkString(", ")
+                      Validation.validate(
+                        Validation.validateField(
+                          field = "proposalIds",
+                          message = s"Some proposal ids are invalid: $invalidProposalIdValuesString",
+                          condition = invalidProposalIdValues.isEmpty
+                        )
+                      )
+                      provideAsync(
+                        proposalService
+                          .changeProposalsIdea(changes.proposalIds, moderatorId = auth.user.userId, changes.ideaId)
+                      ) { updatedProposals =>
+                        val proposalIdsDiff: Seq[String] =
+                          changes.proposalIds.map(_.value).diff(updatedProposals.map(_.proposalId.value))
+                        if (proposalIdsDiff.nonEmpty) {
+                          logger
+                            .warn("Some proposals are not updated during change idea operation: {}", proposalIdsDiff)
+                        }
+                        complete(StatusCodes.NoContent)
+                      }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val moderationProposalRoutes: Route =
     getModerationProposal ~
       searchAllProposals ~
@@ -629,7 +699,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       lock ~
       patchProposal ~
       getDuplicates ~
-      migrateProposalOperation
+      migrateProposalOperation ~
+      changeProposalsIdea
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
