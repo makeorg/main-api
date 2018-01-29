@@ -85,7 +85,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
     ideaSearchQuery.sort.map{
       sort => FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
-    }.getOrElse(FieldSortDefinition(field = "createdAt", order = SortOrder.ASC))
+    }.getOrElse(FieldSortDefinition(field = "name.keyword", order = SortOrder.ASC))
   }
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
