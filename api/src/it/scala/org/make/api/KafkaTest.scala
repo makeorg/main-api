@@ -22,7 +22,7 @@ trait KafkaTest extends ItMakeTest with DockerKafkaService {
   def createProducer[T](schema: SchemaFor[T], format: RecordFormat[T]): KafkaProducer[String, T] = {
     val registryUrl = s"http://localhost:$registryExposedPort"
     val props = new Properties()
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, s"localhost:$kafkaPort")
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, s"localhost:$kafkaExposedPort")
     props.put(ProducerConfig.ACKS_CONFIG, "all")
     props.put(ProducerConfig.RETRIES_CONFIG, "3")
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")

@@ -34,7 +34,10 @@ class ProposalSupervisor(userService: UserService,
     )
 
   override def preStart(): Unit = {
-    context.watch(context.actorOf(ProposalProducerActor.props, ProposalProducerActor.name))
+    context.watch {
+      val (props, name) = MakeBackoffSupervisor.propsAndName(ProposalProducerActor.props, ProposalProducerActor.name)
+      context.actorOf(props, name)
+    }
 
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
@@ -43,6 +46,7 @@ class ProposalSupervisor(userService: UserService,
       )
       context.actorOf(props, name)
     }
+
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService, operationService),

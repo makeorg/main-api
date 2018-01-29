@@ -64,7 +64,6 @@ object TestHelper {
       |      users = "users"
       |      proposals = "proposals"
       |      emails = "emails"
-      |      votes = "votes"
       |      mailjet-events = "mailjet-events"
       |    }
       |  }

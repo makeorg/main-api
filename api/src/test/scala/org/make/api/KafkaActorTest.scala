@@ -31,7 +31,6 @@ object KafkaActorTest {
        |    topics {
        |      users = "users"
        |      proposals = "proposals"
-       |      votes = "votes"
        |      mailjet-events = "mailjet-events"
        |    }
        |  }

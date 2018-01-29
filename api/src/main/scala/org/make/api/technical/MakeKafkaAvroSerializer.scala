@@ -3,13 +3,16 @@ package org.make.api.technical
 import java.util
 
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.typesafe.scalalogging.StrictLogging
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.kafka.common.serialization.Serializer
+
 import scala.collection.JavaConverters._
 
 class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], format: RecordFormat[T])
-    extends Serializer[T] {
+    extends Serializer[T]
+    with StrictLogging {
 
   private val identityMapCapacity = 1000
   private val delegate: Serializer[Object] = new KafkaAvroSerializer(
