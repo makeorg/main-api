@@ -3,7 +3,7 @@ package org.make.api.userhistory
 import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, EventWrapper, RequestContext}
+import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
@@ -14,6 +14,7 @@ sealed trait UserEvent extends UserRelatedEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def requestContext: RequestContext
+  def version(): Int
 }
 
 object UserEvent {
@@ -64,26 +65,28 @@ object UserEvent {
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
                                       override val requestContext: RequestContext)
-      extends UserEvent
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ResetPasswordEvent {
     def apply(connectedUserId: Option[UserId], user: User, requestContext: RequestContext): ResetPasswordEvent = {
       ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, requestContext = requestContext)
     }
-    val version: Int = 1
   }
 
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
                                               override val eventDate: ZonedDateTime = DateHelper.now(),
                                               override val userId: UserId,
                                               override val requestContext: RequestContext)
-      extends UserEvent
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ResendValidationEmailEvent {
     def apply(connectedUserId: UserId, userId: UserId, requestContext: RequestContext): ResendValidationEmailEvent = {
       ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId, requestContext = requestContext)
     }
-    val version: Int = 1
   }
 
   case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
@@ -96,30 +99,25 @@ object UserEvent {
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
                                  postalCode: Option[String])
-      extends UserEvent
-
-  object UserRegisteredEvent {
-    val version: Int = 1
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
   }
 
   final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
                                       override val requestContext: RequestContext)
-      extends UserEvent
+      extends UserEvent {
 
-  object UserConnectedEvent {
-    val version: Int = 1
+    override def version(): Int = MakeSerializable.V1
   }
 
   final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
                                              override val eventDate: ZonedDateTime = DateHelper.now(),
                                              override val userId: UserId = UserId(value = ""),
                                              override val requestContext: RequestContext = RequestContext.empty)
-      extends UserEvent
-
-  object UserValidatedAccountEvent {
-    val version: Int = 1
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
   }
 
   final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
@@ -128,9 +126,8 @@ object UserEvent {
                                        override val requestContext: RequestContext = RequestContext.empty,
                                        oldTag: String,
                                        newTag: String)
-      extends UserEvent
-
-  object UserUpdatedTagEvent {
-    val version: Int = 1
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
   }
+
 }

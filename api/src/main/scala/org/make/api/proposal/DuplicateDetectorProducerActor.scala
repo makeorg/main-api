@@ -2,25 +2,14 @@ package org.make.api.proposal
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.ProducerActor
+import org.make.api.technical.BasicProducerActor
 
-class DuplicateDetectorProducerActor extends ProducerActor[PredictDuplicate] {
-
+class DuplicateDetectorProducerActor extends BasicProducerActor[PredictDuplicate, PredictDuplicate] {
   override protected lazy val eventClass: Class[PredictDuplicate] = classOf[PredictDuplicate]
   override protected lazy val format: RecordFormat[PredictDuplicate] = RecordFormat[PredictDuplicate]
   override protected lazy val schema: SchemaFor[PredictDuplicate] = SchemaFor[PredictDuplicate]
-
-  val kafkaTopic: String = kafkaConfiguration.topics(DuplicateDetectorProducerActor.topicKey)
-
-  override def receive: Receive = {
-    case event: PredictDuplicate => onPredictedDuplicate(event)
-    case other                   => log.warning(s"Unknown event $other")
-  }
-
-  private def onPredictedDuplicate(event: PredictDuplicate): Unit = {
-    log.debug(s"Received event $event")
-    sendRecord(kafkaTopic, event.proposalId.value, event)
-  }
+  override val kafkaTopic: String = kafkaConfiguration.topics(DuplicateDetectorProducerActor.topicKey)
+  override protected def convert(event: PredictDuplicate): PredictDuplicate = event
 }
 
 object DuplicateDetectorProducerActor {

@@ -10,9 +10,13 @@ import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 
 import scala.util.Try
 
-abstract class ProducerActor[T] extends Actor with KafkaConfigurationExtension with AvroSerializers with ActorLogging {
+abstract class ProducerActor[T, U]
+    extends Actor
+    with KafkaConfigurationExtension
+    with AvroSerializers
+    with ActorLogging {
 
-  protected val eventClass: Class[_]
+  protected val eventClass: Class[U]
 
   val sendCallBack: Callback = (r: RecordMetadata, e: Exception) => {
     val topic = Option(r).map(_.topic()).getOrElse("unknown")

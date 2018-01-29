@@ -2,32 +2,14 @@ package org.make.api.technical.mailjet
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.technical.ProducerActor
+import org.make.api.technical.BasicProducerActor
 
-import scala.util.Try
-
-class MailJetProducerActor extends ProducerActor[SendEmail] {
-
+class MailJetProducerActor extends BasicProducerActor[SendEmail, SendEmail] {
   override protected lazy val eventClass: Class[SendEmail] = classOf[SendEmail]
   override protected lazy val format: RecordFormat[SendEmail] = RecordFormat[SendEmail]
   override protected lazy val schema: SchemaFor[SendEmail] = SchemaFor[SendEmail]
-
-  val kafkaTopic: String =
-    kafkaConfiguration.topics(MailJetProducerActor.topicKey)
-
-  override def receive: Receive = {
-    case event: SendEmail => onEvent(event)
-    case other            => log.warning(s"Unknown event $other")
-  }
-
-  private def onEvent(event: SendEmail): Unit = {
-    log.debug(s"Received event $event")
-    sendRecord(kafkaTopic, event)
-  }
-
-  override def postStop(): Unit = {
-    Try(producer.close())
-  }
+  override val kafkaTopic: String = kafkaConfiguration.topics(MailJetProducerActor.topicKey)
+  override protected def convert(event: SendEmail): SendEmail = event
 }
 
 object MailJetProducerActor {

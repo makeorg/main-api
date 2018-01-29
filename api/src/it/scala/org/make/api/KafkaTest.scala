@@ -31,4 +31,5 @@ trait KafkaTest extends ItMakeTest with DockerKafkaService {
     val serializer: Serializer[T] = new MakeKafkaAvroSerializer[T](registryUrl, schema, format)
     new KafkaProducer(props, new StringSerializer(), serializer)
   }
+
 }

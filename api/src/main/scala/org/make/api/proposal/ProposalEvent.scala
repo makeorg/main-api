@@ -27,7 +27,6 @@ object ProposalEvent {
       extends ProposalEvent
 
   object SimilarProposalsCleared {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[SimilarProposalsCleared] =
       DefaultJsonProtocol.jsonFormat3(SimilarProposalsCleared.apply)
@@ -41,7 +40,6 @@ object ProposalEvent {
       extends ProposalEvent
 
   object SimilarProposalRemoved {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[SimilarProposalRemoved] =
       DefaultJsonProtocol.jsonFormat4(SimilarProposalRemoved.apply)
@@ -49,7 +47,9 @@ object ProposalEvent {
 
 }
 
-sealed trait PublishedProposalEvent extends ProposalEvent
+sealed trait PublishedProposalEvent extends ProposalEvent {
+  def version(): Int
+}
 
 object PublishedProposalEvent {
 
@@ -109,9 +109,11 @@ object PublishedProposalEvent {
                                    eventDate: ZonedDateTime = ZonedDateTime.now(),
                                    requestContext: RequestContext = RequestContext.empty,
                                    proposal: Proposal)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
   object ProposalPatched {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalPatched] =
       DefaultJsonProtocol.jsonFormat4(ProposalPatched.apply)
@@ -126,10 +128,12 @@ object PublishedProposalEvent {
                                     content: String,
                                     operation: Option[OperationId] = None,
                                     theme: Option[ThemeId] = None)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalProposed {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
       DefaultJsonProtocol.jsonFormat9(ProposalProposed.apply)
@@ -150,10 +154,12 @@ object PublishedProposalEvent {
   }
 
   final case class ProposalViewed(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalViewed {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalViewed] =
       DefaultJsonProtocol.jsonFormat3(ProposalViewed.apply)
@@ -173,10 +179,12 @@ object PublishedProposalEvent {
                                    similarProposals: Seq[ProposalId] = Seq.empty,
                                    idea: Option[IdeaId] = None,
                                    operation: Option[OperationId] = None)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalUpdated {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
@@ -196,10 +204,12 @@ object PublishedProposalEvent {
                                     similarProposals: Seq[ProposalId],
                                     idea: Option[IdeaId] = None,
                                     operation: Option[OperationId] = None)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalAccepted {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
@@ -214,10 +224,12 @@ object PublishedProposalEvent {
                                    sendRefuseEmail: Boolean,
                                    refusalReason: Option[String],
                                    operation: Option[OperationId] = None)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalRefused {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-refused"
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
@@ -229,10 +241,12 @@ object PublishedProposalEvent {
                                      eventDate: ZonedDateTime = ZonedDateTime.now(),
                                      requestContext: RequestContext = RequestContext.empty,
                                      moderator: UserId)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalPostponed {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-postponed"
 
     implicit val formatter: RootJsonFormat[ProposalPostponed] =
@@ -245,10 +259,12 @@ object PublishedProposalEvent {
                                  eventDate: ZonedDateTime,
                                  requestContext: RequestContext,
                                  voteKey: VoteKey)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalVoted {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalVoted] =
       DefaultJsonProtocol.jsonFormat5(ProposalVoted.apply)
@@ -261,10 +277,12 @@ object PublishedProposalEvent {
                                    requestContext: RequestContext,
                                    voteKey: VoteKey,
                                    selectedQualifications: Seq[QualificationKey])
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalUnvoted {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalUnvoted] =
       DefaultJsonProtocol.jsonFormat6(ProposalUnvoted.apply)
@@ -276,10 +294,12 @@ object PublishedProposalEvent {
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
                                      qualificationKey: QualificationKey)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalQualified {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalQualified] =
       DefaultJsonProtocol.jsonFormat6(ProposalQualified.apply)
@@ -292,10 +312,12 @@ object PublishedProposalEvent {
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
                                        qualificationKey: QualificationKey)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalUnqualified {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalUnqualified] =
       DefaultJsonProtocol.jsonFormat6(ProposalUnqualified.apply)
@@ -314,10 +336,12 @@ object PublishedProposalEvent {
                                          similarProposals: Set[ProposalId],
                                          requestContext: RequestContext,
                                          eventDate: ZonedDateTime)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object SimilarProposalsAdded {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[SimilarProposalsAdded] =
       DefaultJsonProtocol.jsonFormat4(SimilarProposalsAdded.apply)
@@ -328,10 +352,12 @@ object PublishedProposalEvent {
                                   moderatorName: Option[String] = None,
                                   eventDate: ZonedDateTime = ZonedDateTime.now(),
                                   requestContext: RequestContext = RequestContext.empty)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
 
   object ProposalLocked {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "proposal-locked"
 
     implicit val formatter: RootJsonFormat[ProposalLocked] =
@@ -344,9 +370,12 @@ object PublishedProposalEvent {
                                             moderatorId: UserId,
                                             eventDate: ZonedDateTime = ZonedDateTime.now(),
                                             requestContext: RequestContext = RequestContext.empty)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
+
   object ProposalAddedToOperation {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalAddedToOperation] =
       DefaultJsonProtocol.jsonFormat5(ProposalAddedToOperation.apply)
@@ -357,9 +386,11 @@ object PublishedProposalEvent {
                                                 moderatorId: UserId,
                                                 eventDate: ZonedDateTime = ZonedDateTime.now(),
                                                 requestContext: RequestContext = RequestContext.empty)
-      extends PublishedProposalEvent
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
   object ProposalRemovedFromOperation {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[ProposalRemovedFromOperation] =
       DefaultJsonProtocol.jsonFormat5(ProposalRemovedFromOperation.apply)

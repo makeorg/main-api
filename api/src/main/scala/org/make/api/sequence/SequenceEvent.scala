@@ -21,7 +21,9 @@ sealed trait SequenceEvent extends MakeSerializable {
 
 object SequenceEvent {}
 
-sealed trait PublishedSequenceEvent extends SequenceEvent
+sealed trait PublishedSequenceEvent extends SequenceEvent {
+  def version(): Int
+}
 
 object PublishedSequenceEvent {
 
@@ -60,9 +62,11 @@ object PublishedSequenceEvent {
                                    eventDate: ZonedDateTime = ZonedDateTime.now(),
                                    requestContext: RequestContext = RequestContext.empty,
                                    sequence: Sequence)
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+
+    def version(): Int = MakeSerializable.V1
+  }
   object SequencePatched {
-    val version: Int = MakeSerializable.V1
 
     implicit val formatter: RootJsonFormat[SequencePatched] =
       DefaultJsonProtocol.jsonFormat4(SequencePatched.apply)
@@ -73,9 +77,12 @@ object PublishedSequenceEvent {
                                           requestContext: RequestContext,
                                           eventDate: ZonedDateTime,
                                           userId: UserId)
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+
+    def version(): Int = MakeSerializable.V1
+  }
+
   object SequenceProposalsAdded {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-proposal-added"
 
     implicit val sequenceProposalsAddedFormatter: RootJsonFormat[SequenceProposalsAdded] =
@@ -87,9 +94,12 @@ object PublishedSequenceEvent {
                                             requestContext: RequestContext,
                                             eventDate: ZonedDateTime,
                                             userId: UserId)
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+
+    def version(): Int = MakeSerializable.V1
+  }
+
   object SequenceProposalsRemoved {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-proposal-added"
 
     implicit val sequenceProposalsRemovedFormatter: RootJsonFormat[SequenceProposalsRemoved] =
@@ -107,10 +117,11 @@ object PublishedSequenceEvent {
                                    tagIds: Seq[TagId],
                                    operationId: Option[OperationId] = None,
                                    searchable: Boolean)
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+    def version(): Int = MakeSerializable.V1
+  }
 
   object SequenceCreated {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-created"
 
     implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
@@ -118,10 +129,12 @@ object PublishedSequenceEvent {
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+
+    def version(): Int = MakeSerializable.V1
+  }
 
   object SequenceViewed {
-    val version: Int = MakeSerializable.V1
 
     implicit val sequenceViewed: RootJsonFormat[SequenceViewed] =
       DefaultJsonProtocol.jsonFormat3(SequenceViewed.apply)
@@ -137,10 +150,12 @@ object PublishedSequenceEvent {
                                    operationId: Option[OperationId] = None,
                                    themeIds: Seq[ThemeId],
                                    tagIds: Seq[TagId])
-      extends PublishedSequenceEvent
+      extends PublishedSequenceEvent {
+
+    def version(): Int = MakeSerializable.V1
+  }
 
   object SequenceUpdated {
-    val version: Int = MakeSerializable.V1
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
