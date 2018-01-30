@@ -10,12 +10,12 @@ trait DockerZookeeperService extends DockerKit {
   private val client: Docker = new Docker(dockerClientConfig, new JerseyDockerCmdExecFactory())
   override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
 
-  val zookeeperInternalPort = 2181
-  // toDo: use random port to avoid collisions with parallel execution test
-  val zookeeperExposedPort = 32181
-  val zookeeperName = "zookeeper"
+  val zookeeperInternalPort: Int = 2181
+  private val defaultZookeeperExposedPort: Int = 32181
+  def zookeeperExposedPort: Int = defaultZookeeperExposedPort
+  def zookeeperName: String = "zookeeper"
 
-  protected val zookeeperContainer: DockerContainer =
+  protected def zookeeperContainer: DockerContainer =
     DockerContainer(s"confluentinc/cp-zookeeper:${ConfluentPlatformTest.confluentVersion}", name = Some(zookeeperName))
       .withEnv("ZOOKEEPER_CLIENT_PORT=2181")
       .withPorts(zookeeperInternalPort -> Some(zookeeperExposedPort))
