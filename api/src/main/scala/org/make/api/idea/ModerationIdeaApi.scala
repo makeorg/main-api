@@ -161,7 +161,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                         name = request.name,
                         language = request.language.orElse(requestContext.language),
                         country = request.country.orElse(requestContext.country),
-                        operationId = request.operation.orElse(requestContext.operationId),
+                        operationId = request.operation,
                         question = request.question.orElse(requestContext.question)
                       )
                   ) { idea =>

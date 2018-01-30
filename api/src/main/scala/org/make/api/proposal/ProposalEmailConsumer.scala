@@ -117,7 +117,7 @@ class ProposalEmailConsumer(userService: UserService,
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
-      val futureOperationSlug: Future[String] = event.requestContext.operationId match {
+      val futureOperationSlug: Future[String] = event.operation match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
       }
@@ -144,7 +144,7 @@ class ProposalEmailConsumer(userService: UserService,
                     "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.firstName.getOrElse(""),
-                    "operation" -> event.operation.orElse(event.requestContext.operationId).map(_.value).getOrElse(""),
+                    "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
                     "source" -> event.requestContext.source.getOrElse("")
@@ -177,7 +177,7 @@ class ProposalEmailConsumer(userService: UserService,
       val language = event.requestContext.language.getOrElse("fr")
       val country = event.requestContext.country.getOrElse("FR")
 
-      val futureOperationSlug: Future[String] = event.requestContext.operationId match {
+      val futureOperationSlug: Future[String] = event.operation match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
       }
@@ -205,7 +205,7 @@ class ProposalEmailConsumer(userService: UserService,
                     "firstname" -> user.fullName.getOrElse(""),
                     "refusal_reason" -> proposal.refusalReason.getOrElse(""),
                     "registration_context" -> event.requestContext.operationId.map(_.value).getOrElse(""),
-                    "operation" -> event.operation.orElse(event.requestContext.operationId).map(_.value).getOrElse(""),
+                    "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
                     "source" -> event.requestContext.source.getOrElse("")
