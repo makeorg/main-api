@@ -88,25 +88,21 @@ class ModerationIdeaApiTest
 
   val fooIdeaText: String = "fooIdea"
   val fooIdeaId: IdeaId = IdeaId("fooIdeaId")
-  val fooIdea: Idea = Idea(
-    ideaId = fooIdeaId,
-    name = fooIdeaText,
-    createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now())
-  )
+  val fooIdea: Idea =
+    Idea(
+      ideaId = fooIdeaId,
+      name = fooIdeaText,
+      operationId = Some(OperationId("vff")),
+      createdAt = Some(DateHelper.now()),
+      updatedAt = Some(DateHelper.now())
+    )
   val barIdeaText: String = "barIdea"
   val barIdeaId: IdeaId = IdeaId("barIdeaId")
-  val barIdea: Idea = Idea(
-    ideaId = barIdeaId,
-    name = barIdeaText,
-    createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now())
-  )
+  val barIdea: Idea =
+    Idea(ideaId = barIdeaId, name = barIdeaText, createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
 
-  when(
-    ideaService.fetchAll(
-      ArgumentMatchers.any[IdeaSearchQuery])
-  ).thenReturn(Future.successful(IdeaSearchResult.empty))
+  when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
+    .thenReturn(Future.successful(IdeaSearchResult.empty))
 
   when(
     ideaService.insert(
@@ -161,13 +157,25 @@ class ModerationIdeaApiTest
       }
     }
 
+    scenario("authenticated admin without operationId") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea without an operationId")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/ideas")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
     scenario("authenticated admin") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea")
       Then("the idea should be saved if valid")
 
       Post("/moderation/ideas")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "operation": "vff"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         val idea: Idea = entityAs[Idea]

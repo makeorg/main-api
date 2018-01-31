@@ -154,7 +154,13 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                       message = Some("idea already exist. Duplicates are not allowed")
                     )
                   )
-
+                  Validation.validate(
+                    Validation.requirePresent(
+                      fieldName = "operation",
+                      fieldValue = request.operation,
+                      message = Some("operation should not be empty")
+                    )
+                  )
                   onSuccess(
                     ideaService
                       .insert(
