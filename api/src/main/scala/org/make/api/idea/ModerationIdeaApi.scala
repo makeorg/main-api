@@ -208,8 +208,19 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
           requireAdminRole(auth.user) {
             decodeRequest {
               entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
-                onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
-                  complete(ideaId)
+                provideAsync(ideaService.fetchOneByName(request.name)) { idea =>
+                  if (!idea.map(_.ideaId).contains(ideaId)) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "name",
+                        fieldValue = idea,
+                        message = Some("idea already exist. Duplicates are not allowed")
+                      )
+                    )
+                  }
+                  onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
+                    complete(ideaId)
+                  }
                 }
               }
             }
