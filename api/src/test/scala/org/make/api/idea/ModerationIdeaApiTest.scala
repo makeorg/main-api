@@ -100,6 +100,16 @@ class ModerationIdeaApiTest
   val barIdeaId: IdeaId = IdeaId("barIdeaId")
   val barIdea: Idea =
     Idea(ideaId = barIdeaId, name = barIdeaText, createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
+  val otherIdeaText: String = "otherIdea"
+  val otherIdeaId: IdeaId = IdeaId("otherIdeaId")
+  val otherIdea: Idea =
+    Idea(
+      ideaId = otherIdeaId,
+      name = otherIdeaText,
+      operationId = Some(OperationId("vff")),
+      createdAt = Some(DateHelper.now()),
+      updatedAt = Some(DateHelper.now())
+    )
 
   when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
     .thenReturn(Future.successful(IdeaSearchResult.empty))
@@ -117,7 +127,9 @@ class ModerationIdeaApiTest
   when(ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))
 
-  when(ideaService.fetchOneByName(ArgumentMatchers.any[String])).thenReturn(Future.successful(None))
+  when(ideaService.fetchOneByName(ArgumentMatchers.eq(fooIdeaText))).thenReturn(Future.successful(None))
+  when(ideaService.fetchOneByName(ArgumentMatchers.eq(barIdeaText))).thenReturn(Future.successful(None))
+  when(ideaService.fetchOneByName(ArgumentMatchers.eq(otherIdeaText))).thenReturn(Future.successful(Some(otherIdea)))
 
   val routes: Route = sealRoute(ideaRoutes)
 
@@ -229,6 +241,18 @@ class ModerationIdeaApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("authenticated admin - update idea with the name already exist") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to update an idea with the name that already exist")
+      Then("he should receive a bad request (400)")
+
+      Put(s"/moderation/ideas/${fooIdeaId.value}")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$otherIdeaText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
 
