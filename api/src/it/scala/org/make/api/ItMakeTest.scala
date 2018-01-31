@@ -7,10 +7,10 @@ import org.scalatest.mockito.MockitoSugar
 
 // toDo: this trait must be shared between test and it
 trait ItMakeTest
-    extends FeatureSpec
+    extends FeatureSpecLike
     with GivenWhenThen
     with MockitoSugar
     with Matchers
     with StrictLogging
     with BeforeAndAfterAll
-    with ScalaFutures {}
+    with ScalaFutures

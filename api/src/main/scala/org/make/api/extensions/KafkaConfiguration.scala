@@ -10,7 +10,6 @@ class KafkaConfiguration(override protected val configuration: Config) extends E
     "users" -> configuration.getString("topics.users"),
     "emails" -> configuration.getString("topics.emails"),
     "proposals" -> configuration.getString("topics.proposals"),
-    "votes" -> configuration.getString("topics.votes"),
     "mailjet-events" -> configuration.getString("topics.mailjet-events"),
     "duplicates-predicted" -> configuration.getString("topics.duplicates-predicted"),
     "sequences" -> configuration.getString("topics.sequences"),

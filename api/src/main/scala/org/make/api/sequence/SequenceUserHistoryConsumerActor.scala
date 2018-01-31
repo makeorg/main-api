@@ -4,7 +4,6 @@ import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.userhistory._
@@ -16,7 +15,6 @@ import scala.concurrent.duration.DurationInt
 class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[SequenceEventWrapper]
     with ActorEventBusServiceComponent
-    with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(SequenceProducerActor.topicKey)
@@ -27,63 +25,57 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: SequenceEventWrapper): Future[Unit] = {
     message.event.fold(ToSequenceEvent) match {
-      case event: SequenceViewed           => handleSequenceViewed(event)
+      case event: SequenceViewed           => doNothing(event)
       case event: SequenceUpdated          => handleSequenceUpdated(event)
       case event: SequenceCreated          => handleSequenceCreated(event)
       case event: SequenceProposalsRemoved => handleSequenceProposalsRemoved(event)
       case event: SequenceProposalsAdded   => handleSequenceProposalsAdded(event)
-      case event: SequencePatched          => Future.successful {}
-    }
-  }
-
-  def handleSequenceViewed(event: SequenceViewed): Future[Unit] = {
-    Future.successful[Unit] {
-      log.debug(s"received $event")
+      case event: SequencePatched          => doNothing(event)
     }
   }
 
   def handleSequenceUpdated(event: SequenceUpdated): Future[Unit] = {
     log.debug(s"received $event")
-    Future(
+    (
       userHistoryCoordinator ? LogUserUpdateSequenceEvent(
         userId = event.userId,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = SequenceUpdated.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 
   def handleSequenceCreated(event: SequenceCreated): Future[Unit] = {
     log.debug(s"received $event")
-    Future(
+    (
       userHistoryCoordinator ? LogUserCreateSequenceEvent(
         userId = event.userId,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = SequenceCreated.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 
   def handleSequenceProposalsRemoved(event: SequenceProposalsRemoved): Future[Unit] = {
     log.debug(s"received $event")
-    Future(
+    (
       userHistoryCoordinator ? LogUserRemoveProposalsSequenceEvent(
         userId = event.userId,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = SequenceProposalsRemoved.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 
   def handleSequenceProposalsAdded(event: SequenceProposalsAdded): Future[Unit] = {
     log.debug(s"received $event")
-    Future(
+    (
       userHistoryCoordinator ? LogUserAddProposalsSequenceEvent(
         userId = event.userId,
         requestContext = event.requestContext,
         action = UserAction(date = event.eventDate, actionType = SequenceProposalsAdded.actionType, arguments = event)
       )
-    )
+    ).map(_ => {})
   }
 }
 

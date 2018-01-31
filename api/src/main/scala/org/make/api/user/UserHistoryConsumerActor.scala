@@ -27,12 +27,12 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
-      case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
+      case event: ResetPasswordEvent         => doNothing(event)
       case event: UserRegisteredEvent        => handleUserRegisteredEvent(event)
-      case event: UserConnectedEvent         => handleUserConnectedEvent(event)
-      case event: UserUpdatedTagEvent        => handleUserUpdatedTagEvent(event)
-      case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
-      case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
+      case event: UserConnectedEvent         => doNothing(event)
+      case event: UserUpdatedTagEvent        => doNothing(event)
+      case event: ResendValidationEmailEvent => doNothing(event)
+      case event: UserValidatedAccountEvent  => doNothing(event)
     }
   }
 
@@ -57,36 +57,6 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     ).map(_ => {})
   }
 
-  private def handleResetPasswordEvent(resetPasswordEvent: ResetPasswordEvent): Future[Unit] = {
-    log.debug(s"got event $resetPasswordEvent")
-    Future.successful {}
-  }
-
-  private def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
-    log.debug(s"got event $event")
-    Future.successful {}
-  }
-
-  /**
-    * Handles the resend validation email event and publishes as the send email event to the event bus
-    * @param resendValidationEmailEvent resend validation email event
-    * @return Future[Unit]
-    */
-  private def handleResendValidationEmailEvent(resendValidationEmailEvent: ResendValidationEmailEvent): Future[Unit] = {
-    log.debug(s"got event $resendValidationEmailEvent")
-    Future.successful {}
-
-  }
-
-  def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
-    log.debug(s"got event $event")
-    Future.successful {}
-  }
-
-  def handleUserUpdatedTagEvent(event: UserUpdatedTagEvent): Future[Unit] = {
-    log.debug(s"got event $event")
-    Future.successful {}
-  }
 }
 
 object UserHistoryConsumerActor {

@@ -3,8 +3,13 @@ package org.make.api
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor, IdeaService}
 import org.make.api.operation.OperationService
-import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSessionHistoryConsumerActor, ProposalSupervisor}
-import org.make.api.sequence.{PersistentSequenceConfigurationService, SequenceConfigurationActor, SequenceService, SequenceSupervisor}
+import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSupervisor}
+import org.make.api.sequence.{
+  PersistentSequenceConfigurationService,
+  SequenceConfigurationActor,
+  SequenceService,
+  SequenceSupervisor
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
@@ -36,15 +41,6 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
         context.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator), SessionHistoryCoordinator.name)
       )
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          ProposalSessionHistoryConsumerActor.props(sessionHistoryCoordinator),
-          ProposalSessionHistoryConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
     context.watch(
       context
         .actorOf(
@@ -53,7 +49,7 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
         )
     )
 
-    val sequenceCoordinator = context.watch(
+    context.watch(
       context.actorOf(
         SequenceSupervisor.props(userService, userHistoryCoordinator, tagService, themeService),
         SequenceSupervisor.name
@@ -73,7 +69,9 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
         ProposalSupervisor.name
       )
     )
-    context.watch(context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator, operationService), UserSupervisor.name))
+    context.watch(
+      context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator, operationService), UserSupervisor.name)
+    )
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
@@ -93,20 +91,14 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          IdeaProducerActor.props,
-          IdeaProducerActor.name
-        )
+        MakeBackoffSupervisor.propsAndName(IdeaProducerActor.props, IdeaProducerActor.name)
 
       context.actorOf(props, name)
     }
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          IdeaConsumerActor.props(ideaService),
-          IdeaConsumerActor.name
-        )
+        MakeBackoffSupervisor.propsAndName(IdeaConsumerActor.props(ideaService), IdeaConsumerActor.name)
       context.actorOf(props, name)
     }
   }

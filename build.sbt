@@ -1,4 +1,3 @@
-import java.time.LocalDate
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
@@ -50,6 +49,7 @@ lazy val commonSettings = Seq(
     "-Ywarn-dead-code",
     "-Xfuture",
     "-Ywarn-unused-import",
+    "-Ywarn-unused",
     "-Ydelambdafy:method",
     "-language:_"
   )
