@@ -6,6 +6,7 @@ import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ext
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import kamon.executors
 import org.apache.commons.dbcp2.BasicDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
@@ -35,12 +36,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setMaxTotal(configuration.getInt("database.pools.read.max-total"))
   readDatasource.setMaxIdle(configuration.getInt("database.pools.read.max-idle"))
 
+  private val readExecutor: ThreadPoolExecutor = Executors
+    .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
+    .asInstanceOf[ThreadPoolExecutor]
   val readThreadPool: MonitorableExecutionContext =
-    new MonitorableExecutionContext(
-      Executors
-        .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
-        .asInstanceOf[ThreadPoolExecutor]
-    )
+    new MonitorableExecutionContext(readExecutor)
+
+  executors.Executors.register("db-read-executor", readExecutor)
 
   private val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
@@ -51,12 +53,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
   writeDatasource.setMaxTotal(configuration.getInt("database.pools.write.max-total"))
   writeDatasource.setMaxIdle(configuration.getInt("database.pools.write.max-idle"))
 
+  private val writeExecutor: ThreadPoolExecutor = Executors
+    .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
+    .asInstanceOf[ThreadPoolExecutor]
   val writeThreadPool: MonitorableExecutionContext =
-    new MonitorableExecutionContext(
-      Executors
-        .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
-        .asInstanceOf[ThreadPoolExecutor]
-    )
+    new MonitorableExecutionContext(writeExecutor)
+
+  executors.Executors.register("db-write-executor", writeExecutor)
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
   ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))

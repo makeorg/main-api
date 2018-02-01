@@ -11,23 +11,46 @@ import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
-import org.make.api.idea.{DefaultIdeaSearchEngineComponent, DefaultIdeaServiceComponent, DefaultPersistentIdeaServiceComponent, ModerationIdeaApi}
-import org.make.api.operation.{DefaultOperationServiceComponent, DefaultPersistentOperationServiceComponent, ModerationOperationApi, OperationApi}
+import org.make.api.idea.{
+  DefaultIdeaSearchEngineComponent,
+  DefaultIdeaServiceComponent,
+  DefaultPersistentIdeaServiceComponent,
+  ModerationIdeaApi
+}
+import org.make.api.operation.{
+  DefaultOperationServiceComponent,
+  DefaultPersistentOperationServiceComponent,
+  ModerationOperationApi,
+  OperationApi
+}
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceApi, _}
-import org.make.api.sessionhistory.{DefaultSessionHistoryCoordinatorServiceComponent, SessionHistoryCoordinator, SessionHistoryCoordinatorComponent}
+import org.make.api.sessionhistory.{
+  DefaultSessionHistoryCoordinatorServiceComponent,
+  SessionHistoryCoordinator,
+  SessionHistoryCoordinatorComponent
+}
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
-import org.make.api.technical.elasticsearch.{DefaultElasticSearchComponent, ElasticSearchApi, ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticSearchComponent,
+  ElasticSearchApi,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
-import org.make.api.userhistory.{DefaultUserHistoryCoordinatorServiceComponent, UserHistoryCoordinator, UserHistoryCoordinatorComponent}
+import org.make.api.userhistory.{
+  DefaultUserHistoryCoordinatorServiceComponent,
+  UserHistoryCoordinator,
+  UserHistoryCoordinatorComponent
+}
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.Await

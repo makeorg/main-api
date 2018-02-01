@@ -6,7 +6,6 @@ import akka.actor.Props
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.stream.ActorMaterializer
 import com.sksamuel.avro4s.RecordFormat
 import io.circe.Printer
 import io.circe.syntax._
@@ -20,13 +19,12 @@ class MailJetConsumerActor extends KafkaConsumerActor[SendEmail] with MailJetCon
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(MailJetProducerActor.topicKey)
   override protected val format: RecordFormat[SendEmail] = RecordFormat[SendEmail]
-  val printer: Printer = Printer.noSpaces.copy(dropNullKeys = true)
+  val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
   private val httpThreads = 5
-  implicit private val executonContext: ExecutionContext =
+  implicit private val executionContext: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
 
   override def handleMessage(message: SendEmail): Future[Unit] = {
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     Http(context.system)
       .singleRequest(
