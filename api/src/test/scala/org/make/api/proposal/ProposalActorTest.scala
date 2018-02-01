@@ -6,7 +6,6 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
@@ -18,13 +17,10 @@ import org.make.core.session.SessionId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-
-import scala.concurrent.Future
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -47,7 +43,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
-  val operationService: OperationService = mock[OperationService]
   val sequence1: Sequence = Sequence(
     SequenceId("sequence1"),
     "sequence 1",
@@ -95,23 +90,12 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     Seq.empty
   )
 
-  Mockito
-    .when(operationService.findOne(ArgumentMatchers.eq(operation1.operationId)))
-    .thenReturn(Future.successful(Some(operation1)))
-  Mockito
-    .when(operationService.findOne(ArgumentMatchers.eq(operation2.operationId)))
-    .thenReturn(Future.successful(Some(operation2)))
-
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val THREAD_SLEEP_MICROSECONDS: Int = 100
 
   val coordinator: ActorRef =
     system.actorOf(
-      ProposalCoordinator.props(
-        userHistoryActor = userHistoryActor,
-        sessionHistoryActor = sessionHistoryActor,
-        operationService = operationService
-      ),
+      ProposalCoordinator.props(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor),
       ProposalCoordinator.name
     )
 

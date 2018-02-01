@@ -17,17 +17,14 @@ import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, OAuthError, TokenEndpoint}
 
 @Api(value = "Authentication")
 @Path(value = "/")
-trait AuthenticationApi
-    extends MakeDirectives
-    with MakeAuthenticationDirectives
-    with ShortenedNames
-    with StrictLogging {
+trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives with StrictLogging {
   self: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -38,10 +35,10 @@ trait AuthenticationApi
   @ApiOperation(value = "oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
   @Path(value = "/oauth/access_token")
-  def accessTokenRoute(implicit ctx: EC = ECGlobal): Route =
+  def accessTokenRoute: Route =
     pathPrefix("oauth") {
       path("access_token") {
-        makeTrace("OauthAccessToken") { requestContext =>
+        makeTrace("OauthAccessToken") { _ =>
           post {
             formFieldMap { fields =>
               onComplete(
@@ -78,7 +75,7 @@ trait AuthenticationApi
     )
   )
   @Path(value = "/oauth/make_access_token")
-  def makeAccessTokenRoute(implicit ctx: EC = ECGlobal): Route =
+  def makeAccessTokenRoute: Route =
     pathPrefix("oauth") {
       path("make_access_token") {
         makeTrace("OauthMakeAccessToken") { requestContext =>
@@ -154,7 +151,7 @@ trait AuthenticationApi
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/logout")
-  def logoutRoute(implicit ctx: EC = ECGlobal): Route =
+  def logoutRoute: Route =
     post {
       path("logout") {
         makeTrace("OauthLogout") { _ =>

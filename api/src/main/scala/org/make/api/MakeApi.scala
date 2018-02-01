@@ -209,7 +209,7 @@ trait MakeApi
       }
     }
 
-  private lazy val documentation = new MakeDocumentation(actorSystem, apiClasses, makeSettings.Http.ssl).routes
+  private lazy val documentation = new MakeDocumentation(apiClasses, makeSettings.Http.ssl).routes
 
   lazy val makeRoutes: Route =
     documentation ~

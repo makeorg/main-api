@@ -200,7 +200,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     mapInnerRoute { route =>
       optionalHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
-          optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
+          optionalHeaderValueByType[`Access-Control-Request-Headers`](()) {
             case Some(requestHeader) =>
               respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) {
                 route

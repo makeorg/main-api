@@ -4,12 +4,10 @@ import java.time.ZonedDateTime
 
 import org.make.core.user.User
 
-class AuthCode(
-                authorizationCode: String,
-                scope: Option[String],
-                redirectUri: Option[String],
-                createdAt: ZonedDateTime,
-                expiresIn: Int,
-                user: User,
-                client: Client
-              )
+case class AuthCode(authorizationCode: String,
+                    scope: Option[String],
+                    redirectUri: Option[String],
+                    createdAt: ZonedDateTime,
+                    expiresIn: Int,
+                    user: User,
+                    client: Client)

@@ -104,11 +104,11 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
       override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
         implicit val context: EC = readExecutionContext
         findOne(sequenceConfig.sequenceId).flatMap {
-          case Some(configuration) => updateConfig(sequenceConfig)
-          case None                => insertConfig(sequenceConfig)
+          case Some(_) => updateConfig(sequenceConfig)
+          case None    => insertConfig(sequenceConfig)
         }.map {
           case result: Boolean => result
-          case result: Int     => (result == 1)
+          case result: Int     => result == 1
         }
       }
     }

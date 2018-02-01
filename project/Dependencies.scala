@@ -34,12 +34,12 @@ object Dependencies {
   val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.3.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.10.0")
+  val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.5.0"
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.12.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.54")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.80")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"

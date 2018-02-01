@@ -4,7 +4,7 @@ import sbt.Keys.scalacOptions
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.4",
   coursierUseSbtCredentials := true,
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
@@ -50,7 +50,6 @@ lazy val commonSettings = Seq(
     "-Xfuture",
     "-Ywarn-unused-import",
     "-Ywarn-unused",
-    "-Ydelambdafy:method",
     "-language:_"
   )
 )
@@ -69,7 +68,7 @@ lazy val fixtures = project
   .in(file("fixtures"))
   .settings(
     organization := "org.make",
-    scalaVersion := "2.12.1"
+    scalaVersion := "2.12.4"
   )
   .configs(Gatling)
   .settings(moduleName := "make-fixtures": _*)
