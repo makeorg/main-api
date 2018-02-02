@@ -86,7 +86,7 @@ class ProposalSearchEngineIT
       case Failure(e) =>
         logger.error(s"Cannot index proposal: ${e.getStackTrace.mkString("\n")}")
         fail(e)
-      case Success(seq) => logger.debug("Proposal indexed successfully.")
+      case Success(_) => logger.debug("Proposal indexed successfully.")
     }
   }
 
