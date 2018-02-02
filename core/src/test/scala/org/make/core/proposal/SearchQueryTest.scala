@@ -138,8 +138,6 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       When("call buildContentSearchFilter with SearchQuery")
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
       Then("result is a multiMatchQuery")
-      def languageOmission(boostedLanguage: String): Float =
-        if (searchQuery.filters.flatMap(_.language.map(_.language)).contains(boostedLanguage)) 1 else 0
       val fieldsBoosts =
         Map(ProposalElasticsearchFieldNames.contentGeneral -> 1F, ProposalElasticsearchFieldNames.content -> 3F)
       contentSearchFilterResult shouldBe Some(ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts))

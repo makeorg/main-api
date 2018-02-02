@@ -1,18 +1,7 @@
 {
-  "slug": "vff",
-  "status": "Active",
-  "translations": [
-    {
-      "title": "${operationTitle}",
-      "language": "fr"
-    }
-  ],
+  "slug": "${operationSlug}",
+  "status": "${operationStatus}",
+  "translations": ${operationTranslations},
   "defaultLanguage": "fr",
-  "sequenceLandingId": "${sequenceId}",
-  "countriesConfiguration": [
-    {
-      "countryCode": "FR",
-      "tagIds": ${tags}
-    }
-  ]
+  "countriesConfiguration": ${operationCountryConfigurations}
 }

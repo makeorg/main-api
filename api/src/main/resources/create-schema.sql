@@ -325,7 +325,46 @@ INSERT INTO tag (slug, label, enabled) VALUES
 	('pollution', e'pollution', true),
 	('entreprises-emploi', e'entreprises & emploi', true),
 	('qualite-de-vie', e'qualité de vie', true),
-	('alimentation', e'alimentation', true)
+	('description', e'description', true),
+	('police-justice', e'police & justice', true),
+	('professional-environment', e'professional environment', true),
+	('transportation', e'transportation', true),
+	('public-action', e'public action', true),
+	('accommodation', e'accommodation', true),
+	('education-awareness', e'education & awareness', true),
+	('psychological-support', e'psychological support', true),
+	('financial-independence', e'financial independence', true),
+	('sexist-behaviour', e'sexist behaviour', true),
+	('mutilations', e'mutilations', true),
+	('sexual-violence', e'sexual violence', true),
+	('harassment', e'harassment', true),
+	('harmful-questionnable-traditions', e'harmful/questionnable traditions', true),
+	('image-of-women', e'image of women', true),
+	('domestic-violence', e'domestic violence', true),
+	('prevention', e'prevention', true),
+	('protection', e'protection', true),
+	('responses', e'responses', true),
+	('aggression', e'aggression', true),
+	('avviso', e'avviso', true),
+	('polizia-giustizia', e'polizia & giustizia', true),
+	('mondo-del-lavoro', e'mondo del lavoro', true),
+	('trasporti', e'trasporti', true),
+	('azione-pubblica', e'azione pubblica', true),
+	('sistemazione', e'sistemazione', true),
+	('educazione-sensibilizzazione', e'educazione & sensibilizzazione', true),
+	('sostegno-psicologico', e'sostegno psicologico', true),
+	('indipendenza-finanziaria', e'indipendenza finanziaria', true),
+	('comportamento-sessista', e'comportamento sessista', true),
+	('mutilazioni', e'mutilazioni', true),
+	('violenze-sessuali', e'violenze sessuali', true),
+	('molestia', e'molestia', true),
+	('tradizioni-dannose', e'tradizioni dannose', true),
+	('immagine-della-donna', e'immagine della donna', true),
+	('violenza-coniugale', e'violenza coniugale', true),
+	('prevenzione', e'prevenzione', true),
+	('protezione', e'protezione', true),
+	('risposte', e'risposte', true),
+	('aggressione', e'aggressione', true)
 	ON CONFLICT (slug) DO NOTHING;
 %
 INSERT INTO theme
@@ -378,8 +417,6 @@ ALTER TABLE IF EXISTS operation DROP COLUMN sequence_landing_id;
 %
 CREATE UNIQUE index IF NOT EXISTS operation_slug_unique_index ON operation (slug);
 %
-ALTER TABLE IF EXISTS operation DROP COLUMN sequence_landing_id;
-%
 CREATE TABLE IF NOT EXISTS operation_translation (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
   language VARCHAR(3),
@@ -393,11 +430,13 @@ CREATE TABLE IF NOT EXISTS operation_country_configuration (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,
   country VARCHAR(3),
   tag_ids VARCHAR(2048),
-  landing_sequence_id VARCHAR NOT NULL,
+  landing_sequence_id VARCHAR(256) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (operation_uuid, country)
 );
+%
+ALTER TABLE IF EXISTS operation_country_configuration ADD COLUMN landing_sequence_id VARCHAR(256);
 %
 CREATE TABLE IF NOT EXISTS operation_action (
   operation_uuid VARCHAR(256) NOT NULL REFERENCES operation,

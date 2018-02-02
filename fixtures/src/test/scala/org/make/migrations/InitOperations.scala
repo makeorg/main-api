@@ -37,39 +37,51 @@ class InitOperations extends Simulation {
         .asJSON
         .check(jsonPath("$.results[0].id").saveAs("sequenceId"))
     )
-    .exec(session => {
-      session
-        .set("operationTitle", "Stop aux violences faites aux femmes")
-        .set("operationId", "vff")
-        .set(
-          "tags",
-          Json.stringify(
-            Seq(
-              "signalement",
-              "police-justice",
-              "education-sensibilisation",
-              "image-des-femmes",
-              "independance-financiere",
-              "soutien-psychologique",
-              "hebergement",
-              "transports",
-              "monde-du-travail",
-              "monde-medical",
-              "agissements-sexistes",
-              "violences-sexuelles",
-              "harcelement",
-              "agressions-physiques",
-              "violences-conjugales",
-              "traditions-nefastes-mutilations",
-              "action-publique",
-              "prevention",
-              "protection",
-              "reponses"
-            )
+    .exec(
+      session =>
+        session
+          .set("operationId", "vff")
+          .set("operationSlug", "vff")
+          .set("operationStatus", "Active")
+          .set(
+            "operationTranslations",
+            Json.stringify(Array(Map("language" -> "fr", "title" -> "Stop aux violences faites aux femmes")))
           )
+          .set(
+            "operationCountryConfigurations",
+            Json.stringify(
+              Array(
+                Map(
+                  "countryCode" -> "FR",
+                  "landingSequenceId" -> session("sequenceId").as[String],
+                  "tagIds" ->
+                    Seq(
+                      "signalement",
+                      "police-justice",
+                      "education-sensibilisation",
+                      "image-des-femmes",
+                      "independance-financiere",
+                      "soutien-psychologique",
+                      "hebergement",
+                      "transports",
+                      "monde-du-travail",
+                      "monde-medical",
+                      "agissements-sexistes",
+                      "violences-sexuelles",
+                      "harcelement",
+                      "agressions-physiques",
+                      "violences-conjugales",
+                      "traditions-nefastes-mutilations",
+                      "action-publique",
+                      "prevention",
+                      "protection",
+                      "reponses"
+                    )
+                )
+              )
+            )
         )
-
-    })
+    )
     .exec(
       MakeServicesBuilder.updateOperationBuilder
         .body(ElFileBody("jsonModel/updateOperation.json"))

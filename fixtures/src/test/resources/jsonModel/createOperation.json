@@ -7,10 +7,10 @@
     }
   ],
   "defaultLanguage": "fr",
-  "sequenceLandingId": "${sequenceId}",
   "countriesConfiguration": [
     {
       "countryCode": "FR",
+      "landingSequenceId": "${sequenceId}",
       "tagIds": ${tags}
     }
   ]

@@ -66,7 +66,7 @@ object SearchFilters extends ElasticDsl {
 
     (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea, language) match {
       case (None, None, None, None, None, None, None, None, None, None, None, None) => None
-      case params =>
+      case _ =>
         Some(
           SearchFilters(
             proposals,
