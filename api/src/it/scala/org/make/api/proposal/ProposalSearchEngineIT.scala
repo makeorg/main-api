@@ -7,7 +7,6 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
@@ -49,7 +48,6 @@ class ProposalSearchEngineIT
 
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
 
     // register index

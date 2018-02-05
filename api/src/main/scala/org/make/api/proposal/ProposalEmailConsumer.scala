@@ -11,8 +11,6 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.user.UserService
-import org.make.core.proposal.Proposal
-import org.make.core.user._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -70,8 +68,8 @@ class ProposalEmailConsumer(userService: UserService,
 
       futureOperationSlug.map { operationSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
-          proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
-          user: User         <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
+          user @ __    <- OptionT(userService.getUser(proposal.author))
         } yield {
           val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
@@ -130,8 +128,8 @@ class ProposalEmailConsumer(userService: UserService,
 
       futureOperationSlug.map { operationSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
-          proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
-          user: User         <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
+          user @ _     <- OptionT(userService.getUser(proposal.author))
         } yield {
           val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {

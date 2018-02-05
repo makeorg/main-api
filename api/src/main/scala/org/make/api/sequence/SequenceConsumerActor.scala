@@ -12,7 +12,6 @@ import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.theme.ThemeService
-import org.make.api.user.UserService
 import org.make.core.RequestContext
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
 import org.make.core.sequence._
@@ -22,10 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SequenceConsumerActor(sequenceCoordinator: ActorRef,
-                            userService: UserService,
-                            tagService: TagService,
-                            themeService: ThemeService)
+class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagService, themeService: ThemeService)
     extends KafkaConsumerActor[SequenceEventWrapper]
     with KafkaConfigurationExtension
     with DefaultSequenceSearchEngineComponent
@@ -80,9 +76,9 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
     }
 
     val maybeResult = for {
-      sequence <- OptionT((sequenceCoordinator ? GetSequence(id, RequestContext.empty)).mapTo[Option[Sequence]])
-      tags     <- OptionT(retrieveTags(sequence.tagIds))
-      themes   <- OptionT(retrieveThemes(sequence.themeIds))
+      sequence @ _ <- OptionT((sequenceCoordinator ? GetSequence(id, RequestContext.empty)).mapTo[Option[Sequence]])
+      tags @ _     <- OptionT(retrieveTags(sequence.tagIds))
+      themes @ _   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(
         id = sequence.sequenceId,
@@ -114,10 +110,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
 }
 
 object SequenceConsumerActor {
-  def props(sequenceCoordinator: ActorRef,
-            userService: UserService,
-            tagService: TagService,
-            themeService: ThemeService): Props =
-    Props(new SequenceConsumerActor(sequenceCoordinator, userService, tagService, themeService))
+  def props(sequenceCoordinator: ActorRef, tagService: TagService, themeService: ThemeService): Props =
+    Props(new SequenceConsumerActor(sequenceCoordinator, tagService, themeService))
   val name: String = "sequence-consumer"
 }

@@ -27,7 +27,12 @@ import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
-import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, IndexedSequenceTheme, Context => SequenceContext}
+import org.make.core.sequence.indexed.{
+  IndexedSequence,
+  IndexedSequenceProposalId,
+  IndexedSequenceTheme,
+  Context => SequenceContext
+}
 import org.make.core.sequence.{Sequence, SequenceId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -181,19 +186,18 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
   private def executeIndexIdeas(newIndexName: String): Future[Done] = {
     val start = System.currentTimeMillis()
 
-    val result = persistentIdeaService.findAll(IdeaFiltersRequest.empty)
-      .map { ideas =>
-        logger.info(s"Ideas to index: ${ideas.size}")
-        ideas.foreach { idea =>
-          elasticsearchIdeaAPI
-            .indexIdea(IndexedIdea.createFromIdea(idea), Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
-            .recoverWith {
-              case e =>
-                logger.error("indexing idea failed", e)
-                Future.successful(Done)
-            }
-        }
+    val result = persistentIdeaService.findAll(IdeaFiltersRequest.empty).map { ideas =>
+      logger.info(s"Ideas to index: ${ideas.size}")
+      ideas.foreach { idea =>
+        elasticsearchIdeaAPI
+          .indexIdea(IndexedIdea.createFromIdea(idea), Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
+          .recoverWith {
+            case e =>
+              logger.error("indexing idea failed", e)
+              Future.successful(Done)
+          }
       }
+    }
 
     result.onComplete {
       case Success(_) => logger.info("Idea indexation success in {} ms", System.currentTimeMillis() - start)
@@ -221,9 +225,9 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
       proposalCoordinatorService.getProposal(proposalId)
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
-      proposal <- OptionT(futureMayBeProposal)
-      user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveTags(proposal.tags))
+      proposal @ _ <- OptionT(futureMayBeProposal)
+      user @ _     <- OptionT(userService.getUser(proposal.author))
+      tags @ _     <- OptionT(retrieveTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -269,9 +273,9 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
       sequenceCoordinatorService.getSequence(sequenceId)
 
     val maybeResult: OptionT[Future, IndexedSequence] = for {
-      sequence <- OptionT(futureMayBeSequence)
-      tags     <- OptionT(retrieveTags(sequence.tagIds))
-      themes   <- OptionT(retrieveThemes(sequence.themeIds))
+      sequence @ _ <- OptionT(futureMayBeSequence)
+      tags @ _     <- OptionT(retrieveTags(sequence.tagIds))
+      themes @ _   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(
         id = sequence.sequenceId,

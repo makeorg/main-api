@@ -385,7 +385,6 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
               )
             )
             logger.debug(s"Subscribe newsletter request: ${httpRequest.toString}")
-            implicit val meterializer: ActorMaterializer = ActorMaterializer()(actorSystem)
             val futureHttpResponse: Future[HttpResponse] =
               Http(actorSystem).singleRequest(httpRequest)
 

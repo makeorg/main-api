@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.knutwalker.akka.http.support.CirceHttpSupport
+import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
@@ -74,6 +75,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def makeTrace(name: String): Directive1[RequestContext] = {
     for {
+      _                  <- operationName(name)
       maybeCookie        <- optionalCookie(sessionIdKey)
       requestId          <- requestId
       startTime          <- startTime
@@ -198,7 +200,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     mapInnerRoute { route =>
       optionalHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
-          optionalHeaderValueByType[`Access-Control-Request-Headers`]() {
+          optionalHeaderValueByType[`Access-Control-Request-Headers`](()) {
             case Some(requestHeader) =>
               respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) {
                 route

@@ -76,7 +76,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
+      case Some(_) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
             sequenceService
@@ -89,7 +89,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def removeFromOperation(event: ProposalRemovedFromOperation): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
+      case Some(_) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
             sequenceService
@@ -121,9 +121,9 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
     }
 
     val maybeResult = for {
-      proposal <- OptionT(proposalCoordinatorService.getProposal(id))
-      user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveTags(proposal.tags))
+      proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(id))
+      user @ _     <- OptionT(userService.getUser(proposal.author))
+      tags @ _     <- OptionT(retrieveTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,

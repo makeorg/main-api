@@ -123,6 +123,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
                 PersistentClientServiceComponent.GRANT_TYPE_SEPARATOR
               ),
               column.secret -> client.secret,
+              column.redirectUri -> client.redirectUri,
               column.scope -> client.scope,
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now()

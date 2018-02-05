@@ -56,15 +56,17 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
     get {
       path("moderation" / "ideas") {
         parameters(
-          'name.?,
-          'language.?,
-          'country.?,
-          'operationId.?,
-          'question.?,
-          'limit.as[Int].?,
-          'skip.as[Int].?,
-          'sort.?,
-          'order.?
+          (
+            'name.?,
+            'language.?,
+            'country.?,
+            'operationId.?,
+            'question.?,
+            'limit.as[Int].?,
+            'skip.as[Int].?,
+            'sort.?,
+            'order.?
+          )
         ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
           makeTrace("Get all ideas") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>

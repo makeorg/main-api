@@ -5,13 +5,9 @@ import org.make.api.MakeBackoffSupervisor
 import org.make.api.tag.TagService
 import org.make.api.technical.ShortenedNames
 import org.make.api.theme.ThemeService
-import org.make.api.user.UserService
 import org.make.core.DateHelper
 
-class SequenceSupervisor(userService: UserService,
-                         userHistoryCoordinator: ActorRef,
-                         tagService: TagService,
-                         themeService: ThemeService)
+class SequenceSupervisor(userHistoryCoordinator: ActorRef, tagService: TagService, themeService: ThemeService)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -33,12 +29,8 @@ class SequenceSupervisor(userService: UserService,
     }
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        SequenceConsumerActor.props(
-          sequenceCoordinator = sequenceCoordinator,
-          userService = userService,
-          tagService = tagService,
-          themeService = themeService
-        ),
+        SequenceConsumerActor
+          .props(sequenceCoordinator = sequenceCoordinator, tagService = tagService, themeService = themeService),
         SequenceConsumerActor.name
       )
       context.actorOf(props, name)
@@ -55,9 +47,6 @@ class SequenceSupervisor(userService: UserService,
 object SequenceSupervisor {
 
   val name: String = "sequence"
-  def props(userService: UserService,
-            userHistoryCoordinator: ActorRef,
-            tagService: TagService,
-            themeService: ThemeService): Props =
-    Props(new SequenceSupervisor(userService, userHistoryCoordinator, tagService, themeService))
+  def props(userHistoryCoordinator: ActorRef, tagService: TagService, themeService: ThemeService): Props =
+    Props(new SequenceSupervisor(userHistoryCoordinator, tagService, themeService))
 }

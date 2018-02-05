@@ -228,8 +228,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]] = {
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal: Proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
-          author: User       <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(proposalId))
+          author @ _   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
@@ -354,8 +354,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal: Proposal <- OptionT(updatedProposal)
-          author: User       <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(updatedProposal)
+          author @ _   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
@@ -388,8 +388,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal: Proposal <- OptionT(acceptedProposal)
-          author: User       <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(acceptedProposal)
+          author @ _   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
@@ -416,8 +416,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal: Proposal <- OptionT(refusedProposal)
-          author: User       <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(refusedProposal)
+          author @ _   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
@@ -437,8 +437,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal: Proposal <- OptionT(postponedProposal)
-          author: User       <- OptionT(userService.getUser(proposal.author))
+          proposal @ _ <- OptionT(postponedProposal)
+          author @ _   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
@@ -670,8 +670,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         )
 
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (for {
-        proposal: Proposal <- OptionT(patchResult)
-        author: User       <- OptionT(userService.getUser(proposal.author))
+        proposal @ _ <- OptionT(patchResult)
+        author @ _   <- OptionT(userService.getUser(proposal.author))
       } yield (proposal, author)).value
 
       futureMaybeProposalAuthor.flatMap {

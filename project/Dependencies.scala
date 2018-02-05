@@ -2,23 +2,25 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.6"
-  private val akkaHttpVersion = "10.0.10"
-  private val nettyVersion = "4.1.12.Final"
-  private val kafkaVersion = "0.11.0.0"
-  private val elastic4sVersion = "5.6.0"
-  private val kamonVersion = "1.0.0-RC4"
-  private val kamonAkkaHttpVersion = "1.0.0-RC4-37344ef58d5ec7bdec47f2c09919ad3dc1a37dc3"
-  private val kamonScalaVersion = "1.0.0-RC4"
-  private val circeVersion = "0.8.0"
-  val aspectJVersion: String = "1.8.10"
-  val swaggerUiVersion: String = "3.1.4"
+  private val akkaVersion = "2.5.9"
+  private val akkaHttpVersion = "10.0.11"
+  private val nettyVersion = "4.1.20.Final"
+  private val kafkaVersion = "1.0.0"
+  private val elastic4sVersion = "5.6.1"
+  private val kamonVersion = "1.0.1"
+  private val kamonScalaFuturesVersion = "1.0.0"
+  private val kamonAkkaRemoteVersion = "1.0.0"
+  private val kamonSystemMetricsVersion = "1.0.0"
+  private val kamonPrometheusVersion = "1.0.0"
+  private val circeVersion = "0.9.1"
+  val aspectJVersion: String = "1.8.13"
+  val swaggerUiVersion: String = "3.9.2"
 
-  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.5.0"
-  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.9.1"
-  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.9.1"
+  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.7.2"
+  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.10.0"
+  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.10.0"
   val commonsLoggingBridge: ModuleID = "org.slf4j"          % "jcl-over-slf4j"   % "1.7.25"
-  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % "2.9.1"
+  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % "2.10.0"
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyEpollMac: ModuleID =
@@ -32,45 +34,45 @@ object Dependencies {
   val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.3.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.10.0")
+  val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.5.0"
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.12.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.54")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.80")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
-  val kamonAkka: ModuleID = ("io.kamon" %% "kamon-akka-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonCore: ModuleID = ("io.kamon" %% "kamon-core" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonExecutors: ModuleID =
+    ("io.kamon" %% "kamon-executors" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonAkka: ModuleID =
+    ("io.kamon" %% "kamon-akka-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonScalaFutures: ModuleID = "io.kamon" %% "kamon-scala-future" % kamonScalaFuturesVersion
   val kamonAkkaHttp: ModuleID =
-    ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion)
-      .exclude("com.typesafe.akka", "akka-http_2.12")
-      .exclude("com.typesafe.akka", "akka-actor_2.12")
-      .exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka-http-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkkaRemote: ModuleID =
-    ("io.kamon"                          %% "kamon-akka-remote-2.4" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
-  val kamonScala: ModuleID = ("io.kamon" %% "kamon-scala"           % kamonVersion).exclude("ch.qos.logback", "logback-classic")
-  val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonVersion
-
-  val kamonPrometheus: ModuleID = "io.kamon" %% "kamon-prometheus" % kamonVersion
+    ("io.kamon" %% "kamon-akka-remote-2.5" % kamonAkkaRemoteVersion).exclude("ch.qos.logback", "logback-classic")
+  val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
+  val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
 
   val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
   val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
 
-  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.18.0"
+  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.18.1"
   val constructrZookeeper: ModuleID =
-    ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.0").exclude("log4j", "log4j")
+    ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.1").exclude("log4j", "log4j")
 
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.3.0"
-  val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.0"
+  val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.0.1"
-  val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.1.0"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.1.0"
+  val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.1"
 
-  val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.1.9"
+  val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
@@ -80,30 +82,30 @@ object Dependencies {
       .exclude("org.slf4j", "slf4j-log4j12")
       .exclude("io.netty", "netty")
 
-  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.1"
+  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.2"
 
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
-  val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.3"
-  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.3"
+  val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.4"
+  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.4"
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"     %% "akka-testkit"             % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"        %% "scalatest"                % "3.0.1"         % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"        %% "scalatest"                % "3.0.5"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"            % "mockito-core"              % "2.7.22"        % "it,test"
-  val scalikeTest: ModuleID = "org.scalikejdbc"    %% "scalikejdbc-test"         % "3.0.1"         % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.5"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.5" % "it")
+  val mockito: ModuleID = "org.mockito"            % "mockito-core"              % "2.13.0"        % "it,test"
+  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.6"         % "it"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.6" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
-  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.6.0" % "test"
+  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.14.0" % "test"
 
   // Needed to use the client....
-  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.23.1"  % "it"
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0" % "it,test"
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"    % "it"
+  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"    % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1" % "it,test"
 
   // Fixtures
   val gatlingHighcharts: ModuleID = "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.0" % "test"
@@ -115,5 +117,5 @@ object Dependencies {
     .exclude("ch.qos.logback", "logback-classic")
 
   // apache math
-  val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.5"
+  val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
 }

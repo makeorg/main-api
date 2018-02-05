@@ -7,7 +7,6 @@ import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
-import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
@@ -32,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, operationService: OperationService)
+class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
     extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
@@ -633,7 +632,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
     command: UpdateProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map {
-      case ProposalState(proposal, lock) =>
+      case ProposalState(proposal, _) =>
         if (proposal.status != ProposalStatus.Accepted) {
           Left(
             ValidationFailedError(
@@ -724,7 +723,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
     command: RefuseProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map {
-      case ProposalState(proposal, lock) =>
+      case ProposalState(proposal, _) =>
         if (proposal.status == ProposalStatus.Archived) {
           Left(
             ValidationFailedError(
@@ -766,7 +765,7 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef, o
     command: PostponeProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map {
-      case ProposalState(proposal, lock) =>
+      case ProposalState(proposal, _) =>
         if (proposal.status == ProposalStatus.Archived) {
           Left(
             ValidationFailedError(

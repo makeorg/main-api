@@ -31,7 +31,6 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
-    // context.watch(context.actorOf(ClusterFormationActor.props, ClusterFormationActor.name))
 
     val userHistoryCoordinator =
       context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
@@ -50,10 +49,8 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
     )
 
     context.watch(
-      context.actorOf(
-        SequenceSupervisor.props(userService, userHistoryCoordinator, tagService, themeService),
-        SequenceSupervisor.name
-      )
+      context
+        .actorOf(SequenceSupervisor.props(userHistoryCoordinator, tagService, themeService), SequenceSupervisor.name)
     )
     context.watch(
       context.actorOf(
