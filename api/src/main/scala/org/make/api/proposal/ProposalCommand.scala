@@ -21,7 +21,9 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 createdAt: ZonedDateTime,
                                 content: String,
                                 operation: Option[OperationId] = None,
-                                theme: Option[ThemeId] = None)
+                                theme: Option[ThemeId] = None,
+                                language: Option[String],
+                                country: Option[String])
     extends ProposalCommand
 
 final case class UpdateProposalCommand(moderator: UserId,

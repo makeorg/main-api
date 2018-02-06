@@ -5,7 +5,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.{RequestContext, Validation}
-import org.make.core.Validation.{maxLength, minLength, validate}
+import org.make.core.Validation.{mandatoryField, maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
@@ -17,11 +17,16 @@ import org.make.core.user.UserId
 import scala.annotation.meta.field
 import scala.util.Random
 
-final case class ProposeProposalRequest(content: String, operationId: Option[OperationId]) {
+final case class ProposeProposalRequest(content: String,
+                                        operationId: Option[OperationId],
+                                        language: Option[String],
+                                        country: Option[String]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = BusinessConfig.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
   validate(minLength("content", minProposalLength, content))
+  validate(mandatoryField("language", language))
+  validate(mandatoryField("country", country))
 }
 
 object ProposeProposalRequest {

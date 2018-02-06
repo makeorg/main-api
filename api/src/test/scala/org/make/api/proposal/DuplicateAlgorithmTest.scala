@@ -42,7 +42,9 @@ class DuplicateAlgorithmTest extends MakeTest {
             votes = Seq.empty,
             events = List.empty,
             similarProposals = Seq.empty,
-            idea = Some(IdeaId("Idea 1"))
+            idea = Some(IdeaId("Idea 1")),
+            language = Some("fr"),
+            country = Some("FR")
           ),
           1.0
         ),
@@ -62,7 +64,9 @@ class DuplicateAlgorithmTest extends MakeTest {
             votes = Seq.empty,
             events = List.empty,
             similarProposals = Seq.empty,
-            idea = Some(IdeaId("Idea 1"))
+            idea = Some(IdeaId("Idea 1")),
+            language = Some("fr"),
+            country = Some("FR")
           ),
           0.9
         ),
@@ -82,7 +86,9 @@ class DuplicateAlgorithmTest extends MakeTest {
             votes = Seq.empty,
             events = List.empty,
             similarProposals = Seq.empty,
-            idea = Some(IdeaId("Idea 2"))
+            idea = Some(IdeaId("Idea 2")),
+            language = Some("fr"),
+            country = Some("FR")
           ),
           0.8
         )
@@ -113,7 +119,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           votes = Seq.empty,
           events = List.empty,
           similarProposals = Seq.empty,
-          idea = None
+          idea = None,
+          language = Some("fr"),
+          country = Some("FR")
         ),
         1.0
       ),
@@ -133,7 +141,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           votes = Seq.empty,
           events = List.empty,
           similarProposals = Seq.empty,
-          idea = None
+          idea = None,
+          language = Some("fr"),
+          country = Some("FR")
         ),
         0.9
       ),
@@ -153,7 +163,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           votes = Seq.empty,
           events = List.empty,
           similarProposals = Seq.empty,
-          idea = None
+          idea = None,
+          language = Some("fr"),
+          country = Some("FR")
         ),
         0.8
       )
@@ -184,7 +196,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           tags = Seq.empty,
           votes = Seq.empty,
           events = List.empty,
-          idea = Some(IdeaId("Idea 1"))
+          idea = Some(IdeaId("Idea 1")),
+          language = Some("fr"),
+          country = Some("FR")
         ),
         Proposal(
           proposalId = ProposalId("2"),
@@ -201,7 +215,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           votes = Seq.empty,
           events = List.empty,
           similarProposals = Seq.empty,
-          idea = Some(IdeaId("Idea 2"))
+          idea = Some(IdeaId("Idea 2")),
+          language = Some("fr"),
+          country = Some("FR")
         ),
         Proposal(
           proposalId = ProposalId("3"),
@@ -218,7 +234,9 @@ class DuplicateAlgorithmTest extends MakeTest {
           votes = Seq.empty,
           events = List.empty,
           similarProposals = Seq.empty,
-          idea = Some(IdeaId("Idea 2"))
+          idea = Some(IdeaId("Idea 2")),
+          language = Some("fr"),
+          country = Some("FR")
         )
       )
 
@@ -236,7 +254,9 @@ class DuplicateAlgorithmTest extends MakeTest {
         tags = Seq(),
         votes = Seq.empty,
         events = List.empty,
-        similarProposals = Seq.empty
+        similarProposals = Seq.empty,
+        language = Some("fr"),
+        country = Some("FR")
       )
 
       val document = Document(newProposal.content, "fr")

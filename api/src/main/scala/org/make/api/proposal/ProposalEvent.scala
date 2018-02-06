@@ -127,16 +127,18 @@ object PublishedProposalEvent {
                                     eventDate: ZonedDateTime,
                                     content: String,
                                     operation: Option[OperationId] = None,
-                                    theme: Option[ThemeId] = None)
+                                    theme: Option[ThemeId] = None,
+                                    language: Option[String] = None,
+                                    country: Option[String] = None)
       extends PublishedProposalEvent {
 
-    override def version(): Int = MakeSerializable.V1
+    override def version(): Int = MakeSerializable.V2
   }
 
   object ProposalProposed {
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
-      DefaultJsonProtocol.jsonFormat9(ProposalProposed.apply)
+      DefaultJsonProtocol.jsonFormat11(ProposalProposed.apply)
 
   }
 

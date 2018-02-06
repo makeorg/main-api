@@ -78,7 +78,9 @@ class SequenceServiceComponentTest
       similarProposals = duplicates,
       idea = ideaId,
       events = Nil,
-      creationContext = RequestContext.empty
+      creationContext = RequestContext.empty,
+      language = Some("fr"),
+      country = Some("FR")
     )
   }
 

@@ -180,7 +180,9 @@ class ProposalApiTest
         any[ZonedDateTime],
         matches(validProposalText),
         any[Option[OperationId]],
-        any[Option[ThemeId]]
+        any[Option[ThemeId]],
+        any[Option[String]],
+        any[Option[String]]
       )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
@@ -376,7 +378,7 @@ class ProposalApiTest
       Then("the proposal should be saved if valid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "language": "fr", "country": "FR"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
@@ -388,7 +390,7 @@ class ProposalApiTest
       Then("the proposal should be rejected if invalid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMaxLengthProposalText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMaxLengthProposalText", "language": "fr", "country": "FR"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
@@ -403,7 +405,7 @@ class ProposalApiTest
       Then("the proposal should be rejected if invalid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMinLengthProposalText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMinLengthProposalText", "language": "fr", "country": "FR"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
@@ -419,7 +421,7 @@ class ProposalApiTest
       Then("the proposal should be rejected")
       Post("/proposals")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake"}""")
+          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}""")
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "1234-1234")) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -429,7 +431,41 @@ class ProposalApiTest
       }
     }
 
-    scenario("valid proposal with operation") {
+    scenario("invalid proposal without language") {
+      Given("an authenticated user")
+      And("an empty language")
+      When("the user want to propose without language")
+      Then("the proposal should be rejected")
+      Post("/proposals")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "country": "FR"}""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "language")
+        contentError should be(Some(ValidationError("language", Some("language is mandatory"))))
+      }
+    }
+
+    scenario("invalid proposal without country") {
+      Given("an authenticated user")
+      And("an empty country")
+      When("the user want to propose without country")
+      Then("the proposal should be rejected")
+      Post("/proposals")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr"}""")
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "country")
+        contentError should be(Some(ValidationError("country", Some("country is mandatory"))))
+      }
+    }
+
+    scenario("valid proposal with operation, language and country") {
       Given("an authenticated user")
       And("a valid operationId")
       When("the user want to propose in an operation context")
@@ -438,7 +474,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "operationId": "1234-1234"} """
+            s"""{"content": "$validProposalText", "operationId": "1234-1234", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "fake")) ~> routes ~> check {

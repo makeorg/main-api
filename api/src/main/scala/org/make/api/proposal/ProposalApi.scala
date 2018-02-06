@@ -136,7 +136,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                           createdAt = DateHelper.now(),
                           content = request.content,
                           operation = maybeOperation.map(_.operationId),
-                          theme = requestContext.currentTheme
+                          theme = requestContext.currentTheme,
+                          country = request.country,
+                          language = request.language
                         )
                     ) { proposalId =>
                       complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))

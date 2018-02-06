@@ -57,7 +57,9 @@ trait ProposalService {
               createdAt: ZonedDateTime,
               content: String,
               operation: Option[OperationId],
-              theme: Option[ThemeId]): Future[ProposalId]
+              theme: Option[ThemeId],
+              language: Option[String],
+              country: Option[String]): Future[ProposalId]
 
   // toDo: add theme
   def update(proposalId: ProposalId,
@@ -316,7 +318,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          createdAt: ZonedDateTime,
                          content: String,
                          operation: Option[OperationId],
-                         theme: Option[ThemeId]): Future[ProposalId] = {
+                         theme: Option[ThemeId],
+                         language: Option[String],
+                         country: Option[String]): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -326,7 +330,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           createdAt = createdAt,
           content = content,
           operation = operation,
-          theme = theme
+          theme = theme,
+          language = language,
+          country = country
         )
       )
     }
