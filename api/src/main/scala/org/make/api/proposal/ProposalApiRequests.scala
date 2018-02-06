@@ -207,7 +207,9 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       refusalReason: Option[String] = None,
                                       tags: Option[Seq[TagId]] = None,
                                       creationContext: Option[PatchRequestContext] = None,
-                                      operation: Option[OperationId] = None)
+                                      operation: Option[OperationId] = None,
+                                      language: Option[String] = None,
+                                      country: Option[String] = None)
 
 object PatchProposalRequest {
   implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]

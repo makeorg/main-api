@@ -201,7 +201,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               similarProposals = proposal.similarProposals,
               idea = proposal.idea,
               ideaProposals = ideaProposals,
-              operationId = proposal.operation
+              operationId = proposal.operation,
+              language = proposal.language,
+              country = proposal.country
             )
           )
         }

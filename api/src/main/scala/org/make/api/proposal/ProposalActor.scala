@@ -138,7 +138,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
           tags = changes.tags.getOrElse(proposal.tags),
           updatedAt = Some(DateHelper.now()),
-          operation = changes.operation.orElse(proposal.operation)
+          operation = changes.operation.orElse(proposal.operation),
+          language = changes.language,
+          country = changes.country
         )
 
       persistAndPublishEvent(

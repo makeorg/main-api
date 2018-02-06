@@ -268,7 +268,9 @@ class ModerationProposalApiTest
           similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
           idea = None,
           ideaProposals = Seq.empty,
-          operationId = None
+          operationId = None,
+          language = Some("fr"),
+          country = Some("FR")
         )
       )
     )
@@ -307,7 +309,9 @@ class ModerationProposalApiTest
           similarProposals = Seq(ProposalId("sim-111"), ProposalId("sim-222")),
           idea = None,
           ideaProposals = Seq.empty,
-          operationId = None
+          operationId = None,
+          language = Some("fr"),
+          country = Some("FR")
         )
       )
     )
@@ -381,7 +385,9 @@ class ModerationProposalApiTest
       similarProposals = Seq.empty,
       idea = None,
       ideaProposals = Seq.empty,
-      operationId = None
+      operationId = None,
+      language = Some("fr"),
+      country = Some("FR")
     )
   }
 
