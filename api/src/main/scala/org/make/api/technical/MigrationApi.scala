@@ -41,21 +41,17 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
   def migrateCassandra: Route = post {
     path("migrations" / "cassandra") {
       makeTrace("MigrateCassandra") { _ =>
-        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          requireAdminRole(userAuth.user) {
-            val migrator = EventsByTagMigration(actorSystem)
+        val migrator = EventsByTagMigration(actorSystem)
 
-            val schemaMigration: Future[Done] = for {
-              _ <- migrator.createTables()
-              done <- migrator.addTagsColumn().recover {
-                case i: ExecutionException if i.getMessage.contains("conflicts with an existing column") => Done
-              }
-            } yield done
-
-            onComplete(schemaMigration) { _ =>
-              complete(StatusCodes.NoContent)
-            }
+        val schemaMigration: Future[Done] = for {
+          _ <- migrator.createTables()
+          done <- migrator.addTagsColumn().recover {
+            case i: ExecutionException if i.getMessage.contains("conflicts with an existing column") => Done
           }
+        } yield done
+
+        onComplete(schemaMigration) { _ =>
+          complete(StatusCodes.NoContent)
         }
       }
     }
