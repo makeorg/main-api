@@ -12,11 +12,9 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
-import org.make.core.auth.UserRights
 
-import scala.concurrent.{ExecutionException, Future}
-import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionException, Future}
 
 @Path("/migrations")
 @Api(value = "Migrations")
