@@ -115,6 +115,7 @@ trait MakeApi
     with TagApi
     with ModerationIdeaApi
     with TrackingApi
+    with MigrationApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -194,7 +195,8 @@ trait MakeApi
       classOf[ModerationIdeaApi],
       classOf[ElasticSearchApi],
       classOf[ProposalApi],
-      classOf[TrackingApi]
+      classOf[TrackingApi],
+      classOf[MigrationApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -229,7 +231,8 @@ trait MakeApi
       ideaRoutes ~
       operationRoutes ~
       moderationOperationRoutes ~
-      trackingRoutes
+      trackingRoutes ~
+      migrationRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
