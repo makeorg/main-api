@@ -132,6 +132,7 @@ class ConfigurationsApiTest
         status should be(StatusCodes.OK)
         val businessConfig: BackofficeConfiguration = entityAs[BackofficeConfiguration]
         businessConfig.themes.forall(themesList.contains) should be(true)
+        businessConfig.reasonsForRefusal.size should be(8)
       }
     }
   }
