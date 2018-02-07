@@ -2,21 +2,15 @@ package org.make.api.operation
 
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import io.swagger.annotations.ApiModel
 import org.make.core.Validation.{maxLength, requireValidSlug, validChoices, validate}
 import org.make.core.operation.{OperationCountryConfiguration, OperationStatus, OperationTranslation}
-import org.make.core.sequence.SequenceId
-
-import scala.annotation.meta.field
 
 @ApiModel
-final case class ModerationCreateOperationRequest(
-  slug: String,
-  translations: Seq[OperationTranslation],
-  defaultLanguage: String,
-  @(ApiModelProperty @field)(dataType = "string") sequenceLandingId: SequenceId,
-  countriesConfiguration: Seq[OperationCountryConfiguration]
-) {
+final case class ModerationCreateOperationRequest(slug: String,
+                                                  translations: Seq[OperationTranslation],
+                                                  defaultLanguage: String,
+                                                  countriesConfiguration: Seq[OperationCountryConfiguration]) {
   OperationValidation.validateCreate(
     translations = translations,
     defaultLanguage = defaultLanguage,
@@ -29,14 +23,11 @@ object ModerationCreateOperationRequest {
   implicit val decoder: Decoder[ModerationCreateOperationRequest] = deriveDecoder[ModerationCreateOperationRequest]
 }
 @ApiModel
-final case class ModerationUpdateOperationRequest(
-  status: String,
-  slug: String,
-  translations: Seq[OperationTranslation],
-  defaultLanguage: String,
-  @(ApiModelProperty @field)(dataType = "string") sequenceLandingId: SequenceId,
-  countriesConfiguration: Seq[OperationCountryConfiguration]
-) {
+final case class ModerationUpdateOperationRequest(status: String,
+                                                  slug: String,
+                                                  translations: Seq[OperationTranslation],
+                                                  defaultLanguage: String,
+                                                  countriesConfiguration: Seq[OperationCountryConfiguration]) {
   OperationValidation.validateUpdate(
     translations = translations,
     defaultLanguage = defaultLanguage,

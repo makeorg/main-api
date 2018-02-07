@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{CountryHeader, IdGenerator, IdGeneratorComponent}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.sequence.SequenceId
@@ -46,7 +46,6 @@ class OperationApiTest
       OperationTranslation(title = "first operation", language = "en")
     ),
     defaultLanguage = "fr",
-    sequenceLandingId = SequenceId("first-sequence-id"),
     events = List(
       OperationAction(
         date = now,
@@ -57,7 +56,18 @@ class OperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "BR", tagIds = Seq.empty))
+    countriesConfiguration = Seq(
+      OperationCountryConfiguration(
+        countryCode = "BR",
+        tagIds = Seq.empty,
+        landingSequenceId = SequenceId("first-sequence-id-BR")
+      ),
+      OperationCountryConfiguration(
+        countryCode = "GB",
+        tagIds = Seq.empty,
+        landingSequenceId = SequenceId("first-sequence-id-GB")
+      )
+    )
   )
 
   val secondOperation: Operation = Operation(
@@ -69,7 +79,6 @@ class OperationApiTest
       OperationTranslation(title = "second operation", language = "en")
     ),
     defaultLanguage = "it",
-    sequenceLandingId = SequenceId("second-sequence-id"),
     events = List(
       OperationAction(
         date = now,
@@ -80,7 +89,13 @@ class OperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "IT", tagIds = Seq.empty))
+    countriesConfiguration = Seq(
+      OperationCountryConfiguration(
+        countryCode = "IT",
+        tagIds = Seq.empty,
+        landingSequenceId = SequenceId("second-sequence-id")
+      )
+    )
   )
 
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
@@ -123,7 +138,9 @@ class OperationApiTest
         operationResponseList.head.translations.filter(_.language == "it").head.title should be("secondo operazione")
         operationResponseList.head.translations.filter(_.language == "en").head.title should be("second operation")
         operationResponseList.head.defaultLanguage should be("it")
-        operationResponseList.head.sequenceLandingId.value should be(secondOperation.sequenceLandingId.value)
+        operationResponseList.head.sequenceLandingId.value should be(
+          secondOperation.countriesConfiguration.head.landingSequenceId.value
+        )
         operationResponseList.head.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.countriesConfiguration.length should be(1)
@@ -134,9 +151,10 @@ class OperationApiTest
 
     scenario("get an operation by id") {
       Given("2 registered operations and one of them with an id 'firstOperation' ")
-      When("I get a proposal from id 'firstOperation' ")
+      When("I get a proposal from id 'firstOperation'")
       Then("I get 1 operation")
       And("the Operation is the firstOperation")
+      And("the landing sequence id is the head of country configuration")
       Get("/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -146,15 +164,41 @@ class OperationApiTest
         operationResponse.translations.filter(_.language == "fr").head.title should be("première operation")
         operationResponse.translations.filter(_.language == "en").head.title should be("first operation")
         operationResponse.defaultLanguage should be("fr")
-        operationResponse.sequenceLandingId.value should be(firstOperation.sequenceLandingId.value)
+        operationResponse.sequenceLandingId.value should be(
+          firstOperation.countriesConfiguration.head.landingSequenceId.value
+        )
         operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
-        operationResponse.countriesConfiguration.length should be(1)
+        operationResponse.countriesConfiguration.length should be(2)
         operationResponse.countriesConfiguration.head.countryCode should be("BR")
         operationResponse.countriesConfiguration.head.tagIds should be(Seq.empty)
       }
     }
 
+    scenario("get an operation by id and country") {
+      Given("2 registered operations and one of them with an id 'firstOperation' ")
+      When("I get a proposal from id 'firstOperation' with country header set as 'GB'")
+      Then("I get 1 operation")
+      And("the Operation is the firstOperation")
+      And("the landing sequence id is the one defined by the users country")
+      Get("/operations/firstOperation")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
+        .withHeaders(CountryHeader("GB")) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val operationResponse: OperationResponse = entityAs[OperationResponse]
+        operationResponse.slug should be(firstOperation.slug)
+        operationResponse.operationId.value should be(firstOperation.operationId.value)
+        operationResponse.translations.filter(_.language == "fr").head.title should be("première operation")
+        operationResponse.translations.filter(_.language == "en").head.title should be("first operation")
+        operationResponse.defaultLanguage should be("fr")
+        operationResponse.sequenceLandingId.value should be("first-sequence-id-GB")
+        operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
+        operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
+        operationResponse.countriesConfiguration.length should be(2)
+        operationResponse.countriesConfiguration.head.countryCode should be("BR")
+        operationResponse.countriesConfiguration.head.tagIds should be(Seq.empty)
+      }
+    }
     scenario("get an non existent operation by id") {
       Given("2 registered operations")
       When("I get a proposal from a non existent id 'fakeid' ")

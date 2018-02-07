@@ -1,15 +1,14 @@
 package org.make.api.operation
 
-import org.make.api.technical.ShortenedNames
-import org.make.core.operation._
-import org.make.core.user.UserId
 import io.circe.syntax._
 import org.make.api.MakeMain
+import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
-import org.make.core.sequence.SequenceId
+import org.make.core.operation._
+import org.make.core.user.UserId
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait OperationServiceComponent {
   def operationService: OperationService
@@ -23,14 +22,12 @@ trait OperationService extends ShortenedNames {
              slug: String,
              translations: Seq[OperationTranslation] = Seq.empty,
              defaultLanguage: String,
-             sequenceLandingId: SequenceId,
              countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId]
   def update(operationId: OperationId,
              userId: UserId,
              slug: Option[String] = None,
              translations: Option[Seq[OperationTranslation]] = None,
              defaultLanguage: Option[String] = None,
-             sequenceLandingId: Option[SequenceId] = None,
              countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
              status: Option[OperationStatus] = None): Future[Option[OperationId]]
   def activate(operationId: OperationId, userId: UserId): Unit
@@ -58,7 +55,6 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         slug: String,
                         translations: Seq[OperationTranslation] = Seq.empty,
                         defaultLanguage: String,
-                        sequenceLandingId: SequenceId,
                         countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId] = {
       val now = DateHelper.now()
       val operation: Operation = Operation(
@@ -67,7 +63,6 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         slug = slug,
         translations = translations,
         defaultLanguage = defaultLanguage,
-        sequenceLandingId = sequenceLandingId,
         countriesConfiguration = countriesConfiguration,
         events = List.empty,
         createdAt = Some(now),
@@ -93,7 +88,6 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         slug: Option[String] = None,
                         translations: Option[Seq[OperationTranslation]] = None,
                         defaultLanguage: Option[String] = None,
-                        sequenceLandingId: Option[SequenceId] = None,
                         countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
                         status: Option[OperationStatus] = None): Future[Option[OperationId]] = {
 
@@ -105,7 +99,6 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
             slug = slug.getOrElse(registeredOperation.slug),
             translations = translations.getOrElse(registeredOperation.translations),
             defaultLanguage = defaultLanguage.getOrElse(registeredOperation.defaultLanguage),
-            sequenceLandingId = sequenceLandingId.getOrElse(registeredOperation.sequenceLandingId),
             countriesConfiguration = countriesConfiguration.getOrElse(registeredOperation.countriesConfiguration),
             status = status.getOrElse(registeredOperation.status),
             updatedAt = Some(now)
@@ -169,12 +162,10 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
           .map(translation => s"${translation.language}:${translation.title}")
           .mkString(","),
         "defaultLanguage" -> operation.defaultLanguage,
-        "sequenceLandingId" -> operation.sequenceLandingId.value,
         "countriesConfiguration" -> operation.countriesConfiguration
-          .map(
-            countryConfiguration =>
-              s"${countryConfiguration.countryCode}:${countryConfiguration.tagIds.map(_.value).mkString("[", ",", "]")}"
-          )
+          .map(countryConfiguration => s"""${countryConfiguration.countryCode}:
+                  |${countryConfiguration.landingSequenceId}:
+                  |${countryConfiguration.tagIds.map(_.value).mkString("[", ",", "]")}""".stripMargin)
           .mkString(",")
       ).asJson.toString
     }

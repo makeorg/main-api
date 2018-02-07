@@ -12,7 +12,6 @@ import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
-import org.make.core.sequence.{Sequence, SequenceId}
 import org.make.core.session.SessionId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -43,35 +42,12 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
-  val sequence1: Sequence = Sequence(
-    SequenceId("sequence1"),
-    "sequence 1",
-    "sequence-1",
-    themeIds = Seq.empty,
-    createdAt = None,
-    updatedAt = None,
-    creationContext = RequestContext.empty,
-    events = List.empty,
-    searchable = false
-  )
-  val sequence2: Sequence = Sequence(
-    SequenceId("sequence2"),
-    "sequence 2",
-    "sequence-2",
-    themeIds = Seq.empty,
-    createdAt = None,
-    updatedAt = None,
-    creationContext = RequestContext.empty,
-    events = List.empty,
-    searchable = false
-  )
   val operation1: Operation = Operation(
     OperationStatus.Active,
     OperationId("operation1"),
     "operation-1",
     Seq.empty,
     "en",
-    sequence1.sequenceId,
     List.empty,
     None,
     None,
@@ -83,7 +59,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     "operation-2",
     Seq.empty,
     "en",
-    sequence2.sequenceId,
     List.empty,
     None,
     None,

@@ -4,10 +4,10 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.businessconfig.BusinessConfig
-import org.make.core.Validation
+import org.make.core.{RequestContext, Validation}
 import org.make.core.Validation.{maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
@@ -90,6 +90,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                slug: Option[String] = None,
                                seed: Option[Int] = None,
                                context: Option[ContextFilterRequest] = None,
+                               language: Option[String] = None,
                                sorts: Option[Seq[SortRequest]] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
@@ -102,7 +103,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
       None
     }
   }
-  def toSearchQuery: SearchQuery = {
+  def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
@@ -116,10 +117,17 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
           ContentSearchFilter(text, Some(fuzziness))
         }),
         slug = slug.map(value => SlugSearchFilter(value)),
-        context = context.map(_.toContext)
+        context = context.map(_.toContext),
+        language = language.map(LanguageSearchFilter.apply)
       )
 
-    SearchQuery(filters = filters, sorts = sorts.getOrElse(Seq.empty).map(_.toSort), limit = limit, skip = skip)
+    SearchQuery(
+      filters = filters,
+      sorts = sorts.getOrElse(Seq.empty).map(_.toSort),
+      limit = limit,
+      skip = skip,
+      language = requestContext.language
+    )
   }
 }
 
@@ -137,10 +145,11 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
                                          status: Option[Seq[ProposalStatus]] = None,
+                                         language: Option[String] = None,
                                          sorts: Option[Seq[SortRequest]] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {
-  def toSearchQuery: SearchQuery = {
+  def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
@@ -153,10 +162,17 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),
-        status = status.map(StatusSearchFilter.apply)
+        status = status.map(StatusSearchFilter.apply),
+        language = language.map(LanguageSearchFilter.apply)
       )
 
-    SearchQuery(filters = filters, sorts = sorts.getOrElse(Seq.empty).map(_.toSort), limit = limit, skip = skip)
+    SearchQuery(
+      filters = filters,
+      sorts = sorts.getOrElse(Seq.empty).map(_.toSort),
+      limit = limit,
+      skip = skip,
+      language = requestContext.language
+    )
   }
 }
 

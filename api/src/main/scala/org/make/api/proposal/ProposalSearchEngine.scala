@@ -23,6 +23,7 @@ trait ProposalSearchEngineComponent {
   def elasticsearchProposalAPI: ProposalSearchEngine
 }
 
+//TODO: add multi-country
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
   def findProposalsByIds(proposalIds: Seq[ProposalId],
@@ -132,7 +133,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         }
 
       logger.debug(client.show(request))
-
 
       client.execute {
         request

@@ -10,6 +10,7 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
@@ -68,7 +69,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
             'order.?
           )
         ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
-          makeTrace("Get all ideas") { _ =>
+          makeTrace("Get all ideas") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val filters: IdeaFiltersRequest =
@@ -83,7 +84,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                     sort = sort,
                     order = order
                   )
-                provideAsync(ideaService.fetchAll(filters.toSearchQuery)) { ideas =>
+                provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
                   complete(ideas)
                 }
               }
@@ -263,7 +264,7 @@ final case class IdeaFiltersRequest(name: Option[String],
                                     skip: Option[Int],
                                     sort: Option[String],
                                     order: Option[String]) {
-  def toSearchQuery: IdeaSearchQuery = {
+  def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[IdeaSearchFilters] =
       IdeaSearchFilters.parse(
@@ -276,7 +277,14 @@ final case class IdeaFiltersRequest(name: Option[String],
         question = question.map(question          => QuestionSearchFilter(question))
       )
 
-    IdeaSearchQuery(filters = filters, limit = limit, skip = skip, sort = sort, order = order)
+    IdeaSearchQuery(
+      filters = filters,
+      limit = limit,
+      skip = skip,
+      sort = sort,
+      order = order,
+      language = requestContext.language
+    )
 
   }
 }

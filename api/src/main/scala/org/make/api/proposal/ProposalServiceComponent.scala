@@ -462,7 +462,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case Some(indexedProposal) =>
           elasticsearchProposalAPI
             .searchProposals(
-              SearchQuery( // TODO add language filter
+              SearchQuery(
                 filters = Some(
                   SearchFilters(
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
@@ -470,7 +470,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                     operation = indexedProposal.operationId
                       .map(operationId => OperationSearchFilter(operationId = operationId))
                   )
-                )
+                ),
+                language = Some(indexedProposal.language)
               )
             )
             .flatMap { response =>

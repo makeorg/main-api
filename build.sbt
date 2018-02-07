@@ -87,7 +87,7 @@ lazy val api = project
   .settings(imageName := {
     val alias = dockerAlias.value
     s"${alias.registryHost.map(_ + "/").getOrElse("")}${alias.name}:${alias.tag.getOrElse("latest")}"
-  })
+  }, testOptions in IntegrationTest += Tests.Argument("-oF"))
   .dependsOn(core)
 
 isSnapshot in ThisBuild := false

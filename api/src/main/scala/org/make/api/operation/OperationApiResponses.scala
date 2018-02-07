@@ -15,7 +15,7 @@ final case class OperationResponse(operationId: OperationId,
                                    slug: String,
                                    translations: Seq[OperationTranslation] = Seq.empty,
                                    defaultLanguage: String,
-                                   sequenceLandingId: SequenceId,
+                                   @Deprecated sequenceLandingId: SequenceId,
                                    createdAt: Option[ZonedDateTime],
                                    updatedAt: Option[ZonedDateTime],
                                    countriesConfiguration: Seq[OperationCountryConfiguration])
@@ -24,14 +24,17 @@ object OperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[OperationResponse] = deriveEncoder[OperationResponse]
   implicit val decoder: Decoder[OperationResponse] = deriveDecoder[OperationResponse]
 
-  def apply(operation: Operation): OperationResponse = {
+  def apply(operation: Operation, countryCode: Option[String]): OperationResponse = {
     OperationResponse(
       operationId = operation.operationId,
       status = operation.status,
       slug = operation.slug,
       translations = operation.translations,
       defaultLanguage = operation.defaultLanguage,
-      sequenceLandingId = operation.sequenceLandingId,
+      sequenceLandingId = operation.countriesConfiguration
+        .find(conf => countryCode.contains(conf.countryCode))
+        .getOrElse(operation.countriesConfiguration.head)
+        .landingSequenceId,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
       countriesConfiguration = operation.countriesConfiguration
@@ -44,7 +47,7 @@ final case class ModerationOperationResponse(operationId: OperationId,
                                              slug: String,
                                              translations: Seq[OperationTranslation] = Seq.empty,
                                              defaultLanguage: String,
-                                             sequenceLandingId: SequenceId,
+                                             @Deprecated sequenceLandingId: SequenceId,
                                              createdAt: Option[ZonedDateTime],
                                              updatedAt: Option[ZonedDateTime],
                                              events: Seq[OperationActionResponse],
@@ -54,7 +57,9 @@ object ModerationOperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
   implicit val decoder: Decoder[ModerationOperationResponse] = deriveDecoder[ModerationOperationResponse]
 
-  def apply(operation: Operation, operationActionUsers: Seq[User]): ModerationOperationResponse = {
+  def apply(operation: Operation,
+            operationActionUsers: Seq[User],
+            countryCode: Option[String]): ModerationOperationResponse = {
     val events: Seq[OperationActionResponse] = operation.events.map { action =>
       OperationActionResponse(
         date = action.date,
@@ -75,7 +80,10 @@ object ModerationOperationResponse extends CirceFormatters {
       slug = operation.slug,
       translations = operation.translations,
       defaultLanguage = operation.defaultLanguage,
-      sequenceLandingId = operation.sequenceLandingId,
+      sequenceLandingId = operation.countriesConfiguration
+        .find(conf => countryCode.contains(conf.countryCode))
+        .getOrElse(operation.countriesConfiguration.head)
+        .landingSequenceId,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
       countriesConfiguration = operation.countriesConfiguration,

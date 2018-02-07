@@ -108,7 +108,6 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage,
-              column.sequenceLandingId -> operation.sequenceLandingId.value,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -204,7 +203,6 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage,
-              column.sequenceLandingId -> operation.sequenceLandingId.value,
               column.updatedAt -> nowDate
             )
             .where(
@@ -273,6 +271,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               operationCountryConfigurationColumn.tagIds -> countryConfiguration.tagIds
                 .map(_.value)
                 .mkString(PersistentOperationCountryConfiguration.TAG_SEPARATOR.toString),
+              operationCountryConfigurationColumn.landingSequenceId -> countryConfiguration.landingSequenceId.value,
               operationCountryConfigurationColumn.createdAt -> DateHelper.now(),
               operationCountryConfigurationColumn.updatedAt -> DateHelper.now()
             )
@@ -366,6 +365,7 @@ object DefaultPersistentOperationServiceComponent {
   case class PersistentOperationCountryConfiguration(operationUuid: String,
                                                      country: String,
                                                      tagIds: Option[String],
+                                                     landingSequenceId: String,
                                                      createdAt: ZonedDateTime,
                                                      updatedAt: ZonedDateTime)
 
@@ -382,7 +382,6 @@ object DefaultPersistentOperationServiceComponent {
                                  status: String,
                                  slug: String,
                                  defaultLanguage: String,
-                                 sequenceLandingId: String,
                                  createdAt: ZonedDateTime,
                                  updatedAt: ZonedDateTime) {
 
@@ -395,7 +394,6 @@ object DefaultPersistentOperationServiceComponent {
         status = OperationStatus.statusMap(status),
         slug = slug,
         defaultLanguage = defaultLanguage,
-        sequenceLandingId = SequenceId(sequenceLandingId),
         events = operationActions
           .map(
             action =>
@@ -415,7 +413,8 @@ object DefaultPersistentOperationServiceComponent {
                 .getOrElse("")
                 .split(PersistentOperationCountryConfiguration.TAG_SEPARATOR)
                 .map(tagId => TagId(tagId))
-                .filter(value => value != TagId(""))
+                .filter(value => value != TagId("")),
+              landingSequenceId = SequenceId(countryConfiguration.landingSequenceId)
           )
         ),
         translations =
@@ -463,7 +462,8 @@ object DefaultPersistentOperationServiceComponent {
 
     val TAG_SEPARATOR = '|'
 
-    override val columnNames: Seq[String] = Seq("operation_uuid", "country", "tag_ids", "created_at", "updated_at")
+    override val columnNames: Seq[String] =
+      Seq("operation_uuid", "country", "tag_ids", "landing_sequence_id", "created_at", "updated_at")
 
     override val tableName: String = "operation_country_configuration"
 
@@ -487,6 +487,7 @@ object DefaultPersistentOperationServiceComponent {
         operationUuid = resultSet.string(operationCountryConfigurationResultName.operationUuid),
         country = resultSet.string(operationCountryConfigurationResultName.country),
         tagIds = resultSet.stringOpt(operationCountryConfigurationResultName.tagIds),
+        landingSequenceId = resultSet.string(operationCountryConfigurationResultName.landingSequenceId),
         createdAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.updatedAt)
       )
@@ -529,7 +530,7 @@ object DefaultPersistentOperationServiceComponent {
 
   object PersistentOperation extends SQLSyntaxSupport[PersistentOperation] with ShortenedNames with StrictLogging {
     override val columnNames: Seq[String] =
-      Seq("uuid", "status", "slug", "default_language", "sequence_landing_id", "created_at", "updated_at")
+      Seq("uuid", "status", "slug", "default_language", "created_at", "updated_at")
 
     override val tableName: String = "operation"
 
@@ -544,7 +545,6 @@ object DefaultPersistentOperationServiceComponent {
         status = resultSet.string(operationResultName.status),
         slug = resultSet.string(operationResultName.slug),
         defaultLanguage = resultSet.string(operationResultName.defaultLanguage),
-        sequenceLandingId = resultSet.string(operationResultName.sequenceLandingId),
         operationActions = Seq.empty,
         operationTranslations = Seq.empty,
         operationCountryConfigurations = Seq.empty,

@@ -10,6 +10,33 @@
         "french_stemmer": {
           "type": "stemmer",
           "language": "light_french"
+        },
+        "english_stemmer": {
+          "type":       "stemmer",
+          "language":   "english"
+        },
+        "english_possessive_stemmer": {
+          "type":       "stemmer",
+          "language":   "possessive_english"
+        },
+        "italian_elision": {
+          "type": "elision",
+          "articles_case": true,
+          "articles": [
+            "c", "l", "all", "dall", "dell",
+            "nell", "sull", "coll", "pell",
+            "gl", "agl", "dagl", "degl", "negl",
+            "sugl", "un", "m", "t", "s", "v", "d"
+          ]
+        },
+        "italian_stemmer": {
+          "type": "stemmer",
+          "language": "light_italian"
+        },
+        "trigrams_filter": {
+          "type":     "ngram",
+          "min_gram": 3,
+          "max_gram": 3
         }
       },
       "analyzer": {
@@ -20,7 +47,7 @@
             "icu_folding"
           ],
           "char_filter": [
-            "make_char_filter"
+            "make_char_filter-fr"
           ]
         },
         "french_full": {
@@ -31,14 +58,77 @@
             "french_stemmer"
           ],
           "char_filter": [
-            "make_char_filter"
+            "make_char_filter-fr"
+          ]
+        },
+        "english_std": {
+          "tokenizer":  "standard",
+          "filter": [
+            "english_possessive_stemmer",
+            "lowercase"
+          ],
+          "char_filter": [
+            "make_char_filter-en"
+          ]
+
+        },
+        "english_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "english_possessive_stemmer",
+            "icu_folding",
+            "lowercase",
+            "english_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-en"
+          ]
+
+        },
+        "italian_std": {
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "italian_elision",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-it"
+          ]
+        },
+        "italian_full": {
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "italian_elision",
+            "icu_folding",
+            "italian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-it"
+          ]
+        },
+        "trigrams": {
+          "type":      "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter":   [
+            "lowercase",
+            "trigrams_filter"
           ]
         }
       },
       "char_filter": {
-        "make_char_filter": {
+        "make_char_filter-fr": {
           "type": "pattern_replace",
           "pattern": "^Il faut",
+          "replacement": ""
+        },
+        "make_char_filter-en": {
+          "type": "pattern_replace",
+          "pattern": "^We should",
+          "replacement": ""
+        },
+        "make_char_filter-it": {
+          "type": "pattern_replace",
+          "pattern": "^C'è bisogno",
           "replacement": ""
         }
       }
@@ -59,9 +149,21 @@
               "type": "keyword",
               "ignore_above": 256
             },
-            "french": {
+            "fr": {
               "type": "text",
-              "analyzer": "french"
+              "analyzer": "french_std"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english_std"
+            },
+            "it": {
+              "type": "text",
+              "analyzer": "italian_std"
+            },
+            "general": {
+              "type": "text",
+              "analyzer": "trigrams"
             }
           }
         },
@@ -168,9 +270,21 @@
                   "type": "keyword",
                   "ignore_above": 256
                 },
-                "french": {
+                "fr": {
                   "type": "text",
-                  "analyzer": "french"
+                  "analyzer": "french_std"
+                },
+                "en": {
+                  "type": "text",
+                  "analyzer": "english_std"
+                },
+                "it": {
+                  "type": "text",
+                  "analyzer": "italian_std"
+                },
+                "general": {
+                  "type": "text",
+                  "analyzer": "trigrams"
                 }
               }
             },
@@ -200,11 +314,34 @@
         "content": {
           "type": "text",
           "index": true,
-          "analyzer": "french_std",
           "fields": {
-            "stemmed": {
+            "fr": {
+              "type": "text",
+              "analyzer": "french_std"
+            },
+            "stemmed-fr": {
               "type": "text",
               "analyzer": "french_full"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english_std"
+            },
+            "stemmed-en": {
+              "type": "text",
+              "analyzer": "english_full"
+            },
+            "it": {
+              "type": "text",
+              "analyzer": "italian_std"
+            },
+            "stemmed-it": {
+              "type": "text",
+              "analyzer": "italian_full"
+            },
+            "general": {
+              "type": "text",
+              "analyzer": "trigrams"
             }
           }
         },
@@ -355,9 +492,21 @@
               "type": "keyword",
               "ignore_above": 256
             },
-            "french": {
+            "fr": {
               "type": "text",
-              "analyzer": "french"
+              "analyzer": "french_std"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english_std"
+            },
+            "it": {
+              "type": "text",
+              "analyzer": "italian_std"
+            },
+            "general": {
+              "type": "text",
+              "analyzer": "trigrams"
             }
           }
         },

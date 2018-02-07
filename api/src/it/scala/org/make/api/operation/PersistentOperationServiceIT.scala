@@ -61,7 +61,8 @@ class PersistentOperationServiceIT
   val bolton: Tag = Tag("Bolton")
   val greyjoy: Tag = Tag("Greyjoy")
   val now: ZonedDateTime = DateHelper.now()
-  val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
+  val sequenceIdFR: SequenceId = SequenceId(UUID.randomUUID().toString)
+  val sequenceIdGB: SequenceId = SequenceId(UUID.randomUUID().toString)
   val operationId: OperationId = OperationId(UUID.randomUUID().toString)
 
   val simpleOperation = Operation(
@@ -75,7 +76,6 @@ class PersistentOperationServiceIT
       OperationTranslation(title = "hello operation", language = "en")
     ),
     defaultLanguage = "fr",
-    sequenceLandingId = sequenceId,
     events = List(
       OperationAction(
         date = now,
@@ -85,8 +85,16 @@ class PersistentOperationServiceIT
       )
     ),
     countriesConfiguration = Seq(
-      OperationCountryConfiguration(countryCode = "FR", tagIds = Seq(stark.tagId, targaryen.tagId)),
-      OperationCountryConfiguration(countryCode = "GB", tagIds = Seq(bolton.tagId, greyjoy.tagId))
+      OperationCountryConfiguration(
+        countryCode = "FR",
+        tagIds = Seq(stark.tagId, targaryen.tagId),
+        landingSequenceId = sequenceIdFR
+      ),
+      OperationCountryConfiguration(
+        countryCode = "GB",
+        tagIds = Seq(bolton.tagId, greyjoy.tagId),
+        landingSequenceId = sequenceIdGB
+      )
     )
   )
 
@@ -100,10 +108,9 @@ class PersistentOperationServiceIT
            |status = Pending
            |slug = "hello-operation"
            |defaultLanguage = fr
-           |sequenceLandingId = ${sequenceId.value}
            |countriesConfiguration =
-           |  FR -> ( tagIds -> ${stark.tagId.value}, ${targaryen.tagId.value} ),
-           |  GB -> ( tagIds -> ${bolton.tagId.value}, ${greyjoy.tagId.value} ),
+           |  FR -> ( tagIds -> [${stark.tagId.value}, ${targaryen.tagId.value}], landingSequenceId -> ${sequenceIdFR.value} ),
+           |  GB -> ( tagIds -> [${bolton.tagId.value}, ${greyjoy.tagId.value}], landingSequenceId -> ${sequenceIdGB.value} ),
            |events =
            |  OperationAction(date = ${now.toString}, makeUserId = ${userId.value}, actionType = create, arguments = (arg1 -> valueArg1))
            |""".stripMargin)
@@ -135,8 +142,14 @@ class PersistentOperationServiceIT
         operation.slug should be("hello-operation")
         And("""operation default translation should be "fr" """)
         operation.defaultLanguage should be("fr")
-        And(s"""operation sequence landing id should be "${sequenceId.value}" """)
-        operation.sequenceLandingId.value should be(s"${sequenceId.value}")
+        And(s"""operation landing sequence id for FR configuration should be "${sequenceIdFR.value}" """)
+        operation.countriesConfiguration.find(_.countryCode == "FR").map(_.landingSequenceId.value) should be(
+          Some(sequenceIdFR.value)
+        )
+        And(s"""operation landing sequence id for GB configuration should be "${sequenceIdGB.value}" """)
+        operation.countriesConfiguration.find(_.countryCode == "GB").map(_.landingSequenceId.value) should be(
+          Some(sequenceIdGB.value)
+        )
         And(s"""
              |operation countries configuration should be
              |  FR -> ( tagIds -> ${stark.tagId.value}, ${targaryen.tagId.value} )
@@ -233,7 +246,6 @@ class PersistentOperationServiceIT
             .modify(
               initialOperation.copy(
                 status = OperationStatus.Active,
-                sequenceLandingId = SequenceId("updatedSequenceId"),
                 defaultLanguage = "br",
                 slug = "newSlug",
                 translations = Seq(
@@ -255,7 +267,13 @@ class PersistentOperationServiceIT
                     arguments = Map("arg2" -> "valueArg2")
                   )
                 ),
-                countriesConfiguration = Seq(OperationCountryConfiguration(countryCode = "BR", tagIds = Seq.empty))
+                countriesConfiguration = Seq(
+                  OperationCountryConfiguration(
+                    countryCode = "BR",
+                    tagIds = Seq.empty,
+                    landingSequenceId = SequenceId("updatedSequenceId")
+                  )
+                )
               )
             )
             .flatMap { operation =>
@@ -282,7 +300,9 @@ class PersistentOperationServiceIT
             Map("arg2" -> "valueArg2")
           )
           operation.slug should be("newSlug")
-          operation.sequenceLandingId should be(SequenceId("updatedSequenceId"))
+          operation.countriesConfiguration.find(_.countryCode == "BR").map(_.landingSequenceId.value) should be(
+            Some("updatedSequenceId")
+          )
           operation.defaultLanguage should be("br")
           initialOperation.createdAt.get.toEpochSecond should be(operation.createdAt.get.toEpochSecond)
           initialOperation.updatedAt.get.toEpochSecond should be < operation.updatedAt.get.toEpochSecond

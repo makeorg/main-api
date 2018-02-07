@@ -70,7 +70,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   proposalService
                     .searchForUser(
                       userId = userAuth.map(_.user.userId),
-                      query = request.toSearchQuery,
+                      query = request.toSearchQuery(requestContext),
                       maybeSeed = request.randomScoreSeed,
                       requestContext = requestContext
                     )
@@ -123,7 +123,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     case Some(operationId) => operationService.findOne(operationId)
                     case None              => Future.successful(None)
                   }) { maybeOperation =>
-                    request.operationId.map { _ =>
+                    request.operationId.foreach { _ =>
                       Validation.validate(
                         Validation.requirePresent("operationId", maybeOperation, Some("Invalid operationId"))
                       )
