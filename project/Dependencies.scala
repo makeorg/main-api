@@ -69,7 +69,7 @@ object Dependencies {
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.3.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.1.0"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.2.1"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.1"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
