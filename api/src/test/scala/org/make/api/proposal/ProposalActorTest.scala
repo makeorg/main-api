@@ -96,7 +96,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     profile = None
   )
 
-  private def proposal(proposalId: ProposalId) = Proposal(
+  private def proposal(proposalId: ProposalId, country: Option[String], language: Option[String]) = Proposal(
     proposalId = proposalId,
     author = mainUserId,
     content = "This is a proposal",
@@ -142,8 +142,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         arguments = Map("content" -> "This is a proposal")
       )
     ),
-    country = Some("FR"),
-    language = Some("fr")
+    country = country,
+    language = language
   )
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
@@ -172,7 +172,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId)))
+      expectMsg(Some(proposal(proposalId, Some("FR"), Some("fr"))))
 
       And("recover its state after having been kill")
       coordinator ! KillProposalShard(proposalId, RequestContext.empty)
@@ -181,7 +181,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId)))
+      expectMsg(Some(proposal(
+        proposalId = proposalId,
+        country = Some("FR"),
+        language = Some("fr")
+      )))
     }
   }
 
@@ -219,7 +223,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
-      expectMsg(Some(proposal(proposalId)))
+      expectMsg(Some(proposal(
+        proposalId = proposalId,
+        country = Some("FR"),
+        language = Some("fr")
+      )))
     }
   }
 

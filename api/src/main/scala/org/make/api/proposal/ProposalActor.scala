@@ -830,8 +830,6 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             status = ProposalStatus.Pending,
             theme = e.theme.orElse(e.requestContext.currentTheme),
             creationContext = e.requestContext,
-            language = e.language,
-            country = e.country,
             labels = Seq.empty,
             votes = Seq(
               Vote(
@@ -865,7 +863,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 actionType = ProposalProposeAction.name,
                 arguments = Map("content" -> e.content)
               )
-            )
+            ),
+            language = e.language,
+            country = e.country
           )
         )
       )
