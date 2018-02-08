@@ -1,21 +1,24 @@
 package org.make.api.proposal
 
-import io.circe.Encoder
+import java.time.ZonedDateTime
+
+import org.make.api.proposal.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
+import org.make.core.EventWrapper
 import org.make.core.proposal.ProposalId
+import shapeless.{:+:, CNil}
 
-case class PredictDuplicate(proposalId: ProposalId,
-                            predictedDuplicates: Seq[ProposalId],
-                            predictedScores: Seq[Double],
-                            algoLabel: String)
+case class PredictDuplicateEvent(proposalId: ProposalId,
+                                 predictedDuplicates: Seq[ProposalId],
+                                 predictedScores: Seq[Double],
+                                 algoLabel: String)
 
-object PredictDuplicate {
-  implicit val encoder: Encoder[PredictDuplicate] =
-    Encoder.forProduct4("ProposalId", "PredictedDuplicates", "PredictedScores", "AlgoLabel") { predictDuplicate =>
-      (
-        predictDuplicate.proposalId,
-        predictDuplicate.predictedDuplicates,
-        predictDuplicate.predictedScores,
-        predictDuplicate.algoLabel
-      )
-    }
+final case class PredictDuplicateEventWrapper(version: Int,
+                                              id: String,
+                                              date: ZonedDateTime,
+                                              eventType: String,
+                                              event: AnyPredictDuplicateEventEvent)
+    extends EventWrapper
+
+object PredictDuplicateEvent {
+  type AnyPredictDuplicateEventEvent = PredictDuplicateEvent :+: CNil
 }
