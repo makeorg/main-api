@@ -16,6 +16,7 @@ trait OperationServiceComponent {
 
 trait OperationService extends ShortenedNames {
   def find(slug: Option[String] = None): Future[Seq[Operation]]
+  def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
   def create(userId: UserId,
@@ -41,6 +42,10 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
     override def find(slug: Option[String] = None): Future[Seq[Operation]] = {
       persistentOperationService.find(slug = slug)
+    }
+
+    override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
+      persistentOperationService.findSimpleOperation(slug = slug)
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {

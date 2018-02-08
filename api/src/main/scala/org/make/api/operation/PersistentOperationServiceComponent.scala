@@ -30,6 +30,7 @@ trait PersistentOperationServiceComponent {
 
 trait PersistentOperationService {
   def find(slug: Option[String] = None): Future[Seq[Operation]]
+  def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: Operation): Future[Operation]
@@ -94,6 +95,20 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       })
 
       futurePersistentOperations.map(_.map(_.toOperation))
+    }
+
+    override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+            baseSelect
+              .copy()
+              .where(sqls.toAndConditionOpt(slug.map(slug => sqls.eq(operationAlias.slug, slug))))
+          }.map(PersistentOperation.apply()).list.apply()
+      })
+
+      futurePersistentOperations.map(_.map(_.toSimpleOperation))
     }
 
     override def persist(operation: Operation): Future[Operation] = {
@@ -385,8 +400,7 @@ object DefaultPersistentOperationServiceComponent {
                                  createdAt: ZonedDateTime,
                                  updatedAt: ZonedDateTime) {
 
-    def toOperation: Operation = {
-
+    def toOperation: Operation =
       Operation(
         operationId = OperationId(uuid),
         createdAt = Some(createdAt),
@@ -420,7 +434,16 @@ object DefaultPersistentOperationServiceComponent {
         translations =
           operationTranslations.map(trans => OperationTranslation(title = trans.title, language = trans.language))
       )
-    }
+
+    def toSimpleOperation: SimpleOperation =
+      SimpleOperation(
+        operationId = OperationId(uuid),
+        status = OperationStatus.statusMap(status),
+        slug = slug,
+        defaultLanguage = defaultLanguage,
+        createdAt = Some(createdAt),
+        updatedAt = Some(updatedAt)
+      )
   }
 
   object PersistentOperationTranslation

@@ -9,7 +9,7 @@ import org.make.core.SprayJsonFormatters._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
+import org.make.core._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
@@ -127,4 +127,16 @@ object OperationStatus {
   case object Archived extends OperationStatus {
     override val shortName = "Archived"
   }
+}
+
+case class SimpleOperation(operationId: OperationId,
+                           status: OperationStatus,
+                           slug: String,
+                           defaultLanguage: String,
+                           createdAt: Option[ZonedDateTime],
+                           updatedAt: Option[ZonedDateTime])
+
+object SimpleOperation extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SimpleOperation] = deriveEncoder[SimpleOperation]
+  implicit val decoder: Decoder[SimpleOperation] = deriveDecoder[SimpleOperation]
 }

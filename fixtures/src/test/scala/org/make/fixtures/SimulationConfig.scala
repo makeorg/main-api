@@ -108,8 +108,14 @@ object MakeServicesBuilder {
     .post("/moderation/sequences")
     .header("Content-Type", "application/json")
 
-  def searchOperationBuilder(operationSlug: String): HttpRequestBuilder = http("GET_sequence")
-    .get(s"/operations?slug=${operationSlug}")
-    .header("Content-Type", "application/json")
+  def searchOperationBuilder(operationSlug: String): HttpRequestBuilder =
+    http("GET_sequence")
+      .get(s"/operations?slug=${operationSlug}")
+      .header("Content-Type", "application/json")
+
+  def searchSimpleOperationBuilder(operationSlug: String): HttpRequestBuilder =
+    http("GET_sequence")
+      .get(s"/migrations/operations?slug=${operationSlug}")
+      .header("Content-Type", "application/json")
 
 }
