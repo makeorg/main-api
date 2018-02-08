@@ -2,7 +2,7 @@ package org.make.api.technical
 
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Ready, Waiting}
 
-abstract class BasicProducerActor[T, U] extends ProducerActor[T, U] {
+abstract class BasicProducerActor[Wrapper, Event] extends ProducerActor[Wrapper, Event] {
 
   def kafkaTopic: String
 
@@ -18,5 +18,5 @@ abstract class BasicProducerActor[T, U] extends ProducerActor[T, U] {
     case other => log.warning("Unknown event {}", other)
   }
 
-  protected def convert(event: U): T
+  protected def convert(event: Event): Wrapper
 }

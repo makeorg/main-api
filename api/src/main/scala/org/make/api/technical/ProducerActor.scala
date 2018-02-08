@@ -10,28 +10,28 @@ import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 
 import scala.util.Try
 
-abstract class ProducerActor[T, U]
+abstract class ProducerActor[Wrapper, Event]
     extends Actor
     with KafkaConfigurationExtension
     with AvroSerializers
     with ActorLogging {
 
-  protected val eventClass: Class[U]
+  protected val eventClass: Class[Event]
 
   val sendCallBack: Callback = (r: RecordMetadata, e: Exception) => {
     val topic = Option(r).map(_.topic()).getOrElse("unknown")
     Option(e).foreach(e => log.error(e, "Error when producing message on topic {}", topic))
   }
 
-  protected val format: RecordFormat[T]
-  protected val schema: SchemaFor[T]
-  protected val producer: KafkaProducer[String, T] = createProducer()
+  protected val format: RecordFormat[Wrapper]
+  protected val schema: SchemaFor[Wrapper]
+  protected val producer: KafkaProducer[String, Wrapper] = createProducer()
 
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, eventClass)
   }
 
-  protected def createProducer(): KafkaProducer[String, T] = {
+  protected def createProducer(): KafkaProducer[String, Wrapper] = {
     val props = new Properties()
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     props.put(ProducerConfig.ACKS_CONFIG, "all")
@@ -39,17 +39,17 @@ abstract class ProducerActor[T, U]
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
-    val valueSerializer: Serializer[T] =
-      new MakeKafkaAvroSerializer[T](kafkaConfiguration.schemaRegistry, schema, format)
+    val valueSerializer: Serializer[Wrapper] =
+      new MakeKafkaAvroSerializer[Wrapper](kafkaConfiguration.schemaRegistry, schema, format)
     new KafkaProducer(props, new StringSerializer(), valueSerializer)
   }
 
-  protected def sendRecord(kafkaTopic: String, eventId: String, record: T): Unit = {
-    producer.send(new ProducerRecord[String, T](kafkaTopic, eventId, record), sendCallBack)
+  protected def sendRecord(kafkaTopic: String, eventId: String, record: Wrapper): Unit = {
+    producer.send(new ProducerRecord[String, Wrapper](kafkaTopic, eventId, record), sendCallBack)
   }
 
-  protected def sendRecord(kafkaTopic: String, record: T): Unit = {
-    producer.send(new ProducerRecord[String, T](kafkaTopic, record), sendCallBack)
+  protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
+    producer.send(new ProducerRecord[String, Wrapper](kafkaTopic, record), sendCallBack)
   }
 
   override def postStop(): Unit = {
