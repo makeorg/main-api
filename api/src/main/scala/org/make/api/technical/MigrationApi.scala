@@ -2,58 +2,46 @@ package org.make.api.technical
 
 import javax.ws.rs.Path
 
-import akka.Done
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import akka.persistence.cassandra.EventsByTagMigration
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.HttpCodes
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionException, Future}
+import org.make.core.operation.SimpleOperation
 
 @Path("/migrations")
 @Api(value = "Migrations")
 trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
-  self: ActorSystemComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  self: OperationServiceComponent
+    with ActorSystemComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent =>
 
-  @ApiOperation(
-    value = "migrate-cassandra",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
+  @ApiOperation(value = "get-simple-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content", response = classOf[Unit]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[SimpleOperation]]))
   )
-  @Path("/cassandra")
-  def migrateCassandra: Route = post {
-    path("migrations" / "cassandra") {
-      makeTrace("MigrateCassandra") { _ =>
-        val migrator = EventsByTagMigration(actorSystem)
-
-        val schemaMigration: Future[Done] = for {
-          _ <- migrator.createTables()
-          done <- migrator.addTagsColumn().recover {
-            case i: ExecutionException if i.getMessage.contains("conflicts with an existing column") => Done
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"))
+  )
+  @Path(value = "/operations")
+  def migrationGetSimpleOperationsBySlug: Route = {
+    get {
+      path("migrations" / "operations") {
+        parameters('slug.?) { (slug) =>
+          makeTrace("GetSimpleOperations") { _ =>
+            provideAsync(operationService.findSimpleOperation(slug = slug)) { result =>
+              complete(result)
+            }
           }
-        } yield done
-
-        onComplete(schemaMigration) { _ =>
-          complete(StatusCodes.NoContent)
         }
       }
     }
   }
 
-  val migrationRoutes: Route = migrateCassandra
+  val migrationRoutes: Route = migrationGetSimpleOperationsBySlug
 }
