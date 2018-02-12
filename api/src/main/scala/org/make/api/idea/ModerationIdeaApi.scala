@@ -69,7 +69,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
             'order.?
           )
         ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
-          makeTrace("Get all ideas") { requestContext =>
+          makeTrace("GetAllIdeas") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val filters: IdeaFiltersRequest =
