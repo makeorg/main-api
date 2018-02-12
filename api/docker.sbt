@@ -4,18 +4,19 @@ enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
 
-dockerBaseImage := "makeorg/centos-java:latest"
+//dockerBaseImage := "makeorg/centos-java:latest"
+dockerBaseImage := "openjdk:8-jre-alpine3.7"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
 dockerRepository := Some("nexus.prod.makeorg.tech")
-daemonUser in Docker := "user"
+daemonUser in Docker := "make"
 packageName in Docker := "make-api"
 
 dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/version || exit 1")
 dockerCommands := {
   val originalCommands = dockerCommands.value
   originalCommands.take(2) ++
-    Seq(Cmd("RUN", "yum install -y gcc blas lapack arpack && yum clean all")) ++
+    Seq(Cmd("RUN", "apk update && apk add curl && adduser make -D")) ++
     originalCommands.drop(2)
 }
 
