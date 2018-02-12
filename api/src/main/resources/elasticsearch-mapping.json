@@ -462,11 +462,11 @@
         },
         "country": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "language": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "ideaId": {
           "type": "keyword",
@@ -528,11 +528,11 @@
         },
         "language": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "country": {
           "type": "keyword",
-          "index": false
+          "index": true
         },
         "status": {
           "type": "keyword",
