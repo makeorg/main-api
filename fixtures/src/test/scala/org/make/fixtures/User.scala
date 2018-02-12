@@ -6,27 +6,35 @@ import io.gatling.core.structure.ChainBuilder
 import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object User extends SimulationConfig {
 
   val userFeeder: RecordSeqFeederBuilder[Any] = ssv(userFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {
-        case dateOfBirth if dateOfBirth.isEmpty => "null"
-        case dateOfBirth                        => s""""$dateOfBirth""""
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
       }
   }
 
   val vffUserFeeder: RecordSeqFeederBuilder[Any] = ssv(vffUserFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {
-        case dateOfBirth if dateOfBirth.isEmpty => "null"
-        case dateOfBirth                        => s""""$dateOfBirth""""
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
       }
   }
 
-  val defaultPause = 2.seconds
+  val lpaeUserFeeder: RecordSeqFeederBuilder[Any] = ssv(lpaeUserFeederPath, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
+      }
+  }
+
+  val defaultPause: FiniteDuration = 2.seconds
 }
 
 object UserChainBuilder extends SimulationConfig {

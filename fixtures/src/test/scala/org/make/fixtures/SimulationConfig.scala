@@ -44,8 +44,10 @@ trait SimulationConfig {
   val userFeederPath: String = getRequiredString("feeder.users")
   val proposalFeederPath: String = getRequiredString("feeder.proposals")
   val vffUserFeederPath: String = getRequiredString("feeder.users-vff")
+  val lpaeUserFeederPath: String = getRequiredString("feeder.users-lpae")
   val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
   val cpProposalFeederPath: String = getRequiredString("feeder.proposals-cp")
+  val lpaeProposalFeederPath: String = getRequiredString("feeder.proposals-lpae")
   val ideaProposalFeederPath: String = getRequiredString("feeder.idea-proposal")
 
   val defaultUserAgent =
@@ -109,13 +111,13 @@ object MakeServicesBuilder {
     .header("Content-Type", "application/json")
 
   def searchOperationBuilder(operationSlug: String): HttpRequestBuilder =
-    http("GET_sequence")
-      .get(s"/operations?slug=${operationSlug}")
+    http("GET_operation")
+      .get(s"/operations?slug=$operationSlug")
       .header("Content-Type", "application/json")
 
   def searchSimpleOperationBuilder(operationSlug: String): HttpRequestBuilder =
-    http("GET_sequence")
-      .get(s"/migrations/operations?slug=${operationSlug}")
+    http("GET_simple_operation")
+      .get(s"/migrations/operations?slug=$operationSlug")
       .header("Content-Type", "application/json")
 
 }

@@ -21,6 +21,11 @@ object Proposal extends SimulationConfig {
     ssv(cpProposalFeederPath, '"', '\\').records.groupBy { record =>
       record("username")
     }
+
+  val lpaeProposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
+    ssv(lpaeProposalFeederPath, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
 }
 
 object ProposalChainBuilder {
