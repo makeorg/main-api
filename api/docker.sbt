@@ -15,7 +15,7 @@ dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/vers
 dockerCommands := {
   val originalCommands = dockerCommands.value
   originalCommands.take(2) ++
-    Seq(Cmd("RUN", "yum install -y blas lapack arpack && yum clean all")) ++
+    Seq(Cmd("RUN", "yum install -y gcc blas lapack arpack && yum clean all")) ++
     originalCommands.drop(2)
 }
 

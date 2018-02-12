@@ -53,6 +53,12 @@ Configuration:
         AppenderRef:
           - ref: AkkaConsole
           - ref: console
+      - name: org.reflections.ReflectionUtils
+        level: error
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
       - name: io.netty
         level: info
         additivity: false
