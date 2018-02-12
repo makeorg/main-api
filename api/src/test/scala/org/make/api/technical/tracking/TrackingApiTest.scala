@@ -58,7 +58,7 @@ class TrackingApiTest
       Post("/tracking/front", HttpEntity(ContentTypes.`application/json`, frontRequest)) ~>
         routes ~> check {
         status should be(StatusCodes.NoContent)
-        verify(eventBusService).publish(any[AnyRef])
+        verify(eventBusService).publish(any[TrackingEventWrapper])
       }
     }
 

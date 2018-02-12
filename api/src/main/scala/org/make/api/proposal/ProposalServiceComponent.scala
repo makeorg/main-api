@@ -486,7 +486,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 )
                 .flatMap { duplicates: Seq[DuplicateResult] =>
                   eventBusService.publish(
-                    PredictDuplicate(
+                    PredictDuplicateEvent(
                       proposalId = proposalId,
                       predictedDuplicates = duplicates.map(_.proposal.proposalId),
                       predictedScores = duplicates.map(_.score),

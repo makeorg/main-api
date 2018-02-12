@@ -3,13 +3,24 @@ package org.make.api.technical.tracking
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.BasicProducerActor
+import org.make.api.technical.tracking.TrackingEvent.AnyTrackingEvent
+import org.make.core.MakeSerializable
+import shapeless.Coproduct
 
-class TrackingProducerActor extends BasicProducerActor[TrackingEvent, TrackingEvent] {
+class TrackingProducerActor extends BasicProducerActor[TrackingEventWrapper, TrackingEvent] {
   override protected lazy val eventClass: Class[TrackingEvent] = classOf[TrackingEvent]
-  override protected lazy val format: RecordFormat[TrackingEvent] = RecordFormat[TrackingEvent]
-  override protected lazy val schema: SchemaFor[TrackingEvent] = SchemaFor[TrackingEvent]
+  override protected lazy val format: RecordFormat[TrackingEventWrapper] = RecordFormat[TrackingEventWrapper]
+  override protected lazy val schema: SchemaFor[TrackingEventWrapper] = SchemaFor[TrackingEventWrapper]
   override val kafkaTopic: String = kafkaConfiguration.topics(TrackingProducerActor.topicKey)
-  override protected def convert(event: TrackingEvent): TrackingEvent = event
+  override protected def convert(event: TrackingEvent): TrackingEventWrapper = {
+    TrackingEventWrapper(
+      version = MakeSerializable.V1,
+      id = event.requestContext.sessionId.value,
+      date = event.createdAt,
+      eventType = "TrackingEvent",
+      event = Coproduct[AnyTrackingEvent](event)
+    )
+  }
 }
 
 object TrackingProducerActor {
