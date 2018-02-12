@@ -16,7 +16,7 @@ dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/vers
 dockerCommands := {
   val originalCommands = dockerCommands.value
   originalCommands.take(2) ++
-    Seq(Cmd("RUN", "apk update && apk add curl && adduser make -D")) ++
+    Seq(Cmd("RUN", "apk update && apk add curl bash && adduser make -D")) ++
     originalCommands.drop(2)
 }
 
