@@ -15,9 +15,9 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalProposedSerializer: JsonPersister[ProposalProposed, V2] =
     persister[ProposalProposed, V2](
       "proposal-proposed",
-      from[V1].to[V2](_
-        .update('language ! set[Option[String]](None))
-        .update('country ! set[Option[String]](None))
+      from[V1].to[V2](
+        _.update('language ! set[Option[String]](Some("fr")))
+          .update('country ! set[Option[String]](Some("FR")))
       )
     )
 

@@ -7,7 +7,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.{RequestContext, Validation}
 import org.make.core.Validation.{mandatoryField, maxLength, minLength, validate}
 import org.make.core.common.indexed.SortRequest
-import org.make.core.idea.{IdeaId, LanguageSearchFilter}
+import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
@@ -96,7 +96,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                seed: Option[Int] = None,
                                context: Option[ContextFilterRequest] = None,
                                language: Option[String] = None,
-                               sorts: Option[Seq[SortRequest]] = None,
+                               country: Option[String] = None,
+                               sort: Option[SortRequest] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
                                isRandom: Option[Boolean] = Some(false)) {
@@ -123,12 +124,13 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         }),
         slug = slug.map(value => SlugSearchFilter(value)),
         context = context.map(_.toContext),
-        language = language.map(LanguageSearchFilter.apply)
+        language = language.map(LanguageSearchFilter.apply),
+        country = country.map(CountrySearchFilter.apply)
       )
 
     SearchQuery(
       filters = filters,
-      sorts = sorts.getOrElse(Seq.empty).map(_.toSort),
+      sort = sort.map(_.toSort),
       limit = limit,
       skip = skip,
       language = requestContext.language
@@ -151,7 +153,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          context: Option[ContextFilterRequest] = None,
                                          status: Option[Seq[ProposalStatus]] = None,
                                          language: Option[String] = None,
-                                         sorts: Option[Seq[SortRequest]] = None,
+                                         country: Option[String] = None,
+                                         sort: Option[SortRequest] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
@@ -168,12 +171,13 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),
         status = status.map(StatusSearchFilter.apply),
-        language = language.map(LanguageSearchFilter.apply)
+        language = language.map(LanguageSearchFilter.apply),
+        country = country.map(CountrySearchFilter.apply)
       )
 
     SearchQuery(
       filters = filters,
-      sorts = sorts.getOrElse(Seq.empty).map(_.toSort),
+      sort = sort.map(_.toSort),
       limit = limit,
       skip = skip,
       language = requestContext.language

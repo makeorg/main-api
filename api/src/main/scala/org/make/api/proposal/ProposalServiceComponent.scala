@@ -15,7 +15,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
@@ -456,6 +456,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    //noinspection ScalaStyle
     override def getDuplicates(userId: UserId,
                                proposalId: ProposalId,
                                requestContext: RequestContext): Future[Seq[DuplicateResponse]] = {
@@ -476,7 +477,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                     content = Some(ContentSearchFilter(text = indexedProposal.content)),
                     theme = indexedProposal.themeId.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
                     operation = indexedProposal.operationId
-                      .map(operationId => OperationSearchFilter(operationId = operationId))
+                      .map(operationId => OperationSearchFilter(operationId = operationId)),
+                    language = Some(LanguageSearchFilter(indexedProposal.language)),
+                    country = Some(CountrySearchFilter(indexedProposal.country))
                   )
                 ),
                 language = Some(indexedProposal.language)

@@ -11,7 +11,7 @@ import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.ThemeId
@@ -432,11 +432,11 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
-      country = "FR",
-      language = "fr",
+      country = "IT",
+      language = "it",
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
-      content = "Il faut qu'il/elle soutienne et défende l'agriculture dans mon département",
-      slug = "il-faut-qu-il-elle-soutienne-et-defende-l-agriculture-dans-mon-departement",
+      content = "C'è bisogno lui / lei deve sostenere e difendere l'agricoltura nel mio dipartimento",
+      slug = "c-e-bisogno-lui-lei-deve-sostenere-e-difendere-l-agricoltura-nel-mio-dipartimento",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
@@ -480,11 +480,11 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
-      country = "FR",
-      language = "fr",
+      country = "IT",
+      language = "it",
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
-      content = "Il faut qu'il/elle privilégie les producteurs locaux pour les cantines et repas à domicile.",
-      slug = "il-faut-qu-il-elle-privilegie-les-producteurs-locaux-pour-les-cantines-et-repas-a-domicile",
+      content = "C'è bisogno lui / lei deve favorire i produttori locali per le mense e i pasti a casa.",
+      slug = "c-e-bisogno-lui-lei-deve-favorire-i-produttori-locali-per-le-mense-e-i-pasti-a-casa",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
@@ -827,11 +827,12 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
-      country = "FR",
-      language = "fr",
+      country = "IT",
+      language = "it",
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
-      content = "Il faut qu'il/elle défende la francophonie dans le monde en luttant contre l'hégémonie de l'anglais",
-      slug = "il-elle-defende-la-francophonie-dans-le-monde-en-luttant-contre-l-hegemonie-de-l-anglais",
+      content =
+        "C'è bisogno lui / lei deve difendere la Francofonia nel mondo combattendo contro l'egemonia dell'inglese",
+      slug = "c'e'bisogno-lui-lei-deve-difendere-la-francofonia-nel-mondo-combattendo-contro-l-egemonia-dell-inglese",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
@@ -891,18 +892,7 @@ class ProposalSearchEngineIT
   feature("search proposals by content") {
     Given("searching by keywords")
     val query =
-      SearchQuery(
-        filters = Some(
-          SearchFilters(
-            content = Some(ContentSearchFilter(text = "Il faut qu'il/elle")),
-            theme = None,
-            tags = None,
-            labels = None,
-            status = None,
-            context = None
-          )
-        )
-      )
+      SearchQuery(filters = Some(SearchFilters(content = Some(ContentSearchFilter(text = "Il faut qu'il/elle")))))
 
     ignore("should return a list of proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -939,6 +929,25 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
+      }
+    }
+  }
+
+  feature("search proposals by language and/or country") {
+    Given("searching by language 'fr' or country 'IT'")
+    val queryLanguage =
+      SearchQuery(filters = Some(SearchFilters(language = Some(LanguageSearchFilter(language = "fr")))))
+    val queryCountry =
+      SearchQuery(filters = Some(SearchFilters(country = Some(CountrySearchFilter(country = "IT")))))
+
+    ignore("should return a list of french proposals") {
+      whenReady(elasticsearchProposalAPI.searchProposals(queryLanguage), Timeout(3.seconds)) { result =>
+        result.total should be(acceptedProposals.count(_.language == "fr"))
+      }
+    }
+    ignore("should return a list of proposals from Italy") {
+      whenReady(elasticsearchProposalAPI.searchProposals(queryCountry), Timeout(3.seconds)) { result =>
+        result.total should be(acceptedProposals.count(_.country == "IT"))
       }
     }
   }
