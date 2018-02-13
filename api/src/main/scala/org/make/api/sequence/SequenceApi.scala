@@ -490,7 +490,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("sequences" / sequenceSlug) { slug =>
         parameters('include.*) { (includes) =>
-          makeTrace("Start Sequence by Slug") { requestContext =>
+          makeTrace("StartSequenceBySlug") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
                 provideAsyncOrNotFound(
@@ -529,7 +529,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("sequences" / "start" / sequenceId) { sequenceId =>
         parameters('include.*) { (includes) =>
-          makeTrace("Start Sequence by Id") { requestContext =>
+          makeTrace("StartSequenceById") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
                 provideAsyncOrNotFound(
