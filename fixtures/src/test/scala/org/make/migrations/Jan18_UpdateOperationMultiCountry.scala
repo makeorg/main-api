@@ -188,7 +188,7 @@ class Jan18_UpdateOperationMultiCountry extends Simulation {
       MakeServicesBuilder.searchSequenceBuilder
         .body(
           StringBody(
-            """{"tagIds": [], "themeIds": [], "status":"Unpublished", "slug": "comment-lutter-contre-le-changement-climatique-a-paris", "sorts": []}"""
+            """{"tagIds": [], "themeIds": [], "status":"Published", "slug": "comment-lutter-contre-le-changement-climatique-a-paris", "sorts": []}"""
           )
         )
         .asJSON
