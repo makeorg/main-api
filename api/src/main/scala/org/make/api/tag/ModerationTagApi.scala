@@ -115,33 +115,35 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     get {
       path("moderation" / "tags") {
         makeTrace("Search") { _ =>
-          parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order)) { (start, end, sort, order) =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
-                onSuccess(tagService.findAllEnabled()) { tags =>
-                  val sortField =
-                    try {
-                      classOf[Tag].getDeclaredField(sort)
-                    } catch {
-                      case _: Throwable => classOf[Tag].getDeclaredField("label")
+          parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order, 'label.?)) {
+            (start, end, sort, order, label_filter) =>
+              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+                  onSuccess(tagService.findAllEnabled()) { tags =>
+                    val sortField =
+                      try {
+                        classOf[Tag].getDeclaredField(sort)
+                      } catch {
+                        case _: Throwable => classOf[Tag].getDeclaredField("label")
+                      }
+                    sortField.setAccessible(true)
+                    val cmp = (a: Object, b: Object, order: String) => {
+                      if (order == "DESC") a.toString < b.toString else a.toString > b.toString
                     }
-                  sortField.setAccessible(true)
-                  val cmp = (a: Object, b: Object, order: String) => {
-                    if (order == "DESC") a.toString < b.toString else a.toString > b.toString
-                  }
-                  complete(
-                    (
-                      StatusCodes.OK,
-                      List(RawHeader("x-total-count", tags.length.toString)),
-                      tags
-                        .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
-                        .slice(start, end)
-                        .map(TagResponse.apply)
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(RawHeader("x-total-count", tags.length.toString)),
+                        tags
+                          .filter(t => label_filter.forall(t.label.contains(_)))
+                          .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
+                          .slice(start, end)
+                          .map(TagResponse.apply)
+                      )
                     )
-                  )
+                  }
                 }
               }
-            }
           }
         }
       }
