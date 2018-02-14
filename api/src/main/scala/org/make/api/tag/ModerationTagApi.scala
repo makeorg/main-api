@@ -127,7 +127,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                     }
                   sortField.setAccessible(true)
                   val cmp = (a: Object, b: Object, order: String) => {
-                    if (order == "ASC") a.toString < b.toString else a.toString > b.toString
+                    if (order == "DESC") a.toString < b.toString else a.toString > b.toString
                   }
                   complete(
                     (

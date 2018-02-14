@@ -177,7 +177,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
           RequestTimeHeader.name,
           ExternalIdHeader.name,
           SessionIdHeader.name,
-          TotalCountdHeader.name
+          TotalCountHeader.name
         )
       )
     ) ++ mayBeOriginValue.map { httpOrigin =>
@@ -425,8 +425,8 @@ object SessionIdHeader extends ModeledCustomHeaderCompanion[SessionIdHeader] {
   override def parse(value: String): Try[SessionIdHeader] = Success(new SessionIdHeader(value))
 }
 
-object TotalCountdHeader extends ModeledCustomHeaderCompanion[Int] {
-  override val name: String = "x-total-count"
+object TotalCountHeader {
+  val name: String = "x-total-count"
 
-  override def parse(value: String): Try[Int] = Success(value.toInt)
+  def parse(value: String): Try[Int] = Success(value.toInt)
 }
