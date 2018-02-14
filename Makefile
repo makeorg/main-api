@@ -5,6 +5,7 @@ help:
 	@echo "   fixtures                       to load fixtures data"
 	@echo "   fixtures-core                  to load fixtures data for Core"
 	@echo "   fixtures-vff                   to load fixtures data for Vff Operation"
+	@echo "   create-lpae                    to create LPAE operation"
 	@echo "   package-docker-image           to build locally the docker image"
 	@echo "   release                        to release the application"
 	@echo "   run                            to run app"
@@ -31,6 +32,10 @@ fixtures-core:
 
 fixtures-vff:
 	sbt "fixtures/gatling:testOnly org.make.fixtures.Vff"
+
+create-lpae:
+	sbt "fixtures/gatling:testOnly org.make.migrations.Feb18_LpaeOperation"
+	sbt "fixtures/gatling:testOnly org.make.fixtures.Lpae"
 
 package-docker-image:
 	sbt publishLocal
