@@ -30,7 +30,7 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, TagApi}
+import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
@@ -113,6 +113,7 @@ trait MakeApi
     with ConfigurationsApi
     with UserApi
     with TagApi
+    with ModerationTagApi
     with ModerationIdeaApi
     with TrackingApi
     with MigrationApi
@@ -186,6 +187,7 @@ trait MakeApi
       classOf[AuthenticationApi],
       classOf[UserApi],
       classOf[TagApi],
+      classOf[ModerationTagApi],
       classOf[ProposalApi],
       classOf[OperationApi],
       classOf[ModerationOperationApi],
@@ -220,6 +222,7 @@ trait MakeApi
       elasticsearchRoutes ~
       userRoutes ~
       tagRoutes ~
+      moderationTagRoutes ~
       proposalRoutes ~
       moderationProposalRoutes ~
       sequenceRoutes ~

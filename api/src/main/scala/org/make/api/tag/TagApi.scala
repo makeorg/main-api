@@ -18,12 +18,12 @@ import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Tag")
-@Path(value = "/")
+@Api(value = "Tags")
+@Path(value = "/tags")
 trait TagApi extends MakeAuthenticationDirectives {
   this: TagServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
-  @Path(value = "/tags/{tagId}")
+  @Path(value = "/{tagId}")
   @ApiOperation(value = "get-tag", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
@@ -58,9 +58,9 @@ trait TagApi extends MakeAuthenticationDirectives {
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.CreateTagRequest"))
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
-  @Path(value = "/tag")
+  @Path(value = "/")
   def create: Route = post {
-    path("tag") {
+    path("tags") {
       makeTrace("RegisterTag") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
@@ -79,7 +79,7 @@ trait TagApi extends MakeAuthenticationDirectives {
 
   @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Tag]])))
-  @Path(value = "/tags")
+  @Path(value = "/")
   def listTags: Route = {
     get {
       path("tags") {
@@ -113,7 +113,7 @@ trait TagApi extends MakeAuthenticationDirectives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
-  @Path(value = "/tags/{tagId}")
+  @Path(value = "/{tagId}")
   def updateTag: Route = put {
     path("tags" / tagId) { tagId =>
       makeTrace("UpdateTag") { requestContext =>
