@@ -495,7 +495,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
         eventDate = command.createdAt,
         content = command.content,
         operation = command.operation,
-        theme = command.theme
+        theme = command.theme,
+        language = command.language,
+        country = command.country
       )
     ) { _ =>
       sender() ! proposalId
@@ -826,6 +828,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             status = ProposalStatus.Pending,
             theme = e.theme.orElse(e.requestContext.currentTheme),
             creationContext = e.requestContext,
+            language = e.language,
+            country = e.country,
             labels = Seq.empty,
             votes = Seq(
               Vote(

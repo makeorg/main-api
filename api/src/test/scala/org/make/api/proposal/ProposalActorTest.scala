@@ -141,7 +141,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         actionType = ProposalProposeAction.name,
         arguments = Map("content" -> "This is a proposal")
       )
-    )
+    ),
+    country = Some("FR"),
+    language = Some("fr")
   )
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
@@ -159,7 +161,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsg(proposalId)
@@ -206,7 +210,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsg(proposalId)
@@ -248,7 +254,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -296,7 +304,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -345,7 +355,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -392,7 +404,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -448,7 +462,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -495,7 +511,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -557,7 +575,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -596,7 +616,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -635,7 +657,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -691,7 +715,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -727,7 +753,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -768,7 +796,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = DateHelper.now(),
-        content = originalContent
+        content = originalContent,
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -831,7 +861,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -894,7 +926,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -933,7 +967,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal"
+        content = "This is an unlocked proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -964,7 +1000,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal"
+        content = "This is an unlocked proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -1005,7 +1043,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal"
+        content = "This is an unlocked proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -1046,7 +1086,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal"
+        content = "This is an unlocked proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -1098,7 +1140,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal"
+        content = "This is an unlocked proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -1140,7 +1184,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsgPF[Unit]() {
@@ -1212,7 +1258,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsg(proposalId)
@@ -1275,7 +1323,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
-        content = "This is a proposal"
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
       )
 
       expectMsg(proposalId)

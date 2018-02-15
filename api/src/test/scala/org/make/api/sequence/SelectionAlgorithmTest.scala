@@ -60,7 +60,9 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       tags = Seq.empty,
       similarProposals = duplicates,
       events = Nil,
-      creationContext = RequestContext.empty
+      creationContext = RequestContext.empty,
+      language = Some("fr"),
+      country = Some("FR")
     )
   }
 
@@ -88,7 +90,9 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       tags = Seq.empty,
       similarProposals = duplicates,
       events = Nil,
-      creationContext = RequestContext.empty
+      creationContext = RequestContext.empty,
+      language = Some("fr"),
+      country = Some("FR")
     )
   }
 

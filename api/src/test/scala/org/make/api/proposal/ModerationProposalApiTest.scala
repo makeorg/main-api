@@ -211,7 +211,9 @@ class ModerationProposalApiTest
     creationContext = RequestContext.empty,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    events = Nil
+    events = Nil,
+    language = Some("fr"),
+    country = Some("FR")
   )
 
   val proposalSim124: Proposal = Proposal(
@@ -228,7 +230,9 @@ class ModerationProposalApiTest
     creationContext = RequestContext.empty,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    events = Nil
+    events = Nil,
+    language = Some("fr"),
+    country = Some("FR")
   )
 
   when(

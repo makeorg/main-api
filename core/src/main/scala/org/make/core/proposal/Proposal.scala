@@ -24,6 +24,8 @@ final case class Proposal(proposalId: ProposalId,
                           refusalReason: Option[String] = None,
                           tags: Seq[TagId] = Seq.empty,
                           votes: Seq[Vote],
+                          language: Option[String],
+                          country: Option[String],
                           creationContext: RequestContext,
                           similarProposals: Seq[ProposalId] = Seq.empty,
                           idea: Option[IdeaId] = None,
@@ -36,7 +38,7 @@ final case class Proposal(proposalId: ProposalId,
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat17(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat19(Proposal.apply)
 
 }
 
