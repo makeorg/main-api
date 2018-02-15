@@ -126,7 +126,7 @@ class TagApiTest
       Given("an un authenticated user")
       When("the user wants to create a tag")
       Then("he should get an unauthorized (401) return code")
-      Post("/tag").withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}""")) ~>
+      Post("/tags").withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}""")) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -137,7 +137,7 @@ class TagApiTest
       When("the user wants to create a tag")
       Then("he should get an forbidden (403) return code")
 
-      Post("/tag")
+      Post("/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -149,7 +149,7 @@ class TagApiTest
       When("the user wants to create a tag")
       Then("the tag should be saved if valid")
 
-      Post("/tag")
+      Post("/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -161,7 +161,7 @@ class TagApiTest
       When(s"""the user wants to create a specific tag with value "$specificValidTagText"""")
       Then(s"the created tag's slug should be $specificValidTagSlug")
 
-      Post("/tag")
+      Post("/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$specificValidTagText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
