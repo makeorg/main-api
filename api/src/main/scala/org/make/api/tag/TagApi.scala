@@ -5,15 +5,14 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.Decoder
-import io.swagger.annotations._
 import io.circe.generic.semiauto.deriveDecoder
+import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.{HttpCodes, Validation}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Tag, TagId}
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.{HttpCodes, Validation}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -63,7 +62,7 @@ trait TagApi extends MakeAuthenticationDirectives {
     path("tags") {
       makeTrace("RegisterTag") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+          requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
                 onSuccess(tagService.createTag(request.label)) { tag =>

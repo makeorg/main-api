@@ -3,16 +3,14 @@ package org.make.api.tag
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Tag, TagId}
-import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -42,11 +40,11 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   def moderationGetTag: Route = {
     get {
       path("moderation" / "tags" / moderationTagId) { tagId =>
-        makeTrace("GetTag") { _ =>
+        makeTrace("ModerationGetTag") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+            requireModerationRole(userAuth.user) {
               provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
-                complete(tag)
+                complete(TagResponse(tag))
               }
             }
           }
@@ -77,13 +75,13 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   @Path(value = "/")
   def moderationCreateTag: Route = post {
     path("moderation" / "tags") {
-      makeTrace("RegisterTag") { _ =>
+      makeTrace("ModerationRegisterTag") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+          requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
                 onSuccess(tagService.createTag(request.label)) { tag =>
-                  complete(StatusCodes.Created -> tag)
+                  complete(StatusCodes.Created -> TagResponse(tag))
                 }
               }
             }
@@ -114,11 +112,11 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   def moderationlistTags: Route = {
     get {
       path("moderation" / "tags") {
-        makeTrace("Search") { _ =>
+        makeTrace("ModerationSearchTag") { _ =>
           parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order, 'label.?)) {
             (start, end, sort, order, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                authorize(userAuth.user.roles.exists(role => role == RoleAdmin || role == RoleModerator)) {
+                requireModerationRole(userAuth.user) {
                   onSuccess(tagService.findAllEnabled()) { tags =>
                     val sortField =
                       try {
@@ -130,13 +128,14 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                     val cmp = (a: Object, b: Object, order: String) => {
                       if (order == "DESC") a.toString < b.toString else a.toString > b.toString
                     }
+                    val filteredTags = tags
+                      .filter(t => label_filter.forall(t.label.contains(_)))
+                      .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
                     complete(
                       (
                         StatusCodes.OK,
-                        List(RawHeader("x-total-count", tags.length.toString)),
-                        tags
-                          .filter(t => label_filter.forall(t.label.contains(_)))
-                          .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
+                        List(TotalCountHeader(filteredTags.size.toString)),
+                        filteredTags
                           .slice(start, end)
                           .map(TagResponse.apply)
                       )
