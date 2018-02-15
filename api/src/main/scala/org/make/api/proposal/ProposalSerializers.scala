@@ -12,8 +12,14 @@ import stamina.json._
 
 object ProposalSerializers extends SprayJsonFormatters {
 
-  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V1] =
-    persister[ProposalProposed]("proposal-proposed")
+  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V2] =
+    persister[ProposalProposed, V2](
+      "proposal-proposed",
+      from[V1].to[V2](_
+        .update('language ! set[Option[String]](None))
+        .update('country ! set[Option[String]](None))
+      )
+    )
 
   private val proposalViewedSerializer: JsonPersister[ProposalViewed, V1] =
     persister[ProposalViewed]("proposal-viewed")
