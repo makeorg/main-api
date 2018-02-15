@@ -34,6 +34,8 @@ class PersistentOperationServiceIT
     gender = Some(Gender.Male),
     genderName = Some("other"),
     postalCode = Some("93"),
+    country = Some("FR"),
+    language = Some("fr"),
     karmaLevel = Some(2),
     locale = Some("FR_FR")
   )

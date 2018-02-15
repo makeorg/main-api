@@ -120,7 +120,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         Profile.parseProfile(
           dateOfBirth = userRegisterData.dateOfBirth,
           profession = userRegisterData.profession,
-          postalCode = userRegisterData.postalCode
+          postalCode = userRegisterData.postalCode,
+          country = country,
+          language = language
         )
 
       val result = for {
@@ -174,7 +176,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 case "female" => Female
                 case _        => Other
               },
-              genderName = userInfo.gender
+              genderName = userInfo.gender,
+              country = country,
+              language = language
             )
 
           // @todo: Add a unit test to check role by domain

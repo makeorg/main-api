@@ -54,6 +54,8 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    gender: Option[Gender],
                    genderName: Option[String],
                    postalCode: Option[String],
+                   country: Option[String],
+                   language: Option[String],
                    karmaLevel: Option[Int],
                    locale: Option[String],
                    optInNewsletter: Boolean = true)
@@ -64,8 +66,8 @@ object Profile extends CirceFormatters {
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
 
   def isEmpty(profile: Profile): Boolean = profile match {
-    case Profile(None, None, None, None, None, None, None, None, None, None, None, None, true) => true
-    case _                                                                                     => false
+    case Profile(None, None, None, None, None, None, None, None, None, None, None, None, None, None, true) => true
+    case _                                                                                                 => false
   }
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
@@ -78,6 +80,8 @@ object Profile extends CirceFormatters {
                    gender: Option[Gender] = None,
                    genderName: Option[String] = None,
                    postalCode: Option[String] = None,
+                   country: Option[String] = None,
+                   language: Option[String] = None,
                    karmaLevel: Option[Int] = None,
                    locale: Option[String] = None,
                    optInNewsletter: Boolean = true): Option[Profile] = {
@@ -93,6 +97,8 @@ object Profile extends CirceFormatters {
       gender = gender,
       genderName = genderName,
       postalCode = postalCode,
+      country = country,
+      language = language,
       karmaLevel = karmaLevel,
       locale = locale,
       optInNewsletter = optInNewsletter
