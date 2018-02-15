@@ -64,6 +64,8 @@ case class User(userId: UserId,
                 resetToken: Option[String],
                 resetTokenExpiresAt: Option[ZonedDateTime],
                 roles: Seq[Role],
+                country: String,
+                language: String,
                 profile: Option[Profile],
                 override val createdAt: Option[ZonedDateTime] = None,
                 override val updatedAt: Option[ZonedDateTime] = None)

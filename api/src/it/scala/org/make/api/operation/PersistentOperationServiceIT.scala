@@ -53,6 +53,8 @@ class PersistentOperationServiceIT
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = Some(profile)
   )
 

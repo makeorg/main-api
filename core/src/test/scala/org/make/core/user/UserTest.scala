@@ -23,6 +23,8 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 

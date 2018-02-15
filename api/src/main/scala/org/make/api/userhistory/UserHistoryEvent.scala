@@ -121,11 +121,13 @@ final case class UserRegistered(email: String,
                                 firstName: Option[String],
                                 lastName: Option[String],
                                 profession: Option[String],
-                                postalCode: Option[String])
+                                postalCode: Option[String],
+                                country: String = "FR",
+                                language: String = "fr")
 
 object UserRegistered {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
-    DefaultJsonProtocol.jsonFormat6(UserRegistered.apply)
+    DefaultJsonProtocol.jsonFormat8(UserRegistered.apply)
 
 }
 

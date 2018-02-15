@@ -20,6 +20,8 @@ trait SocialService {
 
   def login(provider: String,
             token: String,
+            country: String,
+            language: String,
             clientIp: Option[String],
             requestContext: RequestContext): Future[UserIdAndToken]
 }
@@ -43,6 +45,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       */
     def login(provider: String,
               token: String,
+              country: String,
+              language: String,
               clientIp: Option[String],
               requestContext: RequestContext): Future[UserIdAndToken] = {
 
@@ -55,6 +59,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               email = googleUserInfo.email,
               firstName = googleUserInfo.givenName,
               lastName = googleUserInfo.familyName,
+              country = country,
+              language = language,
               googleId = googleUserInfo.iat,
               picture = Option(googleUserInfo.picture),
               domain = googleUserInfo.hd
@@ -67,6 +73,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               email = facebookUserInfo.email,
               firstName = facebookUserInfo.firstName,
               lastName = facebookUserInfo.lastName,
+              country = country,
+              language = language,
               gender = facebookUserInfo.gender,
               facebookId = Some(facebookUserInfo.id),
               picture = Option(facebookUserInfo.picture.data.url)

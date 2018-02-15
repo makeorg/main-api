@@ -98,7 +98,9 @@ object UserEvent {
                                  lastName: Option[String],
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
-                                 postalCode: Option[String])
+                                 postalCode: Option[String],
+                                 country: String = "FR",
+                                 language: String = "fr")
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }

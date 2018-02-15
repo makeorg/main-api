@@ -86,6 +86,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -106,6 +108,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleAdmin),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -126,6 +130,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None

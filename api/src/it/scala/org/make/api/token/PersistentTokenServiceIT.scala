@@ -38,6 +38,8 @@ class PersistentTokenServiceIT
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None
   )
   val exampleClient = Client(
