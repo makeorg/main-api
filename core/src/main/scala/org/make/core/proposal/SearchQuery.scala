@@ -7,7 +7,7 @@ import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.idea.{IdeaId, LanguageSearchFilter}
+import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{LabelId, TagId, ThemeId}
@@ -16,12 +16,12 @@ import org.make.core.reference.{LabelId, TagId, ThemeId}
   * The class holding the entire search query
   *
   * @param filters sequence of search filters
-  * @param sorts   sequence of sorts options
+  * @param sort   sequence of sorts options
   * @param limit   number of items to fetch
   * @param skip    number of items to skip
   */
 case class SearchQuery(filters: Option[SearchFilters] = None,
-                       sorts: Seq[IndexedSort] = Seq.empty,
+                       sort: Option[IndexedSort] = None,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None,
                        language: Option[String] = None)
@@ -47,10 +47,12 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          context: Option[ContextSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
                          idea: Option[IdeaSearchFilter] = None,
-                         language: Option[LanguageSearchFilter] = None)
+                         language: Option[LanguageSearchFilter] = None,
+                         country: Option[CountrySearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
+  //noinspection ScalaStyle
   def parse(proposals: Option[ProposalSearchFilter] = None,
             themes: Option[ThemeSearchFilter] = None,
             tags: Option[TagsSearchFilter] = None,
@@ -62,10 +64,11 @@ object SearchFilters extends ElasticDsl {
             slug: Option[SlugSearchFilter] = None,
             context: Option[ContextSearchFilter] = None,
             idea: Option[IdeaSearchFilter] = None,
-            language: Option[LanguageSearchFilter] = None): Option[SearchFilters] = {
+            language: Option[LanguageSearchFilter] = None,
+            country: Option[CountrySearchFilter] = None): Option[SearchFilters] = {
 
-    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea, language) match {
-      case (None, None, None, None, None, None, None, None, None, None, None, None) => None
+    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea, language, country) match {
+      case (None, None, None, None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
         Some(
           SearchFilters(
@@ -80,7 +83,8 @@ object SearchFilters extends ElasticDsl {
             context,
             slug,
             idea,
-            language
+            language,
+            country
           )
         )
     }
@@ -108,11 +112,12 @@ object SearchFilters extends ElasticDsl {
       buildContextQuestionSearchFilter(searchQuery),
       buildSlugSearchFilter(searchQuery),
       buildIdeaSearchFilter(searchQuery),
-      buildLanguageSearchFilter(searchQuery)
+      buildLanguageSearchFilter(searchQuery),
+      buildCountrySearchFilter(searchQuery)
     ).flatten
 
-  def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
-    searchQuery.sorts
+  def getSort(searchQuery: SearchQuery): Option[FieldSortDefinition] =
+    searchQuery.sort
       .map(sort => FieldSortDefinition(field = sort.field.get, order = sort.mode.getOrElse(SortOrder.ASC)))
 
   def getSkipSearch(searchQuery: SearchQuery): Int =
@@ -305,7 +310,17 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.language, language))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language))
+        case _ => None
+      }
+    }
+  }
+
+  def buildCountrySearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.country match {
+        case Some(CountrySearchFilter(country)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country))
         case _ => None
       }
     }

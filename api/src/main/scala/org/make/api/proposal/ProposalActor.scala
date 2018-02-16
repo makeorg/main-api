@@ -138,7 +138,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
           tags = changes.tags.getOrElse(proposal.tags),
           updatedAt = Some(DateHelper.now()),
-          operation = changes.operation.orElse(proposal.operation)
+          operation = changes.operation.orElse(proposal.operation),
+          language = changes.language,
+          country = changes.country
         )
 
       persistAndPublishEvent(
@@ -828,8 +830,6 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
             status = ProposalStatus.Pending,
             theme = e.theme.orElse(e.requestContext.currentTheme),
             creationContext = e.requestContext,
-            language = e.language,
-            country = e.country,
             labels = Seq.empty,
             votes = Seq(
               Vote(
@@ -863,7 +863,9 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
                 actionType = ProposalProposeAction.name,
                 arguments = Map("content" -> e.content)
               )
-            )
+            ),
+            language = e.language,
+            country = e.country
           )
         )
       )

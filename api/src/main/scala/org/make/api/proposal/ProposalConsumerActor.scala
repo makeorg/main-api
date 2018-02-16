@@ -77,12 +77,11 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(_) =>
+      case Some(proposal) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
-            //TODO: potential incorrect behaviour. Adjust it on the moderation related story.
             val sequenceId: SequenceId = operation.countriesConfiguration
-              .find(conf => event.requestContext.country.contains(conf.countryCode))
+              .find(countryConfiguration => proposal.country.contains(countryConfiguration.countryCode))
               .getOrElse(operation.countriesConfiguration.head)
               .landingSequenceId
             sequenceService
@@ -95,12 +94,11 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def removeFromOperation(event: ProposalRemovedFromOperation): Future[Unit] = {
     proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(_) =>
+      case Some(proposal) =>
         operationService.findOne(event.operationId).map { maybeOperation =>
           maybeOperation.foreach { operation =>
-            //TODO: potential incorrect behaviour. Adjust it on the moderation related story.
             val sequenceId: SequenceId = operation.countriesConfiguration
-              .find(conf => event.requestContext.country.contains(conf.countryCode))
+              .find(countryConfiguration => proposal.country.contains(countryConfiguration.countryCode))
               .getOrElse(operation.countriesConfiguration.head)
               .landingSequenceId
             sequenceService

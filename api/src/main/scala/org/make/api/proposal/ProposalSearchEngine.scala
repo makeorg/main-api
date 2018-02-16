@@ -88,12 +88,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
-        .size(SearchFilters.getLimitSearch(searchQuery))
 
-      for {
+      request = request.size(SearchFilters.getLimitSearch(searchQuery))
+
+      request = (for {
         seed  <- maybeSeed
         query <- request.query
-      } yield request = request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
+      } yield request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))).getOrElse(request)
 
       logger.debug(client.show(request))
 

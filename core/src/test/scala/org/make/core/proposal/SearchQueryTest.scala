@@ -5,7 +5,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.idea.LanguageSearchFilter
+import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{LabelId, TagId, ThemeId}
@@ -28,6 +28,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val statusFilter = StatusSearchFilter(status = Seq(ProposalStatus.Pending))
   val slugFilter = SlugSearchFilter(slug = "my-awesome-slug")
   val languageFilter = LanguageSearchFilter(language = "en")
+  val countryFilter = CountrySearchFilter(country = "GB")
 
   val filters =
     SearchFilters(
@@ -40,22 +41,23 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       status = Some(statusFilter),
       context = None,
       slug = Some(slugFilter),
-      language = Some(languageFilter)
+      language = Some(languageFilter),
+      country = Some(countryFilter)
     )
 
-  val sorts = Seq(IndexedSort(Some("field"), Some(SortOrder.ASC)))
+  val sort = Some(IndexedSort(Some("field"), Some(SortOrder.ASC)))
   val limit = 10
   val skip = 0
 
-  val searchQuery = SearchQuery(Some(filters), sorts, Some(limit), Some(skip), Some("en"))
+  val searchQuery = SearchQuery(Some(filters), sort, Some(limit), Some(skip), Some("en"))
 
   feature("transform searchFilter into QueryDefinition") {
     scenario("get Sort from Search filter") {
       Given("a searchFilter")
       When("call getSort with SearchQuery")
-      val listFieldSortDefinition = SearchFilters.getSort(searchQuery)
+      val fieldSortDefinition = SearchFilters.getSort(searchQuery)
       Then("result is a list of FieldSortDefinition")
-      listFieldSortDefinition shouldBe List(FieldSortDefinition("field", None, None, None, None, None, SortOrder.ASC))
+      fieldSortDefinition shouldBe Some(FieldSortDefinition("field", None, None, None, None, None, SortOrder.ASC))
     }
 
     scenario("get skip from Search filter") {

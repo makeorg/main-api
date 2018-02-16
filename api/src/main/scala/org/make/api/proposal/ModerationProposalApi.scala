@@ -17,17 +17,19 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.{Order, SortRequest}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
-import scala.concurrent.ExecutionContext.Implicits.global
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -190,7 +192,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     )
   )
   @Path(value = "/search")
-  def searchAllProposals: Route = {
+  @Deprecated
+  def searchAllProposalsDeprecated: Route = {
     post {
       path("moderation" / "proposals" / "search") {
         makeTrace("SearchAll") { requestContext =>
@@ -209,6 +212,134 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     complete(proposals)
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //noinspection ScalaStyle
+  @ApiOperation(
+    value = "moderation-search-proposals",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "source", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "location", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+    )
+  )
+  def searchAllProposals: Route = {
+    get {
+      path("moderation" / "proposals") {
+        makeTrace("SearchAll") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              parameters(
+                (
+                  'proposalIds.as(CsvSeq[String]).?,
+                  'themesIds.as(CsvSeq[String]).?,
+                  'tagsIds.as(CsvSeq[String]).?,
+                  'labelsIds.as(CsvSeq[String]).?,
+                  'operationId.?,
+                  'ideaId.?,
+                  'trending.?,
+                  'content.?,
+                  'source.?,
+                  'location.?,
+                  'question.?,
+                  'status.as(CsvSeq[String]).?,
+                  'language.?,
+                  'country.?,
+                  'limit.as[Int].?,
+                  'skip.as[Int].?,
+                  'sort.?,
+                  'order.?
+                )
+              ) {
+                (proposalIds,
+                 themesIds,
+                 tagsIds,
+                 labelsIds,
+                 operationId,
+                 ideaId,
+                 trending,
+                 content,
+                 source,
+                 location,
+                 question,
+                 status,
+                 language,
+                 country,
+                 limit,
+                 skip,
+                 sort,
+                 order) =>
+                  val contextFilterRequest: Option[ContextFilterRequest] =
+                    operationId.orElse(source).orElse(location).orElse(question).map { _ =>
+                      ContextFilterRequest(operationId.map(OperationId.apply), source, location, question)
+                    }
+                  val sortRequest: Option[SortRequest] = sort.orElse(order).map { _ =>
+                    SortRequest(sort, order.flatMap(Order.matchOrder))
+                  }
+                  val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
+                    proposalIds = proposalIds.map(_.map(ProposalId.apply)),
+                    themesIds = themesIds.map(_.map(ThemeId.apply)),
+                    tagsIds = tagsIds.map(_.map(TagId.apply)),
+                    labelsIds = labelsIds.map(_.map(LabelId.apply)),
+                    operationId = operationId.map(OperationId.apply),
+                    ideaId = ideaId.map(IdeaId.apply),
+                    trending = trending,
+                    content = content,
+                    context = contextFilterRequest,
+                    status = status.map(_.flatMap(ProposalStatus.statusMap.get)),
+                    language = language,
+                    country = country,
+                    sort = sortRequest,
+                    limit = limit,
+                    skip = skip
+                  )
+                  provideAsync(
+                    proposalService.search(
+                      userId = Some(userAuth.user.userId),
+                      query = exhaustiveSearchRequest.toSearchQuery(requestContext),
+                      maybeSeed = None,
+                      requestContext = requestContext
+                    )
+                  ) { proposals =>
+                    complete(proposals)
+                  }
               }
             }
           }
@@ -657,6 +788,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
 
   val moderationProposalRoutes: Route =
     getModerationProposal ~
+      searchAllProposalsDeprecated ~
       searchAllProposals ~
       updateProposal ~
       acceptProposal ~

@@ -34,7 +34,9 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   similarProposals: Seq[ProposalId],
                                   idea: Option[IdeaId],
                                   ideaProposals: Seq[IndexedProposal],
-                                  operationId: Option[OperationId])
+                                  operationId: Option[OperationId],
+                                  language: Option[String],
+                                  country: Option[String])
 
 object ProposalResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]

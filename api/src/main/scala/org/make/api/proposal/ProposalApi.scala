@@ -4,6 +4,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
@@ -13,8 +14,11 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.{Order, SortRequest}
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
 import scala.concurrent.Future
@@ -59,7 +63,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.proposal.SearchRequest"))
   )
   @Path(value = "/search")
-  def search: Route = {
+  @Deprecated
+  def searchDeprecated: Route = {
     post {
       path("proposals" / "search") {
         makeTrace("Search") { requestContext =>
@@ -78,6 +83,118 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   complete(proposals)
                 }
               }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @ApiOperation(value = "search-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "seed", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "context", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean")
+    )
+  )
+  def search: Route = {
+    get {
+      path("proposals") {
+        makeTrace("Search") { requestContext =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+            parameters(
+              (
+                'proposalIds.as(CsvSeq[String]).?,
+                'themesIds.as(CsvSeq[String]).?,
+                'tagsIds.as(CsvSeq[String]).?,
+                'labelsIds.as(CsvSeq[String]).?,
+                'operationId.?,
+                'trending.?,
+                'content.?,
+                'slug.?,
+                'seed.as[Int].?,
+                'source.?,
+                'location.?,
+                'question.?,
+                'language.?,
+                'country.?,
+                'sort.?,
+                'order.?,
+                'limit.as[Int].?,
+                'skip.as[Int].?,
+                'isRandom.as[Boolean].?,
+              )
+            ) {
+              (proposalIds,
+               themesIds,
+               tagsIds,
+               labelsIds,
+               operationId,
+               trending,
+               content,
+               slug,
+               seed,
+               source,
+               location,
+               question,
+               language,
+               country,
+               sort,
+               order,
+               limit,
+               skip,
+               isRandom) =>
+                val contextFilterRequest: Option[ContextFilterRequest] =
+                  operationId.orElse(source).orElse(location).orElse(question).map { _ =>
+                    ContextFilterRequest(operationId.map(OperationId.apply), source, location, question)
+                  }
+                val sortRequest: Option[SortRequest] = sort.orElse(order).map { _ =>
+                  SortRequest(sort, order.flatMap(Order.matchOrder))
+                }
+                val searchRequest: SearchRequest = SearchRequest(
+                  proposalIds = proposalIds.map(_.map(ProposalId.apply)),
+                  themesIds = themesIds.map(_.map(ThemeId.apply)),
+                  tagsIds = tagsIds.map(_.map(TagId.apply)),
+                  labelsIds = labelsIds.map(_.map(LabelId.apply)),
+                  operationId = operationId.map(OperationId.apply),
+                  trending = trending,
+                  content = content,
+                  slug = slug,
+                  seed = seed,
+                  context = contextFilterRequest,
+                  language = language,
+                  country = country,
+                  sort = sortRequest
+                )
+                provideAsync(
+                  proposalService
+                    .searchForUser(
+                      userId = userAuth.map(_.user.userId),
+                      query = searchRequest.toSearchQuery(requestContext),
+                      maybeSeed = searchRequest.randomScoreSeed,
+                      requestContext = requestContext
+                    )
+                ) { proposals =>
+                  complete(proposals)
+                }
             }
           }
         }
@@ -297,6 +414,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   val proposalRoutes: Route =
     postProposal ~
       getProposal ~
+      searchDeprecated ~
       search ~
       vote ~
       unvote ~
