@@ -242,7 +242,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                 userService
                   .validateEmail(verificationToken = verificationToken)
                   .map { result =>
-                    eventBusService.publish(UserValidatedAccountEvent(userId = userId, requestContext = requestContext))
+                    eventBusService.publish(
+                      UserValidatedAccountEvent(
+                        userId = userId,
+                        country = user.profile.flatMap(_.country),
+                        language = user.profile.flatMap(_.language),
+                        requestContext = requestContext
+                      )
+                    )
                     result
                   }
               ) { _ =>
@@ -269,12 +276,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
         makeTrace("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
-              provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { userId =>
-                userService.requestPasswordReset(userId)
+              provideAsyncOrNotFound(persistentUserService.findByEmail(request.email)) { user =>
+                userService.requestPasswordReset(user.userId)
                 eventBusService.publish(
                   ResetPasswordEvent(
-                    userId = userId,
+                    userId = user.userId,
                     connectedUserId = userAuth.map(_.user.userId),
+                    country = user.profile.flatMap(_.country),
+                    language = user.profile.flatMap(_.language),
                     requestContext = requestContext
                   )
                 )
@@ -351,14 +360,18 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       makeTrace("ResendValidateEmail") { requestContext =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-            eventBusService.publish(
-              ResendValidationEmailEvent(
-                userId = userId,
-                connectedUserId = userAuth.user.userId,
-                requestContext = requestContext
+            provideAsyncOrNotFound(persistentUserService.get(userId)) { user =>
+              eventBusService.publish(
+                ResendValidationEmailEvent(
+                  userId = userId,
+                  connectedUserId = userAuth.user.userId,
+                  country = user.country,
+                  language = user.language,
+                  requestContext = requestContext
+                )
               )
-            )
-            complete(StatusCodes.NoContent)
+              complete(StatusCodes.NoContent)
+            }
           }
         }
       }
