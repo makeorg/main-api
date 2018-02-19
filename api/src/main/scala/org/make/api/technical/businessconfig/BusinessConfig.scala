@@ -11,7 +11,10 @@ sealed trait BusinessConfig {
   val supportedCountries: Seq[CountryConfiguration]
 }
 
-case class CountryConfiguration(countryCode: String, defaultLanguage: String, supportedLanguages: Seq[String])
+case class CountryConfiguration(countryCode: String,
+                                defaultLanguage: String,
+                                supportedLanguages: Seq[String],
+                                coreIsAvailable: Boolean)
 object CountryConfiguration {
   implicit val encoder: ObjectEncoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
@@ -39,9 +42,24 @@ object BusinessConfig {
   val defaultProposalMaxLength: Int = 140
   val themes: Seq[Theme] = Seq.empty
   val supportedCountries = Seq(
-    CountryConfiguration("FR", "fr", Seq("fr")),
-    CountryConfiguration("IT", "it", Seq("it")),
-    CountryConfiguration("GB", "en", Seq("en"))
+    CountryConfiguration(
+      countryCode = "FR",
+      defaultLanguage = "fr",
+      supportedLanguages = Seq("fr"),
+      coreIsAvailable = true
+    ),
+    CountryConfiguration(
+      countryCode = "IT",
+      defaultLanguage = "it",
+      supportedLanguages = Seq("it"),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = "GB",
+      defaultLanguage = "en",
+      supportedLanguages = Seq("en"),
+      coreIsAvailable = false
+    )
   )
 
   def validateCountry(country: String): String =
