@@ -245,8 +245,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                     eventBusService.publish(
                       UserValidatedAccountEvent(
                         userId = userId,
-                        country = user.profile.flatMap(_.country),
-                        language = user.profile.flatMap(_.language),
+                        country = user.country,
+                        language = user.language,
                         requestContext = requestContext
                       )
                     )
@@ -282,8 +282,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                   ResetPasswordEvent(
                     userId = user.userId,
                     connectedUserId = userAuth.map(_.user.userId),
-                    country = user.profile.flatMap(_.country),
-                    language = user.profile.flatMap(_.language),
+                    country = user.country,
+                    language = user.language,
                     requestContext = requestContext
                   )
                 )

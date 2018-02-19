@@ -413,22 +413,40 @@ class UserApiTest
     info("As a user with an email")
     info("I want to use api to reset my password")
 
-    val johnDoeId = UserId("JOHNDOE")
+    val johnDoeUser = User(
+      userId = UserId("JOHNDOE"),
+      email = "john.doe@example.com",
+      firstName = Some("John"),
+      lastName = Some("Doe"),
+      lastIp = Some("127.0.0.1"),
+      hashedPassword = Some("passpass"),
+      enabled = true,
+      verified = false,
+      lastConnection = DateHelper.now(),
+      verificationToken = Some("token"),
+      verificationTokenExpiresAt = Some(DateHelper.now()),
+      resetToken = None,
+      resetTokenExpiresAt = None,
+      roles = Seq.empty,
+      country = "FR",
+      language = "fr",
+      profile = None
+    )
     Mockito
-      .when(persistentUserService.findUserIdByEmail("john.doe@example.com"))
-      .thenReturn(Future.successful(Some(johnDoeId)))
+      .when(persistentUserService.findByEmail("john.doe@example.com"))
+      .thenReturn(Future.successful(Some(johnDoeUser)))
     Mockito
       .when(persistentUserService.findUserIdByEmail("invalidexample.com"))
       .thenAnswer(_ => throw new IllegalArgumentException("findUserIdByEmail should be called with valid email"))
     when(eventBusService.publish(ArgumentMatchers.any[ResetPasswordEvent]))
       .thenAnswer(
         invocation =>
-          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeId)) {
+          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeUser.userId)) {
             throw new IllegalArgumentException("UserId not match")
         }
       )
     Mockito
-      .when(persistentUserService.findUserIdByEmail("fake@example.com"))
+      .when(persistentUserService.findByEmail("fake@example.com"))
       .thenReturn(Future.successful(None))
 
     val fooBarUserId = UserId("foo-bar")

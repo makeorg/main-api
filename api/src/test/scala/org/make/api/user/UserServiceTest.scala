@@ -54,8 +54,6 @@ class UserServiceTest
         gender = None,
         genderName = None,
         postalCode = None,
-        country = None,
-        language = None,
         karmaLevel = None,
         locale = None
       )
@@ -138,8 +136,6 @@ class UserServiceTest
         gender = None,
         genderName = None,
         postalCode = None,
-        country = None,
-        language = None,
         karmaLevel = None,
         locale = None
       )
@@ -207,8 +203,6 @@ class UserServiceTest
         gender = Some(Female),
         genderName = Some("female"),
         postalCode = None,
-        country = None,
-        language = None,
         karmaLevel = None,
         locale = None
       )

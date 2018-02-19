@@ -58,9 +58,6 @@ class ProposalEmailConsumer(userService: UserService,
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
 
-      val language = event.requestContext.language.getOrElse("fr")
-      val country = event.requestContext.country.getOrElse("FR")
-
       val futureOperationSlug: Future[String] = event.operation match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
@@ -71,6 +68,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user @ __    <- OptionT(userService.getUser(proposal.author))
         } yield {
+          val country = user.country
+          val language = user.language
           val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
@@ -118,9 +117,6 @@ class ProposalEmailConsumer(userService: UserService,
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
 
-      val language = event.requestContext.language.getOrElse("fr")
-      val country = event.requestContext.country.getOrElse("FR")
-
       val futureOperationSlug: Future[String] = event.operation match {
         case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
         case None              => Future.successful("core")
@@ -131,6 +127,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user @ _     <- OptionT(userService.getUser(proposal.author))
         } yield {
+          val country = user.country
+          val language = user.language
           val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(

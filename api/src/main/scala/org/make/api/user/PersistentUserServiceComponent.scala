@@ -97,8 +97,6 @@ object PersistentUserServiceComponent {
         gender = toGender(gender),
         genderName = genderName,
         postalCode = postalCode,
-        country = country,
-        language = language,
         karmaLevel = karmaLevel,
         locale = locale,
         optInNewsletter = optInNewsletter
@@ -119,8 +117,6 @@ object PersistentUserServiceComponent {
       "gender",
       "gender_name",
       "postal_code",
-      "country",
-      "language",
       "karma_level",
       "locale",
       "opt_in_newsletter"
