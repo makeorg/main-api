@@ -176,7 +176,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
           RouteNameHeader.name,
           RequestTimeHeader.name,
           ExternalIdHeader.name,
-          SessionIdHeader.name
+          SessionIdHeader.name,
+          TotalCountHeader.name
         )
       )
     ) ++ mayBeOriginValue.map { httpOrigin =>
@@ -286,140 +287,121 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
 
 final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[ThemeIdHeader] = ThemeIdHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object ThemeIdHeader extends ModeledCustomHeaderCompanion[ThemeIdHeader] {
   override val name: String = "x-make-theme-id"
-
   override def parse(value: String): Try[ThemeIdHeader] = Success(new ThemeIdHeader(value))
 }
 
 final case class OperationHeader(override val value: String) extends ModeledCustomHeader[OperationHeader] {
   override def companion: ModeledCustomHeaderCompanion[OperationHeader] = OperationHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object OperationHeader extends ModeledCustomHeaderCompanion[OperationHeader] {
   override val name: String = "x-make-operation"
-
   override def parse(value: String): Try[OperationHeader] = Success(new OperationHeader(value))
 }
 
 final case class SourceHeader(override val value: String) extends ModeledCustomHeader[SourceHeader] {
   override def companion: ModeledCustomHeaderCompanion[SourceHeader] = SourceHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object SourceHeader extends ModeledCustomHeaderCompanion[SourceHeader] {
   override val name: String = "x-make-source"
-
   override def parse(value: String): Try[SourceHeader] = Success(new SourceHeader(value))
 }
 
 final case class LocationHeader(override val value: String) extends ModeledCustomHeader[LocationHeader] {
   override def companion: ModeledCustomHeaderCompanion[LocationHeader] = LocationHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object LocationHeader extends ModeledCustomHeaderCompanion[LocationHeader] {
   override val name: String = "x-make-location"
-
   override def parse(value: String): Try[LocationHeader] = Success(new LocationHeader(value))
 }
 
 final case class QuestionHeader(override val value: String) extends ModeledCustomHeader[QuestionHeader] {
   override def companion: ModeledCustomHeaderCompanion[QuestionHeader] = QuestionHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object QuestionHeader extends ModeledCustomHeaderCompanion[QuestionHeader] {
   override val name: String = "x-make-question"
-
   override def parse(value: String): Try[QuestionHeader] = Success(new QuestionHeader(value))
 }
 
 final case class LanguageHeader(override val value: String) extends ModeledCustomHeader[LanguageHeader] {
   override def companion: ModeledCustomHeaderCompanion[LanguageHeader] = LanguageHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object LanguageHeader extends ModeledCustomHeaderCompanion[LanguageHeader] {
   override val name: String = "x-make-language"
-
   override def parse(value: String): Try[LanguageHeader] = Success(new LanguageHeader(value))
 }
 
 final case class CountryHeader(override val value: String) extends ModeledCustomHeader[CountryHeader] {
   override def companion: ModeledCustomHeaderCompanion[CountryHeader] = CountryHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object CountryHeader extends ModeledCustomHeaderCompanion[CountryHeader] {
   override val name: String = "x-make-country"
-
   override def parse(value: String): Try[CountryHeader] = Success(new CountryHeader(value))
 }
 
 final case class HostNameHeader(override val value: String) extends ModeledCustomHeader[HostNameHeader] {
   override def companion: ModeledCustomHeaderCompanion[HostNameHeader] = HostNameHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object HostNameHeader extends ModeledCustomHeaderCompanion[HostNameHeader] {
   override val name: String = "x-hostname"
-
   override def parse(value: String): Try[HostNameHeader] = Success(new HostNameHeader(value))
 }
 
 final case class GetParametersHeader(override val value: String) extends ModeledCustomHeader[GetParametersHeader] {
   override def companion: ModeledCustomHeaderCompanion[GetParametersHeader] = GetParametersHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = false
 }
 
 object GetParametersHeader extends ModeledCustomHeaderCompanion[GetParametersHeader] {
   override val name: String = "x-get-parameters"
-
   override def parse(value: String): Try[GetParametersHeader] = Success(new GetParametersHeader(value))
 }
 
 final case class SessionIdHeader(override val value: String) extends ModeledCustomHeader[SessionIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[SessionIdHeader] = SessionIdHeader
-
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = true
 }
 
 object SessionIdHeader extends ModeledCustomHeaderCompanion[SessionIdHeader] {
   override val name: String = "x-session-id"
-
   override def parse(value: String): Try[SessionIdHeader] = Success(new SessionIdHeader(value))
+}
+
+final case class TotalCountHeader(override val value: String) extends ModeledCustomHeader[TotalCountHeader] {
+  override def companion: ModeledCustomHeaderCompanion[TotalCountHeader] = TotalCountHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = true
+}
+
+object TotalCountHeader extends ModeledCustomHeaderCompanion[TotalCountHeader] {
+  val name: String = "x-total-count"
+  def parse(value: String): Try[TotalCountHeader] = Success(new TotalCountHeader(value))
 }
