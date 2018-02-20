@@ -327,10 +327,22 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                       },
                       sort.map { sortValue =>
                         val choices =
-                          Seq("trending", "content", "source", "location", "question", "status", "language", "country")
+                          Seq(
+                            "content",
+                            "slug",
+                            "status",
+                            "createdAt",
+                            "updatedAt",
+                            "trending",
+                            "labels",
+                            "country",
+                            "language"
+                          )
                         Validation.validChoices(
                           fieldName = "sort",
-                          message = Some(s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString(" ")}"),
+                          message = Some(
+                            s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                          ),
                           Seq(sortValue),
                           choices
                         )
