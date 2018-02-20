@@ -1,6 +1,6 @@
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -141,7 +141,9 @@ class ModerationOperationApiTest
       OperationCountryConfiguration(
         countryCode = "BR",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id")
+        landingSequenceId = SequenceId("first-sequence-id"),
+        startDate = Some(LocalDate.parse("2018-02-02")),
+        endDate = None,
       )
     )
   )
@@ -169,7 +171,9 @@ class ModerationOperationApiTest
       OperationCountryConfiguration(
         countryCode = "IT",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("second-sequence-id")
+        landingSequenceId = SequenceId("second-sequence-id"),
+        startDate = Some(LocalDate.parse("2018-02-02")),
+        endDate = Some(LocalDate.parse("2018-05-02"))
       )
     )
   )
@@ -215,7 +219,9 @@ class ModerationOperationApiTest
       |      "tagIds": [
       |        "hello"
       |      ],
-      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
+      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b",
+      |      "startDate": "2018-02-02",
+      |      "endDate": "2018-05-02"
       |    }
       |  ]
       |}
@@ -292,7 +298,9 @@ class ModerationOperationApiTest
         OperationCountryConfiguration(
           countryCode = "FR",
           tagIds = Seq(TagId("hello")),
-          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+          startDate = None,
+          endDate = None
         )
       )
     )
@@ -312,7 +320,9 @@ class ModerationOperationApiTest
           OperationCountryConfiguration(
             countryCode = "FR",
             tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+            startDate = Some(LocalDate.parse("2018-02-02")),
+            endDate = Some(LocalDate.parse("2018-05-02"))
           )
         )
       )
@@ -331,7 +341,9 @@ class ModerationOperationApiTest
           OperationCountryConfiguration(
             countryCode = "FR",
             tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+            startDate = Some(LocalDate.parse("2018-02-02")),
+            endDate = Some(LocalDate.parse("2018-05-02"))
           )
         )
       )

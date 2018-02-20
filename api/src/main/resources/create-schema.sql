@@ -543,12 +543,6 @@ CREATE INDEX IF NOT EXISTS operation_action_operation_id_index ON operation_acti
 %
 CREATE INDEX IF NOT EXISTS operation_action_user_id_index ON make_user (uuid);
 %
-INSERT INTO operation
-    (uuid, status, slug, default_language)
-    VALUES
-    ('vff', 'Active', 'vff', 'fr')
-    ON CONFLICT (uuid) DO NOTHING;
-%
 CREATE TABLE IF NOT EXISTS sequence_configuration (
   sequence_id VARCHAR(256) PRIMARY KEY,
   new_proposals_ratio DECIMAL DEFAULT 0.5,
@@ -560,3 +554,10 @@ CREATE TABLE IF NOT EXISTS sequence_configuration (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+%
+ALTER TABLE IF EXISTS operation_country_configuration ADD COLUMN start_date DATE DEFAULT NULL;
+ALTER TABLE IF EXISTS operation_country_configuration ADD COLUMN end_date DATE DEFAULT NULL;
+UPDATE operation_country_configuration SET end_date = '2018-01-31' WHERE country = 'FR' AND operation_uuid = (SELECT uuid FROM operation where slug = 'vff');
+UPDATE operation_country_configuration SET end_date = '2018-03-01' WHERE country = 'FR' AND operation_uuid = (SELECT uuid FROM operation where slug = 'lpae');
+UPDATE operation_country_configuration SET end_date = '2018-03-01' WHERE country = 'FR' AND operation_uuid = (SELECT uuid FROM operation where slug = 'climatparis');
+%

@@ -60,12 +60,16 @@ class OperationApiTest
       OperationCountryConfiguration(
         countryCode = "BR",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-BR")
+        landingSequenceId = SequenceId("first-sequence-id-BR"),
+        startDate = None,
+        endDate = None
       ),
       OperationCountryConfiguration(
         countryCode = "GB",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-GB")
+        landingSequenceId = SequenceId("first-sequence-id-GB"),
+        startDate = None,
+        endDate = None
       )
     )
   )
@@ -93,7 +97,9 @@ class OperationApiTest
       OperationCountryConfiguration(
         countryCode = "IT",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("second-sequence-id")
+        landingSequenceId = SequenceId("second-sequence-id"),
+        startDate = None,
+        endDate = None
       )
     )
   )

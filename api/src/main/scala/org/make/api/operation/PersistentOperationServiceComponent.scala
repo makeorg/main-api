@@ -1,15 +1,10 @@
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.operation.DefaultPersistentOperationServiceComponent.{
-  PersistentOperation,
-  PersistentOperationAction,
-  PersistentOperationCountryConfiguration,
-  PersistentOperationTranslation
-}
+import org.make.api.operation.DefaultPersistentOperationServiceComponent.{PersistentOperation, PersistentOperationAction, PersistentOperationCountryConfiguration, PersistentOperationTranslation}
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -287,6 +282,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                 .map(_.value)
                 .mkString(PersistentOperationCountryConfiguration.TAG_SEPARATOR.toString),
               operationCountryConfigurationColumn.landingSequenceId -> countryConfiguration.landingSequenceId.value,
+              operationCountryConfigurationColumn.startDate -> countryConfiguration.startDate,
+              operationCountryConfigurationColumn.endDate -> countryConfiguration.endDate,
               operationCountryConfigurationColumn.createdAt -> DateHelper.now(),
               operationCountryConfigurationColumn.updatedAt -> DateHelper.now()
             )
@@ -381,6 +378,8 @@ object DefaultPersistentOperationServiceComponent {
                                                      country: String,
                                                      tagIds: Option[String],
                                                      landingSequenceId: String,
+                                                     startDate: Option[LocalDate],
+                                                     endDate: Option[LocalDate],
                                                      createdAt: ZonedDateTime,
                                                      updatedAt: ZonedDateTime)
 
@@ -428,7 +427,9 @@ object DefaultPersistentOperationServiceComponent {
                 .split(PersistentOperationCountryConfiguration.TAG_SEPARATOR)
                 .map(tagId => TagId(tagId))
                 .filter(value => value != TagId("")),
-              landingSequenceId = SequenceId(countryConfiguration.landingSequenceId)
+              landingSequenceId = SequenceId(countryConfiguration.landingSequenceId),
+              startDate = countryConfiguration.startDate,
+              endDate = countryConfiguration.endDate
           )
         ),
         translations =
@@ -486,7 +487,7 @@ object DefaultPersistentOperationServiceComponent {
     val TAG_SEPARATOR = '|'
 
     override val columnNames: Seq[String] =
-      Seq("operation_uuid", "country", "tag_ids", "landing_sequence_id", "created_at", "updated_at")
+      Seq("operation_uuid", "country", "tag_ids", "landing_sequence_id", "start_date", "end_date", "created_at", "updated_at")
 
     override val tableName: String = "operation_country_configuration"
 
@@ -511,6 +512,8 @@ object DefaultPersistentOperationServiceComponent {
         country = resultSet.string(operationCountryConfigurationResultName.country),
         tagIds = resultSet.stringOpt(operationCountryConfigurationResultName.tagIds),
         landingSequenceId = resultSet.string(operationCountryConfigurationResultName.landingSequenceId),
+        startDate = resultSet.localDateOpt(operationCountryConfigurationResultName.startDate),
+        endDate = resultSet.localDateOpt(operationCountryConfigurationResultName.endDate),
         createdAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.updatedAt)
       )
