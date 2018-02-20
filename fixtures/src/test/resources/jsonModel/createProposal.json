@@ -1,4 +1,6 @@
 {
   "content": "${content}",
-  "operationId": "${operationId}"
+  "operationId": "${operationId}",
+  "country": "${country}",
+  "language": "${language}"
 }
