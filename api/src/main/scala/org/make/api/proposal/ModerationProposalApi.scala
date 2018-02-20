@@ -13,6 +13,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
@@ -97,10 +98,10 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
   )
-  @Path(value = "/moderation/proposals")
+  @Path(value = "/export")
   def exportProposals: Route = {
     get {
-      path("moderation" / "proposals") {
+      path("moderation" / "proposals" / "export") {
         makeTrace("ExportProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
@@ -306,6 +307,45 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                  skip,
                  sort,
                  order) =>
+                  Validation.validate(
+                    Seq(
+                      status.map { statuses =>
+                        Validation.validChoices(
+                          fieldName = "status",
+                          message = Some("Invalid status"),
+                          statuses,
+                          ProposalStatus.statusMap.keys.toSeq
+                        )
+                      },
+                      country.map { countryValue =>
+                        Validation.validChoices(
+                          fieldName = "country",
+                          message = Some("Invalid country"),
+                          Seq(countryValue),
+                          BusinessConfig.supportedCountries
+                        )
+                      },
+                      sort.map { sortValue =>
+                        val choices =
+                          Seq("trending", "content", "source", "location", "question", "status", "language", "country")
+                        Validation.validChoices(
+                          fieldName = "sort",
+                          message = Some(s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString(" ")}"),
+                          Seq(sortValue),
+                          choices
+                        )
+                      },
+                      order.map { orderValue =>
+                        Validation.validChoices(
+                          fieldName = "order",
+                          message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                          Seq(orderValue),
+                          Order.orders.keys.toSeq
+                        )
+                      }
+                    ).flatten: _*
+                  )
+
                   val contextFilterRequest: Option[ContextFilterRequest] =
                     operationId.orElse(source).orElse(location).orElse(question).map { _ =>
                       ContextFilterRequest(operationId.map(OperationId.apply), source, location, question)
