@@ -16,7 +16,7 @@ trait DockerElasticsearchService extends DockerKit {
   val defaultElasticsearchIndex = "proposals"
   val defaultElasticsearchDocType = "proposal"
 
-  private val elasticSearchContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:5.6.6")
+  private val elasticSearchContainer = DockerContainer("makeorg/make-elasticsearch:5.6.6")
     .withPorts(defaultElasticsearchHttpPort -> Some(defaultElasticsearchPortExposed))
     .withEnv(
       "xpack.security.enabled=false",
