@@ -2,13 +2,21 @@ package org.make.api.userhistory
 
 import org.make.api.userhistory.UserHistoryActor.UserHistory
 import org.make.core.SprayJsonFormatters
-import stamina.json.JsonPersister
-import stamina.{json, V1}
+import stamina.json._
+import spray.json.DefaultJsonProtocol._
+import spray.json.lenses.JsonLenses._
+import stamina.{json, V1, V2}
 
 object UserHistorySerializers extends SprayJsonFormatters {
 
-  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V1] =
-    json.persister[LogRegisterCitizenEvent]("user-history-registered")
+  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V2] =
+    json.persister[LogRegisterCitizenEvent, V2](
+      "user-history-registered",
+      from[V1].to[V2](
+        _.update('action / 'arguments / 'country ! set[String]("FR"))
+          .update('action / 'arguments / 'language ! set[String]("fr"))
+      )
+    )
 
   private val logSearchProposalsEventSerializer: JsonPersister[LogUserSearchProposalsEvent, V1] =
     json.persister[LogUserSearchProposalsEvent]("user-history-searched")

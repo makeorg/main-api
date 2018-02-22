@@ -134,7 +134,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
               val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
               onSuccess(
                 socialService
-                  .login(request.provider, request.token, Some(ip), requestContext)
+                  .login(
+                    request.provider,
+                    request.token,
+                    request.country.orElse(requestContext.country).getOrElse("FR"),
+                    request.language.orElse(requestContext.language).getOrElse("fr"),
+                    Some(ip),
+                    requestContext
+                  )
                   .flatMap { social =>
                     sessionHistoryCoordinatorService
                       .convertSession(requestContext.sessionId, social.userId)
@@ -195,7 +202,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                       lastIp = clientIp.toOption.map(_.getHostAddress),
                       dateOfBirth = request.dateOfBirth,
                       profession = request.profession,
-                      postalCode = request.postalCode
+                      postalCode = request.postalCode,
+                      country = request.country.orElse(requestContext.country).getOrElse("FR"),
+                      language = request.language.orElse(requestContext.language).getOrElse("fr")
                     ),
                     requestContext
                   )
@@ -233,7 +242,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                 userService
                   .validateEmail(verificationToken = verificationToken)
                   .map { result =>
-                    eventBusService.publish(UserValidatedAccountEvent(userId = userId, requestContext = requestContext))
+                    eventBusService.publish(
+                      UserValidatedAccountEvent(
+                        userId = userId,
+                        country = user.country,
+                        language = user.language,
+                        requestContext = requestContext
+                      )
+                    )
                     result
                   }
               ) { _ =>
@@ -260,12 +276,14 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
         makeTrace("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
-              provideAsyncOrNotFound(persistentUserService.findUserIdByEmail(request.email)) { userId =>
-                userService.requestPasswordReset(userId)
+              provideAsyncOrNotFound(persistentUserService.findByEmail(request.email)) { user =>
+                userService.requestPasswordReset(user.userId)
                 eventBusService.publish(
                   ResetPasswordEvent(
-                    userId = userId,
+                    userId = user.userId,
                     connectedUserId = userAuth.map(_.user.userId),
+                    country = user.country,
+                    language = user.language,
                     requestContext = requestContext
                   )
                 )
@@ -342,14 +360,18 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       makeTrace("ResendValidateEmail") { requestContext =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-            eventBusService.publish(
-              ResendValidationEmailEvent(
-                userId = userId,
-                connectedUserId = userAuth.user.userId,
-                requestContext = requestContext
+            provideAsyncOrNotFound(persistentUserService.get(userId)) { user =>
+              eventBusService.publish(
+                ResendValidationEmailEvent(
+                  userId = userId,
+                  connectedUserId = userAuth.user.userId,
+                  country = user.country,
+                  language = user.language,
+                  requestContext = requestContext
+                )
               )
-            )
-            complete(StatusCodes.NoContent)
+              complete(StatusCodes.NoContent)
+            }
           }
         }
       }
@@ -485,7 +507,9 @@ case class RegisterUserRequest(email: String,
                                firstName: Option[String],
                                lastName: Option[String],
                                profession: Option[String],
-                               postalCode: Option[String]) {
+                               postalCode: Option[String],
+                               country: Option[String],
+                               language: Option[String]) {
 
   validate(
     mandatoryField("firstName", firstName),
@@ -493,7 +517,9 @@ case class RegisterUserRequest(email: String,
     validateEmail("email", email),
     mandatoryField("password", password),
     validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters"),
-    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
+    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
+    mandatoryField("language", language),
+    mandatoryField("country", country)
   )
 }
 
@@ -501,7 +527,9 @@ object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
 }
 
-case class SocialLoginRequest(provider: String, token: String)
+case class SocialLoginRequest(provider: String, token: String, country: Option[String], language: Option[String]) {
+  validate(mandatoryField("language", language), mandatoryField("country", country))
+}
 
 object SocialLoginRequest {
   implicit val decoder: Decoder[SocialLoginRequest] = deriveDecoder[SocialLoginRequest]

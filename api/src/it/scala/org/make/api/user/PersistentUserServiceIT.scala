@@ -44,6 +44,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = Some(profile)
   )
 
@@ -62,6 +64,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 
@@ -80,6 +84,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 
@@ -98,6 +104,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 
@@ -116,6 +124,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 

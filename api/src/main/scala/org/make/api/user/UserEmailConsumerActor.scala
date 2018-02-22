@@ -40,8 +40,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val language = event.requestContext.language.getOrElse("fr")
-        val country = event.requestContext.country.getOrElse("FR")
+        val language = event.language
+        val country = event.country
 
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
@@ -86,8 +86,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val language = event.requestContext.language.getOrElse("fr")
-        val country = event.requestContext.country.getOrElse("FR")
+        val language = event.language
+        val country = event.country
 
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
@@ -136,8 +136,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     userService.getUser(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val language = event.requestContext.language.getOrElse("fr")
-        val country = event.requestContext.country.getOrElse("FR")
+        val language = event.language
+        val country = event.country
 
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))

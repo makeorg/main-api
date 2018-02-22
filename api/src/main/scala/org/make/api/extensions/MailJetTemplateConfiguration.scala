@@ -34,9 +34,19 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
     if (config.hasPath(operation)) {
       templateConfiguration = config.getConfig(operation).withFallback(templateConfiguration)
     }
+
+    if (config.hasPath(s"$country")) {
+      templateConfiguration = config.getConfig(s"$country").withFallback(templateConfiguration)
+    }
+
+    if (config.hasPath(s"$country.$language")) {
+      templateConfiguration = config.getConfig(s"$country.$language").withFallback(templateConfiguration)
+    }
+
     if (config.hasPath(s"$operation.$country")) {
       templateConfiguration = config.getConfig(s"$operation.$country").withFallback(templateConfiguration)
     }
+
     if (config.hasPath(s"$operation.$country.$language")) {
       templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
     }

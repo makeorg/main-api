@@ -95,6 +95,8 @@ class UserApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq.empty,
+    country = "FR",
+    language = "fr",
     profile = None
   )
 
@@ -115,7 +117,9 @@ class UserApiTest
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "1997-12-02"
+          | "dateOfBirth": "1997-12-02",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -131,7 +135,9 @@ class UserApiTest
               lastName = Some("tom"),
               password = Some("mypassss"),
               lastIp = Some("192.0.0.1"),
-              Some(LocalDate.parse("1997-12-02"))
+              dateOfBirth = Some(LocalDate.parse("1997-12-02")),
+              country = "FR",
+              language = "fr"
             )
           ),
           any[RequestContext]
@@ -155,7 +161,9 @@ class UserApiTest
           | "password": "mypassss",
           | "dateOfBirth": "1997-12-02",
           | "postalCode": "75011",
-          | "profession": "football player"
+          | "profession": "football player",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -173,7 +181,9 @@ class UserApiTest
               lastIp = Some("192.0.0.1"),
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
               postalCode = Some("75011"),
-              profession = Some("football player")
+              profession = Some("football player"),
+              country = "FR",
+              language = "fr"
             )
           ),
           any[RequestContext]
@@ -196,7 +206,9 @@ class UserApiTest
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "1997-12-02"
+          | "dateOfBirth": "1997-12-02",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -208,6 +220,28 @@ class UserApiTest
       }
     }
 
+    scenario("validation failed for missing country and/or language") {
+      val request =
+        """
+          |{
+          | "email": "foo@bar.com",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "1997-12-02"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val countryError = errors.find(_.field == "country")
+        countryError should be(Some(ValidationError("country", Some("country is mandatory"))))
+        val languageError = errors.find(_.field == "language")
+        languageError should be(Some(ValidationError("language", Some("language is mandatory"))))
+      }
+    }
+
     scenario("validation failed for malformed email") {
       val request =
         """
@@ -216,7 +250,9 @@ class UserApiTest
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "1997-12-02"
+          | "dateOfBirth": "1997-12-02",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -237,7 +273,9 @@ class UserApiTest
           | "lastName": "tom",
           | "password": "mypassss",
           | "dateOfBirth": "1997-12-02",
-          | "postalCode": "123456789azertyuiop"
+          | "postalCode": "123456789azertyuiop",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -259,7 +297,9 @@ class UserApiTest
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "foo-12-02"
+          | "dateOfBirth": "foo-12-02",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -293,7 +333,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Option[String]], any[RequestContext])
+            .login(any[String], any[String], any[String], any[String], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
@@ -312,7 +352,9 @@ class UserApiTest
         """
           |{
           | "provider": "google",
-          | "token": "ABCDEFGHIJK"
+          | "token": "ABCDEFGHIJK",
+          | "country": "FR",
+          | "language": "fr"
           |}
         """.stripMargin
 
@@ -324,6 +366,8 @@ class UserApiTest
         verify(socialService).login(
           matches("google"),
           matches("ABCDEFGHIJK"),
+          matches("FR"),
+          matches("fr"),
           matches(Some("192.0.0.1")),
           any[RequestContext]
         )
@@ -334,7 +378,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Option[String]], any[RequestContext])
+            .login(any[String], any[String], any[String], any[String], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
@@ -369,22 +413,40 @@ class UserApiTest
     info("As a user with an email")
     info("I want to use api to reset my password")
 
-    val johnDoeId = UserId("JOHNDOE")
+    val johnDoeUser = User(
+      userId = UserId("JOHNDOE"),
+      email = "john.doe@example.com",
+      firstName = Some("John"),
+      lastName = Some("Doe"),
+      lastIp = Some("127.0.0.1"),
+      hashedPassword = Some("passpass"),
+      enabled = true,
+      verified = false,
+      lastConnection = DateHelper.now(),
+      verificationToken = Some("token"),
+      verificationTokenExpiresAt = Some(DateHelper.now()),
+      resetToken = None,
+      resetTokenExpiresAt = None,
+      roles = Seq.empty,
+      country = "FR",
+      language = "fr",
+      profile = None
+    )
     Mockito
-      .when(persistentUserService.findUserIdByEmail("john.doe@example.com"))
-      .thenReturn(Future.successful(Some(johnDoeId)))
+      .when(persistentUserService.findByEmail("john.doe@example.com"))
+      .thenReturn(Future.successful(Some(johnDoeUser)))
     Mockito
       .when(persistentUserService.findUserIdByEmail("invalidexample.com"))
       .thenAnswer(_ => throw new IllegalArgumentException("findUserIdByEmail should be called with valid email"))
     when(eventBusService.publish(ArgumentMatchers.any[ResetPasswordEvent]))
       .thenAnswer(
         invocation =>
-          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeId)) {
+          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeUser.userId)) {
             throw new IllegalArgumentException("UserId not match")
         }
       )
     Mockito
-      .when(persistentUserService.findUserIdByEmail("fake@example.com"))
+      .when(persistentUserService.findByEmail("fake@example.com"))
       .thenReturn(Future.successful(None))
 
     val fooBarUserId = UserId("foo-bar")
@@ -403,6 +465,8 @@ class UserApiTest
       resetToken = Some("baz-bar"),
       resetTokenExpiresAt = Some(DateHelper.now().minusDays(1)),
       roles = Seq(Role.RoleCitizen),
+      country = "FR",
+      language = "fr",
       profile = None
     )
 
@@ -423,6 +487,8 @@ class UserApiTest
       resetToken = Some("valid-reset-token"),
       resetTokenExpiresAt = Some(DateHelper.now().plusDays(1)),
       roles = Seq(Role.RoleCitizen),
+      country = "FR",
+      language = "fr",
       profile = None
     )
 
@@ -647,6 +713,8 @@ class UserApiTest
               resetToken = None,
               resetTokenExpiresAt = None,
               roles = Seq(Role.RoleCitizen),
+              country = "FR",
+              language = "fr",
               profile = None,
               createdAt = None,
               updatedAt = None

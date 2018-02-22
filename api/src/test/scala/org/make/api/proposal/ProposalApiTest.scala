@@ -80,6 +80,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -100,6 +102,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleAdmin),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -120,6 +124,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
+    country = "FR",
+    language = "fr",
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -344,7 +350,6 @@ class ProposalApiTest
       )
     )
 
-
   val routes: Route = sealRoute(proposalRoutes)
 
   when(operationService.findOne(matches(OperationId("1234-1234")))).thenReturn(
@@ -382,7 +387,12 @@ class ProposalApiTest
       Then("the proposal should be saved if valid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "language": "fr", "country": "FR"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$validProposalText", "language": "fr", "country": "FR"}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
@@ -394,7 +404,12 @@ class ProposalApiTest
       Then("the proposal should be rejected if invalid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMaxLengthProposalText", "language": "fr", "country": "FR"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$invalidMaxLengthProposalText", "language": "fr", "country": "FR"}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
@@ -409,7 +424,12 @@ class ProposalApiTest
       Then("the proposal should be rejected if invalid")
 
       Post("/proposals")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"content": "$invalidMinLengthProposalText", "language": "fr", "country": "FR"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$invalidMinLengthProposalText", "language": "fr", "country": "FR"}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
@@ -425,7 +445,10 @@ class ProposalApiTest
       Then("the proposal should be rejected")
       Post("/proposals")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "1234-1234")) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -442,7 +465,10 @@ class ProposalApiTest
       Then("the proposal should be rejected")
       Post("/proposals")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "country": "FR"}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$validProposalText", "operationId": "fake", "country": "FR"}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -459,7 +485,10 @@ class ProposalApiTest
       Then("the proposal should be rejected")
       Post("/proposals")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr"}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr"}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)

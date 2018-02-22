@@ -73,6 +73,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
+        country = "FR",
+        language = "fr",
         profile = Some(returnedProfile)
       )
 
@@ -90,7 +92,9 @@ class UserServiceTest
           lastName = Some("olive"),
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
-          dateOfBirth = Some(LocalDate.parse("1984-10-11"))
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          country = "FR",
+          language = "fr"
         ),
         RequestContext.empty
       )
@@ -111,6 +115,8 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         lastName = Some("user"),
+        country = "FR",
+        language = "fr",
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -149,6 +155,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
+        country = "FR",
+        language = "fr",
         profile = Some(returnedProfile)
       )
 
@@ -179,7 +187,9 @@ class UserServiceTest
         gender = Some("female"),
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        country = "FR",
+        language = "fr"
       )
 
       val returnedProfileWithGender = Profile(
@@ -212,6 +222,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
+        country = "FR",
+        language = "fr",
         profile = Some(returnedProfileWithGender)
       )
 
@@ -247,7 +259,9 @@ class UserServiceTest
           lastName = Some("olive"),
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
-          dateOfBirth = Some(LocalDate.parse("1984-10-11"))
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          country = "FR",
+          language = "fr"
         ),
         RequestContext.empty
       )
@@ -272,6 +286,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(),
+        country = "FR",
+        language = "fr",
         profile = None
       )
 
@@ -281,6 +297,8 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         lastName = Some("user"),
+        country = "FR",
+        language = "fr",
         gender = None,
         googleId = None,
         facebookId = Some("444444"),

@@ -43,6 +43,19 @@ object BusinessConfig {
     CountryConfiguration("IT", "it", Seq("it")),
     CountryConfiguration("GB", "en", Seq("en"))
   )
+
+  def validateCountry(country: String): String =
+    supportedCountries.map(_.countryCode).find(_ == country).getOrElse("FR")
+
+  def validateLanguage(country: String, language: String): String =
+    supportedCountries
+      .find(_.countryCode == country)
+      .map { countryConfiguration =>
+        countryConfiguration.supportedLanguages
+          .find(_ == language)
+          .getOrElse(countryConfiguration.defaultLanguage)
+      }
+      .getOrElse("fr")
 }
 
 object FrontConfiguration {
@@ -70,7 +83,16 @@ object BackofficeConfiguration {
   val defaultMinProposalsPerSequence: Int = 3
   val defaultMaxProposalsPerSequence: Int = 12
   val defaultReasonsForRefusal: Seq[String] =
-    Seq("Incomprehensible", "Off-topic", "Partisan", "Legal", "Advertising", "MultipleIdeas", "InvalidLanguage","Other")
+    Seq(
+      "Incomprehensible",
+      "Off-topic",
+      "Partisan",
+      "Legal",
+      "Advertising",
+      "MultipleIdeas",
+      "InvalidLanguage",
+      "Other"
+    )
 
   def default(
     proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,

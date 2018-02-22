@@ -51,6 +51,8 @@ object PersistentUserServiceComponent {
                             gender: String,
                             genderName: Option[String],
                             postalCode: Option[String],
+                            country: String,
+                            language: String,
                             karmaLevel: Option[Int],
                             locale: Option[String],
                             optInNewsletter: Boolean) {
@@ -70,6 +72,8 @@ object PersistentUserServiceComponent {
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
         roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
+        country = country,
+        language = language,
         profile = toProfile
       )
     }
@@ -134,7 +138,9 @@ object PersistentUserServiceComponent {
       "verification_token_expires_at",
       "reset_token",
       "reset_token_expires_at",
-      "roles"
+      "roles",
+      "country",
+      "language"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -173,6 +179,8 @@ object PersistentUserServiceComponent {
         gender = resultSet.string(userResultName.gender),
         genderName = resultSet.stringOpt(userResultName.genderName),
         postalCode = resultSet.stringOpt(userResultName.postalCode),
+        country = resultSet.string(userResultName.country),
+        language = resultSet.string(userResultName.language),
         karmaLevel = resultSet.intOpt(userResultName.karmaLevel),
         locale = resultSet.stringOpt(userResultName.locale),
         optInNewsletter = resultSet.boolean(userResultName.optInNewsletter)
@@ -205,7 +213,8 @@ trait PersistentUserService {
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentUserService = new PersistentUserService with ShortenedNames with StrictLogging {
+  override lazy val persistentUserService: PersistentUserService = new PersistentUserService with ShortenedNames
+  with StrictLogging {
 
     private val userAlias = PersistentUser.userAlias
     private val column = PersistentUser.column
@@ -360,18 +369,20 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
               column.roles -> user.roles.map(_.shortName).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
-              column.avatarUrl -> user.profile.map(_.avatarUrl),
-              column.profession -> user.profile.map(_.profession),
-              column.phoneNumber -> user.profile.map(_.phoneNumber),
-              column.twitterId -> user.profile.map(_.twitterId),
-              column.facebookId -> user.profile.map(_.facebookId),
-              column.googleId -> user.profile.map(_.googleId),
-              column.gender -> user.profile.map(_.gender.map(_.shortName)),
-              column.genderName -> user.profile.map(_.genderName),
-              column.postalCode -> user.profile.map(_.postalCode),
-              column.karmaLevel -> user.profile.map(_.karmaLevel),
-              column.locale -> user.profile.map(_.locale),
-              column.dateOfBirth -> user.profile.map(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
+              column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
+              column.profession -> user.profile.flatMap(_.profession),
+              column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
+              column.twitterId -> user.profile.flatMap(_.twitterId),
+              column.facebookId -> user.profile.flatMap(_.facebookId),
+              column.googleId -> user.profile.flatMap(_.googleId),
+              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.genderName -> user.profile.flatMap(_.genderName),
+              column.postalCode -> user.profile.flatMap(_.postalCode),
+              column.country -> user.country,
+              column.language -> user.language,
+              column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
+              column.locale -> user.profile.flatMap(_.locale),
+              column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
               column.optInNewsletter -> user.profile.forall(_.optInNewsletter)
             )
         }.execute().apply()

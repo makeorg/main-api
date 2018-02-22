@@ -93,6 +93,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     verificationTokenExpiresAt = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 
@@ -181,11 +183,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(
-        proposalId = proposalId,
-        country = Some("FR"),
-        language = Some("fr")
-      )))
+      expectMsg(Some(proposal(proposalId = proposalId, country = Some("FR"), language = Some("fr"))))
     }
   }
 
@@ -223,11 +221,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
-      expectMsg(Some(proposal(
-        proposalId = proposalId,
-        country = Some("FR"),
-        language = Some("fr")
-      )))
+      expectMsg(Some(proposal(proposalId = proposalId, country = Some("FR"), language = Some("fr"))))
     }
   }
 

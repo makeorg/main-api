@@ -54,6 +54,8 @@ class OperationServiceIT
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = Some(profile)
   )
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)

@@ -50,7 +50,9 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
             firstName = event.firstName,
             lastName = event.lastName,
             profession = event.profession,
-            postalCode = event.postalCode
+            postalCode = event.postalCode,
+            country = event.country,
+            language = event.language
           )
         )
       )

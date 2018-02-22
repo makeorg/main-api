@@ -41,6 +41,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     verificationTokenExpiresAt = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
+    country = "FR",
+    language = "fr",
     profile = None
   )
 

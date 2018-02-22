@@ -4,6 +4,7 @@ import java.time.LocalDate
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
+import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, ResetTokenRequestException}
 import org.make.api.user.social.models.UserInfo
@@ -42,7 +43,9 @@ case class UserRegisterData(email: String,
                             lastIp: Option[String],
                             dateOfBirth: Option[LocalDate] = None,
                             profession: Option[String] = None,
-                            postalCode: Option[String] = None)
+                            postalCode: Option[String] = None,
+                            country: String,
+                            language: String)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames {
   this: IdGeneratorComponent
@@ -65,8 +68,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     private def registerUser(userRegisterData: UserRegisterData,
                              lowerCasedEmail: String,
+                             country: String,
+                             language: String,
                              profile: Option[Profile],
-                             hashedVerificationToken: String) = {
+                             hashedVerificationToken: String): Future[User] = {
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
@@ -82,6 +87,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
+        country = country,
+        language = language,
         profile = profile
       )
       persistentUserService.persist(user)
@@ -105,6 +112,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User] = {
 
+      val country = BusinessConfig.validateCountry(userRegisterData.country)
+      val language = BusinessConfig.validateLanguage(userRegisterData.country, userRegisterData.language)
+
       val lowerCasedEmail: String = userRegisterData.email.toLowerCase()
       val profile: Option[Profile] =
         Profile.parseProfile(
@@ -116,7 +126,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val result = for {
         emailExists             <- persistentUserService.emailExists(lowerCasedEmail)
         hashedVerificationToken <- generateVerificationToken(lowerCasedEmail, emailExists)
-        user                    <- registerUser(userRegisterData, lowerCasedEmail, profile, hashedVerificationToken)
+        user                    <- registerUser(userRegisterData, lowerCasedEmail, country, language, profile, hashedVerificationToken)
       } yield user
 
       result.onComplete {
@@ -131,7 +141,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               lastName = user.lastName,
               profession = user.profile.flatMap(_.profession),
               dateOfBirth = user.profile.flatMap(_.dateOfBirth),
-              postalCode = user.profile.flatMap(_.postalCode)
+              postalCode = user.profile.flatMap(_.postalCode),
+              country = user.country,
+              language = user.language
             )
           )
         case _ =>
@@ -143,6 +155,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def getOrCreateUserFromSocial(userInfo: UserInfo,
                                            clientIp: Option[String],
                                            requestContext: RequestContext): Future[User] = {
+
+      val country = BusinessConfig.validateCountry(userInfo.country)
+      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
+
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
@@ -182,6 +198,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             resetToken = None,
             resetTokenExpiresAt = None,
             roles = roles,
+            country = country,
+            language = language,
             profile = profile
           )
 

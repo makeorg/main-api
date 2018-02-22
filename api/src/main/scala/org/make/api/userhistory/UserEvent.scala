@@ -14,6 +14,8 @@ sealed trait UserEvent extends UserRelatedEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def requestContext: RequestContext
+  def country: String
+  def language: String
   def version(): Int
 }
 
@@ -64,28 +66,52 @@ object UserEvent {
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
+                                      override val country: String = "FR",
+                                      override val language: String = "fr",
                                       override val requestContext: RequestContext)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
   object ResetPasswordEvent {
-    def apply(connectedUserId: Option[UserId], user: User, requestContext: RequestContext): ResetPasswordEvent = {
-      ResetPasswordEvent(userId = user.userId, connectedUserId = connectedUserId, requestContext = requestContext)
+    def apply(connectedUserId: Option[UserId],
+              user: User,
+              country: String,
+              language: String,
+              requestContext: RequestContext): ResetPasswordEvent = {
+      ResetPasswordEvent(
+        userId = user.userId,
+        connectedUserId = connectedUserId,
+        country = country,
+        language = language,
+        requestContext = requestContext
+      )
     }
   }
 
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
                                               override val eventDate: ZonedDateTime = DateHelper.now(),
                                               override val userId: UserId,
+                                              override val country: String = "FR",
+                                              override val language: String = "fr",
                                               override val requestContext: RequestContext)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
   object ResendValidationEmailEvent {
-    def apply(connectedUserId: UserId, userId: UserId, requestContext: RequestContext): ResendValidationEmailEvent = {
-      ResendValidationEmailEvent(userId = userId, connectedUserId = connectedUserId, requestContext = requestContext)
+    def apply(connectedUserId: UserId,
+              userId: UserId,
+              country: String,
+              language: String,
+              requestContext: RequestContext): ResendValidationEmailEvent = {
+      ResendValidationEmailEvent(
+        userId = userId,
+        connectedUserId = connectedUserId,
+        country = country,
+        language = language,
+        requestContext = requestContext
+      )
     }
   }
 
@@ -98,7 +124,9 @@ object UserEvent {
                                  lastName: Option[String],
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
-                                 postalCode: Option[String])
+                                 postalCode: Option[String],
+                                 override val country: String = "FR",
+                                 override val language: String = "fr")
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -106,6 +134,8 @@ object UserEvent {
   final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
+                                      override val country: String = "FR",
+                                      override val language: String = "fr",
                                       override val requestContext: RequestContext)
       extends UserEvent {
 
@@ -115,6 +145,8 @@ object UserEvent {
   final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
                                              override val eventDate: ZonedDateTime = DateHelper.now(),
                                              override val userId: UserId = UserId(value = ""),
+                                             override val country: String = "FR",
+                                             override val language: String = "fr",
                                              override val requestContext: RequestContext = RequestContext.empty)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
@@ -123,6 +155,8 @@ object UserEvent {
   final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
                                        override val eventDate: ZonedDateTime = DateHelper.now(),
                                        override val userId: UserId = UserId(value = ""),
+                                       override val country: String = "FR",
+                                       override val language: String = "fr",
                                        override val requestContext: RequestContext = RequestContext.empty,
                                        oldTag: String,
                                        newTag: String)
