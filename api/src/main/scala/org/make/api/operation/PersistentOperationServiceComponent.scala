@@ -24,7 +24,9 @@ trait PersistentOperationServiceComponent {
 }
 
 trait PersistentOperationService {
-  def find(slug: Option[String] = None): Future[Seq[Operation]]
+  def find(slug: Option[String] = None,
+           country: Option[String] = None,
+           openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getBySlug(slug: String): Future[Option[Operation]]
@@ -51,7 +53,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     private val operationTranslationColumn = PersistentOperationTranslation.column
     private val operationActionColumn = PersistentOperationAction.column
     private val operationCountryConfigurationColumn = PersistentOperationCountryConfiguration.column
-    private val baseSelect = select
+    private val baseSelect: scalikejdbc.SelectSQLBuilder[Nothing] = select
       .from(PersistentOperation.as(operationAlias))
       .leftJoin(PersistentOperationTranslation.as(operationTranslationAlias))
       .on(operationAlias.uuid, operationTranslationAlias.operationUuid)
@@ -60,14 +62,23 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
-    override def find(slug: Option[String] = None): Future[Seq[Operation]] = {
+    override def find(slug: Option[String] = None,
+                      country: Option[String] = None,
+                      openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL {
             baseSelect
               .copy()
-              .where(sqls.toAndConditionOpt(slug.map(slug => sqls.eq(operationAlias.slug, slug))))
+              .where(
+                sqls.toAndConditionOpt(
+                  slug.map(slug => sqls.eq(operationAlias.slug, slug)),
+                  country.map(country => sqls.eq(operationCountryConfigurationAlias.country, country)),
+                  openAt.map(openAt => sqls.le(operationCountryConfigurationAlias.startDate, openAt)),
+                  openAt.map(openAt => sqls.ge(operationCountryConfigurationAlias.endDate, openAt))
+                )
+              )
           }.one(PersistentOperation.apply())
             .toManies(
               resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
