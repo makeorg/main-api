@@ -166,38 +166,33 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                limit,
                skip,
                isRandom) =>
-                Validation.validate(
-                  Seq(
-                    country.map { countryValue =>
-                      Validation.validChoices(
-                        fieldName = "country",
-                        message = Some("Invalid country"),
-                        Seq(countryValue),
-                        BusinessConfig.supportedCountries
-                      )
-                    },
-                    sort.map { sortValue =>
-                      val choices =
-                        Seq("content", "slug", "createdAt", "updatedAt", "trending", "labels", "country", "language")
-                      Validation.validChoices(
-                        fieldName = "sort",
-                        message = Some(
-                          s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                        ),
-                        Seq(sortValue),
-                        choices
-                      )
-                    },
-                    order.map { orderValue =>
-                      Validation.validChoices(
-                        fieldName = "order",
-                        message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
-                        Seq(orderValue),
-                        Order.orders.keys.toSeq
-                      )
-                    }
-                  ).flatten: _*
-                )
+                Validation.validate(Seq(country.map { countryValue =>
+                  Validation.validChoices(
+                    fieldName = "country",
+                    message =
+                      Some(s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"),
+                    Seq(countryValue.toUpperCase),
+                    BusinessConfig.supportedCountries.map(_.countryCode)
+                  )
+                }, sort.map { sortValue =>
+                  val choices =
+                    Seq("content", "slug", "createdAt", "updatedAt", "trending", "labels", "country", "language")
+                  Validation.validChoices(
+                    fieldName = "sort",
+                    message = Some(
+                      s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                    ),
+                    Seq(sortValue),
+                    choices
+                  )
+                }, order.map { orderValue =>
+                  Validation.validChoices(
+                    fieldName = "order",
+                    message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                    Seq(orderValue),
+                    Order.orders.keys.toSeq
+                  )
+                }).flatten: _*)
 
                 val contextFilterRequest: Option[ContextFilterRequest] =
                   operationId.orElse(source).orElse(location).orElse(question).map { _ =>
@@ -217,8 +212,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   slug = slug,
                   seed = seed,
                   context = contextFilterRequest,
-                  language = language,
-                  country = country,
+                  language = language.map(_.toLowerCase),
+                  country = country.map(_.toUpperCase),
                   sort = sortRequest,
                   limit = limit,
                   skip = skip,

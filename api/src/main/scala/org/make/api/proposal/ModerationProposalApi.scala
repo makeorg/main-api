@@ -320,9 +320,11 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                       country.map { countryValue =>
                         Validation.validChoices(
                           fieldName = "country",
-                          message = Some("Invalid country"),
-                          Seq(countryValue),
-                          BusinessConfig.supportedCountries
+                          message = Some(
+                            s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
+                          ),
+                          Seq(countryValue.toUpperCase),
+                          BusinessConfig.supportedCountries.map(_.countryCode)
                         )
                       },
                       sort.map { sortValue =>
@@ -376,8 +378,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     content = content,
                     context = contextFilterRequest,
                     status = status.map(_.flatMap(ProposalStatus.statusMap.get)),
-                    language = language,
-                    country = country,
+                    language = language.map(_.toLowerCase),
+                    country = country.map(_.toUpperCase),
                     sort = sortRequest,
                     limit = limit,
                     skip = skip
