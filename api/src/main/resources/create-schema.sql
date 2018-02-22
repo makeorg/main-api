@@ -28,14 +28,15 @@ CREATE TABLE IF NOT EXISTS make_user (
   gender VARCHAR(1) DEFAULT NULL,
   gender_name VARCHAR(20) DEFAULT NULL,
   postal_code VARCHAR(10) DEFAULT NULL,
-  country VARCHAR(3) DEFAULT 'FR',
-  language VARCHAR(3) DEFAULT 'fr',
   karma_level INT DEFAULT 0,
   locale VARCHAR(8) DEFAULT NULL,
   opt_in_newsletter BOOLEAN DEFAULT FALSE NOT NULL
 );
 %
 CREATE UNIQUE index IF NOT EXISTS email_unique_index ON make_user (email);
+%
+ALTER TABLE IF EXISTS make_user ADD COLUMN country VARCHAR(3) DEFAULT 'FR';
+ALTER TABLE IF EXISTS make_user ADD COLUMN language VARCHAR(3) DEFAULT 'fr';
 %
 CREATE TABLE IF NOT EXISTS oauth_client (
   uuid VARCHAR(256) PRIMARY KEY,
