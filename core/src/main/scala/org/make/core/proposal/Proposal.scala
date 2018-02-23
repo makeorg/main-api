@@ -10,7 +10,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.reference.{LabelId, TagId, ThemeId}
 import org.make.core.user.UserId
-import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
+import org.make.core.{RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
@@ -33,8 +33,7 @@ final case class Proposal(proposalId: ProposalId,
                           override val createdAt: Option[ZonedDateTime],
                           override val updatedAt: Option[ZonedDateTime],
                           events: List[ProposalAction])
-    extends MakeSerializable
-    with Timestamped
+    extends Timestamped
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
