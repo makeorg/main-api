@@ -1,14 +1,13 @@
 package org.make.api.proposal
 
 import org.make.api.proposal.ProposalActor.ProposalState
-import org.make.core.SprayJsonFormatters
-import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
-import stamina.{V1, V2}
-import spray.json.lenses.JsonLenses._
+import org.make.core.SprayJsonFormatters
 import spray.json.DefaultJsonProtocol._
+import spray.json.lenses.JsonLenses._
 import stamina.json._
+import stamina.{V1, V2}
 
 object ProposalSerializers extends SprayJsonFormatters {
 
@@ -51,14 +50,17 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val similarProposalsAddedSerializer: JsonPersister[SimilarProposalsAdded, V1] =
     persister[SimilarProposalsAdded]("similar-proposals-added")
 
-  private val proposalSerializer: JsonPersister[Proposal, V2] =
-    persister[Proposal, V2]("proposal", from[V1].to[V2](_.update('similarProposals ! set[Seq[ProposalId]](Seq.empty))))
-
   private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
     persister[ProposalLocked]("proposal-locked")
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V1] =
-    persister[ProposalState]("proposalState")
+  private val proposalStateSerializer: JsonPersister[ProposalState, V2] =
+    persister[ProposalState, V2](
+      "proposalState",
+      from[V1].to[V2](
+        _.update('proposal / 'language ! set[Option[String]](Some("fr")))
+          .update('proposal / 'country ! set[Option[String]](Some("FR")))
+      )
+    )
 
   private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
     persister[SimilarProposalRemoved]("similar-proposal-removed")
@@ -90,7 +92,6 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalLockedSerializer,
       proposalStateSerializer,
       similarProposalsAddedSerializer,
-      proposalSerializer,
       similarProposalRemovedSerializer,
       similarProposalsClearedSerializer,
       proposalPatchedSerializer,
