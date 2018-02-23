@@ -204,7 +204,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           )
 
           persistentUserService.persist(user).map { user =>
-            eventBusService.publish(UserValidatedAccountEvent(userId = user.userId, requestContext = requestContext))
+            eventBusService.publish(UserValidatedAccountEvent(userId = user.userId, country = country, language = language, requestContext = requestContext))
             user
           }
       }
