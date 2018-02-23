@@ -98,13 +98,13 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     profile = None
   )
 
-  private def proposal(proposalId: ProposalId, country: Option[String], language: Option[String]) = Proposal(
+  private def proposal(proposalId: ProposalId, content: String, slug: String, country: Option[String], language: Option[String]) = Proposal(
     proposalId = proposalId,
     author = mainUserId,
-    content = "This is a proposal",
+    content = content,
     createdAt = mainCreatedAt,
     updatedAt = None,
-    slug = "this-is-a-proposal",
+    slug = slug,
     creationContext = RequestContext.empty,
     labels = Seq(),
     theme = None,
@@ -141,7 +141,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         date = mainCreatedAt.get,
         user = mainUserId,
         actionType = ProposalProposeAction.name,
-        arguments = Map("content" -> "This is a proposal")
+        arguments = Map("content" -> content)
       )
     ),
     country = country,
@@ -152,6 +152,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("Propose a proposal") {
     val proposalId: ProposalId = ProposalId("proposeCommand")
+    val proposalItalyId: ProposalId = ProposalId("proposeItalyCommand")
     scenario("Initialize the state if it was empty") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
@@ -174,7 +175,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId, Some("FR"), Some("fr"))))
+      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
 
       And("recover its state after having been kill")
       coordinator ! KillProposalShard(proposalId, RequestContext.empty)
@@ -183,7 +184,41 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId = proposalId, country = Some("FR"), language = Some("fr"))))
+      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
+    }
+
+    scenario("Initialize the state for a proposal from Italy") {
+      Given("an empty state")
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
+      expectMsg(None)
+
+      And("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalItalyId,
+        RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is an italian proposal",
+        country = Some("IT"),
+        language = Some("it")
+      )
+
+      expectMsg(proposalItalyId)
+
+      Then("have the proposal state after proposal")
+
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
+
+      expectMsg(Some(proposal(proposalId = proposalItalyId, content = "This is an italian proposal", slug = "this-is-an-italian-proposal", country = Some("IT"), language = Some("it"))))
+
+      And("recover its state after having been kill")
+      coordinator ! KillProposalShard(proposalItalyId, RequestContext.empty)
+
+      Thread.sleep(THREAD_SLEEP_MICROSECONDS)
+
+      coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
+
+      expectMsg(Some(proposal(proposalId = proposalItalyId, content = "This is an italian proposal", slug = "this-is-an-italian-proposal", country = Some("IT"), language = Some("it"))))
     }
   }
 
@@ -221,7 +256,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
-      expectMsg(Some(proposal(proposalId = proposalId, country = Some("FR"), language = Some("fr"))))
+      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
     }
   }
 

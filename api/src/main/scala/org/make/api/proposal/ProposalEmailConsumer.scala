@@ -68,8 +68,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user @ __    <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = user.country
-          val language = user.language
+          val country = proposal.country.getOrElse(user.country)
+          val language = proposal.language.getOrElse(user.language)
           val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
@@ -127,8 +127,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user @ _     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = user.country
-          val language = user.language
+          val country = proposal.country.getOrElse(user.country)
+          val language = proposal.language.getOrElse(user.language)
           val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
