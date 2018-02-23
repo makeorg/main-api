@@ -568,7 +568,9 @@ case class UserResponse(userId: UserId,
                         verified: Boolean,
                         lastConnection: ZonedDateTime,
                         roles: Seq[Role],
-                        profile: Option[Profile])
+                        profile: Option[Profile],
+                        country: String,
+                        language: String)
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
@@ -583,6 +585,8 @@ object UserResponse extends CirceFormatters {
     verified = user.verified,
     lastConnection = user.lastConnection,
     roles = user.roles,
-    profile = user.profile
+    profile = user.profile,
+    country = user.country,
+    language = user.language
   )
 }

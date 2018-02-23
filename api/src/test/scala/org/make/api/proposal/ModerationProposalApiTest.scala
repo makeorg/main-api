@@ -260,7 +260,9 @@ class ModerationProposalApiTest
             verified = true,
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
-            None
+            None,
+            country = "FR",
+            language = "fr"
           ),
           labels = proposalSim123.labels,
           theme = None,
@@ -301,7 +303,9 @@ class ModerationProposalApiTest
             verified = true,
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
-            None
+            None,
+            country = "FR",
+            language = "fr"
           ),
           labels = proposalSim124.labels,
           theme = None,
@@ -373,7 +377,9 @@ class ModerationProposalApiTest
         verified = true,
         lastConnection = DateHelper.now(),
         roles = Seq.empty,
-        None
+        None,
+        country = "FR",
+        language = "fr"
       ),
       labels = Seq(),
       theme = None,
