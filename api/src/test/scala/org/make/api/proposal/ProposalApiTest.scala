@@ -246,7 +246,9 @@ class ProposalApiTest
             verified = true,
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
-            None
+            None,
+            country = "FR",
+            language = "fr"
           ),
           labels = Seq(),
           theme = None,
@@ -312,7 +314,9 @@ class ProposalApiTest
         verified = true,
         lastConnection = DateHelper.now(),
         roles = Seq.empty,
-        None
+        None,
+        country = "FR",
+        language = "fr"
       ),
       labels = Seq(),
       theme = None,
