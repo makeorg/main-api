@@ -74,6 +74,11 @@ object BusinessConfig {
           .getOrElse(countryConfiguration.defaultLanguage)
       }
       .getOrElse("fr")
+
+  def coreIsAvailableForCountry(country: String): Boolean = {
+    supportedCountries.find(_.countryCode == country).exists(_.coreIsAvailable)
+  }
+
 }
 
 object FrontConfiguration {
