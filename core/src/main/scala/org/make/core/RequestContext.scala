@@ -13,6 +13,7 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 sessionId: SessionId,
                                 externalId: String,
                                 country: Option[String],
+                                detectedCountry: Option[String] = None,
                                 language: Option[String],
                                 operationId: Option[OperationId] = None,
                                 source: Option[String],
@@ -28,9 +29,25 @@ object RequestContext {
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]
 
   val empty: RequestContext =
-    RequestContext(None, "", SessionId(""), "", None, None, None, None, None, None, None, None, None)
+    RequestContext(
+      currentTheme = None,
+      requestId = "",
+      sessionId = SessionId(""),
+      externalId = "",
+      country = None,
+      detectedCountry = None,
+      language = None,
+      operationId = None,
+      source = None,
+      location = None,
+      question = None,
+      hostname = None,
+      ipAddress = None,
+      getParameters = None,
+      userAgent = None
+    )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat14(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat15(RequestContext.apply)
 
 }
