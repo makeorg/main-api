@@ -5,5 +5,7 @@
   "lastName": null,
   "password": "${password}",
   "postalCode": null,
-  "profession": null
+  "profession": null,
+  "country": "${country}",
+  "language": "${language}"
 }

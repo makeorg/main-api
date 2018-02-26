@@ -22,6 +22,8 @@ class Core extends Simulation {
     .header("x-make-source", "core")
     .header("x-make-location", "homepage")
     .header("x-make-question", "")
+    .header("x-make-country", "FR")
+    .header("x-make-language", "fr")
     .disableCaching
 
   setUp(
@@ -52,7 +54,7 @@ class Core extends Simulation {
             if (proposal("theme").isEmpty) {
               null
             } else {
-              Json.stringify(proposal("theme"), false)
+              Json.stringify(proposal("theme"), isRootObject = false)
             }
           }
 
@@ -61,6 +63,8 @@ class Core extends Simulation {
             .set("theme", theme)
             .set("tags", tags)
             .set("labels", labels)
+            .set("country", proposal("country"))
+            .set("language", proposal("language"))
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
           ProposalChainBuilder.createProposal,

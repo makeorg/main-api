@@ -23,6 +23,8 @@ class Vff extends Simulation {
     .header("x-make-source", "core")
     .header("x-make-location", "")
     .header("x-make-question", "")
+    .header("x-make-country", "FR")
+    .header("x-make-language", "fr")
     .disableCaching
 
   setUp(
@@ -55,6 +57,8 @@ class Vff extends Simulation {
             .set("tags", tags)
             .set("labels", Json.stringify(Seq.empty))
             .set("operationId", "vff")
+            .set("country", proposal("country"))
+            .set("language", proposal("language"))
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),

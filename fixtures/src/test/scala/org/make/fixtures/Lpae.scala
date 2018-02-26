@@ -22,6 +22,8 @@ class Lpae extends Simulation {
     .header("x-make-source", "core")
     .header("x-make-location", "")
     .header("x-make-question", "Vous avez les cl&eacute;s du monde, que changez-vous ?")
+    .header("x-make-country", "FR")
+    .header("x-make-language", "fr")
     .disableCaching
 
   setUp(
@@ -56,6 +58,8 @@ class Lpae extends Simulation {
 
           session
             .set("content", proposal("content"))
+            .set("country", proposal("country"))
+            .set("language", proposal("language"))
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),

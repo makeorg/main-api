@@ -22,6 +22,8 @@ class ClimatParis extends Simulation {
     .header("x-make-source", "core")
     .header("x-make-location", "")
     .header("x-make-question", "")
+    .header("x-make-country", "FR")
+    .header("x-make-language", "fr")
     .disableCaching
 
   setUp(
@@ -32,6 +34,8 @@ class ClimatParis extends Simulation {
           .set("dateOfBirth", "null")
           .set("firstName", "Mairie de Paris")
           .set("password", "U93XCRtH")
+          .set("country", "FR")
+          .set("language", "fr")
 
       })
       .exec(UserChainBuilder.createUser)
@@ -50,10 +54,10 @@ class ClimatParis extends Simulation {
         }
       )
       .exec(
-        MakeServicesBuilder.searchOperationBuilder("climatparis")
+        MakeServicesBuilder
+          .searchOperationBuilder("climatparis")
           .asJSON
           .check(jsonPath("$[0].operationId").saveAs("operationId"))
-
       )
       .foreach("${proposals}", "proposal") {
 
@@ -64,13 +68,12 @@ class ClimatParis extends Simulation {
 
           session
             .set("content", proposal("content"))
-            .set("tags", tags)
-            .set("labels", Json.stringify(Seq.empty))
+            .set("country", proposal("country"))
+            .set("language", proposal("language"))
 
         }).exec(
           UserChainBuilder.authenticate(UserAuthParams(username = "${username}", password = "${password}")),
-          ProposalChainBuilder.createProposalOperation,
-          UserChainBuilder.authenticateAsAdmin
+          ProposalChainBuilder.createProposalOperation
         )
       }
       .inject(heavisideUsers(maxClients).over(2.minutes))
