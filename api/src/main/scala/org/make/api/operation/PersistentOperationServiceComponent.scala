@@ -4,7 +4,12 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.operation.DefaultPersistentOperationServiceComponent.{PersistentOperation, PersistentOperationAction, PersistentOperationCountryConfiguration, PersistentOperationTranslation}
+import org.make.api.operation.DefaultPersistentOperationServiceComponent.{
+  PersistentOperation,
+  PersistentOperationAction,
+  PersistentOperationCountryConfiguration,
+  PersistentOperationTranslation
+}
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -73,10 +78,15 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               .copy()
               .where(
                 sqls.toAndConditionOpt(
-                  slug.map(slug => sqls.eq(operationAlias.slug, slug)),
+                  slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
                   country.map(country => sqls.eq(operationCountryConfigurationAlias.country, country)),
-                  openAt.map(openAt => sqls.le(operationCountryConfigurationAlias.startDate, openAt)),
-                  openAt.map(openAt => sqls.ge(operationCountryConfigurationAlias.endDate, openAt))
+                  openAt.map(openAt   => sqls.le(operationCountryConfigurationAlias.startDate, openAt)),
+                  openAt.map(
+                    openAt =>
+                      sqls
+                        .ge(operationCountryConfigurationAlias.endDate, openAt)
+                        .or(sqls.isNull(operationCountryConfigurationAlias.endDate))
+                  )
                 )
               )
           }.one(PersistentOperation.apply())
@@ -498,7 +508,16 @@ object DefaultPersistentOperationServiceComponent {
     val TAG_SEPARATOR = '|'
 
     override val columnNames: Seq[String] =
-      Seq("operation_uuid", "country", "tag_ids", "landing_sequence_id", "start_date", "end_date", "created_at", "updated_at")
+      Seq(
+        "operation_uuid",
+        "country",
+        "tag_ids",
+        "landing_sequence_id",
+        "start_date",
+        "end_date",
+        "created_at",
+        "updated_at"
+      )
 
     override val tableName: String = "operation_country_configuration"
 

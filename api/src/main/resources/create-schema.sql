@@ -558,5 +558,7 @@ CREATE TABLE IF NOT EXISTS sequence_configuration (
 ALTER TABLE IF EXISTS operation_country_configuration ADD COLUMN start_date DATE DEFAULT NULL;
 ALTER TABLE IF EXISTS operation_country_configuration ADD COLUMN end_date DATE DEFAULT NULL;
 UPDATE operation_country_configuration SET end_date = '2018-01-31' WHERE country = 'FR' AND operation_uuid = (SELECT uuid FROM operation where slug = 'vff');
+UPDATE operation_country_configuration SET start_date = '2018-03-08' WHERE country = 'IT' AND operation_uuid = (SELECT uuid FROM operation where slug = 'vff');
+UPDATE operation_country_configuration SET start_date = '2018-03-08' WHERE country = 'GB' AND operation_uuid = (SELECT uuid FROM operation where slug = 'vff');
 UPDATE operation_country_configuration SET end_date = '2018-03-01' WHERE country = 'FR' AND operation_uuid = (SELECT uuid FROM operation where slug = 'lpae');
 %
