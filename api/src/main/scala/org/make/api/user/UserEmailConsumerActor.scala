@@ -92,6 +92,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
+        //todo: refactor to handle multiple operation by country
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
           case None =>
