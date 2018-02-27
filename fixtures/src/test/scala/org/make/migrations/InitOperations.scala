@@ -83,8 +83,8 @@ class InitOperations extends Simulation {
         )
     )
     .exec(
-      MakeServicesBuilder.updateOperationBuilder
-        .body(ElFileBody("jsonModel/updateOperation.json"))
+      MakeServicesBuilder.createOperationBuilder
+        .body(ElFileBody("jsonModel/createOperation.json"))
         .asJSON
         .check(status.is(200))
     )
@@ -105,30 +105,42 @@ class InitOperations extends Simulation {
       session
         .set("operationTitle", "Climat Paris")
         .set("operationSlug", "climatparis")
+        .set("operationStatus", "Active")
         .set(
-          "tags",
+          "operationTranslations",
+          Json.stringify(Array(Map("language" -> "fr", "title" -> "Climat Paris")))
+        )
+        .set(
+          "operationCountryConfigurations",
           Json.stringify(
-            Seq(
-              "pollution",
-              "entreprises-emploi",
-              "qualite-de-vie",
-              "alimentation",
-              "energies-renouvelables",
-              "bio",
-              "sante",
-              "agriculture",
-              "circuits-courts",
-              "recyclage-zero-dechets",
-              "consommation-responsable",
-              "energies-traditionnelles",
-              "nouvelles-technologies",
-              "urbanisme-habitat",
-              "transports",
-              "fiscalite-subventions",
-              "sensibilisation-education",
-              "solidarite",
-              "action-publique",
-              "participation-citoyenne"
+            Array(
+              Map(
+                "countryCode" -> "FR",
+                "landingSequenceId" -> session("sequenceId").as[String],
+                "tagIds" ->
+                  Seq(
+                    "pollution",
+                    "entreprises-emploi",
+                    "qualite-de-vie",
+                    "alimentation",
+                    "energies-renouvelables",
+                    "bio",
+                    "sante",
+                    "agriculture",
+                    "circuits-courts",
+                    "recyclage-zero-dechets",
+                    "consommation-responsable",
+                    "energies-traditionnelles",
+                    "nouvelles-technologies",
+                    "urbanisme-habitat",
+                    "transports",
+                    "fiscalite-subventions",
+                    "sensibilisation-education",
+                    "solidarite",
+                    "action-publique",
+                    "participation-citoyenne"
+                  )
+              )
             )
           )
         )

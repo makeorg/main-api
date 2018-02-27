@@ -65,9 +65,13 @@ class Jan18_UpdateOperationMultiCountry extends Simulation {
         .asJSON
         .check(jsonPath("$.sequenceId").saveAs("sequenceIdIT"))
     )
+    .exec(
+      MakeServicesBuilder.searchOperationBuilder("vff")
+        .asJSON
+        .check(jsonPath("$[0].operationId").saveAs("operationId"))
+    )
     .exec(session => {
       session
-        .set("operationId", "vff")
         .set("operationSlug", "vff")
         .set("operationStatus", "Active")
         .set(
