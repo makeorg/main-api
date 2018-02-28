@@ -75,6 +75,7 @@ object SequenceId {
 sealed trait SequenceStatus {
   def shortName: String
 }
+
 object SequenceStatus {
   val statusMap: Map[String, SequenceStatus] =
     Map(Unpublished.shortName -> Unpublished, Published.shortName -> Published)

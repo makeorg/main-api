@@ -1,5 +1,7 @@
 package org.make.api.operation
 
+import java.time.LocalDate
+
 import io.circe.syntax._
 import org.make.api.MakeMain
 import org.make.api.technical.ShortenedNames
@@ -15,7 +17,9 @@ trait OperationServiceComponent {
 }
 
 trait OperationService extends ShortenedNames {
-  def find(slug: Option[String] = None): Future[Seq[Operation]]
+  def find(slug: Option[String] = None,
+           country: Option[String] = None,
+           openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
@@ -40,8 +44,10 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
   val operationService: OperationService = new OperationService {
 
-    override def find(slug: Option[String] = None): Future[Seq[Operation]] = {
-      persistentOperationService.find(slug = slug)
+    override def find(slug: Option[String] = None,
+                      country: Option[String] = None,
+                      openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
+      persistentOperationService.find(slug = slug, country = country, openAt = openAt)
     }
 
     override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {

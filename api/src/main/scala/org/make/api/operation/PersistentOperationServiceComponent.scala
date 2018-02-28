@@ -1,6 +1,6 @@
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
@@ -29,7 +29,9 @@ trait PersistentOperationServiceComponent {
 }
 
 trait PersistentOperationService {
-  def find(slug: Option[String] = None): Future[Seq[Operation]]
+  def find(slug: Option[String] = None,
+           country: Option[String] = None,
+           openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getBySlug(slug: String): Future[Option[Operation]]
@@ -56,7 +58,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     private val operationTranslationColumn = PersistentOperationTranslation.column
     private val operationActionColumn = PersistentOperationAction.column
     private val operationCountryConfigurationColumn = PersistentOperationCountryConfiguration.column
-    private val baseSelect = select
+    private val baseSelect: scalikejdbc.SelectSQLBuilder[Nothing] = select
       .from(PersistentOperation.as(operationAlias))
       .leftJoin(PersistentOperationTranslation.as(operationTranslationAlias))
       .on(operationAlias.uuid, operationTranslationAlias.operationUuid)
@@ -65,14 +67,28 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
-    override def find(slug: Option[String] = None): Future[Seq[Operation]] = {
+    override def find(slug: Option[String] = None,
+                      country: Option[String] = None,
+                      openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL {
             baseSelect
               .copy()
-              .where(sqls.toAndConditionOpt(slug.map(slug => sqls.eq(operationAlias.slug, slug))))
+              .where(
+                sqls.toAndConditionOpt(
+                  slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
+                  country.map(country => sqls.eq(operationCountryConfigurationAlias.country, country)),
+                  openAt.map(openAt   => sqls.le(operationCountryConfigurationAlias.startDate, openAt)),
+                  openAt.map(
+                    openAt =>
+                      sqls
+                        .ge(operationCountryConfigurationAlias.endDate, openAt)
+                        .or(sqls.isNull(operationCountryConfigurationAlias.endDate))
+                  )
+                )
+              )
           }.one(PersistentOperation.apply())
             .toManies(
               resultSet => PersistentOperationTranslation.opt(operationTranslationAlias)(resultSet),
@@ -287,6 +303,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                 .map(_.value)
                 .mkString(PersistentOperationCountryConfiguration.TAG_SEPARATOR.toString),
               operationCountryConfigurationColumn.landingSequenceId -> countryConfiguration.landingSequenceId.value,
+              operationCountryConfigurationColumn.startDate -> countryConfiguration.startDate,
+              operationCountryConfigurationColumn.endDate -> countryConfiguration.endDate,
               operationCountryConfigurationColumn.createdAt -> DateHelper.now(),
               operationCountryConfigurationColumn.updatedAt -> DateHelper.now()
             )
@@ -381,6 +399,8 @@ object DefaultPersistentOperationServiceComponent {
                                                      country: String,
                                                      tagIds: Option[String],
                                                      landingSequenceId: String,
+                                                     startDate: Option[LocalDate],
+                                                     endDate: Option[LocalDate],
                                                      createdAt: ZonedDateTime,
                                                      updatedAt: ZonedDateTime)
 
@@ -428,7 +448,9 @@ object DefaultPersistentOperationServiceComponent {
                 .split(PersistentOperationCountryConfiguration.TAG_SEPARATOR)
                 .map(tagId => TagId(tagId))
                 .filter(value => value != TagId("")),
-              landingSequenceId = SequenceId(countryConfiguration.landingSequenceId)
+              landingSequenceId = SequenceId(countryConfiguration.landingSequenceId),
+              startDate = countryConfiguration.startDate,
+              endDate = countryConfiguration.endDate
           )
         ),
         translations =
@@ -486,7 +508,16 @@ object DefaultPersistentOperationServiceComponent {
     val TAG_SEPARATOR = '|'
 
     override val columnNames: Seq[String] =
-      Seq("operation_uuid", "country", "tag_ids", "landing_sequence_id", "created_at", "updated_at")
+      Seq(
+        "operation_uuid",
+        "country",
+        "tag_ids",
+        "landing_sequence_id",
+        "start_date",
+        "end_date",
+        "created_at",
+        "updated_at"
+      )
 
     override val tableName: String = "operation_country_configuration"
 
@@ -511,6 +542,8 @@ object DefaultPersistentOperationServiceComponent {
         country = resultSet.string(operationCountryConfigurationResultName.country),
         tagIds = resultSet.stringOpt(operationCountryConfigurationResultName.tagIds),
         landingSequenceId = resultSet.string(operationCountryConfigurationResultName.landingSequenceId),
+        startDate = resultSet.localDateOpt(operationCountryConfigurationResultName.startDate),
+        endDate = resultSet.localDateOpt(operationCountryConfigurationResultName.endDate),
         createdAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.updatedAt)
       )

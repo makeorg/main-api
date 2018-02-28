@@ -1,15 +1,15 @@
 package org.make.core.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
+import org.make.core._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
-import org.make.core._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
@@ -51,14 +51,18 @@ object OperationId {
     }
   }
 }
+
 @ApiModel
 final case class OperationCountryConfiguration(countryCode: String,
                                                @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
-                                               landingSequenceId: SequenceId)
+                                               landingSequenceId: SequenceId,
+                                               startDate: Option[LocalDate],
+                                               endDate: Option[LocalDate])
 
-object OperationCountryConfiguration {
+
+object OperationCountryConfiguration extends CirceFormatters {
   implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =
-    DefaultJsonProtocol.jsonFormat3(OperationCountryConfiguration.apply)
+    DefaultJsonProtocol.jsonFormat5(OperationCountryConfiguration.apply)
 
   implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
@@ -83,6 +87,7 @@ object OperationAction {
   implicit val operationActionFormatter: RootJsonFormat[OperationAction] =
     DefaultJsonProtocol.jsonFormat4(OperationAction.apply)
 }
+
 sealed trait OperationActionType { val name: String }
 case object OperationCreateAction extends OperationActionType { override val name: String = "create" }
 case object OperationUpdateAction extends OperationActionType { override val name: String = "update" }
@@ -92,6 +97,7 @@ case object OperationArchiveAction extends OperationActionType { override val na
 sealed trait OperationStatus {
   def shortName: String
 }
+
 object OperationStatus {
   val statusMap: Map[String, OperationStatus] =
     Map(Pending.shortName -> Pending, Active.shortName -> Active, Archived.shortName -> Archived)

@@ -1,6 +1,6 @@
 package org.make.api.operation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -141,7 +141,9 @@ class ModerationOperationApiTest
       OperationCountryConfiguration(
         countryCode = "BR",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id")
+        landingSequenceId = SequenceId("first-sequence-id"),
+        startDate = Some(LocalDate.parse("2018-02-02")),
+        endDate = None,
       )
     )
   )
@@ -169,7 +171,9 @@ class ModerationOperationApiTest
       OperationCountryConfiguration(
         countryCode = "IT",
         tagIds = Seq.empty,
-        landingSequenceId = SequenceId("second-sequence-id")
+        landingSequenceId = SequenceId("second-sequence-id"),
+        startDate = Some(LocalDate.parse("2018-02-02")),
+        endDate = Some(LocalDate.parse("2018-05-02"))
       )
     )
   )
@@ -215,7 +219,9 @@ class ModerationOperationApiTest
       |      "tagIds": [
       |        "hello"
       |      ],
-      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
+      |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b",
+      |      "startDate": "2018-02-02",
+      |      "endDate": "2018-05-02"
       |    }
       |  ]
       |}
@@ -255,7 +261,10 @@ class ModerationOperationApiTest
 
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find()).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None)).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = Some("IT"), openAt = None)).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = None, openAt = Some(LocalDate.parse("2018-02-02")))).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = None, openAt = None)).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(Future.successful(Seq(Tag("hello"))))
   when(tagService.findByTagIds(Seq(TagId("fakeTag")))).thenReturn(Future.successful(Seq()))
   when(sequenceService.getModerationSequenceById(SequenceId("29625b5a-56da-4539-b195-15303187c20b"))).thenReturn(
@@ -292,7 +301,9 @@ class ModerationOperationApiTest
         OperationCountryConfiguration(
           countryCode = "FR",
           tagIds = Seq(TagId("hello")),
-          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+          startDate = None,
+          endDate = None
         )
       )
     )
@@ -312,7 +323,9 @@ class ModerationOperationApiTest
           OperationCountryConfiguration(
             countryCode = "FR",
             tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+            startDate = Some(LocalDate.parse("2018-02-02")),
+            endDate = Some(LocalDate.parse("2018-05-02"))
           )
         )
       )
@@ -331,7 +344,9 @@ class ModerationOperationApiTest
           OperationCountryConfiguration(
             countryCode = "FR",
             tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b")
+            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
+            startDate = Some(LocalDate.parse("2018-02-02")),
+            endDate = Some(LocalDate.parse("2018-05-02"))
           )
         )
       )
@@ -400,6 +415,58 @@ class ModerationOperationApiTest
       Then("I get a list of 1 operation")
       And("the operation match the slug")
       Get("/moderation/operations?slug=second-operation")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val moderationOperationListResponse: ModerationOperationListResponse =
+          entityAs[ModerationOperationListResponse]
+        moderationOperationListResponse.total should be(1)
+        moderationOperationListResponse.results.head shouldBe a[ModerationOperationResponse]
+
+        val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
+        secondOperationResult.slug should be("second-operation")
+        secondOperationResult.translations.filter(_.language == "it").head.title should be("secondo operazione")
+        secondOperationResult.translations.filter(_.language == "en").head.title should be("second operation")
+        secondOperationResult.defaultLanguage should be("it")
+        secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
+        secondOperationResult.countriesConfiguration.filter(_.countryCode == "IT").head.tagIds should be(Seq.empty)
+        secondOperationResult.events.length should be(1)
+        secondOperationResult.events.head.user.get shouldBe a[UserResponse]
+      }
+    }
+
+    scenario("get an operation by country") {
+      Given("2 registered operations")
+      When("I get all proposals with a filter by country")
+      Then("I get a list of 1 operation")
+      And("the operation match the country")
+      Get("/moderation/operations?country=IT")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val moderationOperationListResponse: ModerationOperationListResponse =
+          entityAs[ModerationOperationListResponse]
+        moderationOperationListResponse.total should be(1)
+        moderationOperationListResponse.results.head shouldBe a[ModerationOperationResponse]
+
+        val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
+        secondOperationResult.slug should be("second-operation")
+        secondOperationResult.translations.filter(_.language == "it").head.title should be("secondo operazione")
+        secondOperationResult.translations.filter(_.language == "en").head.title should be("second operation")
+        secondOperationResult.defaultLanguage should be("it")
+        secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
+        secondOperationResult.countriesConfiguration.filter(_.countryCode == "IT").head.tagIds should be(Seq.empty)
+        secondOperationResult.events.length should be(1)
+        secondOperationResult.events.head.user.get shouldBe a[UserResponse]
+      }
+    }
+
+    scenario("get an operation by openAt") {
+      Given("2 registered operations")
+      When("I get all proposals with a filter by openAt")
+      Then("I get a list of 1 operation")
+      And("the operation match the openAt")
+      Get("/moderation/operations?openAt=2018-02-02")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)

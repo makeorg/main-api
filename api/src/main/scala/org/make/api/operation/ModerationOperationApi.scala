@@ -1,5 +1,6 @@
 package org.make.api.operation
 
+import java.time.LocalDate
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
@@ -16,9 +17,9 @@ import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
-import org.make.core.{reference, HttpCodes, Validation}
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.make.core.{HttpCodes, Validation, reference}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scalaoauth2.provider.AuthInfo
 
@@ -223,31 +224,32 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
       }
     }
   }
+
   @ApiOperation(value = "get-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationOperationListResponse]))
   )
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"))
+    value = Array(
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "date")
+    )
   )
   @Path(value = "/")
   def moderationGetOperations: Route = {
     get {
       path("moderation" / "operations") {
-        parameters('slug.?) { (slug) =>
+        parameters(('slug.?, 'country.?, 'openAt.?)) { (slug, country, openAt) =>
           makeTrace("ModerationGetOperations") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsync(operationService.find()) { operations =>
+                provideAsync(operationService.find(slug = slug, country = country, openAt = openAt.map(LocalDate.parse(_)))) { operations =>
                   provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
                     users =>
-                      val filteredOperation: Seq[Operation] = slug match {
-                        case Some(value) => operations.filter(_.slug == value)
-                        case _           => operations
-                      }
                       val operationResponses: Seq[ModerationOperationResponse] =
-                        filteredOperation.map(
+                        operations.map(
                           operation => ModerationOperationResponse(operation, users, requestContext.country)
                         )
                       val result: ModerationOperationListResponse =

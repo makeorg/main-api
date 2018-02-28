@@ -1,5 +1,6 @@
 package org.make.api.operation
 
+import java.time.LocalDate
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.server._
@@ -25,15 +26,25 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[OperationResponse]]))
   )
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"))
+    value = Array(
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "date")
+    )
   )
   @Path(value = "/")
   def getOperations: Route = {
     get {
       path("operations") {
-        parameters('slug.?) { (slug) =>
+        parameters(('slug.?, 'country.?, 'openAt.?)) { (slug, country, openAt) =>
           makeTrace("GetOperations") { requestContext =>
-            provideAsync(operationService.find(slug = slug)) { result =>
+            provideAsync(
+              operationService.find(
+                slug    = slug,
+                country = country,
+                openAt  = openAt.map(LocalDate.parse(_))
+              )
+            ) { result =>
               complete(result.map(operation => OperationResponse(operation, requestContext.country)))
             }
           }

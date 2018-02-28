@@ -69,10 +69,10 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
             .from(PersistentIdea.as(ideaAlias))
             .where(
               sqls.toAndConditionOpt(
-                ideaFilters.language.map(language     => sqls.eq(ideaAlias.language, language)),
-                ideaFilters.country.map(country       => sqls.eq(ideaAlias.country, country)),
+                ideaFilters.language.map(language       => sqls.eq(ideaAlias.language, language)),
+                ideaFilters.country.map(country         => sqls.eq(ideaAlias.country, country)),
                 ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId)),
-                ideaFilters.question.map(question     => sqls.eq(ideaAlias.question, question))
+                ideaFilters.question.map(question       => sqls.eq(ideaAlias.question, question))
               )
             )
         }.map(PersistentIdea.apply()).list.apply
