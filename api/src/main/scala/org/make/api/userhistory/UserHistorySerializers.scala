@@ -48,8 +48,19 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
     json.persister[LogUserUnqualificationEvent]("user-history-unqualification-vote")
 
-  private val userHistorySerializer: JsonPersister[UserHistory, V1] =
-    json.persister[UserHistory]("user-history")
+  private val userHistorySerializer: JsonPersister[UserHistory, V2] =
+    json.persister[UserHistory, V2](
+      "user-history",
+      from[V1].to[V2](
+        _.update(
+          'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'language !
+            set[String]("fr")
+        ).update(
+          'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'country !
+            set[String]("FR")
+        )
+      )
+    )
 
   private val logUserCreateSequenceEventSerializer: JsonPersister[LogUserCreateSequenceEvent, V1] =
     json.persister[LogUserCreateSequenceEvent]("user-history-create-sequence")

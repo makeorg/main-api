@@ -106,6 +106,7 @@ object Dependencies {
   val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"    % "it"
   val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"    % "it"
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1" % "it,test"
+  val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % "0.1.4"   % "test"
 
   // Fixtures
   val gatlingHighcharts: ModuleID = "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.0" % "test"
