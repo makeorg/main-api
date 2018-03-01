@@ -505,6 +505,8 @@ class UserApiTest
       .when(persistentUserService.findUserByUserIdAndResetToken(notExpiredResetTokenUserId, validResetToken))
       .thenReturn(Future.successful(Some(notExpiredResetTokenUser)))
 
+    Mockito.when(userService.requestPasswordReset(any[UserId])).thenReturn(Future.successful(true))
+
     scenario("Reset a password from an existing email") {
       Given("a registered user with an email john.doe@example.com")
       When("I reset password with john.doe@example.com")
@@ -523,6 +525,7 @@ class UserApiTest
       Then("The existence of email is checked")
       And("I get a valid response")
       resetPasswordRequestRoute ~> check {
+        verify(eventBusService, times(1)).publish(any[ResetPasswordEvent])
         status should be(StatusCodes.NoContent)
       }
       And("a user Event ResetPasswordEvent is emitted")

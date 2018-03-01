@@ -1,6 +1,6 @@
 package org.make.api.user
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
@@ -38,6 +38,7 @@ class UserServiceTest
   override val eventBusService: EventBusService = mock[EventBusService]
 
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+  Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
   feature("register user") {
     scenario("successful register user") {
@@ -309,6 +310,23 @@ class UserServiceTest
 
       whenReady(futureUserSocial, Timeout(3.seconds)) { _ =>
         verify(eventBusService, times(3)).publish(any[UserValidatedAccountEvent])
+      }
+    }
+  }
+
+  feature("password recovery") {
+    scenario("successfully reset password") {
+
+      val userId = UserId("AAA-BBB-CCC-DDD-EEE")
+
+      Mockito
+        .when(persistentUserService.requestResetPassword(any[UserId], any[String], any[Option[ZonedDateTime]]))
+        .thenReturn(Future.successful(true))
+
+      val futureResetPassword = userService.requestPasswordReset(userId)
+
+      whenReady(futureResetPassword, Timeout(3.seconds)) { result =>
+        result shouldBe true
       }
     }
   }
