@@ -75,28 +75,29 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def makeTrace(name: String): Directive1[RequestContext] = {
     for {
-      _                  <- operationName(name)
-      maybeCookie        <- optionalCookie(sessionIdKey)
-      requestId          <- requestId
-      startTime          <- startTime
-      sessionId          <- sessionId
-      externalId         <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      origin             <- optionalHeaderValueByName(Origin.name)
-      _                  <- makeAuthCookieHandlers()
-      _                  <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
-      _                  <- handleExceptions(MakeApi.exceptionHandler(name, requestId))
-      _                  <- handleRejections(MakeApi.rejectionHandler)
-      maybeTheme         <- optionalHeaderValueByName(ThemeIdHeader.name)
-      maybeOperation     <- optionalHeaderValueByName(OperationHeader.name)
-      maybeSource        <- optionalHeaderValueByName(SourceHeader.name)
-      maybeLocation      <- optionalHeaderValueByName(LocationHeader.name)
-      maybeQuestion      <- optionalHeaderValueByName(QuestionHeader.name)
-      maybeCountry       <- optionalHeaderValueByName(CountryHeader.name)
-      maybeLanguage      <- optionalHeaderValueByName(LanguageHeader.name)
-      maybeHostName      <- optionalHeaderValueByName(HostNameHeader.name)
-      maybeIpAddress     <- extractClientIP
-      maybeGetParameters <- optionalHeaderValueByName(GetParametersHeader.name)
-      maybeUserAgent     <- optionalHeaderValueByType[`User-Agent`](())
+      _                    <- operationName(name)
+      maybeCookie          <- optionalCookie(sessionIdKey)
+      requestId            <- requestId
+      startTime            <- startTime
+      sessionId            <- sessionId
+      externalId           <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin               <- optionalHeaderValueByName(Origin.name)
+      _                    <- makeAuthCookieHandlers()
+      _                    <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
+      _                    <- handleExceptions(MakeApi.exceptionHandler(name, requestId))
+      _                    <- handleRejections(MakeApi.rejectionHandler)
+      maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)
+      maybeOperation       <- optionalHeaderValueByName(OperationHeader.name)
+      maybeSource          <- optionalHeaderValueByName(SourceHeader.name)
+      maybeLocation        <- optionalHeaderValueByName(LocationHeader.name)
+      maybeQuestion        <- optionalHeaderValueByName(QuestionHeader.name)
+      maybeCountry         <- optionalHeaderValueByName(CountryHeader.name)
+      maybeDetectedCountry <- optionalHeaderValueByName(DetectedCountryHeader.name)
+      maybeLanguage        <- optionalHeaderValueByName(LanguageHeader.name)
+      maybeHostName        <- optionalHeaderValueByName(HostNameHeader.name)
+      maybeIpAddress       <- extractClientIP
+      maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
+      maybeUserAgent       <- optionalHeaderValueByType[`User-Agent`](())
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -109,6 +110,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         question = maybeQuestion,
         language = maybeLanguage,
         country = maybeCountry,
+        detectedCountry = maybeDetectedCountry,
         hostname = maybeHostName,
         ipAddress = maybeIpAddress.toOption.map(_.getHostAddress),
         getParameters = maybeGetParameters.map(
@@ -360,6 +362,17 @@ final case class CountryHeader(override val value: String) extends ModeledCustom
 object CountryHeader extends ModeledCustomHeaderCompanion[CountryHeader] {
   override val name: String = "x-make-country"
   override def parse(value: String): Try[CountryHeader] = Success(new CountryHeader(value))
+}
+
+final case class DetectedCountryHeader(override val value: String) extends ModeledCustomHeader[DetectedCountryHeader] {
+  override def companion: ModeledCustomHeaderCompanion[DetectedCountryHeader] = DetectedCountryHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object DetectedCountryHeader extends ModeledCustomHeaderCompanion[DetectedCountryHeader] {
+  override val name: String = "x-detected-country"
+  override def parse(value: String): Try[DetectedCountryHeader] = Success(new DetectedCountryHeader(value))
 }
 
 final case class HostNameHeader(override val value: String) extends ModeledCustomHeader[HostNameHeader] {

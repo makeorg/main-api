@@ -98,7 +98,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     profile = None
   )
 
-  private def proposal(proposalId: ProposalId, content: String, slug: String, country: Option[String], language: Option[String]) = Proposal(
+  private def proposal(proposalId: ProposalId,
+                       content: String,
+                       slug: String,
+                       country: Option[String],
+                       language: Option[String]) = Proposal(
     proposalId = proposalId,
     author = mainUserId,
     content = content,
@@ -175,7 +179,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
+      expectMsg(
+        Some(
+          proposal(
+            proposalId = proposalId,
+            content = "This is a proposal",
+            slug = "this-is-a-proposal",
+            country = Some("FR"),
+            language = Some("fr")
+          )
+        )
+      )
 
       And("recover its state after having been kill")
       coordinator ! KillProposalShard(proposalId, RequestContext.empty)
@@ -184,7 +198,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
+      expectMsg(
+        Some(
+          proposal(
+            proposalId = proposalId,
+            content = "This is a proposal",
+            slug = "this-is-a-proposal",
+            country = Some("FR"),
+            language = Some("fr")
+          )
+        )
+      )
     }
 
     scenario("Initialize the state for a proposal from Italy") {
@@ -209,7 +233,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId = proposalItalyId, content = "This is an italian proposal", slug = "this-is-an-italian-proposal", country = Some("IT"), language = Some("it"))))
+      expectMsg(
+        Some(
+          proposal(
+            proposalId = proposalItalyId,
+            content = "This is an italian proposal",
+            slug = "this-is-an-italian-proposal",
+            country = Some("IT"),
+            language = Some("it")
+          )
+        )
+      )
 
       And("recover its state after having been kill")
       coordinator ! KillProposalShard(proposalItalyId, RequestContext.empty)
@@ -218,7 +252,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
 
-      expectMsg(Some(proposal(proposalId = proposalItalyId, content = "This is an italian proposal", slug = "this-is-an-italian-proposal", country = Some("IT"), language = Some("it"))))
+      expectMsg(
+        Some(
+          proposal(
+            proposalId = proposalItalyId,
+            content = "This is an italian proposal",
+            slug = "this-is-an-italian-proposal",
+            country = Some("IT"),
+            language = Some("it")
+          )
+        )
+      )
     }
   }
 
@@ -256,7 +300,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
-      expectMsg(Some(proposal(proposalId = proposalId, content = "This is a proposal", slug = "this-is-a-proposal", country = Some("FR"), language = Some("fr"))))
+      expectMsg(
+        Some(
+          proposal(
+            proposalId = proposalId,
+            content = "This is a proposal",
+            slug = "this-is-a-proposal",
+            country = Some("FR"),
+            language = Some("fr")
+          )
+        )
+      )
     }
   }
 
@@ -1340,6 +1394,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           sessionId = SessionId("session-id"),
           externalId = "external-id",
           country = Some("BE"),
+          detectedCountry = None,
           language = Some("nl"),
           operationId = None,
           source = Some("my-source"),
