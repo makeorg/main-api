@@ -1,17 +1,7 @@
 {
   "slug": "${operationSlug}",
-  "translations": [
-    {
-      "title": "${operationTitle}",
-      "language": "fr"
-    }
-  ],
+  "status": "${operationStatus}",
+  "translations": ${operationTranslations},
   "defaultLanguage": "fr",
-  "countriesConfiguration": [
-    {
-      "countryCode": "FR",
-      "landingSequenceId": "${sequenceId}",
-      "tagIds": ${tags}
-    }
-  ]
+  "countriesConfiguration": ${operationCountryConfigurations}
 }
