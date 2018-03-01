@@ -1,10 +1,13 @@
 package org.make.api.user
 
+import java.time.LocalDate
+
 import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.operation.OperationService
+import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
 import org.make.api.userhistory.UserEvent._
@@ -89,9 +92,17 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
+        //todo: refactor to handle multiple operation by country
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-          case None              => Future.successful("core")
+          case None =>
+            if (BusinessConfig.coreIsAvailableForCountry(country)) {
+              Future.successful("core")
+            } else {
+              operationService
+                .find(country = Some(country), openAt = Some(LocalDate.now()))
+                .map(_.headOption.map(_.slug).getOrElse("core"))
+            }
         }
 
         futureOperationSlug.map { operationSlug =>
@@ -101,7 +112,9 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
           if (registration.enabled) {
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}/#/account-activation/${user.userId.value}/${user.verificationToken.get}" +
-              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId
+                .map(_.value)
+                .getOrElse(operationSlug)}&language=$language&country=$country"
 
             eventBusService.publish(
               SendEmail(
