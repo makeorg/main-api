@@ -277,17 +277,20 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findByEmail(request.email)) { user =>
-                userService.requestPasswordReset(user.userId)
-                eventBusService.publish(
-                  ResetPasswordEvent(
-                    userId = user.userId,
-                    connectedUserId = userAuth.map(_.user.userId),
-                    country = user.country,
-                    language = user.language,
-                    requestContext = requestContext
+                onSuccess(userService.requestPasswordReset(user.userId).map { result =>
+                  eventBusService.publish(
+                    ResetPasswordEvent(
+                      userId = user.userId,
+                      connectedUserId = userAuth.map(_.user.userId),
+                      country = user.country,
+                      language = user.language,
+                      requestContext = requestContext
+                    )
                   )
-                )
-                complete(StatusCodes.NoContent)
+                  result
+                }) { _ =>
+                  complete(StatusCodes.NoContent)
+                }
               }
             })
           }

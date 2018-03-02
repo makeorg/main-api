@@ -6,12 +6,12 @@ import com.github.t3hnar.bcrypt._
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, ResetTokenRequestException}
+import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
-import org.make.core.profile.Profile
 import org.make.api.userhistory.UserEvent.{UserRegisteredEvent, UserValidatedAccountEvent}
 import org.make.core.profile.Gender.{Female, Male, Other}
+import org.make.core.profile.Profile
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -31,7 +31,7 @@ trait UserService extends ShortenedNames {
   def getOrCreateUserFromSocial(userInfo: UserInfo,
                                 clientIp: Option[String],
                                 requestContext: RequestContext): Future[User]
-  def requestPasswordReset(userId: UserId): Unit
+  def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
 }
@@ -204,14 +204,21 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           )
 
           persistentUserService.persist(user).map { user =>
-            eventBusService.publish(UserValidatedAccountEvent(userId = user.userId, country = country, language = language, requestContext = requestContext))
+            eventBusService.publish(
+              UserValidatedAccountEvent(
+                userId = user.userId,
+                country = country,
+                language = language,
+                requestContext = requestContext
+              )
+            )
             user
           }
       }
     }
 
-    override def requestPasswordReset(userId: UserId): Unit = {
-      val result = for {
+    override def requestPasswordReset(userId: UserId): Future[Boolean] = {
+      for {
         resetToken <- generateResetToken()
         result <- persistentUserService.requestResetPassword(
           userId,
@@ -219,11 +226,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           Some(DateHelper.now().plusSeconds(resetTokenExpiresIn))
         )
       } yield result
-
-      result.onComplete {
-        case Success(_) => Future.successful(true)
-        case (_)        => Future.failed(ResetTokenRequestException())
-      }
     }
 
     override def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean] = {
