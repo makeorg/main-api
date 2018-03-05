@@ -41,8 +41,9 @@ object Dependencies {
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.80")
       .exclude("io.netty", "netty-handler")
-  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
-  val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
+  val akkaSlf4j: ModuleID = "com.typesafe.akka"          %% "akka-slf4j"              % akkaVersion
+  val jaxRsApi: ModuleID = "javax.ws.rs"                 % "javax.ws.rs-api"          % "2.0.1"
+  val kryoSerializer: ModuleID = "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 

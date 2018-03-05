@@ -23,6 +23,7 @@ libraryDependencies ++= Seq(
   Dependencies.akkaHttpCirce,
   Dependencies.akkaClusterSharding,
   Dependencies.akkaPersistenceCassandra,
+  Dependencies.kryoSerializer,
   Dependencies.stamina,
   Dependencies.circeGeneric,
   Dependencies.constructr,
