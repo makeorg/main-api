@@ -84,7 +84,7 @@ class ProposalEmailConsumer(userService: UserService,
                 ),
                 variables = Some(
                   Map(
-                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/proposal/${proposal.slug}",
+                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country}/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.firstName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
