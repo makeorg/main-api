@@ -9,7 +9,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
-import org.make.api.semantic.{SemanticComponent, SimilarProposal}
+import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
@@ -39,7 +39,7 @@ trait ProposalService {
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
 
-  def getSimilar(userId: UserId, proposalId: ProposalId, requestContext: RequestContext): Future[Seq[SimilarProposal]]
+  def getSimilar(userId: UserId, proposalId: ProposalId, requestContext: RequestContext): Future[Seq[SimilarIdea]]
 
   def search(userId: Option[UserId],
              query: SearchQuery,
@@ -458,7 +458,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     //noinspection ScalaStyle
     override def getSimilar(userId: UserId,
                             proposalId: ProposalId,
-                            requestContext: RequestContext): Future[Seq[SimilarProposal]] = {
+                            requestContext: RequestContext): Future[Seq[SimilarIdea]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -468,7 +468,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
       elasticsearchProposalAPI.findProposalById(proposalId).flatMap {
         case Some(indexedProposal) =>
-          semanticService.getSimilarProposals(indexedProposal, 10)
+          semanticService.getSimilarIdeas(indexedProposal, 10)
         case None => Future.successful(Seq.empty)
       }
     }

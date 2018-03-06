@@ -3,7 +3,6 @@ package org.make.api
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
@@ -291,5 +290,4 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
 
 trait ActorSystemComponent {
   def actorSystem: ActorSystem
-  def materializer: ActorMaterializer
 }

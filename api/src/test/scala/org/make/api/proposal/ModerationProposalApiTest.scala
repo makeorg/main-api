@@ -10,7 +10,7 @@ import io.circe.syntax._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
-import org.make.api.semantic.SimilarProposal
+import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -450,8 +450,8 @@ class ModerationProposalApiTest
     .thenReturn(
       Future.successful(
         Seq(
-          SimilarProposal(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
-          SimilarProposal(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
+          SimilarIdea(IdeaId("Idea 1"), "Idea One", ProposalId("Proposal 1"), "Proposal One", 1.23456),
+          SimilarIdea(IdeaId("Idea 2"), "Idea Two", ProposalId("Proposal 2"), "Proposal Two", 0.123456)
         )
       )
     )

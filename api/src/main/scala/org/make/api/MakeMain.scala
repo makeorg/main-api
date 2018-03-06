@@ -54,7 +54,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val host = settings.Http.host
   val port = settings.Http.port

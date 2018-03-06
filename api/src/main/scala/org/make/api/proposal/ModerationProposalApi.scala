@@ -12,7 +12,7 @@ import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
-import org.make.api.semantic.SimilarProposal
+import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
@@ -754,9 +754,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     )
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SimilarProposal]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SimilarIdea])))
   @Path(value = "/{proposalId}/duplicates")
   def getDuplicates: Route = {
     get {
