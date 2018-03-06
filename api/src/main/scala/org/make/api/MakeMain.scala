@@ -41,7 +41,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
       themeService = themeService,
       sequenceService = sequenceService,
       operationService = operationService,
-      ideaService = ideaService
+      ideaService = ideaService,
+      semanticService = semanticService
     ),
     MakeGuardian.name
   )
@@ -53,7 +54,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val host = settings.Http.host
   val port = settings.Http.port

@@ -3,6 +3,7 @@ package org.make.api.proposal
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
 import org.make.api.operation.OperationService
+import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.ShortenedNames
@@ -13,7 +14,8 @@ class ProposalSupervisor(userService: UserService,
                          sessionHistoryCoordinator: ActorRef,
                          tagService: TagService,
                          sequenceService: SequenceService,
-                         operationService: OperationService)
+                         operationService: OperationService,
+                         semanticService: SemanticService)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -53,7 +55,14 @@ class ProposalSupervisor(userService: UserService,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalConsumerActor
-          .props(proposalCoordinatorService, userService, tagService, sequenceService, operationService),
+          .props(
+            proposalCoordinatorService,
+            userService,
+            tagService,
+            sequenceService,
+            operationService,
+            semanticService
+          ),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)
@@ -74,7 +83,8 @@ object ProposalSupervisor {
             sessionHistoryCoordinator: ActorRef,
             tagService: TagService,
             sequenceService: SequenceService,
-            operationService: OperationService): Props =
+            operationService: OperationService,
+            semanticService: SemanticService): Props =
     Props(
       new ProposalSupervisor(
         userService,
@@ -82,7 +92,8 @@ object ProposalSupervisor {
         sessionHistoryCoordinator,
         tagService,
         sequenceService,
-        operationService
+        operationService,
+        semanticService
       )
     )
 }

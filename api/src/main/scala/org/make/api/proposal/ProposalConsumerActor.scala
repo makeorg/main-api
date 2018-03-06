@@ -12,6 +12,7 @@ import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.OperationService
 import org.make.api.proposal.ProposalIndexerActor.IndexProposal
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
 import org.make.api.technical.KafkaConsumerActor
@@ -29,7 +30,8 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
                             userService: UserService,
                             tagService: TagService,
                             sequenceService: SequenceService,
-                            operationService: OperationService)
+                            operationService: OperationService,
+                            semanticService: SemanticService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with ActorLogging {
@@ -118,7 +120,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
     indexerActor ! IndexProposal(proposal)
-    Future.successful {}
+    semanticService.indexProposal(proposal)
   }
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
@@ -179,9 +181,17 @@ object ProposalConsumerActor {
             userService: UserService,
             tagService: TagService,
             sequenceService: SequenceService,
-            operationService: OperationService): Props =
+            operationService: OperationService,
+            semanticService: SemanticService): Props =
     Props(
-      new ProposalConsumerActor(proposalCoordinatorService, userService, tagService, sequenceService, operationService)
+      new ProposalConsumerActor(
+        proposalCoordinatorService,
+        userService,
+        tagService,
+        sequenceService,
+        operationService,
+        semanticService
+      )
     )
   val name: String = "proposal-consumer"
 }

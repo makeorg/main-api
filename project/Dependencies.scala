@@ -113,11 +113,6 @@ object Dependencies {
   val gatlingHighcharts: ModuleID = "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.0" % "test"
   val gatling: ModuleID = "io.gatling"                      % "gatling-test-framework"    % "2.3.0" % "test"
 
-  // Semantic
-  val semantic: ModuleID = ("org.make" %% "semantic" % "0.1.6")
-    .exclude("ch.qos.logback", "logback-core")
-    .exclude("ch.qos.logback", "logback-classic")
-
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
 }

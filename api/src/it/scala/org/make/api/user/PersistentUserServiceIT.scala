@@ -2,11 +2,12 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import com.github.t3hnar.bcrypt._
+
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 

@@ -1,10 +1,10 @@
 package org.make.core
 
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, ObjectEncoder}
+import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
 import org.make.core.session.SessionId
-import io.circe.generic.semiauto._
-import org.make.core.operation.OperationId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 

@@ -3,6 +3,7 @@ package org.make.api
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
@@ -24,6 +25,7 @@ import org.make.api.operation.{
   OperationApi
 }
 import org.make.api.proposal._
+import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
   DefaultSessionHistoryCoordinatorServiceComponent,
@@ -35,7 +37,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.elasticsearch.{
-  DefaultElasticSearchComponent,
+  DefaultIndexationComponent,
   ElasticSearchApi,
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
@@ -79,7 +81,8 @@ trait MakeApi
     with DefaultPersistentSequenceConfigurationServiceComponent
     with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
-    with DuplicateDetectorConfigurationComponent
+    with DefaultSemanticComponent
+    with DefaultSemanticConfigurationComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
     with DefaultEventBusServiceComponent
@@ -100,7 +103,7 @@ trait MakeApi
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
-    with DefaultElasticSearchComponent
+    with DefaultIndexationComponent
     with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with OperationApi
@@ -127,10 +130,6 @@ trait MakeApi
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
 
   override lazy val elasticsearchConfiguration: ElasticsearchConfiguration = ElasticsearchConfiguration(actorSystem)
-
-  override lazy val duplicateDetectorConfiguration: DuplicateDetectorConfiguration = DuplicateDetectorConfiguration(
-    actorSystem
-  )
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
@@ -292,4 +291,5 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
 
 trait ActorSystemComponent {
   def actorSystem: ActorSystem
+  def materializer: ActorMaterializer
 }

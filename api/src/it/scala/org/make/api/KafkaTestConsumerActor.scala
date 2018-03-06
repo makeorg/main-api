@@ -3,15 +3,15 @@ package org.make.api
 import java.util.UUID
 
 import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Ready, Waiting}
-import akka.pattern.ask
-import akka.util.Timeout
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class KafkaTestConsumerActor[T](override val format: RecordFormat[T],
                                 override val kafkaTopic: String,
