@@ -8,10 +8,12 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import kamon.executors
 import org.apache.commons.dbcp2.BasicDataSource
+import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.MigrationVersion
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.concurrent.ExecutionContext
-import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 class DatabaseConfiguration(override protected val configuration: Config)
@@ -23,9 +25,6 @@ class DatabaseConfiguration(override protected val configuration: Config)
   private val password: String = configuration.getString("database.password")
 
   private val jdbcUrl: String = configuration.getString("database.jdbc-url")
-
-  private val autoCreateSchemas: Boolean =
-    configuration.getBoolean("database.auto-create-db-schemas")
 
   private val readDatasource = new BasicDataSource()
   readDatasource.setDriverClassName("org.postgresql.Driver")
@@ -72,32 +71,38 @@ class DatabaseConfiguration(override protected val configuration: Config)
     logLevel = 'debug
   )
 
-  if (autoCreateSchemas) {
-    val dbname = writeDatasource.getConnection.getCatalog
-    val defaultClientId: String = configuration.getString("authentication.default-client-id")
-    val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
-    val adminFirstName: String = configuration.getString("default-admin.first-name")
-    val adminEmail: String = configuration.getString("default-admin.email")
-    val adminPassword: String = configuration.getString("default-admin.password")
-    logger.debug(s"Creating database with name: $dbname")
-    val queries = Source
-      .fromResource("create-schema.sql")(Codec.UTF8)
-      .mkString
-      .replace("#dbname#", dbname)
-      .replace("#clientid#", defaultClientId)
-      .replace("#clientsecret#", defaultClientSecret)
-      .replace("#adminemail#", adminEmail)
-      .replace("#adminfirstname#", adminFirstName)
-      .replace("#adminencryptedpassword#", adminPassword.bcrypt)
-      .split("%")
+  private val dbname = writeDatasource.getConnection.getCatalog
+  private val defaultClientId: String = configuration.getString("authentication.default-client-id")
+  private val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
+  private val adminFirstName: String = configuration.getString("default-admin.first-name")
+  private val adminEmail: String = configuration.getString("default-admin.email")
+  private val adminPassword: String = configuration.getString("default-admin.password")
+  logger.debug(s"Creating database with name: $dbname")
 
-    val conn = writeDatasource.getConnection
-    val results = queries.map(query => Try(conn.createStatement.execute(query)))
-
-    results.foreach {
-      case Success(_) =>
-      case Failure(e) => logger.warn("Error in creation script:", e)
-    }
+  val flyway: Flyway = new Flyway()
+  val setBaselineVersion: Boolean = configuration.getBoolean("database.migration.init-schema")
+  val baselineVersion: MigrationVersion =
+    MigrationVersion.fromVersion(configuration.getString("database.migration.baseline-version"))
+  flyway.setDataSource(writeDatasource)
+  flyway.setBaselineOnMigrate(true)
+  if (!setBaselineVersion && flyway.getBaselineVersion.compareTo(baselineVersion) < 0) {
+    flyway.setBaselineVersion(baselineVersion)
+  } else {
+    flyway.setPlaceholders(
+      Map(
+        "dbname" -> dbname,
+        "clientId" -> defaultClientId,
+        "clientSecret" -> defaultClientSecret,
+        "adminEmail" -> adminEmail,
+        "adminFirstName" -> adminFirstName,
+        "adminEncryptedPassword" -> adminPassword.bcrypt
+      ).asJava
+    )
+  }
+  flyway.migrate()
+  Try(flyway.validate()) match {
+    case Success(_) => logger.info("SQL migrations: success")
+    case Failure(e) => logger.warn("Cannot migrate database:", e)
   }
 }
 

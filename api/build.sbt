@@ -36,6 +36,7 @@ libraryDependencies ++= Seq(
   Dependencies.scalaBcrypt,
   Dependencies.scalike,
   Dependencies.postgresql,
+  Dependencies.flywaydb,
   Dependencies.nettyAll,
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
