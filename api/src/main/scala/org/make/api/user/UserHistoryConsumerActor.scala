@@ -5,13 +5,12 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
-import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
+import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[UserEventWrapper]
@@ -23,7 +22,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override val groupId = "user-history"
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {

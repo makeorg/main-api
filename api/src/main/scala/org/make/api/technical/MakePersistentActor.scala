@@ -6,7 +6,6 @@ import akka.util.Timeout
 import org.make.api.technical.MakePersistentActor.Snapshot
 
 import scala.collection.immutable
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
 abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[State],
@@ -15,7 +14,7 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
     extends PersistentActor
     with ActorLogging {
 
-  protected val defaultTimeout: Timeout = Timeout(3.seconds)
+  protected val defaultTimeout: Timeout = TimeSettings.defaultTimeout
 
   protected val snapshotThreshold = 10
   protected var eventsCount: Int = 0

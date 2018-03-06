@@ -4,15 +4,14 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.technical.TimeSettings
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
 
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-
 import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.Future
 
 trait SessionHistoryCoordinatorComponent {
   def sessionHistoryCoordinator: ActorRef
@@ -36,7 +35,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
   override def sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     new SessionHistoryCoordinatorService {
 
-      implicit val timeout: Timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
       override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
         (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).mapTo[SessionHistory]

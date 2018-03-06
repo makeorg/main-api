@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.{ask, AskTimeoutException}
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.technical.ActorTimeoutException
+import org.make.api.technical.{ActorTimeoutException, TimeSettings}
 import org.make.core.proposal._
 import org.make.core.reference.TagId
 import org.make.core.user.UserId
@@ -12,7 +12,6 @@ import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 trait ProposalCoordinatorComponent {
@@ -66,7 +65,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
   override lazy val proposalCoordinatorService: ProposalCoordinatorService = new ProposalCoordinatorService {
 
-    implicit val timeout: Timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     def recover[T](command: Any): PartialFunction[Throwable, Future[T]] = {
       case e: AskTimeoutException => Future.failed(ActorTimeoutException(command, e))

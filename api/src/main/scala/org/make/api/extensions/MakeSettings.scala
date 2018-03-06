@@ -38,6 +38,10 @@ class MakeSettings(config: Config) extends Extension {
     val defaultClientSecret: String = config.getString("authentication.default-client-secret")
   }
 
+  object Dev {
+    val environmentType: String = config.getString("dev.environment-type")
+  }
+
 }
 object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MakeSettings =

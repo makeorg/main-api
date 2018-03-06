@@ -254,21 +254,26 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         case _ =>
           logger.error(s"update of operation '${operation.operationId.value}' failed - not found")
           Future.successful(false)
-      }.map {
+      }.flatMap {
         case (updatedTranslationCount, updatedActionCount, updatedCountryConfigurationCount) =>
           if (updatedTranslationCount != operation.translations.size) {
-            throw new Exception(
-              s"""Expected ${operation.translations.size} translations updated and get $updatedTranslationCount"""
+            Future.failed(
+              new IllegalStateException(
+                s"""Expected ${operation.translations.size} translations updated and get $updatedTranslationCount"""
+              )
             )
+          } else if (updatedActionCount != operation.events.size) {
+            Future.failed(
+              new IllegalStateException(
+                s"""Expected ${operation.events.size} events updated and get $updatedActionCount"""
+              )
+            )
+          } else if (updatedCountryConfigurationCount != operation.countriesConfiguration.size) {
+            Future.failed(new IllegalStateException(s"""Expected ${operation.countriesConfiguration.size}
+                 | events updated and get $updatedCountryConfigurationCount""".stripMargin))
+          } else {
+            Future.successful(operation.copy(updatedAt = Some(nowDate)))
           }
-          if (updatedActionCount != operation.events.size) {
-            throw new Exception(s"""Expected ${operation.events.size} events updated and get $updatedActionCount""")
-          }
-          if (updatedCountryConfigurationCount != operation.countriesConfiguration.size) {
-            throw new Exception(s"""Expected ${operation.countriesConfiguration.size}
-                 | events updated and get $updatedCountryConfigurationCount""".stripMargin)
-          }
-          operation.copy(updatedAt = Some(nowDate))
       }
     }
 

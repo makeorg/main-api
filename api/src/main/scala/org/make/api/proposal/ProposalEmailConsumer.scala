@@ -9,12 +9,11 @@ import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSetti
 import org.make.api.operation.OperationService
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
+import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class ProposalEmailConsumer(userService: UserService,
                             proposalCoordinatorService: ProposalCoordinatorService,
@@ -29,7 +28,7 @@ class ProposalEmailConsumer(userService: UserService,
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-email"
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {

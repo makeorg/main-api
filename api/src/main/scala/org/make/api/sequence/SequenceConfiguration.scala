@@ -1,18 +1,17 @@
 package org.make.api.sequence
 
-import com.typesafe.scalalogging.StrictLogging
-import org.make.core.sequence.SequenceId
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.scalalogging.StrictLogging
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
-
-import scala.concurrent.duration.DurationInt
 import org.make.api.sequence.SequenceConfigurationActor.{
   GetPersistentSequenceConfiguration,
   GetSequenceConfiguration,
   SetSequenceConfiguration
 }
-import io.circe.generic.semiauto._
+import org.make.api.technical.TimeSettings
+import org.make.core.sequence.SequenceId
 
 import scala.concurrent.Future
 
@@ -42,7 +41,7 @@ trait SequenceConfigurationComponent {
 trait DefaultSequenceConfigurationComponent extends SequenceConfigurationComponent with StrictLogging {
   self: SequenceConfigurationActorComponent =>
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override lazy val sequenceConfigurationService: SequenceConfigurationService = new SequenceConfigurationService {
     override def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration] = {

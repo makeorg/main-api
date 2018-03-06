@@ -9,12 +9,11 @@ import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSetti
 import org.make.api.operation.OperationService
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.mailjet.{Recipient, SendEmail}
-import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
+import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class UserEmailConsumerActor(userService: UserService, operationService: OperationService)
     extends KafkaConsumerActor[UserEventWrapper]
@@ -27,7 +26,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override val groupId = "user-email"
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {

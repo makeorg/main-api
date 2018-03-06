@@ -1,6 +1,7 @@
 package org.make.api.technical
 
 import akka.actor.{Actor, ActorLogging, DeadLetter, Props}
+import akka.persistence.SaveSnapshotSuccess
 
 class DeadLettersListenerActor extends Actor with ActorLogging {
 
@@ -9,6 +10,7 @@ class DeadLettersListenerActor extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
+    case DeadLetter(_: SaveSnapshotSuccess, _, _) =>
     case DeadLetter(msg, from, to) =>
       log.info("[DEADLETTERS] [{}] -> [{}]. Message: {}", from.toString, to.toString, msg.toString)
   }
