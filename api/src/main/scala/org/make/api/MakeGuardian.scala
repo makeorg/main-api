@@ -3,7 +3,8 @@ package org.make.api
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor, IdeaService}
 import org.make.api.operation.OperationService
-import org.make.api.proposal.{DuplicateDetectorProducerActor, ProposalSupervisor}
+import org.make.api.proposal.ProposalSupervisor
+import org.make.api.semantic.{SemanticProducerActor, SemanticService}
 import org.make.api.sequence.{
   PersistentSequenceConfigurationService,
   SequenceConfigurationActor,
@@ -25,7 +26,8 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
                    themeService: ThemeService,
                    sequenceService: SequenceService,
                    operationService: OperationService,
-                   ideaService: IdeaService)
+                   ideaService: IdeaService,
+                   semanticService: SemanticService)
     extends Actor
     with ActorLogging {
 
@@ -61,7 +63,8 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
             sessionHistoryCoordinator,
             tagService,
             sequenceService,
-            operationService
+            operationService,
+            semanticService
           ),
         ProposalSupervisor.name
       )
@@ -73,7 +76,7 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
 
-    context.watch(context.actorOf(DuplicateDetectorProducerActor.props, DuplicateDetectorProducerActor.name))
+    context.watch(context.actorOf(SemanticProducerActor.props, SemanticProducerActor.name))
 
     context.watch {
       val (props, name) =
@@ -113,7 +116,8 @@ object MakeGuardian {
             themeService: ThemeService,
             sequenceService: SequenceService,
             operationService: OperationService,
-            ideaService: IdeaService): Props =
+            ideaService: IdeaService,
+            semanticService: SemanticService): Props =
     Props(
       new MakeGuardian(
         persistentSequenceConfigurationService,
@@ -122,7 +126,8 @@ object MakeGuardian {
         themeService,
         sequenceService,
         operationService,
-        ideaService
+        ideaService,
+        semanticService
       )
     )
 }

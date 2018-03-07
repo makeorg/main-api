@@ -19,6 +19,7 @@ trait IdeaServiceComponent {
 
 trait IdeaService extends ShortenedNames {
   def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult]
+  def fetchAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]]
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
   def insert(name: String,
@@ -30,14 +31,16 @@ trait IdeaService extends ShortenedNames {
 }
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
-  this: PersistentIdeaServiceComponent
-  with EventBusServiceComponent
-  with IdeaSearchEngineComponent =>
+  this: PersistentIdeaServiceComponent with EventBusServiceComponent with IdeaSearchEngineComponent =>
 
   override val ideaService: IdeaService = new IdeaService {
 
     override def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
       elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery)
+    }
+
+    override def fetchAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]] = {
+      persistentIdeaService.findAllByIdeaIds(ids)
     }
 
     override def fetchOne(ideaId: IdeaId): Future[Option[Idea]] = {

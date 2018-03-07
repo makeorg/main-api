@@ -1,10 +1,9 @@
 package org.make.core
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto.deriveEncoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
+import io.circe.{Decoder, ObjectEncoder}
 
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}

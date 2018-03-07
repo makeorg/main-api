@@ -49,7 +49,6 @@ libraryDependencies ++= Seq(
   Dependencies.jerseyHk2,
   Dependencies.jaxRsApi,
   Dependencies.wireMock,
-  Dependencies.semantic,
   Dependencies.apacheMath,
   Dependencies.staminaTestKit
 )

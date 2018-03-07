@@ -22,6 +22,7 @@ trait PersistentIdeaService {
   def findOne(ideaId: IdeaId): Future[Option[Idea]]
   def findOneByName(name: String): Future[Option[Idea]]
   def findAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]]
+  def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]]
   def persist(idea: Idea): Future[Idea]
   def modify(ideaId: IdeaId, name: String): Future[Int]
 }
@@ -75,6 +76,19 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
                 ideaFilters.question.map(question       => sqls.eq(ideaAlias.question, question))
               )
             )
+        }.map(PersistentIdea.apply()).list.apply
+      })
+
+      futurePersistentIdeas.map(_.map(_.toIdea))
+    }
+
+    def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentIdeas = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentIdea.as(ideaAlias))
+            .where(sqls.in(ideaAlias.id, ids.map(_.value)))
         }.map(PersistentIdea.apply()).list.apply
       })
 

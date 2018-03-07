@@ -1,8 +1,8 @@
-package org.make.api.proposal
+package org.make.api.semantic
 
 import java.time.ZonedDateTime
 
-import org.make.api.proposal.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
+import org.make.api.semantic.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
 import org.make.core.EventWrapper
 import org.make.core.proposal.ProposalId
 import shapeless.{:+:, CNil}

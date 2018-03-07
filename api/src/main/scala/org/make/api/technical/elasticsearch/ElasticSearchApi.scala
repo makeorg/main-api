@@ -16,10 +16,7 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "Elasticsearch")
 @Path(value = "/")
 trait ElasticSearchApi extends MakeAuthenticationDirectives {
-  this: DefaultElasticSearchComponent
-    with MakeSettingsComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent =>
+  this: DefaultIndexationComponent with MakeSettingsComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
 
   @ApiOperation(
     value = "reindex",
@@ -39,7 +36,7 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
       makeOAuth2 { auth: AuthInfo[UserRights] =>
         requireAdminRole(auth.user) {
           makeTrace("Reindexing data") { _ =>
-            provideAsync(elasticSearch.reindexData()) { result =>
+            provideAsync(indexationService.reindexData()) { result =>
               complete(StatusCodes.NoContent)
             }
           }

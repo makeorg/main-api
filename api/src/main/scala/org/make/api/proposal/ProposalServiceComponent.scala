@@ -9,13 +9,14 @@ import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
+import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
@@ -38,9 +39,7 @@ trait ProposalService {
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
 
-  def getDuplicates(userId: UserId,
-                    proposalId: ProposalId,
-                    requestContext: RequestContext): Future[Seq[DuplicateResponse]]
+  def getSimilar(userId: UserId, proposalId: ProposalId, requestContext: RequestContext): Future[Seq[SimilarIdea]]
 
   def search(userId: Option[UserId],
              query: SearchQuery,
@@ -125,7 +124,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with UserHistoryCoordinatorServiceComponent
     with SessionHistoryCoordinatorServiceComponent
     with ProposalSearchEngineComponent
-    with DuplicateDetectorConfigurationComponent
+    with SemanticComponent
     with EventBusServiceComponent
     with ReadJournalComponent
     with ActorSystemComponent
@@ -457,9 +456,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     //noinspection ScalaStyle
-    override def getDuplicates(userId: UserId,
-                               proposalId: ProposalId,
-                               requestContext: RequestContext): Future[Seq[DuplicateResponse]] = {
+    override def getSimilar(userId: UserId,
+                            proposalId: ProposalId,
+                            requestContext: RequestContext): Future[Seq[SimilarIdea]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -469,88 +468,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
       elasticsearchProposalAPI.findProposalById(proposalId).flatMap {
         case Some(indexedProposal) =>
-          elasticsearchProposalAPI
-            .searchProposals(
-              SearchQuery(
-                filters = Some(
-                  SearchFilters(
-                    content = Some(ContentSearchFilter(text = indexedProposal.content)),
-                    theme = indexedProposal.themeId.map(themeId => ThemeSearchFilter(themeIds = Seq(themeId))),
-                    operation = indexedProposal.operationId
-                      .map(operationId => OperationSearchFilter(operationId = operationId)),
-                    language = Some(LanguageSearchFilter(indexedProposal.language)),
-                    country = Some(CountrySearchFilter(indexedProposal.country))
-                  )
-                ),
-                language = Some(indexedProposal.language)
-              )
-            )
-            .flatMap { response =>
-              DuplicateAlgorithm
-                .getDuplicates(
-                  indexedProposal,
-                  response.results,
-                  (proposalId: ProposalId) => {
-                    proposalCoordinatorService.viewProposal(proposalId, requestContext)
-                  },
-                  duplicateDetectorConfiguration.maxResults
-                )
-                .flatMap { duplicates: Seq[DuplicateResult] =>
-                  eventBusService.publish(
-                    PredictDuplicateEvent(
-                      proposalId = proposalId,
-                      predictedDuplicates = duplicates.map(_.proposal.proposalId),
-                      predictedScores = duplicates.map(_.score),
-                      algoLabel = DuplicateAlgorithm.getModelName
-                    )
-                  )
-                  formatDuplicateResults(duplicates)
-                }
-            }
+          semanticService.getSimilarIdeas(indexedProposal, 10)
         case None => Future.successful(Seq.empty)
       }
     }
-
-    private def formatDuplicateResult(duplicateResult: DuplicateResult): Future[DuplicateResponse] = {
-      duplicateResult.proposal.idea match {
-        case Some(ideaId) =>
-          ideaService.fetchOne(ideaId).map {
-            case Some(idea) =>
-              DuplicateResponse(
-                idea.ideaId,
-                idea.name,
-                duplicateResult.proposal.proposalId,
-                duplicateResult.proposal.content,
-                duplicateResult.score
-              )
-            case None =>
-              DuplicateResponse(
-                ideaId,
-                "Not found",
-                duplicateResult.proposal.proposalId,
-                duplicateResult.proposal.content,
-                duplicateResult.score
-              )
-          }
-        case None =>
-          Future.successful(
-            DuplicateResponse(
-              IdeaId("No Idea"),
-              "No Idea",
-              duplicateResult.proposal.proposalId,
-              duplicateResult.proposal.content,
-              duplicateResult.score
-            )
-          )
-      }
-    }
-
-    private def formatDuplicateResults(duplicates: Seq[DuplicateResult]): Future[Seq[DuplicateResponse]] = {
-      Future.traverse(duplicates) { duplicate =>
-        formatDuplicateResult(duplicate)
-      }
-    }
-
     private def retrieveVoteHistory(proposalId: ProposalId,
                                     maybeUserId: Option[UserId],
                                     requestContext: RequestContext) = {

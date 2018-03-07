@@ -17,6 +17,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea._
 import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ReadJournalComponent
@@ -39,15 +40,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait ElasticSearchComponent {
-  def elasticSearch: ElasticSearch
+trait IndexationComponent {
+  def indexationService: IndexationService
 }
 
-trait ElasticSearch {
+trait IndexationService {
   def reindexData(): Future[Done]
 }
 
-trait DefaultElasticSearchComponent extends ElasticSearchComponent {
+trait DefaultIndexationComponent extends IndexationComponent {
   this: ElasticsearchConfigurationComponent
     with StrictLogging
     with ActorSystemComponent
@@ -61,9 +62,10 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
     with ProposalSearchEngineComponent
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
-    with DefaultPersistentIdeaServiceComponent =>
+    with DefaultPersistentIdeaServiceComponent
+    with SemanticComponent =>
 
-  override lazy val elasticSearch: ElasticSearch = new ElasticSearch {
+  override lazy val indexationService: IndexationService = new IndexationService {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
@@ -137,6 +139,7 @@ trait DefaultElasticSearchComponent extends ElasticSearchComponent {
                 logger.error("indexing proposal failed", e)
                 Future.successful(Done)
             }
+          semanticService.indexProposal(indexedProposal)
         }
         .runForeach { done =>
           logger.debug("proposal flow ended with result {}", done)

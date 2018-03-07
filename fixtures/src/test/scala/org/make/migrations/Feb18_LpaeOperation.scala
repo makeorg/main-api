@@ -4,8 +4,8 @@ import io.gatling.core.Predef._
 import io.gatling.core.json.Json
 import io.gatling.http.Predef.{http, jsonPath, status}
 import io.gatling.http.protocol.HttpProtocolBuilder
-import org.make.fixtures.{MakeServicesBuilder, UserChainBuilder}
 import org.make.fixtures.User.{baseURL, defaultAcceptLanguage, defaultUserAgent}
+import org.make.fixtures.{MakeServicesBuilder, UserChainBuilder}
 
 import scala.concurrent.duration.DurationInt
 
