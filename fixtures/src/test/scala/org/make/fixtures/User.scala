@@ -26,6 +26,22 @@ object User extends SimulationConfig {
       }
   }
 
+  val vffGBUserFeeder: RecordSeqFeederBuilder[Any] = ssv(vffGBUserFeederPath, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
+      }
+  }
+
+  val vffITUserFeeder: RecordSeqFeederBuilder[Any] = ssv(vffITUserFeederPath, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
+      }
+  }
+
   val lpaeUserFeeder: RecordSeqFeederBuilder[Any] = ssv(lpaeUserFeederPath, '"', '\\').convert {
     case ("dateOfBirth", dateOfBirth) =>
       dateOfBirth match {

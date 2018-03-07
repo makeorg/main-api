@@ -17,6 +17,18 @@ object Proposal extends SimulationConfig {
       record("username")
     }
 
+  val vffGBProposalsByUsername: Map[String, IndexedSeq[Record[String]]] = {
+    ssv(vffGBProposalFeederPath, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
+  }
+
+  val vffITProposalsByUsername: Map[String, IndexedSeq[Record[String]]] = {
+    ssv(vffITProposalFeederPath, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
+  }
+
   val cpProposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
     ssv(cpProposalFeederPath, '"', '\\').records.groupBy { record =>
       record("username")

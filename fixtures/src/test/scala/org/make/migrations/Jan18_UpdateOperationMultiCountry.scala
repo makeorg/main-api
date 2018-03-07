@@ -66,7 +66,8 @@ class Jan18_UpdateOperationMultiCountry extends Simulation {
         .check(jsonPath("$.sequenceId").saveAs("sequenceIdIT"))
     )
     .exec(
-      MakeServicesBuilder.searchOperationBuilder("vff")
+      MakeServicesBuilder
+        .searchOperationBuilder("vff")
         .asJSON
         .check(jsonPath("$[0].operationId").saveAs("operationId"))
     )
@@ -123,23 +124,23 @@ class Jan18_UpdateOperationMultiCountry extends Simulation {
                     "description",
                     "police-justice",
                     "professional-environment",
+                    "medical-environment",
                     "transportation",
-                    "public-action",
                     "accommodation",
                     "education-awareness",
                     "psychological-support",
                     "financial-independence",
                     "sexist-behaviour",
-                    "mutilations",
+                    "mutilations-harmful-traditions",
                     "sexual-violence",
                     "harassment",
-                    "harmful-questionnable-traditions",
+                    "physical-aggression",
                     "image-of-women",
                     "domestic-violence",
                     "prevention-en",
                     "protection",
                     "responses",
-                    "aggression"
+                    "public-action"
                   )
               ),
               Map(
@@ -150,23 +151,23 @@ class Jan18_UpdateOperationMultiCountry extends Simulation {
                     "avviso",
                     "polizia-giustizia",
                     "mondo-del-lavoro",
+                    "mondo-medico",
                     "trasporti",
-                    "azione-pubblica",
                     "sistemazione",
                     "educazione-sensibilizzazione",
                     "sostegno-psicologico",
                     "indipendenza-finanziaria",
                     "comportamento-sessista",
-                    "mutilazioni",
+                    "mutilazioni-tradizioni-dannose",
                     "violenze-sessuali",
                     "molestia",
-                    "tradizioni-dannose",
+                    "aggresisoni-fisiche",
                     "immagine-della-donna",
                     "violenza-coniugale",
                     "prevenzione",
                     "protezione",
                     "risposte",
-                    "aggressione"
+                    "azione-pubblica"
                   )
               )
             )
