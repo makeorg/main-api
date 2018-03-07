@@ -162,8 +162,7 @@
               "analyzer": "italian_std"
             },
             "general": {
-              "type": "text",
-              "analyzer": "trigrams"
+              "type": "text"
             }
           }
         },
@@ -505,8 +504,7 @@
               "analyzer": "italian_std"
             },
             "general": {
-              "type": "text",
-              "analyzer": "trigrams"
+              "type": "text"
             }
           }
         },
