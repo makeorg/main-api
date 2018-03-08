@@ -339,8 +339,7 @@
               "analyzer": "italian_full"
             },
             "general": {
-              "type": "text",
-              "analyzer": "trigrams"
+              "type": "text"
             }
           }
         },
