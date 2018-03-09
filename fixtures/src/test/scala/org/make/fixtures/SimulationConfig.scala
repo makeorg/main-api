@@ -116,6 +116,10 @@ object MakeServicesBuilder {
     .post("/moderation/sequences")
     .header("Content-Type", "application/json")
 
+  def activateSequenceBuilder(sequenceId: String): HttpRequestBuilder = http("PATCH_sequence")
+    .patch(s"/moderation/sequences/$sequenceId")
+    .header("Content-Type", "application/json")
+
   def searchOperationBuilder(operationSlug: String): HttpRequestBuilder =
     http("GET_operation")
       .get(s"/operations?slug=$operationSlug")

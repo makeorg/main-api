@@ -51,6 +51,14 @@ class Mar8_MveOperation extends Simulation {
             .asJSON
             .check(jsonPath("$.sequenceId").saveAs("sequenceId"))
         )
+        .exec(
+          MakeServicesBuilder.activateSequenceBuilder(sequenceId = "${sequenceId}")
+            .body(
+              StringBody(
+                """{"status": "Published"}"""
+              )
+            )
+        )
       }
       .exec(session => {
         session
