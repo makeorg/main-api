@@ -7,6 +7,12 @@ import io.gatling.http.Predef.{jsonPath, status}
 
 object Proposal extends SimulationConfig {
 
+  def groupProposalsByUsername(path: String): Map[String, IndexedSeq[Record[String]]] = {
+    ssv(path, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
+  }
+
   val proposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
     ssv(proposalFeederPath, '"', '\\').records.groupBy { record =>
       record("username")
@@ -36,6 +42,11 @@ object Proposal extends SimulationConfig {
 
   val lpaeProposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
     ssv(lpaeProposalFeederPath, '"', '\\').records.groupBy { record =>
+      record("username")
+    }
+
+  val mveProposalsByUsername: Map[String, IndexedSeq[Record[String]]] =
+    ssv(mveProposalFeederPath, '"', '\\').records.groupBy { record =>
       record("username")
     }
 }

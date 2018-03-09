@@ -50,6 +50,14 @@ object User extends SimulationConfig {
       }
   }
 
+  def loadUserFeeder(path: String): RecordSeqFeederBuilder[Any] = ssv(path, '"', '\\').convert {
+    case ("dateOfBirth", dateOfBirth) =>
+      dateOfBirth match {
+        case _ if dateOfBirth.isEmpty => "null"
+        case _                        => s""""$dateOfBirth""""
+      }
+  }
+
   val defaultPause: FiniteDuration = 2.seconds
 }
 

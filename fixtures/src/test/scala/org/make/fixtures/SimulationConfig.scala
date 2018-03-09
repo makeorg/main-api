@@ -47,11 +47,13 @@ trait SimulationConfig {
   val vffGBUserFeederPath: String = getRequiredString("feeder.users-vff-gb")
   val vffITUserFeederPath: String = getRequiredString("feeder.users-vff-it")
   val lpaeUserFeederPath: String = getRequiredString("feeder.users-lpae")
+  val mveUserFeederPath: String = getRequiredString("feeder.users-mve")
   val vffProposalFeederPath: String = getRequiredString("feeder.proposals-vff")
   val vffGBProposalFeederPath: String = getRequiredString("feeder.proposals-vff-gb")
   val vffITProposalFeederPath: String = getRequiredString("feeder.proposals-vff-it")
   val cpProposalFeederPath: String = getRequiredString("feeder.proposals-cp")
   val lpaeProposalFeederPath: String = getRequiredString("feeder.proposals-lpae")
+  val mveProposalFeederPath: String = getRequiredString("feeder.proposals-mve")
   val ideaProposalFeederPath: String = getRequiredString("feeder.idea-proposal")
 
   val defaultUserAgent =
