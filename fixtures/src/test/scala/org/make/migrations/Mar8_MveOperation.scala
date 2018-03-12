@@ -34,15 +34,11 @@ class Mar8_MveOperation extends Simulation {
       .exec(UserChainBuilder.authenticateAsAdmin)
       .exec(
         MakeServicesBuilder.searchSequenceBuilder
-          .body(
-            StringBody(
-              """{"tagIds": [], "themeIds": [], "slug": "comment-mieux-vivre-ensemble", "sorts": []}"""
-            )
-          )
+          .body(StringBody("""{"tagIds": [], "themeIds": [], "slug": "comment-mieux-vivre-ensemble", "sorts": []}"""))
           .asJSON
           .check(jsonPath("$.results[0].id").saveAs("sequenceId"))
       )
-      .doIf(session => !session.contains("sequenceId") || session("sequenceId").as[String].isEmpty){
+      .doIf(session => !session.contains("sequenceId") || session("sequenceId").as[String].isEmpty) {
         exec(
           MakeServicesBuilder.createSequenceBuilder
             .body(
@@ -52,14 +48,10 @@ class Mar8_MveOperation extends Simulation {
             )
             .asJSON
             .check(jsonPath("$.sequenceId").saveAs("sequenceId"))
-        )
-        .exec(
-          MakeServicesBuilder.activateSequenceBuilder(sequenceId = "${sequenceId}")
-            .body(
-              StringBody(
-                """{"status": "Published"}"""
-              )
-            )
+        ).exec(
+          MakeServicesBuilder
+            .activateSequenceBuilder(sequenceId = "${sequenceId}")
+            .body(StringBody("""{"status": "Published"}"""))
         )
       }
       .exec(session => {
@@ -68,11 +60,7 @@ class Mar8_MveOperation extends Simulation {
           .set("operationStatus", "Active")
           .set(
             "operationTranslations",
-            Json.stringify(
-              Array(
-                Map("language" -> "fr", "title" -> "Mieux Vivre Ensemble")
-              )
-            )
+            Json.stringify(Array(Map("language" -> "fr", "title" -> "Mieux Vivre Ensemble")))
           )
           .set(
             "operationCountryConfigurations",
@@ -83,57 +71,59 @@ class Mar8_MveOperation extends Simulation {
                   "landingSequenceId" -> session("sequenceId").as[String],
                   "tagIds" ->
                     Seq(
-                      "curation",
-                      "prevention",
-                      "action-associations",
-                      "action-syndicats",
-                      "action-entreprises",
-                      "action-publique",
-                      "cible-citadins",
-                      "cible-ruraux",
-                      "cible-jeunes",
-                      "cible-personnes-agees",
-                      "cible-associations",
-                      "cible-syndicats",
-                      "cible-entreprises",
-                      "cible-individus",
-                      "cible-elus",
-                      "cible-collectivites-territoriales",
-                      "cible-etats-gouvernements",
-                      "numerique",
-                      "engagement-associatif",
-                      "partage",
-                      "participation-citoyenne",
-                      "effort-individuel",
-                      "rse",
-                      "fiscalite",
-                      "aides-subventions",
-                      "sanctions",
-                      "couverture-sociale",
-                      "regulation",
-                      "sensibilisation",
-                      "education",
-                      "laicite",
-                      "civisme",
-                      "sport",
-                      "culture",
-                      "solidarites",
-                      "sans-abri",
-                      "pauvrete",
-                      "mixite-sociale",
-                      "discriminations",
-                      "dialogue",
-                      "intergenerationnel",
-                      "vieillissement",
-                      "jeunesse",
-                      "handicap",
-                      "urbanisme",
-                      "ruralite",
+                      "isolement",
                       "fracture-numerique",
-                      "isolement"
+                      "ruralite",
+                      "urbanisme",
+                      "handicap",
+                      "jeunesse",
+                      "vieillissement",
+                      "intergenerationnel",
+                      "dialogue",
+                      "discriminations",
+                      "mixite-sociale",
+                      "pauvrete",
+                      "sans-abri",
+                      "solidarites",
+                      "culture",
+                      "sport",
+                      "civisme",
+                      "laicite",
+                      "education",
+                      "sensibilisation",
+                      "regulation",
+                      "couverture-sociale",
+                      "sanctions",
+                      "aides-subventions",
+                      "fiscalite",
+                      "rse",
+                      "effort-individuel",
+                      "participation-citoyenne",
+                      "partage",
+                      "engagement-associatif",
+                      "numerique",
+                      "cible-etats-gouvernements",
+                      "cible-collectivites-territoriales",
+                      "cible-elus",
+                      "cible-individus",
+                      "cible-entreprises",
+                      "cible-syndicats",
+                      "cible-associations",
+                      "cible-personnes-agees",
+                      "cible-jeunes",
+                      "cible-ruraux",
+                      "cible-citadins",
+                      "action--publique",
+                      "action-des-individus",
+                      "action-entreprises",
+                      "action-syndicats",
+                      "action-associations",
+                      "prevention",
+                      "repression",
+                      "curation"
                     ),
                   "startDate" -> "2018-03-13",
-                  "endDate" -> "2018-05-21"
+                  "endDate" -> "2018-05-14"
                 )
               )
             )
@@ -162,7 +152,7 @@ class Mar8_MveOperation extends Simulation {
             maybeProposals.map { proposals =>
               session.set("proposals", proposals)
             }.getOrElse(session)
-          }
+        }
       )
       .exec(
         MakeServicesBuilder
