@@ -21,10 +21,12 @@ class Mar8_MveOperation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .acceptLanguageHeader(defaultAcceptLanguage)
     .userAgentHeader(defaultUserAgent)
-    .header("x-make-operation", "")
-    .header("x-make-source", "")
+    .header("x-make-operation", "mieux-vivre-ensemble")
+    .header("x-make-source", "core")
     .header("x-make-location", "")
-    .header("x-make-question", "")
+    .header("x-make-question", "Comment mieux vivre ensemble ?")
+    .header("x-make-country", "FR")
+    .header("x-make-language", "fr")
     .disableCaching
 
   setUp(
@@ -50,6 +52,14 @@ class Mar8_MveOperation extends Simulation {
             )
             .asJSON
             .check(jsonPath("$.sequenceId").saveAs("sequenceId"))
+        )
+        .exec(
+          MakeServicesBuilder.activateSequenceBuilder(sequenceId = "${sequenceId}")
+            .body(
+              StringBody(
+                """{"status": "Published"}"""
+              )
+            )
         )
       }
       .exec(session => {
@@ -121,7 +131,9 @@ class Mar8_MveOperation extends Simulation {
                       "ruralite",
                       "fracture-numerique",
                       "isolement"
-                    )
+                    ),
+                  "startDate" -> "2018-03-13",
+                  "endDate" -> "2018-05-21"
                 )
               )
             )
