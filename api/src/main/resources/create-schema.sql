@@ -483,6 +483,7 @@ INSERT INTO tag (slug, label, enabled) VALUES
     ('cible-ruraux', e'cible : ruraux', true),
     ('cible-citadins', e'cible : citadins', true),
     ('action--publique', e'action : publique', true),
+    ('action-des-individus', e'action : des individus', true),
     ('action-entreprises', e'action : entreprises', true),
     ('action-syndicats', e'action : syndicats', true),
     ('action-associations', e'action : associations', true)
