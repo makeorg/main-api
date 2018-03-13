@@ -11,18 +11,15 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaServiceComponent {
 
-  val simpleIdea: Idea = Idea(
-    IdeaId("foo-idea"),
-    "fooIdea",
-    createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now())
-  )
+  val simpleIdea: Idea =
+    Idea(IdeaId("foo-idea"), "fooIdea", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
   val completeIdea: Idea = Idea(
     ideaId = IdeaId("bar-idea"),
     name = "barIdea",
     language = Some("fr"),
     country = Some("FR"),
     operationId = Some(OperationId("operation")),
+    themeId = None,
     question = Some("question"),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())

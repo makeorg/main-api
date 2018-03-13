@@ -120,7 +120,8 @@ trait InsertFixtureData extends Migration with StrictLogging {
                     language = Some(proposalsToAccept.language),
                     country = Some(proposalsToAccept.country),
                     operationId = proposalsToAccept.operation,
-                    question = None
+                    question = None,
+                    themeId = proposalsToAccept.theme
                   )
                 )
                 proposalId <- retryableFuture(

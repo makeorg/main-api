@@ -14,6 +14,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -120,6 +121,7 @@ class ModerationIdeaApiTest
       ArgumentMatchers.any[Option[String]],
       ArgumentMatchers.any[Option[String]],
       ArgumentMatchers.any[Option[OperationId]],
+      ArgumentMatchers.any[Option[ThemeId]],
       ArgumentMatchers.any[Option[String]]
     )
   ).thenReturn(Future.successful(fooIdea))
@@ -160,7 +162,7 @@ class ModerationIdeaApiTest
     scenario("authenticated moderator") {
       Given("an authenticated user with the moderator role")
       When("the user wants to create an idea")
-      Then("the idea should be saved if valid")
+      Then("It should be forbidden")
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
@@ -171,7 +173,7 @@ class ModerationIdeaApiTest
 
     scenario("authenticated admin without operationId") {
       Given("an authenticated user with the admin role")
-      When("the user wants to create an idea without an operationId")
+      When("the user wants to create an idea without an operationId nor a themeId")
       Then("he should get a bad request (400) return code")
 
       Post("/moderation/ideas")
@@ -181,9 +183,9 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin") {
+    scenario("authenticated admin with operationId") {
       Given("an authenticated user with the admin role")
-      When("the user wants to create an idea")
+      When("the user wants to create an idea with an operationId")
       Then("the idea should be saved if valid")
 
       Post("/moderation/ideas")
@@ -192,6 +194,42 @@ class ModerationIdeaApiTest
         status should be(StatusCodes.Created)
         val idea: Idea = entityAs[Idea]
         idea.ideaId.value should be(fooIdeaId.value)
+      }
+    }
+
+    scenario("authenticated admin with themeId") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea with a themeId")
+      Then("the idea should be saved if valid")
+
+      Post("/moderation/ideas")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df"}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Created)
+        val idea: Idea = entityAs[Idea]
+        idea.ideaId.value should be(fooIdeaId.value)
+      }
+    }
+
+    scenario("authenticated admin with operationId and themeId") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea with a themeId and an operationId")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/ideas")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "operation": "vff"}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
 
@@ -271,7 +309,7 @@ class ModerationIdeaApiTest
     }
   }
 
-  feature("get an idea ") {
+  feature("get an idea") {
     scenario("unauthenticated") {
       Given("an un authenticated user")
       When("the user wants to get an idea")
@@ -296,7 +334,7 @@ class ModerationIdeaApiTest
 
   feature("get a list of ideas") {
     scenario("unauthenticated") {
-      Given("an un authenticated user")
+      Given("an unauthenticated user")
       When("the user wants to get a list of ideas")
       Then("he should get an unauthorized (401) return code")
       Get("/moderation/ideas") ~> routes ~> check {
