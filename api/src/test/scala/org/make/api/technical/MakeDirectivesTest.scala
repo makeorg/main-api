@@ -69,6 +69,14 @@ class MakeDirectivesTest
     }
   })
 
+  val routeMakeTrace: Route = sealRoute(get {
+    path("testMakeTrace") {
+      makeTrace("test Make trace!") { requestContext: RequestContext =>
+        complete(StatusCodes.OK)
+      }
+    }
+  })
+
   val routeWithParameters: Route = sealRoute(get {
     path("testWithParameter") {
       makeTrace("testWithParameter") { requestContext: RequestContext =>
@@ -254,6 +262,15 @@ class MakeDirectivesTest
       Get("/testWithParameter").addHeader(GetParametersHeader("foo")) ~> routeWithParameters ~> check {
         status should be(StatusCodes.OK)
         responseAs[Map[String, String]] should be(Map("foo" -> ""))
+      }
+    }
+  }
+
+  feature("make trace parameter") {
+    scenario("slugify the makeTrace parameter") {
+      Get("/testMakeTrace") ~> routeMakeTrace ~> check {
+        status should be(StatusCodes.OK)
+        header[RouteNameHeader].map(_.value) shouldBe Some("test-make-trace")
       }
     }
   }

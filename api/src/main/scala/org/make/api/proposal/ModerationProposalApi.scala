@@ -798,7 +798,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/change-idea")
   def changeProposalsIdea: Route = post {
     path("moderation" / "proposals" / "change-idea") {
-      makeTrace("change proposals idea") { _ =>
+      makeTrace("ChangeProposalsIdea") { _ =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {

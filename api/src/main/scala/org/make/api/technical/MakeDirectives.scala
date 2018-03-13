@@ -15,7 +15,7 @@ import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
 import org.make.core.session.SessionId
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.{CirceFormatters, RequestContext}
+import org.make.core.{CirceFormatters, RequestContext, SlugHelper}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -74,8 +74,10 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
   }
 
   def makeTrace(name: String): Directive1[RequestContext] = {
+    val slugifiedName: String = SlugHelper(name)
+
     for {
-      _                    <- operationName(name)
+      _                    <- operationName(slugifiedName)
       maybeCookie          <- optionalCookie(sessionIdKey)
       requestId            <- requestId
       startTime            <- startTime
@@ -83,8 +85,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       externalId           <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
       origin               <- optionalHeaderValueByName(Origin.name)
       _                    <- makeAuthCookieHandlers()
-      _                    <- addMakeHeaders(requestId, name, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
-      _                    <- handleExceptions(MakeApi.exceptionHandler(name, requestId))
+      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
+      _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)
       maybeOperation       <- optionalHeaderValueByName(OperationHeader.name)
