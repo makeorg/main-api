@@ -2,12 +2,13 @@ package org.make.api
 
 import com.github.t3hnar.bcrypt._
 import org.apache.commons.dbcp2.BasicDataSource
+import org.flywaydb.core.Flyway
 import org.make.api.docker.DockerCockroachService
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.concurrent.ExecutionContext
-import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
@@ -37,33 +38,37 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
     ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = writeDatasource))
 
-    val queries = Source
-      .fromString("DROP DATABASE IF EXISTS makeapitest;%")
-      .mkString
-      .concat(
-        Source
-          .fromResource("create-schema.sql")(Codec.UTF8)
-          .mkString
-          .replace("#dbname#", "makeapitest")
-          .replace("#clientid#", "clientId")
-          .replace("#clientsecret#", "clientSecret")
-          .replace("#adminemail#", "admin@example.com")
-          .replace("#adminfirstname#", "admin")
-          .replace("#adminencryptedpassword#", "passpass".bcrypt)
-      )
-      .split("%")
+    val dbname: String = "makeapitest"
+    val defaultClientId: String = "clientId"
+    val defaultClientSecret: String = "clientSecret"
+    val adminFirstName: String = "admin"
+    val adminEmail: String = "admin@example.com"
+    val adminPassword: String = "passpass".bcrypt
+    logger.debug(s"Creating database with name: $dbname")
 
-    val conn = writeDatasource.getConnection
-    def createSchema = queries.map(query => Try(conn.createStatement.execute(query)))
-
-    Try(createSchema) match {
-      case Success(_) => logger.debug("Database schema created.")
-      case Failure(e) =>
-        logger.error(s"Cannot create schema: ${e.getStackTrace.mkString("\n")}")
+    val flyway: Flyway = new Flyway()
+    flyway.setDataSource(writeDatasource)
+    flyway.setBaselineOnMigrate(true)
+    flyway.setPlaceholders(
+      Map(
+        "dbname" -> dbname,
+        "clientId" -> defaultClientId,
+        "clientSecret" -> defaultClientSecret,
+        "adminEmail" -> adminEmail,
+        "adminFirstName" -> adminFirstName,
+        "adminEncryptedPassword" -> adminPassword.bcrypt
+      ).asJava
+    )
+    flyway.migrate()
+    Try(flyway.validate()) match {
+      case Success(_) => logger.info("Database schema created")
+      case Failure(e) => logger.warn("Cannot migrate database:", e)
     }
+
   }
 
   override protected def afterAll(): Unit = {
+
     super.afterAll()
     stopAllQuietly()
   }
