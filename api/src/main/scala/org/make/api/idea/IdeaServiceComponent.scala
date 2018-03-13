@@ -9,6 +9,7 @@ import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -26,6 +27,7 @@ trait IdeaService extends ShortenedNames {
              language: Option[String],
              country: Option[String],
              operationId: Option[OperationId],
+             themeId: Option[ThemeId],
              question: Option[String]): Future[Idea]
   def update(ideaId: IdeaId, name: String): Future[Int]
 }
@@ -55,6 +57,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
                         language: Option[String],
                         country: Option[String],
                         operationId: Option[OperationId],
+                        themeId: Option[ThemeId],
                         question: Option[String]): Future[Idea] = {
       val idea: Idea =
         Idea(
@@ -64,6 +67,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
           country = country,
           question = question,
           operationId = operationId,
+          themeId = themeId,
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now())
         )

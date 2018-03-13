@@ -10,6 +10,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -108,6 +109,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.country -> idea.country,
               column.question -> idea.question,
               column.operationId -> idea.operationId.map(_.value),
+              column.themeId -> idea.themeId.map(_.value),
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
             )
@@ -139,6 +141,7 @@ object DefaultPersistentIdeaServiceComponent {
                             country: Option[String],
                             question: Option[String],
                             operationId: Option[String],
+                            themeId: Option[String],
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime) {
     def toIdea: Idea =
@@ -149,6 +152,7 @@ object DefaultPersistentIdeaServiceComponent {
         country = country,
         question = question,
         operationId = operationId.map(operationId => OperationId(operationId)),
+        themeId = themeId.map(themeId             => ThemeId(themeId)),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt)
       )
@@ -157,7 +161,7 @@ object DefaultPersistentIdeaServiceComponent {
   object PersistentIdea extends SQLSyntaxSupport[PersistentIdea] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("id", "name", "language", "country", "operation_id", "question", "created_at", "updated_at")
+      Seq("id", "name", "language", "country", "operation_id", "theme_id", "question", "created_at", "updated_at")
 
     override val tableName: String = "idea"
 
@@ -173,6 +177,7 @@ object DefaultPersistentIdeaServiceComponent {
         country = resultSet.stringOpt(ideaResultName.country),
         question = resultSet.stringOpt(ideaResultName.question),
         operationId = resultSet.stringOpt(ideaResultName.operationId),
+        themeId = resultSet.stringOpt(ideaResultName.themeId),
         createdAt = resultSet.zonedDateTime(ideaResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(ideaResultName.updatedAt)
       )

@@ -7,6 +7,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.CirceFormatters
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 
 object IdeaElasticsearchFieldNames {
   val ideaId: String = "ideaId"
@@ -16,6 +17,7 @@ object IdeaElasticsearchFieldNames {
   val nameIt: String = "name.it"
   val nameGeneral: String = "name.general"
   val operationId: String = "operationId"
+  val themeId: String = "themeId"
   val question: String = "question"
   val country: String = "country"
   val language: String = "language"
@@ -27,6 +29,7 @@ object IdeaElasticsearchFieldNames {
 case class IndexedIdea(ideaId: IdeaId,
                        name: String,
                        operationId: Option[OperationId],
+                       themeId: Option[ThemeId],
                        question: Option[String],
                        country: Option[String],
                        language: Option[String],
@@ -43,6 +46,7 @@ object IndexedIdea extends CirceFormatters {
       ideaId = idea.ideaId,
       name = idea.name,
       operationId = idea.operationId,
+      themeId = idea.themeId,
       question = idea.question,
       country = idea.country,
       language = idea.language,
