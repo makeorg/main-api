@@ -843,8 +843,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   }
 
   val moderationProposalRoutes: Route =
-    getModerationProposal ~
-      searchAllProposalsDeprecated ~
+    searchAllProposalsDeprecated ~
       searchAllProposals ~
       updateProposal ~
       acceptProposal ~
@@ -856,8 +855,9 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       lock ~
       patchProposal ~
       getDuplicates ~
-      changeProposalsIdea
-  getDuplicates
+      changeProposalsIdea ~
+      getDuplicates ~
+      getModerationProposal
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
