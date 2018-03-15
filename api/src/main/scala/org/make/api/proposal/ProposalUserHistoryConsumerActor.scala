@@ -6,12 +6,11 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
+import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[ProposalEventWrapper]
@@ -23,7 +22,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-user-history"
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {

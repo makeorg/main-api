@@ -52,7 +52,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                   maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
                     complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
                   })
-                case Failure(ex) => throw ex
+                case Failure(ex) => failWith(ex)
               }
             }
           }
@@ -102,7 +102,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
               onComplete(future) {
                 case Success(Right(result)) => handleGrantResult(fields, result)
                 case Success(Left(_))       => complete(Unauthorized)
-                case Failure(ex)            => throw ex
+                case Failure(ex)            => failWith(ex)
               }
             }
           }
@@ -175,7 +175,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                 ) {
                   complete(StatusCodes.NoContent)
                 }
-              case Failure(ex) => throw ex
+              case Failure(ex) => failWith(ex)
             }
           }
         }

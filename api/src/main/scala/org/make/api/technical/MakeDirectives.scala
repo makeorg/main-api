@@ -134,7 +134,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       extract(_ => provider).flatMap { fa ⇒
         onComplete(fa).flatMap {
           case Success(value) ⇒ provide(value)
-          case Failure(e) ⇒ throw e
+          case Failure(e) ⇒ failWith(e)
         }
       }
     }
@@ -145,7 +145,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         onComplete(fa).flatMap {
           case Success(Some(value)) ⇒ provide(value)
           case Success(None) ⇒ complete(StatusCodes.NotFound)
-          case Failure(e) ⇒ throw e
+          case Failure(e) ⇒ failWith(e)
         }
       }
     }

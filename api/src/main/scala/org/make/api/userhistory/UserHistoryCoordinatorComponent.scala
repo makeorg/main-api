@@ -3,6 +3,7 @@ package org.make.api.userhistory
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import org.make.api.technical.TimeSettings
 import org.make.api.userhistory.UserHistoryActor.{
   ReloadState,
   RequestUserVotedProposals,
@@ -15,7 +16,6 @@ import org.make.core.user._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 trait UserHistoryCoordinatorComponent {
   def userHistoryCoordinator: ActorRef
@@ -39,7 +39,7 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
 
   override def userHistoryCoordinatorService: UserHistoryCoordinatorService = new UserHistoryCoordinatorService {
 
-    implicit val timeout: Timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def userHistory(userId: UserId): Future[UserHistory] = {
       (userHistoryCoordinator ? GetUserHistory(userId)).mapTo[UserHistory].map { history =>

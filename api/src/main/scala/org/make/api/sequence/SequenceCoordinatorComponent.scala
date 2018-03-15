@@ -4,13 +4,13 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.technical.TimeSettings
 import org.make.core.RequestContext
 import org.make.core.reference.TagId
 import org.make.core.sequence._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 trait SequenceCoordinatorComponent {
@@ -55,7 +55,7 @@ trait DefaultSequenceCoordinatorServiceComponent extends SequenceCoordinatorServ
 
   override lazy val sequenceCoordinatorService: SequenceCoordinatorService = new SequenceCoordinatorService {
 
-    implicit val timeout: Timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def getSequence(sequenceId: SequenceId): Future[Option[Sequence]] = {
       (sequenceCoordinator ? GetSequence(sequenceId, RequestContext.empty)).mapTo[Option[Sequence]]

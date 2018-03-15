@@ -10,6 +10,7 @@ import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
+import org.make.api.migrations._
 import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 
@@ -69,6 +70,28 @@ object MakeMain extends App with StrictLogging with MakeApi {
       logger.error(s"Failed to bind to $host:$port!", ex)
       actorSystem.terminate()
     case _ =>
+  }
+
+  Thread.sleep(5000)
+  val migrations: Seq[Migration] =
+    Seq(
+      CoreData,
+      VffOperation,
+      VffData,
+      VffITData,
+      VffGBData,
+      ClimatParisOperation,
+      ClimatParisData,
+      LpaeOperation,
+      LpaeData,
+      MVEOperation,
+      MVEData
+    )
+  val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
+
+  // Run migrations sequentially
+  sequentially(migrationsToRun) { migration =>
+    migration.initialize(this).flatMap(_ => migration.migrate(this))
   }
 
 }

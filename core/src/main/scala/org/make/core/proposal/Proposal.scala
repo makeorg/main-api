@@ -98,11 +98,12 @@ object QualificationKey extends StrictLogging {
   implicit val qualificationKeyEncoder: Encoder[QualificationKey] =
     (qualificationKey: QualificationKey) => Json.fromString(qualificationKey.shortName)
   implicit val qualificationKeyDecoder: Decoder[QualificationKey] =
-    Decoder.decodeString.map(
+    Decoder.decodeString.emap(
       qualificationKey =>
         QualificationKey
           .matchQualificationKey(qualificationKey)
-          .getOrElse(throw new IllegalArgumentException(s"$qualificationKey is not a QualificationKey"))
+          .map(Right.apply)
+          .getOrElse(Left(s"$qualificationKey is not a QualificationKey"))
     )
 
   implicit val qualificationKeyFormatter: JsonFormat[QualificationKey] = new JsonFormat[QualificationKey] {
@@ -166,9 +167,8 @@ object VoteKey extends StrictLogging {
   implicit lazy val voteKeyEncoder: Encoder[VoteKey] =
     (voteKey: VoteKey) => Json.fromString(voteKey.shortName)
   implicit lazy val voteKeyDecoder: Decoder[VoteKey] =
-    Decoder.decodeString.map(
-      voteKey =>
-        VoteKey.matchVoteKey(voteKey).getOrElse(throw new IllegalArgumentException(s"$voteKey is not a VoteKey"))
+    Decoder.decodeString.emap(
+      voteKey => VoteKey.matchVoteKey(voteKey).map(Right.apply).getOrElse(Left(s"$voteKey is not a VoteKey"))
     )
 
   implicit val voteKeyFormatter: JsonFormat[VoteKey] = new JsonFormat[VoteKey] {

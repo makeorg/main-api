@@ -15,8 +15,8 @@ sealed trait Gender {
 object Gender extends StrictLogging {
   implicit lazy val genderEncoder: Encoder[Gender] = (gender: Gender) => Json.fromString(gender.shortName)
   implicit lazy val genderDecoder: Decoder[Gender] =
-    Decoder.decodeString.map(
-      gender => Gender.matchGender(gender).getOrElse(throw new IllegalArgumentException(s"$gender is not a Gender"))
+    Decoder.decodeString.emap(
+      gender => Gender.matchGender(gender).map(Right.apply).getOrElse(Left(s"$gender is not a Gender"))
     )
 
   val genders: Map[String, Gender] = Map(Male.shortName -> Male, Female.shortName -> Female, Other.shortName -> Other)

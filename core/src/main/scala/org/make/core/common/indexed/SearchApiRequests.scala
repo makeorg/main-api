@@ -14,9 +14,8 @@ case object OrderDesc extends Order { override val shortName: String = "DESC" }
 
 object Order {
   implicit lazy val orderEncoder: Encoder[Order] = (order: Order) => Json.fromString(order.shortName)
-  implicit lazy val orderDecoder: Decoder[Order] = Decoder.decodeString.map(
-    order => matchOrder(order).getOrElse(throw new IllegalArgumentException(s"$order is not a Order"))
-  )
+  implicit lazy val orderDecoder: Decoder[Order] =
+    Decoder.decodeString.emap(order => matchOrder(order).map(Right.apply).getOrElse(Left(s"$order is not a Order")))
 
   val orders: Map[String, Order] = Map(OrderAsc.shortName -> OrderAsc, OrderDesc.shortName -> OrderDesc)
 
