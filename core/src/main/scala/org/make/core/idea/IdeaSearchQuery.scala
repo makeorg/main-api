@@ -78,7 +78,7 @@ object IdeaSearchFilters extends ElasticDsl {
     ideaSearchQuery.limit
       .getOrElse(-1) // TODO get default value from configurations
 
-  def getSort(ideaSearchQuery: IdeaSearchQuery): FieldSortDefinition = {
+  def getSort(ideaSearchQuery: IdeaSearchQuery): Option[FieldSortDefinition] = {
     val order = ideaSearchQuery.order.map {
       case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
       case desc if desc.toLowerCase == "desc" => SortOrder.DESC
@@ -86,7 +86,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
     ideaSearchQuery.sort.map { sort =>
       FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
-    }.getOrElse(FieldSortDefinition(field = "name.keyword", order = SortOrder.ASC))
+    }
   }
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
