@@ -114,6 +114,8 @@ object BackofficeConfiguration {
       "Advertising",
       "MultipleIdeas",
       "InvalidLanguage",
+      "Rudeness",
+      "Test",
       "Other"
     )
 
