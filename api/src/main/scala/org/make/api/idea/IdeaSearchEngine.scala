@@ -52,8 +52,8 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
       val request = search(ideaAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
-        .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
+        .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
 
       logger.debug(client.show(request))
 
