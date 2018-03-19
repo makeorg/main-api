@@ -30,7 +30,7 @@ trait TrackingApi extends MakeDirectives {
   def frontTracking: Route =
     post {
       path("tracking" / "front") {
-        makeTrace("TrackingFront") { requestContext: RequestContext =>
+        makeOperation("TrackingFront") { requestContext: RequestContext =>
           decodeRequest {
             entity(as[FrontTrackingRequest]) { request: FrontTrackingRequest =>
               eventBusService.publish(

@@ -47,7 +47,7 @@ class MakeDirectivesTest
 
   val route: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") { _ =>
+      makeOperation("test") { _ =>
         complete(StatusCodes.OK)
       }
     }
@@ -55,7 +55,7 @@ class MakeDirectivesTest
 
   val routeRejection: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") { _ =>
+      makeOperation("test") { _ =>
         reject(MalformedRequestContentRejection("http", new Exception("fake exception")))
       }
     }
@@ -63,7 +63,7 @@ class MakeDirectivesTest
 
   val routeException: Route = sealRoute(get {
     path("test") {
-      makeTrace("test") { _ =>
+      makeOperation("test") { _ =>
         throw new Exception("fake exception")
       }
     }
@@ -71,7 +71,7 @@ class MakeDirectivesTest
 
   val routeMakeTrace: Route = sealRoute(get {
     path("testMakeTrace") {
-      makeTrace("test Make trace!") { requestContext: RequestContext =>
+      makeOperation("test Make trace!") { requestContext: RequestContext =>
         complete(StatusCodes.OK)
       }
     }
@@ -79,7 +79,7 @@ class MakeDirectivesTest
 
   val routeWithParameters: Route = sealRoute(get {
     path("testWithParameter") {
-      makeTrace("testWithParameter") { requestContext: RequestContext =>
+      makeOperation("testWithParameter") { requestContext: RequestContext =>
         complete(StatusCodes.OK -> requestContext.getParameters)
       }
     }

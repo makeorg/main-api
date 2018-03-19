@@ -73,7 +73,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     }
   }
 
-  def makeTrace(name: String): Directive1[RequestContext] = {
+  def makeOperation(name: String): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
 
     for {

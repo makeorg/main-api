@@ -74,7 +74,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def getUser: Route = {
     get {
       path("user" / userId) { userId =>
-        makeTrace("GetUser") { _ =>
+        makeOperation("GetUser") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
               onSuccess(userService.getUser(userId)) {
@@ -107,7 +107,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def getMe: Route = {
     get {
       path("user" / "me") {
-        makeTrace("GetMe") { _ =>
+        makeOperation("GetMe") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
               complete(UserResponse(user))
@@ -127,7 +127,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   def socialLogin: Route = post {
     path("user" / "login" / "social") {
-      makeTrace("SocialLogin") { requestContext =>
+      makeOperation("SocialLogin") { requestContext =>
         decodeRequest {
           entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
             extractClientIP { clientIp =>
@@ -187,7 +187,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   def register: Route = post {
     path("user") {
-      makeTrace("RegisterUser") { requestContext =>
+      makeOperation("RegisterUser") { requestContext =>
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
             extractClientIP { clientIp =>
@@ -230,7 +230,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def validateAccountRoute: Route = {
     post {
       path("user" / userId / "validate" / Segment) { (userId: UserId, verificationToken: String) =>
-        makeTrace("UserValidation") { requestContext =>
+        makeOperation("UserValidation") { requestContext =>
           provideAsyncOrNotFound(
             persistentUserService
               .findUserByUserIdAndVerificationToken(userId, verificationToken)
@@ -273,7 +273,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def resetPasswordRequestRoute: Route = {
     post {
       path("user" / "reset-password" / "request-reset") {
-        makeTrace("ResetPasswordRequest") { requestContext =>
+        makeOperation("ResetPasswordRequest") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest(entity(as[ResetPasswordRequest]) { request =>
               provideAsyncOrNotFound(persistentUserService.findByEmail(request.email)) { user =>
@@ -306,7 +306,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def resetPasswordCheckRoute: Route = {
     post {
       path("user" / "reset-password" / "check-validity" / userId / Segment) { (userId: UserId, resetToken: String) =>
-        makeTrace("ResetPasswordCheck") { _ =>
+        makeOperation("ResetPasswordCheck") { _ =>
           provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, resetToken)) { user =>
             if (user.resetTokenExpiresAt.exists(_.isAfter(DateHelper.now()))) {
               complete(StatusCodes.NoContent)
@@ -331,7 +331,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   def resetPasswordRoute: Route = {
     post {
       path("user" / "reset-password" / "change-password" / userId) { userId =>
-        makeTrace("ResetPassword") { _ =>
+        makeOperation("ResetPassword") { _ =>
           decodeRequest {
             entity(as[ResetPassword]) { request: ResetPassword =>
               provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, request.resetToken)) {
@@ -360,7 +360,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def resendValidationEmail: Route = post {
     path("user" / userId / "resend-validation-email") { userId =>
-      makeTrace("ResendValidateEmail") { requestContext =>
+      makeOperation("ResendValidateEmail") { requestContext =>
         makeOAuth2 { userAuth =>
           authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
             provideAsyncOrNotFound(persistentUserService.get(userId)) { user =>
@@ -391,7 +391,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/newsletter")
   def subscribeToNewsLetter: Route = post {
     path("user" / "newsletter") {
-      makeTrace("SubscribeToNewsletter") { _ =>
+      makeOperation("SubscribeToNewsletter") { _ =>
         decodeRequest {
           entity(as[SubscribeToNewsLetter]) { request: SubscribeToNewsLetter =>
             // Keep as info in case sending form would fail
@@ -444,7 +444,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{userId}/reload-history")
   def rebuildUserHistory: Route = post {
     path("user" / userId / "reload-history") { userId =>
-      makeTrace("ReloadUserHistory") { _ =>
+      makeOperation("ReloadUserHistory") { _ =>
         makeOAuth2 { userAuth =>
           requireAdminRole(userAuth.user) {
             userHistoryCoordinatorService.reloadHistory(userId)
@@ -473,7 +473,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/reload-history")
   def rebuildAllUsersHistory: Route = post {
     path("user" / "reload-history") {
-      makeTrace("ReloadAllUsersHistory") { _ =>
+      makeOperation("ReloadAllUsersHistory") { _ =>
         makeOAuth2 { userAuth =>
           requireAdminRole(userAuth.user) {
             implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)

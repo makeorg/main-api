@@ -29,7 +29,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   def getTag: Route = {
     get {
       path("tags" / tagId) { tagId =>
-        makeTrace("GetTag") { _ =>
+        makeOperation("GetTag") { _ =>
           provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
             complete(tag)
           }
@@ -60,7 +60,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   @Path(value = "/")
   def create: Route = post {
     path("tags") {
-      makeTrace("RegisterTag") { _ =>
+      makeOperation("RegisterTag") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           requireModerationRole(userAuth.user) {
             decodeRequest {
@@ -82,7 +82,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   def listTags: Route = {
     get {
       path("tags") {
-        makeTrace("Search") { _ =>
+        makeOperation("Search") { _ =>
           onSuccess(tagService.findAllEnabled()) { tags =>
             complete(tags)
           }
@@ -115,7 +115,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   @Path(value = "/{tagId}")
   def updateTag: Route = put {
     path("tags" / tagId) { tagId =>
-      makeTrace("UpdateTag") { requestContext =>
+      makeOperation("UpdateTag") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             decodeRequest {

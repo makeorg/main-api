@@ -59,7 +59,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def getModerationSequence: Route = {
     get {
       path("moderation" / "sequences" / sequenceId) { sequenceId =>
-        makeTrace("GetModerationSequence") { _ =>
+        makeOperation("GetModerationSequence") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(sequenceService.getModerationSequenceById(sequenceId)) { sequenceResponse =>
@@ -98,7 +98,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def postSequence: Route =
     post {
       path("moderation" / "sequences") {
-        makeTrace("PostSequence") { requestContext =>
+        makeOperation("PostSequence") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -169,7 +169,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def patchSequence: Route =
     patch {
       path("moderation" / "sequences" / sequenceId) { sequenceId =>
-        makeTrace("PatchSequence") { requestContext =>
+        makeOperation("PatchSequence") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -258,7 +258,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def getModerationSequenceConfiguration: Route = {
     get {
       path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
-        makeTrace("GetModerationSequenceConfiguration") { _ =>
+        makeOperation("GetModerationSequenceConfiguration") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound[SequenceConfiguration](
@@ -300,7 +300,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def putSequenceConfiguration: Route =
     put {
       path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
-        makeTrace("PostSequenceConfiguration") { requestContext =>
+        makeOperation("PostSequenceConfiguration") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -348,7 +348,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def postAddProposalSequence: Route =
     post {
       path("moderation" / "sequences" / sequenceId / "proposals" / "add") { sequenceId =>
-        makeTrace("AddProposalsSequence") { requestContext =>
+        makeOperation("AddProposalsSequence") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -402,7 +402,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def postRemoveProposalSequence: Route =
     post {
       path("moderation" / "sequences" / sequenceId / "proposals" / "remove") { sequenceId =>
-        makeTrace("AddProposalsSequence") { requestContext =>
+        makeOperation("AddProposalsSequence") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -455,7 +455,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def searchAllSequences: Route = {
     post {
       path("moderation" / "sequences" / "search") {
-        makeTrace("SearchAll") { requestContext =>
+        makeOperation("SearchAll") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               decodeRequest {
@@ -490,7 +490,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("sequences" / sequenceSlug) { slug =>
         parameters('include.*) { (includes) =>
-          makeTrace("StartSequenceBySlug") { requestContext =>
+          makeOperation("StartSequenceBySlug") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
                 provideAsyncOrNotFound(
@@ -529,7 +529,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("sequences" / "start" / sequenceId) { sequenceId =>
         parameters('include.*) { (includes) =>
-          makeTrace("StartSequenceById") { requestContext =>
+          makeOperation("StartSequenceById") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
                 provideAsyncOrNotFound(

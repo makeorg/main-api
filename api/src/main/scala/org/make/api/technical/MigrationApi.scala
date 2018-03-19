@@ -33,7 +33,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
     get {
       path("migrations" / "operations") {
         parameters('slug.?) { (slug) =>
-          makeTrace("GetSimpleOperations") { _ =>
+          makeOperation("GetSimpleOperations") { _ =>
             provideAsync(operationService.findSimpleOperation(slug = slug)) { result =>
               complete(result)
             }

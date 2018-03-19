@@ -14,7 +14,7 @@ trait BuildInfoRoutes extends MakeDirectives {
 
   def buildInfo: Route = get {
     path("version") {
-      makeTrace("version") { _ =>
+      makeOperation("version") { _ =>
         complete(BuildInformation())
       }
     }

@@ -35,7 +35,7 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
     path("technical" / "elasticsearch" / "reindex") {
       makeOAuth2 { auth: AuthInfo[UserRights] =>
         requireAdminRole(auth.user) {
-          makeTrace("ReindexingData") { _ =>
+          makeOperation("ReindexingData") { _ =>
             provideAsync(indexationService.reindexData()) { result =>
               complete(StatusCodes.NoContent)
             }
