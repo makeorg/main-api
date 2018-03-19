@@ -108,12 +108,31 @@ deploy-preproduction:
     - preproduction
   script:
     - >
-      curl -D - -X "POST"
-      -H "Accept: application/json"
-      -H "Content-Type: application/x-www-form-urlencoded"
-      -H "X-Rundeck-Auth-Token: $RUNDECK_PREPROD_TOKEN"
-      --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
-      $RUNDECK_PREPROD_URL/api/16/job/$RUNDECK_PREPROD_JOB_ID/run
+      job_id=$(curl -s -X "POST" \
+        -H "Accept: application/json" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -H "X-Rundeck-Auth-Token: ${RUNDECK_PREPROD_TOKEN}" \
+        --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest" \
+        ${RUNDECK_PREPROD_URL}/api/16/job/${RUNDECK_PREPROD_JOB_ID}/run \
+        | jq -r '.id')
+
+      [[ "${job_id}" =~ ^[0-9]+$ ]] && echo "Job ${job_id} started ..." \
+      || { echo "Rundeck Job is not correctly launched"; exit 1; };
+
+      status='running';
+      while [ "${status}" == 'running' ]; do
+        status=$(curl -s -X "GET" \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -H "X-Rundeck-Auth-Token: ${RUNDECK_PREPROD_TOKEN}" \
+          ${RUNDECK_PREPROD_URL}/api/16/execution/${job_id} \
+          | jq -r '.status');
+        [ "${status}" == 'running' ] \
+        && { echo -e "Job ${job_id} is still running ... \nWaiting 5s ..."; sleep 5; };
+      done;
+
+      [ "${status}" != 'succeeded' ] && { echo -e "Job ${job_id} has ${status}."; exit 2; };
+      echo "Job ${job_id} has ${status}.";
 
 deploy-production:
   stage: deploy
@@ -124,9 +143,28 @@ deploy-production:
     - production
   script:
     - >
-      curl -D - -X "POST"
-      -H "Accept: application/json"
-      -H "Content-Type: application/x-www-form-urlencoded"
-      -H "X-Rundeck-Auth-Token: $RUNDECK_PROD_TOKEN"
-      --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest"
-      $RUNDECK_PROD_URL/api/16/job/$RUNDECK_PROD_JOB_ID/run
+      job_id=$(curl -s -X "POST" \
+        -H "Accept: application/json" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -H "X-Rundeck-Auth-Token: ${RUNDECK_PROD_TOKEN}" \
+        --data-urlencode "argString=-version $CI_COMMIT_REF_NAME-latest" \
+        ${RUNDECK_PROD_URL}/api/16/job/${RUNDECK_PROD_JOB_ID}/run \
+        | jq -r '.id')
+
+      [[ "${job_id}" =~ ^[0-9]+$ ]] && echo "Job ${job_id} started ..." \
+      || { echo "Rundeck Job is not correctly launched"; exit 1; };
+
+      status='running';
+      while [ "${status}" == 'running' ]; do
+        status=$(curl -s -X "GET" \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -H "X-Rundeck-Auth-Token: ${RUNDECK_PROD_TOKEN}" \
+          ${RUNDECK_PROD_URL}/api/16/execution/${job_id} \
+          | jq -r '.status');
+        [ "${status}" == 'running' ] \
+        && { echo -e "Job ${job_id} is still running ... \nWaiting 5s ..."; sleep 5; };
+      done;
+
+      [ "${status}" != 'succeeded' ] && { echo -e "Job ${job_id} has ${status}."; exit 2; };
+      echo "Job ${job_id} has ${status}.";
