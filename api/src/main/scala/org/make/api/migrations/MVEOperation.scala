@@ -6,7 +6,7 @@ import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.core.reference.TagId
 
 object MVEOperation extends CreateOperation {
-  override val operationSlug: String = "comment-mieux-vivre-ensemble"
+  override val operationSlug: String = "mieux-vivre-ensemble"
 
   override val defaultLanguage: String = "fr"
 
@@ -20,6 +20,7 @@ object MVEOperation extends CreateOperation {
       tags = Seq(
         TagId("curation"),
         TagId("prevention"),
+        TagId("repression"),
         TagId("action-associations"),
         TagId("action-syndicats"),
         TagId("action-entreprises"),
