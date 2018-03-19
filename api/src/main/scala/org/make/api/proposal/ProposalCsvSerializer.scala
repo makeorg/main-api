@@ -1,5 +1,6 @@
 package org.make.api.proposal
 
+import org.make.core.operation.Operation
 import org.make.core.proposal.VoteKey
 import org.make.core.proposal.indexed.{IndexedProposal, IndexedVote}
 import org.make.core.reference.Theme
@@ -15,7 +16,7 @@ object ProposalCsvSerializer {
       "Platitude Agree,Disagree,No Way,Impossible,Platitude Disagree,Neutral,Do Not Understand," +
       "No Opinion,Do Not Care,User PostalCode,User Age,UserId,Created at,Updated at"
 
-  def proposalsToRow(proposals: Seq[IndexedProposal], themes: Seq[Theme]): Seq[String] = {
+  def proposalsToRow(proposals: Seq[IndexedProposal], themes: Seq[Theme], operations: Seq[Operation]): Seq[String] = {
     proposals.map { proposal =>
       Seq(
         themes
@@ -26,7 +27,11 @@ object ProposalCsvSerializer {
               .map(START + _.title + END)
           }
           .getOrElse(""),
-        proposal.context.flatMap(_.operation.map(operation => START + operation + END)).getOrElse(""),
+        proposal.operationId.flatMap { operationId =>
+          operations.find(_.operationId.value == operationId.value).flatMap { operation =>
+            operation.translations.find(_.language == operation.defaultLanguage).map(START + _.title + END)
+          }
+        }.getOrElse(""),
         proposal.tags.map(_.label).mkString(START, SEPARATOR, END),
         START + proposal.content + END,
         proposal.author.firstName.map(firstname => START + firstname + END).getOrElse(""),

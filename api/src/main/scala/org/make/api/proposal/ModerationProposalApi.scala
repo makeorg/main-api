@@ -12,6 +12,7 @@ import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
@@ -43,6 +44,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with UserServiceComponent
     with IdeaServiceComponent
     with ThemeServiceComponent
+    with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
@@ -120,41 +122,46 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 )
               ) { (_, fileName, themeId, tags, content, operation, source, question, language) =>
                 provideAsync(themeService.findAll()) { themes =>
-                  provideAsync(
-                    proposalService.search(
-                      userId = Some(auth.user.userId),
-                      query = ExhaustiveSearchRequest(
-                        themesIds = themeId.map(_.map(ThemeId(_))),
-                        tagsIds = tags.map(_.map(TagId(_))),
-                        content = content,
-                        context = Some(
-                          ContextFilterRequest(
-                            operation = operation.map(OperationId(_)),
-                            source = source,
-                            question = question
-                          )
-                        ),
-                        language = language,
-                        status = Some(Seq(Accepted)),
-                        limit = Some(5000) //TODO get limit value for export into config files
-                      ).toSearchQuery(requestContext),
-                      maybeSeed = None,
-                      requestContext = requestContext
-                    )
-                  ) { proposals =>
-                    {
-                      complete {
-                        HttpResponse(
-                          entity = HttpEntity(
-                            ContentTypes.`text/csv(UTF-8)`,
-                            ByteString(
-                              (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
-                                .proposalsToRow(proposals.results, themes)).mkString("\n")
+                  provideAsync(operationService.find()) { operations =>
+                    provideAsync(
+                      proposalService.search(
+                        userId = Some(auth.user.userId),
+                        query = ExhaustiveSearchRequest(
+                          themesIds = themeId.map(_.map(ThemeId(_))),
+                          tagsIds = tags.map(_.map(TagId(_))),
+                          content = content,
+                          context = Some(
+                            ContextFilterRequest(
+                              operation = operation.map(OperationId(_)),
+                              source = source,
+                              question = question
+                            )
+                          ),
+                          language = language,
+                          status = Some(Seq(Accepted)),
+                          limit = Some(5000) //TODO get limit value for export into config files
+                        ).toSearchQuery(requestContext),
+                        maybeSeed = None,
+                        requestContext = requestContext
+                      )
+                    ) { proposals =>
+                      {
+                        complete {
+                          HttpResponse(
+                            entity = HttpEntity(
+                              ContentTypes.`text/csv(UTF-8)`,
+                              ByteString(
+                                (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
+                                  .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
+                              )
+                            )
+                          ).withHeaders(
+                            `Content-Disposition`(
+                              ContentDispositionTypes.attachment,
+                              Map("filename" -> s"$fileName.csv")
                             )
                           )
-                        ).withHeaders(
-                          `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> s"$fileName.csv"))
-                        )
+                        }
                       }
                     }
                   }
