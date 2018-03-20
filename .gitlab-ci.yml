@@ -71,7 +71,7 @@ push-image:
     - ls -lah ./dist/
     - docker load -i dist/make-api.tar.gz
     - >
-      if [[ -z $(docker images -q $NEXUS_URL$IMAGE:$IMAGE_VERSION) ]];then
+      if [[ $SEARCH_CODE == "404" ]];then
         docker push ${NEXUS_URL}${IMAGE}:${IMAGE_VERSION}
       fi
     - docker tag $NEXUS_URL$IMAGE:$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
