@@ -75,17 +75,17 @@ object MakeMain extends App with StrictLogging with MakeApi {
   Thread.sleep(5000)
   val migrations: Seq[Migration] =
     Seq(
-//      CoreData,
-//      VffOperation,
-//      VffData,
-//      VffITData,
-//      VffGBData,
-//      ClimatParisOperation,
-//      ClimatParisData,
-//      LpaeOperation,
-//      LpaeData,
-//      MVEOperation,
-//      MVEData
+      CoreData,
+      VffOperation,
+      VffData,
+      VffITData,
+      VffGBData,
+      ClimatParisOperation,
+      ClimatParisData,
+      LpaeOperation,
+      LpaeData,
+      MVEOperation,
+      MVEData
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 

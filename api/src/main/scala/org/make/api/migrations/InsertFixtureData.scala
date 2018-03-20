@@ -94,66 +94,69 @@ trait InsertFixtureData extends Migration with StrictLogging {
       api.persistentUserService
         .findByEmail(user.email)
         .flatMap {
-          case Some(u) => Future.successful(u)
-          case None    => api.persistentUserService.persist(user)
+          case Some(_) => Future.successful {}
+          case None    => api.persistentUserService.persist(user).map(_ => ())
         }
-        .flatMap { user =>
-          sequentially(proposalsToAccept) { proposalsToAccept =>
-            api.elasticsearchProposalAPI
-              .countProposals(
-                SearchQuery(
-                  filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(proposalsToAccept.content)))))
+
+    }.recoverWith {
+      case _ => Future.successful(())
+    }.flatMap { _ =>
+      sequentially(proposalsToAccept) { proposalsToAccept =>
+        api.elasticsearchProposalAPI
+          .countProposals(
+            SearchQuery(
+              filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(proposalsToAccept.content)))))
+            )
+          )
+          .flatMap { countResult =>
+            if (countResult > 0) {
+              Future.successful {}
+            } else {
+              for {
+                user <- retryableFuture(api.persistentUserService.findByEmail(proposalsToAccept.userEmail)).map(_.get)
+                idea <- retryableFuture(
+                  api.ideaService.insert(
+                    name = proposalsToAccept.content,
+                    language = Some(proposalsToAccept.language),
+                    country = Some(proposalsToAccept.country),
+                    operationId = proposalsToAccept.operation,
+                    question = None
+                  )
                 )
-              )
-              .flatMap { countResult =>
-                if (countResult > 0) {
-                  Future.successful {}
-                } else {
-                  for {
-                    idea <- retryableFuture(
-                      api.ideaService.insert(
-                        name = proposalsToAccept.content,
-                        language = Some(proposalsToAccept.language),
-                        country = Some(proposalsToAccept.country),
-                        operationId = proposalsToAccept.operation,
-                        question = None
-                      )
+                proposalId <- retryableFuture(
+                  api.proposalService
+                    .propose(
+                      user,
+                      emptyContext,
+                      DateHelper.now(),
+                      proposalsToAccept.content,
+                      proposalsToAccept.operation,
+                      proposalsToAccept.theme,
+                      Some(proposalsToAccept.language),
+                      Some(proposalsToAccept.country)
                     )
-                    proposalId <- retryableFuture(
-                      api.proposalService
-                        .propose(
-                          user,
-                          emptyContext,
-                          DateHelper.now(),
-                          proposalsToAccept.content,
-                          proposalsToAccept.operation,
-                          proposalsToAccept.theme,
-                          Some(proposalsToAccept.language),
-                          Some(proposalsToAccept.country)
-                        )
+                )
+                _ <- retryableFuture(
+                  api.proposalService.validateProposal(
+                    proposalId,
+                    moderatorId,
+                    emptyContext,
+                    ValidateProposalRequest(
+                      newContent = None,
+                      sendNotificationEmail = false,
+                      theme = proposalsToAccept.theme,
+                      labels = proposalsToAccept.labels,
+                      tags = proposalsToAccept.tags,
+                      similarProposals = Seq.empty,
+                      operation = proposalsToAccept.operation,
+                      idea = Some(idea.ideaId)
                     )
-                    _ <- retryableFuture(
-                      api.proposalService.validateProposal(
-                        proposalId,
-                        moderatorId,
-                        emptyContext,
-                        ValidateProposalRequest(
-                          newContent = None,
-                          sendNotificationEmail = false,
-                          theme = proposalsToAccept.theme,
-                          labels = proposalsToAccept.labels,
-                          tags = proposalsToAccept.tags,
-                          similarProposals = Seq.empty,
-                          operation = proposalsToAccept.operation,
-                          idea = Some(idea.ideaId)
-                        )
-                      )
-                    )
-                  } yield {}
-                }
-              }
+                  )
+                )
+              } yield {}
+            }
           }
-        }
+      }
     }
   }
 

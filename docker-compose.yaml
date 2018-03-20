@@ -65,6 +65,16 @@ services:
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost
+  semantic:
+    image: nexus.prod.makeorg.tech/make-semantic:preproduction-latest
+    ports:
+      - 9001:9001
+    environment:
+      ES_URL: "elasticsearch:9200"
+    depends_on:
+      - elasticsearch
+    networks:
+      - makeapi
   kafka-manager:
     image: sheepkiller/kafka-manager
     environment:
