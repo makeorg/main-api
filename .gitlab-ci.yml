@@ -3,7 +3,7 @@ image: makeorg/docker-sbt-coursier
 variables:
   CI_BUILD: "true"
   SBT_OPTS: "-Xms2G -Xmx2G"
-  IMAGE: "/make-api"
+  IMAGE: "make-api"
 
 stages:
   - build
@@ -22,7 +22,7 @@ tests-coverage:
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
     - export IMAGE_VERSION=`git rev-parse --short=10 HEAD`
-    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=make-api&version=$IMAGE_VERSION"`
+    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=$IMAGE&version=$IMAGE_VERSION"`
   script:
     - echo $SEARCH_CODE
     - >
@@ -42,17 +42,17 @@ build-image:
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=overlay2 dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
-    - echo $(docker pull $NEXUS_URL$IMAGE:$IMAGE_VERSION)
+    - echo $(docker pull $NEXUS_URL/$IMAGE:$IMAGE_VERSION)
   script:
     - >
-      if [[ -z $(docker images -q $NEXUS_URL$IMAGE:$IMAGE_VERSION) ]];then
+      if [[ -z $(docker images -q $NEXUS_URL/$IMAGE:$IMAGE_VERSION) ]];then
         sbt publishLocal
       fi
     - mkdir dist
-    - docker save ${NEXUS_URL}${IMAGE}:${IMAGE_VERSION} -o dist/make-api.tar.gz
+    - docker save ${NEXUS_URL}/${IMAGE}:${IMAGE_VERSION} -o dist/image.tar.gz
   artifacts:
     paths:
-      - dist/make-api.tar.gz
+      - dist/image.tar.gz
 
 push-image:
   stage: push
@@ -65,17 +65,17 @@ push-image:
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=overlay2 dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://${NEXUS_URL}" --username "${NEXUS_USER}" --password "${NEXUS_PASSWORD}"
-    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=make-api&version=$IMAGE_VERSION"`
+    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=$IMAGE&version=$IMAGE_VERSION"`
   script:
     - ls -lah
     - ls -lah ./dist/
-    - docker load -i dist/make-api.tar.gz
+    - docker load -i dist/image.tar.gz
     - >
       if [[ $SEARCH_CODE == "404" ]];then
-        docker push ${NEXUS_URL}${IMAGE}:${IMAGE_VERSION}
+        docker push ${NEXUS_URL}/${IMAGE}:${IMAGE_VERSION}
       fi
-    - docker tag $NEXUS_URL$IMAGE:$IMAGE_VERSION $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
-    - docker push $NEXUS_URL$IMAGE:$CI_COMMIT_REF_NAME-latest
+    - docker tag $NEXUS_URL/$IMAGE:$IMAGE_VERSION $NEXUS_URL/$IMAGE:$CI_COMMIT_REF_NAME-latest
+    - docker push $NEXUS_URL/$IMAGE:$CI_COMMIT_REF_NAME-latest
 
 merge-to-prod:
   stage: merge
