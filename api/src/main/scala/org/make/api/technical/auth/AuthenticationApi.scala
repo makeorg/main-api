@@ -38,7 +38,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
   def accessTokenRoute: Route =
     pathPrefix("oauth") {
       path("access_token") {
-        makeTrace("OauthAccessToken") { _ =>
+        makeOperation("OauthAccessToken") { _ =>
           post {
             formFieldMap { fields =>
               onComplete(
@@ -78,7 +78,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
   def makeAccessTokenRoute: Route =
     pathPrefix("oauth") {
       path("make_access_token") {
-        makeTrace("OauthMakeAccessToken") { requestContext =>
+        makeOperation("OauthMakeAccessToken") { requestContext =>
           post {
             formFieldMap { fields =>
               val allFields = fields ++ Map(
@@ -154,7 +154,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
   def logoutRoute: Route =
     post {
       path("logout") {
-        makeTrace("OauthLogout") { _ =>
+        makeOperation("OauthLogout") { _ =>
           makeOAuth2 { userAuth =>
             val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
             onComplete(futureRowsDeletedCount) {

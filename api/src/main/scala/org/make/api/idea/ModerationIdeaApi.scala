@@ -69,7 +69,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
             'order.?
           )
         ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
-          makeTrace("GetAllIdeas") { requestContext =>
+          makeOperation("GetAllIdeas") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 val filters: IdeaFiltersRequest =
@@ -112,7 +112,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   def getIdea: Route = {
     get {
       path("moderation" / "ideas" / ideaId) { ideaId =>
-        makeTrace("GetIdea") { _ =>
+        makeOperation("GetIdea") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
@@ -144,7 +144,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   @Path(value = "/")
   def createIdea: Route = post {
     path("moderation" / "ideas") {
-      makeTrace("CreateIdea") { requestContext =>
+      makeOperation("CreateIdea") { requestContext =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           requireAdminRole(userAuth.user) {
             decodeRequest {
@@ -206,7 +206,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
   @Path(value = "/{ideaId}")
   def updateIdea: Route = put {
     path("moderation" / "ideas" / ideaId) { ideaId =>
-      makeTrace("UpdateIdea") { _ =>
+      makeOperation("UpdateIdea") { _ =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             decodeRequest {

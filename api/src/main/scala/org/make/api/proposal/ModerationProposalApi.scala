@@ -69,7 +69,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def getModerationProposal: Route = {
     get {
       path("moderation" / "proposals" / moderationProposalId) { proposalId =>
-        makeTrace("GetModerationProposal") { _ =>
+        makeOperation("GetModerationProposal") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) { proposalResponse =>
@@ -103,7 +103,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def exportProposals: Route = {
     get {
       path("moderation" / "proposals" / "export") {
-        makeTrace("ExportProposal") { requestContext =>
+        makeOperation("ExportProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               parameters(
@@ -198,7 +198,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def searchAllProposalsDeprecated: Route = {
     post {
       path("moderation" / "proposals" / "search") {
-        makeTrace("SearchAll") { requestContext =>
+        makeOperation("SearchAll") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               decodeRequest {
@@ -265,7 +265,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def searchAllProposals: Route = {
     get {
       path("moderation" / "proposals") {
-        makeTrace("SearchAll") { requestContext =>
+        makeOperation("SearchAll") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               parameters(
@@ -434,7 +434,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def updateProposal: Route =
     put {
       path("moderation" / "proposals" / moderationProposalId) { proposalId =>
-        makeTrace("EditProposal") { requestContext =>
+        makeOperation("EditProposal") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               decodeRequest {
@@ -488,7 +488,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/{proposalId}/accept")
   def acceptProposal: Route = post {
     path("moderation" / "proposals" / moderationProposalId / "accept") { proposalId =>
-      makeTrace("ValidateProposal") { requestContext =>
+      makeOperation("ValidateProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {
@@ -536,7 +536,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/{proposalId}/refuse")
   def refuseProposal: Route = post {
     path("moderation" / "proposals" / moderationProposalId / "refuse") { proposalId =>
-      makeTrace("RefuseProposal") { requestContext =>
+      makeOperation("RefuseProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {
@@ -580,7 +580,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/{proposalId}/postpone")
   def postponeProposal: Route = post {
     path("moderation" / "proposals" / moderationProposalId / "postpone") { proposalId =>
-      makeTrace("PostponeProposal") { requestContext =>
+      makeOperation("PostponeProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {
@@ -619,7 +619,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/{proposalId}/lock")
   def lock: Route = post {
     path("moderation" / "proposals" / moderationProposalId / "lock") { proposalId =>
-      makeTrace("LockProposal") { requestContext =>
+      makeOperation("LockProposal") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             provideAsyncOrNotFound(
@@ -654,7 +654,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Deprecated
   def removeProposalFromClusters: Route = delete {
     path("moderation" / "proposals" / "similars" / moderationProposalId) { proposalId =>
-      makeTrace("RemoveFromSimilars") { context =>
+      makeOperation("RemoveFromSimilars") { context =>
         makeOAuth2 { auth =>
           requireModerationRole(auth.user) {
             onSuccess(proposalService.removeProposalFromCluster(proposalId)) { _ =>
@@ -685,7 +685,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Deprecated
   def removeClusters: Route = delete {
     path("moderation" / "proposals" / "similars") {
-      makeTrace("RemoveClusters") { context =>
+      makeOperation("RemoveClusters") { context =>
         makeOAuth2 { auth =>
           requireModerationRole(auth.user) {
             onSuccess(proposalService.clearSimilarProposals()) { _ =>
@@ -721,7 +721,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def patchProposal: Route = {
     patch {
       path("moderation" / "proposals" / moderationProposalId) { id =>
-        makeTrace("PatchProposal") { context =>
+        makeOperation("PatchProposal") { context =>
           makeOAuth2 { auth =>
             requireAdminRole(auth.user) {
               decodeRequest {
@@ -759,7 +759,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   def getDuplicates: Route = {
     get {
       path("moderation" / "proposals" / moderationProposalId / "duplicates") { proposalId =>
-        makeTrace("Duplicates") { requestContext =>
+        makeOperation("Duplicates") { requestContext =>
           makeOAuth2 { auth =>
             requireModerationRole(auth.user) {
               provideAsync(
@@ -798,7 +798,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   @Path(value = "/change-idea")
   def changeProposalsIdea: Route = post {
     path("moderation" / "proposals" / "change-idea") {
-      makeTrace("ChangeProposalsIdea") { _ =>
+      makeOperation("ChangeProposalsIdea") { _ =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {

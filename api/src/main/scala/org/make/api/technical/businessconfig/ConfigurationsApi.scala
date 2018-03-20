@@ -26,7 +26,7 @@ trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives
   def businessConfigurationFront: Route =
     get {
       path("configurations" / "front") {
-        makeTrace("FrontConfiguration") { _ =>
+        makeOperation("FrontConfiguration") { _ =>
           onSuccess(themeService.findAll()) { themes =>
             complete(FrontConfiguration.default(themes = themes))
           }
@@ -55,7 +55,7 @@ trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives
   def businessConfigBack: Route =
     get {
       path("configurations" / "backoffice") {
-        makeTrace("BackofficeConfiguration") { _ =>
+        makeOperation("BackofficeConfiguration") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               onSuccess(themeService.findAll()) { themes =>

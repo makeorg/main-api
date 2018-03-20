@@ -40,7 +40,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   def moderationGetTag: Route = {
     get {
       path("moderation" / "tags" / moderationTagId) { tagId =>
-        makeTrace("ModerationGetTag") { _ =>
+        makeOperation("ModerationGetTag") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
               provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
@@ -75,7 +75,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   @Path(value = "/")
   def moderationCreateTag: Route = post {
     path("moderation" / "tags") {
-      makeTrace("ModerationRegisterTag") { _ =>
+      makeOperation("ModerationRegisterTag") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           requireModerationRole(userAuth.user) {
             decodeRequest {
@@ -112,7 +112,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   def moderationlistTags: Route = {
     get {
       path("moderation" / "tags") {
-        makeTrace("ModerationSearchTag") { _ =>
+        makeOperation("ModerationSearchTag") { _ =>
           parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order, 'label.?)) {
             (start, end, sort, order, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>

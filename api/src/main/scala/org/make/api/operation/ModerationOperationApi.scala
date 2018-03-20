@@ -17,7 +17,7 @@ import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
-import org.make.core.{HttpCodes, Validation, reference}
+import org.make.core.{reference, HttpCodes, Validation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -61,7 +61,7 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
   def moderationPostOperation: Route = {
     post {
       path("moderation" / "operations") {
-        makeTrace("ModerationPostOperation") { _ =>
+        makeOperation("ModerationPostOperation") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
@@ -127,7 +127,7 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
   def moderationPutOperation: Route = {
     put {
       path("moderation" / "operations" / operationId) { operationId =>
-        makeTrace("ModerationPutOperation") { _ =>
+        makeOperation("ModerationPutOperation") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(operationService.findOne(operationId)) { _ =>
@@ -207,7 +207,7 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
   def moderationGetOperation: Route = {
     get {
       path("moderation" / "operations" / operationId) { operationId =>
-        makeTrace("ModerationGetOperation") { requestContext =>
+        makeOperation("ModerationGetOperation") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
@@ -242,10 +242,12 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
     get {
       path("moderation" / "operations") {
         parameters(('slug.?, 'country.?, 'openAt.?)) { (slug, country, openAt) =>
-          makeTrace("ModerationGetOperations") { requestContext =>
+          makeOperation("ModerationGetOperations") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsync(operationService.find(slug = slug, country = country, openAt = openAt.map(LocalDate.parse(_)))) { operations =>
+                provideAsync(
+                  operationService.find(slug = slug, country = country, openAt = openAt.map(LocalDate.parse(_)))
+                ) { operations =>
                   provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
                     users =>
                       val operationResponses: Seq[ModerationOperationResponse] =

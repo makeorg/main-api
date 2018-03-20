@@ -46,7 +46,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def getProposal: Route = {
     get {
       path("proposals" / proposalId) { proposalId =>
-        makeTrace("GetProposal") { requestContext =>
+        makeOperation("GetProposal") { requestContext =>
           provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
             complete(proposal)
           }
@@ -68,7 +68,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def searchDeprecated: Route = {
     post {
       path("proposals" / "search") {
-        makeTrace("Search") { requestContext =>
+        makeOperation("Search") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest {
               entity(as[SearchRequest]) { request: SearchRequest =>
@@ -122,7 +122,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def search: Route = {
     get {
       path("proposals") {
-        makeTrace("Search") { requestContext =>
+        makeOperation("Search") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters(
               (
@@ -266,7 +266,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   def postProposal: Route =
     post {
       path("proposals") {
-        makeTrace("PostProposal") { requestContext =>
+        makeOperation("PostProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
@@ -315,7 +315,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{proposalId}/vote")
   def vote: Route = post {
     path("proposals" / proposalId / "vote") { proposalId =>
-      makeTrace("VoteProposal") { requestContext =>
+      makeOperation("VoteProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
@@ -347,7 +347,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{proposalId}/unvote")
   def unvote: Route = post {
     path("proposals" / proposalId / "unvote") { proposalId =>
-      makeTrace("UnvoteProposal") { requestContext =>
+      makeOperation("UnvoteProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
           decodeRequest {
             entity(as[VoteProposalRequest]) { request =>
@@ -385,7 +385,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{proposalId}/qualification")
   def qualification: Route = post {
     path("proposals" / proposalId / "qualification") { proposalId =>
-      makeTrace("QualificationProposal") { requestContext =>
+      makeOperation("QualificationProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
           decodeRequest {
             entity(as[QualificationProposalRequest]) { request =>
@@ -424,7 +424,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
   @Path(value = "/{proposalId}/unqualification")
   def unqualification: Route = post {
     path("proposals" / proposalId / "unqualification") { proposalId =>
-      makeTrace("UnqualificationProposal") { requestContext =>
+      makeOperation("UnqualificationProposal") { requestContext =>
         optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
           decodeRequest {
             entity(as[QualificationProposalRequest]) { request =>
