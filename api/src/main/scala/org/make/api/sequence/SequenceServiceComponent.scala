@@ -143,7 +143,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         votedProposals        <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
         sequenceConfiguration <- sequenceConfigurationService.getSequenceConfiguration(sequence.id)
         selectedProposals: Seq[ProposalId] = selectionAlgorithm
-          .newProposalsForSequence(
+          .selectProposalsForSequence(
             targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
             sequenceConfiguration = sequenceConfiguration,
             proposals = prepareSimilarProposalsForAlgorithm(allProposals),

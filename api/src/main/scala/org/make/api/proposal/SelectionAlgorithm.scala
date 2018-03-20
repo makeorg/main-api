@@ -12,32 +12,60 @@ import scala.annotation.tailrec
 import scala.math.ceil
 import scala.util.Random
 
-object InverseWeightedRandom extends StrictLogging {
+trait ProposalChooser {
+  def choose(proposals: Seq[Proposal]): Proposal
+}
+
+object OldestProposalChooser extends ProposalChooser {
+  override def choose(proposals: Seq[Proposal]): Proposal = {
+    proposals
+      .sortWith((first, second) => {
+        (for {
+          firstCreation  <- first.createdAt
+          secondCreation <- second.createdAt
+        } yield {
+          firstCreation.isBefore(secondCreation)
+        }).getOrElse(false)
+      })
+      .head
+  }
+}
+
+trait RandomProposalChooser extends ProposalChooser {
   var random: Random = Random
 
-  def proposalWeight(proposal: Proposal): Double = {
-    1 / (proposal.votes.map(_.count).sum + 1).toDouble
-  }
+  protected def proposalWeight(proposal: Proposal): Double
 
   @tailrec
-  final def search(proposals: Seq[Proposal], choice: Double, cumsum: Double = 0): Proposal = {
-    val cumsumNew = cumsum + proposalWeight(proposals.head)
-    if (choice <= cumsumNew) {
+  private final def search(proposals: Seq[Proposal], choice: Double, accumulatedSum: Double = 0): Proposal = {
+    val accumulatedSumNew = accumulatedSum + proposalWeight(proposals.head)
+    if (choice <= accumulatedSumNew) {
       proposals.head
     } else {
-      search(proposals.tail, choice, cumsumNew)
+      search(proposals.tail, choice, accumulatedSumNew)
     }
   }
 
-  def choose(proposals: Seq[Proposal]): Proposal = {
+  final def choose(proposals: Seq[Proposal]): Proposal = {
     val weightSum: Double = proposals.map(proposalWeight).sum
     val choice: Double = random.nextDouble() * weightSum
     search(proposals, choice)
   }
-
 }
 
-object UniformRandom extends StrictLogging {
+object InverseWeightedRandom extends RandomProposalChooser {
+  override def proposalWeight(proposal: Proposal): Double = {
+    1 / (proposal.votes.map(_.count).sum + 1).toDouble
+  }
+}
+
+object SoftMinRandom extends RandomProposalChooser {
+  override def proposalWeight(proposal: Proposal): Double = {
+    Math.exp(-1 * proposal.votes.map(_.count).sum)
+  }
+}
+
+object UniformRandom extends ProposalChooser with StrictLogging {
   var random: Random = Random
 
   def choose(proposals: Seq[Proposal]): Proposal = {
@@ -199,11 +227,11 @@ trait SelectionAlgorithmComponent {
 }
 
 trait SelectionAlgorithm {
-  def newProposalsForSequence(targetLength: Int,
-                              sequenceConfiguration: SequenceConfiguration,
-                              proposals: Seq[Proposal],
-                              votedProposals: Seq[ProposalId],
-                              includeList: Seq[ProposalId]): Seq[ProposalId]
+  def selectProposalsForSequence(targetLength: Int,
+                                 sequenceConfiguration: SequenceConfiguration,
+                                 proposals: Seq[Proposal],
+                                 votedProposals: Seq[ProposalId],
+                                 includeList: Seq[ProposalId]): Seq[ProposalId]
 }
 
 trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
@@ -225,11 +253,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       (cluster of similar proposals) can appear in each sequence
     - the non imposed proposals are ordered randomly
      */
-    def newProposalsForSequence(targetLength: Int,
-                                sequenceConfiguration: SequenceConfiguration,
-                                proposals: Seq[Proposal],
-                                votedProposals: Seq[ProposalId],
-                                includeList: Seq[ProposalId]): Seq[ProposalId] = {
+    def selectProposalsForSequence(targetLength: Int,
+                                   sequenceConfiguration: SequenceConfiguration,
+                                   proposals: Seq[Proposal],
+                                   votedProposals: Seq[ProposalId],
+                                   includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
       // fetch included proposals and exclude similars
       val includedProposals: Seq[Proposal] = proposals.filter(p             => includeList.contains(p.proposalId))
@@ -273,11 +301,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
 
-    def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: (Seq[Proposal]) => Proposal): Seq[Proposal] = {
+    def chooseProposals(proposals: Seq[Proposal], count: Int, algorithm: ProposalChooser): Seq[Proposal] = {
       if (proposals.isEmpty || count <= 0) {
         Seq.empty
       } else {
-        val chosen: Proposal = algorithm(proposals)
+        val chosen: Proposal = algorithm.choose(proposals)
         Seq(chosen) ++ chooseProposals(
           count = count - 1,
           proposals =
@@ -287,19 +315,6 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
 
-    def chooseNewProposalAlgorithm(proposals: Seq[Proposal]): Proposal = {
-      proposals
-        .sortWith((first, second) => {
-          (for {
-            firstCreation  <- first.createdAt
-            secondCreation <- second.createdAt
-          } yield {
-            firstCreation.isBefore(secondCreation)
-          }).getOrElse(false)
-        })
-        .head
-    }
-
     def chooseNewProposals(sequenceConfiguration: SequenceConfiguration,
                            availableProposals: Seq[Proposal],
                            targetNewProposalsCount: Int): Seq[Proposal] = {
@@ -307,7 +322,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         val votes: Int = proposal.votes.map(_.count).sum
         votes < sequenceConfiguration.newProposalsVoteThreshold
       }
-      chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = chooseNewProposalAlgorithm)
+      chooseProposals(proposals = newProposals, count = targetNewProposalsCount, algorithm = OldestProposalChooser)
     }
 
     case class ScoredProposal(proposal: Proposal, score: Double)
@@ -370,7 +385,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           testedProposals
         }
 
-      chooseProposals(proposals = proposalPool, count = testedProposalCount, algorithm = InverseWeightedRandom.choose)
+      chooseProposals(proposals = proposalPool, count = testedProposalCount, algorithm = SoftMinRandom)
     }
 
     def complementSequence(sequence: Seq[ProposalId],
@@ -383,7 +398,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       sequence ++ chooseProposals(
         availableProposals.filter(p => !excludeList.contains(p.proposalId)),
         targetLength - sequence.size,
-        chooseNewProposalAlgorithm
+        OldestProposalChooser
       ).map(_.proposalId)
     }
   }
