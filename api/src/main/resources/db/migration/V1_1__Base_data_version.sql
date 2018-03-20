@@ -308,7 +308,10 @@ INSERT INTO tag (slug, label, enabled, created_at, updated_at) VALUES
 	('seniors-juniors', 'seniors / juniors', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
 	('sensibilisation', 'sensibilisation', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
 	('sensibilisation-education', e'sensibilisation & \u00E9ducation', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
-	('sensibilisation-prevention', e'sensibilisation & pr\u00E9vention', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00');
+	('sensibilisation-prevention', e'sensibilisation & pr\u00E9vention', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
+	('isolement', e'isolement', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
+	('ruralite', e'ruralité', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),
+	('intergenerationnel', e'intergenerationnel', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00');
 
 INSERT INTO tag (slug, label, enabled, created_at, updated_at) VALUES
 	('service-civique', 'service civique', true, '2018-03-06 09:39:11.240144+00:00', '2018-03-06 09:39:11.240144+00:00'),

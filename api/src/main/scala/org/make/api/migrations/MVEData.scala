@@ -12,7 +12,7 @@ object MVEData extends InsertFixtureData {
   var operationId: OperationId = _
 
   override def initialize(api: MakeApi): Future[Unit] = {
-    api.operationService.findOneBySlug("comment-mieux-vivre-ensemble").flatMap {
+    api.operationService.findOneBySlug("mieux-vivre-ensemble").flatMap {
       case Some(operation) =>
         Future.successful { operationId = operation.operationId }
       case None => Future.failed(new IllegalStateException("Unable to find an operation with slug lpae"))
