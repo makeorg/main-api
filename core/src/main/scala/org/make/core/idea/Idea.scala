@@ -7,6 +7,7 @@ import io.circe.generic.semiauto._
 import org.make.core.CirceFormatters
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 import org.make.core.{MakeSerializable, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
@@ -17,6 +18,7 @@ final case class Idea(ideaId: IdeaId,
                       country: Option[String] = None,
                       question: Option[String] = None,
                       operationId: Option[OperationId] = None,
+                      themeId: Option[ThemeId] = None,
                       status: IdeaStatus = IdeaStatus.Activated,
                       override val createdAt: Option[ZonedDateTime],
                       override val updatedAt: Option[ZonedDateTime])
@@ -26,10 +28,10 @@ final case class Idea(ideaId: IdeaId,
 object Idea extends CirceFormatters {
 
   implicit val ideaFormatter: RootJsonFormat[Idea] =
-    DefaultJsonProtocol.jsonFormat9(Idea.apply)
+    DefaultJsonProtocol.jsonFormat10(Idea.apply)
 
-    implicit val encoder: Encoder[Idea] = deriveEncoder[Idea]
-    implicit val decoder: Decoder[Idea] = deriveDecoder[Idea]
+  implicit val encoder: Encoder[Idea] = deriveEncoder[Idea]
+  implicit val decoder: Decoder[Idea] = deriveDecoder[Idea]
 }
 
 final case class IdeaId(value: String) extends StringValue
@@ -58,13 +60,9 @@ sealed trait IdeaStatus {
 
 object IdeaStatus {
   val statusMap: Map[String, IdeaStatus] =
-    Map(
-      Activated.shortName -> Activated,
-      Archived.shortName -> Archived
-    )
+    Map(Activated.shortName -> Activated, Archived.shortName -> Archived)
 
-  implicit lazy val ideaStatusEncoder: Encoder[IdeaStatus] = (status: IdeaStatus) =>
-    Json.fromString(status.shortName)
+  implicit lazy val ideaStatusEncoder: Encoder[IdeaStatus] = (status: IdeaStatus) => Json.fromString(status.shortName)
   implicit lazy val ideaStatusDecoder: Decoder[IdeaStatus] =
     Decoder.decodeString.emap { value: String =>
       statusMap.get(value) match {
@@ -92,4 +90,3 @@ object IdeaStatus {
     override val shortName = "Activated"
   }
 }
-

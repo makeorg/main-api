@@ -15,6 +15,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 import org.make.core.{HttpCodes, Validation}
 
 import scala.util.Try
@@ -45,6 +46,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
@@ -62,13 +64,14 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
             'language.?,
             'country.?,
             'operationId.?,
+            'themeId.?,
             'question.?,
             'limit.as[Int].?,
             'skip.as[Int].?,
             'sort.?,
             'order.?
           )
-        ) { (name, language, country, operationId, question, limit, skip, sort, order) =>
+        ) { (name, language, country, operationId, themeId, question, limit, skip, sort, order) =>
           makeOperation("GetAllIdeas") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
@@ -78,6 +81,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                     language = language,
                     country = country,
                     operationId = operationId,
+                    themeId = themeId,
                     question = question,
                     limit = limit,
                     skip = skip,
@@ -159,11 +163,29 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                   )
                   Validation.validate(
                     Validation.requirePresent(
-                      fieldName = "operation",
-                      fieldValue = request.operation,
-                      message = Some("operation should not be empty")
+                      fieldName = "operation/theme",
+                      fieldValue = request.operation.orElse(request.theme),
+                      message = Some("operation or theme should not be empty")
                     )
                   )
+                  if (request.operation.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "theme",
+                        fieldValue = request.theme,
+                        message = Some("Idea can not have both operation and theme")
+                      )
+                    )
+                  }
+                  if (request.theme.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "operation",
+                        fieldValue = request.operation,
+                        message = Some("Idea can not have both operation and theme")
+                      )
+                    )
+                  }
                   onSuccess(
                     ideaService
                       .insert(
@@ -171,6 +193,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                         language = request.language.orElse(requestContext.language),
                         country = request.country.orElse(requestContext.country),
                         operationId = request.operation,
+                        themeId = request.theme,
                         question = request.question.orElse(requestContext.question)
                       )
                   ) { idea =>
@@ -243,6 +266,7 @@ final case class CreateIdeaRequest(name: String,
                                    language: Option[String],
                                    country: Option[String],
                                    operation: Option[OperationId],
+                                   theme: Option[ThemeId],
                                    question: Option[String])
 
 object CreateIdeaRequest {
@@ -259,6 +283,7 @@ final case class IdeaFiltersRequest(name: Option[String],
                                     language: Option[String],
                                     country: Option[String],
                                     operationId: Option[String],
+                                    themeId: Option[String],
                                     question: Option[String],
                                     limit: Option[Int],
                                     skip: Option[Int],
@@ -274,6 +299,7 @@ final case class IdeaFiltersRequest(name: Option[String],
         language = language.map(language          => LanguageSearchFilter(language)),
         country = country.map(country             => CountrySearchFilter(country)),
         operationId = operationId.map(operationId => OperationIdSearchFilter(OperationId(operationId))),
+        themeId = themeId.map(themeId             => ThemeIdSearchFilter(ThemeId(themeId))),
         question = question.map(question          => QuestionSearchFilter(question))
       )
 
@@ -290,5 +316,5 @@ final case class IdeaFiltersRequest(name: Option[String],
 }
 
 object IdeaFiltersRequest {
-  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None, None, None)
+  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None, None, None, None)
 }
