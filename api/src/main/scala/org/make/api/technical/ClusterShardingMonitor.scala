@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.Cluster
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ShardRegion.{ClusterShardingStats, GetClusterShardingStats}
-import akka.pattern.{ask, Backoff, BackoffSupervisor}
+import akka.pattern.{ask, AskTimeoutException, Backoff, BackoffSupervisor}
 import akka.util.Timeout
 import com.typesafe.config.Config
 import kamon.Kamon
@@ -14,7 +14,6 @@ import org.make.api.technical.ClusterShardingMonitor.{Monitor, ShardingGauges}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.util.{Failure, Success}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ClusterShardingMonitor extends Actor with ActorLogging {
@@ -61,6 +60,8 @@ class ClusterShardingMonitor extends Actor with ActorLogging {
                 regionGauges.nodeActorsCount.set(shardStats.stats.values.sum)
                 regionGauges.nodeShardsCount.set(shardStats.stats.size)
               }
+            case Failure(e: AskTimeoutException) if e.getMessage.contains("terminated") =>
+              log.warning("Unable to retrieve stats due to terminated actor: {}", e.getMessage)
             case Failure(e) => log.error(e, "")
           }
       }
