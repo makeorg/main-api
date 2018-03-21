@@ -5,6 +5,8 @@ import akka.pattern.{Backoff, BackoffSupervisor}
 import kamon.Kamon
 import kamon.metric.GaugeMetric
 import org.make.api.extensions.ThreadPoolMonitoringActor.{ExecutorWithGauges, Monitor, MonitorThreadPool}
+import org.make.api.technical.MonitorableExecutionContext
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 

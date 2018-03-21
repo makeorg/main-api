@@ -10,10 +10,10 @@ import kamon.executors
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
+import org.make.api.technical.MonitorableExecutionContext
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 class DatabaseConfiguration(override protected val configuration: Config)
@@ -115,16 +115,4 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
 
   override def get(system: ActorSystem): DatabaseConfiguration =
     super.get(system)
-}
-
-class MonitorableExecutionContext(executorService: ThreadPoolExecutor) extends ExecutionContext {
-  private val executionContext = ExecutionContext.fromExecutorService(executorService)
-
-  override def execute(runnable: Runnable): Unit = executionContext.execute(runnable)
-  override def reportFailure(cause: Throwable): Unit = executionContext.reportFailure(cause)
-
-  def activeTasks: Int = executorService.getActiveCount
-  def currentTasks: Int = executorService.getPoolSize
-  def maxTasks: Int = executorService.getMaximumPoolSize
-  def waitingTasks: Int = executorService.getQueue.size()
 }
