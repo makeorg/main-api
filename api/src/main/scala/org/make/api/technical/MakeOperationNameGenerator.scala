@@ -15,7 +15,7 @@ class MakeOperationNameGenerator extends OperationNameGenerator with StrictLoggi
 
   // Copied from kamon-akka-http
   override def clientOperationName(request: HttpRequest): String = {
-    request.uri.toString()
+    request.uri.copy(rawQueryString = None, fragment = None).toString()
   }
 
   private def originFromHeaders(request: HttpRequest): Option[String] = {
