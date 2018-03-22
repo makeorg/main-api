@@ -848,6 +848,56 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       }
     }
   }
+  @ApiOperation(
+    value = "next-proposal-to-moderate",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "moderator", description = "BO Moderator"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.NextProposalToModerateRequest"
+      )
+    )
+  )
+  @Path(value = "/next")
+  def nextProposalToModerate: Route = post {
+    path("moderation" / "proposals" / "next") {
+      makeOperation("NextProposalToModerate") { context =>
+        makeOAuth2 { user =>
+          requireModerationRole(user.user) {
+            decodeRequest {
+              entity(as[NextProposalToModerateRequest]) { request =>
+                provideAsyncOrNotFound(
+                  proposalService.searchAndLockProposalToModerate(
+                    request.operationId,
+                    request.themeId,
+                    request.country,
+                    request.language,
+                    user.user.userId,
+                    context
+                  )
+                ) { proposal =>
+                  complete(proposal)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   val moderationProposalRoutes: Route =
     searchAllProposalsDeprecated ~
@@ -864,7 +914,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       getDuplicates ~
       changeProposalsIdea ~
       getDuplicates ~
-      getModerationProposal
+      getModerationProposal ~
+      nextProposalToModerate
 
   val moderationProposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
