@@ -100,11 +100,11 @@ trait DefaultTagServiceComponent
 
       val newTagToCreate: Tag = Tag(newTagLabel)
       val newTag: OptionT[Future, Tag] = for {
-        oldTag @ _ <- OptionT(getTag(slug))
-        newTag @ _ <- OptionT(persistentTagService.persist(newTagToCreate).map(Option(_)))
-        _          <- OptionT(updateProposalTag(oldTag.tagId, newTag.tagId).map(Option(_)))
-        _          <- OptionT(updateSequenceTag(oldTag.tagId, newTag.tagId).map(Option(_)))
-        rows @ _   <- OptionT(persistentTagService.remove(oldTag.tagId).map(Option(_)))
+        oldTag <- OptionT(getTag(slug))
+        newTag <- OptionT(persistentTagService.persist(newTagToCreate).map(Option(_)))
+        _      <- OptionT(updateProposalTag(oldTag.tagId, newTag.tagId).map(Option(_)))
+        _      <- OptionT(updateSequenceTag(oldTag.tagId, newTag.tagId).map(Option(_)))
+        rows   <- OptionT(persistentTagService.remove(oldTag.tagId).map(Option(_)))
         if rows >= 1
       } yield newTag
 

@@ -132,9 +132,9 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
     }
 
     val maybeResult = for {
-      proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(id))
-      user @ _     <- OptionT(userService.getUser(proposal.author))
-      tags @ _     <- OptionT(retrieveTags(proposal.tags))
+      proposal <- OptionT(proposalCoordinatorService.getProposal(id))
+      user     <- OptionT(userService.getUser(proposal.author))
+      tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,

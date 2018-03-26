@@ -4,7 +4,7 @@ import sbt.Keys.scalacOptions
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.12.5",
   coursierUseSbtCredentials := true,
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
@@ -50,7 +50,11 @@ lazy val commonSettings = Seq(
     "-Xfuture",
     "-Ywarn-unused-import",
     "-Ywarn-unused",
-    "-language:_"
+    "-language:_",
+    "-Ycache-plugin-class-loader:last-modified",
+    "-Ycache-macro-class-loader:last-modified",
+    "-Ybackend-parallelism",
+    "5"
   )
 )
 

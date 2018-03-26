@@ -64,8 +64,8 @@ class ProposalEmailConsumer(userService: UserService,
 
       futureOperationSlug.map { operationSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
-          proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
-          user @ __    <- OptionT(userService.getUser(proposal.author))
+          proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
+          user     <- OptionT(userService.getUser(proposal.author))
         } yield {
           val country = proposal.country.getOrElse(user.country)
           val language = proposal.language.getOrElse(user.language)
@@ -83,7 +83,8 @@ class ProposalEmailConsumer(userService: UserService,
                 ),
                 variables = Some(
                   Map(
-                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country.getOrElse("FR")}/proposal/${proposal.slug}",
+                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country
+                      .getOrElse("FR")}/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.firstName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
@@ -123,8 +124,8 @@ class ProposalEmailConsumer(userService: UserService,
 
       futureOperationSlug.map { operationSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
-          proposal @ _ <- OptionT(proposalCoordinatorService.getProposal(event.id))
-          user @ _     <- OptionT(userService.getUser(proposal.author))
+          proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
+          user     <- OptionT(userService.getUser(proposal.author))
         } yield {
           val country = proposal.country.getOrElse(user.country)
           val language = proposal.language.getOrElse(user.language)

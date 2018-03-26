@@ -228,9 +228,9 @@ trait DefaultIndexationComponent extends IndexationComponent {
       proposalCoordinatorService.getProposal(proposalId)
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
-      proposal @ _ <- OptionT(futureMayBeProposal)
-      user @ _     <- OptionT(userService.getUser(proposal.author))
-      tags @ _     <- OptionT(retrieveTags(proposal.tags))
+      proposal <- OptionT(futureMayBeProposal)
+      user     <- OptionT(userService.getUser(proposal.author))
+      tags     <- OptionT(retrieveTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -276,9 +276,9 @@ trait DefaultIndexationComponent extends IndexationComponent {
       sequenceCoordinatorService.getSequence(sequenceId)
 
     val maybeResult: OptionT[Future, IndexedSequence] = for {
-      sequence @ _ <- OptionT(futureMayBeSequence)
-      tags @ _     <- OptionT(retrieveTags(sequence.tagIds))
-      themes @ _   <- OptionT(retrieveThemes(sequence.themeIds))
+      sequence <- OptionT(futureMayBeSequence)
+      tags     <- OptionT(retrieveTags(sequence.tagIds))
+      themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(
         id = sequence.sequenceId,

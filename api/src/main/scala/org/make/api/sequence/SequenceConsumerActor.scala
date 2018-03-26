@@ -76,9 +76,9 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
     }
 
     val maybeResult = for {
-      sequence @ _ <- OptionT((sequenceCoordinator ? GetSequence(id, RequestContext.empty)).mapTo[Option[Sequence]])
-      tags @ _     <- OptionT(retrieveTags(sequence.tagIds))
-      themes @ _   <- OptionT(retrieveThemes(sequence.themeIds))
+      sequence <- OptionT((sequenceCoordinator ? GetSequence(id, RequestContext.empty)).mapTo[Option[Sequence]])
+      tags     <- OptionT(retrieveTags(sequence.tagIds))
+      themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(
         id = sequence.sequenceId,
