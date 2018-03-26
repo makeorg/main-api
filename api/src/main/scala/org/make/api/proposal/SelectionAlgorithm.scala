@@ -150,9 +150,20 @@ object ProposalScorer extends StrictLogging {
     realistic(scoreCounts(proposal))
   }
 
+  def score(counts: ScoreCounts): Double = {
+    engagement(counts) + adhesion(counts) + 2 * realistic(counts)
+  }
+
   def score(proposal: Proposal): Double = {
-    val counts = scoreCounts(proposal)
-    engagement(counts) + adhesion(counts) + realistic(counts)
+    score(scoreCounts(proposal))
+  }
+
+  def controversy(counts: ScoreCounts): Double = {
+    math.min(counts.loveCount + 0.01, counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
+  }
+
+  def controversy(proposal: Proposal): Double = {
+    controversy(scoreCounts(proposal))
   }
 
   /*
@@ -191,7 +202,7 @@ object ProposalScorer extends StrictLogging {
 
   def sampleScore(proposal: Proposal): Double = {
     val counts = scoreCounts(proposal)
-    sampleEngagement(counts) + sampleAdhesion(counts) + sampleRealistic(counts)
+    sampleEngagement(counts) + sampleAdhesion(counts) + 2 * sampleRealistic(counts)
   }
 
   /*
@@ -219,6 +230,37 @@ object ProposalScorer extends StrictLogging {
       rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
 
     1 - engagementEstimate.rate + 2 * engagementEstimate.sd
+  }
+
+  def scoreUpperBound(proposal: Proposal): Double = {
+    val counts = scoreCounts(proposal)
+
+    val engagementEstimate: RateEstimate =
+      rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
+
+    val adhesionEstimate: RateEstimate =
+      rateEstimate(math.max(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
+
+    val realisticEstimate: RateEstimate =
+      rateEstimate(math.max(counts.doableCount, counts.impossibleCount), counts.votes - counts.neutralCount)
+
+    val scoreEstimate: Double = score(counts)
+    val confidenceInterval: Double = 2 * math.sqrt(
+      math.pow(engagementEstimate.sd, 2) +
+        math.pow(adhesionEstimate.sd, 2) +
+        2 * math.pow(realisticEstimate.sd, 2)
+    )
+
+    scoreEstimate + confidenceInterval
+  }
+
+  def controversyUpperBound(proposal: Proposal): Double = {
+    val counts = scoreCounts(proposal)
+
+    val controversyEstimate: RateEstimate =
+      rateEstimate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
+
+    controversyEstimate.rate + 2 * controversyEstimate.sd
   }
 }
 
@@ -373,9 +415,13 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                               testedProposalCount: Int): Seq[Proposal] = {
       val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
         val votes: Int = proposal.votes.map(_.count).sum
-        val engagement_rate: Double = ProposalScorer.engagementUpperBound(proposal)
+        val engagementRate: Double = ProposalScorer.engagementUpperBound(proposal)
+        val scoreRate: Double = ProposalScorer.scoreUpperBound(proposal)
+        val controversyRate: Double = ProposalScorer.controversyUpperBound(proposal)
         (votes >= sequenceConfiguration.newProposalsVoteThreshold
-        && engagement_rate > sequenceConfiguration.testedProposalsEngagementThreshold)
+        && engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold
+        && (scoreRate > sequenceConfiguration.testedProposalsScoreThreshold
+        || controversyRate > sequenceConfiguration.testedProposalsControversyThreshold))
       }
 
       val proposalPool =

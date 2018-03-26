@@ -19,6 +19,8 @@ case class SequenceConfiguration(sequenceId: SequenceId,
                                  newProposalsRatio: Double,
                                  newProposalsVoteThreshold: Int,
                                  testedProposalsEngagementThreshold: Double,
+                                 testedProposalsScoreThreshold: Double,
+                                 testedProposalsControversyThreshold: Double,
                                  banditEnabled: Boolean,
                                  banditMinCount: Int,
                                  banditProposalsRatio: Double)
