@@ -1408,7 +1408,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
     }
 
-    scenario("patch proposal information") {
+    scenario("patch some proposal information") {
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1455,6 +1455,52 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.refusalReason should be(Some("I don't want"))
       proposal.idea should be(Some(IdeaId("my-idea")))
       proposal.tags should be(Seq(TagId("my-tag")))
+      proposal.country should be(Some("FR"))
+      proposal.language should be(Some("fr"))
+    }
+
+    scenario("patch other proposal information") {
+      val proposalId = ProposalId("patched-context")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        country = Some("FR"),
+        language = Some("fr")
+      )
+
+      expectMsg(proposalId)
+
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+
+      expectMsgType[Option[Proposal]]
+
+      coordinator ! PatchProposalCommand(
+        proposalId,
+        UserId("1234"),
+        PatchProposalRequest(
+          creationContext = None,
+          slug = Some("some-custom-slug"),
+          author = Some(UserId("the user id")),
+          theme = Some(ThemeId("my-theme")),
+          status = Some(Postponed),
+          country = Some("GB"),
+          language = Some("en")
+        ),
+        RequestContext.empty
+      )
+
+      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+
+      proposal.slug should be("some-custom-slug")
+      proposal.content should be("This is a proposal")
+      proposal.author should be(UserId("the user id"))
+      proposal.theme should be(Some(ThemeId("my-theme")))
+      proposal.status should be(Postponed)
+      proposal.country should be(Some("GB"))
+      proposal.language should be(Some("en"))
     }
   }
 }
