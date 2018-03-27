@@ -21,7 +21,6 @@ trait InsertFixtureData extends Migration with StrictLogging {
 
   implicit val executor: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
-  val emptyContext: RequestContext = RequestContext.empty
   val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
   val EmailRegex: Regex = """$yopmail\+([^@]+)@make\.org^""".r
 
@@ -68,6 +67,8 @@ trait InsertFixtureData extends Migration with StrictLogging {
       }
     }
   }
+
+  def requestContext: RequestContext
 
   case class UserMinimalData(email: String, country: String, language: String)
 
@@ -128,7 +129,7 @@ trait InsertFixtureData extends Migration with StrictLogging {
                   api.proposalService
                     .propose(
                       user,
-                      emptyContext,
+                      requestContext,
                       DateHelper.now(),
                       proposalsToAccept.content,
                       proposalsToAccept.operation,
@@ -141,7 +142,7 @@ trait InsertFixtureData extends Migration with StrictLogging {
                   api.proposalService.validateProposal(
                     proposalId,
                     moderatorId,
-                    emptyContext,
+                    requestContext,
                     ValidateProposalRequest(
                       newContent = None,
                       sendNotificationEmail = false,

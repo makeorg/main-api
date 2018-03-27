@@ -1,6 +1,7 @@
 package org.make.api.migrations
 import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
+import org.make.core.RequestContext
 import org.make.core.operation.OperationId
 import org.make.core.reference.TagId
 
@@ -9,11 +10,16 @@ import scala.concurrent.Future
 object LpaeData extends InsertFixtureData {
 
   var operationId: OperationId = _
+  var localRequestContext: RequestContext = _
+  override def requestContext: RequestContext = localRequestContext
 
   override def initialize(api: MakeApi): Future[Unit] = {
     api.operationService.findOneBySlug("lpae").flatMap {
       case Some(operation) =>
-        Future.successful { operationId = operation.operationId }
+        Future.successful {
+          operationId = operation.operationId
+          localRequestContext = RequestContext.empty.copy(operationId = Some(operationId))
+        }
       case None => Future.failed(new IllegalStateException("Unable to find an operation with slug lpae"))
     }
   }
