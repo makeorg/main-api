@@ -4,6 +4,7 @@ import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
+import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
@@ -36,9 +37,8 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
 
   override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new IdeaSearchEngine with StrictLogging {
 
-    private val client = HttpClient(
-      ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
-    )
+    private val esClient = ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
+    private val client = HttpClient(esClient)
 
     private val ideaAlias: IndexAndType = elasticsearchConfiguration.aliasName / IdeaSearchEngine.ideaIndexName
 
@@ -49,7 +49,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
     override def searchIdeas(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
       // parse json string to build search query
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
-      val request = search(ideaAlias)
+      val request: SearchDefinition = search(ideaAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))

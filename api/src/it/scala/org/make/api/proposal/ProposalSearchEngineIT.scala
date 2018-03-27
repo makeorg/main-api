@@ -53,8 +53,6 @@ class ProposalSearchEngineIT
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
-
-    // register index
     val proposalMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
@@ -94,9 +92,13 @@ class ProposalSearchEngineIT
         case (Failure(e), id) => logger.error(s"Error when indexing proposal ${id.value}:", e)
         case _                =>
       }(ActorMaterializer())
-
     Await.result(insertFutures, 150.seconds)
     logger.debug("Proposals indexed successfully.")
+
+    val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
+      HttpRequest(uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex/_refresh", method = HttpMethods.POST)
+    )
+    Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
 
   private val now = DateHelper.now()

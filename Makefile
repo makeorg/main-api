@@ -83,4 +83,4 @@ infra-stop:
 	docker-compose -f $(DOCKER_COMPOSE_FILE) stop
 
 infra-up:
-	docker-compose -f $(DOCKER_COMPOSE_FILE) up --build -d
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up -d

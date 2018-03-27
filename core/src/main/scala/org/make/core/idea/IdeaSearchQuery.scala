@@ -89,7 +89,12 @@ object IdeaSearchFilters extends ElasticDsl {
     }
 
     ideaSearchQuery.sort.map { sort =>
-      FieldSortDefinition(field = sort, order = order.getOrElse(SortOrder.ASC))
+      val sortFieldName: String = if (sort == "name") {
+        "name.keyword"
+      } else {
+        sort
+      }
+      FieldSortDefinition(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
     }
   }
 
