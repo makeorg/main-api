@@ -18,6 +18,8 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
     newProposalsRatio = 0.5,
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = 0.8,
+    testedProposalsScoreThreshold = 1.2,
+    testedProposalsControversyThreshold = 0.1,
     banditEnabled = true,
     banditMinCount = 3,
     banditProposalsRatio = 0.3

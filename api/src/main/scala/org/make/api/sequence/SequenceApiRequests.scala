@@ -123,6 +123,8 @@ object SearchStartSequenceRequest {
 final case class SequenceConfigurationRequest(newProposalsRatio: Double,
                                               newProposalsVoteThreshold: Int,
                                               testedProposalsEngagementThreshold: Double,
+                                              testedProposalsScoreThreshold: Double,
+                                              testedProposalsControversyThreshold: Double,
                                               banditEnabled: Boolean,
                                               banditMinCount: Int,
                                               banditProposalsRatio: Double) {
@@ -132,6 +134,8 @@ final case class SequenceConfigurationRequest(newProposalsRatio: Double,
       newProposalsRatio = newProposalsRatio,
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
+      testedProposalsScoreThreshold = testedProposalsScoreThreshold,
+      testedProposalsControversyThreshold = testedProposalsControversyThreshold,
       banditEnabled = banditEnabled,
       banditMinCount = banditMinCount,
       banditProposalsRatio = banditProposalsRatio

@@ -31,6 +31,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     newProposalsRatio = 0.5,
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = 0.8,
+    testedProposalsScoreThreshold = 0.0,
+    testedProposalsControversyThreshold = 0.0,
     banditEnabled = true,
     banditMinCount = 3,
     banditProposalsRatio = 1.0 / 3.0
@@ -729,6 +731,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 100,
         testedProposalsEngagementThreshold = 0.8,
+        testedProposalsScoreThreshold = 1.2,
+        testedProposalsControversyThreshold = 0.1,
         banditEnabled = false,
         banditMinCount = 3,
         banditProposalsRatio = 1.0 / 3.0
@@ -774,6 +778,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 100,
         testedProposalsEngagementThreshold = 0.8,
+        testedProposalsScoreThreshold = 0.0,
+        testedProposalsControversyThreshold = 0.0,
         banditEnabled = true,
         banditMinCount = 3,
         banditProposalsRatio = 0.0
@@ -813,5 +819,120 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         selectionAlgorithm.chooseTestedProposals(noBanditRatioConfiguration, testedProposals, 10)
       chosen.length should be(10)
     }
+  }
+
+  scenario("check tested proposal chooser with score threshold") {
+    val scoreThresholdConfiguration = SequenceConfiguration(
+      sequenceId = SequenceId("test-sequence"),
+      newProposalsRatio = 0.5,
+      newProposalsVoteThreshold = 100,
+      testedProposalsEngagementThreshold = 0.8,
+      testedProposalsScoreThreshold = 1.15,
+      testedProposalsControversyThreshold = 1.0,
+      banditEnabled = false,
+      banditMinCount = 0,
+      banditProposalsRatio = 0.0
+    )
+
+    val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+      val a = 800
+      val n = 200
+      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+        VoteKey.Agree -> (
+          a ->
+            Map(QualificationKey.LikeIt -> 8 * i, QualificationKey.Doable -> 8 * i)
+        ),
+        VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+      )
+      fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Seq.empty)
+    }
+
+    UniformRandom.random = new Random(0)
+    ProposalScorer.random = new MersenneTwister(0)
+
+    val chosen: Seq[Proposal] =
+      selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
+    val chosenIds = chosen.map(_.proposalId)
+    chosen.length should be(10)
+    chosenIds.contains(ProposalId("testedProposal1")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal2")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal3")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal4")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal5")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal6")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal7")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal8")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal9")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal10")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal11")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal12")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal13")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal14")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal15")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal16")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal17")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal18")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal19")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal20")) should be(true)
+  }
+
+  scenario("check tested proposal chooser with controversy threshold") {
+    val scoreThresholdConfiguration = SequenceConfiguration(
+      sequenceId = SequenceId("test-sequence"),
+      newProposalsRatio = 0.5,
+      newProposalsVoteThreshold = 100,
+      testedProposalsEngagementThreshold = 0.8,
+      testedProposalsScoreThreshold = 2.0,
+      testedProposalsControversyThreshold = .14,
+      banditEnabled = false,
+      banditMinCount = 0,
+      banditProposalsRatio = 0.0
+    )
+
+    val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+      val a = 600
+      val d = 200
+      val n = 200
+      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+        VoteKey.Agree -> (
+          a ->
+            Map(QualificationKey.LikeIt -> 16 * i)
+        ),
+        VoteKey.Disagree -> (
+          d ->
+            Map(QualificationKey.NoWay -> 16 * (21 - i))
+        ),
+        VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+      )
+      fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Seq.empty)
+    }
+
+    UniformRandom.random = new Random(0)
+    ProposalScorer.random = new MersenneTwister(0)
+
+    val chosen: Seq[Proposal] =
+      selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
+    val chosenIds = chosen.map(_.proposalId)
+    chosen.length should be(10)
+    chosenIds.contains(ProposalId("testedProposal1")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal2")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal3")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal4")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal5")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal6")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal7")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal8")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal9")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal10")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal11")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal12")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal13")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal14")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal15")) should be(true)
+    chosenIds.contains(ProposalId("testedProposal16")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal17")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal18")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal19")) should be(false)
+    chosenIds.contains(ProposalId("testedProposal20")) should be(false)
   }
 }
