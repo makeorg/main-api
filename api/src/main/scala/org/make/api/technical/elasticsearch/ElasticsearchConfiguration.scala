@@ -1,5 +1,6 @@
 package org.make.api.technical.elasticsearch
 
+import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
@@ -13,7 +14,7 @@ import org.make.api.extensions.ConfigurationSupport
 import org.make.core.DateHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.{Failure, Success}
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
@@ -32,8 +33,22 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
+  def createIndexName: String = {
+    val localMapping: String = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
+    val hash: String =
+      MessageDigest
+        .getInstance("SHA-1")
+        .digest(localMapping.getBytes)
+        .map("%02X".format(_))
+        .mkString
+        .take(12)
+        .toLowerCase()
+
+    indexName + "-" + dateFormatter.format(DateHelper.now()) + "-" + hash
+  }
+
   private def createInitialIndexAndAlias(): Unit = {
-    val newIndexName = indexName + "-" + dateFormatter.format(DateHelper.now())
+    val newIndexName = createIndexName
     client.execute {
       createIndex(newIndexName).source(elasticsearchMapping)
     }.onComplete {
