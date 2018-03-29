@@ -87,7 +87,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
       MVEOperation,
       MVEData,
       MakeEuropeOperation,
-      MakeEuropeData
+      MakeEuropeData,
+      ChanceAuxJeunesOperation,
+      ChanceAuxJeunesData
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 
