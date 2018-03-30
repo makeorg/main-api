@@ -36,7 +36,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     testedProposalsControversyThreshold = 0.0,
     banditEnabled = true,
     banditMinCount = 3,
-    banditProposalsRatio = 1.0 / 3.0
+    banditProposalsRatio = 1.0 / 3.0,
+    ideaCompetitionEnabled = false
   )
 
   val defaultSize = 12
@@ -71,7 +72,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
   def fakeProposalQualif(id: ProposalId,
                          votes: Map[VoteKey, (Int, Map[QualificationKey, Int])],
-                         duplicates: Seq[ProposalId],
+                         idea: Option[IdeaId] = None,
                          createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
@@ -91,7 +92,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       theme = None,
       refusalReason = None,
       tags = Seq.empty,
-      similarProposals = duplicates,
+      idea = idea,
       events = Nil,
       creationContext = RequestContext.empty,
       language = Some("fr"),
@@ -573,7 +574,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         VoteKey.Neutral -> (30 -> Map(QualificationKey.DoNotCare -> 10))
       )
 
-      val testProposal = fakeProposalQualif(ProposalId("tested"), votes, Seq.empty)
+      val testProposal = fakeProposalQualif(ProposalId("tested"), votes)
       val testProposalScore = ProposalScorer.score(testProposal)
 
       ProposalScorer.random = new MersenneTwister(0)
@@ -592,7 +593,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         VoteKey.Disagree -> (0 -> Map.empty),
         VoteKey.Neutral -> (0 -> Map.empty)
       )
-      val testProposal: Proposal = fakeProposalQualif(ProposalId("tested"), votes, Seq.empty)
+      val testProposal: Proposal = fakeProposalQualif(ProposalId("tested"), votes)
 
       val testProposalScore: Double = ProposalScorer.score(testProposal)
       val testProposalScoreSample: Double = ProposalScorer.sampleScore(testProposal)
@@ -618,7 +619,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
           ),
           VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
         )
-        fakeProposalQualif(ProposalId(s"tested$i"), votes, Seq.empty)
+        fakeProposalQualif(ProposalId(s"tested$i"), votes)
       }
 
       UniformRandom.random = new Random(0)
@@ -652,8 +653,6 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
     scenario("check tested proposal chooser") {
       val random = new Random(0)
-      val similars: Seq[Seq[ProposalId]] =
-        (1 to 20).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
       val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
         val a = random.nextInt(100) + 100
         val d = random.nextInt(100) + 100
@@ -675,7 +674,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
           ),
           VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
         )
-        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, Some(IdeaId("Idea%s".format((i - 1) / 5))))
       }
 
       UniformRandom.random = new Random(0)
@@ -699,8 +698,6 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
 
       val random = new Random(0)
-      val similars: Seq[Seq[ProposalId]] =
-        (1 to 20).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
       val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
         val a = random.nextInt(100) + 100
         val d = random.nextInt(100) + 100
@@ -722,7 +719,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
           ),
           VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
         )
-        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, Some(IdeaId("Idea%s".format((i - 1) / 5))))
       }
 
       UniformRandom.random = new Random(0)
@@ -746,8 +743,6 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
 
       val random = new Random(0)
-      val similars: Seq[Seq[ProposalId]] =
-        (1 to 20).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
       val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
         val a = random.nextInt(100) + 100
         val d = random.nextInt(100) + 100
@@ -769,7 +764,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
           ),
           VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
         )
-        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, Some(IdeaId("Idea%s".format((i - 1) / 5))))
       }
 
       UniformRandom.random = new Random(0)
@@ -781,118 +776,302 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     }
   }
 
-  scenario("check tested proposal chooser with score threshold") {
-    val scoreThresholdConfiguration = SequenceConfiguration(
-      sequenceId = SequenceId("test-sequence"),
-      newProposalsRatio = 0.5,
-      newProposalsVoteThreshold = 100,
-      testedProposalsEngagementThreshold = 0.8,
-      testedProposalsScoreThreshold = 1.15,
-      testedProposalsControversyThreshold = 1.0,
-      banditEnabled = false,
-      banditMinCount = 0,
-      banditProposalsRatio = 0.0
-    )
+  feature("score + controversy score filter") {
 
-    val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
-      val a = 800
-      val n = 200
-      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
-        VoteKey.Agree -> (
-          a ->
-            Map(QualificationKey.LikeIt -> 8 * i, QualificationKey.Doable -> 8 * i)
-        ),
-        VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+    scenario("check tested proposal chooser with score threshold") {
+      val scoreThresholdConfiguration = SequenceConfiguration(
+        sequenceId = SequenceId("test-sequence"),
+        newProposalsRatio = 0.5,
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = 0.8,
+        testedProposalsScoreThreshold = 1.15,
+        testedProposalsControversyThreshold = 1.0,
+        banditEnabled = false,
+        banditMinCount = 0,
+        banditProposalsRatio = 0.0
       )
-      fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Seq.empty)
+
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = 800
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 8 * i, QualificationKey.Doable -> 8 * i)
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        fakeProposalQualif(ProposalId(s"testedProposal$i"), votes)
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val chosen: Seq[Proposal] =
+        selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
+      val chosenIds = chosen.map(_.proposalId)
+      chosen.length should be(10)
+      chosenIds.contains(ProposalId("testedProposal1")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal2")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal3")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal4")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal5")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal6")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal7")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal8")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal9")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal10")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal11")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal12")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal13")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal14")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal15")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal16")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal17")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal18")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal19")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal20")) should be(true)
     }
 
-    UniformRandom.random = new Random(0)
-    ProposalScorer.random = new MersenneTwister(0)
+    scenario("check tested proposal chooser with controversy threshold") {
+      val scoreThresholdConfiguration = SequenceConfiguration(
+        sequenceId = SequenceId("test-sequence"),
+        newProposalsRatio = 0.5,
+        newProposalsVoteThreshold = 100,
+        testedProposalsEngagementThreshold = 0.8,
+        testedProposalsScoreThreshold = 2.0,
+        testedProposalsControversyThreshold = .14,
+        banditEnabled = false,
+        banditMinCount = 0,
+        banditProposalsRatio = 0.0
+      )
 
-    val chosen: Seq[Proposal] =
-      selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
-    val chosenIds = chosen.map(_.proposalId)
-    chosen.length should be(10)
-    chosenIds.contains(ProposalId("testedProposal1")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal2")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal3")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal4")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal5")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal6")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal7")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal8")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal9")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal10")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal11")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal12")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal13")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal14")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal15")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal16")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal17")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal18")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal19")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal20")) should be(true)
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = 600
+        val d = 200
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 16 * i)
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(QualificationKey.NoWay -> 16 * (21 - i))
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        fakeProposalQualif(ProposalId(s"testedProposal$i"), votes)
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+
+      val chosen: Seq[Proposal] =
+        selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
+      val chosenIds = chosen.map(_.proposalId)
+      chosen.length should be(10)
+      chosenIds.contains(ProposalId("testedProposal1")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal2")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal3")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal4")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal5")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal6")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal7")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal8")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal9")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal10")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal11")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal12")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal13")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal14")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal15")) should be(true)
+      chosenIds.contains(ProposalId("testedProposal16")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal17")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal18")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal19")) should be(false)
+      chosenIds.contains(ProposalId("testedProposal20")) should be(false)
+    }
   }
 
-  scenario("check tested proposal chooser with controversy threshold") {
-    val scoreThresholdConfiguration = SequenceConfiguration(
-      sequenceId = SequenceId("test-sequence"),
-      newProposalsRatio = 0.5,
-      newProposalsVoteThreshold = 100,
-      testedProposalsEngagementThreshold = 0.8,
-      testedProposalsScoreThreshold = 2.0,
-      testedProposalsControversyThreshold = .14,
-      banditEnabled = false,
-      banditMinCount = 0,
-      banditProposalsRatio = 0.0
-    )
+  feature("idea competition") {
+    scenario("check champion selection") {
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = 600
+        val d = 200
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 16 * i)
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(QualificationKey.NoWay -> 16 * (21 - i))
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        fakeProposalQualif(ProposalId(s"testedProposal$i"), votes)
+      }
 
-    val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
-      val a = 600
-      val d = 200
-      val n = 200
-      val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
-        VoteKey.Agree -> (
-          a ->
-            Map(QualificationKey.LikeIt -> 16 * i)
-        ),
-        VoteKey.Disagree -> (
-          d ->
-            Map(QualificationKey.NoWay -> 16 * (21 - i))
-        ),
-        VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
-      )
-      fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Seq.empty)
+      val champion = selectionAlgorithm.chooseChampion(testedProposals)
+
+      champion.proposalId.value should be("testedProposal20")
     }
 
-    UniformRandom.random = new Random(0)
-    ProposalScorer.random = new MersenneTwister(0)
+    scenario("check idea selection") {
+      val ideasWithChampion: Map[IdeaId, Proposal] = (1 to 20).map { i =>
+        val a = 600
+        val d = 200
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 16 * i)
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(QualificationKey.NoWay -> 16 * (21 - i))
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        val ideaId = IdeaId("Idea%s".format(i))
+        (ideaId, fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Some(ideaId)))
+      }.toMap
 
-    val chosen: Seq[Proposal] =
-      selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
-    val chosenIds = chosen.map(_.proposalId)
-    chosen.length should be(10)
-    chosenIds.contains(ProposalId("testedProposal1")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal2")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal3")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal4")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal5")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal6")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal7")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal8")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal9")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal10")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal11")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal12")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal13")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal14")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal15")) should be(true)
-    chosenIds.contains(ProposalId("testedProposal16")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal17")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal18")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal19")) should be(false)
-    chosenIds.contains(ProposalId("testedProposal20")) should be(false)
+      val ideas = selectionAlgorithm.selectIdeasWithChampions(ideasWithChampion, 5)
+
+      ideas.length should be(5)
+
+      ProposalScorer.random = new MersenneTwister(0)
+      val counts = new mutable.HashMap[IdeaId, Int]() {
+        override def default(key: IdeaId) = 0
+      }
+
+      val samples = 1000
+      for (_ <- 1 to samples) {
+        selectionAlgorithm
+          .selectIdeasWithChampions(ideasWithChampion, 5)
+          .foreach(counts(_) += 1)
+      }
+
+      val proportions: mutable.Map[IdeaId, Double] = counts.map {
+        case (i, p) => (i, p.toDouble / samples)
+      }
+
+      logger.debug(proportions.mkString(", "))
+
+      val confidenceInterval: Double = 0.03
+      proportions(IdeaId("Idea20")) should equal(1.0 +- confidenceInterval)
+      proportions(IdeaId("Idea15")) should equal(0.13 +- confidenceInterval)
+    }
+
+    scenario("check controversial idea selection") {
+      val ideasWithChampion: Map[IdeaId, Proposal] = (1 to 20).map { i =>
+        val a = 600
+        val d = 200
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 16 * i)
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(QualificationKey.NoWay -> 16 * (21 - i))
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        val ideaId = IdeaId("Idea%s".format(i))
+        (ideaId, fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, Some(ideaId)))
+      }.toMap
+
+      val ideas = selectionAlgorithm.selectControversialIdeasWithChampions(ideasWithChampion, 5)
+
+      ideas.length should be(5)
+
+      ProposalScorer.random = new MersenneTwister(0)
+      val counts = new mutable.HashMap[IdeaId, Int]() {
+        override def default(key: IdeaId) = 0
+      }
+
+      val samples = 1000
+      for (_ <- 1 to samples) {
+        selectionAlgorithm
+          .selectControversialIdeasWithChampions(ideasWithChampion, 5)
+          .foreach(counts(_) += 1)
+      }
+
+      val proportions: mutable.Map[IdeaId, Double] = counts.map {
+        case (i, p) => (i, p.toDouble / samples)
+      }
+
+      val confidenceInterval: Double = 0.03
+      proportions(IdeaId("Idea10")) should equal(1.0 +- confidenceInterval)
+      proportions(IdeaId("Idea7")) should equal(0.06 +- confidenceInterval)
+    }
+
+    scenario("check tested idea selection with idea competition") {
+      val ideaCompetitionConfiguration = SequenceConfiguration(
+        sequenceId = SequenceId("test-sequence"),
+        newProposalsRatio = 0.5,
+        newProposalsVoteThreshold = 10,
+        testedProposalsEngagementThreshold = 0.0,
+        testedProposalsScoreThreshold = 0.0,
+        testedProposalsControversyThreshold = 0.0,
+        banditEnabled = true,
+        banditMinCount = 1,
+        banditProposalsRatio = 0.0,
+        ideaCompetitionEnabled = true,
+        ideaCompetitionTargetCount = 10,
+        ideaCompetitionControversialRatio = 0.1,
+        ideaCompetitionControversialCount = 10
+      )
+
+      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+        val a = 600
+        val d = 200
+        val n = 200
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(QualificationKey.LikeIt -> 16 * i)
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(QualificationKey.NoWay -> 16 * (21 - i))
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+        )
+        fakeProposalQualif(ProposalId(s"testedProposal$i"), votes)
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorer.random = new MersenneTwister(0)
+      selectionAlgorithm.random = new Random(0)
+
+      val chosen: Seq[Proposal] =
+        selectionAlgorithm.chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10)
+      chosen.length should be(10)
+
+      val counts = new mutable.HashMap[ProposalId, Int]() {
+        override def default(key: ProposalId) = 0
+      }
+
+      val samples = 1000
+      for (_ <- 1 to samples) {
+        selectionAlgorithm
+          .chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10)
+          .foreach(p => counts(p.proposalId) += 1)
+      }
+
+      val proportions: mutable.Map[ProposalId, Double] = counts.map {
+        case (i, p) => (i, p.toDouble / samples)
+      }
+
+      val confidenceInterval: Double = 0.03
+      proportions(ProposalId("testedProposal20")) should equal(0.9 +- confidenceInterval)
+      proportions(ProposalId("testedProposal10")) should equal(0.2 +- confidenceInterval)
+    }
   }
 }

@@ -127,7 +127,11 @@ final case class SequenceConfigurationRequest(newProposalsRatio: Double,
                                               testedProposalsControversyThreshold: Double,
                                               banditEnabled: Boolean,
                                               banditMinCount: Int,
-                                              banditProposalsRatio: Double) {
+                                              banditProposalsRatio: Double,
+                                              ideaCompetitionEnabled: Boolean,
+                                              ideaCompetitionTargetCount: Int,
+                                              ideaCompetitionControversialRatio: Double,
+                                              ideaCompetitionControversialCount: Int) {
   def toSequenceConfiguration(sequenceId: SequenceId): SequenceConfiguration = {
     SequenceConfiguration(
       sequenceId = sequenceId,
@@ -138,7 +142,11 @@ final case class SequenceConfigurationRequest(newProposalsRatio: Double,
       testedProposalsControversyThreshold = testedProposalsControversyThreshold,
       banditEnabled = banditEnabled,
       banditMinCount = banditMinCount,
-      banditProposalsRatio = banditProposalsRatio
+      banditProposalsRatio = banditProposalsRatio,
+      ideaCompetitionEnabled = ideaCompetitionEnabled,
+      ideaCompetitionTargetCount = ideaCompetitionTargetCount,
+      ideaCompetitionControversialRatio = ideaCompetitionControversialRatio,
+      ideaCompetitionControversialCount = ideaCompetitionControversialCount
     )
   }
 }

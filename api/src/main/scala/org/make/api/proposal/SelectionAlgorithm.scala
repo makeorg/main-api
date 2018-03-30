@@ -201,9 +201,20 @@ object ProposalScorer extends StrictLogging {
     sampleRealistic(scoreCounts(proposal))
   }
 
-  def sampleScore(proposal: Proposal): Double = {
-    val counts = scoreCounts(proposal)
+  def sampleControversy(counts: ScoreCounts): Double = {
+    sampleRate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount, 0.01)
+  }
+
+  def sampleControversy(proposal: Proposal): Double = {
+    sampleControversy(scoreCounts(proposal))
+  }
+
+  def sampleScore(counts: ScoreCounts): Double = {
     sampleEngagement(counts) + sampleAdhesion(counts) + 2 * sampleRealistic(counts)
+  }
+
+  def sampleScore(proposal: Proposal): Double = {
+    sampleScore(scoreCounts(proposal))
   }
 
   /*
@@ -270,6 +281,8 @@ trait SelectionAlgorithmComponent {
 }
 
 trait SelectionAlgorithm {
+  var random: Random = Random
+
   def selectProposalsForSequence(targetLength: Int,
                                  sequenceConfiguration: SequenceConfiguration,
                                  proposals: Seq[Proposal],
@@ -280,6 +293,13 @@ trait SelectionAlgorithm {
 trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
 
   override val selectionAlgorithm: DefaultSelectionAlgorithm = new DefaultSelectionAlgorithm
+
+  def isSameIdea(ideaOption1: Option[IdeaId], ideaOption2: Option[IdeaId]): Boolean = {
+    (ideaOption1, ideaOption2) match {
+      case (Some(ideaId1), Some(ideaId2)) => ideaId1 == ideaId2
+      case _                              => false
+    }
+  }
 
   class DefaultSelectionAlgorithm extends SelectionAlgorithm {
     /*
@@ -312,7 +332,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         p =>
           p.status == ProposalStatus.Accepted &&
             !includedProposalsToExclude.contains(p.proposalId) &&
-            !includedIdeasToExclude.contains(p.idea.getOrElse(IdeaId("None"))) &&
+            !includedIdeasToExclude.exists(excludedIdea => p.idea.contains(excludedIdea)) &&
             !votedProposals.contains(p.proposalId)
       )
 
@@ -330,7 +350,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // chooses tested proposals
       val remainingProposals: Seq[Proposal] = availableProposals.filter(
         p =>
-          !newProposalsToExclude.contains(p.proposalId) && !newIdeasToExclude.contains(p.idea.getOrElse(IdeaId("None")))
+          !newProposalsToExclude.contains(p.proposalId) && !newIdeasToExclude
+            .exists(excludedIdea => p.idea.contains(excludedIdea))
       )
       val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
       val testedIncludedProposals: Seq[Proposal] =
@@ -357,7 +378,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           proposals = proposals.filter(
             p =>
               p.proposalId != chosen.proposalId &&
-                p.idea.getOrElse(IdeaId("Empty")) != chosen.idea.getOrElse(IdeaId("None"))
+                !isSameIdea(p.idea, chosen.idea)
           ),
           algorithm = algorithm
         )
@@ -399,6 +420,25 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       UniformRandom.choose(shortList)
     }
 
+    def chooseChampion(proposals: Seq[Proposal]): Proposal = {
+      val scoredProposal: Seq[ScoredProposal] = proposals.map(p => ScoredProposal(p, ProposalScorer.score(p)))
+      scoredProposal.maxBy(_.score).proposal
+    }
+
+    case class ScoredIdeaId(ideaId: IdeaId, score: Double)
+
+    def selectIdeasWithChampions(champions: Map[IdeaId, Proposal], count: Int): Seq[IdeaId] = {
+      val scoredIdea: Seq[ScoredIdeaId] =
+        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorer.sampleScore(p)) }
+      scoredIdea.sortBy(-_.score).take(count).map(_.ideaId)
+    }
+
+    def selectControversialIdeasWithChampions(champions: Map[IdeaId, Proposal], count: Int): Seq[IdeaId] = {
+      val scoredIdea: Seq[ScoredIdeaId] =
+        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorer.sampleControversy(p)) }
+      scoredIdea.sortBy(-_.score).take(count).map(_.ideaId)
+    }
+
     def chooseTestedProposals(sequenceConfiguration: SequenceConfiguration,
                               availableProposals: Seq[Proposal],
                               testedProposalCount: Int): Seq[Proposal] = {
@@ -420,7 +460,16 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         testedProposals.groupBy(p => p.idea.getOrElse(IdeaId(p.proposalId.value)))
 
       // select ideas
-      val selectedIdeas: Seq[IdeaId] = ideas.keys.toSeq
+      val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.ideaCompetitionEnabled) {
+        val champions: Map[IdeaId, Proposal] = ideas.mapValues(chooseChampion(_))
+        if (random.nextFloat() < sequenceConfiguration.ideaCompetitionControversialRatio) {
+          selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
+        } else {
+          selectIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionTargetCount)
+        }
+      } else {
+        ideas.keys.toSeq
+      }
 
       // pick one proposal for each idea
       val selectedProposals: Seq[Proposal] = ideas
@@ -436,7 +485,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         .values
         .toSeq
 
-      // and finally pick the proposals
+      // and finally pick the requested number of proposals
       chooseProposals(selectedProposals, testedProposalCount, SoftMinRandom)
     }
 
@@ -451,7 +500,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         availableProposals.filter(
           p =>
             !sequence.contains(p.proposalId) &&
-              !excludeIdeas.contains(p.idea.getOrElse(IdeaId("None")))
+              !excludeIdeas.exists(excludedIdea => p.idea.contains(excludedIdea))
         ),
         targetLength - sequence.size,
         OldestProposalChooser

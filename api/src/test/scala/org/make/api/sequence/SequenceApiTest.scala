@@ -217,7 +217,11 @@ class SequenceApiTest
                                           |  "testedProposalsControversyThreshold": 0.1,
                                           |  "banditEnabled": false,
                                           |  "banditMinCount": 3,
-                                          |  "banditProposalsRatio": 0.3
+                                          |  "banditProposalsRatio": 0.3,
+                                          |  "ideaCompetitionEnabled": false,
+                                          |  "ideaCompetitionTargetCount": 50,
+                                          |  "ideaCompetitionControversialRatio": 0.0,
+                                          |  "ideaCompetitionControversialCount": 0
                                           |}""".stripMargin
 
   val routes: Route = sealRoute(sequenceRoutes)
