@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit
 import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeTest
 import org.make.api.proposal._
+import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
@@ -43,7 +44,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
   def fakeProposal(id: ProposalId,
                    votes: Map[VoteKey, Int],
-                   duplicates: Seq[ProposalId],
+                   idea: Option[IdeaId] = None,
                    createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
@@ -60,7 +61,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       theme = None,
       refusalReason = None,
       tags = Seq.empty,
-      similarProposals = duplicates,
+      idea = idea,
       events = Nil,
       creationContext = RequestContext.empty,
       language = Some("fr"),
@@ -102,7 +103,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     scenario("no duplicates with enough proposals only new proposals") {
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map.empty, Seq.empty))
+        proposalIds.map(id => fakeProposal(id, Map.empty))
 
       val selectedProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -120,7 +121,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     scenario("no duplicates with enough proposals and include list only new proposals") {
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map.empty, Seq.empty))
+        proposalIds.map(id => fakeProposal(id, Map.empty))
 
       val sequenceProposals = selectionAlgorithm.selectProposalsForSequence(
         targetLength = defaultSize,
@@ -140,13 +141,11 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
     scenario("duplicates with enough proposals only new proposals") {
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("proposal2")),
-        ProposalId("proposal2") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates: Map[ProposalId, IdeaId] =
+        Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("proposal2") -> IdeaId("TestIdea"))
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.getOrElse(id, Seq.empty)))
+        proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.get(id)))
 
       val sequenceProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -168,13 +167,11 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
     scenario("duplicates from include list with enough proposals only new proposals") {
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("included1")),
-        ProposalId("included1") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates: Map[ProposalId, IdeaId] =
+        Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("included1") -> IdeaId("TestIdea"))
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map.empty, duplicates.getOrElse(id, Seq.empty)))
+        (proposalIds ++ Seq(ProposalId("included1"))).map(id => fakeProposal(id, Map.empty, duplicates.get(id)))
 
       val sequenceProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -197,7 +194,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     scenario("no duplicates with enough proposals only tested proposals") {
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
+        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200)))
 
       val selectedProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -215,7 +212,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
     scenario("no duplicates with enough proposals and include list only tested proposals") {
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
+        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200)))
 
       val sequenceProposals = selectionAlgorithm.selectProposalsForSequence(
         targetLength = defaultSize,
@@ -235,13 +232,11 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
     scenario("duplicates with enough proposals only tested proposals") {
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("proposal2")),
-        ProposalId("proposal2") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates =
+        Map(ProposalId("proposal1") -> IdeaId("TestId"), ProposalId("proposal2") -> IdeaId("TestId"))
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.getOrElse(id, Seq.empty)))
+        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.get(id)))
 
       val sequenceProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -263,13 +258,12 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
     scenario("duplicates from include list with enough proposals only tested proposals") {
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("included1")),
-        ProposalId("included1") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates =
+        Map(ProposalId("proposal1") -> IdeaId("TestId"), ProposalId("included1") -> IdeaId("TestId"))
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.getOrElse(id, Seq.empty)))
+        (proposalIds ++ Seq(ProposalId("included1")))
+          .map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), duplicates.get(id)))
 
       val sequenceProposals =
         selectionAlgorithm.selectProposalsForSequence(
@@ -301,7 +295,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
                                                      200
                                                    } else {
                                                      50
-                                                   })), Seq.empty)
+                                                   })))
         )
 
       val selectedProposals =
@@ -328,7 +322,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
                                                      200
                                                    } else {
                                                      50
-                                                   })), Seq.empty)
+                                                   })))
         )
 
       val sequenceProposals = selectionAlgorithm.selectProposalsForSequence(
@@ -351,10 +345,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
       val switch = new Switch()
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("proposal2")),
-        ProposalId("proposal2") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates =
+        Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("proposal2") -> IdeaId("TestIdea"))
 
       val proposals: Seq[Proposal] =
         proposalIds.map(
@@ -363,7 +355,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
                                                      200
                                                    } else {
                                                      50
-                                                   })), duplicates.getOrElse(id, Seq.empty))
+                                                   })), duplicates.get(id))
         )
 
       val sequenceProposals =
@@ -388,19 +380,17 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
       val switch = new Switch()
 
-      val duplicates = Map(
-        ProposalId("proposal1") -> Seq(ProposalId("included1")),
-        ProposalId("included1") -> Seq(ProposalId("proposal1"))
-      )
+      val duplicates =
+        Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("included1") -> IdeaId("TestIdea"))
 
       val proposals: Seq[Proposal] =
-        proposalIds.map(
+        (proposalIds ++ Seq(ProposalId("included1"))).map(
           id =>
             fakeProposal(id, Map(VoteKey.Agree -> (if (switch.getAndSwitch()) {
                                                      200
                                                    } else {
                                                      50
-                                                   })), duplicates.getOrElse(id, Seq.empty))
+                                                   })), duplicates.get(id))
         )
 
       val sequenceProposals =
@@ -429,7 +419,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
             fakeProposal(
               id,
               Map(VoteKey.Agree -> 0),
-              Seq.empty,
+              None,
               ZonedDateTime.parse("2017-12-07T16:00:00Z").plus(i, ChronoUnit.MINUTES)
             )
         }
@@ -437,7 +427,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       val newProposalsRandom = Random.shuffle(newProposals)
 
       val testedProposals: Seq[Proposal] =
-        testedProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), Seq.empty))
+        testedProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200)))
 
       val proposals: Seq[Proposal] = newProposalsRandom ++ testedProposals
 
@@ -471,12 +461,12 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       val testedProposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"testedProposal$i"))
 
       val newProposals: Seq[Proposal] =
-        newProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 0), Seq.empty))
+        newProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 0)))
 
       val testedProposals: Seq[Proposal] =
         testedProposalIds.zipWithIndex.map {
           case (id, i) =>
-            fakeProposal(id, Map(VoteKey.Agree -> (200 - i * 10), VoteKey.Neutral -> i * 10), Seq.empty)
+            fakeProposal(id, Map(VoteKey.Agree -> (200 - i * 10), VoteKey.Neutral -> i * 10))
         }
 
       val testedProposalsRandom = Random.shuffle(testedProposals)
@@ -509,7 +499,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
   feature("allocate votes inversely proportional to current vote count") {
     scenario("sequential vote counts") {
       val testedProposals: Seq[Proposal] = (1 to 10).map { i =>
-        fakeProposal(ProposalId(s"testedProposal$i"), Map(VoteKey.Agree -> 100 * i), Seq.empty, DateHelper.now())
+        fakeProposal(ProposalId(s"testedProposal$i"), Map(VoteKey.Agree -> 100 * i), None, DateHelper.now())
       }
 
       val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
@@ -547,7 +537,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         fakeProposal(
           ProposalId(s"testedProposal$i"),
           Map(VoteKey.Agree -> Math.pow(2, i).toInt),
-          Seq.empty,
+          None,
           DateHelper.now()
         )
       }
@@ -644,7 +634,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
           .map(
             i =>
               (
-                selectionAlgorithm.chooseBanditProposalsSimilars(sequenceConfiguration, testedProposals).proposalId ->
+                selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).proposalId ->
                   1
             )
           )
@@ -658,36 +648,6 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       chosenCounts.slice(0, 5).contains(sortedProposals(1)) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(2)) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(19)) should be(false)
-    }
-
-    scenario("check global bandit chooser") {
-      val random = new Random(0)
-      val similars: Seq[Seq[ProposalId]] =
-        (1 to 4).map(i => ((i - 1) * 5 + 1 to i * 5 + 1).map(j => ProposalId(s"tested$j")).toSeq)
-      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
-        val a = random.nextInt(100) + 1
-        val d = random.nextInt(100) + 1
-        val n = random.nextInt(100) + 1
-        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
-          VoteKey.Agree -> (
-            a ->
-              Map(QualificationKey.LikeIt -> random.nextInt(a), QualificationKey.PlatitudeAgree -> random.nextInt(a))
-          ),
-          VoteKey.Disagree -> (
-            d ->
-              Map(QualificationKey.NoWay -> random.nextInt(d), QualificationKey.PlatitudeDisagree -> random.nextInt(d))
-          ),
-          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
-        )
-        fakeProposalQualif(ProposalId(s"tested$i"), votes, similars((i - 1) / 5).filter(_ != ProposalId(s"tested$i")))
-      }
-
-      UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
-
-      val chosen: Seq[Proposal] = selectionAlgorithm.chooseBanditProposals(sequenceConfiguration, testedProposals)
-
-      chosen.length should be(4)
     }
 
     scenario("check tested proposal chooser") {

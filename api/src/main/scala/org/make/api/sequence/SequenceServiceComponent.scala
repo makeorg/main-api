@@ -12,7 +12,6 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{TagId, ThemeId}
@@ -146,7 +145,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           .selectProposalsForSequence(
             targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
             sequenceConfiguration = sequenceConfiguration,
-            proposals = prepareSimilarProposalsForAlgorithm(allProposals),
+            proposals = allProposals,
             votedProposals = votedProposals.keys.toSeq,
             includeList = includedProposals
           )
@@ -163,29 +162,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               )
           )
         )
-      }
-    }
-
-    /**
-      * This method take proposals as parameters, group proposals by idea and update
-      * similar Proposals
-      *
-      * @param proposals Seq[Prposal]
-      *
-      * @return Seq[Prposal]
-      */
-    private def prepareSimilarProposalsForAlgorithm(proposals: Seq[Proposal]): Seq[Proposal] = {
-      val proposalsByIdea: Map[Option[IdeaId], Seq[Proposal]] = proposals.filter(p => p.idea.isDefined).groupBy(_.idea)
-      proposals.map { proposal =>
-        proposal.idea match {
-          case Some(idea) =>
-            proposal.copy(
-              similarProposals = proposalsByIdea(Some(idea))
-                .map(_.proposalId)
-                .filterNot(_ == proposal.proposalId)
-            )
-          case None => proposal
-        }
       }
     }
 

@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.make.api.sequence.SequenceConfiguration
+import org.make.core.idea.IdeaId
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal._
@@ -292,7 +293,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     - if there are not enough tested proposals to provide the requested number of proposals,
       the sequence is completed with new proposals
     - the candidates proposals are filtered such that only one proposal by ideas
-      (cluster of similar proposals) can appear in each sequence
+       can appear in each sequence
     - the non imposed proposals are ordered randomly
      */
     def selectProposalsForSequence(targetLength: Int,
@@ -301,17 +302,18 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                                    votedProposals: Seq[ProposalId],
                                    includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
-      // fetch included proposals and exclude similars
-      val includedProposals: Seq[Proposal] = proposals.filter(p             => includeList.contains(p.proposalId))
-      val proposalsToExclude: Seq[ProposalId] = includedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
+      // fetch included proposals and exclude same idea
+      val includedProposals: Seq[Proposal] = proposals.filter(p                 => includeList.contains(p.proposalId))
+      val includedProposalsToExclude: Seq[ProposalId] = includedProposals.map(p => p.proposalId)
+      val includedIdeasToExclude: Seq[IdeaId] = includedProposals.flatMap(p     => p.idea)
 
       // fetch available proposals for user
       val availableProposals: Seq[Proposal] = proposals.filter(
         p =>
           p.status == ProposalStatus.Accepted &&
-            !proposalsToExclude.contains(p.proposalId) &&
-            !votedProposals.contains(p.proposalId) &&
-            !p.similarProposals.exists(proposal => includeList.contains(proposal))
+            !includedProposalsToExclude.contains(p.proposalId) &&
+            !includedIdeasToExclude.contains(p.idea.getOrElse(IdeaId("None"))) &&
+            !votedProposals.contains(p.proposalId)
       )
 
       // balance proposals between new and tested
@@ -322,12 +324,14 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // chooses new proposals
       val newIncludedProposals: Seq[Proposal] =
         chooseNewProposals(sequenceConfiguration, availableProposals, targetNewProposalsCount)
-      val newProposalsToExclude: Seq[ProposalId] =
-        newIncludedProposals.flatMap(p => p.similarProposals ++ Seq(p.proposalId))
+      val newProposalsToExclude: Seq[ProposalId] = newIncludedProposals.map(p => p.proposalId)
+      val newIdeasToExclude: Seq[IdeaId] = newIncludedProposals.flatMap(p     => p.idea)
 
       // chooses tested proposals
-      val remainingProposals: Seq[Proposal] =
-        availableProposals.filter(p => !newProposalsToExclude.contains(p.proposalId))
+      val remainingProposals: Seq[Proposal] = availableProposals.filter(
+        p =>
+          !newProposalsToExclude.contains(p.proposalId) && !newIdeasToExclude.contains(p.idea.getOrElse(IdeaId("None")))
+      )
       val testedProposalCount: Int = proposalsToChoose - newIncludedProposals.size
       val testedIncludedProposals: Seq[Proposal] =
         chooseTestedProposals(sequenceConfiguration, remainingProposals, testedProposalCount)
@@ -350,8 +354,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         val chosen: Proposal = algorithm.choose(proposals)
         Seq(chosen) ++ chooseProposals(
           count = count - 1,
-          proposals =
-            proposals.filter(p => p.proposalId != chosen.proposalId && !chosen.similarProposals.contains(p.proposalId)),
+          proposals = proposals.filter(
+            p =>
+              p.proposalId != chosen.proposalId &&
+                p.idea.getOrElse(IdeaId("Empty")) != chosen.idea.getOrElse(IdeaId("None"))
+          ),
           algorithm = algorithm
         )
       }
@@ -374,45 +381,29 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
      * Keep at least 3 proposals per ideas
      * Then keep the top quartile
      */
-    def chooseBanditProposalsSimilars(sequenceConfiguration: SequenceConfiguration,
-                                      similarProposals: Seq[Proposal]): Proposal = {
+    def chooseProposalBandit(sequenceConfiguration: SequenceConfiguration, proposals: Seq[Proposal]): Proposal = {
 
-      val similarProposalsScored: Seq[ScoredProposal] =
-        similarProposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
+      val proposalsScored: Seq[ScoredProposal] =
+        proposals.map(p => ScoredProposal(p, ProposalScorer.sampleScore(p)))
 
-      val shortList = if (similarProposals.length < sequenceConfiguration.banditMinCount) {
-        similarProposals
+      val shortList = if (proposals.length < sequenceConfiguration.banditMinCount) {
+        proposals
       } else {
         val count = math.max(
           sequenceConfiguration.banditMinCount,
-          ceil(similarProposals.length * sequenceConfiguration.banditProposalsRatio).toInt
+          ceil(proposals.length * sequenceConfiguration.banditProposalsRatio).toInt
         )
-        similarProposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
+        proposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
       }
 
       UniformRandom.choose(shortList)
     }
 
-    def chooseBanditProposals(sequenceConfiguration: SequenceConfiguration, proposals: Seq[Proposal]): Seq[Proposal] = {
-      if (proposals.isEmpty) {
-        Seq.empty
-      } else {
-        val currentProposal: Proposal = proposals.head
-        val similarProposals: Seq[Proposal] =
-          proposals.filter(p => currentProposal.similarProposals.contains(p.proposalId)) ++ Seq(currentProposal)
-        val chosen = chooseBanditProposalsSimilars(sequenceConfiguration, similarProposals)
-        val similarProposalIds = similarProposals.map(p => p.proposalId)
-
-        Seq(chosen) ++ chooseBanditProposals(
-          sequenceConfiguration = sequenceConfiguration,
-          proposals = proposals.filter(p => !similarProposalIds.contains(p.proposalId))
-        )
-      }
-    }
-
     def chooseTestedProposals(sequenceConfiguration: SequenceConfiguration,
                               availableProposals: Seq[Proposal],
                               testedProposalCount: Int): Seq[Proposal] = {
+
+      // filter proposals
       val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
         val votes: Int = proposal.votes.map(_.count).sum
         val engagementRate: Double = ProposalScorer.engagementUpperBound(proposal)
@@ -424,25 +415,44 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         || controversyRate > sequenceConfiguration.testedProposalsControversyThreshold))
       }
 
-      val proposalPool =
-        if (sequenceConfiguration.banditEnabled) {
-          chooseBanditProposals(sequenceConfiguration, testedProposals)
-        } else {
-          testedProposals
-        }
+      // group by idea
+      val ideas: Map[IdeaId, Seq[Proposal]] =
+        testedProposals.groupBy(p => p.idea.getOrElse(IdeaId(p.proposalId.value)))
 
-      chooseProposals(proposals = proposalPool, count = testedProposalCount, algorithm = SoftMinRandom)
+      // select ideas
+      val selectedIdeas: Seq[IdeaId] = ideas.keys.toSeq
+
+      // pick one proposal for each idea
+      val selectedProposals: Seq[Proposal] = ideas
+        .filterKeys(selectedIdeas.contains(_))
+        .mapValues(
+          proposals =>
+            if (sequenceConfiguration.banditEnabled) {
+              chooseProposalBandit(sequenceConfiguration, proposals)
+            } else {
+              chooseProposals(proposals, 1, SoftMinRandom).head
+          }
+        )
+        .values
+        .toSeq
+
+      // and finally pick the proposals
+      chooseProposals(selectedProposals, testedProposalCount, SoftMinRandom)
     }
 
     def complementSequence(sequence: Seq[ProposalId],
                            targetLength: Int,
                            proposals: Seq[Proposal],
                            availableProposals: Seq[Proposal]): Seq[ProposalId] = {
-      val excludeList: Set[ProposalId] =
-        (proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.similarProposals) ++ sequence).toSet
+      val excludeIdeas: Set[IdeaId] =
+        proposals.filter(p => sequence.contains(p.proposalId)).flatMap(_.idea).toSet
 
       sequence ++ chooseProposals(
-        availableProposals.filter(p => !excludeList.contains(p.proposalId)),
+        availableProposals.filter(
+          p =>
+            !sequence.contains(p.proposalId) &&
+              !excludeIdeas.contains(p.idea.getOrElse(IdeaId("None")))
+        ),
         targetLength - sequence.size,
         OldestProposalChooser
       ).map(_.proposalId)
