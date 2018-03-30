@@ -12,7 +12,7 @@ import org.make.api.extensions.{
   MakeSettingsComponent
 }
 import org.make.api.technical.auth._
-import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
+import org.make.api.technical.mailjet.{MailJetApi, MailJetBaseEvent, MailJetEvent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
@@ -97,9 +97,8 @@ class MailJetApiTest
       }
 
       events.size should be(2)
-
       events.head should be(
-        MailJetEvent(
+        MailJetBaseEvent(
           event = "sent",
           time = Some(1433333949L),
           messageId = Some(19421777835146490L),
@@ -107,8 +106,6 @@ class MailJetApiTest
           campaignId = Some(7257),
           contactId = Some(4),
           customCampaign = Some(""),
-          stringMessageId = Some("19421777835146490"),
-          smtpReply = Some("sent (250 2.0.0 OK 1433333948 fa5si855896wjc.199 - gsmtp)"),
           customId = Some("helloworld"),
           payload = Some("")
         )

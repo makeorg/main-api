@@ -5,7 +5,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
@@ -46,35 +45,4 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
       }
     }
   }
-}
-
-case class MailJetEvent(event: String,
-                        time: Option[Long] = None,
-                        messageId: Option[Long] = None,
-                        email: String,
-                        campaignId: Option[Int] = None,
-                        contactId: Option[Int] = None,
-                        customCampaign: Option[String] = None,
-                        stringMessageId: Option[String] = None,
-                        smtpReply: Option[String] = None,
-                        customId: Option[String] = None,
-                        payload: Option[String] = None)
-    extends Sharded {
-  override def id: String = email
-}
-
-object MailJetEvent {
-  implicit val decoder: Decoder[MailJetEvent] = Decoder.forProduct11(
-    "event",
-    "time",
-    "MessageID",
-    "email",
-    "mj_campaign_id",
-    "mj_contact_id",
-    "customcampaign",
-    "mj_message_id",
-    "smtp_reply",
-    "CustomID",
-    "Payload"
-  )(MailJetEvent.apply)
 }
