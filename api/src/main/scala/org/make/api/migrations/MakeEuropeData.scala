@@ -95,5 +95,5 @@ object MakeEuropeData extends InsertFixtureData {
   }
 
   override val dataResource: String = "fixtures/proposals_make-europe.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }
