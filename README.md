@@ -1,5 +1,5 @@
-[![build status](https://gitlab.com/makeorg-scala/make-api/badges/master/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
-[![coverage report](https://gitlab.com/makeorg-scala/make-api/badges/master/coverage.svg)](https://gitlab.com/makeorg-scala/make-api/commits/master)
+[![build status](https://gitlab.com/makeorg-scala/make-api/badges/preproduction/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/preproduction)
+[![coverage report](https://gitlab.com/makeorg-scala/make-api/badges/preproduction/coverage.svg)](https://gitlab.com/makeorg-scala/make-api/commits/preproduction)
 
 ## Setting up the dev environment
 
@@ -7,7 +7,6 @@
 - Install coursier (sbt plugin) https://github.com/coursier/coursier
 - Install the _scalafmt_ IntelliJ plugin
 - Install the _scala_ IntelliJ plugin
-- Run `sbt attach-hooks`
 
 ## Running the app :
 
