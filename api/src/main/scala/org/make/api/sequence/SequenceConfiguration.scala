@@ -16,14 +16,18 @@ import org.make.core.sequence.SequenceId
 import scala.concurrent.Future
 
 case class SequenceConfiguration(sequenceId: SequenceId,
-                                 newProposalsRatio: Double,
-                                 newProposalsVoteThreshold: Int,
-                                 testedProposalsEngagementThreshold: Double,
-                                 testedProposalsScoreThreshold: Double,
-                                 testedProposalsControversyThreshold: Double,
-                                 banditEnabled: Boolean,
-                                 banditMinCount: Int,
-                                 banditProposalsRatio: Double)
+                                 newProposalsRatio: Double = 0.5,
+                                 newProposalsVoteThreshold: Int = 100,
+                                 testedProposalsEngagementThreshold: Double = 0.0,
+                                 testedProposalsScoreThreshold: Double = 0.0,
+                                 testedProposalsControversyThreshold: Double = 0.0,
+                                 banditEnabled: Boolean = false,
+                                 banditMinCount: Int = 1,
+                                 banditProposalsRatio: Double = 0.0,
+                                 ideaCompetitionEnabled: Boolean = false,
+                                 ideaCompetitionTargetCount: Int = 50,
+                                 ideaCompetitionControversialRatio: Double = 0.0,
+                                 ideaCompetitionControversialCount: Int = 0)
 
 object SequenceConfiguration {
   implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]

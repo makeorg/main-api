@@ -18,11 +18,15 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
     newProposalsRatio = 0.5,
     newProposalsVoteThreshold = 100,
     testedProposalsEngagementThreshold = 0.8,
-    testedProposalsScoreThreshold = 1.2,
-    testedProposalsControversyThreshold = 0.1,
+    testedProposalsScoreThreshold = 0.0,
+    testedProposalsControversyThreshold = 0.0,
     banditEnabled = true,
-    banditMinCount = 3,
-    banditProposalsRatio = 0.3
+    banditMinCount = 1,
+    banditProposalsRatio = 0.0,
+    ideaCompetitionEnabled = false,
+    ideaCompetitionTargetCount = 50,
+    ideaCompetitionControversialRatio = 0.0,
+    ideaCompetitionControversialCount = 0
   )
 
   var configCache: Map[SequenceId, SequenceConfiguration] = Map.empty

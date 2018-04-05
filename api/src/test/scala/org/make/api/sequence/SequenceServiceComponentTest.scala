@@ -13,7 +13,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext, proposal}
+import org.make.core.{proposal, DateHelper, RequestContext}
 import org.scalatest.PrivateMethodTester
 
 class SequenceServiceComponentTest
@@ -84,20 +84,5 @@ class SequenceServiceComponentTest
     )
   }
 
-  feature("Starting a sequence") {
-    scenario("Group proposal by idea cluster") {
-      val proposalIdsWithFooIdea: Seq[ProposalId] = (1 to 3).map(i => ProposalId(s"proposal$i-FooIdea"))
-
-      val proposalsWithFooIdea: Seq[Proposal] =
-        proposalIdsWithFooIdea.map(id => fakeProposal(id, Map.empty, Some(IdeaId("foo-idea")), Seq.empty))
-
-      val prepareSimilarProposalsForAlgorithm = PrivateMethod[Seq[Proposal]]('prepareSimilarProposalsForAlgorithm)
-
-      val similars = sequenceService.invokePrivate(prepareSimilarProposalsForAlgorithm(proposalsWithFooIdea))
-
-      similars.foreach { proposal =>
-        assert(proposal.similarProposals.size == 2)
-      }
-    }
-  }
+  feature("Starting a sequence") {}
 }

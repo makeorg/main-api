@@ -74,6 +74,10 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.banditEnabled -> sequenceConfig.banditEnabled,
                 column.banditMinCount -> sequenceConfig.banditMinCount,
                 column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio,
+                column.ideaCompetitionEnabled -> sequenceConfig.ideaCompetitionEnabled,
+                column.ideaCompetitionTargetCount -> sequenceConfig.ideaCompetitionTargetCount,
+                column.ideaCompetitionControversialRatio -> sequenceConfig.ideaCompetitionControversialRatio,
+                column.ideaCompetitionControversialCount -> sequenceConfig.ideaCompetitionControversialCount,
                 column.createdAt -> DateHelper.now,
                 column.updatedAt -> DateHelper.now
               )
@@ -95,6 +99,10 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.banditEnabled -> sequenceConfig.banditEnabled,
                 column.banditMinCount -> sequenceConfig.banditMinCount,
                 column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio,
+                column.ideaCompetitionEnabled -> sequenceConfig.ideaCompetitionEnabled,
+                column.ideaCompetitionTargetCount -> sequenceConfig.ideaCompetitionTargetCount,
+                column.ideaCompetitionControversialRatio -> sequenceConfig.ideaCompetitionControversialRatio,
+                column.ideaCompetitionControversialCount -> sequenceConfig.ideaCompetitionControversialCount,
                 column.updatedAt -> DateHelper.now
               )
               .where(
@@ -129,6 +137,10 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
                                              banditEnabled: Boolean,
                                              banditMinCount: Int,
                                              banditProposalsRatio: Double,
+                                             ideaCompetitionEnabled: Boolean,
+                                             ideaCompetitionTargetCount: Int,
+                                             ideaCompetitionControversialRatio: Double,
+                                             ideaCompetitionControversialCount: Int,
                                              createdAt: ZonedDateTime,
                                              updatedAt: ZonedDateTime) {
     def toSequenceConfiguration: SequenceConfiguration =
@@ -141,7 +153,11 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         testedProposalsControversyThreshold = testedProposalsControversyThreshold,
         banditEnabled = banditEnabled,
         banditMinCount = banditMinCount,
-        banditProposalsRatio = banditProposalsRatio
+        banditProposalsRatio = banditProposalsRatio,
+        ideaCompetitionEnabled = ideaCompetitionEnabled,
+        ideaCompetitionTargetCount = ideaCompetitionTargetCount,
+        ideaCompetitionControversialRatio = ideaCompetitionControversialRatio,
+        ideaCompetitionControversialCount = ideaCompetitionControversialCount
       )
   }
 
@@ -161,6 +177,10 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "bandit_enabled",
         "bandit_min_count",
         "bandit_proposals_ratio",
+        "idea_competition_enabled",
+        "idea_competition_target_count",
+        "idea_competition_controversial_ratio",
+        "idea_competition_controversial_count",
         "created_at",
         "updated_at"
       )
@@ -184,6 +204,10 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         banditEnabled = resultSet.boolean(resultName.banditEnabled),
         banditMinCount = resultSet.int(resultName.banditMinCount),
         banditProposalsRatio = resultSet.double(resultName.banditProposalsRatio),
+        ideaCompetitionEnabled = resultSet.boolean(resultName.ideaCompetitionEnabled),
+        ideaCompetitionTargetCount = resultSet.int(resultName.ideaCompetitionTargetCount),
+        ideaCompetitionControversialRatio = resultSet.double(resultName.ideaCompetitionControversialRatio),
+        ideaCompetitionControversialCount = resultSet.int(resultName.ideaCompetitionControversialCount),
         createdAt = resultSet.zonedDateTime(resultName.createdAt),
         updatedAt = resultSet.zonedDateTime(resultName.updatedAt)
       )
