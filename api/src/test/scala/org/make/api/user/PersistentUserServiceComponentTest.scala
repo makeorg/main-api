@@ -19,6 +19,8 @@ class PersistentUserServiceComponentTest
 
   val rs: WrappedResultSet = mock[WrappedResultSet]
   Mockito.when(rs.string(ArgumentMatchers.eq("r_on_u"))).thenReturn("ROLE_ADMIN,ROLE_MODERATOR")
+  Mockito.when(rs.stringOpt(ArgumentMatchers.any[String])).thenReturn(None)
+  Mockito.when(rs.zonedDateTimeOpt(ArgumentMatchers.any[String])).thenReturn(None)
 
   feature("PersistentUser to User") {
     scenario("User should have roles") {

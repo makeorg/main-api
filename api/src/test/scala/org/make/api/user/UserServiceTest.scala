@@ -12,10 +12,10 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{MailingErrorLog, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.{times, verify}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -326,6 +326,114 @@ class UserServiceTest
       val futureResetPassword = userService.requestPasswordReset(userId)
 
       whenReady(futureResetPassword, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+  }
+
+  feature("update opt in newsletter") {
+    scenario("update opt in newsletter using userId") {
+      Given("a user")
+      When("I update opt in newsletter using UserId")
+      Then("opt in value is updated")
+      Mockito
+        .when(persistentUserService.updateOptInNewsletter(any[UserId], ArgumentMatchers.eq(true)))
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateOptInNewsletter(UserId("update-opt-in-user"), true)
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+    scenario("update opt in newsletter using email") {
+      Given("a user")
+      When("I update opt in newsletter using user email")
+      Then("opt in value is updated")
+      Mockito
+        .when(
+          persistentUserService
+            .updateOptInNewsletter(ArgumentMatchers.eq("user@example.com"), ArgumentMatchers.eq(true))
+        )
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateOptInNewsletter("user@example.com", true)
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+  }
+
+  feature("update hard bounce") {
+    scenario("update hard bounce using userId") {
+      Given("a user")
+      When("I update hard bounce using UserId")
+      Then("hard bounce is updated")
+      Mockito
+        .when(persistentUserService.updateIsHardBounce(any[UserId], ArgumentMatchers.eq(true)))
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateIsHardBounce(UserId("update-opt-in-user"), true)
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+    scenario("update hard bounce using email") {
+      Given("a user")
+      When("I update hard bounce using user email")
+      Then("hard bounce is updated")
+      Mockito
+        .when(
+          persistentUserService
+            .updateIsHardBounce(ArgumentMatchers.eq("user@example.com"), ArgumentMatchers.eq(true))
+        )
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateIsHardBounce("user@example.com", true)
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+  }
+
+  feature("update mailing error") {
+    scenario("update mailing error using userId") {
+      Given("a user")
+      When("I update mailing error using UserId")
+      Then("mailing error is updated")
+      Mockito
+        .when(persistentUserService.updateLastMailingError(any[UserId], any[Option[MailingErrorLog]]))
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateLastMailingError(
+        UserId("update-opt-in-user"),
+        Some(MailingErrorLog(error = "my_error", date = ZonedDateTime.now()))
+      )
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        result shouldBe true
+      }
+    }
+    scenario("update mailing error using email") {
+      Given("a user")
+      When("I update mailing error using user email")
+      Then("mailing error is updated")
+      Mockito
+        .when(
+          persistentUserService
+            .updateLastMailingError(ArgumentMatchers.eq("user@example.com"), any[Option[MailingErrorLog]])
+        )
+        .thenReturn(Future.successful(true))
+
+      val futureBoolean = userService.updateLastMailingError(
+        "user@example.com",
+        Some(MailingErrorLog(error = "my_error", date = ZonedDateTime.now()))
+      )
+
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
         result shouldBe true
       }
     }

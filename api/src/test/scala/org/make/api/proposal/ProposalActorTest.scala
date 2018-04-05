@@ -95,7 +95,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     roles = Seq(RoleCitizen),
     country = "FR",
     language = "fr",
-    profile = None
+    profile = None,
+    isHardBounce = false,
+    lastMailingError = None
   )
 
   private def proposal(proposalId: ProposalId,

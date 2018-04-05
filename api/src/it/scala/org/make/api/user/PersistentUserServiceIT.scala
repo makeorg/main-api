@@ -1,11 +1,11 @@
 package org.make.api.user
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -130,6 +130,16 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = None
   )
 
+  val johnMailing: User = johnDoe.copy(
+    email = "johnmailing@example.com",
+    userId = UserId("6"),
+    isHardBounce = true,
+    lastMailingError =
+      Some(MailingErrorLog(error = "my error", date = ZonedDateTime.parse("2018-12-12T12:30:40+01:00[Europe/Paris]")))
+  )
+
+  var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
+
   feature("The app can persist and retrieve users") {
     info("As a programmer")
     info("I want to be able to persist a user")
@@ -219,6 +229,38 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         results.exists(_.userId.value == janeDee.userId.value) shouldBe true
       }
     }
+
+    scenario("Persist a user with mailing params") {
+      Given("""a user John Mailing with values:
+              |    - email: johnmailing@example.com
+              |    - isHardBounce: true
+              |    - lastMailingError: Some(error = "my error", date = "2018-12-12T12:30:40Z[UTC]")
+            """.stripMargin)
+      When("I persist John Mailing")
+      And("I get the persisted user")
+      val futureUser: Future[Option[User]] = persistentUserService
+        .persist(johnMailing)
+        .flatMap(_ => persistentUserService.get(johnMailing.userId))(readExecutionContext)
+
+      whenReady(futureUser, Timeout(3.seconds)) { result =>
+        Then("result should be an instance of User")
+        val user = result.get
+        user shouldBe a[User]
+
+        And("the user hard bounce should be true")
+        user.isHardBounce shouldBe true
+
+        And("the user last mailing error should be my error at 12-12-2018T12:30:40")
+        user.lastMailingError.get.error shouldBe "my error"
+        user.lastMailingError.get.date
+          .withZoneSameInstant(ZoneId.of("Europe/Paris"))
+          .toString shouldBe "2018-12-12T12:30:40+01:00[Europe/Paris]"
+
+        And("the user newsletter option must be true")
+        user.profile.get.optInNewsletter shouldBe true
+      }
+    }
+
   }
 
   feature("The app can persist a user") {
@@ -287,4 +329,166 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
+  feature("register mailing data") {
+    scenario("update opt in newsletter with user id") {
+      Given("a user with a userId(7)")
+      When("I update opt in newsletter to true")
+      val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateOptInNewsletter(user.userId, optInNewsletter = true)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user opt in newsletter is true")
+      whenReady(futureMaybeUserWithTrueValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.profile.get.optInNewsletter shouldBe true
+      }
+
+      When("I update opt in newsletter to false")
+      val futureMaybeUserWithFalseValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateOptInNewsletter(user.userId, optInNewsletter = false)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user opt in newsletter is false")
+      whenReady(futureMaybeUserWithFalseValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.profile.get.optInNewsletter shouldBe false
+      }
+    }
+
+    scenario("update opt in newsletter with user email") {
+      Given("a user with an email johnmailing2@example.com")
+      When("I update opt in newsletter to true")
+      val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateOptInNewsletter("johnmailing2@example.com", optInNewsletter = true)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user opt in newsletter is true")
+      whenReady(futureMaybeUserWithTrueValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.profile.get.optInNewsletter shouldBe true
+      }
+
+      When("I update opt in newsletter to false")
+      val futureMaybeUserWithFalseValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateOptInNewsletter("johnmailing2@example.com", optInNewsletter = false)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user opt in newsletter is true")
+      whenReady(futureMaybeUserWithFalseValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.profile.get.optInNewsletter shouldBe false
+      }
+    }
+    scenario("update hard bounce with user id") {
+      Given("a user with a userId(7)")
+      When("I update hard bounce to true")
+      val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateIsHardBounce(user.userId, isHardBounce = true)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user hard bounce is true")
+      whenReady(futureMaybeUserWithTrueValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.isHardBounce shouldBe true
+      }
+
+      When("I update hard bounce to false")
+      val futureMaybeUserWithFalseValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateIsHardBounce(user.userId, isHardBounce = false)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user hard bounce is false")
+      whenReady(futureMaybeUserWithFalseValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.isHardBounce shouldBe false
+      }
+    }
+    scenario("update hard bounce with user email") {
+      Given("a user with an email johnmailing2@example.com")
+      When("I update hard bounce to true")
+      val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateIsHardBounce("johnmailing2@example.com", isHardBounce = true)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user hard bounce is true")
+      whenReady(futureMaybeUserWithTrueValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.isHardBounce shouldBe true
+      }
+
+      When("I update hard bounce to false")
+      val futureMaybeUserWithFalseValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateIsHardBounce("johnmailing2@example.com", isHardBounce = false)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user hard bounce is false")
+      whenReady(futureMaybeUserWithFalseValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.isHardBounce shouldBe false
+      }
+    }
+    scenario("update mailing error with user id") {
+      Given("a user with a userId(7)")
+      And("a mailing error my_error at 2018-01-02 12:03:30")
+      val mailingError: MailingErrorLog =
+        MailingErrorLog(error = "my_error", date = ZonedDateTime.parse("2018-01-02T12:03:30+01:00[Europe/Paris]"))
+      When("I update mailing error to my_error at 2018-01-02 12:03:30")
+      val futureMaybeUserWithValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateLastMailingError(user.userId, Some(mailingError))
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user mailing error should be my_error at 2018-01-02 12:03:30")
+      whenReady(futureMaybeUserWithValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.lastMailingError.get.error shouldBe mailingError.error
+        maybeUser.get.lastMailingError.get.date.toEpochSecond shouldBe mailingError.date.toEpochSecond
+      }
+
+      When("I update mailing error to None")
+      val futureMaybeUserWithNoneValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateLastMailingError(user.userId, None)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user mailing error is None")
+      whenReady(futureMaybeUserWithNoneValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.lastMailingError shouldBe None
+      }
+    }
+    scenario("update mailing error with user email") {
+      Given("a user with an email johnmailing2@example.com")
+      And("a mailing error my_error at 2018-01-02 12:03:30")
+      val mailingError: MailingErrorLog =
+        MailingErrorLog(error = "my_error", date = ZonedDateTime.parse("2018-01-02T12:03:30+01:00[Europe/Paris]"))
+      When("I update mailing error to my_error at 2018-01-02 12:03:30")
+      val futureMaybeUserWithValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateLastMailingError("johnmailing2@example.com", Some(mailingError))
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user mailing error should be my_error at 2018-01-02 12:03:30")
+      whenReady(futureMaybeUserWithValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.lastMailingError.get.error shouldBe mailingError.error
+        maybeUser.get.lastMailingError.get.date.toEpochSecond shouldBe mailingError.date.toEpochSecond
+      }
+
+      When("I update mailing error to None")
+      val futureMaybeUserWithNoneValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
+        persistentUserService
+          .updateLastMailingError("johnmailing2@example.com", None)
+          .flatMap(_ => persistentUserService.get(user.userId))(readExecutionContext)
+      }
+      Then("user mailing error is None")
+      whenReady(futureMaybeUserWithNoneValue, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.get.lastMailingError shouldBe None
+      }
+    }
+
+  }
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    futureJohnMailing2 =
+      persistentUserService.persist(johnDoe.copy(email = "johnmailing2@example.com", userId = UserId("7")))
+  }
 }

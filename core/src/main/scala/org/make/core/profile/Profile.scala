@@ -3,10 +3,9 @@ package org.make.core.profile
 import java.time.LocalDate
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.circe.generic.semiauto._
-import org.make.core.MakeSerializable
-import org.make.core.CirceFormatters
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import org.make.core.{CirceFormatters, MakeSerializable}
 
 sealed trait Gender {
   def shortName: String

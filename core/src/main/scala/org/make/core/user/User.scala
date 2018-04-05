@@ -48,6 +48,8 @@ object Role extends StrictLogging {
     val shortName: String = "ROLE_CITIZEN"
   }
 }
+case class MailingErrorLog(error: String, date: ZonedDateTime)
+
 case class User(userId: UserId,
                 email: String,
                 firstName: Option[String],
@@ -66,7 +68,9 @@ case class User(userId: UserId,
                 language: String,
                 profile: Option[Profile],
                 override val createdAt: Option[ZonedDateTime] = None,
-                override val updatedAt: Option[ZonedDateTime] = None)
+                override val updatedAt: Option[ZonedDateTime] = None,
+                isHardBounce: Boolean = false,
+                lastMailingError: Option[MailingErrorLog] = None)
     extends MakeSerializable
     with Timestamped {
 
