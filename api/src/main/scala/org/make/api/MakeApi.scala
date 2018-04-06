@@ -41,6 +41,12 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
+import org.make.api.technical.healthcheck.{
+  DefaultHealthCheckServiceComponent,
+  HealthCheckApi,
+  HealthCheckComponent,
+  HealthCheckSupervisor
+}
 import org.make.api.technical.mailjet.MailJetApi
 import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
@@ -97,12 +103,14 @@ trait MakeApi
     with DefaultSequenceCoordinatorServiceComponent
     with DefaultSequenceSearchEngineComponent
     with DefaultReadJournalComponent
+    with DefaultHealthCheckServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with DefaultIndexationComponent
+    with HealthCheckComponent
     with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with OperationApi
@@ -119,6 +127,7 @@ trait MakeApi
     with ModerationIdeaApi
     with TrackingApi
     with MigrationApi
+    with HealthCheckApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -165,6 +174,13 @@ trait MakeApi
     atMost = 2.seconds
   )
 
+  override lazy val healthCheckSupervisor: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / HealthCheckSupervisor.name)
+      .resolveOne()(Timeout(2.seconds)),
+    atMost = 2.seconds
+  )
+
   override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
 
@@ -194,9 +210,9 @@ trait MakeApi
       classOf[SequenceApi],
       classOf[ModerationIdeaApi],
       classOf[ElasticSearchApi],
-      classOf[ProposalApi],
       classOf[TrackingApi],
-      classOf[MigrationApi]
+      classOf[MigrationApi],
+      classOf[HealthCheckApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -233,7 +249,8 @@ trait MakeApi
       operationRoutes ~
       moderationOperationRoutes ~
       trackingRoutes ~
-      migrationRoutes
+      migrationRoutes ~
+      healthCheckRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
