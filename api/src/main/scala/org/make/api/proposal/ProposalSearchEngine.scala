@@ -13,6 +13,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.core.DateHelper
+import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 
@@ -32,6 +33,7 @@ trait ProposalSearchEngine {
   def searchProposals(searchQuery: SearchQuery, maybeSeed: Option[Int] = None): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Int]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
+  def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
@@ -143,7 +145,27 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+    override def proposalTrendingMode(proposal: IndexedProposal): Option[String] = {
+      val totalVotes: Int = proposal.votes.map(_.count).sum
+      val agreeVote: Int = proposal.votes.find(_.key == Agree).map(_.count).getOrElse(0)
+      val disagreeVote: Int = proposal.votes.find(_.key == Disagree).map(_.count).getOrElse(0)
+      val agreementRate: Float = agreeVote.toFloat / totalVotes.toFloat
+      val disagreementRate: Float = disagreeVote.toFloat / totalVotes.toFloat
+
+      val ruleControversial: Boolean = totalVotes >= 50 && agreementRate >= 0.4f && disagreementRate >= 0.4f
+      val rulePopular: Boolean = totalVotes >= 50 && agreementRate >= 0.8f
+
+      if (rulePopular) {
+        Some("popular")
+      } else if (ruleControversial) {
+        Some("controversial")
+      } else {
+        None
+      }
+    }
+
+    override def indexProposal(proposal: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val record: IndexedProposal = proposal.copy(trending = proposalTrendingMode(proposal))
       val index = mayBeIndex.getOrElse(proposalAlias)
       logger.debug(s"$index -> Saving in Elasticsearch: $record")
       client.execute {
