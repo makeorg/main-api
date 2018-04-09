@@ -139,8 +139,8 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
           tags = changes.tags.getOrElse(proposal.tags),
           updatedAt = Some(DateHelper.now()),
           operation = changes.operation.orElse(proposal.operation),
-          language = changes.language,
-          country = changes.country
+          language = changes.language.orElse(proposal.language),
+          country = changes.country.orElse(proposal.country)
         )
 
       persistAndPublishEvent(
