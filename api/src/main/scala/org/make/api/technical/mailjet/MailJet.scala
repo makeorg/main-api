@@ -1,6 +1,7 @@
 package org.make.api.technical.mailjet
 
 import io.circe.{Decoder, Encoder}
+import org.make.core.Sharded
 
 case class SendEmail(from: Option[Recipient] = None,
                      subject: Option[String] = None,
@@ -14,6 +15,9 @@ case class SendEmail(from: Option[Recipient] = None,
                      emailId: Option[String] = None,
                      customCampaign: Option[String] = None,
                      monitoringCategory: Option[String] = None)
+    extends Sharded {
+  override def id: String = recipients.headOption.map(_.email).getOrElse("unknown")
+}
 
 object SendEmail {
   implicit val encoder: Encoder[SendEmail] = Encoder.forProduct12(

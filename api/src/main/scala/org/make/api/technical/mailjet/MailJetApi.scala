@@ -9,6 +9,7 @@ import io.circe.Decoder
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
+import org.make.core.Sharded
 
 trait MailJetApi extends MakeDirectives with StrictLogging {
   this: MakeDataHandlerComponent
@@ -58,6 +59,9 @@ case class MailJetEvent(event: String,
                         smtpReply: Option[String] = None,
                         customId: Option[String] = None,
                         payload: Option[String] = None)
+    extends Sharded {
+  override def id: String = email
+}
 
 object MailJetEvent {
   implicit val decoder: Decoder[MailJetEvent] = Decoder.forProduct11(

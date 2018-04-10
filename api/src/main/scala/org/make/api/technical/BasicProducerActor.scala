@@ -1,8 +1,9 @@
 package org.make.api.technical
 
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Ready, Waiting}
+import org.make.core.Sharded
 
-abstract class BasicProducerActor[Wrapper, Event] extends ProducerActor[Wrapper, Event] {
+abstract class BasicProducerActor[Wrapper <: Sharded, Event] extends ProducerActor[Wrapper, Event] {
 
   def kafkaTopic: String
 
@@ -19,4 +20,8 @@ abstract class BasicProducerActor[Wrapper, Event] extends ProducerActor[Wrapper,
   }
 
   protected def convert(event: Event): Wrapper
+
+  override protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
+    sendRecord(kafkaTopic, record.id, record)
+  }
 }
