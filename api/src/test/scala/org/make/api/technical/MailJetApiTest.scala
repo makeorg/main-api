@@ -116,22 +116,22 @@ class MailJetApiTest
 
   feature("callback api") {
     scenario("should refuse service if no credentials are supplied with a 401 return code") {
-      Post("/mailjet") ~> routes ~> check {
+      Post("/technical/mailjet") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
     scenario("should refuse service if bad credentials are supplied with a 401 return code") {
-      Post("/mailjet").withHeaders(Authorization(BasicHttpCredentials("fake", "fake"))) ~> routes ~> check {
+      Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("fake", "fake"))) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
     scenario("should refuse service if credentials are supplied but no content with a 400 return code") {
-      Post("/mailjet").withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
+      Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
     scenario("should send parsed events in event bus") {
-      Post("/mailjet", HttpEntity(ContentTypes.`application/json`, request))
+      Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(eventBusService, times(2)).publish(any[AnyRef])

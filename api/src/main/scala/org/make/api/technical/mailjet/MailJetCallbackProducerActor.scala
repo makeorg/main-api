@@ -14,6 +14,7 @@ class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrappe
   override protected lazy val schema: SchemaFor[MailJetEventWrapper] = SchemaFor[MailJetEventWrapper]
   override val kafkaTopic: String = kafkaConfiguration.topics(MailJetCallbackProducerActor.topicKey)
   override protected def convert(event: MailJetEvent): MailJetEventWrapper = {
+    logger.debug(s"Produce MailJetEvent: ${event.toString}")
     MailJetEventWrapper(version = MakeSerializable.V1, id = event.email, date = event.time.map { timestamp =>
       ZonedDateTime.from(Instant.ofEpochMilli(timestamp * 1000).atZone(ZoneOffset.UTC))
     }.getOrElse(DateHelper.now()), event = MailJetEventWrapper.wrapEvent(event))

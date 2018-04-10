@@ -212,7 +212,8 @@ trait MakeApi
       classOf[ElasticSearchApi],
       classOf[TrackingApi],
       classOf[MigrationApi],
-      classOf[HealthCheckApi]
+      classOf[HealthCheckApi],
+      classOf[MailJetApi]
     )
 
   private lazy val optionsCors: Route = options {
