@@ -9,6 +9,8 @@ class MailJetConfiguration(config: Config) extends Extension {
   val secretKey: String = config.getString("secret-key")
   val basicAuthLogin: String = config.getString("basic-auth-login")
   val basicAuthPassword: String = config.getString("basic-auth-password")
+  val campaignApiKey: String = config.getString("campaign-api-key")
+  val campaignSecretKey: String = config.getString("campaign-secret-key")
 }
 
 object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {
