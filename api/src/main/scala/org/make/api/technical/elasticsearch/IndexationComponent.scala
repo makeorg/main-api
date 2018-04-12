@@ -43,7 +43,7 @@ trait IndexationComponent {
 }
 
 trait IndexationService {
-  def reindexData(): Future[Done]
+  def reindexData(force: Boolean): Future[Done]
   def schemaIsUpToDate(): Future[Boolean]
 }
 
@@ -68,43 +68,37 @@ trait DefaultIndexationComponent extends IndexationComponent {
   override lazy val indexationService: IndexationService = new IndexationService {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
-
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    override def reindexData(): Future[Done] = {
-      logger.info("Elasticsearch Reindexation Begin")
+    override def reindexData(force: Boolean): Future[Done] = {
+      logger.info(s"Elasticsearch Reindexation: Check schema is up to date - force $force")
 
-      val newIndexName = elasticsearchConfiguration.createIndexName
+      schemaIsUpToDate().map { isUpToDate =>
+        logger.info(s"Elasticsearch Reindexation: Check schema is up to date - isUpToDate $isUpToDate")
+        if (!isUpToDate || force) {
+          val newIndexName = elasticsearchConfiguration.createIndexName
+          logger.info("Elasticsearch Reindexation: Begin")
 
-      for {
-        _      <- executeCreateIndex(newIndexName)
-        _      <- executeIndexProposals(newIndexName)
-        _      <- executeIndexSequences(newIndexName)
-        _      <- executeIndexIdeas(newIndexName)
-        result <- executeSetAlias(newIndexName)
-      } yield result
+          for {
+            _ <- executeCreateIndex(newIndexName)
+            _ <- executeIndexProposals(newIndexName)
+            _ <- executeIndexSequences(newIndexName)
+            _ <- executeIndexIdeas(newIndexName)
+            result <- executeSetAlias(newIndexName)
+          } yield result
+        }
+      }
+
+      Future.successful(Done)
     }
 
     override def schemaIsUpToDate(): Future[Boolean] = {
-      def getHashFromIndex(index: String): String =
-        index.split("-").lastOption.getOrElse("")
+      val hash = elasticsearchConfiguration.getHashFromIndex(elasticsearchConfiguration.createIndexName)
 
-      def getCurrentIndexName: Future[String] = {
-        client
-          .execute(getAlias(Seq(elasticsearchConfiguration.aliasName)))
-          .map(_.keys.headOption.getOrElse(""))
-          .recover {
-            case e: Exception =>
-              logger.error("fail to retrieve ES alias", e)
-              ""
-          }
-      }
-
-      val hash = getHashFromIndex(elasticsearchConfiguration.createIndexName)
-      getCurrentIndexName.map { index =>
-        getHashFromIndex(index) == hash
+      elasticsearchConfiguration.getCurrentIndexName.map { index =>
+        elasticsearchConfiguration.getHashFromIndex(index) == hash
       }
     }
 

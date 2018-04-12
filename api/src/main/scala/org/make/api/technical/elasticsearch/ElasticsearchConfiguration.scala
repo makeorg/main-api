@@ -14,6 +14,7 @@ import org.make.api.extensions.ConfigurationSupport
 import org.make.core.DateHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success}
 
@@ -45,6 +46,20 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
         .toLowerCase()
 
     indexName + "-" + dateFormatter.format(DateHelper.now()) + "-" + hash
+  }
+
+  def getHashFromIndex(index: String): String =
+    index.split("-").lastOption.getOrElse("")
+
+  def getCurrentIndexName: Future[String] = {
+    client
+      .execute(getAlias(Seq(aliasName)))
+      .map(_.keys.headOption.getOrElse(""))
+      .recover {
+        case e: Exception =>
+          logger.error("fail to retrieve ES alias", e)
+          ""
+      }
   }
 
   private def createInitialIndexAndAlias(): Unit = {
