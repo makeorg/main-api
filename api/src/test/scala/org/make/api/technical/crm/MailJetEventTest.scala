@@ -1,4 +1,4 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
 import io.circe
 import io.circe.parser.decode

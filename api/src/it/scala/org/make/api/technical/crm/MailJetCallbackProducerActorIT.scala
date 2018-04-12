@@ -1,4 +1,4 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
@@ -97,6 +97,8 @@ object MailJetCallbackProducerActorIT {
       |      emails = "emails"
       |      proposals = "proposals"
       |      mailjet-events = "mailjet-events"
+      |      crm-contact = "crm-contact"
+      |      users-update = "users-update"
       |      duplicates-predicted = "duplicates-predicted"
       |      sequences = "sequences"
       |      tracking-events = "tracking-events"

@@ -1,4 +1,4 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
@@ -128,7 +128,7 @@ class MailJetEventConsumerActorIT
       val wrappedSpamEventBounce = MailJetEventWrapper(
         version = MakeSerializable.V1,
         id = "some-event",
-        date = DateHelper.now,
+        date = DateHelper.now(),
         event = MailJetEventWrapper.wrapEvent(eventSpam)
       )
 
@@ -156,7 +156,7 @@ class MailJetEventConsumerActorIT
       val wrappedUnsubscribeEventBounce = MailJetEventWrapper(
         version = MakeSerializable.V1,
         id = "some-event",
-        date = DateHelper.now,
+        date = DateHelper.now(),
         event = MailJetEventWrapper.wrapEvent(eventUnsubscribe)
       )
 
@@ -188,6 +188,8 @@ object MailJetEventConsumerActorIT {
       |      emails = "emails"
       |      proposals = "proposals"
       |      mailjet-events = "mailjet-events"
+      |      crm-contact = "crm-contact"
+      |      users-update = "users-update"
       |      duplicates-predicted = "duplicates-predicted"
       |      sequences = "sequences"
       |      tracking-events = "tracking-events"

@@ -1,41 +1,19 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
-import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor, IdeaService}
-import org.make.api.operation.OperationService
+import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
 import org.make.api.proposal.ProposalSupervisor
-import org.make.api.semantic.{SemanticProducerActor, SemanticService}
-import org.make.api.sequence.{
-  PersistentSequenceConfigurationService,
-  SequenceConfigurationActor,
-  SequenceService,
-  SequenceSupervisor
-}
+import org.make.api.semantic.SemanticProducerActor
+import org.make.api.sequence.{SequenceConfigurationActor, SequenceSupervisor}
 import org.make.api.sessionhistory.SessionHistoryCoordinator
-import org.make.api.tag.TagService
 import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
+import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
-import org.make.api.technical.mailjet.{
-  MailJetCallbackProducerActor,
-  MailJetConsumerActor,
-  MailJetEventConsumerActor,
-  MailJetProducerActor
-}
 import org.make.api.technical.tracking.TrackingProducerActor
-import org.make.api.theme.ThemeService
-import org.make.api.user.{UserService, UserSupervisor}
+import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.UserHistoryCoordinator
 
-class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
-                   userService: UserService,
-                   tagService: TagService,
-                   themeService: ThemeService,
-                   sequenceService: SequenceService,
-                   operationService: OperationService,
-                   ideaService: IdeaService,
-                   semanticService: SemanticService)
-    extends Actor
-    with ActorLogging {
+class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
@@ -53,48 +31,67 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
     context.watch(
       context
         .actorOf(
-          SequenceConfigurationActor.props(persistentSequenceConfigurationService),
+          SequenceConfigurationActor.props(makeApi.persistentSequenceConfigurationService),
           SequenceConfigurationActor.name
         )
     )
 
     context.watch(
       context
-        .actorOf(SequenceSupervisor.props(userHistoryCoordinator, tagService, themeService), SequenceSupervisor.name)
+        .actorOf(
+          SequenceSupervisor.props(userHistoryCoordinator, makeApi.tagService, makeApi.themeService),
+          SequenceSupervisor.name
+        )
     )
     context.watch(
       context.actorOf(
         ProposalSupervisor
           .props(
-            userService,
+            makeApi.userService,
             userHistoryCoordinator,
             sessionHistoryCoordinator,
-            tagService,
-            sequenceService,
-            operationService,
-            semanticService
+            makeApi.tagService,
+            makeApi.sequenceService,
+            makeApi.operationService,
+            makeApi.semanticService
           ),
         ProposalSupervisor.name
       )
     )
     context.watch(
-      context.actorOf(UserSupervisor.props(userService, userHistoryCoordinator, operationService), UserSupervisor.name)
+      context.actorOf(
+        UserSupervisor.props(makeApi.userService, userHistoryCoordinator, makeApi.operationService),
+        UserSupervisor.name
+      )
     )
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
+    context.watch(context.actorOf(CrmContactProducerActor.props, CrmContactProducerActor.name))
 
     context.watch(context.actorOf(SemanticProducerActor.props, SemanticProducerActor.name))
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props(makeApi.crmService), MailJetConsumerActor.name)
       context.actorOf(props, name)
     }
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(MailJetEventConsumerActor.props(userService), MailJetEventConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(
+          MailJetEventConsumerActor.props(makeApi.userService),
+          MailJetEventConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          CrmContactEventConsumerActor.props(makeApi.userService, makeApi.crmService),
+          CrmContactEventConsumerActor.name
+        )
       context.actorOf(props, name)
     }
 
@@ -112,7 +109,7 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(IdeaConsumerActor.props(ideaService), IdeaConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(IdeaConsumerActor.props(makeApi.ideaService), IdeaConsumerActor.name)
       context.actorOf(props, name)
     }
 
@@ -126,24 +123,6 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService,
-            userService: UserService,
-            tagService: TagService,
-            themeService: ThemeService,
-            sequenceService: SequenceService,
-            operationService: OperationService,
-            ideaService: IdeaService,
-            semanticService: SemanticService): Props =
-    Props(
-      new MakeGuardian(
-        persistentSequenceConfigurationService,
-        userService,
-        tagService,
-        themeService,
-        sequenceService,
-        operationService,
-        ideaService,
-        semanticService
-      )
-    )
+  def props(makeApi: MakeApi): Props =
+    Props(new MakeGuardian(makeApi))
 }

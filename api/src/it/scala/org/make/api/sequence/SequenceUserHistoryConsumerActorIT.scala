@@ -94,6 +94,8 @@ object SequenceUserHistoryConsumerActorIT {
       |      emails = "emails"
       |      proposals = "proposals"
       |      mailjet-events = "mailjet-events"
+      |      crm-contact = "crm-contact"
+      |      users-update = "users-update"
       |      duplicates-predicted = "duplicates-predicted"
       |      sequences = "sequences"
       |      tracking-events = "tracking-events"

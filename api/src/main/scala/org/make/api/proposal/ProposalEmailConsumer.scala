@@ -8,7 +8,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.operation.OperationService
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.technical.mailjet.{Recipient, SendEmail}
+import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserService
 

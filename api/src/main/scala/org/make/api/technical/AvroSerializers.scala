@@ -5,7 +5,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.make.api.technical.mailjet.MailJetError
+import org.make.api.technical.crm.MailJetError
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceStatus
 
