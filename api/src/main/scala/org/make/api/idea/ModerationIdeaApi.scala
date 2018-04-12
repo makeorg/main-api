@@ -163,6 +163,20 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
                   )
                   Validation.validate(
                     Validation.requirePresent(
+                        fieldValue = request.language,
+                        fieldName = "Language",
+                        message = Some("Language is required")
+                    )
+                  )
+                  Validation.validate(
+                    Validation.requirePresent(
+                        fieldValue = request.country,
+                        fieldName = "Country",
+                        message = Some("Country is required")
+                    )
+                  )
+                  Validation.validate(
+                    Validation.requirePresent(
                       fieldName = "operation/theme",
                       fieldValue = request.operation.orElse(request.theme),
                       message = Some("operation or theme should not be empty")

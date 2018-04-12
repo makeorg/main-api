@@ -185,11 +185,11 @@ class ModerationIdeaApiTest
 
     scenario("authenticated admin with operationId") {
       Given("an authenticated user with the admin role")
-      When("the user wants to create an idea with an operationId")
+      When("the user wants to create an idea with an operationId, language and a country")
       Then("the idea should be saved if valid")
 
       Post("/moderation/ideas")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "operation": "vff"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr", "country": "FR"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         val idea: Idea = entityAs[Idea]
@@ -199,14 +199,14 @@ class ModerationIdeaApiTest
 
     scenario("authenticated admin with themeId") {
       Given("an authenticated user with the admin role")
-      When("the user wants to create an idea with a themeId")
+      When("the user wants to create an idea with a themeId, language and a country")
       Then("the idea should be saved if valid")
 
       Post("/moderation/ideas")
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df"}"""
+            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
@@ -226,6 +226,40 @@ class ModerationIdeaApiTest
           HttpEntity(
             ContentTypes.`application/json`,
             s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "operation": "vff"}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("authenticated admin without language") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea without language")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/ideas")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"name": "$fooIdeaText", "operation": "vff", "country": "FR"}"""
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
+    scenario("authenticated admin without country") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea without country")
+      Then("he should get a bad request (400) return code")
+
+      Post("/moderation/ideas")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
