@@ -56,7 +56,9 @@ class OperationServiceIT
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = "FR",
     language = "fr",
-    profile = Some(profile)
+    profile = Some(profile),
+    isHardBounce = false,
+    lastMailingError = None
   )
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
   val operationId: OperationId = OperationId(UUID.randomUUID().toString)
