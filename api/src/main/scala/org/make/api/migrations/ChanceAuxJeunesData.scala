@@ -4,12 +4,13 @@ import java.time.LocalDate
 
 import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
-import org.make.core.{DateHelper, RequestContext, SlugHelper}
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
-import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
+import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
+import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter, StatusSearchFilter}
 import org.make.core.reference.TagId
 import org.make.core.user.{Role, User}
+import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import scala.concurrent.Future
 import scala.io.Source
@@ -101,7 +102,12 @@ object ChanceAuxJeunesData extends InsertFixtureData {
       api.elasticsearchProposalAPI
         .countProposals(
           SearchQuery(
-            filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(proposalsToInsert.content)))))
+            filters = Some(
+              SearchFilters(
+                slug = Some(SlugSearchFilter(SlugHelper(proposalsToInsert.content))),
+                status = Some(StatusSearchFilter(Seq(Accepted, Pending)))
+              )
+            )
           )
         )
         .flatMap { countResult =>
@@ -152,5 +158,5 @@ object ChanceAuxJeunesData extends InsertFixtureData {
   }
 
   override val dataResource: String = "fixtures/proposals_chance-aux-jeunes.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }
