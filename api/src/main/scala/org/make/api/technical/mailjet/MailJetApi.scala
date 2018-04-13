@@ -5,12 +5,15 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
+import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
-import org.make.core.Sharded
+import org.make.core.HttpCodes
 
+@Api(value = "MailJet")
+@Path(value = "/")
 trait MailJetApi extends MakeDirectives with StrictLogging {
   this: MakeDataHandlerComponent
     with EventBusServiceComponent
@@ -28,10 +31,21 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
   }
 
   val mailJetRoutes: Route = webHook
-
-  def webHook: Route = {
+  @ApiOperation(
+    value = "consume-event",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(new Authorization(value = "basicAuth"))
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @Path(value = "/technical/mailjet")
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.technical.mailjet.MailJetEvent")
+    )
+  ) def webHook: Route = {
     post {
-      path("mailjet") {
+      path("technical" / "mailjet") {
         makeOperation("mailjet-webhook") { _ =>
           authenticateBasic[String]("make-mailjet", authenticate).apply { _ =>
             decodeRequest {
@@ -46,35 +60,4 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
       }
     }
   }
-}
-
-case class MailJetEvent(event: String,
-                        time: Option[Long] = None,
-                        messageId: Option[Long] = None,
-                        email: String,
-                        campaignId: Option[Int] = None,
-                        contactId: Option[Int] = None,
-                        customCampaign: Option[String] = None,
-                        stringMessageId: Option[String] = None,
-                        smtpReply: Option[String] = None,
-                        customId: Option[String] = None,
-                        payload: Option[String] = None)
-    extends Sharded {
-  override def id: String = email
-}
-
-object MailJetEvent {
-  implicit val decoder: Decoder[MailJetEvent] = Decoder.forProduct11(
-    "event",
-    "time",
-    "MessageID",
-    "email",
-    "mj_campaign_id",
-    "mj_contact_id",
-    "customcampaign",
-    "mj_message_id",
-    "smtp_reply",
-    "CustomID",
-    "Payload"
-  )(MailJetEvent.apply)
 }

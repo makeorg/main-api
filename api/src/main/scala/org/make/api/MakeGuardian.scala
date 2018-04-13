@@ -15,7 +15,12 @@ import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
 import org.make.api.technical.DeadLettersListenerActor
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
-import org.make.api.technical.mailjet.{MailJetCallbackProducerActor, MailJetConsumerActor, MailJetProducerActor}
+import org.make.api.technical.mailjet.{
+  MailJetCallbackProducerActor,
+  MailJetConsumerActor,
+  MailJetEventConsumerActor,
+  MailJetProducerActor
+}
 import org.make.api.technical.tracking.TrackingProducerActor
 import org.make.api.theme.ThemeService
 import org.make.api.user.{UserService, UserSupervisor}
@@ -82,6 +87,12 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(MailJetConsumerActor.props, MailJetConsumerActor.name)
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(MailJetEventConsumerActor.props(userService), MailJetEventConsumerActor.name)
       context.actorOf(props, name)
     }
 

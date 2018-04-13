@@ -34,6 +34,12 @@ trait UserService extends ShortenedNames {
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
+  def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
+  def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
+  def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean]
+  def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
+  def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
+  def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
 }
 
 case class UserRegisterData(email: String,
@@ -158,7 +164,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       val country = BusinessConfig.validateCountry(userInfo.country)
       val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
-
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
@@ -234,6 +239,30 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
       persistentUserService.validateEmail(verificationToken)
+    }
+
+    override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {
+      persistentUserService.updateOptInNewsletter(userId, optInNewsletter)
+    }
+
+    override def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean] = {
+      persistentUserService.updateIsHardBounce(userId, isHardBounce)
+    }
+
+    override def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
+      persistentUserService.updateLastMailingError(userId, lastMailingError)
+    }
+
+    override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
+      persistentUserService.updateOptInNewsletter(email, optInNewsletter)
+    }
+
+    override def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean] = {
+      persistentUserService.updateIsHardBounce(email, isHardBounce)
+    }
+
+    override def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
+      persistentUserService.updateLastMailingError(email, lastMailingError)
     }
   }
 }

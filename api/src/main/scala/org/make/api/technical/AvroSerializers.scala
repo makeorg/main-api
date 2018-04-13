@@ -5,6 +5,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
+import org.make.api.technical.mailjet.MailJetError
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceStatus
 
@@ -76,6 +77,20 @@ trait AvroSerializers {
     override def apply(value: Any, field: Field): SequenceStatus =
       SequenceStatus.statusMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a SequenceStatus"))
+  }
+
+  implicit object MailJetErrorToValue extends ToValue[MailJetError] {
+    override def apply(value: MailJetError): String = value.name
+  }
+
+  implicit object MailJetErrorFromValue extends FromValue[MailJetError] {
+    override def apply(value: Any, field: Field): MailJetError =
+      MailJetError.errorMap
+        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a MailJetError"))
+  }
+
+  implicit object MailJetErrorToSchema extends ToSchema[MailJetError] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
   }
 
 }

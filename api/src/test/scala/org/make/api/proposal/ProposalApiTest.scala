@@ -84,7 +84,9 @@ class ProposalApiTest
     language = "fr",
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    isHardBounce = false,
+    lastMailingError = None
   )
 
   val daenerys = User(

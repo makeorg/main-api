@@ -12,7 +12,7 @@ import org.make.api.extensions.{
   MakeSettingsComponent
 }
 import org.make.api.technical.auth._
-import org.make.api.technical.mailjet.{MailJetApi, MailJetEvent}
+import org.make.api.technical.mailjet.{MailJetApi, MailJetBaseEvent, MailJetEvent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
@@ -97,9 +97,8 @@ class MailJetApiTest
       }
 
       events.size should be(2)
-
       events.head should be(
-        MailJetEvent(
+        MailJetBaseEvent(
           event = "sent",
           time = Some(1433333949L),
           messageId = Some(19421777835146490L),
@@ -107,8 +106,6 @@ class MailJetApiTest
           campaignId = Some(7257),
           contactId = Some(4),
           customCampaign = Some(""),
-          stringMessageId = Some("19421777835146490"),
-          smtpReply = Some("sent (250 2.0.0 OK 1433333948 fa5si855896wjc.199 - gsmtp)"),
           customId = Some("helloworld"),
           payload = Some("")
         )
@@ -119,22 +116,22 @@ class MailJetApiTest
 
   feature("callback api") {
     scenario("should refuse service if no credentials are supplied with a 401 return code") {
-      Post("/mailjet") ~> routes ~> check {
+      Post("/technical/mailjet") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
     scenario("should refuse service if bad credentials are supplied with a 401 return code") {
-      Post("/mailjet").withHeaders(Authorization(BasicHttpCredentials("fake", "fake"))) ~> routes ~> check {
+      Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("fake", "fake"))) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
     scenario("should refuse service if credentials are supplied but no content with a 400 return code") {
-      Post("/mailjet").withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
+      Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
     scenario("should send parsed events in event bus") {
-      Post("/mailjet", HttpEntity(ContentTypes.`application/json`, request))
+      Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(eventBusService, times(2)).publish(any[AnyRef])

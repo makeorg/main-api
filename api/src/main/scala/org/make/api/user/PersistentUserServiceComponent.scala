@@ -11,7 +11,7 @@ import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
@@ -55,7 +55,10 @@ object PersistentUserServiceComponent {
                             language: String,
                             karmaLevel: Option[Int],
                             locale: Option[String],
-                            optInNewsletter: Boolean) {
+                            optInNewsletter: Boolean,
+                            isHardBounce: Boolean,
+                            lastMailingErrorDate: Option[ZonedDateTime],
+                            lastMailingErrorMessage: Option[String]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -74,7 +77,13 @@ object PersistentUserServiceComponent {
         roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
         country = country,
         language = language,
-        profile = toProfile
+        profile = toProfile,
+        isHardBounce = isHardBounce,
+        lastMailingError = lastMailingErrorMessage.flatMap { message =>
+          lastMailingErrorDate.map { date =>
+            MailingErrorLog(error = message, date = date)
+          }
+        }
       )
     }
 
@@ -140,7 +149,10 @@ object PersistentUserServiceComponent {
       "reset_token_expires_at",
       "roles",
       "country",
-      "language"
+      "language",
+      "is_hard_bounce",
+      "last_mailing_error_date",
+      "last_mailing_error_message"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -183,7 +195,10 @@ object PersistentUserServiceComponent {
         language = resultSet.string(userResultName.language),
         karmaLevel = resultSet.intOpt(userResultName.karmaLevel),
         locale = resultSet.stringOpt(userResultName.locale),
-        optInNewsletter = resultSet.boolean(userResultName.optInNewsletter)
+        optInNewsletter = resultSet.boolean(userResultName.optInNewsletter),
+        isHardBounce = resultSet.boolean(userResultName.isHardBounce),
+        lastMailingErrorDate = resultSet.zonedDateTimeOpt(userResultName.lastMailingErrorDate),
+        lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage)
       )
     }
   }
@@ -208,6 +223,12 @@ trait PersistentUserService {
                            resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
+  def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
+  def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean]
+  def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
+  def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
+  def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
+  def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -383,7 +404,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
               column.locale -> user.profile.flatMap(_.locale),
               column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
-              column.optInNewsletter -> user.profile.forall(_.optInNewsletter)
+              column.optInNewsletter -> user.profile.forall(_.optInNewsletter),
+              column.isHardBounce -> user.isHardBounce,
+              column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
+              column.lastMailingErrorMessage -> user.lastMailingError.map(_.error)
             )
         }.execute().apply()
       }).map(_ => user)
@@ -427,6 +451,78 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.verified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
             .where(sqls.eq(column.verificationToken, verificationToken))
+        }.execute().apply()
+      })
+    }
+
+    override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.optInNewsletter -> optInNewsletter)
+            .where(sqls.eq(column.uuid, userId.value))
+        }.execute().apply()
+      })
+    }
+
+    override def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.isHardBounce -> isHardBounce)
+            .where(sqls.eq(column.uuid, userId.value))
+        }.execute().apply()
+      })
+    }
+
+    override def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.lastMailingErrorDate -> lastMailingError.map(_.date),
+              column.lastMailingErrorMessage -> lastMailingError.map(_.error)
+            )
+            .where(sqls.eq(column.uuid, userId.value))
+        }.execute().apply()
+      })
+    }
+
+    override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.optInNewsletter -> optInNewsletter)
+            .where(sqls.eq(column.email, email))
+        }.execute().apply()
+      })
+    }
+
+    override def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.isHardBounce -> isHardBounce)
+            .where(sqls.eq(column.email, email))
+        }.execute().apply()
+      })
+    }
+
+    override def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.lastMailingErrorDate -> lastMailingError.map(_.date),
+              column.lastMailingErrorMessage -> lastMailingError.map(_.error)
+            )
+            .where(sqls.eq(column.email, email))
         }.execute().apply()
       })
     }
