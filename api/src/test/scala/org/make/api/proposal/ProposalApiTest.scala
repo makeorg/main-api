@@ -250,7 +250,9 @@ class ProposalApiTest
             roles = Seq.empty,
             None,
             country = "FR",
-            language = "fr"
+            language = "fr",
+            isHardBounce = false,
+            lastMailingError = None
           ),
           labels = Seq(),
           theme = None,
@@ -318,7 +320,9 @@ class ProposalApiTest
         roles = Seq.empty,
         None,
         country = "FR",
-        language = "fr"
+        language = "fr",
+        isHardBounce = false,
+        lastMailingError = None
       ),
       labels = Seq(),
       theme = None,

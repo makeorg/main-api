@@ -2,8 +2,8 @@ package org.make.api.user
 
 import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
-import javax.ws.rs.Path
 
+import javax.ws.rs.Path
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
@@ -31,7 +31,7 @@ import org.make.core.Validation.{mandatoryField, validate, validateEmail, valida
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -563,6 +563,15 @@ object SubscribeToNewsLetter {
   implicit val decoder: Decoder[SubscribeToNewsLetter] = deriveDecoder[SubscribeToNewsLetter]
 }
 
+case class MailingErrorLogResponse(error: String, date: ZonedDateTime)
+object MailingErrorLogResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
+  implicit val decoder: Decoder[MailingErrorLogResponse] = deriveDecoder[MailingErrorLogResponse]
+
+  def apply(mailingErrorLog: MailingErrorLog): MailingErrorLogResponse =
+    MailingErrorLogResponse(error = mailingErrorLog.error, date = mailingErrorLog.date)
+}
+
 case class UserResponse(userId: UserId,
                         email: String,
                         firstName: Option[String],
@@ -573,7 +582,9 @@ case class UserResponse(userId: UserId,
                         roles: Seq[Role],
                         profile: Option[Profile],
                         country: String,
-                        language: String)
+                        language: String,
+                        isHardBounce: Boolean,
+                        lastMailingError: Option[MailingErrorLogResponse])
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
@@ -590,6 +601,8 @@ object UserResponse extends CirceFormatters {
     roles = user.roles,
     profile = user.profile,
     country = user.country,
-    language = user.language
+    language = user.language,
+    isHardBounce = user.isHardBounce,
+    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_))
   )
 }

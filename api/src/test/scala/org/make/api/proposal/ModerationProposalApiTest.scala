@@ -265,7 +265,9 @@ class ModerationProposalApiTest
             roles = Seq.empty,
             None,
             country = "FR",
-            language = "fr"
+            language = "fr",
+            isHardBounce = false,
+            lastMailingError = None
           ),
           labels = proposalSim123.labels,
           theme = None,
@@ -308,7 +310,9 @@ class ModerationProposalApiTest
             roles = Seq.empty,
             None,
             country = "FR",
-            language = "fr"
+            language = "fr",
+            isHardBounce = false,
+            lastMailingError = None
           ),
           labels = proposalSim124.labels,
           theme = None,
@@ -382,7 +386,9 @@ class ModerationProposalApiTest
         roles = Seq.empty,
         None,
         country = "FR",
-        language = "fr"
+        language = "fr",
+        isHardBounce = false,
+        lastMailingError = None
       ),
       labels = Seq(),
       theme = None,
