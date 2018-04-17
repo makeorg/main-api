@@ -3,7 +3,7 @@ package org.make.api.proposal
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.technical.businessconfig.BusinessConfig
+import org.make.api.technical.businessconfig.{BusinessConfig, FrontConfiguration}
 import org.make.core.{RequestContext, Validation}
 import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
@@ -22,7 +22,7 @@ final case class ProposeProposalRequest(content: String,
                                         language: Option[String],
                                         country: Option[String]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
-  private val minProposalLength = BusinessConfig.defaultProposalMinLength
+  private val minProposalLength = FrontConfiguration.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
   validate(minLength("content", minProposalLength, content))
   validate(mandatoryField("language", language))
