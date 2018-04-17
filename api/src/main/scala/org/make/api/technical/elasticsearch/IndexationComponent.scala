@@ -1,7 +1,6 @@
 package org.make.api.technical.elasticsearch
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 import akka.Done
@@ -23,7 +22,6 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.core.DateHelper
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
@@ -45,9 +43,11 @@ trait IndexationComponent {
 }
 
 trait IndexationService {
-  def reindexData(): Future[Done]
+  def reindexData(force: Boolean): Future[Done]
+  def schemaIsUpToDate(): Future[Boolean]
 }
 
+//TODO: test this component
 trait DefaultIndexationComponent extends IndexationComponent {
   this: ElasticsearchConfigurationComponent
     with StrictLogging
@@ -68,28 +68,41 @@ trait DefaultIndexationComponent extends IndexationComponent {
   override lazy val indexationService: IndexationService = new IndexationService {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
-
     private val client = HttpClient(
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    override def reindexData(): Future[Done] = {
-      logger.info("Elasticsearch Reindexation Begin")
+    override def reindexData(force: Boolean): Future[Done] = {
+      logger.info(s"Elasticsearch Reindexation: Check schema is up to date - force $force")
 
-      val newIndexName = elasticsearchConfiguration.indexName + "-" + dateFormatter.format(DateHelper.now())
+      schemaIsUpToDate().map { isUpToDate =>
+        logger.info(s"Elasticsearch Reindexation: Check schema is up to date - isUpToDate $isUpToDate")
+        if (!isUpToDate || force) {
+          val newIndexName = elasticsearchConfiguration.createIndexName
+          logger.info("Elasticsearch Reindexation: Begin")
 
-      for {
-        _      <- executeCreateIndex(newIndexName)
-        _      <- executeIndexProposals(newIndexName)
-        _      <- executeIndexSequences(newIndexName)
-        _      <- executeIndexIdeas(newIndexName)
-        result <- executeSetAlias(newIndexName)
-      } yield result
+          for {
+            _ <- executeCreateIndex(newIndexName)
+            _ <- executeIndexProposals(newIndexName)
+            _ <- executeIndexSequences(newIndexName)
+            _ <- executeIndexIdeas(newIndexName)
+            result <- executeSetAlias(newIndexName)
+          } yield result
+        }
+      }
+
+      Future.successful(Done)
+    }
+
+    override def schemaIsUpToDate(): Future[Boolean] = {
+      val hash = elasticsearchConfiguration.getHashFromIndex(elasticsearchConfiguration.createIndexName)
+
+      elasticsearchConfiguration.getCurrentIndexName.map { index =>
+        elasticsearchConfiguration.getHashFromIndex(index) == hash
+      }
     }
 
     private def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[IndicesAliasResponse] = {
-
       if (indexes.isEmpty) {
         logger.error("indexes with alias is empty")
       }
@@ -102,11 +115,9 @@ trait DefaultIndexationComponent extends IndexationComponent {
     }
 
     private def executeSetAlias(newIndexName: String): Future[Done] = {
-      val futureAliasies: Future[GetAliasResponse] = client.execute {
+      client.execute {
         getAlias(Seq(elasticsearchConfiguration.aliasName))
-      }
-
-      futureAliasies.onComplete {
+      }.onComplete {
         case Success(getAliasResponse) => addAndRemoveAlias(newIndexName, getAliasResponse.keys.toSeq)
         case Failure(e)                => logger.error("fail to retrieve ES alias", e)
         case _                         => logger.error("fail to retrieve ES alias")
