@@ -148,8 +148,7 @@ reindex-preproduction:
         -H "Accept: application/json" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -H "X-Rundeck-Auth-Token: ${RUNDECK_PREPROD_TOKEN}" \
-        --data-urlencode "argString=-username ${ADMIN_USERNAME}" \
-        --data-urlencode "argString=-password ${ADMIN_PASSWORD}" \
+        --data-urlencode "argString=-username ${ADMIN_USERNAME} -password ${ADMIN_PASSWORD}" \
         ${RUNDECK_PREPROD_URL}/api/16/job/${RUNDECK_PREPROD_REINDEX_JOB_ID}/run \
         | jq -r '.id')
 
@@ -219,8 +218,7 @@ reindex-production:
         -H "Accept: application/json" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -H "X-Rundeck-Auth-Token: ${RUNDECK_PROD_TOKEN}" \
-        --data-urlencode "argString=-username ${ADMIN_USERNAME}" \
-        --data-urlencode "argString=-password ${ADMIN_PASSWORD}" \
+        --data-urlencode "argString=-username ${ADMIN_USERNAME} -password ${ADMIN_PASSWORD}" \
         ${RUNDECK_PROD_URL}/api/16/job/${RUNDECK_PROD_REINDEX_JOB_ID}/run \
         | jq -r '.id')
 
