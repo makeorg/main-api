@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS tag_type(
+    id STRING(256) NOT NULL,
+    label STRING(256) NULL,
+    display STRING(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NULL DEFAULT now(),
+    CONSTRAINT "primary" PRIMARY KEY (id)
+);
+
+ALTER TABLE tag RENAME COLUMN slug TO id;
+
+ALTER TABLE tag DROP COLUMN enabled;
+
+ALTER TABLE tag
+    ADD COLUMN display STRING(64) NOT NULL DEFAULT 'INHERIT',
+    ADD COLUMN tag_type_id STRING(256),
+    ADD COLUMN operation_id STRING(256),
+    ADD COLUMN theme_id STRING(256),
+    ADD COLUMN weight FLOAT NOT NULL DEFAULT 0,
+    ADD COLUMN country STRING(10) NOT NULL DEFAULT 'FR',
+    ADD COLUMN language STRING(10) NOT NULL DEFAULT 'fr';
+
+CREATE INDEX ON tag (tag_type_id);
+CREATE INDEX ON tag (operation_id);
+CREATE INDEX ON tag (theme_id);
+
+COMMIT;
