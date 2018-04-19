@@ -10,11 +10,12 @@ import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.sequence.{SequenceId, SequenceStatus, SequenceTranslation}
 import org.make.core.user.UserId
 import org.make.core.CirceFormatters
+import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
 

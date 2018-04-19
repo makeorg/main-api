@@ -7,7 +7,8 @@ import org.make.api.migrations.InsertFixtureData.{FixtureDataLine, ProposalToAcc
 import org.make.api.proposal.ValidateProposalRequest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 

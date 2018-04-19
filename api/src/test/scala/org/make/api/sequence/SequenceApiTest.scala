@@ -13,9 +13,10 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
+import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
 import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError}

@@ -10,6 +10,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.api.theme.DefaultPersistentThemeServiceComponent.{PersistentTheme, PersistentThemeTranslation}
 import org.make.core.DateHelper
 import org.make.core.reference._
+import org.make.core.tag.{Tag, TagId}
 import scalikejdbc._
 
 import scala.concurrent.Future

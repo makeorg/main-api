@@ -13,8 +13,8 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent}
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{Tag, TagId}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.UserId
 import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout

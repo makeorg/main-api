@@ -1,7 +1,7 @@
-package org.make.core.reference
+package org.make.core.tag
 
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.{MakeSerializable, SlugHelper, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 

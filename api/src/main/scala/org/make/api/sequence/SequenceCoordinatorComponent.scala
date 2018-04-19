@@ -6,8 +6,8 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.TimeSettings
 import org.make.core.RequestContext
-import org.make.core.reference.TagId
 import org.make.core.sequence._
+import org.make.core.tag.TagId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

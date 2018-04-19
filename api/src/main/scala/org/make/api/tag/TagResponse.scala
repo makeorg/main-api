@@ -3,7 +3,7 @@ package org.make.api.tag
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagId}
 
 import scala.annotation.meta.field
 

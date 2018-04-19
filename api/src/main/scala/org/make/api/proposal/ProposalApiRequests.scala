@@ -4,15 +4,16 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.businessconfig.{BusinessConfig, FrontConfiguration}
-import org.make.core.{RequestContext, Validation}
 import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
+import org.make.core.{RequestContext, Validation}
 
 import scala.annotation.meta.field
 import scala.util.Random

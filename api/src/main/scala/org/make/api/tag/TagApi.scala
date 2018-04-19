@@ -1,7 +1,6 @@
 package org.make.api.tag
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.Decoder
@@ -11,8 +10,8 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
-import org.make.core.{HttpCodes, Validation}
+import org.make.core.tag.{Tag, TagId}
+import org.make.core.{tag, HttpCodes, Validation}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -24,7 +23,7 @@ trait TagApi extends MakeAuthenticationDirectives {
 
   @Path(value = "/{tagId}")
   @ApiOperation(value = "get-tag", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
   def getTag: Route = {
     get {
@@ -56,7 +55,7 @@ trait TagApi extends MakeAuthenticationDirectives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.CreateTagRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @Path(value = "/")
   def create: Route = post {
     path("tags") {
@@ -77,7 +76,7 @@ trait TagApi extends MakeAuthenticationDirectives {
   }
 
   @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Tag]])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[tag.Tag]])))
   @Path(value = "/")
   def listTags: Route = {
     get {
@@ -111,7 +110,7 @@ trait TagApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.UpdateTagRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @Path(value = "/{tagId}")
   def updateTag: Route = put {
     path("tags" / tagId) { tagId =>

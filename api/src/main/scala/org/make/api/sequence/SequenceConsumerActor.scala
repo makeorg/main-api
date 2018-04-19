@@ -13,9 +13,10 @@ import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.theme.ThemeService
 import org.make.core.RequestContext
-import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
+import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed._
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

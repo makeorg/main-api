@@ -19,8 +19,8 @@ import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{Tag, TagId}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -1,7 +1,7 @@
 package org.make.api.tag
 
 import org.make.api.DatabaseTest
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future

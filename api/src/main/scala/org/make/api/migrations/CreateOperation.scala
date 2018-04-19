@@ -7,8 +7,8 @@ import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.api.sequence.SequenceResponse
 import org.make.core.operation.{OperationCountryConfiguration, OperationTranslation}
-import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceStatus
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 

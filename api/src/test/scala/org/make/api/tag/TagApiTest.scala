@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCod
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, ValidationError}

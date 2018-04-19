@@ -12,8 +12,8 @@ import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, S
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{Tag, TagId}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global

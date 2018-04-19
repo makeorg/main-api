@@ -1,16 +1,15 @@
 package org.make.api.tag
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.HttpCodes
+import org.make.core.{tag, HttpCodes}
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.TagId
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
@@ -35,7 +34,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
   def moderationGetTag: Route = {
     get {
@@ -71,7 +70,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.CreateTagRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @Path(value = "/")
   def moderationCreateTag: Route = post {
     path("moderation" / "tags") {
@@ -120,9 +119,9 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                   onSuccess(tagService.findAllEnabled()) { tags =>
                     val sortField =
                       try {
-                        classOf[Tag].getDeclaredField(sort)
+                        classOf[tag.Tag].getDeclaredField(sort)
                       } catch {
-                        case _: Throwable => classOf[Tag].getDeclaredField("label")
+                        case _: Throwable => classOf[tag.Tag].getDeclaredField("label")
                       }
                     sortField.setAccessible(true)
                     val cmp = (a: Object, b: Object, order: String) => {

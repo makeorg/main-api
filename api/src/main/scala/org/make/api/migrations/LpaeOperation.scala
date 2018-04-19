@@ -3,7 +3,7 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 
 object LpaeOperation extends CreateOperation {
   override val operationSlug: String = "lpae"

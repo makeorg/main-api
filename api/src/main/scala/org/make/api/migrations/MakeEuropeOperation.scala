@@ -2,7 +2,7 @@ package org.make.api.migrations
 
 import java.time.LocalDate
 
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 
 object MakeEuropeOperation extends CreateOperation {
   override val operationSlug: String = "make-europe"

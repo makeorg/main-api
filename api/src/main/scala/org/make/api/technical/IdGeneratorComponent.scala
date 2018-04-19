@@ -6,6 +6,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.sequence.SequenceId
 import org.make.core.session.VisitorId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 trait IdGeneratorComponent {
@@ -18,6 +19,7 @@ trait IdGenerator {
   def nextSequenceId(): SequenceId = SequenceId(nextId())
   def nextOperationId(): OperationId = OperationId(nextId())
   def nextVisitorId(): VisitorId = VisitorId(nextId())
+  def nextTagId(): TagId = TagId(nextId())
   def nextId(): String
 }
 

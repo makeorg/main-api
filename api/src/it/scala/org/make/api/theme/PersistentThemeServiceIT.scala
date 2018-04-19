@@ -6,6 +6,7 @@ import org.make.api.DatabaseTest
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.reference._
+import org.make.core.tag.Tag
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt

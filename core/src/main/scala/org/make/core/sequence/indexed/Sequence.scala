@@ -8,8 +8,9 @@ import org.make.core.CirceFormatters
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.reference.{Tag, ThemeId, ThemeTranslation}
+import org.make.core.reference.{ThemeId, ThemeTranslation}
 import org.make.core.sequence._
+import org.make.core.tag.Tag
 
 import scala.concurrent.Future
 

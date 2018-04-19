@@ -12,8 +12,8 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
-import org.make.core.reference.{Tag, TagId}
 import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}

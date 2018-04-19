@@ -3,7 +3,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.RequestContext
 import org.make.core.operation.OperationId
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 
 import scala.concurrent.Future
 

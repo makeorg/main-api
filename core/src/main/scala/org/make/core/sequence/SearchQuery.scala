@@ -7,8 +7,9 @@ import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.sequence.indexed.SequenceElasticsearchFieldNames
+import org.make.core.tag.TagId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 

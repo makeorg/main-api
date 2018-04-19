@@ -1,7 +1,6 @@
 package org.make.api.proposal
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
@@ -19,7 +18,8 @@ import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
 import scala.concurrent.Future

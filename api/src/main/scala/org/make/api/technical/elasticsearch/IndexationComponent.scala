@@ -25,7 +25,7 @@ import org.make.api.user.UserServiceComponent
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
-import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
+import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.{
   IndexedSequence,
   IndexedSequenceProposalId,
@@ -33,6 +33,7 @@ import org.make.core.sequence.indexed.{
   Context => SequenceContext
 }
 import org.make.core.sequence.{Sequence, SequenceId}
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

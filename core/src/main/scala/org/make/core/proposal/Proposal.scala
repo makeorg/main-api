@@ -8,7 +8,8 @@ import io.circe.generic.semiauto._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._

@@ -10,6 +10,7 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.auth.UserRights
 import org.make.core.reference._
+import org.make.core.tag.Tag
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches}
