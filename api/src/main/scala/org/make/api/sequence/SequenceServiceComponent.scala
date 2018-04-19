@@ -151,12 +151,13 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           )
         indexedProposals <- elasticsearchProposalAPI.findProposalsByIds(selectedProposals, random = false)
       } yield {
+        val indexedProposalsSorted = indexedProposals.sortBy(proposal => selectedProposals.indexOf(proposal.id))
         Some(
           SequenceResult(
             id = sequence.id,
             title = sequence.title,
             slug = sequence.slug,
-            proposals = indexedProposals
+            proposals = indexedProposalsSorted
               .map(
                 indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), votedProposals.get(indexed.id))
               )
