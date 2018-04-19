@@ -16,7 +16,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
 import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError}
@@ -85,8 +85,20 @@ class SequenceApiTest
   when(themeService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
   when(themeService.findByIds(matches(Seq(ThemeId("badthemeid"))))).thenReturn(Future.successful(Seq.empty))
 
-  when(tagService.findAllEnabled()).thenReturn(Future.successful(Seq(Tag("mytag"))))
-  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(Tag("mytag"))))
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
+
+  when(tagService.findAll()).thenReturn(Future.successful(Seq(newTag("mytag"))))
+  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(newTag("mytag"))))
   when(tagService.findByTagIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
   when(tagService.findByTagIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
 

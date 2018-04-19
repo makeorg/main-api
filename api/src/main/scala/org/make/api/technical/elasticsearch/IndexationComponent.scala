@@ -217,7 +217,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
 
   private def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
     tagService
-      .findEnabledByTagIds(tags)
+      .findByTagIds(tags)
       .map(Some(_))
   }
   private def retrieveThemes(themeIds: Seq[ThemeId]): Future[Option[Seq[Theme]]] = {

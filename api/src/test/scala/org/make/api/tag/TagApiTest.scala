@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCod
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, ValidationError}
@@ -71,21 +71,32 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
   val fakeTag: String = "fake-tag"
   val newTagNameText: String = "new tag name"
   val newTagNameSlug: String = "new-tag-name"
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
 
   when(tagService.createTag(ArgumentMatchers.eq(validTagText)))
-    .thenReturn(Future.successful(Tag(validTagText)))
+    .thenReturn(Future.successful(newTag(validTagText)))
   when(tagService.createTag(ArgumentMatchers.eq(specificValidTagText)))
-    .thenReturn(Future.successful(Tag(specificValidTagText)))
+    .thenReturn(Future.successful(newTag(specificValidTagText)))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(newTagNameSlug))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(helloWorldTagText))))
+    .thenReturn(Future.successful(Some(newTag(helloWorldTagText))))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(existingValidTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(existingValidTagText))))
-  when(tagService.findAllEnabled())
-    .thenReturn(Future.successful(Seq(Tag("tag1"), Tag("tag2"))))
+    .thenReturn(Future.successful(Some(newTag(existingValidTagText))))
+  when(tagService.findAll())
+    .thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
   when(
     tagService.updateTag(
@@ -94,7 +105,7 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
       requestContext = ArgumentMatchers.any[RequestContext],
       connectedUserId = ArgumentMatchers.any[Option[UserId]]
     )
-  ).thenReturn(Future.successful(Some(Tag(newTagNameText))))
+  ).thenReturn(Future.successful(Some(newTag(newTagNameText))))
 
   val routes: Route = sealRoute(tagRoutes)
 

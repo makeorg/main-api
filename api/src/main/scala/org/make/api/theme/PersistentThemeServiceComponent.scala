@@ -56,7 +56,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
       for {
         persistentThemes <- futurePersistentThemes
         tagsIds: Seq[TagId] = persistentThemes.flatMap(_.tagsIdsFromSlug)
-        persistentTags <- persistentTagService.findAllEnabledFromIds(tagsIds)
+        persistentTags <- persistentTagService.findAllFromIds(tagsIds)
       } yield persistentThemes.map(_.toTheme(persistentTags))
     }
 

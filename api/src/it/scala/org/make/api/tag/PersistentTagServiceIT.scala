@@ -1,25 +1,41 @@
 package org.make.api.tag
 
 import org.make.api.DatabaseTest
-import org.make.core.tag.{Tag, TagId}
+import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServiceComponent {
+class PersistentTagServiceIT
+    extends DatabaseTest
+    with DefaultPersistentTagServiceComponent
+    with DefaultIdGeneratorComponent {
 
-  val stark: Tag = Tag("Stark")
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("8405aba4-4192-41d2-9a0d-b5aa6cb98d37"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
 
-  val targaryen: Tag = Tag("Targaryen")
-  val lannister: Tag = Tag("Lannister")
-  val bolton: Tag = Tag("Bolton")
-  val greyjoy: Tag = Tag("Greyjoy")
+  val stark: Tag = newTag("Stark")
 
-  val tully: Tag = Tag("Tully")
-  val baratheon: Tag = Tag("Baratheon")
-  val martell: Tag = Tag("Martell")
-  val tyrell: Tag = Tag("Tyrell")
+  val targaryen: Tag = newTag("Targaryen")
+  val lannister: Tag = newTag("Lannister")
+  val bolton: Tag = newTag("Bolton")
+  val greyjoy: Tag = newTag("Greyjoy")
+
+  val tully: Tag = newTag("Tully")
+  val baratheon: Tag = newTag("Baratheon")
+  val martell: Tag = newTag("Martell")
+  val tyrell: Tag = newTag("Tyrell")
 
   feature("One tag can be persisted and retrieved") {
     scenario("Get tag by tagId") {
@@ -37,9 +53,6 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
 
         And("the tag label must be Stark")
         tag.label shouldBe "Stark"
-
-        And("the tag id must be stark")
-        tag.tagId.value shouldBe "stark"
       }
     }
 
@@ -73,7 +86,7 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
       When("""I retrieve the tags list""")
       val futureTagsLists: Future[(Seq[Tag], Seq[Tag])] = for {
         persistedTagsList <- futurePersistedTagList
-        foundTags         <- persistentTagService.findAllEnabled()
+        foundTags         <- persistentTagService.findAll()
       } yield foundTags -> persistedTagsList
 
       whenReady(futureTagsLists, Timeout(3.seconds)) {
@@ -101,7 +114,7 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
       val tagsToFind = Seq(tully, baratheon)
       val futureTagsLists: Future[Seq[Tag]] = for {
         _         <- futurePersistedTagList
-        foundTags <- persistentTagService.findAllEnabledFromIds(tagsToFind.map(_.tagId))
+        foundTags <- persistentTagService.findAllFromIds(tagsToFind.map(_.tagId))
       } yield foundTags
 
       whenReady(futureTagsLists, Timeout(3.seconds)) { found =>

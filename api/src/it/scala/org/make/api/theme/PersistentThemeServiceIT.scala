@@ -4,9 +4,10 @@ import java.sql.SQLException
 
 import org.make.api.DatabaseTest
 import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.SlugHelper
 import org.make.core.reference._
-import org.make.core.tag.Tag
+import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -15,12 +16,25 @@ import scala.concurrent.{Await, Future}
 class PersistentThemeServiceIT
     extends DatabaseTest
     with DefaultPersistentThemeServiceComponent
-    with DefaultPersistentTagServiceComponent {
+    with DefaultPersistentTagServiceComponent
+    with DefaultIdGeneratorComponent {
 
-  val stark: Tag = Tag("Stark")
-  val targaryen: Tag = Tag("Targaryen")
-  val lannister: Tag = Tag("Lannister")
-  val whiteWalker: Tag = Tag("White walker")
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagType.LEGACY.tagTypeId,
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
+
+  val stark: Tag = newTag("Stark")
+  val targaryen: Tag = newTag("Targaryen")
+  val lannister: Tag = newTag("Lannister")
+  val whiteWalker: Tag = newTag("White walker")
 
   val winterIsComingTags: Seq[Tag] = Seq(stark, targaryen, lannister)
   val winterIsComing: Theme = Theme(

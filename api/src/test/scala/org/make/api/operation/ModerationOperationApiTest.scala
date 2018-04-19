@@ -13,7 +13,7 @@ import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.sequence.{SequenceId, SequenceStatus}
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
@@ -250,7 +250,23 @@ class ModerationOperationApiTest
     .thenReturn(Future.successful(Seq(secondOperation)))
   when(operationService.find(slug = None, country = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(Future.successful(Seq(Tag("hello"))))
+  when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
+    Future.successful(
+      Seq(
+        Tag(
+          tagId = idGenerator.nextTagId(),
+          label = "hello",
+          display = TagDisplay.Inherit,
+          weight = 0f,
+          tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+          operationId = None,
+          themeId = None,
+          country = "FR",
+          language = "fr"
+        )
+      )
+    )
+  )
   when(tagService.findByTagIds(Seq(TagId("fakeTag")))).thenReturn(Future.successful(Seq()))
   when(sequenceService.getModerationSequenceById(SequenceId("29625b5a-56da-4539-b195-15303187c20b"))).thenReturn(
     Future.successful(

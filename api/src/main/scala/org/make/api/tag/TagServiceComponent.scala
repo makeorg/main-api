@@ -7,13 +7,14 @@ import cats.implicits._
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalCoordinatorServiceComponent
 import org.make.api.sequence.SequenceCoordinatorServiceComponent
-import org.make.api.tag.TagExceptions.TagAlreadyExistsException
-import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, ShortenedNames}
+import org.make.api.technical._
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
 import org.make.core.RequestContext
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
+import org.make.core.reference.ThemeId
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag._
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,10 +27,16 @@ trait TagServiceComponent {
 trait TagService extends ShortenedNames {
   def getTag(slug: TagId): Future[Option[Tag]]
   def getTag(slug: String): Future[Option[Tag]]
-  def findEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
-  def createTag(label: String): Future[Tag]
+  def createLegacyTag(label: String): Future[Tag]
+  def createTag(label: String,
+                tagTypeId: TagTypeId,
+                operationId: Option[OperationId],
+                themeId: Option[ThemeId],
+                country: String,
+                language: String,
+                display: TagDisplay = TagDisplay.Inherit,
+                weight: Float = 0f): Future[Tag]
   def findAll(): Future[Seq[Tag]]
-  def findAllEnabled(): Future[Seq[Tag]]
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def updateTag(slug: TagId,
                 newTagLabel: String,
@@ -45,7 +52,7 @@ trait DefaultTagServiceComponent
     with ProposalCoordinatorServiceComponent
     with SequenceCoordinatorServiceComponent
     with ActorSystemComponent {
-  this: PersistentTagServiceComponent =>
+  this: PersistentTagServiceComponent with IdGeneratorComponent =>
 
   val tagService: TagService = new TagService {
 
@@ -57,23 +64,42 @@ trait DefaultTagServiceComponent
       persistentTagService.get(TagId(slug))
     }
 
-    override def createTag(label: String): Future[Tag] = {
-      val tag: Tag = Tag(label)
-      persistentTagService.get(tag.tagId).flatMap { result =>
-        if (result.isDefined) {
-          Future.failed(TagAlreadyExistsException(tag.label))
-        } else {
-          persistentTagService.persist(tag)
-        }
-      }
+    override def createLegacyTag(label: String): Future[Tag] = {
+//      TEMPORARY TAG CREATION. TagType "Legacy" with no link and FR_fr
+      val tag: Tag = Tag(
+        tagId = idGenerator.nextTagId(),
+        label = label,
+        display = TagDisplay.Inherit,
+        weight = 0f,
+        tagTypeId = TagType.LEGACY.tagTypeId,
+        operationId = None,
+        themeId = None,
+        country = "FR",
+        language = "fr"
+      )
+      persistentTagService.persist(tag)
     }
 
-    override def findEnabledByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
-      persistentTagService.findAllEnabledFromIds(tagIds)
-    }
-
-    override def findAllEnabled(): Future[Seq[Tag]] = {
-      persistentTagService.findAllEnabled()
+    override def createTag(label: String,
+                           tagTypeId: TagTypeId,
+                           operationId: Option[OperationId],
+                           themeId: Option[ThemeId],
+                           country: String,
+                           language: String,
+                           display: TagDisplay,
+                           weight: Float): Future[Tag] = {
+      val tag: Tag = Tag(
+        tagId = idGenerator.nextTagId(),
+        label = label,
+        display = display,
+        weight = weight,
+        tagTypeId = tagTypeId,
+        operationId = operationId,
+        themeId = themeId,
+        country = country,
+        language = language
+      )
+      persistentTagService.persist(tag)
     }
 
     override def findAll(): Future[Seq[Tag]] = {
@@ -81,7 +107,7 @@ trait DefaultTagServiceComponent
     }
 
     override def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
-      findAll().map(_.filter(tag => tagIds.contains(tag.tagId)))
+      persistentTagService.findAllFromIds(tagIds)
     }
 
     override def updateTag(slug: TagId,
@@ -98,7 +124,18 @@ trait DefaultTagServiceComponent
         )
       )
 
-      val newTagToCreate: Tag = Tag(newTagLabel)
+      val newTagToCreate: Tag = Tag(
+        tagId = idGenerator.nextTagId(),
+        label = newTagLabel,
+        display = TagDisplay.Inherit,
+        weight = 0f,
+        tagTypeId = TagType.LEGACY.tagTypeId,
+        operationId = None,
+        themeId = None,
+        country = "FR",
+        language = "fr"
+      )
+
       val newTag: OptionT[Future, Tag] = for {
         oldTag <- OptionT(getTag(slug))
         newTag <- OptionT(persistentTagService.persist(newTagToCreate).map(Option(_)))

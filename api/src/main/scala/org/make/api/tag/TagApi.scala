@@ -1,20 +1,20 @@
 package org.make.api.tag
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.TagId
 import org.make.core.{tag, HttpCodes, Validation}
+import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Tags")
 @Path(value = "/tags")
@@ -64,7 +64,7 @@ trait TagApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                onSuccess(tagService.createTag(request.label)) { tag =>
+                onSuccess(tagService.createLegacyTag(request.label)) { tag =>
                   complete(StatusCodes.Created -> tag)
                 }
               }
@@ -82,7 +82,7 @@ trait TagApi extends MakeAuthenticationDirectives {
     get {
       path("tags") {
         makeOperation("Search") { _ =>
-          onSuccess(tagService.findAllEnabled()) { tags =>
+          onSuccess(tagService.findAll()) { tags =>
             complete(tags)
           }
         }
@@ -120,7 +120,7 @@ trait TagApi extends MakeAuthenticationDirectives {
             decodeRequest {
               entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
                 provideAsyncOrNotFound(tagService.getTag(tagId)) { maybeOldTag =>
-                  provideAsync(tagService.getTag(Tag(request.label).tagId)) { maybeNewTag =>
+                  provideAsync(tagService.getTag(tagId)) { maybeNewTag =>
                     Validation.validate(
                       Validation.requireNotPresent(
                         fieldName = "label",

@@ -1,18 +1,19 @@
 package org.make.api.tag
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.{tag, HttpCodes}
 import org.make.core.auth.UserRights
 import org.make.core.tag.TagId
+import org.make.core.tag.Tag
+import org.make.core.HttpCodes
+import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
@@ -34,7 +35,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
   def moderationGetTag: Route = {
     get {
@@ -70,7 +71,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.CreateTagRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
   @Path(value = "/")
   def moderationCreateTag: Route = post {
     path("moderation" / "tags") {
@@ -79,7 +80,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                onSuccess(tagService.createTag(request.label)) { tag =>
+                onSuccess(tagService.createLegacyTag(request.label)) { tag =>
                   complete(StatusCodes.Created -> TagResponse(tag))
                 }
               }
@@ -116,12 +117,12 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
             (start, end, sort, order, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
-                  onSuccess(tagService.findAllEnabled()) { tags =>
+                  onSuccess(tagService.findAll()) { tags =>
                     val sortField =
                       try {
-                        classOf[tag.Tag].getDeclaredField(sort)
+                        classOf[Tag].getDeclaredField(sort)
                       } catch {
-                        case _: Throwable => classOf[tag.Tag].getDeclaredField("label")
+                        case _: Throwable => classOf[Tag].getDeclaredField("label")
                       }
                     sortField.setAccessible(true)
                     val cmp = (a: Object, b: Object, order: String) => {

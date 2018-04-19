@@ -9,12 +9,12 @@ import org.make.api.proposal.ProposalCoordinatorService
 import org.make.api.sequence.SequenceCoordinatorService
 import org.make.api.tag.TagExceptions.TagAlreadyExistsException
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
-import org.make.api.technical.{EventBusService, EventBusServiceComponent}
+import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
 import org.make.core.RequestContext
 import org.make.core.proposal.ProposalId
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -26,7 +26,8 @@ class TagServiceTest
     extends MakeUnitTest
     with DefaultTagServiceComponent
     with PersistentTagServiceComponent
-    with EventBusServiceComponent {
+    with EventBusServiceComponent
+    with DefaultIdGeneratorComponent {
 
   override val persistentTagService: PersistentTagService = mock[PersistentTagService]
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -34,6 +35,18 @@ class TagServiceTest
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val readJournal: MakeReadJournal = mock[MakeReadJournal]
+
+  def newTag(label: String, tagId: TagId = idGenerator.nextTagId()): Tag = Tag(
+    tagId = tagId,
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
 
   feature("get tag") {
     scenario("get tag from TagId") {
@@ -63,9 +76,9 @@ class TagServiceTest
 
       Mockito
         .when(persistentTagService.get(TagId("existing-tag")))
-        .thenReturn(Future.successful(Option(Tag("existing-tag"))))
+        .thenReturn(Future.successful(Option(newTag("existing-tag"))))
 
-      val futureTag: Future[Tag] = tagService.createTag("existing-tag")
+      val futureTag: Future[Tag] = tagService.createLegacyTag("existing-tag")
       whenReady(futureTag.failed, Timeout(3.seconds)) { e =>
         e shouldBe a[TagAlreadyExistsException]
       }
@@ -79,15 +92,15 @@ class TagServiceTest
         .when(persistentTagService.get(TagId("new-tag")))
         .thenReturn(Future.successful(None))
 
-      val tag = Tag(TagId("new-tag"), "new tag")
+      val tag = newTag("new tag", tagId = TagId("new-tag"))
 
       Mockito
         .when(persistentTagService.persist(tag))
         .thenReturn(Future.successful(tag))
 
-      val newTag: Future[Tag] = tagService.createTag("new tag")
+      val futureNewTag: Future[Tag] = tagService.createLegacyTag("new tag")
 
-      whenReady(newTag, Timeout(3.seconds)) { _ =>
+      whenReady(futureNewTag, Timeout(3.seconds)) { _ =>
         Mockito.verify(persistentTagService).persist(tag)
       }
 
@@ -98,19 +111,19 @@ class TagServiceTest
     scenario("find enabled tags with ids 'find-tag1' and 'find-tag2'") {
       Given("a list of registered enabled tags 'find tag1', 'find tag2'")
       When("i find enabled tags")
-      Then("persistent service findAllEnabledFromIds is called")
-      tagService.findEnabledByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
+      Then("persistent service findAllFromIds is called")
+      tagService.findByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
 
-      Mockito.verify(persistentTagService).findAllEnabledFromIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
+      Mockito.verify(persistentTagService).findAllFromIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
     }
 
     scenario("find all enabled tags") {
       Given("a list of registered enabled tags 'find tag1', 'find tag2'")
       When("i find all enabled tags")
-      Then("persistent service findAllEnabled is called")
-      tagService.findAllEnabled()
+      Then("persistent service findAll is called")
+      tagService.findAll()
 
-      Mockito.verify(persistentTagService).findAllEnabled()
+      Mockito.verify(persistentTagService).findAll()
     }
 
     scenario("find all tags") {
@@ -131,14 +144,14 @@ class TagServiceTest
       Mockito.reset(persistentTagService)
       Mockito
         .when(persistentTagService.findAll())
-        .thenReturn(Future.successful(Seq(Tag("find tag1"), Tag("find tag2"), Tag("find tag3"))))
+        .thenReturn(Future.successful(Seq(newTag("find tag1"), newTag("find tag2"), newTag("find tag3"))))
 
       val futureTags: Future[Seq[Tag]] = tagService.findByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
 
       whenReady(futureTags, Timeout(3.seconds)) { tags =>
         tags.size shouldBe 2
-        tags.contains(Tag("find tag1")) shouldBe true
-        tags.contains(Tag("find tag2")) shouldBe true
+        tags.map(_.label).contains("find tag1") shouldBe true
+        tags.map(_.label).contains("find tag2") shouldBe true
       }
     }
   }
@@ -207,9 +220,9 @@ class TagServiceTest
       Mockito.reset(eventBusService)
       Mockito
         .when(persistentTagService.get(TagId("existed-old-tag")))
-        .thenReturn(Future.successful(Some(Tag("existed old tag"))))
+        .thenReturn(Future.successful(Some(newTag("existed old tag"))))
       Mockito
-        .when(persistentTagService.persist(Tag("existed tag")))
+        .when(persistentTagService.persist(newTag("existed tag")))
         .thenReturn(Future.failed(new SQLIntegrityConstraintViolationException))
 
       val futureTag: Future[Option[Tag]] = tagService.updateTag(
@@ -231,10 +244,10 @@ class TagServiceTest
       Mockito.reset(eventBusService)
       Mockito
         .when(persistentTagService.get(TagId("old-tag-success")))
-        .thenReturn(Future.successful(Some(Tag("old tag success"))))
+        .thenReturn(Future.successful(Some(newTag("old tag success"))))
       Mockito
-        .when(persistentTagService.persist(Tag("new tag success")))
-        .thenReturn(Future.successful(Tag("new tag success")))
+        .when(persistentTagService.persist(newTag("new tag success")))
+        .thenReturn(Future.successful(newTag("new tag success")))
       Mockito.when(readJournal.currentPersistenceIds()).thenReturn(Source(List("id1", "id2", "id3")))
       Mockito.when(persistentTagService.remove(TagId("old-tag-success"))).thenReturn(Future.successful(1))
 
@@ -266,7 +279,7 @@ class TagServiceTest
           .verify(sequenceCoordinatorService)
           .updateSequenceTag(SequenceId("id3"), TagId("old-tag-success"), TagId("new-tag-success"))
 
-        tag shouldEqual Some(Tag("new tag success"))
+        tag.map(_.label) shouldEqual Some("new tag success")
       }
     }
 
