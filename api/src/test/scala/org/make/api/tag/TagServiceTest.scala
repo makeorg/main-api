@@ -1,13 +1,10 @@
 package org.make.api.tag
 
-import java.sql.SQLIntegrityConstraintViolationException
-
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalCoordinatorService
 import org.make.api.sequence.SequenceCoordinatorService
-import org.make.api.tag.TagExceptions.TagAlreadyExistsException
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.api.userhistory.UserEvent.UserUpdatedTagEvent
@@ -69,70 +66,43 @@ class TagServiceTest
   }
 
   feature("create tag") {
-    scenario("creating an existing tag throws an exception") {
-      Given("an existing tag 'existing tag'")
-      When("i create a tag 'existing tag'")
-      Then("an exception TagAlreadyExistsException is thrown")
-
-      Mockito
-        .when(persistentTagService.get(TagId("existing-tag")))
-        .thenReturn(Future.successful(Option(newTag("existing-tag"))))
-
-      val futureTag: Future[Tag] = tagService.createLegacyTag("existing-tag")
-      whenReady(futureTag.failed, Timeout(3.seconds)) { e =>
-        e shouldBe a[TagAlreadyExistsException]
-      }
-    }
-
     scenario("creating a tag success") {
       When("i create a tag with label 'new tag'")
       Then("my tag is persisted")
 
       Mockito
-        .when(persistentTagService.get(TagId("new-tag")))
+        .when(persistentTagService.get(ArgumentMatchers.any[TagId]))
         .thenReturn(Future.successful(None))
 
       val tag = newTag("new tag", tagId = TagId("new-tag"))
 
       Mockito
-        .when(persistentTagService.persist(tag))
+        .when(persistentTagService.persist(ArgumentMatchers.any[Tag]))
         .thenReturn(Future.successful(tag))
 
       val futureNewTag: Future[Tag] = tagService.createLegacyTag("new tag")
 
       whenReady(futureNewTag, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentTagService).persist(tag)
+        Mockito.verify(persistentTagService).persist(ArgumentMatchers.any[Tag])
       }
 
     }
   }
 
   feature("find tags") {
-    scenario("find enabled tags with ids 'find-tag1' and 'find-tag2'") {
-      Given("a list of registered enabled tags 'find tag1', 'find tag2'")
-      When("i find enabled tags")
-      Then("persistent service findAllFromIds is called")
-      tagService.findByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
-
-      Mockito.verify(persistentTagService).findAllFromIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
-    }
-
-    scenario("find all enabled tags") {
-      Given("a list of registered enabled tags 'find tag1', 'find tag2'")
-      When("i find all enabled tags")
-      Then("persistent service findAll is called")
-      tagService.findAll()
-
-      Mockito.verify(persistentTagService).findAll()
-    }
 
     scenario("find all tags") {
       Given("a list of registered tags 'find tag1', 'find tag2'")
       When("i find all tags")
       Then("persistent service findAll is called")
-      tagService.findAll()
+      Mockito
+        .when(persistentTagService.findAll())
+        .thenReturn(Future.successful(Seq.empty))
+      val futureFindAll: Future[Seq[Tag]] = tagService.findAll()
 
-      Mockito.verify(persistentTagService).findAll()
+      whenReady(futureFindAll, Timeout(3.seconds)) { _ =>
+        Mockito.verify(persistentTagService).findAll()
+      }
     }
 
     scenario("find tags with ids 'find-tag1' and 'find-tag2'") {
@@ -143,8 +113,8 @@ class TagServiceTest
 
       Mockito.reset(persistentTagService)
       Mockito
-        .when(persistentTagService.findAll())
-        .thenReturn(Future.successful(Seq(newTag("find tag1"), newTag("find tag2"), newTag("find tag3"))))
+        .when(persistentTagService.findAllFromIds(ArgumentMatchers.any[Seq[TagId]]))
+        .thenReturn(Future.successful(Seq(newTag("find tag1"), newTag("find tag2"))))
 
       val futureTags: Future[Seq[Tag]] = tagService.findByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
 
@@ -213,30 +183,6 @@ class TagServiceTest
       }
     }
 
-    scenario("update to an existed tag ") {
-      When("i update a tag to an existed tag")
-      Then("a get a None value")
-
-      Mockito.reset(eventBusService)
-      Mockito
-        .when(persistentTagService.get(TagId("existed-old-tag")))
-        .thenReturn(Future.successful(Some(newTag("existed old tag"))))
-      Mockito
-        .when(persistentTagService.persist(newTag("existed tag")))
-        .thenReturn(Future.failed(new SQLIntegrityConstraintViolationException))
-
-      val futureTag: Future[Option[Tag]] = tagService.updateTag(
-        slug = TagId("existed-old-tag"),
-        newTagLabel = "existed tag",
-        connectedUserId = Some(UserId("bob")),
-        requestContext = RequestContext.empty
-      )
-
-      whenReady(futureTag.failed, Timeout(3.seconds)) { e =>
-        e shouldBe a[SQLIntegrityConstraintViolationException]
-      }
-    }
-
     scenario("update a tag success") {
       When("i update a tag 'old tag success' to 'new tag success'")
       Then("a get a None value")
@@ -244,10 +190,10 @@ class TagServiceTest
       Mockito.reset(eventBusService)
       Mockito
         .when(persistentTagService.get(TagId("old-tag-success")))
-        .thenReturn(Future.successful(Some(newTag("old tag success"))))
+        .thenReturn(Future.successful(Some(newTag("old tag success", tagId = TagId("old-tag-success")))))
       Mockito
-        .when(persistentTagService.persist(newTag("new tag success")))
-        .thenReturn(Future.successful(newTag("new tag success")))
+        .when(persistentTagService.persist(ArgumentMatchers.any[Tag]))
+        .thenReturn(Future.successful(newTag("new tag success", tagId = TagId("new-tag-success"))))
       Mockito.when(readJournal.currentPersistenceIds()).thenReturn(Source(List("id1", "id2", "id3")))
       Mockito.when(persistentTagService.remove(TagId("old-tag-success"))).thenReturn(Future.successful(1))
 

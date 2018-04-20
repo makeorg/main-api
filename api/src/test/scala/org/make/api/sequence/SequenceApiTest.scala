@@ -85,9 +85,9 @@ class SequenceApiTest
   when(themeService.findByIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
   when(themeService.findByIds(matches(Seq(ThemeId("badthemeid"))))).thenReturn(Future.successful(Seq.empty))
 
-  def newTag(label: String): Tag = Tag(
-    tagId = idGenerator.nextTagId(),
-    label = label,
+  val myTag = Tag(
+    tagId = TagId("mytag"),
+    label = "mytag",
     display = TagDisplay.Inherit,
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
@@ -97,8 +97,8 @@ class SequenceApiTest
     language = "fr"
   )
 
-  when(tagService.findAll()).thenReturn(Future.successful(Seq(newTag("mytag"))))
-  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(newTag("mytag"))))
+  when(tagService.findAll()).thenReturn(Future.successful(Seq(myTag)))
+  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(myTag)))
   when(tagService.findByTagIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
   when(tagService.findByTagIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
 

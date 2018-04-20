@@ -71,8 +71,8 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
   val fakeTag: String = "fake-tag"
   val newTagNameText: String = "new tag name"
   val newTagNameSlug: String = "new-tag-name"
-  def newTag(label: String): Tag = Tag(
-    tagId = idGenerator.nextTagId(),
+  def newTag(label: String, tagId: Option[String] = None): Tag = Tag(
+    tagId = TagId(tagId.getOrElse(label)),
     label = label,
     display = TagDisplay.Inherit,
     weight = 0f,
@@ -83,18 +83,18 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
     language = "fr"
   )
 
-  when(tagService.createTag(ArgumentMatchers.eq(validTagText)))
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(validTagText)))
     .thenReturn(Future.successful(newTag(validTagText)))
-  when(tagService.createTag(ArgumentMatchers.eq(specificValidTagText)))
-    .thenReturn(Future.successful(newTag(specificValidTagText)))
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(specificValidTagText)))
+    .thenReturn(Future.successful(newTag(specificValidTagText, Some(specificValidTagSlug))))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(newTagNameSlug))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
-    .thenReturn(Future.successful(Some(newTag(helloWorldTagText))))
+    .thenReturn(Future.successful(Some(newTag(helloWorldTagText, Some(helloWorldTagSlug)))))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(existingValidTagSlug))))
-    .thenReturn(Future.successful(Some(newTag(existingValidTagText))))
+    .thenReturn(Future.successful(Some(newTag(existingValidTagText, Some(existingValidTagSlug)))))
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
@@ -264,20 +264,6 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
         contentError should be(
           Some(ValidationError("label", Some("New tag already exist. Duplicates are not allowed")))
         )
-      }
-    }
-
-    scenario("update tag success") {
-      Given(s"a registered tag with a label '$existingValidTagText' and an id '$existingValidTagSlug'")
-      When(s"i update tag label with id '$existingValidTagSlug' to '$newTagNameText'")
-      Then("i get a success response")
-      Put(s"/tags/$existingValidTagSlug")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$newTagNameText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val tag: Tag = entityAs[Tag]
-        tag.label should be(newTagNameText)
-        tag.tagId.value should be(newTagNameSlug)
       }
     }
 

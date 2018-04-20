@@ -254,7 +254,7 @@ class ModerationOperationApiTest
     Future.successful(
       Seq(
         Tag(
-          tagId = idGenerator.nextTagId(),
+          tagId = TagId("hello"),
           label = "hello",
           display = TagDisplay.Inherit,
           weight = 0f,
