@@ -80,7 +80,11 @@ object ChanceAuxJeunesData extends InsertFixtureData {
       maybeOperation match {
         case Some(operation) =>
           operationId = operation.operationId
-          localRequestContext = RequestContext.empty.copy(operationId = Some(operationId))
+          localRequestContext = RequestContext.empty.copy(
+            question = Some("Comment donner une chance à chaque jeune ?"),
+            source = Some("core"),
+            operationId = Some(operationId)
+          )
         case None =>
           throw new IllegalStateException(
             s"Unable to find an operation with slug ${ChanceAuxJeunesOperation.operationSlug}"
