@@ -3,7 +3,8 @@ package org.make.api.technical.mailjet
 import io.circe.{Decoder, Encoder}
 import org.make.core.Sharded
 
-case class SendEmail(from: Option[Recipient] = None,
+case class SendEmail(id: String = "unknown",
+                     from: Option[Recipient] = None,
                      subject: Option[String] = None,
                      textPart: Option[String] = None,
                      htmlPart: Option[String] = None,
@@ -15,11 +16,40 @@ case class SendEmail(from: Option[Recipient] = None,
                      emailId: Option[String] = None,
                      customCampaign: Option[String] = None,
                      monitoringCategory: Option[String] = None)
-    extends Sharded {
-  override def id: String = recipients.headOption.map(_.email).getOrElse("unknown")
-}
+    extends Sharded
 
 object SendEmail {
+
+  def create(from: Option[Recipient] = None,
+             subject: Option[String] = None,
+             textPart: Option[String] = None,
+             htmlPart: Option[String] = None,
+             useTemplateLanguage: Option[Boolean] = Some(true),
+             templateId: Option[Int] = None,
+             variables: Option[Map[String, String]] = None,
+             recipients: Seq[Recipient],
+             headers: Option[Map[String, String]] = None,
+             emailId: Option[String] = None,
+             customCampaign: Option[String] = None,
+             monitoringCategory: Option[String] = None): SendEmail = {
+
+    SendEmail(
+      recipients.headOption.map(_.email).getOrElse("unknown"),
+      from,
+      subject,
+      textPart,
+      htmlPart,
+      useTemplateLanguage,
+      templateId,
+      variables,
+      recipients,
+      headers,
+      emailId,
+      customCampaign,
+      monitoringCategory
+    )
+  }
+
   implicit val encoder: Encoder[SendEmail] = Encoder.forProduct12(
     "From",
     "Subject",

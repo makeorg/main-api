@@ -72,7 +72,7 @@ class ProposalEmailConsumer(userService: UserService,
           val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
@@ -132,7 +132,7 @@ class ProposalEmailConsumer(userService: UserService,
           val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
           if (user.verified && templateConfiguration.enabled) {
             eventBusService.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(

@@ -56,7 +56,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
           if (templateConfiguration.enabled) {
             eventBusService.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(templateConfiguration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
@@ -116,7 +116,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 .getOrElse(operationSlug)}&language=$language&country=$country"
 
             eventBusService.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(registration.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
@@ -167,7 +167,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
 
             context.system.eventStream.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(forgottenPassword.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
@@ -221,7 +221,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               .getFrontUrl()}/#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
             eventBusService.publish(
-              SendEmail(
+              SendEmail.create(
                 templateId = Some(resendAccountValidationLink.templateId),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
