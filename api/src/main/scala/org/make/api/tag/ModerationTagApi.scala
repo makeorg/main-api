@@ -7,10 +7,9 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.auth.UserRights
-import org.make.core.tag.TagId
-import org.make.core.tag.Tag
 import org.make.core.HttpCodes
+import org.make.core.auth.UserRights
+import org.make.core.tag.{Tag, TagId}
 import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try

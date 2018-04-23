@@ -131,10 +131,15 @@ trait TagApi extends MakeAuthenticationDirectives {
 
                     provideAsyncOrNotFound(
                       tagService.updateTag(
-                        slug = maybeOldTag.tagId,
-                        newTagLabel = request.label,
-                        requestContext = requestContext,
-                        connectedUserId = Some(auth.user.userId)
+                        tagId = tagId,
+                        label = request.label,
+                        display = maybeOldTag.display,
+                        tagTypeId = maybeOldTag.tagTypeId,
+                        weight = maybeOldTag.weight,
+                        operationId = maybeOldTag.operationId,
+                        themeId = maybeOldTag.themeId,
+                        country = maybeOldTag.country,
+                        language = maybeOldTag.language
                       )
                     ) { tag =>
                       complete(tag)

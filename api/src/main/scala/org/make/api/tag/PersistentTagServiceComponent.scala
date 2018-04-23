@@ -28,6 +28,7 @@ trait PersistentTagService {
   def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
   def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
+  def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
 }
 
@@ -121,6 +122,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def persist(tag: Tag): Future[Tag] = {
       implicit val context: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
@@ -135,11 +137,42 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.weight -> tag.weight,
               column.country -> tag.country,
               column.language -> tag.language,
-              column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now
+              column.createdAt -> nowDate,
+              column.updatedAt -> nowDate
             )
         }.execute().apply()
       }).map(_ => tag)
+    }
+
+    override def update(tag: Tag): Future[Option[Tag]] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          scalikejdbc
+            .update(PersistentTag)
+            .set(
+              column.label -> tag.label,
+              column.display -> tag.display.shortName,
+              column.tagTypeId -> tag.tagTypeId.value,
+              column.operationId -> tag.operationId.map(_.value),
+              column.themeId -> tag.themeId.map(_.value),
+              column.weight -> tag.weight,
+              column.country -> tag.country,
+              column.language -> tag.language,
+              column.updatedAt -> nowDate
+            )
+            .where(
+              sqls
+                .eq(column.id, tag.tagId.value)
+            )
+        }.executeUpdate().apply()
+      }).map {
+        case 1 => Some(tag)
+        case 0 =>
+          logger.error(s"Tag '${tag.tagId.value}' not found")
+          None
+      }
     }
 
     override def remove(tagId: TagId): Future[Int] = {
