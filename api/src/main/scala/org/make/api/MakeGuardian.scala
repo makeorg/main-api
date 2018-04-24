@@ -13,7 +13,7 @@ import org.make.api.sequence.{
 }
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.tag.TagService
-import org.make.api.technical.DeadLettersListenerActor
+import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.mailjet.{
   MailJetCallbackProducerActor,
@@ -38,6 +38,8 @@ class MakeGuardian(persistentSequenceConfigurationService: PersistentSequenceCon
     with ActorLogging {
 
   override def preStart(): Unit = {
+    context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
+
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
 
     val userHistoryCoordinator =

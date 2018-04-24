@@ -18,6 +18,7 @@ libraryDependencies ++= Seq(
   Dependencies.aspectJWeaver,
   Dependencies.aspectJRt,
   Dependencies.akkaSlf4j,
+  Dependencies.akkaStream,
   Dependencies.akkaHttp,
   Dependencies.akkaHttpSwagger,
   Dependencies.akkaHttpCirce,
