@@ -2,8 +2,8 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.9"
-  private val akkaHttpVersion = "10.0.11"
+  private val akkaVersion = "2.5.12"
+  private val akkaHttpVersion = "10.1.1"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "5.6.1"
@@ -33,6 +33,7 @@ object Dependencies {
   val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster"          % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
+  val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.5.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.12.0")
@@ -63,7 +64,7 @@ object Dependencies {
   val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
   val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
 
-  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.18.1"
+  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.19.0"
   val constructrZookeeper: ModuleID =
     ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.1").exclude("log4j", "log4j")
 

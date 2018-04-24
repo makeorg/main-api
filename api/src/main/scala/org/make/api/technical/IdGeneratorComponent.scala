@@ -18,7 +18,7 @@ trait IdGenerator {
 }
 
 trait DefaultIdGeneratorComponent extends IdGeneratorComponent {
-  override lazy val idGenerator = new IdGenerator {
+  override lazy val idGenerator: IdGenerator = new IdGenerator {
     override def nextId(): String = {
       UUID.randomUUID().toString
     }
