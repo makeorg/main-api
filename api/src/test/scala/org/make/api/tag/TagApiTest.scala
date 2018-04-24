@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToke
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.core.ValidationError
 import org.make.core.auth.UserRights
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
@@ -97,15 +97,6 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
     .thenReturn(Future.successful(Some(newTag(existingValidTagText, Some(existingValidTagSlug)))))
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
-
-  when(
-    tagService.updateTag(
-      slug = ArgumentMatchers.eq(TagId(existingValidTagSlug)),
-      newTagLabel = ArgumentMatchers.eq(newTagNameText),
-      requestContext = ArgumentMatchers.any[RequestContext],
-      connectedUserId = ArgumentMatchers.any[Option[UserId]]
-    )
-  ).thenReturn(Future.successful(Some(newTag(newTagNameText))))
 
   val routes: Route = sealRoute(tagRoutes)
 

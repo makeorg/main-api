@@ -23,7 +23,7 @@ trait TagTypeService {
 trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
   this: PersistentTagTypeServiceComponent with IdGeneratorComponent =>
 
-  val tagService: TagTypeService = new TagTypeService {
+  val tagTypeService: TagTypeService = new TagTypeService {
 
     override def getTagType(slug: TagTypeId): Future[Option[TagType]] = {
       persistentTagTypeService.get(slug)

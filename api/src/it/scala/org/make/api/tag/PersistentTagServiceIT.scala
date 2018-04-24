@@ -46,6 +46,7 @@ class PersistentTagServiceIT
   val weirdTag: Tag = newTag("weird%Tag")
   val snow: Tag = newTag("Snow", operationId = Some(OperationId("vff")))
   val lancaster: Tag = newTag("Lancaster", themeId = Some(developementDurableTheme))
+  val byron: Tag = newTag("Byron")
 
   val fakeOperation = Operation(
     OperationStatus.Active,
@@ -124,9 +125,9 @@ class PersistentTagServiceIT
       Given(s"""a persisted tag "${bron.label}"""")
       When(s"""I search the tag by a part of its label: "${bron.label.take(3)}"""")
       val futureTag: Future[Seq[Tag]] = for {
-        _        <- persistentTagService.persist(bron)
-        tagStark <- persistentTagService.findByLabelLike(bron.label.take(3))
-      } yield tagStark
+        _       <- persistentTagService.persist(bron)
+        tagBron <- persistentTagService.findByLabelLike(bron.label.take(3))
+      } yield tagBron
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be a list af at least one tag")
@@ -141,9 +142,9 @@ class PersistentTagServiceIT
       Given(s"""a persisted tag "${weirdTag.label}"""")
       When(s"""I search the tag by a part of its label: "${weirdTag.label.take(3)}"""")
       val futureTag: Future[Seq[Tag]] = for {
-        _        <- persistentTagService.persist(weirdTag)
-        tagStark <- persistentTagService.findByLabelLike(weirdTag.label.take(3))
-      } yield tagStark
+        _           <- persistentTagService.persist(weirdTag)
+        tagWeirdTag <- persistentTagService.findByLabelLike(weirdTag.label.take(3))
+      } yield tagWeirdTag
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be a list af at least one tag")
@@ -159,10 +160,10 @@ class PersistentTagServiceIT
       Given(s"""a persisted tag "${snow.label}" and a persisted operation "${fakeOperation.slug}"""")
       When("""I search the tag by its operation""")
       val futureTag: Future[Seq[Tag]] = for {
-        _        <- persistentOperationService.persist(fakeOperation)
-        _        <- persistentTagService.persist(snow)
-        tagStark <- persistentTagService.findByOperationId(fakeOperation.operationId)
-      } yield tagStark
+        _                <- persistentOperationService.persist(fakeOperation)
+        _                <- persistentTagService.persist(snow)
+        tagFakeOperation <- persistentTagService.findByOperationId(fakeOperation.operationId)
+      } yield tagFakeOperation
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be a list af at least one tag")
@@ -177,9 +178,9 @@ class PersistentTagServiceIT
       Given(s"""a persisted tag "${lancaster.label}"""")
       When("""I search the tag by its theme""")
       val futureTag: Future[Seq[Tag]] = for {
-        _        <- persistentTagService.persist(lancaster)
-        tagStark <- persistentTagService.findByThemeId(lancaster.themeId.get)
-      } yield tagStark
+        _            <- persistentTagService.persist(lancaster)
+        tagLancaster <- persistentTagService.findByThemeId(lancaster.themeId.get)
+      } yield tagLancaster
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be a list af at least one tag")
@@ -189,7 +190,35 @@ class PersistentTagServiceIT
         result.contains(lancaster) shouldBe true
       }
     }
+  }
 
+  feature("update a tag") {
+    scenario("update an existing tag") {
+      Given(s"""a persisted tag "${byron.label}" """)
+      When("""I update this tag label to "not a got character"""")
+      val futureTag: Future[Option[Tag]] = for {
+        _        <- persistentTagService.persist(byron)
+        tagByron <- persistentTagService.update(byron.copy(label = "not a got character"))
+      } yield tagByron
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then(s"""result should have the same id as "${byron.label}" tag""")
+        result.map(_.tagId) should be(Some(byron.tagId))
+        And("the tag label should have changed")
+        result.map(_.label) should be(Some("not a got character"))
+      }
+    }
+
+    scenario("update a non existing tag") {
+      Given("a non existing tag")
+      When("""I update this tag label to "not here"""")
+      val futureTag: Future[Option[Tag]] = persistentTagService.update(newTag("not here"))
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be empty")
+        result should be(None)
+      }
+    }
   }
 
 }

@@ -11,7 +11,7 @@ import org.make.api.tagtype.{TagTypeResponse, TagTypeServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
-import org.make.core.tag.{TagType, TagTypeDisplay, TagTypeId}
+import org.make.core.tag.{TagTypeDisplay, TagTypeId}
 import org.make.core.{tag, HttpCodes}
 import scalaoauth2.provider.AuthInfo
 
@@ -78,7 +78,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   @Path(value = "/")
   def moderationCreateTagType: Route = post {
     path("moderation" / "tag-types") {
-      makeOperation("ModerationRegisterTagType") { _ =>
+      makeOperation("ModerationCreateTagType") { _ =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           requireModerationRole(userAuth.user) {
             decodeRequest {
@@ -95,7 +95,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   }
 
   @ApiOperation(
-    value = "create-tag-type",
+    value = "update-tag-type",
     httpMethod = "PUT",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -126,7 +126,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
                 provideAsyncOrNotFound(
                   tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display)
                 ) { tagType =>
-                  complete(tagType)
+                  complete(TagTypeResponse(tagType))
                 }
               }
             }
@@ -154,7 +154,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagTypeResponse]]))
   )
   @Path(value = "/")
-  def moderationlistTagTypes: Route = {
+  def moderationListTagTypes: Route = {
     get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
@@ -163,26 +163,13 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
                   onSuccess(tagTypeService.findAll()) { tagTypes =>
-                    val sortField =
-                      try {
-                        classOf[TagType].getDeclaredField(sort)
-                      } catch {
-                        case _: Throwable => classOf[TagType].getDeclaredField("label")
-                      }
-                    sortField.setAccessible(true)
-                    val cmp = (a: Object, b: Object, order: String) => {
-                      if (order == "DESC") a.toString < b.toString else a.toString > b.toString
-                    }
-                    val filteredTagTypes = tagTypes
-                      .filter(t => label_filter.forall(t.label.contains(_)))
-                      .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
+                    //TODO: define the sort in the persistence layer
+                    val filteredTagTypes = tagTypes.filter(t => label_filter.forall(t.label.contains(_)))
                     complete(
                       (
                         StatusCodes.OK,
                         List(TotalCountHeader(filteredTagTypes.size.toString)),
-                        filteredTagTypes
-                          .slice(start, end)
-                          .map(TagTypeResponse.apply)
+                        filteredTagTypes.slice(start, end).map(TagTypeResponse.apply)
                       )
                     )
                   }
@@ -195,7 +182,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   }
 
   val moderationTagTypeRoutes
-    : Route = moderationGetTagType ~ moderationCreateTagType ~ moderationUpdateTagType ~ moderationlistTagTypes
+    : Route = moderationGetTagType ~ moderationCreateTagType ~ moderationUpdateTagType ~ moderationListTagTypes
 
   val moderationTagTypeId: PathMatcher1[TagTypeId] =
     Segment.flatMap(id => Try(TagTypeId(id)).toOption)
