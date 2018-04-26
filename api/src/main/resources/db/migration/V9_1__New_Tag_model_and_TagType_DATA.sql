@@ -9,7 +9,7 @@ INSERT INTO tag_type(id, label, display) VALUES
 ('cc6a16a5-cfa7-495b-a235-08affb3551af', 'Solution type', 'DISPLAYED'),
 ('982e6860-eb66-407e-bafb-461c2d927478', 'Actor', 'HIDDEN'),
 ('226070ac-51b0-4e92-883a-f0a24d5b8525', 'Target', 'HIDDEN'),
-('8405aba4-4192-41d2-9a0d-b5aa6cb98d37', 'Legacy', 'DISPLAYED');
+('8405aba4-4192-41d2-9a0d-b5aa6cb98d37', 'Legacy', 'DISPLAYED') ON CONFLICT (id) DO NOTHING;
 
 UPDATE tag SET tag_type_id='8405aba4-4192-41d2-9a0d-b5aa6cb98d37' WHERE 1=1;
 

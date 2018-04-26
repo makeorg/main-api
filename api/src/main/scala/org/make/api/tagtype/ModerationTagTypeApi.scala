@@ -1,4 +1,4 @@
-package org.make.api.tagtypetype
+package org.make.api.tagtype
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
@@ -7,7 +7,6 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.tagtype.{TagTypeResponse, TagTypeServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights

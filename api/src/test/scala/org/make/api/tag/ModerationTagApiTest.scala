@@ -2,13 +2,10 @@ package org.make.api.tag
 
 import java.util.Date
 
+import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.RequestContext
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.auth.UserRights
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -19,7 +16,6 @@ import org.mockito.Mockito._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with TagServiceComponent {
 

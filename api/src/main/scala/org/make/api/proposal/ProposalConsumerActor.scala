@@ -165,7 +165,10 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = tags,
+        //TODO: remove this hack
+        tags = tags.map { tag =>
+          IndexedTag(tag.tagId, tag.label)
+        },
         ideaId = proposal.idea,
         operationId = proposal.operation
       )

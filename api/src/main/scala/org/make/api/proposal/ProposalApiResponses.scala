@@ -12,7 +12,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference._
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 final case class ModerationProposalResponse(indexedProposal: IndexedProposal, ideaProposals: Seq[IndexedProposal])
@@ -74,7 +74,7 @@ final case class ProposalResult(id: ProposalId,
                                 country: String,
                                 language: String,
                                 themeId: Option[ThemeId],
-                                tags: Seq[Tag],
+                                tags: Seq[IndexedTag],
                                 myProposal: Boolean,
                                 idea: Option[IdeaId],
                                 operationId: Option[OperationId])

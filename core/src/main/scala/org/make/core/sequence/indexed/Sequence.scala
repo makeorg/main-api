@@ -7,7 +7,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.CirceFormatters
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.indexed.{IndexedProposal, IndexedTag}
 import org.make.core.reference.{ThemeId, ThemeTranslation}
 import org.make.core.sequence._
 import org.make.core.tag.Tag
@@ -62,7 +62,7 @@ case class IndexedSequence(id: SequenceId,
                            createdAt: ZonedDateTime,
                            updatedAt: ZonedDateTime,
                            context: Option[Context],
-                           tags: Seq[Tag],
+                           tags: Seq[IndexedTag],
                            themes: Seq[IndexedSequenceTheme],
                            operationId: Option[OperationId],
                            proposals: Seq[IndexedSequenceProposalId],

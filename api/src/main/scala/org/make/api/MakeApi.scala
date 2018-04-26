@@ -31,7 +31,7 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi}
+import org.make.api.tag._
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
@@ -105,6 +105,7 @@ trait MakeApi
     with DefaultReadJournalComponent
     with DefaultHealthCheckServiceComponent
     with DefaultCrmServiceComponent
+    with DefaultTagMigrationServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
@@ -260,6 +261,10 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
   def defaultError(id: String): String =
     s"""
       |{
+      |
+      |
+      |
+      |
       |  "error": "an error occurred, it has been logged with id $id"
       |}
     """.stripMargin
