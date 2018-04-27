@@ -3,8 +3,11 @@ package org.make.api.tag
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalCoordinatorServiceComponent
 import org.make.api.sequence.SequenceCoordinatorServiceComponent
+import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.technical._
 import org.make.core.operation.OperationId
+import org.make.core.proposal.ProposalId
+import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.reference.ThemeId
 import org.make.core.tag._
 
@@ -40,6 +43,7 @@ trait TagService extends ShortenedNames {
                 themeId: Option[ThemeId],
                 country: String,
                 language: String): Future[Option[Tag]]
+  def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
 }
 
 trait DefaultTagServiceComponent
@@ -49,7 +53,8 @@ trait DefaultTagServiceComponent
     with ReadJournalComponent
     with ProposalCoordinatorServiceComponent
     with SequenceCoordinatorServiceComponent
-    with ActorSystemComponent {
+    with ActorSystemComponent
+    with PersistentTagTypeServiceComponent {
   this: PersistentTagServiceComponent with IdGeneratorComponent =>
 
   val tagService: TagService = new TagService {
@@ -59,7 +64,6 @@ trait DefaultTagServiceComponent
     }
 
     override def createLegacyTag(label: String): Future[Tag] = {
-//      TEMPORARY TAG CREATION. TagType "Legacy" with no link and FR_fr
       val tag: Tag = Tag(
         tagId = idGenerator.nextTagId(),
         label = label,
@@ -106,6 +110,29 @@ trait DefaultTagServiceComponent
 
     override def findByOperationId(operationId: OperationId): Future[Seq[Tag]] = {
       persistentTagService.findByOperationId(operationId)
+    }
+
+    override def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
+      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
+
+      tagTypes.flatMap { tagTypes =>
+        tagService
+          .findByTagIds(tags)
+          .map { tags =>
+            Some(tags.map { tag =>
+              if (tag.display == TagDisplay.Inherit) {
+                val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
+                IndexedTag(
+                  tagId = tag.tagId,
+                  label = tag.label,
+                  display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
+                )
+              } else {
+                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+              }
+            })
+          }
+      }
     }
 
     override def findByThemeId(themeId: ThemeId): Future[Seq[Tag]] = {

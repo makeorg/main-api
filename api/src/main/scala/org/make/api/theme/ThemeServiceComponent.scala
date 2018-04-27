@@ -47,7 +47,6 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
             tags <- maybeTags
           } yield
             theme.copy(proposalsCount = proposalsCount, votesCount = votesCount, tags = tags)
-
         }
       }
     }

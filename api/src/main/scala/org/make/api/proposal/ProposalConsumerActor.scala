@@ -15,13 +15,11 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
-import org.make.api.tagtype.PersistentTagTypeService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{TagDisplay, TagId, TagType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -30,7 +28,6 @@ import scala.concurrent.duration.DurationInt
 class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
                             tagService: TagService,
-                            persistentTagTypeService: PersistentTagTypeService,
                             sequenceService: SequenceService,
                             operationService: OperationService,
                             semanticService: SemanticService)
@@ -153,7 +150,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
     val maybeResult = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(id))
       user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveIndexedTags(proposal.tags))
+      tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -199,7 +196,6 @@ object ProposalConsumerActor {
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
             tagService: TagService,
-            persistentTagTypeService: PersistentTagTypeService,
             sequenceService: SequenceService,
             operationService: OperationService,
             semanticService: SemanticService): Props =
@@ -208,7 +204,6 @@ object ProposalConsumerActor {
         proposalCoordinatorService,
         userService,
         tagService,
-        persistentTagTypeService,
         sequenceService,
         operationService,
         semanticService

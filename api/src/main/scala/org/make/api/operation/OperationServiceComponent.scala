@@ -3,9 +3,11 @@ package org.make.api.operation
 import java.time.LocalDate
 
 import io.circe.syntax._
+import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,14 +41,28 @@ trait OperationService extends ShortenedNames {
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
-  this: PersistentOperationServiceComponent with IdGeneratorComponent =>
+  this: PersistentOperationServiceComponent with IdGeneratorComponent with DefaultPersistentTagServiceComponent =>
 
   val operationService: OperationService = new OperationService {
 
     override def find(slug: Option[String] = None,
                       country: Option[String] = None,
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
-      persistentOperationService.find(slug = slug, country = country, openAt = openAt)
+      persistentOperationService.find(slug = slug, country = country, openAt = openAt).flatMap { operations =>
+        Future.traverse(operations) { operation =>
+          val maybeTags = persistentTagService.findByOperationId(operation.operationId)
+
+          for {
+            tags <- maybeTags
+          } yield {
+            val filtredTag: Seq[TagId] = tags.map(_.tagId)
+            val countriesConfiguration = operation.countriesConfiguration
+              .map(_.copy(tagIds = filtredTag))
+
+            operation.copy(countriesConfiguration = countriesConfiguration)
+          }
+        }
+      }
     }
 
     override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {

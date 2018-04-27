@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalCoordinatorService
 import org.make.api.sequence.SequenceCoordinatorService
+import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
@@ -19,10 +20,12 @@ class TagServiceTest
     extends MakeUnitTest
     with DefaultTagServiceComponent
     with PersistentTagServiceComponent
+    with PersistentTagTypeServiceComponent
     with EventBusServiceComponent
     with DefaultIdGeneratorComponent {
 
   override val persistentTagService: PersistentTagService = mock[PersistentTagService]
+  override val persistentTagTypeService: PersistentTagTypeService = mock[PersistentTagTypeService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val actorSystem: ActorSystem = ActorSystem()
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]

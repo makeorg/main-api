@@ -19,12 +19,11 @@ import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearc
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
-import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.idea.indexed.IndexedIdea
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedTag, IndexedVote, Context => ProposalContext}
+import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.{
@@ -34,7 +33,6 @@ import org.make.core.sequence.indexed.{
   Context => SequenceContext
 }
 import org.make.core.sequence.{Sequence, SequenceId}
-import org.make.core.tag.{TagDisplay, TagId, TagType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -65,7 +63,6 @@ trait DefaultIndexationComponent extends IndexationComponent {
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
     with DefaultPersistentIdeaServiceComponent
-    with DefaultPersistentTagTypeServiceComponent
     with SemanticComponent =>
 
   override lazy val indexationService: IndexationService = new IndexationService {
@@ -255,7 +252,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(futureMayBeProposal)
       user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveIndexedTags(proposal.tags))
+      tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -302,7 +299,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
 
     val maybeResult: OptionT[Future, IndexedSequence] = for {
       sequence <- OptionT(futureMayBeSequence)
-      tags     <- OptionT(retrieveIndexedTags(sequence.tagIds))
+      tags     <- OptionT(tagService.retrieveIndexedTags(sequence.tagIds))
       themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(

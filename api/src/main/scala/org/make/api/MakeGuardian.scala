@@ -39,7 +39,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
       context
         .actorOf(
           SequenceSupervisor
-            .props(userHistoryCoordinator, makeApi.tagService, makeApi.persistentTagTypeService, makeApi.themeService),
+            .props(userHistoryCoordinator, makeApi.tagService, makeApi.themeService),
           SequenceSupervisor.name
         )
     )
@@ -51,7 +51,6 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
             userHistoryCoordinator,
             sessionHistoryCoordinator,
             makeApi.tagService,
-            makeApi.persistentTagTypeService,
             makeApi.sequenceService,
             makeApi.operationService,
             makeApi.semanticService

@@ -3,14 +3,12 @@ package org.make.api.sequence
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.MakeBackoffSupervisor
 import org.make.api.tag.TagService
-import org.make.api.tagtype.PersistentTagTypeService
 import org.make.api.technical.ShortenedNames
 import org.make.api.theme.ThemeService
 import org.make.core.DateHelper
 
 class SequenceSupervisor(userHistoryCoordinator: ActorRef,
                          tagService: TagService,
-                         persistentTagTypeService: PersistentTagTypeService,
                          themeService: ThemeService)
     extends Actor
     with ActorLogging
@@ -34,7 +32,7 @@ class SequenceSupervisor(userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         SequenceConsumerActor
-          .props(sequenceCoordinator = sequenceCoordinator, tagService = tagService, persistentTagTypeService = persistentTagTypeService, themeService = themeService),
+          .props(sequenceCoordinator = sequenceCoordinator, tagService = tagService, themeService = themeService),
         SequenceConsumerActor.name
       )
       context.actorOf(props, name)
@@ -53,14 +51,11 @@ object SequenceSupervisor {
   val name: String = "sequence"
   def props(userHistoryCoordinator: ActorRef,
             tagService: TagService,
-            persistentTagTypeService:
-            PersistentTagTypeService,
             themeService: ThemeService): Props =
     Props(
       new SequenceSupervisor(
         userHistoryCoordinator,
         tagService,
-        persistentTagTypeService,
         themeService
       )
     )
