@@ -5,7 +5,6 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.user.UserResponse
-import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -14,6 +13,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.reference._
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, RequestContext}
 
 final case class ModerationProposalResponse(indexedProposal: IndexedProposal, ideaProposals: Seq[IndexedProposal])
 

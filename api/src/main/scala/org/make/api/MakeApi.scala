@@ -31,10 +31,12 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
-import org.make.api.tag._
+import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi, _}
+import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
+import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
 import org.make.api.technical.elasticsearch.{
   DefaultIndexationComponent,
   ElasticSearchApi,
@@ -47,7 +49,6 @@ import org.make.api.technical.healthcheck.{
   HealthCheckComponent,
   HealthCheckSupervisor
 }
-import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
 import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -59,10 +60,10 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorComponent
 }
 import org.make.core.{ValidationError, ValidationFailedError}
+import scalaoauth2.provider._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
-import scalaoauth2.provider._
 
 trait MakeApi
     extends DefaultIdGeneratorComponent
@@ -112,6 +113,7 @@ trait MakeApi
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with DefaultIndexationComponent
+    with DefaultPersistentTagTypeServiceComponent
     with HealthCheckComponent
     with MakeDBExecutionContextComponent
     with ElasticSearchApi

@@ -6,6 +6,7 @@ import org.make.api.operation.OperationService
 import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
+import org.make.api.tagtype.PersistentTagTypeService
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserService
 
@@ -13,6 +14,7 @@ class ProposalSupervisor(userService: UserService,
                          userHistoryCoordinator: ActorRef,
                          sessionHistoryCoordinator: ActorRef,
                          tagService: TagService,
+                         persistentTagTypeService: PersistentTagTypeService,
                          sequenceService: SequenceService,
                          operationService: OperationService,
                          semanticService: SemanticService)
@@ -59,6 +61,7 @@ class ProposalSupervisor(userService: UserService,
             proposalCoordinatorService,
             userService,
             tagService,
+            persistentTagTypeService,
             sequenceService,
             operationService,
             semanticService
@@ -82,6 +85,7 @@ object ProposalSupervisor {
             userHistoryCoordinator: ActorRef,
             sessionHistoryCoordinator: ActorRef,
             tagService: TagService,
+            persistentTagTypeService: PersistentTagTypeService,
             sequenceService: SequenceService,
             operationService: OperationService,
             semanticService: SemanticService): Props =
@@ -91,6 +95,7 @@ object ProposalSupervisor {
         userHistoryCoordinator,
         sessionHistoryCoordinator,
         tagService,
+        persistentTagTypeService,
         sequenceService,
         operationService,
         semanticService

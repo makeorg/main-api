@@ -19,6 +19,7 @@ import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearc
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
+import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
@@ -33,7 +34,7 @@ import org.make.core.sequence.indexed.{
   Context => SequenceContext
 }
 import org.make.core.sequence.{Sequence, SequenceId}
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{TagDisplay, TagId, TagType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -64,6 +65,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
     with DefaultPersistentIdeaServiceComponent
+    with DefaultPersistentTagTypeServiceComponent
     with SemanticComponent =>
 
   override lazy val indexationService: IndexationService = new IndexationService {
@@ -215,11 +217,29 @@ trait DefaultIndexationComponent extends IndexationComponent {
     Future.successful(Done)
   }
 
-  private def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
-    tagService
-      .findByTagIds(tags)
-      .map(Some(_))
+  private def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
+    val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
+
+    tagTypes.flatMap { tagTypes =>
+      tagService
+        .findByTagIds(tags)
+        .map { tags =>
+          Some(tags.map { tag =>
+            if (tag.display == TagDisplay.Inherit) {
+              val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
+              IndexedTag(
+                tagId = tag.tagId,
+                label = tag.label,
+                display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
+              )
+            } else {
+              IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+            }
+          })
+        }
+    }
   }
+
   private def retrieveThemes(themeIds: Seq[ThemeId]): Future[Option[Seq[Theme]]] = {
     themeService
       .findAll()
@@ -235,7 +255,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(futureMayBeProposal)
       user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveTags(proposal.tags))
+      tags     <- OptionT(retrieveIndexedTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -266,10 +286,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,
-        //TODO: remove this hack
-        tags = tags.map { tag =>
-          IndexedTag(tag.tagId, tag.label)
-        },
+        tags = tags,
         ideaId = proposal.idea,
         operationId = proposal.operation
       )
@@ -285,7 +302,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
 
     val maybeResult: OptionT[Future, IndexedSequence] = for {
       sequence <- OptionT(futureMayBeSequence)
-      tags     <- OptionT(retrieveTags(sequence.tagIds))
+      tags     <- OptionT(retrieveIndexedTags(sequence.tagIds))
       themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(

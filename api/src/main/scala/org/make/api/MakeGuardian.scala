@@ -14,7 +14,6 @@ import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.UserHistoryCoordinator
 
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
-
   override def preStart(): Unit = {
     context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
 
@@ -39,7 +38,8 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch(
       context
         .actorOf(
-          SequenceSupervisor.props(userHistoryCoordinator, makeApi.tagService, makeApi.themeService),
+          SequenceSupervisor
+            .props(userHistoryCoordinator, makeApi.tagService, makeApi.persistentTagTypeService, makeApi.themeService),
           SequenceSupervisor.name
         )
     )
@@ -51,6 +51,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
             userHistoryCoordinator,
             sessionHistoryCoordinator,
             makeApi.tagService,
+            makeApi.persistentTagTypeService,
             makeApi.sequenceService,
             makeApi.operationService,
             makeApi.semanticService

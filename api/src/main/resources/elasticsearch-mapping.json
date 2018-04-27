@@ -209,6 +209,10 @@
             "tagId": {
               "type": "keyword",
               "index": true
+            },
+            "display": {
+              "type": "boolean",
+              "index": false
             }
           }
         },
@@ -451,6 +455,10 @@
             "tagId": {
               "type": "keyword",
               "index": true
+            },
+            "display": {
+              "type": "boolean",
+              "index": false
             }
           }
         },

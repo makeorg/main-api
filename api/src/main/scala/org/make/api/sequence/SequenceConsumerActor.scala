@@ -9,6 +9,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.tag.TagService
+import org.make.api.tagtype.PersistentTagTypeService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.theme.ThemeService
@@ -17,13 +18,16 @@ import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed._
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{TagDisplay, TagId, TagType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagService, themeService: ThemeService)
+class SequenceConsumerActor(sequenceCoordinator: ActorRef,
+                            tagService: TagService,
+                            persistentTagTypeService: PersistentTagTypeService,
+                            themeService: ThemeService)
     extends KafkaConsumerActor[SequenceEventWrapper]
     with KafkaConfigurationExtension
     with DefaultSequenceSearchEngineComponent
@@ -64,10 +68,29 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
 
   private def retrieveAndShapeSequence(id: SequenceId): Future[IndexedSequence] = {
 
-    def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
-      tagService
-        .findByTagIds(tags)
-        .map(Some(_))
+    def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
+      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
+
+      tagTypes.flatMap { tagTypes =>
+        tagService
+          .findByTagIds(tags)
+          .map { tags =>
+            Some(
+              tags.map { tag =>
+                if (tag.display == TagDisplay.Inherit) {
+                  val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
+                  IndexedTag(
+                    tagId = tag.tagId,
+                    label = tag.label,
+                    display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
+                  )
+                } else {
+                  IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+                }
+              }
+            )
+          }
+      }
     }
 
     def retrieveThemes(themeIds: Seq[ThemeId]): Future[Option[Seq[Theme]]] = {
@@ -79,7 +102,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
 
     val maybeResult = for {
       sequence <- OptionT((sequenceCoordinator ? GetSequence(id, RequestContext.empty)).mapTo[Option[Sequence]])
-      tags     <- OptionT(retrieveTags(sequence.tagIds))
+      tags     <- OptionT(retrieveIndexedTags(sequence.tagIds))
       themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(
@@ -114,7 +137,14 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
 }
 
 object SequenceConsumerActor {
-  def props(sequenceCoordinator: ActorRef, tagService: TagService, themeService: ThemeService): Props =
-    Props(new SequenceConsumerActor(sequenceCoordinator, tagService, themeService))
+  def props(sequenceCoordinator: ActorRef, tagService: TagService, persistentTagTypeService: PersistentTagTypeService, themeService: ThemeService): Props =
+    Props(
+      new SequenceConsumerActor(
+        sequenceCoordinator,
+        tagService,
+        persistentTagTypeService,
+        themeService
+      )
+    )
   val name: String = "sequence-consumer"
 }

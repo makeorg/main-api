@@ -69,7 +69,6 @@ object TagDisplay extends StrictLogging {
   case object Displayed extends TagDisplay { override val shortName: String = "DISPLAYED" }
   case object Hidden extends TagDisplay { override val shortName: String = "HIDDEN" }
   case object Inherit extends TagDisplay { override val shortName: String = "INHERIT" }
-
 }
 
 final case class Tag(tagId: TagId,

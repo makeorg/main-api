@@ -15,12 +15,13 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
 import org.make.api.tag.TagService
+import org.make.api.tagtype.PersistentTagTypeService
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{Tag, TagId}
+import org.make.core.tag.{TagDisplay, TagId, TagType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,6 +30,7 @@ import scala.concurrent.duration.DurationInt
 class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
                             userService: UserService,
                             tagService: TagService,
+                            persistentTagTypeService: PersistentTagTypeService,
                             sequenceService: SequenceService,
                             operationService: OperationService,
                             semanticService: SemanticService)
@@ -125,16 +127,33 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
 
-    def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
-      tagService
-        .findByTagIds(tags)
-        .map(Some(_))
+    def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
+      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
+
+      tagTypes.flatMap { tagTypes =>
+        tagService
+          .findByTagIds(tags)
+          .map { tags =>
+            Some(tags.map { tag =>
+              if (tag.display == TagDisplay.Inherit) {
+                val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
+                IndexedTag(
+                  tagId = tag.tagId,
+                  label = tag.label,
+                  display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
+                )
+              } else {
+                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+              }
+            })
+          }
+      }
     }
 
     val maybeResult = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(id))
       user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(retrieveTags(proposal.tags))
+      tags     <- OptionT(retrieveIndexedTags(proposal.tags))
     } yield {
       IndexedProposal(
         id = proposal.proposalId,
@@ -165,10 +184,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,
-        //TODO: remove this hack
-        tags = tags.map { tag =>
-          IndexedTag(tag.tagId, tag.label)
-        },
+        tags = tags,
         ideaId = proposal.idea,
         operationId = proposal.operation
       )
@@ -183,6 +199,7 @@ object ProposalConsumerActor {
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             userService: UserService,
             tagService: TagService,
+            persistentTagTypeService: PersistentTagTypeService,
             sequenceService: SequenceService,
             operationService: OperationService,
             semanticService: SemanticService): Props =
@@ -191,6 +208,7 @@ object ProposalConsumerActor {
         proposalCoordinatorService,
         userService,
         tagService,
+        persistentTagTypeService,
         sequenceService,
         operationService,
         semanticService

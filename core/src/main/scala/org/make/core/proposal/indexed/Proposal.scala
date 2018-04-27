@@ -2,8 +2,8 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -121,7 +121,7 @@ object ProposalsSearchResult {
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
 }
 
-final case class IndexedTag(tagId: TagId, label: String)
+final case class IndexedTag(tagId: TagId, label: String, display: Boolean)
 
 object IndexedTag {
   implicit val encoder: ObjectEncoder[IndexedTag] = deriveEncoder[IndexedTag]
