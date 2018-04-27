@@ -1,9 +1,11 @@
 package org.make.api.theme
 
 import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.proposal.{SearchFilters, SearchQuery, ThemeSearchFilter}
 import org.make.core.reference._
+import org.make.core.tag.Tag
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -18,7 +20,9 @@ trait ThemeService extends ShortenedNames {
 }
 
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
-  this: PersistentThemeServiceComponent with ProposalSearchEngineComponent =>
+  this: PersistentThemeServiceComponent
+    with ProposalSearchEngineComponent
+    with DefaultPersistentTagServiceComponent =>
 
   val themeService = new ThemeService {
 
@@ -35,12 +39,14 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
+          val maybeTags: Future[Seq[Tag]] = persistentTagService.findByThemeId(theme.themeId)
+
           for {
             proposalsCount <- maybeProposalsCount
             votesCount <- maybeVotesCount
-
+            tags <- maybeTags
           } yield
-            theme.copy(proposalsCount = proposalsCount, votesCount = votesCount)
+            theme.copy(proposalsCount = proposalsCount, votesCount = votesCount, tags = tags)
 
         }
       }

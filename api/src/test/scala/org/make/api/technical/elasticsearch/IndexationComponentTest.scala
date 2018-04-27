@@ -8,6 +8,7 @@ import org.make.api.proposal.{ProposalCoordinatorService, ProposalCoordinatorSer
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.{SequenceCoordinatorService, SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
+import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -31,6 +32,7 @@ class IndexationComponentTest
   with ReadJournalComponent
   with UserServiceComponent
   with TagServiceComponent
+  with DefaultPersistentTagTypeServiceComponent
   with ThemeServiceComponent
   with ProposalSearchEngineComponent
   with SequenceSearchEngineComponent
