@@ -75,8 +75,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(templateConfiguration.customCampaign),
-                monitoringCategory = Some(templateConfiguration.monitoringCategory)
+                customCampaign = templateConfiguration.customCampaign,
+                monitoringCategory = templateConfiguration.monitoringCategory
               )
             )
           }
@@ -135,8 +135,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(registration.customCampaign),
-                monitoringCategory = Some(registration.monitoringCategory)
+                customCampaign = registration.customCampaign,
+                monitoringCategory = registration.monitoringCategory
               )
             )
           }
@@ -186,8 +186,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(forgottenPassword.customCampaign),
-                monitoringCategory = Some(forgottenPassword.monitoringCategory)
+                customCampaign = forgottenPassword.customCampaign,
+                monitoringCategory = forgottenPassword.monitoringCategory
               )
             )
           }
@@ -240,8 +240,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(resendAccountValidationLink.customCampaign),
-                monitoringCategory = Some(resendAccountValidationLink.monitoringCategory)
+                customCampaign = resendAccountValidationLink.customCampaign,
+                monitoringCategory = resendAccountValidationLink.monitoringCategory
               )
             )
           }

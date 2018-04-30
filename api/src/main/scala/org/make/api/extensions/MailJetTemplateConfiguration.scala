@@ -3,9 +3,11 @@ package org.make.api.extensions
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 
-class MailJetTemplateConfiguration(config: Config) extends Extension {
+class MailJetTemplateConfiguration(config: Config) extends Extension with ConfigurationSupport {
   val from: String = config.getString("from")
   val fromName: String = config.getString("from-name")
+
+  override protected def configuration: Config = config
 
   def getFrontUrl(): String = {
     config.getString("front-url")
@@ -53,14 +55,17 @@ class MailJetTemplateConfiguration(config: Config) extends Extension {
 
     TemplateConfiguration(
       templateId = templateConfiguration.getInt("template-id"),
-      customCampaign = templateConfiguration.getString("custom-campaign"),
-      monitoringCategory = templateConfiguration.getString("monitoring-category"),
+      customCampaign = optionalString("custom-campaign"),
+      monitoringCategory = optionalString("monitoring-category"),
       enabled = templateConfiguration.getBoolean("enabled")
     )
   }
 }
 
-case class TemplateConfiguration(templateId: Int, customCampaign: String, monitoringCategory: String, enabled: Boolean)
+case class TemplateConfiguration(templateId: Int,
+                                 customCampaign: Option[String],
+                                 monitoringCategory: Option[String],
+                                 enabled: Boolean)
 
 object MailJetTemplateConfiguration extends ExtensionId[MailJetTemplateConfiguration] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MailJetTemplateConfiguration =

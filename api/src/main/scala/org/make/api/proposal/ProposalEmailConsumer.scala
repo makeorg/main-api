@@ -93,8 +93,8 @@ class ProposalEmailConsumer(userService: UserService,
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(templateConfiguration.customCampaign),
-                monitoringCategory = Some(templateConfiguration.monitoringCategory)
+                customCampaign = templateConfiguration.customCampaign,
+                monitoringCategory = templateConfiguration.monitoringCategory
               )
             )
           }
@@ -153,8 +153,8 @@ class ProposalEmailConsumer(userService: UserService,
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = Some(templateConfiguration.customCampaign),
-                monitoringCategory = Some(templateConfiguration.monitoringCategory)
+                customCampaign = templateConfiguration.customCampaign,
+                monitoringCategory = templateConfiguration.monitoringCategory
               )
             )
           }
