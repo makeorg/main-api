@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import cats.data.OptionT
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
+import org.elasticsearch.search.sort.SortOrder
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.semantic.{SemanticComponent, SimilarIdea}
@@ -15,10 +16,11 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, R
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory._
+import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.ThemeId
 import org.make.core.user._
@@ -115,6 +117,13 @@ trait ProposalService {
                     changes: PatchProposalRequest): Future[Option[ProposalResponse]]
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
+
+  def searchAndLockProposalToModerate(operationId: Option[OperationId],
+                                      themeId: Option[ThemeId],
+                                      country: String,
+                                      language: String,
+                                      moderator: UserId,
+                                      requestContext: RequestContext): Future[Option[ProposalResponse]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -630,6 +639,49 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         })
         .map(_.flatten)
     }
+
+    override def searchAndLockProposalToModerate(operationId: Option[OperationId],
+                                                 themeId: Option[ThemeId],
+                                                 country: String,
+                                                 language: String,
+                                                 moderator: UserId,
+                                                 requestContext: RequestContext): Future[Option[ProposalResponse]] = {
+
+      userService.getUser(moderator).flatMap { user =>
+        search(
+          maybeUserId = Some(moderator),
+          maybeSeed = None,
+          requestContext = requestContext,
+          query = SearchQuery(
+            filters = Some(
+              SearchFilters(
+                operation = operationId.map(OperationSearchFilter.apply),
+                theme = themeId.map(theme => Seq(theme)).map(ThemeSearchFilter.apply),
+                country = Some(CountrySearchFilter(country.toUpperCase())),
+                language = Some(LanguageSearchFilter(language.toLowerCase())),
+                status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
+              )
+            ),
+            sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
+            limit = Some(50),
+            language = None
+          )
+        ).flatMap { results =>
+          def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ProposalResponse]] = {
+            availableProposals match {
+              case Nil => Future.successful(None)
+              case head :: tail =>
+                proposalCoordinatorService
+                  .lock(LockProposalCommand(head, moderator, user.flatMap(_.fullName), requestContext))
+                  .flatMap(_ => getModerationProposalById(head))
+                  .recoverWith { case _ => recursiveLock(tail) }
+            }
+          }
+          recursiveLock(results.results.map(_.id).toList)
+        }
+      }
+    }
+
   }
 
 }

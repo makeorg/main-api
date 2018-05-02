@@ -18,12 +18,13 @@ import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
@@ -140,13 +141,37 @@ class ModerationProposalApiTest
     updatedAt = None
   )
 
+  val arya = User(
+    userId = UserId("the-faceless"),
+    email = "arya@kills-the-bad-guys.com",
+    firstName = Some("Arya"),
+    lastName = Some("Stark"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    verified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    createdAt = None,
+    updatedAt = None
+  )
+
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"
+  val userToken = "my-user-access-token"
   val moderatorToken = "my-moderator-access-token"
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
+  private val userAccessToken = AccessToken(userToken, None, None, Some(1234567890L), tokenCreationDate)
   private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
   private val moderatorAccessToken =
     AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
@@ -168,6 +193,7 @@ class ModerationProposalApiTest
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
+  when(oauth2DataHandler.findAccessToken(userToken)).thenReturn(Future.successful(Some(userAccessToken)))
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(UserRights(john.userId, john.roles), None, Some("user"), None))))
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
@@ -176,6 +202,9 @@ class ModerationProposalApiTest
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(userAccessToken)))
+    .thenReturn(Future.successful(Some(AuthInfo(UserRights(arya.userId, arya.roles), None, None, None))))
 
   when(
     proposalService
@@ -687,6 +716,132 @@ class ModerationProposalApiTest
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "proposalIds")
         contentError should be(Some(ValidationError("proposalIds", Some("Some proposal ids are invalid: fake, fake2"))))
+      }
+    }
+
+  }
+
+  feature("next proposal to moderate") {
+
+    val validPayload =
+      """
+        |{
+        |  "operationId": "vff",
+        |  "country": "FR",
+        |  "language": "fr"
+        |}
+      """.stripMargin
+
+    scenario("unauthenticated call") {
+      Given("an unauthenticated user")
+      When("the user requests the next proposal to moderate")
+      Then("The return code should be 401")
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+
+    }
+
+    scenario("calling with a user right") {
+      Given("an authenticated user with the user role")
+      When("the user requests the next proposal to moderate")
+      Then("The return code should be 403")
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("no proposal to moderate") {
+      Given("an authenticated user with the moderator role")
+      When("the user requests the next proposal to moderate")
+      And("there is no proposal matching criterias")
+      Then("The return code should be 404")
+
+      when(
+        proposalService.searchAndLockProposalToModerate(
+          matches(Some(OperationId("vff"))),
+          matches(None),
+          matches("FR"),
+          matches("fr"),
+          matches(tyrion.userId),
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(None))
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("normal case") {
+      Given("an authenticated user with the moderator role")
+      When("the user requests the next proposal to moderate")
+      And("there is a proposal matching criterias")
+      Then("The return code should be 200")
+
+      val payload =
+        """
+          |{
+          |  "operationId": "mieux-vivre-ensemble",
+          |  "country": "FR",
+          |  "language": "fr"
+          |}
+        """.stripMargin
+
+      when(
+        proposalService.searchAndLockProposalToModerate(
+          matches(Some(OperationId("mieux-vivre-ensemble"))),
+          matches(None),
+          matches("FR"),
+          matches("fr"),
+          matches(tyrion.userId),
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("invalid payload") {
+      Given("an authenticated user with the moderator role")
+      When("the user requests the next proposal to moderate")
+      And("there is a proposal matching criterias")
+      Then("The return code should be 200")
+
+      val payload =
+        """
+          |{
+          |  "country": "FR",
+          |  "language": "fr"
+          |}
+        """.stripMargin
+
+      when(
+        proposalService.searchAndLockProposalToModerate(
+          matches(Some(OperationId("mieux-vivre-ensemble"))),
+          matches(None),
+          matches("FR"),
+          matches("fr"),
+          matches(tyrion.userId),
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
 

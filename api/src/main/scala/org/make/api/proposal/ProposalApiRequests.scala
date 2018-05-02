@@ -5,7 +5,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.core.{RequestContext, Validation}
-import org.make.core.Validation.{mandatoryField, maxLength, minLength, validate}
+import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
@@ -40,7 +40,7 @@ final case class UpdateProposalRequest(newContent: Option[String],
                                        similarProposals: Seq[ProposalId],
                                        idea: Option[IdeaId],
                                        operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
+  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
 }
 
 object UpdateProposalRequest {
@@ -55,7 +55,7 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          similarProposals: Seq[ProposalId],
                                          idea: Option[IdeaId],
                                          operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), Validation.requirePresent("idea", idea))
+  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
 }
 
 object ValidateProposalRequest {
@@ -245,4 +245,20 @@ final case class PatchProposalsIdeaRequest(
 )
 object PatchProposalsIdeaRequest {
   implicit val decoder: Decoder[PatchProposalsIdeaRequest] = deriveDecoder[PatchProposalsIdeaRequest]
+}
+
+final case class NextProposalToModerateRequest(operationId: Option[OperationId],
+                                               themeId: Option[ThemeId],
+                                               country: String,
+                                               language: String) {
+  validate(
+    requirePresent("operationId", operationId.orElse(themeId), Some("Next proposal needs a theme or an operation")),
+    mandatoryField("country", country, Some("country is mandatory")),
+    mandatoryField("language", language, Some("language is mandatory")),
+  )
+}
+
+object NextProposalToModerateRequest {
+  implicit val decoder: Decoder[NextProposalToModerateRequest] = deriveDecoder[NextProposalToModerateRequest]
+
 }
