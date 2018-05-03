@@ -5,6 +5,7 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent.PersistentTag
+import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent.PersistentTagType
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
@@ -24,6 +25,7 @@ trait PersistentTagService {
   def get(tagId: TagId): Future[Option[Tag]]
   def findAll(): Future[Seq[Tag]]
   def findAllFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]]
+  def findAllDisplayed(): Future[Seq[Tag]]
   def findByLabelLike(partialLabel: String): Future[Seq[Tag]]
   def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
   def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
@@ -39,6 +41,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
   with StrictLogging {
 
     private val tagAlias = PersistentTag.tagAlias
+    private val tagTypeAlias = PersistentTagType.tagTypeAlias
+
     private val column = PersistentTag.column
 
     override def get(tagId: TagId): Future[Option[Tag]] = {
@@ -74,6 +78,26 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.in(tagAlias.id, uniqueTagsIds))
+        }.map(PersistentTag.apply()).list.apply
+      })
+
+      futurePersistentTags.map(_.map(_.toTag))
+    }
+
+    override def findAllDisplayed(): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .leftJoin(PersistentTagType.as(tagTypeAlias))
+            .on(tagAlias.tagTypeId, tagTypeAlias.id)
+            .where(
+              sqls.eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                .or(sqls.eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                  .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                )
+            )
         }.map(PersistentTag.apply()).list.apply
       })
 

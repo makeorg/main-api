@@ -1,7 +1,7 @@
 package org.make.api.theme
 
 import org.make.api.proposal.ProposalSearchEngineComponent
-import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.proposal.{SearchFilters, SearchQuery, ThemeSearchFilter}
 import org.make.core.reference._
@@ -22,7 +22,7 @@ trait ThemeService extends ShortenedNames {
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
   this: PersistentThemeServiceComponent
     with ProposalSearchEngineComponent
-    with DefaultPersistentTagServiceComponent =>
+    with TagServiceComponent  =>
 
   val themeService = new ThemeService {
 
@@ -39,7 +39,7 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
-          val maybeTags: Future[Seq[Tag]] = persistentTagService.findByThemeId(theme.themeId)
+          val maybeTags: Future[Seq[Tag]] = tagService.findByThemeId(theme.themeId)
 
           for {
             proposalsCount <- maybeProposalsCount
