@@ -13,7 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class HealthCheckSupervisor extends Actor with ActorLogging {
 
-  val healthCheckActorDefinitions: Seq[HealthCheckActorDefinition] = Seq(ZookeeperHealthCheckActor)
+  val healthCheckActorDefinitions: Seq[HealthCheckActorDefinition] =
+    Seq(ZookeeperHealthCheckActor, CockroachHealthCheckActor)
 
   private implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
