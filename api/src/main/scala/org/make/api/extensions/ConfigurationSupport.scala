@@ -7,10 +7,10 @@ trait ConfigurationSupport {
   protected def configuration: Config
 
   protected def optionalString(path: String): Option[String] = {
-    if (configuration.hasPath(path)) {
-      Some(configuration.getString(path))
-    } else {
+    if (!configuration.hasPath(path) || configuration.getIsNull(path)) {
       None
+    } else {
+      Some(configuration.getString(path))
     }
   }
 
@@ -23,10 +23,10 @@ trait ConfigurationSupport {
   }
 
   protected def optionalInt(path: String): Option[Int] = {
-    if (configuration.hasPath(path)) {
-      Some(configuration.getInt(path))
-    } else {
+    if (!configuration.hasPath(path) || configuration.getIsNull(path)) {
       None
+    } else {
+      Some(configuration.getInt(path))
     }
   }
 
@@ -39,10 +39,10 @@ trait ConfigurationSupport {
   }
 
   protected def optionalBoolean(path: String): Option[Boolean] = {
-    if (configuration.hasPath(path)) {
-      Some(configuration.getBoolean(path))
-    } else {
+    if (!configuration.hasPath(path) || configuration.getIsNull(path)) {
       None
+    } else {
+      Some(configuration.getBoolean(path))
     }
   }
 
@@ -55,10 +55,10 @@ trait ConfigurationSupport {
   }
 
   protected def optionalLong(path: String): Option[Long] = {
-    if (configuration.hasPath(path)) {
-      Some(configuration.getLong(path))
-    } else {
+    if (!configuration.hasPath(path) || configuration.getIsNull(path)) {
       None
+    } else {
+      Some(configuration.getLong(path))
     }
   }
 
@@ -71,10 +71,10 @@ trait ConfigurationSupport {
   }
 
   protected def optionalDouble(path: String): Option[Double] = {
-    if (configuration.hasPath(path)) {
-      Some(configuration.getDouble(path))
-    } else {
+    if (!configuration.hasPath(path) || configuration.getIsNull(path)) {
       None
+    } else {
+      Some(configuration.getDouble(path))
     }
   }
 
