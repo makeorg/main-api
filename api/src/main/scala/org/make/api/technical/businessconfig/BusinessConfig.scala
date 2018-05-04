@@ -5,7 +5,6 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.reference.Theme
 
 sealed trait BusinessConfig {
-  val proposalMinLength: Int
   val proposalMaxLength: Int
   val themes: Seq[Theme]
   val supportedCountries: Seq[CountryConfiguration]
@@ -20,25 +19,19 @@ object CountryConfiguration {
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
 
-case class BackofficeConfiguration(override val proposalMinLength: Int,
-                                   override val proposalMaxLength: Int,
+case class BackofficeConfiguration(override val proposalMaxLength: Int,
                                    override val themes: Seq[Theme],
                                    override val supportedCountries: Seq[CountryConfiguration],
-                                   nVotesTriggerConnexion: Int,
-                                   nPendingProposalsTriggerEmailModerator: Int,
-                                   minProposalsPerSequence: Int,
-                                   maxProposalsPerSequence: Int,
                                    reasonsForRefusal: Seq[String])
     extends BusinessConfig
 
-case class FrontConfiguration(override val proposalMinLength: Int,
+case class FrontConfiguration(proposalMinLength: Int,
                               override val proposalMaxLength: Int,
                               override val themes: Seq[Theme],
                               override val supportedCountries: Seq[CountryConfiguration])
     extends BusinessConfig
 
 object BusinessConfig {
-  val defaultProposalMinLength: Int = 12
   val defaultProposalMaxLength: Int = 140
   val themes: Seq[Theme] = Seq.empty
   val supportedCountries = Seq(
@@ -85,7 +78,9 @@ object FrontConfiguration {
   implicit val encoder: ObjectEncoder[FrontConfiguration] = deriveEncoder[FrontConfiguration]
   implicit val decoder: Decoder[FrontConfiguration] = deriveDecoder[FrontConfiguration]
 
-  def default(proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
+  val defaultProposalMinLength: Int = 12
+
+  def default(proposalMinLength: Int = defaultProposalMinLength,
               proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
               themes: Seq[Theme] = BusinessConfig.themes,
               supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries): FrontConfiguration =
@@ -101,9 +96,6 @@ object BackofficeConfiguration {
   implicit val encoder: ObjectEncoder[BackofficeConfiguration] = deriveEncoder[BackofficeConfiguration]
   implicit val decoder: Decoder[BackofficeConfiguration] = deriveDecoder[BackofficeConfiguration]
 
-  val defaultNumberVotesTriggerConnexion: Int = 5
-  val defaultNumberPendingProposalsTriggerEmailModerator: Int = 50
-  val defaultMinProposalsPerSequence: Int = 3
   val defaultMaxProposalsPerSequence: Int = 12
   val defaultReasonsForRefusal: Seq[String] =
     Seq(
@@ -120,25 +112,15 @@ object BackofficeConfiguration {
     )
 
   def default(
-    proposalMinLength: Int = BusinessConfig.defaultProposalMinLength,
     proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
     themes: Seq[Theme] = BusinessConfig.themes,
-    nVotesTriggerConnexion: Int = defaultNumberVotesTriggerConnexion,
-    nPendingProposalsTriggerEmailModerator: Int = defaultNumberPendingProposalsTriggerEmailModerator,
-    minProposalsPerSequence: Int = defaultMinProposalsPerSequence,
-    maxProposalsPerSequence: Int = defaultMaxProposalsPerSequence,
     reasonsForRefusal: Seq[String] = defaultReasonsForRefusal,
     supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries
   ): BackofficeConfiguration =
     BackofficeConfiguration(
-      proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
       themes = themes,
       reasonsForRefusal = reasonsForRefusal,
-      nVotesTriggerConnexion = nVotesTriggerConnexion,
-      nPendingProposalsTriggerEmailModerator = nPendingProposalsTriggerEmailModerator,
-      minProposalsPerSequence = minProposalsPerSequence,
-      maxProposalsPerSequence = maxProposalsPerSequence,
       supportedCountries = supportedCountries
     )
 }
