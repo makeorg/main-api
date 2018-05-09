@@ -20,10 +20,9 @@ import org.make.core.reference.ThemeId
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.{eq => matches}
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito
+import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito.when
+import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
@@ -230,6 +229,25 @@ class OrganisationApiTest
         proposalsSearchResult.results.size shouldBe 2
         proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
         proposalsSearchResult.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
+      }
+    }
+  }
+
+  feature("get votes of an organisation") {
+    Mockito
+      .when(
+        organisationService.getVotedProposals(
+          ArgumentMatchers.any[UserId],
+          ArgumentMatchers.any[Option[UserId]],
+          ArgumentMatchers.any[RequestContext]
+        )
+      )
+      .thenReturn(Future.successful(ProposalsResultSeededResponse(2, Seq.empty, None)))
+    scenario("get existing organisation") {
+      Get("/organisations/make-org/votes") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val votedProposals: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        votedProposals.total should be(2)
       }
     }
   }

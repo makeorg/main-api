@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{OrganisationServiceComponent, UserResponse}
@@ -76,7 +76,34 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
       }
     }
 
-  val organisationRoutes: Route = getOrganisation ~ getOrganisationProposals
+  @ApiOperation(value = "get-organisation-votes", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  @Path(value = "/{organisationId}/votes")
+  def getOrganisationVotes: Route =
+    get {
+      path("organisations" / organisationId / "votes") { organisationId =>
+        makeOperation("GetOrganisationVotes") { requestContext =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+              if (!organisation.isOrganisation) {
+                complete(StatusCodes.Forbidden)
+              } else {
+                onSuccess(
+                  organisationService.getVotedProposals(organisationId, userAuth.map(_.user.userId), requestContext)
+                ) { proposals =>
+                  complete(proposals)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+  val organisationRoutes: Route = getOrganisation ~ getOrganisationProposals ~ getOrganisationVotes
 
   val organisationId: PathMatcher1[UserId] = Segment.flatMap(id => Try(UserId(id)).toOption)
 

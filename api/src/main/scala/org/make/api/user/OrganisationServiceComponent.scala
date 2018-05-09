@@ -1,11 +1,15 @@
 package org.make.api.user
 
 import com.github.t3hnar.bcrypt._
+import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
+import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.profile.Profile
+import org.make.core.proposal.{ProposalSearchFilter, SearchFilters, SearchQuery}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -22,6 +26,9 @@ trait OrganisationService extends ShortenedNames {
   def getOrganisations: Future[Seq[User]]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
+  def getVotedProposals(organisationId: UserId,
+                        maybeUserId: Option[UserId],
+                        requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 }
 
 case class OrganisationRegisterData(name: String,
@@ -34,8 +41,11 @@ case class OrganisationRegisterData(name: String,
 case class OrganisationUpdateData(name: Option[String], email: Option[String], avatar: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
-
-  this: IdGeneratorComponent with PersistentUserServiceComponent with EventBusServiceComponent =>
+  this: IdGeneratorComponent
+    with PersistentUserServiceComponent
+    with EventBusServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ProposalServiceComponent =>
 
   val organisationService: OrganisationService = new OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
@@ -162,6 +172,20 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       lowerCasedEmail.map { mail =>
         persistentUserService.emailExists(mail)
       }.getOrElse(Future.successful(false))
+    }
+
+    override def getVotedProposals(organisationId: UserId,
+                                   maybeUserId: Option[UserId],
+                                   requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
+      userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(organisationId)).flatMap {
+        proposalIds =>
+          proposalService.searchForUser(
+            userId = maybeUserId,
+            query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
+            maybeSeed = None,
+            requestContext = requestContext
+          )
+      }
     }
   }
 }

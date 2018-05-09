@@ -71,10 +71,10 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorComponent
 }
 import org.make.core.{ValidationError, ValidationFailedError}
-import scalaoauth2.provider._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
+import scalaoauth2.provider._
 
 trait MakeApi
     extends DefaultIdGeneratorComponent
