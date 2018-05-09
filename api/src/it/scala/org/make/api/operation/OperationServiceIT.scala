@@ -51,7 +51,7 @@ class OperationServiceIT
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"),
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),
@@ -61,7 +61,6 @@ class OperationServiceIT
     country = "FR",
     language = "fr",
     profile = Some(profile),
-    isHardBounce = false,
     lastMailingError = None
   )
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)

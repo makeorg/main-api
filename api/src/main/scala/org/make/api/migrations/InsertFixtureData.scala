@@ -52,7 +52,7 @@ trait InsertFixtureData extends Migration with StrictLogging {
             lastIp = None,
             hashedPassword = None,
             enabled = true,
-            verified = true,
+            emailVerified = true,
             lastConnection = DateHelper.now(),
             verificationToken = None,
             verificationTokenExpiresAt = None,

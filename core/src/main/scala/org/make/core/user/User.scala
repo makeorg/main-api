@@ -21,7 +21,9 @@ object Role extends StrictLogging {
     RoleAdmin.shortName -> RoleAdmin,
     RoleModerator.shortName -> RoleModerator,
     RolePolitical.shortName -> RolePolitical,
-    RoleCitizen.shortName -> RoleCitizen
+    RoleCitizen.shortName -> RoleCitizen,
+    RoleActor.shortName -> RoleActor,
+    RoleOrganisation.shortName -> RoleOrganisation
   )
 
   def matchRole(role: String): Option[Role] = {
@@ -47,6 +49,14 @@ object Role extends StrictLogging {
   case object RoleCitizen extends Role {
     val shortName: String = "ROLE_CITIZEN"
   }
+
+  case object RoleActor extends Role {
+    val shortName: String = "ROLE_ACTOR"
+  }
+
+  case object RoleOrganisation extends Role {
+    val shortName: String = "ROLE_ORGANISATION"
+  }
 }
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
@@ -57,7 +67,7 @@ case class User(userId: UserId,
                 lastIp: Option[String],
                 hashedPassword: Option[String],
                 enabled: Boolean,
-                verified: Boolean,
+                emailVerified: Boolean,
                 lastConnection: ZonedDateTime,
                 verificationToken: Option[String],
                 verificationTokenExpiresAt: Option[ZonedDateTime],
@@ -70,7 +80,8 @@ case class User(userId: UserId,
                 override val createdAt: Option[ZonedDateTime] = None,
                 override val updatedAt: Option[ZonedDateTime] = None,
                 isHardBounce: Boolean = false,
-                lastMailingError: Option[MailingErrorLog] = None)
+                lastMailingError: Option[MailingErrorLog] = None,
+                organisation: Option[String] = None)
     extends MakeSerializable
     with Timestamped {
 

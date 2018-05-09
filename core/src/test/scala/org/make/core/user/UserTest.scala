@@ -2,7 +2,7 @@ package org.make.core.user
 
 import java.time.ZonedDateTime
 
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
+import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RoleOrganisation, RolePolitical}
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 
@@ -16,7 +16,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -60,6 +60,22 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       Then("Role object are returned")
       role shouldBe Some(RoleCitizen)
     }
+
+    scenario("pass ROLE_ACTOR string to matchRole function") {
+      Given("a Role as a string")
+      When("call matchRole with ROLE_ACTOR as Role string")
+      val role = Role.matchRole("ROLE_ACTOR")
+      Then("Role object are returned")
+      role shouldBe Some(RoleActor)
+    }
+
+    scenario("pass ROLE_ORGANISATION string to matchRole function") {
+      Given("a Role as a string")
+      When("call matchRole with ROLE_ORGANISATION as Role string")
+      val role = Role.matchRole("ROLE_ORGANISATION")
+      Then("Role object are returned")
+      role shouldBe Some(RoleOrganisation)
+    }
   }
 
   feature("get a user full name") {
@@ -71,6 +87,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       Then("result is None")
       fullName shouldBe None
     }
+
     scenario("user with non empty first name and empty last name") {
       Given("a user with a first name John and empty last name")
       val userWithoutFirstnameAndLastName = johnDoe.copy(lastName = None)
@@ -79,6 +96,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       Then("result is John")
       fullName shouldBe Some("John")
     }
+
     scenario("user with empty first name and non empty last name") {
       Given("a user with a last name Doe and empty first name")
       val userWithoutFirstnameAndLastName = johnDoe.copy(firstName = None)
@@ -86,6 +104,14 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       val fullName = userWithoutFirstnameAndLastName.fullName
       Then("result is Doe")
       fullName shouldBe Some("Doe")
+    }
+
+    scenario("user with a first name and a last name") {
+      Given("a user with a last name Doe and a first name John")
+      When("I get the full name")
+      val fullName = johnDoe.fullName
+      Then("result is John Doe")
+      fullName shouldBe Some("John Doe")
     }
   }
 }

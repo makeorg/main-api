@@ -40,7 +40,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -60,7 +60,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -80,7 +80,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -100,7 +100,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("123456".bcrypt),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -120,7 +120,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = None,
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -151,7 +151,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           |    - firstName: John
           |    - lastName: Doe
           |    - email: doe@example.com
-          |    - verified: true
+          |    - emailVerified: true
           |    - roles: ROLE_ADMIN, ROLE_CITIZEN
         """.stripMargin)
       And("""a John Doe profile with values:
@@ -177,8 +177,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         And("the user last name must Doe")
         user.lastName.get shouldBe "Doe"
 
-        And("the user should be verified")
-        user.verified shouldBe true
+        And("the user email should be verified")
+        user.emailVerified shouldBe true
 
         And("the user roles should be instance of Role")
         user.roles.map(role => {
@@ -274,7 +274,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
               |    - firstName: John
               |    - lastName: Doe
               |    - email: doe@example.com
-              |    - verified: true
+              |    - emailVerified: true
               |    - roles: ROLE_ADMIN, ROLE_CITIZEN
             """.stripMargin)
       When("I search the userId by email doe@example.com")

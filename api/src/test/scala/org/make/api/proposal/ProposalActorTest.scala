@@ -82,7 +82,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     lastName = None,
     lastIp = None,
     hashedPassword = None,
-    verified = true,
+    emailVerified = true,
     enabled = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
@@ -93,7 +93,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = "FR",
     language = "fr",
     profile = None,
-    isHardBounce = false,
     lastMailingError = None
   )
 
