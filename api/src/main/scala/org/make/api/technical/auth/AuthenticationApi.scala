@@ -111,26 +111,26 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
     }
 
   private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
-    val redirectUri = fields.getOrElse("redirect_uri", "")
-    if (redirectUri != "") {
-      redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)
-    } else {
-      mapResponseHeaders(
-        _ ++ Seq(
-          `Set-Cookie`(
-            HttpCookie(
-              name = makeSettings.SessionCookie.name,
-              value = grantResult.accessToken,
-              secure = makeSettings.SessionCookie.isSecure,
-              httpOnly = true,
-              maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
-              path = Some("/")
+    fields.get("redirect_uri") match {
+      case Some(redirectUri) =>
+        redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)
+      case None =>
+        mapResponseHeaders(
+          _ ++ Seq(
+            `Set-Cookie`(
+              HttpCookie(
+                name = makeSettings.SessionCookie.name,
+                value = grantResult.accessToken,
+                secure = makeSettings.SessionCookie.isSecure,
+                httpOnly = true,
+                maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                path = Some("/")
+              )
             )
           )
-        )
-      ) {
-        complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
-      }
+        ) {
+          complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+        }
     }
   }
 
@@ -161,6 +161,16 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
               case Success(_) =>
                 mapResponseHeaders(
                   _ ++ Seq(
+                    `Set-Cookie`(
+                      HttpCookie(
+                        name = sessionIdKey,
+                        value = idGenerator.nextId(),
+                        secure = makeSettings.SessionCookie.isSecure,
+                        httpOnly = true,
+                        maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                        path = Some("/")
+                      )
+                    ),
                     `Set-Cookie`(
                       HttpCookie(
                         name = makeSettings.SessionCookie.name,

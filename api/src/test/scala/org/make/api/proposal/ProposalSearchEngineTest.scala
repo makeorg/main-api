@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.core.idea.IdeaId
@@ -20,8 +21,11 @@ class ProposalSearchEngineTest
     with MakeSettingsComponent
     with IdGeneratorComponent
     with ElasticsearchConfigurationComponent
-    with DefaultProposalSearchEngineComponent {
+    with DefaultProposalSearchEngineComponent
+    with MakeAuthentication
+    with MakeDataHandlerComponent {
 
+  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
 

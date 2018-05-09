@@ -1,14 +1,12 @@
 package org.make.api.sequence
 
 import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
@@ -35,46 +33,42 @@ class SequenceUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   def handleSequenceUpdated(event: SequenceUpdated): Future[Unit] = {
     log.debug(s"received $event")
-    (
-      userHistoryCoordinator ? LogUserUpdateSequenceEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = SequenceUpdated.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogUserUpdateSequenceEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = SequenceUpdated.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleSequenceCreated(event: SequenceCreated): Future[Unit] = {
     log.debug(s"received $event")
-    (
-      userHistoryCoordinator ? LogUserCreateSequenceEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = SequenceCreated.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogUserCreateSequenceEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = SequenceCreated.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleSequenceProposalsRemoved(event: SequenceProposalsRemoved): Future[Unit] = {
     log.debug(s"received $event")
-    (
-      userHistoryCoordinator ? LogUserRemoveProposalsSequenceEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = SequenceProposalsRemoved.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogUserRemoveProposalsSequenceEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = SequenceProposalsRemoved.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleSequenceProposalsAdded(event: SequenceProposalsAdded): Future[Unit] = {
     log.debug(s"received $event")
-    (
-      userHistoryCoordinator ? LogUserAddProposalsSequenceEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = SequenceProposalsAdded.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogUserAddProposalsSequenceEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = SequenceProposalsAdded.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 }
 

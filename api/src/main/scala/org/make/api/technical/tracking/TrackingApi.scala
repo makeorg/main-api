@@ -1,19 +1,19 @@
 package org.make.api.technical.tracking
 
 import javax.ws.rs.Path
-
 import io.swagger.annotations._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import io.circe.Decoder
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.core.{HttpCodes, RequestContext}
 
 @Api(value = "Tracking")
 @Path(value = "/tracking")
 trait TrackingApi extends MakeDirectives {
-  this: EventBusServiceComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: EventBusServiceComponent with IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
 
   @ApiOperation(value = "front-events", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))

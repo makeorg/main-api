@@ -14,7 +14,6 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.sessionhistory._
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
-import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
 import org.make.core.operation.OperationId
@@ -31,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
+class ProposalActor(sessionHistoryActor: ActorRef)
     extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
@@ -233,103 +232,51 @@ class ProposalActor(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef)
   }
 
   private def logVoteEvent(event: ProposalVoted): Future[_] = {
-    event.maybeUserId match {
-      case Some(userId) =>
-        userHistoryActor ? LogUserVoteEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = ProposalVoteAction.name,
-            UserVote(proposalId = event.id, voteKey = event.voteKey)
-          )
-        )
-      case None =>
-        sessionHistoryActor ? LogSessionVoteEvent(
-          sessionId = event.requestContext.sessionId,
-          requestContext = event.requestContext,
-          action = SessionAction(
-            date = event.eventDate,
-            actionType = ProposalVoteAction.name,
-            SessionVote(proposalId = event.id, voteKey = event.voteKey)
-          )
-        )
-    }
+    sessionHistoryActor ? LogSessionVoteEvent(
+      sessionId = event.requestContext.sessionId,
+      requestContext = event.requestContext,
+      action = SessionAction(
+        date = event.eventDate,
+        actionType = ProposalVoteAction.name,
+        SessionVote(proposalId = event.id, voteKey = event.voteKey)
+      )
+    )
   }
 
   private def logUnvoteEvent(event: ProposalUnvoted): Future[_] = {
-    event.maybeUserId match {
-      case Some(userId) =>
-        userHistoryActor ? LogUserUnvoteEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = ProposalUnvoteAction.name,
-            UserUnvote(proposalId = event.id, voteKey = event.voteKey)
-          )
-        )
-      case None =>
-        sessionHistoryActor ? LogSessionUnvoteEvent(
-          sessionId = event.requestContext.sessionId,
-          requestContext = event.requestContext,
-          action = SessionAction(
-            date = event.eventDate,
-            actionType = ProposalUnvoteAction.name,
-            SessionUnvote(proposalId = event.id, voteKey = event.voteKey)
-          )
-        )
-    }
+    sessionHistoryActor ? LogSessionUnvoteEvent(
+      sessionId = event.requestContext.sessionId,
+      requestContext = event.requestContext,
+      action = SessionAction(
+        date = event.eventDate,
+        actionType = ProposalUnvoteAction.name,
+        SessionUnvote(proposalId = event.id, voteKey = event.voteKey)
+      )
+    )
   }
 
   private def logQualifyVoteEvent(event: ProposalQualified): Future[_] = {
-    event.maybeUserId match {
-      case Some(userId) =>
-        userHistoryActor ? LogUserQualificationEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = ProposalQualifyAction.name,
-            UserQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
-          )
-        )
-      case None =>
-        sessionHistoryActor ? LogSessionQualificationEvent(
-          sessionId = event.requestContext.sessionId,
-          requestContext = event.requestContext,
-          action = SessionAction(
-            date = event.eventDate,
-            actionType = ProposalQualifyAction.name,
-            SessionQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
-          )
-        )
-    }
+    sessionHistoryActor ? LogSessionQualificationEvent(
+      sessionId = event.requestContext.sessionId,
+      requestContext = event.requestContext,
+      action = SessionAction(
+        date = event.eventDate,
+        actionType = ProposalQualifyAction.name,
+        SessionQualification(proposalId = event.id, qualificationKey = event.qualificationKey)
+      )
+    )
   }
 
   private def logRemoveVoteQualificationEvent(event: ProposalUnqualified): Future[_] = {
-    event.maybeUserId match {
-      case Some(userId) =>
-        userHistoryActor ? LogUserUnqualificationEvent(
-          userId = userId,
-          requestContext = event.requestContext,
-          action = UserAction(
-            date = event.eventDate,
-            actionType = ProposalUnqualifyAction.name,
-            UserUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
-          )
-        )
-      case None =>
-        sessionHistoryActor ? LogSessionUnqualificationEvent(
-          sessionId = event.requestContext.sessionId,
-          requestContext = event.requestContext,
-          action = SessionAction(
-            date = event.eventDate,
-            actionType = ProposalUnqualifyAction.name,
-            SessionUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
-          )
-        )
-    }
+    sessionHistoryActor ? LogSessionUnqualificationEvent(
+      sessionId = event.requestContext.sessionId,
+      requestContext = event.requestContext,
+      action = SessionAction(
+        date = event.eventDate,
+        actionType = ProposalUnqualifyAction.name,
+        SessionUnqualification(proposalId = event.id, qualificationKey = event.qualificationKey)
+      )
+    )
   }
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {

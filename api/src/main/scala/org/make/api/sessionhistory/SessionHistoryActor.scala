@@ -1,11 +1,18 @@
 package org.make.api.sessionhistory
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
-import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.sessionhistory.SessionHistoryActor.{SessionClosed, SessionHistory}
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
+import org.make.api.userhistory.UserHistoryActor.{
+  InjectSessionEvents,
+  LogAcknowledged,
+  RequestUserVotedProposals,
+  RequestVoteValues
+}
+import org.make.api.userhistory.UserHistoryEvent
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
@@ -15,7 +22,6 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class SessionHistoryActor(userHistoryCoordinator: ActorRef)
@@ -26,59 +32,92 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
   def sessionId: SessionId = SessionId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case GetSessionHistory(_)                     => sender() ! state.getOrElse(SessionHistory(Nil))
-    case command: LogSessionVoteEvent             => persistEvent(command)()
-    case command: LogSessionUnvoteEvent           => persistEvent(command)()
-    case command: LogSessionQualificationEvent    => persistEvent(command)()
-    case command: LogSessionUnqualificationEvent  => persistEvent(command)()
-    case command: LogSessionSearchProposalsEvent  => persistEvent(command)()
+    case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
+    case command: TransactionalSessionHistoryEvent[_] =>
+      persistEvent(command) { _ =>
+        sender() ! LogAcknowledged
+      }
+    case command: TransferableToUser[_] =>
+      persistEvent(command) { _ =>
+        ()
+      }
     case RequestSessionVoteValues(_, proposalIds) => retrieveVoteValues(proposalIds)
     case RequestSessionVotedProposals(_)          => retrieveVotedProposals()
     case UserConnected(_, userId)                 => transformSession(userId)
-    case UserCreated(_, userId)                   => transformSession(userId)
     case Snapshot                                 => saveSnapshot()
+    case StopSession(_)                           => self ! PoisonPill
+  }
+
+  override def onRecoveryCompleted(): Unit = {
+    val transformation =
+      state.toList.flatMap(_.events).find(_.isInstanceOf[SessionTransformed]).map(_.asInstanceOf[SessionTransformed])
+
+    transformation.foreach { event =>
+      context.become(closed(event.action.arguments))
+    }
   }
 
   private def transformSession(userId: UserId): Unit = {
+    val originalSender = sender()
     log.debug(
       "Transforming session {} to user {} with events {}",
       persistenceId,
       userId.value,
       state.toSeq.flatMap(_.events).map(_.toString).mkString(", ")
     )
-    persistEvent(
-      SessionTransformed(
-        sessionId = sessionId,
-        requestContext = RequestContext.empty,
-        action = SessionAction(date = DateHelper.now(), actionType = "transformSession", arguments = userId)
-      )
-    ) { event =>
-      val events = state.toSeq.flatMap(_.events)
-      val originalSender = sender()
-      Future
-        .traverse(events) {
-          case event: LogSessionVoteEvent =>
-            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case event: LogSessionUnvoteEvent =>
-            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case event: LogSessionQualificationEvent =>
-            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case event: LogSessionUnqualificationEvent =>
-            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case event: LogSessionSearchProposalsEvent =>
-            userHistoryCoordinator ? event.toUserHistoryEvent(userId)
-          case _ =>
-            Future.successful {}
-        }
-        .onComplete {
-          case Success(_) => originalSender ! event
-          case Failure(e) => log.error(e, "error while transforming session")
-        }
-      state = state.map(_.copy(events = Nil))
-      // We need a snapshot here since we don't want to be able to replay a session transformation event
-      state.foreach(saveSnapshot)
+
+    val events: Seq[UserHistoryEvent[_]] = state.toSeq.flatMap(_.events).flatMap {
+      case event: TransferableToUser[_] => Seq[UserHistoryEvent[_]](event.toUserHistoryEvent(userId))
+      case _                            => Seq.empty[UserHistoryEvent[_]]
     }
 
+    (userHistoryCoordinator ? InjectSessionEvents(userId, events)).onComplete {
+      case Success(_) => self ! SessionClosed(originalSender)
+      case Failure(e) =>
+        // TODO: handle it gracefully
+        log.error(e, "error while transforming session")
+        self ! SessionClosed(originalSender)
+    }
+
+    context.become(transforming(userId, Seq.empty))
+  }
+
+  def closed(userId: UserId): Receive = {
+    case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
+    case UserConnected(_, newUserId) =>
+      if (newUserId != userId) {
+        context.become(closed(newUserId))
+      }
+      sender() ! LogAcknowledged
+    case command: TransferableToUser[_]  => userHistoryCoordinator.forward(command.toUserHistoryEvent(userId))
+    case RequestSessionVotedProposals(_) => RequestUserVotedProposals(userId)
+    case RequestSessionVoteValues(_, proposalIds) =>
+      userHistoryCoordinator.forward(RequestVoteValues(userId, proposalIds))
+    case command: SessionHistoryAction =>
+      log.warning("closed session {} with userId {} received command {}", persistenceId, userId.value, command.toString)
+    case Snapshot       => saveSnapshot()
+    case StopSession(_) => self ! PoisonPill
+  }
+
+  def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)]): Receive = {
+    case SessionClosed(originalSender) =>
+      persistEvent(
+        SessionTransformed(
+          sessionId = sessionId,
+          requestContext = RequestContext.empty,
+          action = SessionAction(date = DateHelper.now(), actionType = "transformSession", arguments = userId)
+        )
+      ) { event =>
+        context.become(closed(event.action.arguments))
+        originalSender ! event
+        self ! Snapshot
+
+        pendingEvents.foreach {
+          case (messageSender, e) => self.tell(e, messageSender)
+        }
+      }
+    case Snapshot => saveSnapshot()
+    case event    => context.become(transforming(userId, pendingEvents :+ sender() -> event))
   }
 
   private def retrieveVotedProposals(): Unit = {
@@ -183,20 +222,19 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
 
   override def persistenceId: String = sessionId.value
 
-  private def persistEvent(event: SessionHistoryEvent[_])(andThen: SessionHistoryEvent[_] => Unit = { e =>
-    sender() ! e
-  }): Unit = {
+  private def persistEvent[Event <: SessionHistoryEvent[_]](event: Event)(andThen: Event => Unit): Unit = {
     if (state.isEmpty) {
       state = Some(SessionHistory(Nil))
     }
-    persist(event) { e: SessionHistoryEvent[_] =>
+    persist(event) { e: Event =>
       state = applyEvent(e)
       andThen(e)
     }
   }
 
   override val applyEvent: PartialFunction[SessionHistoryEvent[_], Option[SessionHistory]] = {
-    case event => state.map(s => s.copy(events = event :: s.events))
+    case transformed: SessionTransformed => state.map(_.copy(events = List(transformed)))
+    case event                           => state.map(s => s.copy(events = event :: s.events))
   }
 }
 
@@ -206,5 +244,7 @@ object SessionHistoryActor {
   object SessionHistory {
     implicit val persister: RootJsonFormat[SessionHistory] = DefaultJsonProtocol.jsonFormat1(SessionHistory.apply)
   }
+
+  final case class SessionClosed(sender: ActorRef)
 
 }

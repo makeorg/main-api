@@ -38,7 +38,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val userHistoryController: Controller = new Controller
   val sessionHistoryController: Controller = new Controller
 
-  val userHistoryActor: ActorRef = system.actorOf(Props(new ControllableActor(userHistoryController)), "user-history")
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
@@ -69,10 +68,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val THREAD_SLEEP_MICROSECONDS: Int = 100
 
   val coordinator: ActorRef =
-    system.actorOf(
-      ProposalCoordinator.props(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor),
-      ProposalCoordinator.name
-    )
+    system.actorOf(ProposalCoordinator.props(sessionHistoryActor = sessionHistoryActor), ProposalCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
@@ -1392,6 +1388,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.creationContext should be(
         RequestContext(
           currentTheme = Some(ThemeId("my-theme")),
+          userId = None,
           requestId = "my-request-id",
           sessionId = SessionId("session-id"),
           externalId = "external-id",

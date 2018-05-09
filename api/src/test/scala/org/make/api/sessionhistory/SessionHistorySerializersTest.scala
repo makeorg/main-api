@@ -3,8 +3,10 @@ package org.make.api.sessionhistory
 import java.time.ZonedDateTime
 
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.userhistory.StartSequenceParameters
 import org.make.core.RequestContext
 import org.make.core.proposal._
+import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
@@ -79,6 +81,21 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = SessionAction(date = eventDate, actionType = "transformSession", arguments = userId)
     )
 
+    val sessionStartSequenceEvent =
+      LogSessionStartSequenceEvent(
+        sessionId = sessionId,
+        requestContext = requestContext,
+        action = SessionAction(
+          date = eventDate,
+          actionType = LogSessionStartSequenceEvent.action,
+          arguments = StartSequenceParameters(
+            slug = None,
+            sequenceId = Some(SequenceId("sequence-id")),
+            includedProposals = Seq(ProposalId("proposalId1"), ProposalId("proposalId2"))
+          )
+        )
+      )
+
     val sessionHistory = SessionHistory(
       events = List(
         sessionSearchEvent,
@@ -90,6 +107,8 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       )
     )
 
+    val sessionHistory2 = sessionHistory.copy(events = sessionHistory.events ++ Seq(sessionStartSequenceEvent))
+
     persisters.generateTestsFor(
       sample(sessionSearchEvent),
       sample(sessionVoteEvent),
@@ -97,7 +116,9 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       sample(sessionQualificationEvent),
       sample(sessionUnqualificationEvent),
       sample(sessionTransformedEvent),
-      sample(sessionHistory)
+      sample(sessionStartSequenceEvent),
+      sample(sessionHistory),
+      sample("sessionHistory2", sessionHistory2)
     )
   }
 }

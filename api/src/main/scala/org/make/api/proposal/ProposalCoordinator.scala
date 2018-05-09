@@ -4,15 +4,15 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 
 object ProposalCoordinator {
-  def props(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef): Props =
-    Props(new ProposalCoordinator(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor))
+  def props(sessionHistoryActor: ActorRef): Props =
+    Props(new ProposalCoordinator(sessionHistoryActor = sessionHistoryActor))
   val name: String = "proposal-coordinator"
 }
 
-class ProposalCoordinator(userHistoryActor: ActorRef, sessionHistoryActor: ActorRef) extends Actor {
+class ProposalCoordinator(sessionHistoryActor: ActorRef) extends Actor {
   ClusterSharding(context.system).start(
     ShardedProposal.shardName,
-    ShardedProposal.props(userHistoryActor = userHistoryActor, sessionHistoryActor = sessionHistoryActor),
+    ShardedProposal.props(sessionHistoryActor = sessionHistoryActor),
     ClusterShardingSettings(context.system),
     ShardedProposal.extractEntityId,
     ShardedProposal.extractShardId

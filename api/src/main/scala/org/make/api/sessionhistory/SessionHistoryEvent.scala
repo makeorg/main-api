@@ -31,6 +31,14 @@ sealed trait SessionHistoryEvent[T] extends SessionRelatedEvent with MakeSeriali
   def action: SessionAction[T]
 }
 
+sealed trait TransactionalSessionHistoryEvent[T] extends SessionHistoryEvent[T]
+
+sealed trait TransferableToUser[T] extends SessionHistoryEvent[T] {
+
+  def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_]
+
+}
+
 object SessionHistoryEvent {
   implicit val format: RootJsonFormat[SessionHistoryEvent[_]] =
     new RootJsonFormat[SessionHistoryEvent[_]] {
@@ -42,6 +50,7 @@ object SessionHistoryEvent {
           case Seq(JsString("LogSessionUnvoteEvent"))          => json.convertTo[LogSessionUnvoteEvent]
           case Seq(JsString("LogSessionQualificationEvent"))   => json.convertTo[LogSessionQualificationEvent]
           case Seq(JsString("LogSessionUnqualificationEvent")) => json.convertTo[LogSessionUnqualificationEvent]
+          case Seq(JsString("LogSessionStartSequenceEvent"))   => json.convertTo[LogSessionStartSequenceEvent]
         }
       }
 
@@ -53,6 +62,7 @@ object SessionHistoryEvent {
           case event: LogSessionUnvoteEvent          => event.toJson
           case event: LogSessionQualificationEvent   => event.toJson
           case event: LogSessionUnqualificationEvent => event.toJson
+          case event: LogSessionStartSequenceEvent   => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -96,8 +106,9 @@ object SessionUnqualification {
 final case class LogSessionVoteEvent(sessionId: SessionId,
                                      requestContext: RequestContext,
                                      action: SessionAction[SessionVote])
-    extends SessionHistoryEvent[SessionVote] {
-  def toUserHistoryEvent(userId: UserId): LogUserVoteEvent = {
+    extends TransferableToUser[SessionVote]
+    with TransactionalSessionHistoryEvent[SessionVote] {
+  override def toUserHistoryEvent(userId: UserId): LogUserVoteEvent = {
     LogUserVoteEvent(
       userId = userId,
       requestContext = requestContext,
@@ -120,8 +131,9 @@ object LogSessionVoteEvent {
 final case class LogSessionUnvoteEvent(sessionId: SessionId,
                                        requestContext: RequestContext,
                                        action: SessionAction[SessionUnvote])
-    extends SessionHistoryEvent[SessionUnvote] {
-  def toUserHistoryEvent(userId: UserId): LogUserUnvoteEvent = {
+    extends TransferableToUser[SessionUnvote]
+    with TransactionalSessionHistoryEvent[SessionUnvote] {
+  override def toUserHistoryEvent(userId: UserId): LogUserUnvoteEvent = {
     LogUserUnvoteEvent(
       userId = userId,
       requestContext = requestContext,
@@ -144,8 +156,9 @@ object LogSessionUnvoteEvent {
 final case class LogSessionQualificationEvent(sessionId: SessionId,
                                               requestContext: RequestContext,
                                               action: SessionAction[SessionQualification])
-    extends SessionHistoryEvent[SessionQualification] {
-  def toUserHistoryEvent(userId: UserId): LogUserQualificationEvent = {
+    extends TransferableToUser[SessionQualification]
+    with TransactionalSessionHistoryEvent[SessionQualification] {
+  override def toUserHistoryEvent(userId: UserId): LogUserQualificationEvent = {
     LogUserQualificationEvent(
       userId = userId,
       requestContext = requestContext,
@@ -171,8 +184,9 @@ object LogSessionQualificationEvent {
 final case class LogSessionUnqualificationEvent(sessionId: SessionId,
                                                 requestContext: RequestContext,
                                                 action: SessionAction[SessionUnqualification])
-    extends SessionHistoryEvent[SessionUnqualification] {
-  def toUserHistoryEvent(userId: UserId): LogUserUnqualificationEvent = {
+    extends TransferableToUser[SessionUnqualification]
+    with TransactionalSessionHistoryEvent[SessionUnqualification] {
+  override def toUserHistoryEvent(userId: UserId): LogUserUnqualificationEvent = {
     LogUserUnqualificationEvent(
       userId = userId,
       requestContext = requestContext,
@@ -198,8 +212,8 @@ object LogSessionUnqualificationEvent {
 final case class LogSessionSearchProposalsEvent(sessionId: SessionId,
                                                 requestContext: RequestContext,
                                                 action: SessionAction[SessionSearchParameters])
-    extends SessionHistoryEvent[SessionSearchParameters] {
-  def toUserHistoryEvent(userId: UserId): LogUserSearchProposalsEvent = {
+    extends TransferableToUser[SessionSearchParameters] {
+  override def toUserHistoryEvent(userId: UserId): LogUserSearchProposalsEvent = {
     LogUserSearchProposalsEvent(
       userId = userId,
       requestContext = requestContext,
@@ -237,5 +251,25 @@ final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq
     extends SessionRelatedEvent
 
 final case class RequestSessionVotedProposals(sessionId: SessionId) extends SessionRelatedEvent
-final case class UserCreated(sessionId: SessionId, userId: UserId) extends SessionHistoryAction
 final case class UserConnected(sessionId: SessionId, userId: UserId) extends SessionHistoryAction
+
+final case class LogSessionStartSequenceEvent(sessionId: SessionId,
+                                              requestContext: RequestContext,
+                                              action: SessionAction[StartSequenceParameters])
+    extends TransferableToUser[StartSequenceParameters] {
+  override def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_] =
+    LogUserStartSequenceEvent(
+      userId,
+      requestContext,
+      UserAction(date = action.date, actionType = LogUserStartSequenceEvent.action, arguments = action.arguments)
+    )
+}
+
+object LogSessionStartSequenceEvent {
+  val action: String = "start-sequence"
+
+  implicit val logSessionStartSequenceEventFormatted: RootJsonFormat[LogSessionStartSequenceEvent] =
+    DefaultJsonProtocol.jsonFormat(LogSessionStartSequenceEvent.apply, "sessionId", "context", "action")
+}
+
+final case class StopSession(sessionId: SessionId) extends SessionRelatedEvent

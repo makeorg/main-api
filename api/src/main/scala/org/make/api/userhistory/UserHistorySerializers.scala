@@ -5,7 +5,7 @@ import org.make.core.SprayJsonFormatters
 import stamina.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
-import stamina.{json, V1, V2}
+import stamina.{json, V1, V2, V3}
 
 object UserHistorySerializers extends SprayJsonFormatters {
 
@@ -48,18 +48,25 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
     json.persister[LogUserUnqualificationEvent]("user-history-unqualification-vote")
 
-  private val userHistorySerializer: JsonPersister[UserHistory, V2] =
-    json.persister[UserHistory, V2](
+  private val userHistorySerializer: JsonPersister[UserHistory, V3] =
+    json.persister[UserHistory, V3](
       "user-history",
-      from[V1].to[V2](
-        _.update(
-          'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'language !
-            set[String]("fr")
-        ).update(
-          'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'country !
-            set[String]("FR")
+      from[V1]
+        .to[V2](
+          _.update(
+            'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'language !
+              set[String]("fr")
+          ).update(
+            'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'country !
+              set[String]("FR")
+          )
         )
-      )
+        .to[V3](
+          _.update(
+            'events / filter("type".is[String](_ == "LogUserStartSequenceEvent")) / 'action / 'arguments / 'includedProposals !
+              set[Seq[String]](Seq.empty)
+          )
+        )
     )
 
   private val logUserCreateSequenceEventSerializer: JsonPersister[LogUserCreateSequenceEvent, V1] =
@@ -80,8 +87,11 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserSearchSequencesEventSerializer: JsonPersister[LogUserSearchSequencesEvent, V1] =
     json.persister[LogUserSearchSequencesEvent]("user-history-search-sequence")
 
-  private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V1] =
-    json.persister[LogUserStartSequenceEvent]("user-history-start-sequence")
+  private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V2] =
+    json.persister[LogUserStartSequenceEvent, V2](
+      "user-history-start-sequence",
+      from[V1].to[V2](_.update('action / 'arguments / 'includedProposals ! set[Seq[String]](Seq.empty)))
+    )
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(

@@ -8,7 +8,7 @@ object HistoryActions {
 
   final case class VoteAndQualifications(voteKey: VoteKey, qualificationKeys: Seq[QualificationKey])
 
-  sealed trait VoteRelatedAction {
+  sealed trait VoteRelatedAction extends Product with Serializable {
     def proposalId: ProposalId
     def date: ZonedDateTime
   }

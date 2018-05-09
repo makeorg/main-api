@@ -5,7 +5,12 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
-import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.sessionhistory.{
+  LogSessionStartSequenceEvent,
+  RequestSessionVoteValues,
+  SessionAction,
+  SessionHistoryCoordinatorServiceComponent
+}
 import org.make.api.technical.businessconfig.BackofficeConfiguration
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
@@ -105,7 +110,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   slug: String,
                                   includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      logStartSequenceUserHisory(Some(slug), None, maybeUserId, requestContext)
+      logStartSequenceUserHisory(Some(slug), None, maybeUserId, includedProposals, requestContext)
 
       elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap {
         case None => Future.successful(None)
@@ -118,7 +123,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   sequenceId: SequenceId,
                                   includedProposals: Seq[ProposalId],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, requestContext)
+      logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, includedProposals, requestContext)
 
       elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap {
         case None => Future.successful(None)
@@ -169,20 +174,36 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     private def logStartSequenceUserHisory(sequenceSlug: Option[String],
                                            sequenceId: Option[SequenceId],
                                            maybeUserId: Option[UserId],
+                                           includedProposals: Seq[ProposalId],
                                            requestContext: RequestContext): Unit = {
-      maybeUserId.foreach { userId =>
-        userHistoryCoordinatorService.logHistory(
-          LogUserStartSequenceEvent(
-            userId,
-            requestContext,
-            UserAction(
-              date = DateHelper.now(),
-              actionType = LogUserStartSequenceEvent.action,
-              arguments = StartSequenceParameters(sequenceSlug, sequenceId)
+
+      (maybeUserId, requestContext.sessionId) match {
+        case (Some(userId), _) =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserStartSequenceEvent(
+              userId,
+              requestContext,
+              UserAction(
+                date = DateHelper.now(),
+                actionType = LogUserStartSequenceEvent.action,
+                arguments = StartSequenceParameters(sequenceSlug, sequenceId, includedProposals)
+              )
             )
           )
-        )
+        case (None, sessionId) =>
+          sessionHistoryCoordinatorService.logHistory(
+            LogSessionStartSequenceEvent(
+              sessionId,
+              requestContext,
+              SessionAction(
+                date = DateHelper.now(),
+                actionType = LogSessionStartSequenceEvent.action,
+                arguments = StartSequenceParameters(sequenceSlug, sequenceId, includedProposals)
+              )
+            )
+          )
       }
+
     }
 
     private def futureVotedProposals(maybeUserId: Option[UserId],

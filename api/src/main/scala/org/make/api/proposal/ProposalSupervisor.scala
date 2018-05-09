@@ -26,7 +26,7 @@ class ProposalSupervisor(userService: UserService,
     context.watch(
       context.actorOf(
         ProposalCoordinator
-          .props(userHistoryActor = userHistoryCoordinator, sessionHistoryActor = sessionHistoryCoordinator),
+          .props(sessionHistoryActor = sessionHistoryCoordinator),
         ProposalCoordinator.name
       )
     )
