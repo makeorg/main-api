@@ -50,7 +50,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     Flow[(HttpRequest, HttpRequest)]
       .via(Http(actorSystem).cachedHostConnectionPoolHttps(host = url.getHost, port = 443))
   }
-  private val bufferSize = mailJetConfiguration.httpBufferSize
+  private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
   lazy val queue: SourceQueueWithComplete[(HttpRequest, HttpRequest)] = Source
     .queue[(HttpRequest, HttpRequest)](bufferSize = bufferSize, OverflowStrategy.backpressure)
