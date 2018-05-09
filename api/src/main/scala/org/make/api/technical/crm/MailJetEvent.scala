@@ -1,10 +1,10 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, DecodingFailure, HCursor}
-import org.make.api.technical.mailjet.MailJetEvent.AnyMailJetEvent
+import org.make.api.technical.crm.MailJetEvent.AnyMailJetEvent
 import org.make.core.Sharded
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
@@ -18,6 +18,10 @@ sealed trait MailJetEvent {
   def customId: Option[String]
   def payload: Option[String]
 }
+
+/**
+  * see Mailjet documentation: https://dev.mailjet.com/guides/
+  */
 object MailJetEvent {
   type AnyMailJetEvent =
     MailJetBaseEvent :+: MailJetUnsubscribeEvent :+: MailJetSpamEvent :+: MailJetBounceEvent :+: MailJetBlockedEvent :+: CNil

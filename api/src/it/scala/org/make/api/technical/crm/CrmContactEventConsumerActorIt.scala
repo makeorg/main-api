@@ -1,0 +1,335 @@
+package org.make.api.technical.crm
+
+import java.time.ZonedDateTime
+
+import akka.actor.ActorSystem
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.make.api.technical.AvroSerializers
+import org.make.api.technical.crm.PublishedCrmContactEvent._
+import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.{KafkaTest, KafkaTestConsumerActor}
+import org.make.core.profile.Profile
+import org.make.core.user.{User, UserId}
+import org.make.core.{DateHelper, MakeSerializable}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.mockito.{ArgumentMatchers, Mockito}
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+
+class CrmContactEventConsumerActorIt
+    extends TestKit(CrmContactEventConsumerActorIt.actorSystem)
+    with KafkaTest
+    with ImplicitSender
+    with AvroSerializers
+    with UserServiceComponent
+    with CrmServiceComponent {
+  override val kafkaName: String = "kafkacrmcontacteventconsumer"
+  override val registryName: String = "registrycrmcontacteventconsumer"
+  override val zookeeperName: String = "zookeepercrmcontacteventconsumer"
+  override val kafkaExposedPort: Int = 29097
+  override val registryExposedPort: Int = 28087
+  override val zookeeperExposedPort: Int = 22187
+  override val userService: UserService = mock[UserService]
+  override val crmService: CrmService = mock[CrmService]
+
+  implicit def toAnswerWithArguments[T](f: (InvocationOnMock) => T): Answer[T] =
+    (invocation: InvocationOnMock) => f(invocation)
+  implicit def toAnswer[T](f: () => T): Answer[T] = (_: InvocationOnMock) => f()
+
+  feature("consume crm contact event") {
+
+    scenario("Reacting to a crm contact event") {
+
+      val probe = TestProbe()
+      val consumer = system.actorOf(
+        CrmContactEventConsumerActor.props(userService = userService, crmService = crmService),
+        "CrmContactNewEvent"
+      )
+      val format = RecordFormat[CrmContactEventWrapper]
+      val schema = SchemaFor[CrmContactEventWrapper]
+      val producer = createProducer(schema, format)
+
+      Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
+
+      val nowDate: ZonedDateTime = DateHelper.now()
+      val johnDoeUserProfile: Profile = Profile(
+        dateOfBirth = None,
+        avatarUrl = None,
+        profession = None,
+        phoneNumber = None,
+        twitterId = None,
+        facebookId = None,
+        googleId = None,
+        gender = None,
+        genderName = None,
+        postalCode = None,
+        karmaLevel = None,
+        locale = None
+      )
+      val johnDoeUser: User = User(
+        userId = UserId("JOHNDOE"),
+        email = "john.doe@example.com",
+        firstName = Some("John"),
+        lastName = Some("Doe"),
+        lastIp = None,
+        hashedPassword = None,
+        enabled = true,
+        verified = false,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq.empty,
+        country = "FR",
+        language = "fr",
+        profile = Some(johnDoeUserProfile)
+      )
+
+      Given("a crm new contact event to consume with an opt out user")
+      val newUserOptOut: User =
+        johnDoeUser.copy(userId = UserId("user1"), profile = Some(johnDoeUserProfile.copy(optInNewsletter = false)))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user1"))))
+        .thenReturn(Future.successful(Some(newUserOptOut)))
+      Mockito
+        .when(crmService.addUserToUnsubscribeList(ArgumentMatchers.eq(newUserOptOut)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToUnsubscribeList called"
+          Future.successful {}
+        })
+      val newContactEvent: CrmContactNew = CrmContactNew(id = UserId("user1"), eventDate = nowDate)
+      val wrappedNewContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactNewEvent",
+        event = CrmContactEventWrapper.wrapEvent(newContactEvent)
+      )
+
+      When("I send crm contact event")
+      producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedNewContactEvent))
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList called")
+
+      Given("a crm new contact event to consume with an opt-in user")
+      val newUserOptIn: User =
+        johnDoeUser.copy(userId = UserId("user2"), profile = Some(johnDoeUserProfile.copy(optInNewsletter = true)))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user2"))))
+        .thenReturn(Future.successful(Some(newUserOptIn)))
+      Mockito
+        .when(crmService.addUserToOptInList(ArgumentMatchers.eq(newUserOptIn)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToOptInList called"
+          Future.successful {}
+        })
+      val newOptinContactEvent: CrmContactNew = CrmContactNew(id = UserId("user2"), eventDate = nowDate)
+      val wrappedNewOptinContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactNewEvent",
+        event = CrmContactEventWrapper.wrapEvent(newOptinContactEvent)
+      )
+
+      When("I send crm contact event")
+      producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedNewOptinContactEvent))
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.addUserToOptInList called")
+
+      Given("a crm hard bounce contact event to consume")
+      val hardBounceUser: User = johnDoeUser.copy(userId = UserId("user3"))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user3"))))
+        .thenReturn(Future.successful(Some(hardBounceUser)))
+      Mockito
+        .when(crmService.removeUserFromOptInList(ArgumentMatchers.eq(hardBounceUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.removeUserFromOptInList called"
+          Future.successful {}
+        })
+      Mockito
+        .when(crmService.addUserToHardBounceList(ArgumentMatchers.eq(hardBounceUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToHardBounceList called"
+          Future.successful {}
+        })
+      val hardBounceContactEvent: CrmContactHardBounce = CrmContactHardBounce(id = UserId("user3"), eventDate = nowDate)
+      val wrappedHardBounceContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactHardBounce",
+        event = CrmContactEventWrapper.wrapEvent(hardBounceContactEvent)
+      )
+
+      When("I send crm hard bounce event")
+      producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedHardBounceContactEvent))
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.removeUserFromOptInList called")
+      probe.expectMsg(500 millis, "crmService.addUserToHardBounceList called")
+
+      Given("a crm unsubscribe event to consume")
+      val unsubscribeUser: User = johnDoeUser.copy(userId = UserId("user4"))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user4"))))
+        .thenReturn(Future.successful(Some(unsubscribeUser)))
+      Mockito
+        .when(crmService.removeUserFromOptInList(ArgumentMatchers.eq(unsubscribeUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.removeUserFromOptInList unsubscribe called"
+          Future.successful {}
+        })
+      Mockito
+        .when(crmService.addUserToUnsubscribeList(ArgumentMatchers.eq(unsubscribeUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToUnsubscribeList unsubscribe called"
+          Future.successful {}
+        })
+      val unsubscribeContactEvent: CrmContactUnsubscribe =
+        CrmContactUnsubscribe(id = UserId("user4"), eventDate = nowDate)
+      val wrappedUnsubscribeContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactUnsubscribe",
+        event = CrmContactEventWrapper.wrapEvent(unsubscribeContactEvent)
+      )
+
+      When("I send crm unsubscribe event")
+      producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedUnsubscribeContactEvent))
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.removeUserFromOptInList unsubscribe called")
+      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList unsubscribe called")
+
+      Given("a crm subscribe event to consume")
+      val subscribeUser: User = johnDoeUser.copy(userId = UserId("user5"))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user5"))))
+        .thenReturn(Future.successful(Some(subscribeUser)))
+      Mockito
+        .when(crmService.removeUserFromUnsubscribeList(ArgumentMatchers.eq(subscribeUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.removeUserFromUnsubscribeList subscribe called"
+          Future.successful {}
+        })
+      Mockito
+        .when(crmService.addUserToOptInList(ArgumentMatchers.eq(subscribeUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToUnsubscribeList unsubscribe called"
+          Future.successful {}
+        })
+      val subscribeContactEvent: CrmContactSubscribe =
+        CrmContactSubscribe(id = UserId("user5"), eventDate = nowDate)
+      val wrappedSubscribeContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactSubscribe",
+        event = CrmContactEventWrapper.wrapEvent(subscribeContactEvent)
+      )
+
+      When("I send crm subscribe event")
+      producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedSubscribeContactEvent))
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.removeUserFromUnsubscribeList subscribe called")
+      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList unsubscribe called")
+
+      Given("a crm subscribe event to consume with a user marked as hard bounce")
+      val subscribeHardBounceUser: User = johnDoeUser.copy(userId = UserId("user6"), isHardBounce = true)
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user6"))))
+        .thenReturn(Future.successful(Some(subscribeHardBounceUser)))
+      Mockito
+        .when(crmService.removeUserFromUnsubscribeList(ArgumentMatchers.eq(subscribeHardBounceUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.removeUserFromUnsubscribeList subscribe hard bounce called"
+          Future.successful {}
+        })
+      Mockito
+        .when(crmService.addUserToOptInList(ArgumentMatchers.eq(subscribeHardBounceUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.addUserToUnsubscribeList subscribe hard bounce called"
+          Future.successful {}
+        })
+      val subscribeHardBounceContactEvent: CrmContactSubscribe =
+        CrmContactSubscribe(id = UserId("user6"), eventDate = nowDate)
+      val wrappedSubscribeHardBounceContactEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactSubscribe",
+        event = CrmContactEventWrapper.wrapEvent(subscribeHardBounceContactEvent)
+      )
+
+      When("I send crm subscribe event")
+      producer.send(
+        new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedSubscribeHardBounceContactEvent)
+      )
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.removeUserFromUnsubscribeList subscribe hard bounce called")
+      probe.expectNoMessage(500 millis)
+
+    }
+  }
+
+}
+
+object CrmContactEventConsumerActorIt {
+  val configuration: String =
+    """
+      |akka.log-dead-letters-during-shutdown = off
+      |make-api {
+      |   mail-jet {
+      |    url = "mailjeturl"
+      |    http-buffer-size = 5
+      |    api-key = "apikey"
+      |    secret-key = "secretkey"
+      |    basic-auth-login = "basicauthlogin"
+      |    basic-auth-password = "basicauthpassword"
+      |    campaign-api-key = "campaignapikey"
+      |    campaign-secret-key = "campaignsecretkey"
+      |
+      |
+      |    user-list {
+      |      hard-bounce-list-id = "hardbouncelistid"
+      |      unsubscribe-list-id = "unsubscribelistid"
+      |      opt-in-list-id = "optinlistid"
+      |      batch-size = 100
+      |    }
+      |  }
+      |
+      |  kafka {
+      |    connection-string = "127.0.0.1:29097"
+      |    poll-timeout = 1000
+      |    schema-registry = "http://localhost:28087"
+      |    topics {
+      |      users = "users"
+      |      emails = "emails"
+      |      proposals = "proposals"
+      |      mailjet-events = "mailjet-events"
+      |      duplicates-predicted = "duplicates-predicted"
+      |      sequences = "sequences"
+      |      tracking-events = "tracking-events"
+      |      ideas = "ideas"
+      |      crm-contact = "crm-contact"
+      |      users-update = "users-update"
+      |    }
+      |  }
+      |}
+    """.stripMargin
+
+  val actorSystem = ActorSystem("CrmContactEventConsumerIT", ConfigFactory.parseString(configuration))
+}

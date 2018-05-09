@@ -1,4 +1,4 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
@@ -9,15 +9,19 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
+import org.make.api.technical.crm.PublishedCrmContactEvent.CrmContactListSync
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
+import org.make.core.auth.UserRights
+import scalaoauth2.provider.AuthInfo
 
-@Api(value = "MailJet")
+@Api(value = "CRM")
 @Path(value = "/")
-trait MailJetApi extends MakeDirectives with StrictLogging {
+trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
   this: MakeDataHandlerComponent
     with EventBusServiceComponent
     with MailJetConfigurationComponent
+    with EventBusServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
@@ -29,10 +33,8 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
       case _                                                   => None
     }
   }
-
-  val mailJetRoutes: Route = webHook
   @ApiOperation(
-    value = "consume-event",
+    value = "consume-mailjet-event",
     httpMethod = "POST",
     code = HttpCodes.OK,
     authorizations = Array(new Authorization(value = "basicAuth"))
@@ -41,9 +43,10 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
   @Path(value = "/technical/mailjet")
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.technical.mailjet.MailJetEvent")
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.technical.crm.MailJetEvent")
     )
-  ) def webHook: Route = {
+  )
+  def webHook: Route = {
     post {
       path("technical" / "mailjet") {
         makeOperation("mailjet-webhook") { _ =>
@@ -60,4 +63,32 @@ trait MailJetApi extends MakeDirectives with StrictLogging {
       }
     }
   }
+
+  @ApiOperation(
+    value = "sync-crm-data",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @Path(value = "/technical/crm/synchronize")
+  def syncCrmData: Route = post {
+    path("technical" / "crm" / "synchronize") {
+      makeOAuth2 { auth: AuthInfo[UserRights] =>
+        requireAdminRole(auth.user) {
+          makeOperation("SyncCrmData") { _ =>
+            eventBusService.publish(CrmContactListSync(id = auth.user.userId))
+            complete(StatusCodes.NoContent)
+          }
+        }
+      }
+    }
+  }
+
+  val crmRoutes: Route = webHook ~ syncCrmData
 }

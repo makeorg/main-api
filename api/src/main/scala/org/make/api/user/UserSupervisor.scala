@@ -19,9 +19,23 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
         .actorOf(UserProducerActor.props, UserProducerActor.name)
     )
 
+    context.watch(
+      context
+        .actorOf(UserUpdateProducerActor.props, UserUpdateProducerActor.name)
+    )
+
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(UserEmailConsumerActor.props(userService, operationService), UserEmailConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(
+          UserEmailConsumerActor.props(userService, operationService),
+          UserEmailConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(UserCrmConsumerActor.props(userService), UserCrmConsumerActor.name)
       context.actorOf(props, name)
     }
 

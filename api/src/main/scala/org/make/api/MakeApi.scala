@@ -47,7 +47,7 @@ import org.make.api.technical.healthcheck.{
   HealthCheckComponent,
   HealthCheckSupervisor
 }
-import org.make.api.technical.mailjet.MailJetApi
+import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
 import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -104,6 +104,7 @@ trait MakeApi
     with DefaultSequenceSearchEngineComponent
     with DefaultReadJournalComponent
     with DefaultHealthCheckServiceComponent
+    with DefaultCrmServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
@@ -118,7 +119,7 @@ trait MakeApi
     with ProposalApi
     with ModerationProposalApi
     with SequenceApi
-    with MailJetApi
+    with CrmApi
     with AuthenticationApi
     with ConfigurationsApi
     with UserApi
@@ -213,7 +214,7 @@ trait MakeApi
       classOf[TrackingApi],
       classOf[MigrationApi],
       classOf[HealthCheckApi],
-      classOf[MailJetApi]
+      classOf[CrmApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -243,7 +244,7 @@ trait MakeApi
       sequenceRoutes ~
       optionsAuthorized ~
       buildRoutes ~
-      mailJetRoutes ~
+      crmRoutes ~
       authenticationRoutes ~
       businessConfigRoutes ~
       ideaRoutes ~

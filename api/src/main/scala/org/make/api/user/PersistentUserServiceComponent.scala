@@ -229,6 +229,9 @@ trait PersistentUserService {
   def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
+  def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
+  def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
+  def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -334,6 +337,58 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUserId.map(_.map(UserId(_)))
     }
 
+    override def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.isHardBounce, true))
+            .orderBy(userAlias.createdAt)
+            .desc
+            .limit(limit)
+            .offset(page * limit - limit)
+
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+    }
+
+    override def findOptInUsers(page: Int, limit: Int): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.optInNewsletter, true).and(sqls.eq(userAlias.isHardBounce, false)))
+            .orderBy(userAlias.createdAt)
+            .desc
+            .limit(limit)
+            .offset(page * limit - limit)
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+    }
+
+    override def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.optInNewsletter, false))
+            .orderBy(userAlias.createdAt)
+            .desc
+            .limit(limit)
+            .offset(page * limit - limit)
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+    }
+
     override def emailExists(email: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
@@ -425,7 +480,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               sqls
                 .eq(column.uuid, userId.value)
             )
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -440,7 +498,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 .eq(column.uuid, userId.value)
                 .and(sqls.eq(column.resetToken, resetToken))
             )
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -451,7 +512,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.verified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
             .where(sqls.eq(column.verificationToken, verificationToken))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -462,7 +526,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.optInNewsletter -> optInNewsletter)
             .where(sqls.eq(column.uuid, userId.value))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -473,7 +540,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.isHardBounce -> isHardBounce)
             .where(sqls.eq(column.uuid, userId.value))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -487,7 +557,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorMessage -> lastMailingError.map(_.error)
             )
             .where(sqls.eq(column.uuid, userId.value))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -498,7 +571,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.optInNewsletter -> optInNewsletter)
             .where(sqls.eq(column.email, email))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -509,7 +585,10 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           update(PersistentUser)
             .set(column.isHardBounce -> isHardBounce)
             .where(sqls.eq(column.email, email))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
 
@@ -523,8 +602,12 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorMessage -> lastMailingError.map(_.error)
             )
             .where(sqls.eq(column.email, email))
-        }.execute().apply()
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
       })
     }
+
   }
 }

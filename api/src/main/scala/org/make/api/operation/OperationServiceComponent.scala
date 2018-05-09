@@ -3,8 +3,7 @@ package org.make.api.operation
 import java.time.LocalDate
 
 import io.circe.syntax._
-import org.make.api.MakeMain
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.user.UserId
@@ -40,7 +39,7 @@ trait OperationService extends ShortenedNames {
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
-  this: PersistentOperationServiceComponent =>
+  this: PersistentOperationServiceComponent with IdGeneratorComponent =>
 
   val operationService: OperationService = new OperationService {
 
@@ -69,7 +68,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId] = {
       val now = DateHelper.now()
       val operation: Operation = Operation(
-        operationId = OperationId(MakeMain.idGenerator.nextId()),
+        operationId = idGenerator.nextOperationId(),
         status = OperationStatus.Pending,
         slug = slug,
         translations = translations,

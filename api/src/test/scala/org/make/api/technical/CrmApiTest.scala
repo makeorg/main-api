@@ -12,15 +12,15 @@ import org.make.api.extensions.{
   MakeSettingsComponent
 }
 import org.make.api.technical.auth._
-import org.make.api.technical.mailjet.{MailJetApi, MailJetBaseEvent, MailJetEvent}
+import org.make.api.technical.crm.{CrmApi, MailJetBaseEvent, MailJetEvent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
 import scala.concurrent.duration.Duration
 
-class MailJetApiTest
+class CrmApiTest
     extends MakeApiTestUtils
-    with MailJetApi
+    with CrmApi
     with MakeDataHandlerComponent
     with EventBusServiceComponent
     with MailJetConfigurationComponent
@@ -45,9 +45,16 @@ class MailJetApiTest
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
+  when(mailJetConfiguration.campaignApiKey).thenReturn("campaignapikey")
+  when(mailJetConfiguration.campaignSecretKey).thenReturn("campaignsecretkey")
+  when(mailJetConfiguration.hardBounceListId).thenReturn("hardbouncelistid")
+  when(mailJetConfiguration.unsubscribeListId).thenReturn("unsubscribelistid")
+  when(mailJetConfiguration.optInListId).thenReturn("optinlistid")
+  when(mailJetConfiguration.userListBatchSize).thenReturn(100)
+  when(mailJetConfiguration.url).thenReturn("http://fakeurl.com")
   when(idGenerator.nextId()).thenReturn("some-id")
 
-  val routes: Route = sealRoute(mailJetRoutes)
+  val routes: Route = sealRoute(crmRoutes)
 
   val request: String =
     """

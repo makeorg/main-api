@@ -1,7 +1,8 @@
-package org.make.api.technical.mailjet
+package org.make.api.technical.crm
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.Sharded
+import spray.json.{JsString, JsValue, JsonFormat}
 
 case class SendEmail(id: String = "unknown",
                      from: Option[Recipient] = None,
@@ -117,5 +118,91 @@ case class Recipient(email: String, name: Option[String] = None, variables: Opti
 object Recipient {
   implicit val encoder: Encoder[Recipient] = Encoder.forProduct3("Email", "Name", "Variables") { recipient =>
     (recipient.email, recipient.name, recipient.variables)
+  }
+}
+
+case class ManageContact(email: String,
+                         name: String,
+                         action: ManageContactAction,
+                         properties: Option[Map[String, String]] = None)
+
+object ManageContact {
+  implicit val encoder: Encoder[ManageContact] = Encoder.forProduct4("Email", "Name", "Action", "Properties") {
+    manageContact: ManageContact =>
+      (manageContact.email, manageContact.name, manageContact.action, manageContact.properties)
+  }
+}
+
+sealed trait ManageContactAction {
+  def shortName: String
+}
+
+object ManageContactAction {
+  val actionMap: Map[String, ManageContactAction] =
+    Map(
+      AddForce.shortName -> AddForce,
+      AddNoForce.shortName -> AddNoForce,
+      Remove.shortName -> Remove,
+      Unsubscribe.shortName -> Unsubscribe
+    )
+
+  implicit lazy val manageContactActionEncoder: Encoder[ManageContactAction] =
+    (manageContactAction: ManageContactAction) => Json.fromString(manageContactAction.shortName)
+  implicit lazy val manageContactActionDecoder: Decoder[ManageContactAction] =
+    Decoder.decodeString.emap { value: String =>
+      actionMap.get(value) match {
+        case Some(manageContactAction) => Right(manageContactAction)
+        case None                      => Left(s"$value is not a manage contact action")
+      }
+    }
+
+  implicit val manageContactActionFormatted: JsonFormat[ManageContactAction] = new JsonFormat[ManageContactAction] {
+    override def read(json: JsValue): ManageContactAction = json match {
+      case JsString(s) => ManageContactAction.actionMap(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ManageContactAction): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
+  case object AddForce extends ManageContactAction {
+    override val shortName = "addForce"
+  }
+
+  case object AddNoForce extends ManageContactAction {
+    override val shortName = "addnoforce"
+  }
+
+  case object Remove extends ManageContactAction {
+    override val shortName = "remove"
+  }
+
+  case object Unsubscribe extends ManageContactAction {
+    override val shortName = "unsub"
+  }
+}
+
+case class Contact(email: String, name: String, properties: Option[Map[String, String]] = None)
+
+object Contact {
+  implicit val encoder: Encoder[Contact] = Encoder.forProduct3("Email", "Name", "Properties") { contact: Contact =>
+    (contact.email, contact.name, contact.properties)
+  }
+}
+
+case class ContactList(listId: String, action: ManageContactAction)
+object ContactList {
+  implicit val encoder: Encoder[ContactList] = Encoder.forProduct2("ListID", "action") { contactList: ContactList =>
+    (contactList.listId, contactList.action)
+  }
+}
+
+case class ManageManyContacts(contacts: Seq[Contact], contactList: Seq[ContactList])
+object ManageManyContacts {
+  implicit val encoder: Encoder[ManageManyContacts] = Encoder.forProduct2("Contacts", "ContactsLists") {
+    manageManyContacts: ManageManyContacts =>
+      (manageManyContacts.contacts, manageManyContacts.contactList)
   }
 }

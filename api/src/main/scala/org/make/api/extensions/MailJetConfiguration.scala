@@ -9,6 +9,14 @@ class MailJetConfiguration(config: Config) extends Extension {
   val secretKey: String = config.getString("secret-key")
   val basicAuthLogin: String = config.getString("basic-auth-login")
   val basicAuthPassword: String = config.getString("basic-auth-password")
+  val campaignApiKey: String = config.getString("campaign-api-key")
+  val campaignSecretKey: String = config.getString("campaign-secret-key")
+
+  val hardBounceListId: String = config.getString("user-list.hard-bounce-list-id")
+  val unsubscribeListId: String = config.getString("user-list.unsubscribe-list-id")
+  val optInListId: String = config.getString("user-list.opt-in-list-id")
+  val userListBatchSize: Int = config.getInt("user-list.batch-size")
+  val httpBufferSize: Int = config.getInt("http-buffer-size")
 }
 
 object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {

@@ -5,6 +5,7 @@ import java.util.UUID
 
 import org.make.api.DatabaseTest
 import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
@@ -22,7 +23,8 @@ class OperationServiceIT
     with DefaultOperationServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentUserServiceComponent
-    with DefaultPersistentTagServiceComponent {
+    with DefaultPersistentTagServiceComponent
+    with DefaultIdGeneratorComponent {
 
   val profile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-02")),
@@ -121,7 +123,7 @@ class OperationServiceIT
         operation <- operationService.findOne(operationId)
       } yield operation
 
-      whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
+      whenReady(futureMaybeOperation, Timeout(6.seconds)) { maybeOperation =>
         val operation: Operation = maybeOperation.get
         Then("operations should be an instance of Seq[Operation]")
         operation shouldBe a[Operation]

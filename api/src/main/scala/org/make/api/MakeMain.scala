@@ -34,19 +34,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)
-  actorSystem.actorOf(
-    MakeGuardian.props(
-      persistentSequenceConfigurationService = persistentSequenceConfigurationService,
-      userService = userService,
-      tagService = tagService,
-      themeService = themeService,
-      sequenceService = sequenceService,
-      operationService = operationService,
-      ideaService = ideaService,
-      semanticService = semanticService
-    ),
-    MakeGuardian.name
-  )
+  actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
   actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
   val threadPoolMonitor = actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
