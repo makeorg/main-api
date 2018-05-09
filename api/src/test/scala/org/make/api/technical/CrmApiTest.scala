@@ -56,7 +56,7 @@ class CrmApiTest
 
   val routes: Route = sealRoute(crmRoutes)
 
-  val request: String =
+  val requestMultipleEvents: String =
     """
       |[
       |   {
@@ -89,9 +89,27 @@ class CrmApiTest
       |
       """.stripMargin
 
+  val requestSingleEvent: String =
+    """
+      |   {
+      |      "event": "sent",
+      |      "time": 1433333949,
+      |      "MessageID": 19421777835146490,
+      |      "email": "api@mailjet.com",
+      |      "mj_campaign_id": 7257,
+      |      "mj_contact_id": 4,
+      |      "customcampaign": "",
+      |      "mj_message_id": "19421777835146490",
+      |      "smtp_reply": "sent (250 2.0.0 OK 1433333948 fa5si855896wjc.199 - gsmtp)",
+      |      "CustomID": "helloworld",
+      |      "Payload": ""
+      |   }
+      |
+      """.stripMargin
+
   feature("callback requests") {
     scenario("json decoding") {
-      val maybeJson = jawn.parse(request)
+      val maybeJson = jawn.parse(requestMultipleEvents)
 
       val parseResult = maybeJson match {
         case Right(json) => json.as[Seq[MailJetEvent]]
@@ -137,13 +155,19 @@ class CrmApiTest
         status should be(StatusCodes.BadRequest)
       }
     }
-    scenario("should send parsed events in event bus") {
-      Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, request))
+    scenario("should send parsed events in event bus with multiple events") {
+      Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, requestMultipleEvents))
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(eventBusService, times(2)).publish(any[AnyRef])
       }
     }
+    scenario("should send parsed events in event bus with single event") {
+      Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
+        .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        verify(eventBusService, times(3)).publish(any[AnyRef])
+      }
+    }
   }
-
 }

@@ -52,11 +52,17 @@ trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("mailjet-webhook") { _ =>
           authenticateBasic[String]("make-mailjet", authenticate).apply { _ =>
             decodeRequest {
+
               entity(as[Seq[MailJetEvent]]) { events: Seq[MailJetEvent] =>
                 // Send all events to event bus
                 events.foreach(eventBusService.publish)
                 complete(StatusCodes.OK)
-              }
+              } ~
+                entity(as[MailJetEvent]) { event: MailJetEvent =>
+                  eventBusService.publish(event)
+                  complete(StatusCodes.OK)
+                }
+
             }
           }
         }
