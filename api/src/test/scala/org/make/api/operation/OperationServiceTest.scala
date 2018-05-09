@@ -5,7 +5,8 @@ import java.util.UUID
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, PersistentTagService}
+import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
+import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.reference._
@@ -22,10 +23,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class OperationServiceTest
     extends MakeUnitTest
     with DefaultOperationServiceComponent
-    with DefaultPersistentTagServiceComponent
+    with PersistentTagServiceComponent
+    with IdGeneratorComponent
     with MakeDBExecutionContextComponent
     with PersistentOperationServiceComponent {
 
+  override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentOperationService: PersistentOperationService = mock[PersistentOperationService]
   override lazy val persistentTagService: PersistentTagService = mock[PersistentTagService]
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
@@ -96,7 +99,6 @@ class OperationServiceTest
       Mockito
         .when(persistentTagService.findByOperationId(ArgumentMatchers.eq(OperationId("foo"))))
         .thenReturn(Future.successful(Seq(fooTag)))
-
 
       val futureoperations: Future[Seq[Operation]] = operationService.find()
 

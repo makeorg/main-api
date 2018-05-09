@@ -7,7 +7,6 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.ThemeId
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
-import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
@@ -115,18 +114,17 @@ object PublishedSequenceEvent {
                                    eventDate: ZonedDateTime,
                                    title: String,
                                    themeIds: Seq[ThemeId],
-                                   tagIds: Seq[TagId],
                                    operationId: Option[OperationId] = None,
                                    searchable: Boolean)
       extends PublishedSequenceEvent {
-    def version(): Int = MakeSerializable.V1
+    def version(): Int = MakeSerializable.V2
   }
 
   object SequenceCreated {
     val actionType: String = "sequence-created"
 
     implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
-      DefaultJsonProtocol.jsonFormat10(SequenceCreated.apply)
+      DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
   }
 
   final case class SequenceViewed(id: SequenceId, eventDate: ZonedDateTime, requestContext: RequestContext)
@@ -149,18 +147,17 @@ object PublishedSequenceEvent {
                                    status: Option[SequenceStatus],
                                    @Deprecated operation: Option[String] = None,
                                    operationId: Option[OperationId] = None,
-                                   themeIds: Seq[ThemeId],
-                                   tagIds: Seq[TagId])
+                                   themeIds: Seq[ThemeId])
       extends PublishedSequenceEvent {
 
-    def version(): Int = MakeSerializable.V1
+    def version(): Int = MakeSerializable.V2
   }
 
   object SequenceUpdated {
     val actionType: String = "sequence-updated"
 
     implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
-      DefaultJsonProtocol.jsonFormat10(SequenceUpdated.apply)
+      DefaultJsonProtocol.jsonFormat9(SequenceUpdated.apply)
   }
 
   final case class SequenceEdition(oldVersion: String, newVersion: String)

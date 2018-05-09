@@ -62,7 +62,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         date = mainCreatedAt.get,
         user = mainUserId,
         actionType = "create",
-        arguments = Map("title" -> "This is a sequence", "tagIds" -> "", "themeIds" -> "")
+        arguments = Map("title" -> "This is a sequence", "themeIds" -> "")
       )
     ),
     searchable = false
@@ -135,8 +135,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         title = Some("An updated content"),
         status = Some(SequenceStatus.Published),
         operationId = None,
-        themeIds = Seq.empty,
-        tagIds = Seq.empty
+        themeIds = Seq.empty
       )
 
       Then("returns None")
@@ -169,8 +168,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
         title = Some("An updated content"),
         operationId = None,
         status = Some(SequenceStatus.Published),
-        themeIds = Seq.empty,
-        tagIds = Seq.empty
+        themeIds = Seq.empty
       )
 
       val modified = Some(

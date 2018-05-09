@@ -49,8 +49,7 @@ class SequenceUserHistoryConsumerActorIT
         status = None,
         operation = None,
         operationId = None,
-        themeIds = Seq.empty,
-        tagIds = Seq.empty
+        themeIds = Seq.empty
       )
       val wrappedEvent = SequenceEventWrapper(
         version = MakeSerializable.V1,

@@ -80,36 +80,7 @@ trait DefaultTagServiceComponent
     }
 
     override def findByThemeId(themeId: ThemeId): Future[Seq[Tag]] = {
-      val futureDisplayedTags = findAllDisplayed()
-
-      persistentTagService.findByThemeId(themeId).flatMap { tags =>
-        for {
-          displayedTags <- futureDisplayedTags
-        } yield tags.filter(tag => displayedTags.contains(tag))
-      }
-    }
-
-    override def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
-      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
-
-      tagTypes.flatMap { tagTypes =>
-        tagService
-          .findByTagIds(tags)
-          .map { tags =>
-            Some(tags.map { tag =>
-              if (tag.display == TagDisplay.Inherit) {
-                val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
-                IndexedTag(
-                  tagId = tag.tagId,
-                  label = tag.label,
-                  display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
-                )
-              } else {
-                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
-              }
-            })
-          }
-      }
+      persistentTagService.findByThemeId(themeId)
     }
 
     override def createLegacyTag(label: String): Future[Tag] = {
@@ -149,18 +120,6 @@ trait DefaultTagServiceComponent
       persistentTagService.persist(tag)
     }
 
-    override def findAll(): Future[Seq[Tag]] = {
-      persistentTagService.findAll()
-    }
-
-    override def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]] = {
-      persistentTagService.findAllFromIds(tagIds)
-    }
-
-    override def findByOperationId(operationId: OperationId): Future[Seq[Tag]] = {
-      persistentTagService.findByOperationId(operationId)
-    }
-
     override def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
       val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
 
@@ -182,10 +141,6 @@ trait DefaultTagServiceComponent
             })
           }
       }
-    }
-
-    override def findByThemeId(themeId: ThemeId): Future[Seq[Tag]] = {
-      persistentTagService.findByThemeId(themeId)
     }
 
     override def searchByLabel(partialLabel: String): Future[Seq[Tag]] = {

@@ -2,18 +2,8 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.api.proposal.PublishedProposalEvent.{
-  ProposalAccepted,
-  ProposalLocked,
-  ProposalPostponed,
-  ProposalRefused
-}
-import org.make.api.sequence.PublishedSequenceEvent.{
-  SequenceCreated,
-  SequenceProposalsAdded,
-  SequenceProposalsRemoved,
-  SequenceUpdated
-}
+import org.make.api.proposal.PublishedProposalEvent.{ProposalAccepted, ProposalLocked, ProposalPostponed, ProposalRefused}
+import org.make.api.sequence.PublishedSequenceEvent.{SequenceCreated, SequenceProposalsAdded, SequenceProposalsRemoved, SequenceUpdated}
 import org.make.api.userhistory.UserHistoryActor.UserHistory
 import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
@@ -226,8 +216,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
           status = Some(SequenceStatus.Published),
           operationId = Some(OperationId("operation-id")),
           operation = Some("my-operation-slug"),
-          themeIds = Seq(ThemeId("theme-1"), ThemeId("theme2")),
-          tagIds = Seq(TagId("kitten"))
+          themeIds = Seq(ThemeId("theme-1"), ThemeId("theme2"))
         )
       )
     )
@@ -244,9 +233,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
           firstName = Some("me"),
           lastName = Some("myself"),
           profession = Some("doer"),
-          postalCode = Some("75011"),
-          country = "FR",
-          language = "fr"
+          postalCode = Some("75011")
         )
       )
     )
@@ -282,7 +269,6 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
           eventDate = eventDate,
           title = "my sequence",
           themeIds = Seq(ThemeId("theme-1"), ThemeId("theme-2")),
-          tagIds = Seq(TagId("tag-1"), TagId("tag-2")),
           operationId = Some(OperationId("operation-id")),
           searchable = true
         )

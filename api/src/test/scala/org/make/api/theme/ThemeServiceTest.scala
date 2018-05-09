@@ -3,29 +3,29 @@ package org.make.api.theme
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, PersistentTagService}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.proposal.SearchQuery
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class ThemeServiceTest
     extends MakeUnitTest
     with DefaultThemeServiceComponent
-    with DefaultPersistentTagServiceComponent
+    with TagServiceComponent
     with MakeDBExecutionContextComponent
     with PersistentThemeServiceComponent
     with ProposalSearchEngineComponent {
 
+  override val tagService: TagService = mock[TagService]
   override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
-  override lazy val persistentTagService: PersistentTagService = mock[PersistentTagService]
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
 
@@ -85,7 +85,7 @@ class ThemeServiceTest
 
 
       Mockito
-        .when(persistentTagService.findByThemeId(any[ThemeId]))
+        .when(tagService.findByThemeId(any[ThemeId]))
         .thenReturn(Future.successful(Seq.empty))
 
       val futureThemes = themeService.findAll()
@@ -110,11 +110,11 @@ class ThemeServiceTest
         .thenReturn(Future.successful(Seq(fooTheme, barTheme)))
 
       Mockito
-        .when(persistentTagService.findByThemeId(ArgumentMatchers.eq(ThemeId("foo"))))
+        .when(tagService.findByThemeId(ArgumentMatchers.eq(ThemeId("foo"))))
         .thenReturn(Future.successful(Seq(fooTag)))
 
       Mockito
-        .when(persistentTagService.findByThemeId(ArgumentMatchers.eq(ThemeId("bar"))))
+        .when(tagService.findByThemeId(ArgumentMatchers.eq(ThemeId("bar"))))
         .thenReturn(Future.successful(Seq.empty))
 
 

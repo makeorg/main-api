@@ -50,7 +50,6 @@ trait CreateOperation extends Migration {
                   requestContext = emptyContext,
                   createdAt = DateHelper.now(),
                   title = operationSlug,
-                  tagIds = Seq.empty,
                   themeIds = Seq.empty,
                   operationId = None,
                   searchable = true
@@ -83,7 +82,6 @@ trait CreateOperation extends Migration {
                 )
                 .map { operationId =>
                   sequenceResponses.map { sequence =>
-                    val configuration = findConfiguration(sequence.country, sequence.language)
                     api.sequenceService.update(
                       sequenceId = sequence.sequence.sequenceId,
                       moderatorId = moderatorId,
@@ -91,8 +89,7 @@ trait CreateOperation extends Migration {
                       title = None,
                       status = Some(SequenceStatus.Published),
                       operationId = Some(operationId),
-                      themeIds = Seq.empty,
-                      tagIds = configuration.tags
+                      themeIds = Seq.empty
                     )
                   }
                 }

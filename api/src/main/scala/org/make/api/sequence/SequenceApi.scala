@@ -9,7 +9,6 @@ import io.swagger.annotations._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.OperationServiceComponent
-import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.theme.ThemeServiceComponent
@@ -30,7 +29,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     with IdGeneratorComponent
     with MakeSettingsComponent
     with ThemeServiceComponent
-    with TagServiceComponent
     with OperationServiceComponent
     with SequenceCoordinatorServiceComponent
     with SequenceConfigurationComponent
@@ -119,7 +117,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                             requestContext = requestContext,
                             createdAt = DateHelper.now(),
                             title = request.title,
-                            tagIds = request.tagIds,
                             themeIds = themeIds,
                             operationId = operation.map(_.operationId),
                             searchable = request.searchable
@@ -175,59 +172,46 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
                   provideAsync(themeService.findByIds(request.themeIds.getOrElse(Seq.empty))) { themes =>
-                    provideAsync(tagService.findByTagIds(request.tagIds.getOrElse(Seq.empty))) { tags =>
-                      provideAsync(
-                        request.operation.map(operationService.findOne(_)).getOrElse(Future.successful(None))
-                      ) { operation =>
-                        val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
-                        Validation.validate(
-                          Validation.validateEquals(
-                            "themeIds",
-                            Some("Some theme ids are invalid"),
-                            requestThemesSize,
-                            themes.size
-                          )
+                    provideAsync(
+                      request.operation.map(operationService.findOne(_)).getOrElse(Future.successful(None))
+                    ) { operation =>
+                      val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
+                      Validation.validate(
+                        Validation.validateEquals(
+                          "themeIds",
+                          Some("Some theme ids are invalid"),
+                          requestThemesSize,
+                          themes.size
                         )
+                      )
 
+                      if (request.status.nonEmpty) {
                         Validation.validate(
-                          Validation.validateEquals(
-                            "tagIds",
-                            Some("Some tag ids are invalid"),
-                            request.tagIds.getOrElse(Seq.empty).distinct.size,
-                            tags.size
-                          )
+                          Validation
+                            .validChoices(
+                              "status",
+                              Some("Invalid status"),
+                              Seq(request.status.get),
+                              SequenceStatus.statusMap.keys.toList
+                            )
                         )
+                      }
 
-                        if (request.status.nonEmpty) {
-                          Validation.validate(
-                            Validation
-                              .validChoices(
-                                "status",
-                                Some("Invalid status"),
-                                Seq(request.status.get),
-                                SequenceStatus.statusMap.keys.toList
-                              )
-                          )
-                        }
-
-                        provideAsyncOrNotFound(
-                          sequenceService.update(
-                            sequenceId = sequenceId,
-                            moderatorId = auth.user.userId,
-                            requestContext = requestContext,
-                            title = request.title,
-                            status = request.status.map(SequenceStatus.statusMap),
-                            operationId = operation.map(_.operationId),
-                            themeIds = themes.map(_.themeId),
-                            tagIds = tags.map(_.tagId)
-                          )
-                        ) { sequenceResponse =>
-                          complete(StatusCodes.OK -> sequenceResponse)
-                        }
+                      provideAsyncOrNotFound(
+                        sequenceService.update(
+                          sequenceId = sequenceId,
+                          moderatorId = auth.user.userId,
+                          requestContext = requestContext,
+                          title = request.title,
+                          status = request.status.map(SequenceStatus.statusMap),
+                          operationId = operation.map(_.operationId),
+                          themeIds = themes.map(_.themeId)
+                        )
+                      ) { sequenceResponse =>
+                        complete(StatusCodes.OK -> sequenceResponse)
                       }
                     }
                   }
-
                 }
               }
             }

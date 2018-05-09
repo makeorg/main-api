@@ -22,7 +22,6 @@ import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.ThemeId
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
-import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
@@ -50,7 +49,6 @@ trait SequenceService {
              requestContext: RequestContext,
              createdAt: ZonedDateTime,
              title: String,
-             tagIds: Seq[TagId] = Seq.empty,
              themeIds: Seq[ThemeId] = Seq.empty,
              operationId: Option[OperationId],
              searchable: Boolean): Future[Option[SequenceResponse]]
@@ -60,8 +58,7 @@ trait SequenceService {
              title: Option[String],
              status: Option[SequenceStatus],
              operationId: Option[OperationId],
-             themeIds: Seq[ThemeId],
-             tagIds: Seq[TagId]): Future[Option[SequenceResponse]]
+             themeIds: Seq[ThemeId]): Future[Option[SequenceResponse]]
   def addProposals(sequenceId: SequenceId,
                    moderatorId: UserId,
                    requestContext: RequestContext,
@@ -222,7 +219,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         requestContext: RequestContext,
                         createdAt: ZonedDateTime,
                         title: String,
-                        tagIds: Seq[TagId],
                         themeIds: Seq[ThemeId],
                         operationId: Option[OperationId],
                         searchable: Boolean): Future[Option[SequenceResponse]] = {
@@ -234,7 +230,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             title = title,
             requestContext = requestContext,
             moderatorId = userId,
-            tagIds = tagIds,
             themeIds = themeIds,
             operationId = operationId,
             status = SequenceStatus.Published,
@@ -288,8 +283,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                         title: Option[String],
                         status: Option[SequenceStatus],
                         operationId: Option[OperationId],
-                        themeIds: Seq[ThemeId],
-                        tagIds: Seq[TagId]): Future[Option[SequenceResponse]] = {
+                        themeIds: Seq[ThemeId]): Future[Option[SequenceResponse]] = {
 
       sequenceCoordinatorService
         .update(
@@ -300,8 +294,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             title = title,
             status = status,
             operationId = operationId,
-            themeIds = themeIds,
-            tagIds = tagIds
+            themeIds = themeIds
           )
         )
         .flatMap {
@@ -345,7 +338,6 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             createdAt = sequence.createdAt,
             updatedAt = sequence.updatedAt,
             themeIds = sequence.themeIds,
-            tagIds = sequence.tagIds,
             proposalIds = sequence.proposalIds,
             sequenceTranslation = sequence.sequenceTranslation,
             events = events

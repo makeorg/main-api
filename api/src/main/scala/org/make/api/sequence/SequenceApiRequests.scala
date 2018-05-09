@@ -8,7 +8,6 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.ThemeId
 import org.make.core.sequence._
-import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
 
@@ -16,7 +15,6 @@ import scala.annotation.meta.field
 @ApiModel
 final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma séquence") title: String,
                                        @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId],
-                                       @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
                                        operationId: Option[OperationId],
                                        searchable: Boolean)
 
@@ -47,8 +45,7 @@ final case class UpdateSequenceRequest(
   title: Option[String],
   status: Option[String],
   operation: Option[OperationId],
-  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]],
-  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Option[Seq[TagId]]
+  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]]
 )
 
 object UpdateSequenceRequest {
@@ -57,7 +54,6 @@ object UpdateSequenceRequest {
 
 @ApiModel
 final case class ExhaustiveSearchRequest(
-  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
   @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId] = Seq.empty,
   title: Option[String] = None,
   slug: Option[String] = None,
@@ -71,10 +67,8 @@ final case class ExhaustiveSearchRequest(
 ) {
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] = {
-      val tagsFilter: Option[TagsSearchFilter] = if (tagIds.isEmpty) None else Some(TagsSearchFilter(tagIds))
       val themesFilter: Option[ThemesSearchFilter] = if (themeIds.isEmpty) None else Some(ThemesSearchFilter(themeIds))
       SearchFilters.parse(
-        tags = tagsFilter,
         slug = slug.map(text => SlugSearchFilter(text)),
         themes = themesFilter,
         title = title.map(text => TitleSearchFilter(text)),

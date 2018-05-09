@@ -35,14 +35,12 @@ object SearchQuery {
 /**
   * The class holding the filters
   *
-  * @param tags    List of Tags to filters
   * @param themes  The Theme to filter
   * @param title   Text to search into the sequence
   * @param status  The Status of sequence
   * @param context The Context of sequence
   */
-case class SearchFilters(tags: Option[TagsSearchFilter] = None,
-                         themes: Option[ThemesSearchFilter] = None,
+case class SearchFilters(themes: Option[ThemesSearchFilter] = None,
                          title: Option[TitleSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
@@ -53,10 +51,9 @@ case class SearchFilters(tags: Option[TagsSearchFilter] = None,
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
-    DefaultJsonProtocol.jsonFormat8(SearchFilters.apply)
+    DefaultJsonProtocol.jsonFormat7(SearchFilters.apply)
 
-  def parse(tags: Option[TagsSearchFilter] = None,
-            themes: Option[ThemesSearchFilter] = None,
+  def parse(themes: Option[ThemesSearchFilter] = None,
             title: Option[TitleSearchFilter] = None,
             slug: Option[SlugSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
@@ -64,9 +61,9 @@ object SearchFilters extends ElasticDsl {
             context: Option[ContextSearchFilter] = None,
             operationId: Option[OperationSearchFilter] = None): Option[SearchFilters] = {
 
-    (tags, themes, title, slug, status, searchable, context, operationId) match {
-      case (None, None, None, None, None, None, None, None) => None
-      case _                                                => Some(SearchFilters(tags, themes, title, slug, status, searchable, context, operationId))
+    (themes, title, slug, status, searchable, context, operationId) match {
+      case (None, None, None, None, None, None, None) => None
+      case _                                                => Some(SearchFilters(themes, title, slug, status, searchable, context, operationId))
     }
   }
 
@@ -79,7 +76,6 @@ object SearchFilters extends ElasticDsl {
   def getSearchFilters(searchQuery: SearchQuery): Seq[QueryDefinition] =
     Seq(
       buildThemesSearchFilter(searchQuery),
-      buildTagsSearchFilter(searchQuery),
       buildTitleSearchFilter(searchQuery),
       buildSlugSearchFilter(searchQuery),
       buildStatusSearchFilter(searchQuery),
@@ -110,18 +106,6 @@ object SearchFilters extends ElasticDsl {
           Some(ElasticApi.termQuery(SequenceElasticsearchFieldNames.themeId, themeId))
         case Some(ThemesSearchFilter(themes)) =>
           Some(ElasticApi.termsQuery(SequenceElasticsearchFieldNames.themes, themes))
-        case _ => None
-      }
-    }
-  }
-
-  def buildTagsSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    searchQuery.filters.flatMap {
-      _.tags match {
-        case Some(TagsSearchFilter(Seq(tagId))) =>
-          Some(ElasticApi.termQuery(SequenceElasticsearchFieldNames.tagId, tagId))
-        case Some(TagsSearchFilter(tags)) =>
-          Some(ElasticApi.termsQuery(SequenceElasticsearchFieldNames.tags, tags))
         case _ => None
       }
     }

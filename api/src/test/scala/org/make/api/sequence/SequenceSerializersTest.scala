@@ -8,7 +8,6 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.ThemeId
 import org.make.core.sequence._
-import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
 import stamina.Persisters
@@ -36,7 +35,6 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
         eventDate = eventDate,
         title = "my sequence",
         themeIds = Seq(ThemeId("theme-id")),
-        tagIds = Seq(TagId("tag-1"), TagId("tag-2")),
         operationId = Some(operationId),
         searchable = true
       )
@@ -71,8 +69,7 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
         status = Some(SequenceStatus.Published),
         operationId = Some(operationId),
         operation = Some("my-operation"),
-        themeIds = Seq(ThemeId("theme-1")),
-        tagIds = Seq(TagId("tag-1"), TagId("tag-2"))
+        themeIds = Seq(ThemeId("theme-1"))
       )
 
     val sequencePatched =
@@ -84,7 +81,6 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
           sequenceId = sequenceId,
           title = "the sequence",
           slug = "the-sequence",
-          tagIds = Seq(TagId("tag-1"), TagId("tag-2")),
           proposalIds = Seq(ProposalId("proposal-1"), ProposalId("proposal-2")),
           themeIds = Seq(ThemeId("theme-id")),
           operationId = Some(operationId),
@@ -109,7 +105,6 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
       sequenceId = sequenceId,
       title = "the sequence",
       slug = "the-sequence",
-      tagIds = Seq(TagId("tag-1"), TagId("tag-2")),
       proposalIds = Seq(ProposalId("proposal-1"), ProposalId("proposal-2")),
       themeIds = Seq(ThemeId("theme-id")),
       operationId = Some(operationId),

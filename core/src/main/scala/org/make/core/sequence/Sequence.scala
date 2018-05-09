@@ -4,15 +4,14 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.ThemeId
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
-import org.make.core.SprayJsonFormatters._
-import org.make.core.operation.OperationId
-import org.make.core.tag.TagId
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 final case class SequenceTranslation(slug: String, title: String, language: String) extends MakeSerializable
 
@@ -34,7 +33,6 @@ object SequenceAction {
 case class Sequence(sequenceId: SequenceId,
                     title: String,
                     slug: String,
-                    tagIds: Seq[TagId] = Seq.empty,
                     proposalIds: Seq[ProposalId] = Seq.empty,
                     themeIds: Seq[ThemeId],
                     operationId: Option[OperationId] = None,
@@ -50,7 +48,7 @@ case class Sequence(sequenceId: SequenceId,
 
 object Sequence {
   implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat14(Sequence.apply)
+    DefaultJsonProtocol.jsonFormat13(Sequence.apply)
 }
 
 final case class SequenceId(value: String) extends StringValue

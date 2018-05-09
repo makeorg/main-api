@@ -9,7 +9,7 @@ import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
-import org.make.core.tag._
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -223,14 +223,21 @@ class TagServiceTest
 
       val themeId = ThemeId("theme-id")
 
+      val tag1 = newTag("theme tag1", themeId = Some(themeId))
+      val tag2 = newTag("theme tag2", themeId = Some(themeId))
+
       Mockito.reset(persistentTagService)
+
+      Mockito
+        .when(persistentTagService.findAllDisplayed())
+        .thenReturn(
+          Future
+            .successful(Seq(tag1, tag2))
+        )
       Mockito
         .when(persistentTagService.findByThemeId(ArgumentMatchers.eq(themeId)))
         .thenReturn(
-          Future
-            .successful(
-              Seq(newTag("theme tag1", themeId = Some(themeId)), newTag("theme tag2", themeId = Some(themeId)))
-            )
+          Future.successful(Seq(tag1, tag2))
         )
 
       val futureTags: Future[Seq[Tag]] = tagService.findByThemeId(themeId)

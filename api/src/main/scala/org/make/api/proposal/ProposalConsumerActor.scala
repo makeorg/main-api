@@ -124,29 +124,6 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
   private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
 
-    def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
-      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
-
-      tagTypes.flatMap { tagTypes =>
-        tagService
-          .findByTagIds(tags)
-          .map { tags =>
-            Some(tags.map { tag =>
-              if (tag.display == TagDisplay.Inherit) {
-                val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
-                IndexedTag(
-                  tagId = tag.tagId,
-                  label = tag.label,
-                  display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
-                )
-              } else {
-                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
-              }
-            })
-          }
-      }
-    }
-
     val maybeResult = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(id))
       user     <- OptionT(userService.getUser(proposal.author))

@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.operation.{OperationService, OperationServiceComponent}
-import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
@@ -32,14 +31,12 @@ class SequenceApiTest
     with SequenceApi
     with SequenceServiceComponent
     with ThemeServiceComponent
-    with TagServiceComponent
     with OperationServiceComponent
     with SequenceCoordinatorServiceComponent
     with SequenceConfigurationComponent {
 
   override val sequenceService: SequenceService = mock[SequenceService]
   override val themeService: ThemeService = mock[ThemeService]
-  override val tagService: TagService = mock[TagService]
   override val operationService: OperationService = mock[OperationService]
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
@@ -97,11 +94,6 @@ class SequenceApiTest
     language = "fr"
   )
 
-  when(tagService.findAll()).thenReturn(Future.successful(Seq(myTag)))
-  when(tagService.findByTagIds(matches(Seq(TagId("mytag"))))).thenReturn(Future.successful(Seq(myTag)))
-  when(tagService.findByTagIds(matches(Seq.empty))).thenReturn(Future.successful(Seq.empty))
-  when(tagService.findByTagIds(matches(Seq(TagId("badtagid"))))).thenReturn(Future.successful(Seq.empty))
-
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"
   val moderatorToken = "my-moderator-access-token"
@@ -140,7 +132,6 @@ class SequenceApiTest
     sequenceId = SequenceId("123"),
     title = "my sequence 1",
     slug = "my-sequence-1",
-    tagIds = Seq.empty,
     proposalIds = Seq.empty,
     themeIds = Seq.empty,
     createdAt = Some(DateHelper.now()),
@@ -157,7 +148,6 @@ class SequenceApiTest
       slug = "my-sequence-1",
       title = "my sequence 1",
       status = SequenceStatus.Published,
-      tagIds = Seq.empty,
       themeIds = Seq.empty,
       creationContext = RequestContext.empty,
       createdAt = Some(DateHelper.now()),
@@ -171,7 +161,6 @@ class SequenceApiTest
   val validCreateJson: String =
     """
       |{
-      | "tagIds": ["happy"],
       | "themeIds": [],
       | "title": "my valid sequence",
       | "searchable": true
@@ -181,7 +170,6 @@ class SequenceApiTest
   val invalidCreateJson: String =
     """
       |{
-      | "tagIds": ["happy"],
       | "themeIds": ["909090"],
       | "title": "my valid sequence",
       | "searchable": true
@@ -191,7 +179,6 @@ class SequenceApiTest
   val validModeratorSearchJson: String =
     """
       |{
-      | "tagIds": [],
       | "themeIds": [],
       | "title": "my sequence 1",
       | "slug": "my-sequence-1",
@@ -223,7 +210,6 @@ class SequenceApiTest
         any[RequestContext],
         any[ZonedDateTime],
         any[String],
-        any[Seq[TagId]],
         any[Seq[ThemeId]],
         any[Option[OperationId]],
         matches(true)
@@ -279,7 +265,6 @@ class SequenceApiTest
         matches(Some("newSequenceTitle")),
         matches(None),
         matches(None),
-        matches(Seq.empty),
         matches(Seq.empty)
       )
   ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
@@ -293,7 +278,6 @@ class SequenceApiTest
         matches(Some("newSequenceTitle")),
         matches(None),
         matches(None),
-        matches(Seq.empty),
         matches(Seq.empty)
       )
   ).thenReturn(Future.successful(None))
@@ -410,9 +394,9 @@ class SequenceApiTest
       }
     }
 
-    scenario("create sequence without themes and tags field") {
+    scenario("create sequence without themes field") {
       Given("an authenticated user with moderator role")
-      When("the user wants to create a sequence without tags or themes field")
+      When("the user wants to create a sequence without themes field")
       Then("he should get a bad request (400) return code")
 
       Post("/moderation/sequences")
@@ -428,7 +412,7 @@ class SequenceApiTest
       Then("he should get a bad request (400) return code")
 
       Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"themeIds: [], tagIds: []"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"themeIds: []"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
@@ -632,17 +616,6 @@ class SequenceApiTest
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "themeIds")
         contentError should be(Some(ValidationError("themeIds", Some("Some theme ids are invalid"))))
-      }
-    }
-
-    scenario("invalid tagId") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"tagIds": ["badtagid"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "tagIds")
-        contentError should be(Some(ValidationError("tagIds", Some("Some tag ids are invalid"))))
       }
     }
 

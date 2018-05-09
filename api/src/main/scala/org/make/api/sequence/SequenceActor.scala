@@ -71,7 +71,6 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         eventDate = dateHelper.now(),
         title = command.title,
         themeIds = command.themeIds,
-        tagIds = command.tagIds,
         operationId = command.operationId,
         searchable = command.searchable
       )
@@ -92,8 +91,7 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
         status = command.status,
         operationId = command.operationId,
         userId = userId,
-        themeIds = command.themeIds,
-        tagIds = command.tagIds
+        themeIds = command.themeIds
       )
     ) { _ =>
       sender() ! state
@@ -101,12 +99,10 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
   }
 
   private def onPatchSequenceCommand(command: PatchSequenceCommand): Unit = {
-    if (state.exists(_.tagIds.nonEmpty)) {
-      persistAndPublishEvent(
-        SequencePatched(id = command.sequenceId, requestContext = command.requestContext, sequence = command.sequence)
-      ) { _ =>
-        sender() ! state
-      }
+    persistAndPublishEvent(
+      SequencePatched(id = command.sequenceId, requestContext = command.requestContext, sequence = command.sequence)
+    ) { _ =>
+      sender() ! state
     }
   }
 
@@ -125,7 +121,6 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
           themeIds = e.themeIds,
           operationId = e.operationId,
           creationContext = e.requestContext,
-          tagIds = e.tagIds,
           events = List(
             SequenceAction(
               date = e.eventDate,
@@ -133,7 +128,6 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
               actionType = "create",
               arguments = Map(
                 "title" -> e.title,
-                "tagIds" -> e.tagIds.mkString(","),
                 "themeIds" -> e.themeIds.map(_.value).mkString(",")
               )
             )
@@ -151,7 +145,6 @@ class SequenceActor(dateHelper: DateHelper) extends MakePersistentActor(classOf[
             slug = SlugHelper(e.title.getOrElse(state.title)),
             status = e.status.getOrElse(state.status),
             themeIds = e.themeIds,
-            tagIds = e.tagIds,
             operationId = e.operationId
         )
       )

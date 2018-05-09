@@ -3,7 +3,7 @@ package org.make.api.operation
 import java.time.LocalDate
 
 import io.circe.syntax._
-import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
@@ -41,7 +41,7 @@ trait OperationService extends ShortenedNames {
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
-  this: PersistentOperationServiceComponent with IdGeneratorComponent with DefaultPersistentTagServiceComponent =>
+  this: PersistentOperationServiceComponent with IdGeneratorComponent with PersistentTagServiceComponent =>
 
   val operationService: OperationService = new OperationService {
 

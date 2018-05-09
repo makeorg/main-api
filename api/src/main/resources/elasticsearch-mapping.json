@@ -199,23 +199,6 @@
             }
           }
         },
-        "tags": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "keyword",
-              "index": true
-            },
-            "tagId": {
-              "type": "keyword",
-              "index": true
-            },
-            "display": {
-              "type": "boolean",
-              "index": false
-            }
-          }
-        },
         "themes": {
           "type": "object",
           "properties": {

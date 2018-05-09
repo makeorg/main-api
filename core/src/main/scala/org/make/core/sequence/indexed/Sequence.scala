@@ -7,10 +7,9 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.CirceFormatters
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedTag}
+import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{ThemeId, ThemeTranslation}
 import org.make.core.sequence._
-import org.make.core.tag.Tag
 
 import scala.concurrent.Future
 
@@ -22,8 +21,6 @@ object SequenceElasticsearchFieldNames {
   val status: String = "status"
   val createdAt: String = "createdAt"
   val updatedAt: String = "updatedAt"
-  val tags: String = "tags"
-  val tagId: String = "tags.tagId"
   val themes: String = "themes"
   val themeId: String = "themes.themeId"
   val themeTranslation: String = "themes.translation"
@@ -62,7 +59,6 @@ case class IndexedSequence(id: SequenceId,
                            createdAt: ZonedDateTime,
                            updatedAt: ZonedDateTime,
                            context: Option[Context],
-                           tags: Seq[IndexedTag],
                            themes: Seq[IndexedSequenceTheme],
                            operationId: Option[OperationId],
                            proposals: Seq[IndexedSequenceProposalId],
@@ -93,7 +89,6 @@ final case class IndexedStartSequence(id: SequenceId,
                                       title: String,
                                       slug: String,
                                       translation: Seq[SequenceTranslation] = Seq.empty,
-                                      tags: Seq[Tag],
                                       themes: Seq[IndexedSequenceTheme],
                                       proposals: Seq[IndexedProposal])
 
