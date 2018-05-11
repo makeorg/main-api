@@ -28,6 +28,7 @@ object UserEvent {
       UserConnectedEvent :+:
       UserUpdatedTagEvent :+:
       UserValidatedAccountEvent :+:
+      OrganisationRegisteredEvent :+:
       CNil
 
   final case class UserEventWrapper(version: Int,
@@ -40,12 +41,13 @@ object UserEvent {
   object UserEventWrapper {
     def wrapEvent(event: UserEvent): AnyUserEvent =
       event match {
-        case e: ResetPasswordEvent         => Coproduct[AnyUserEvent](e)
-        case e: ResendValidationEmailEvent => Coproduct[AnyUserEvent](e)
-        case e: UserConnectedEvent         => Coproduct[AnyUserEvent](e)
-        case e: UserUpdatedTagEvent        => Coproduct[AnyUserEvent](e)
-        case e: UserRegisteredEvent        => Coproduct[AnyUserEvent](e)
-        case e: UserValidatedAccountEvent  => Coproduct[AnyUserEvent](e)
+        case e: ResetPasswordEvent          => Coproduct[AnyUserEvent](e)
+        case e: ResendValidationEmailEvent  => Coproduct[AnyUserEvent](e)
+        case e: UserConnectedEvent          => Coproduct[AnyUserEvent](e)
+        case e: UserUpdatedTagEvent         => Coproduct[AnyUserEvent](e)
+        case e: UserRegisteredEvent         => Coproduct[AnyUserEvent](e)
+        case e: UserValidatedAccountEvent   => Coproduct[AnyUserEvent](e)
+        case e: OrganisationRegisteredEvent => Coproduct[AnyUserEvent](e)
       }
   }
 
@@ -61,6 +63,7 @@ object UserEvent {
     implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
       at(identity)
     implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
+    implicit val atOrganisationRegisteredEvent: Case.Aux[OrganisationRegisteredEvent, OrganisationRegisteredEvent] = at(identity)
   }
 
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
@@ -161,6 +164,17 @@ object UserEvent {
                                        oldTag: String,
                                        newTag: String)
       extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class OrganisationRegisteredEvent(override val connectedUserId: Option[UserId] = None,
+                                 override val eventDate: ZonedDateTime = DateHelper.now(),
+                                 override val userId: UserId,
+                                 override val requestContext: RequestContext,
+                                 email: String,
+                                 override val country: String = "FR",
+                                 override val language: String = "fr")
+    extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
 

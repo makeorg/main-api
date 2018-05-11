@@ -30,12 +30,13 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
-      case event: ResetPasswordEvent         => handleResetPasswordEvent(event)
-      case event: UserRegisteredEvent        => handleUserRegisteredEventEvent(event)
-      case event: UserValidatedAccountEvent  => handleUserValidatedAccountEvent(event)
-      case event: UserConnectedEvent         => doNothing(event)
-      case event: UserUpdatedTagEvent        => doNothing(event)
-      case event: ResendValidationEmailEvent => handleResendValidationEmailEvent(event)
+      case event: ResetPasswordEvent          => handleResetPasswordEvent(event)
+      case event: UserRegisteredEvent         => handleUserRegisteredEventEvent(event)
+      case event: UserValidatedAccountEvent   => handleUserValidatedAccountEvent(event)
+      case event: UserConnectedEvent          => doNothing(event)
+      case event: UserUpdatedTagEvent         => doNothing(event)
+      case event: ResendValidationEmailEvent  => handleResendValidationEmailEvent(event)
+      case event: OrganisationRegisteredEvent => doNothing(event)
     }
   }
 
