@@ -38,6 +38,7 @@ import org.make.api.tagtype.{
   DefaultTagTypeServiceComponent,
   ModerationTagTypeApi
 }
+import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
