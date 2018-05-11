@@ -23,7 +23,7 @@ import org.make.api.operation.{
   ModerationOperationApi,
   OperationApi
 }
-import org.make.api.organisation.ModerationOrganisationApi
+import org.make.api.organisation.{ModerationOrganisationApi, OrganisationApi}
 import org.make.api.proposal._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
@@ -147,6 +147,7 @@ trait MakeApi
     with HealthCheckApi
     with ModerationOperationApi
     with ModerationOrganisationApi
+    with OrganisationApi
     with ModerationProposalApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
@@ -236,7 +237,8 @@ trait MakeApi
       classOf[ModerationOperationApi],
       classOf[ModerationProposalApi],
       classOf[ModerationTagApi],
-      classOf[ModerationOrganisationApi]
+      classOf[ModerationOrganisationApi],
+      classOf[OrganisationApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -275,7 +277,8 @@ trait MakeApi
       trackingRoutes ~
       migrationRoutes ~
       healthCheckRoutes ~
-      moderationOrganisationRoutes
+      moderationOrganisationRoutes ~
+      organisationRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
