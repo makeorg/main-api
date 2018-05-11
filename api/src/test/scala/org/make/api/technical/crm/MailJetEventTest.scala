@@ -15,36 +15,77 @@ class MailJetEventTest extends MakeUnitTest {
       val mailJetBounceEvent: Either[circe.Error, MailJetEvent] =
         decode[MailJetEvent]("""
           |{
-          |   "event": "bounce",
-          |   "time": 1430812195,
-          |   "MessageID": 13792286917004336,
-          |   "email": "bounce@mailjet.com",
-          |   "mj_campaign_id": 0,
-          |   "mj_contact_id": 1,
-          |   "customcampaign": "custom campaign",
-          |   "CustomID": "helloworld",
-          |   "Payload": "payload here",
-          |   "blocked": true,
-          |   "hard_bounce": true,
-          |   "error_related_to": "recipient",
-          |   "error": "user unknown"
-          |}
+          |   "event":"bounce",
+          |   "time":1526023276,
+          |   "MessageID":70650219325536063,
+          |   "email":"bounce@mailjet.com",
+          |   "mj_campaign_id":5591678702,
+          |   "mj_contact_id":1778942720,
+          |   "customcampaign":"custom campaign",
+          |   "blocked":true,
+          |   "hard_bounce":true,
+          |   "error_related_to":"domain",
+          |   "error":"invalid domain"
+          | }
         """.stripMargin)
       mailJetBounceEvent.isRight shouldBe true
       mailJetBounceEvent should be(
         Right(
           MailJetBounceEvent(
             email = "bounce@mailjet.com",
-            time = Some(1430812195L),
-            messageId = Some(13792286917004336L),
-            campaignId = Some(0),
-            contactId = Some(1),
+            time = Some(1526023276),
+            messageId = Some(70650219325536063L),
+            campaignId = Some(5591678702L),
+            contactId = Some(1778942720),
             customCampaign = Some("custom campaign"),
-            customId = Some("helloworld"),
-            payload = Some("payload here"),
+            customId = None,
+            payload = None,
             blocked = true,
             hardBounce = true,
-            error = Some(MailJetError.UserUnknown)
+            error = Some(MailJetError.InvalidDomaine)
+          )
+        )
+      )
+    }
+
+    scenario("deserialize an empty bounce event") {
+      Given("an empty bounce json event from Mailjet")
+      When("I deserialize json")
+      Then("I get a MailJetBounceEvent")
+
+      val mailJetBounceEvent: Either[circe.Error, MailJetEvent] =
+        decode[MailJetEvent]("""
+                               |{
+                               |  "event":"bounce",
+                               |  "time":1525881217,
+                               |  "MessageID":0,
+                               |  "email":"",
+                               |  "mj_campaign_id":0,
+                               |  "mj_contact_id":0,
+                               |  "customcampaign":"",
+                               |  "CustomID":"",
+                               |  "Payload":"",
+                               |  "blocked":"",
+                               |  "hard_bounce":"",
+                               |  "error_related_to":"",
+                               |  "error":""
+                               |}
+                             """.stripMargin)
+      mailJetBounceEvent.isRight shouldBe true
+      mailJetBounceEvent should be(
+        Right(
+          MailJetBounceEvent(
+            email = "",
+            time = Some(1525881217),
+            messageId = Some(0),
+            campaignId = Some(0),
+            contactId = Some(0),
+            customCampaign = Some(""),
+            customId = Some(""),
+            payload = Some(""),
+            blocked = false,
+            hardBounce = false,
+            error = None
           )
         )
       )
@@ -170,6 +211,50 @@ class MailJetEventTest extends MakeUnitTest {
             agent = Some(
               "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36"
             )
+          )
+        )
+      )
+    }
+
+    scenario("deserialize an empty unsub event") {
+      Given("an empty unsub json event from Mailjet")
+      When("I deserialize json")
+      Then("I get a MailJetUnsubEvent")
+
+      val mailJetUnsubEvent: Either[circe.Error, MailJetEvent] =
+        decode[MailJetEvent]("""
+            | {
+            |   "event":"unsub",
+            |   "time":1525883669,
+            |   "MessageID":0,
+            |   "email":"",
+            |   "mj_campaign_id":0,
+            |   "mj_contact_id":0,
+            |   "customcampaign":"",
+            |   "CustomID":"",
+            |   "Payload":"",
+            |   "mj_list_id":"",
+            |   "ip":"",
+            |   "geo":"",
+            |   "agent":""
+            | }
+          """.stripMargin)
+      mailJetUnsubEvent.isRight shouldBe true
+      mailJetUnsubEvent should be(
+        Right(
+          MailJetUnsubscribeEvent(
+            email = "",
+            time = Some(1525883669),
+            messageId = Some(0),
+            campaignId = Some(0),
+            contactId = Some(0),
+            customCampaign = Some(""),
+            customId = Some(""),
+            payload = Some(""),
+            listId = None,
+            ip = Some(""),
+            geo = Some(""),
+            agent = Some("")
           )
         )
       )

@@ -77,7 +77,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   def manageContactMailJetRequest(listId: String, manageContact: ManageContact): Future[QueueOfferResult] = {
     val request = HttpRequest(
       method = HttpMethods.POST,
-      uri = Uri(s"${mailJetConfiguration.url}/contactslist/$listId/managecontact"),
+      uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactslist/$listId/managecontact"),
       headers = immutable.Seq(authorization),
       entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContact.asJson))
     )
@@ -88,7 +88,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     val request =
       HttpRequest(
         method = HttpMethods.POST,
-        uri = Uri(s"${mailJetConfiguration.url}/contact/managemanycontacts"),
+        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
         headers = immutable.Seq(authorization),
         entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
       )
@@ -98,7 +98,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   def sendEmailMailJetRequest(message: SendEmail): Future[QueueOfferResult] = {
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.POST,
-      uri = Uri(s"${mailJetConfiguration.url}/send"),
+      uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
       headers = immutable
         .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
       entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(SendMessages(message).asJson))

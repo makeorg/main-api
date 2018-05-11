@@ -4,16 +4,17 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, DecodingFailure, HCursor}
+import io.circe.Decoder._
 import org.make.api.technical.crm.MailJetEvent.AnyMailJetEvent
-import org.make.core.Sharded
+import org.make.core.{CirceFormatters, Sharded}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 sealed trait MailJetEvent {
   def email: String
   def time: Option[Long]
   def messageId: Option[Long]
-  def campaignId: Option[Int]
-  def contactId: Option[Int]
+  def campaignId: Option[Long]
+  def contactId: Option[Long]
   def customCampaign: Option[String]
   def customId: Option[String]
   def payload: Option[String]
@@ -218,13 +219,13 @@ case class MailJetBaseEvent(event: String,
                             override val email: String,
                             override val time: Option[Long],
                             override val messageId: Option[Long],
-                            override val campaignId: Option[Int],
-                            override val contactId: Option[Int],
+                            override val campaignId: Option[Long],
+                            override val contactId: Option[Long],
                             override val customCampaign: Option[String],
                             override val customId: Option[String],
                             override val payload: Option[String])
     extends MailJetEvent
-object MailJetBaseEvent {
+object MailJetBaseEvent extends CirceFormatters {
   val decoder: Decoder[MailJetBaseEvent] = Decoder.forProduct9(
     "event",
     "email",
@@ -240,8 +241,8 @@ object MailJetBaseEvent {
      email: String,
      time: Option[Long],
      messageId: Option[Long],
-     campaignId: Option[Int],
-     contactId: Option[Int],
+     campaignId: Either[Option[Long], String],
+     contactId: Either[Option[Long], String],
      customCampaign: Option[String],
      customId: Option[String],
      payload: Option[String]) =>
@@ -251,8 +252,14 @@ object MailJetBaseEvent {
         time = time,
         messageId = messageId,
         customCampaign = customCampaign,
-        campaignId = campaignId,
-        contactId = contactId,
+        campaignId = campaignId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
+        contactId = contactId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
         customId = customId,
         payload = payload
       )
@@ -262,8 +269,8 @@ object MailJetBaseEvent {
 case class MailJetBounceEvent(override val email: String,
                               override val time: Option[Long] = None,
                               override val messageId: Option[Long] = None,
-                              override val campaignId: Option[Int] = None,
-                              override val contactId: Option[Int] = None,
+                              override val campaignId: Option[Long] = None,
+                              override val contactId: Option[Long] = None,
                               override val customCampaign: Option[String] = None,
                               override val customId: Option[String] = None,
                               override val payload: Option[String] = None,
@@ -272,7 +279,7 @@ case class MailJetBounceEvent(override val email: String,
                               error: Option[MailJetError])
     extends MailJetEvent
 
-object MailJetBounceEvent {
+object MailJetBounceEvent extends CirceFormatters {
   val decoder: Decoder[MailJetBounceEvent] = Decoder.forProduct12(
     "email",
     "time",
@@ -290,13 +297,13 @@ object MailJetBounceEvent {
     (email: String,
      time: Option[Long],
      messageId: Option[Long],
-     campaignId: Option[Int],
-     contactId: Option[Int],
+     campaignId: Either[Option[Long], String],
+     contactId: Either[Option[Long], String],
      customCampaign: Option[String],
      customId: Option[String],
      payload: Option[String],
-     blocked: Boolean,
-     hardBounce: Boolean,
+     blocked: Either[Boolean, String],
+     hardBounce: Either[Boolean, String],
      errorRelatedTo: Option[String],
      error: Option[String]) =>
       MailJetBounceEvent(
@@ -304,12 +311,24 @@ object MailJetBounceEvent {
         time = time,
         messageId = messageId,
         customCampaign = customCampaign,
-        campaignId = campaignId,
-        contactId = contactId,
+        campaignId = campaignId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
+        contactId = contactId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
         customId = customId,
         payload = payload,
-        blocked = blocked,
-        hardBounce = hardBounce,
+        blocked = blocked match {
+          case Left(value) => value
+          case _           => false
+        },
+        hardBounce = hardBounce match {
+          case Left(value) => value
+          case _           => false
+        },
         error = MailJetError.getError(error, errorRelatedTo)
       )
 
@@ -319,14 +338,14 @@ object MailJetBounceEvent {
 case class MailJetBlockedEvent(override val email: String,
                                override val time: Option[Long] = None,
                                override val messageId: Option[Long] = None,
-                               override val campaignId: Option[Int] = None,
-                               override val contactId: Option[Int] = None,
+                               override val campaignId: Option[Long] = None,
+                               override val contactId: Option[Long] = None,
                                override val customCampaign: Option[String] = None,
                                override val customId: Option[String] = None,
                                override val payload: Option[String] = None,
                                error: Option[MailJetError])
     extends MailJetEvent
-object MailJetBlockedEvent {
+object MailJetBlockedEvent extends CirceFormatters {
   val decoder: Decoder[MailJetBlockedEvent] = Decoder.forProduct10(
     "email",
     "time",
@@ -342,8 +361,8 @@ object MailJetBlockedEvent {
     (email: String,
      time: Option[Long],
      messageId: Option[Long],
-     campaignId: Option[Int],
-     contactId: Option[Int],
+     campaignId: Either[Option[Long], String],
+     contactId: Either[Option[Long], String],
      customCampaign: Option[String],
      customId: Option[String],
      payload: Option[String],
@@ -354,8 +373,14 @@ object MailJetBlockedEvent {
         time = time,
         messageId = messageId,
         customCampaign = customCampaign,
-        campaignId = campaignId,
-        contactId = contactId,
+        campaignId = campaignId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
+        contactId = contactId match {
+          case Left(value) => value
+          case Right(_)    => None
+        },
         customId = customId,
         payload = payload,
         error = MailJetError.getError(error, errorRelatedTo)
@@ -366,14 +391,14 @@ object MailJetBlockedEvent {
 case class MailJetSpamEvent(override val email: String,
                             override val time: Option[Long] = None,
                             override val messageId: Option[Long] = None,
-                            override val campaignId: Option[Int] = None,
-                            override val contactId: Option[Int] = None,
+                            override val campaignId: Option[Long] = None,
+                            override val contactId: Option[Long] = None,
                             override val customCampaign: Option[String] = None,
                             override val customId: Option[String] = None,
                             override val payload: Option[String] = None,
                             source: Option[String])
     extends MailJetEvent
-object MailJetSpamEvent {
+object MailJetSpamEvent extends CirceFormatters {
   val decoder: Decoder[MailJetSpamEvent] = Decoder.forProduct9(
     "email",
     "time",
@@ -388,31 +413,27 @@ object MailJetSpamEvent {
     (email: String,
      time: Option[Long],
      messageId: Option[Long],
-     campaignId: Option[Int],
-     contactId: Option[Int],
+     campaignId: Either[Option[Long], String],
+     contactId: Either[Option[Long], String],
      customCampaign: Option[String],
      customId: Option[String],
      payload: Option[String],
      source: Option[String]) =>
-      MailJetSpamEvent(
-        email = email,
-        time = time,
-        messageId = messageId,
-        campaignId = campaignId,
-        contactId = contactId,
-        customCampaign = customCampaign,
-        customId = customId,
-        payload = payload,
-        source = source
-      )
+      MailJetSpamEvent(email = email, time = time, messageId = messageId, campaignId = campaignId match {
+        case Left(value) => value
+        case Right(_)    => None
+      }, contactId = contactId match {
+        case Left(value) => value
+        case Right(_)    => None
+      }, customCampaign = customCampaign, customId = customId, payload = payload, source = source)
   }
 }
 
 case class MailJetUnsubscribeEvent(email: String,
                                    time: Option[Long] = None,
                                    messageId: Option[Long] = None,
-                                   campaignId: Option[Int] = None,
-                                   contactId: Option[Int] = None,
+                                   campaignId: Option[Long] = None,
+                                   contactId: Option[Long] = None,
                                    customCampaign: Option[String] = None,
                                    customId: Option[String] = None,
                                    payload: Option[String] = None,
@@ -421,7 +442,7 @@ case class MailJetUnsubscribeEvent(email: String,
                                    geo: Option[String],
                                    agent: Option[String])
     extends MailJetEvent
-object MailJetUnsubscribeEvent {
+object MailJetUnsubscribeEvent extends CirceFormatters {
   val decoder: Decoder[MailJetUnsubscribeEvent] = Decoder.forProduct12(
     "email",
     "time",
@@ -439,29 +460,25 @@ object MailJetUnsubscribeEvent {
     (email: String,
      time: Option[Long],
      messageId: Option[Long],
-     campaignId: Option[Int],
-     contactId: Option[Int],
+     campaignId: Either[Option[Long], String],
+     contactId: Either[Option[Long], String],
      customCampaign: Option[String],
      customId: Option[String],
      payload: Option[String],
-     listId: Option[Int],
+     listId: Either[Option[Int], String],
      ip: Option[String],
      geo: Option[String],
      agent: Option[String]) =>
-      MailJetUnsubscribeEvent(
-        email = email,
-        time = time,
-        messageId = messageId,
-        campaignId = campaignId,
-        contactId = contactId,
-        customCampaign = customCampaign,
-        customId = customId,
-        payload = payload,
-        listId = listId,
-        ip = ip,
-        geo = geo,
-        agent = agent
-      )
+      MailJetUnsubscribeEvent(email = email, time = time, messageId = messageId, campaignId = campaignId match {
+        case Left(value) => value
+        case Right(_)    => None
+      }, contactId = contactId match {
+        case Left(value) => value
+        case Right(_)    => None
+      }, customCampaign = customCampaign, customId = customId, payload = payload, listId = listId match {
+        case Left(value) => value
+        case Right(_)    => None
+      }, ip = ip, geo = geo, agent = agent)
 
   }
 }
