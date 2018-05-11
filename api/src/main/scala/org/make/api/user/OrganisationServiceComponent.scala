@@ -19,6 +19,7 @@ trait OrganisationServiceComponent {
 
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
+  def getOrganisations(organisation: Option[String]): Future[Seq[User]]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
 }
@@ -33,12 +34,17 @@ case class OrganisationRegisterData(name: String,
 case class OrganisationUpdateData(name: Option[String], email: Option[String], avatar: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
+
   this: IdGeneratorComponent with PersistentUserServiceComponent with EventBusServiceComponent =>
 
   val organisationService: OrganisationService = new OrganisationService {
 
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
       persistentUserService.get(userId)
+    }
+
+    override def getOrganisations(organisation: Option[String]): Future[Seq[User]] = {
+      persistentUserService.findByOrganisationLike(organisation)
     }
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,

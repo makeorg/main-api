@@ -12,7 +12,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user._
 import org.make.core.HttpCodes
-import org.make.core.Validation.{maxLength, _}
+import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
 import org.make.core.user.{Role, UserId}
 import scalaoauth2.provider.AuthInfo
@@ -77,7 +77,6 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
             }
           }
         }
-
       }
     }
   }
@@ -123,10 +122,32 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
             }
           }
         }
-
       }
     }
   }
+
+  @ApiOperation(value = "get-organisation", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
+  )
+  @Path(value = "/")
+  def moderationGetOrganisation: Route =
+    get {
+      path("moderation" / "organisations") {
+        makeOperation("ModerationGetOrganisations") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              parameters('organisation.?) { organisation =>
+                onSuccess(organisationService.getOrganisations(organisation)) { result =>
+                  complete(result.map(UserResponse.apply))
+                }
+              }
+            }
+          }
+        }
+
+      }
+    }
 
   val moderationOrganisationRoutes: Route = moderationPostOrganisation ~ moderationPutOrganisation
 

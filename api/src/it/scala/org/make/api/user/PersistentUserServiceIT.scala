@@ -204,6 +204,69 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       Some(MailingErrorLog(error = "my error", date = ZonedDateTime.parse("2018-12-12T12:30:40+01:00[Europe/Paris]")))
   )
 
+  val userOrganisationCIA = User(
+    userId = UserId("CIA"),
+    email = "cia@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "US",
+    language = "en",
+    profile = None,
+    organisationName = Some("Central Intelligence Agency - CIA")
+  )
+
+  val userOrganisationFBI = User(
+    userId = UserId("FBI"),
+    email = "fbi@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "US",
+    language = "en",
+    profile = None,
+    organisationName = Some("Federal Bureau of Investigation - FBI")
+  )
+
+  val userOrganisationMI5 = User(
+    userId = UserId("MI5"),
+    email = "mi5@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "UK",
+    language = "en",
+    profile = None,
+    organisationName = Some("Military Intelligence, Section 5 - MI5")
+  )
+
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
 
   feature("The app can persist and retrieve users") {
@@ -436,6 +499,38 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]
         organisationFailUpdate.isLeft shouldBe true
         organisationFailUpdate.left.get shouldBe UpdateFailed()
+      }
+    }
+  }
+
+  feature("find users by organisation") {
+    scenario("find all organisations") {
+      val futureOrganisations = for {
+        cia <- persistentUserService.persist(userOrganisationCIA)
+        fbi <- persistentUserService.persist(userOrganisationFBI)
+      } yield (cia, fbi)
+
+      whenReady(futureOrganisations, Timeout(3.seconds)) { _ =>
+        whenReady(persistentUserService.findByOrganisationLike(None), Timeout(3.seconds)) { organisations =>
+          organisations.size should be(2)
+          organisations.exists(_.userId == UserId("FBI")) should be(true)
+          organisations.exists(_.userId == UserId("CIA")) should be(true)
+        }
+      }
+    }
+
+    scenario("find existing organisations by their name") {
+      whenReady(persistentUserService.persist(userOrganisationMI5), Timeout(3.seconds)) { _ =>
+        whenReady(persistentUserService.findByOrganisationLike(Some("MI5")), Timeout(3.seconds)) { organisations =>
+          organisations.size should be(1)
+          organisations.exists(_.userId == UserId("MI5")) should be(true)
+        }
+      }
+    }
+
+    scenario("find not existing organisations by their name") {
+      whenReady(persistentUserService.findByOrganisationLike(Some("nothing")), Timeout(3.seconds)) { organisations =>
+        organisations.size should be(0)
       }
     }
   }
