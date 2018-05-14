@@ -167,7 +167,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
               .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, SequenceSearchEngine.sequenceIndexName)))
               .recoverWith {
                 case e =>
-                  logger.error("indexing sequence failed", e)
+                  logger.error(s"indexing sequence ${indexedSequence.id.value} failed", e)
                   Future.successful(Done)
               }
         }
@@ -200,8 +200,8 @@ trait DefaultIndexationComponent extends IndexationComponent {
             .map(_ => {})
             .recoverWith {
               case e =>
-                logger.error("indexing idea failed", e)
-                Future.successful {}
+                logger.error(s"indexing idea with id ${idea.ideaId.value} failed", e)
+                Future.successful(Done)
             }
         }
       }
