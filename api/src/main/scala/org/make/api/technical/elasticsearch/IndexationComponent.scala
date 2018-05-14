@@ -13,7 +13,7 @@ import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.IndicesAliasResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.ActorSystemComponent
+import org.make.api.{migrations, ActorSystemComponent}
 import org.make.api.idea._
 import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.semantic.SemanticComponent
@@ -82,10 +82,9 @@ trait DefaultIndexationComponent extends IndexationComponent {
           logger.info("Elasticsearch Reindexation: Begin")
 
           for {
-            _ <- executeCreateIndex(newIndexName)
-            _ <- executeIndexProposals(newIndexName)
-            _ <- executeIndexSequences(newIndexName)
-            _ <- executeIndexIdeas(newIndexName)
+            _      <- executeCreateIndex(newIndexName)
+            _      <- executeIndexProposalsAndSequences(newIndexName)
+            _      <- executeIndexIdeas(newIndexName)
             result <- executeSetAlias(newIndexName)
           } yield result
         }
@@ -132,28 +131,48 @@ trait DefaultIndexationComponent extends IndexationComponent {
       }
     }
 
-    private def executeIndexProposals(newIndexName: String): Future[Done] = {
+    private def executeIndexProposalsAndSequences(newIndexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
       val parallelism = 5
       val result = readJournal
         .currentPersistenceIds()
         .mapAsync(parallelism) { persistenceId =>
-          getIndexedProposal(ProposalId(persistenceId))
+          getIndexedProposal(ProposalId(persistenceId)).flatMap {
+            case result @ Some(_) => Future.successful(result)
+            case None =>
+              getIndexedSequence(SequenceId(persistenceId))
+          }
         }
         .filter(_.isDefined)
         .map(_.get)
-        .mapAsync(parallelism) { indexedProposal =>
-          elasticsearchProposalAPI
-            .indexProposal(indexedProposal, Some(IndexAndType(newIndexName, ProposalSearchEngine.proposalIndexName)))
-            .recoverWith {
-              case e =>
-                logger.error("indexing proposal failed", e)
-                Future.successful(Done)
-            }
-          semanticService.indexProposal(indexedProposal)
+        .mapAsync(parallelism) {
+
+          case indexedProposal: IndexedProposal =>
+            elasticsearchProposalAPI
+              .indexProposal(indexedProposal, Some(IndexAndType(newIndexName, ProposalSearchEngine.proposalIndexName)))
+              .recoverWith {
+                case e =>
+                  logger.error(s"indexing proposal ${indexedProposal.id.value} failed", e)
+                  Future.successful(Done)
+              }
+              .flatMap(_ => semanticService.indexProposal(indexedProposal))
+              .recoverWith {
+                case e =>
+                  logger.error(s"indexing proposal ${indexedProposal.id.value} in semantic failed", e)
+                  Future.successful(Done)
+              }
+
+          case indexedSequence: IndexedSequence =>
+            elasticsearchSequenceAPI
+              .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, SequenceSearchEngine.sequenceIndexName)))
+              .recoverWith {
+                case e =>
+                  logger.error("indexing sequence failed", e)
+                  Future.successful(Done)
+              }
         }
         .runForeach { done =>
-          logger.debug("proposal flow ended with result {}", done)
+          logger.debug("proposal and sequence flow ended with result {}", done)
         }
 
       result.onComplete {
@@ -163,55 +182,29 @@ trait DefaultIndexationComponent extends IndexationComponent {
 
       result
     }
-
-    private def executeIndexSequences(newIndexName: String): Future[Done] = {
-      val start = System.currentTimeMillis()
-
-      val parallelism = 5
-      val result = readJournal
-        .currentPersistenceIds()
-        .mapAsync(parallelism) { persistenceId =>
-          getIndexedSequence(SequenceId(persistenceId))
-        }
-        .filter(_.isDefined)
-        .map(_.get)
-        .mapAsync(parallelism) { indexedSequence =>
-          elasticsearchSequenceAPI
-            .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, SequenceSearchEngine.sequenceIndexName)))
-            .recoverWith {
-              case e =>
-                logger.error("indexing sequence failed", e)
-                Future.successful(Done)
-            }
-        }
-        .runForeach { done =>
-          logger.debug("sequence flow ended with result {}", done)
-        }
-
-      result.onComplete {
-        case Success(_) => logger.info("Sequence indexation success in {} ms", System.currentTimeMillis() - start)
-        case Failure(e) => logger.error(s"Sequence indexation failed in ${System.currentTimeMillis() - start} ms", e)
-      }
-
-      result
-    }
   }
 
   private def executeIndexIdeas(newIndexName: String): Future[Done] = {
     val start = System.currentTimeMillis()
 
-    val result = persistentIdeaService.findAll(IdeaFiltersRequest.empty).map { ideas =>
-      logger.info(s"Ideas to index: ${ideas.size}")
-      ideas.foreach { idea =>
-        elasticsearchIdeaAPI
-          .indexIdea(IndexedIdea.createFromIdea(idea), Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName)))
-          .recoverWith {
-            case e =>
-              logger.error("indexing idea failed", e)
-              Future.successful(Done)
-          }
+    val result = persistentIdeaService
+      .findAll(IdeaFiltersRequest.empty)
+      .flatMap { ideas =>
+        logger.info(s"Ideas to index: ${ideas.size}")
+        migrations.sequentially(ideas) { idea =>
+          elasticsearchIdeaAPI
+            .indexIdea(
+              IndexedIdea.createFromIdea(idea),
+              Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName))
+            )
+            .map(_ => {})
+            .recoverWith {
+              case e =>
+                logger.error("indexing idea failed", e)
+                Future.successful {}
+            }
+        }
       }
-    }
 
     result.onComplete {
       case Success(_) => logger.info("Idea indexation success in {} ms", System.currentTimeMillis() - start)
