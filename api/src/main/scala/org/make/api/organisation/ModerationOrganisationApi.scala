@@ -11,8 +11,8 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user._
-import org.make.core.HttpCodes
-import org.make.core.Validation.{maxLength, validate}
+import org.make.core.{CirceFormatters, HttpCodes}
+import org.make.core.Validation.{maxLength, _}
 import org.make.core.auth.UserRights
 import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
@@ -92,18 +92,25 @@ final case class ModerationCreateOrganisationRequest(name: String,
                                                      avatar: Option[String],
                                                      country: Option[String],
                                                      language: Option[String]) {
-  OrganisationValidation.validateCreate(name = name)
+  OrganisationValidation.validateCreate(
+    name = name,
+    email = email
+  )
 }
 
-object ModerationCreateOrganisationRequest {
-  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] =
-    deriveDecoder[ModerationCreateOrganisationRequest]
+
+object ModerationCreateOrganisationRequest extends CirceFormatters  {
+  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] = deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
 private object OrganisationValidation {
   private val maxNameLength = 256
 
-  def validateCreate(name: String): Unit = {
-    validate(maxLength("name", maxNameLength, name))
+  def validateCreate(name: String, email: String): Unit = {
+    validate(
+      mandatoryField("email", email),
+      mandatoryField("name", name),
+      maxLength("name", maxNameLength, name),
+    )
   }
 }

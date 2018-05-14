@@ -582,7 +582,8 @@ case class UserResponse(userId: UserId,
                         country: String,
                         language: String,
                         isHardBounce: Boolean,
-                        lastMailingError: Option[MailingErrorLogResponse])
+                        lastMailingError: Option[MailingErrorLogResponse],
+                        organisation: Option[String])
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
@@ -601,6 +602,7 @@ object UserResponse extends CirceFormatters {
     country = user.country,
     language = user.language,
     isHardBounce = user.isHardBounce,
-    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_))
+    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
+    organisation = user.organisationName
   )
 }
