@@ -1,7 +1,6 @@
 package org.make.api.user
 
 import akka.actor.{ActorRef, Props}
-import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
@@ -9,7 +8,6 @@ import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, K
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
@@ -36,26 +34,26 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
-    (
-      userHistoryCoordinator ? LogRegisterCitizenEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogRegisterCitizenEvent.action,
-          arguments = UserRegistered(
-            email = event.email,
-            dateOfBirth = event.dateOfBirth,
-            firstName = event.firstName,
-            lastName = event.lastName,
-            profession = event.profession,
-            postalCode = event.postalCode,
-            country = event.country,
-            language = event.language
-          )
+    userHistoryCoordinator ! LogRegisterCitizenEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(
+        date = event.eventDate,
+        actionType = LogRegisterCitizenEvent.action,
+        arguments = UserRegistered(
+          email = event.email,
+          dateOfBirth = event.dateOfBirth,
+          firstName = event.firstName,
+          lastName = event.lastName,
+          profession = event.profession,
+          postalCode = event.postalCode,
+          country = event.country,
+          language = event.language
         )
       )
-    ).map(_ => {})
+    )
+
+    Future.successful {}
   }
 
 }

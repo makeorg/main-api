@@ -1,7 +1,6 @@
 package org.make.api.proposal
 
 import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.pattern.ask
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
@@ -9,7 +8,6 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
@@ -46,58 +44,53 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    (
-      userHistoryCoordinator ? LogUserProposalEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogUserProposalEvent.action,
-          arguments = UserProposal(content = event.content, event.theme)
-        )
+    userHistoryCoordinator ! LogUserProposalEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(
+        date = event.eventDate,
+        actionType = LogUserProposalEvent.action,
+        arguments = UserProposal(content = event.content, event.theme)
       )
-    ).map(_ => {})
+    )
+    Future.successful {}
   }
 
   def handleProposalLocked(event: ProposalLocked): Future[Unit] = {
-    Future.successful {
-      userHistoryCoordinator ! LogLockProposalEvent(
-        userId = event.moderatorId,
-        moderatorName = event.moderatorName,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalLocked.actionType, arguments = event)
-      )
-    }
+    userHistoryCoordinator ! LogLockProposalEvent(
+      userId = event.moderatorId,
+      moderatorName = event.moderatorName,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = ProposalLocked.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
-    (
-      userHistoryCoordinator ? LogAcceptProposalEvent(
-        userId = event.moderator,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogAcceptProposalEvent(
+      userId = event.moderator,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
-    (
-      userHistoryCoordinator ? LogRefuseProposalEvent(
-        userId = event.moderator,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogRefuseProposalEvent(
+      userId = event.moderator,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 
   def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
-    (
-      userHistoryCoordinator ? LogPostponeProposalEvent(
-        userId = event.moderator,
-        requestContext = event.requestContext,
-        action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
-      )
-    ).map(_ => {})
+    userHistoryCoordinator ! LogPostponeProposalEvent(
+      userId = event.moderator,
+      requestContext = event.requestContext,
+      action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
+    )
+    Future.successful {}
   }
 }
 

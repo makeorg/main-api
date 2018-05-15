@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical._
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
 
@@ -16,8 +17,11 @@ class TrackingApiTest
     with EventBusServiceComponent
     with IdGeneratorComponent
     with ShortenedNames
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with MakeDataHandlerComponent {
 
+  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val eventBusService: EventBusService = mock[EventBusService]

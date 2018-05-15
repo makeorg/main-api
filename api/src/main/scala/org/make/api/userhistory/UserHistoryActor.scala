@@ -1,5 +1,7 @@
 package org.make.api.userhistory
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.ActorLogging
 import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
@@ -24,11 +26,7 @@ class UserHistoryActor
   def userId: UserId = UserId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case GetUserHistory(_)                    => sender() ! state.getOrElse(UserHistory(Nil))
-    case command: LogUserSearchProposalsEvent => persistEvent(command)
-    case command: LogAcceptProposalEvent      => persistEvent(command)
-    case command: LogRefuseProposalEvent      => persistEvent(command)
-    case command: LogPostponeProposalEvent    => persistEvent(command)
+    case GetUserHistory(_) => sender() ! state.getOrElse(UserHistory(Nil))
     case command: LogLockProposalEvent =>
       if (!state.toSeq
             .flatMap(_.events)
@@ -36,39 +34,56 @@ class UserHistoryActor
               case LogLockProposalEvent(command.userId, _, _, _) => true
               case _                                             => false
             }) {
-        persistEvent(command)
+        persistEvent(command) { _ =>
+          ()
+        }
       }
-    case command: LogRegisterCitizenEvent             => persistEvent(command)
-    case command: LogUserProposalEvent                => persistEvent(command)
-    case command: LogUserVoteEvent                    => persistEvent(command)
-    case command: LogUserUnvoteEvent                  => persistEvent(command)
-    case command: LogUserQualificationEvent           => persistEvent(command)
-    case command: LogUserUnqualificationEvent         => persistEvent(command)
-    case RequestVoteValues(_, values)                 => retrieveVoteValues(values)
-    case RequestUserVotedProposals(_)                 => retrieveUserVotedProposals()
-    case command: LogUserCreateSequenceEvent          => persistEvent(command)
-    case command: LogUserUpdateSequenceEvent          => persistEvent(command)
-    case command: LogUserAddProposalsSequenceEvent    => persistEvent(command)
-    case command: LogUserRemoveProposalsSequenceEvent => persistEvent(command)
-    case command: LogGetProposalDuplicatesEvent       => persistEvent(command)
-    case command: LogUserSearchSequencesEvent         => persistEvent(command)
-    case command: LogUserStartSequenceEvent           => persistEvent(command)
-    case _: ReloadState                               => reloadState()
-    case Snapshot                                     => saveSnapshot()
+    case command: InjectSessionEvents => persistEvents(command.events) { sender() ! SessionEventsInjected }
+    case RequestVoteValues(_, values) => retrieveVoteValues(values)
+    case RequestUserVotedProposals(_) => retrieveUserVotedProposals()
+    case _: ReloadState               => reloadState()
+    case Snapshot                     => saveSnapshot()
+    case command: TransactionalUserHistoryEvent[_] =>
+      persistEvent(command) { _ =>
+        sender() ! LogAcknowledged
+      }
+    case command: UserHistoryEvent[_] =>
+      persistEvent(command) { _ =>
+        ()
+      }
   }
 
   override def onRecoveryCompleted(): Unit = {}
 
   override def persistenceId: String = userId.value
 
-  private def persistEvent(event: UserHistoryEvent[_]): Unit = {
+  private def persistEvent[Event <: UserHistoryEvent[_]](event: Event)(andThen: Event => Unit): Unit = {
     if (state.isEmpty) {
       state = Some(UserHistory(Nil))
     }
-    persist(event) { e: UserHistoryEvent[_] =>
+    persist(event) { e: Event =>
       log.debug("Persisted event {} for user {}", e.toString, persistenceId)
       newEventAdded(e)
-      sender() ! event
+      andThen(e)
+    }
+  }
+
+  def persistEvents(events: Seq[UserHistoryEvent[_]])(andThen: => Unit): Unit = {
+    if (state.isEmpty) {
+      state = Some(UserHistory(Nil))
+    }
+
+    if (events.nonEmpty) {
+      val counter = new AtomicInteger()
+      persistAll(collection.immutable.Seq(events: _*)) { e: UserHistoryEvent[_] =>
+        log.debug("Persisted event {} for user {}", e.toString, persistenceId)
+        newEventAdded(e)
+        if (counter.incrementAndGet() == events.size) {
+          andThen
+        }
+      }
+    } else {
+      andThen
     }
   }
 
@@ -209,7 +224,11 @@ object UserHistoryActor {
 
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId]) extends UserRelatedEvent
   final case class RequestUserVotedProposals(userId: UserId) extends UserRelatedEvent
+  final case class InjectSessionEvents(userId: UserId, events: Seq[UserHistoryEvent[_]]) extends UserRelatedEvent
 
   case class ReloadState(userId: UserId) extends UserRelatedEvent
 
+  case object SessionEventsInjected
+
+  case object LogAcknowledged
 }

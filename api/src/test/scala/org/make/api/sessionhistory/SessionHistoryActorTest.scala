@@ -6,18 +6,25 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
+import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.userhistory.StartSequenceParameters
+import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.scalatest.GivenWhenThen
 
+import scala.concurrent.duration.DurationInt
+
 class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
-  val userCoordinator: ActorRef = TestProbe()(system).ref
+  val userCoordinatorProbe: TestProbe = TestProbe()(system)
 
   val coordinator: ActorRef =
-    system.actorOf(SessionHistoryCoordinator.props(userCoordinator), SessionHistoryCoordinator.name)
+    system.actorOf(SessionHistoryCoordinator.props(userCoordinatorProbe.ref), SessionHistoryCoordinator.name)
 
   feature("Vote retrieval") {
     scenario("no vote history") {
@@ -33,7 +40,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
@@ -47,14 +55,16 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionUnvoteEvent(
         sessionId,
         RequestContext.empty,
         SessionAction(DateHelper.now(), "unvote", SessionUnvote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionUnvoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(Map.empty)
@@ -68,7 +78,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Disagree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionUnvoteEvent(
         sessionId,
@@ -79,14 +90,16 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionUnvote(proposalId, VoteKey.Disagree)
         )
       )
-      expectMsgType[LogSessionUnvoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
         SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
@@ -100,14 +113,16 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
         RequestContext.empty,
         SessionAction(DateHelper.now(), "qualification", SessionQualification(proposalId, QualificationKey.LikeIt))
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq(QualificationKey.LikeIt))))
@@ -121,7 +136,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -132,7 +148,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.LikeIt)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -143,7 +160,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(
@@ -164,7 +182,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -175,7 +194,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.LikeIt)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -186,7 +206,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.Doable)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -197,7 +218,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(
@@ -218,7 +240,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -229,7 +252,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.LikeIt)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -240,7 +264,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.Doable)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionUnqualificationEvent(
         sessionId,
@@ -251,7 +276,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionUnqualification(proposalId, QualificationKey.LikeIt)
         )
       )
-      expectMsgType[LogSessionUnqualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -262,7 +288,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       expectMsg(
@@ -285,7 +312,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId1, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionVoteEvent(
         sessionId,
@@ -296,14 +324,16 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionVote(proposalId2, VoteKey.Disagree)
         )
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", SessionVote(proposalId3, VoteKey.Neutral))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
       expectMsg(
@@ -325,7 +355,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId1, VoteKey.Agree))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -336,7 +367,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId1, QualificationKey.Doable)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionVoteEvent(
         sessionId,
@@ -347,7 +379,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionVote(proposalId2, VoteKey.Disagree)
         )
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -358,7 +391,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId2, QualificationKey.Impossible)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionQualificationEvent(
         sessionId,
@@ -369,14 +403,16 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
           SessionQualification(proposalId2, QualificationKey.NoWay)
         )
       )
-      expectMsgType[LogSessionQualificationEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
         SessionAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", SessionVote(proposalId3, VoteKey.Neutral))
       )
-      expectMsgType[LogSessionVoteEvent]
+
+      expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
       expectMsg(
@@ -392,4 +428,70 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
     }
   }
 
+  feature("session transformation") {
+    scenario("normal case") {
+      val sessionId = SessionId("normal-session-transformation")
+      val userId = UserId("normal-user-id")
+      val event1 = LogSessionStartSequenceEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now(),
+          LogSessionStartSequenceEvent.action,
+          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+        )
+      )
+
+      val event2 = LogSessionStartSequenceEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now().plus(1, ChronoUnit.MINUTES),
+          LogSessionStartSequenceEvent.action,
+          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+        )
+      )
+
+      coordinator ! event1
+      coordinator ! UserConnected(sessionId, userId)
+
+      // This event should be forwarded to user history
+      coordinator ! event2
+
+      userCoordinatorProbe.expectMsg(5.seconds, InjectSessionEvents(userId, Seq(event1.toUserHistoryEvent(userId))))
+      userCoordinatorProbe.reply(SessionEventsInjected)
+      userCoordinatorProbe.expectMsg(5.seconds, event2.toUserHistoryEvent(userId))
+
+      val transformation = expectMsgType[SessionTransformed]
+
+      coordinator ! GetSessionHistory(sessionId)
+      // Once transformed, there shouldn't be any more messages added to the session
+      expectMsg(SessionHistory(List(transformation)))
+
+      coordinator ! StopSession(sessionId)
+
+      Thread.sleep(500)
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionHistory(List(transformation)))
+
+      val event3 = LogSessionStartSequenceEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now().plus(2, ChronoUnit.MINUTES),
+          LogSessionStartSequenceEvent.action,
+          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+        )
+      )
+      coordinator ! event3
+
+      userCoordinatorProbe.expectMsg(5.seconds, event3.toUserHistoryEvent(userId))
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionHistory(List(transformation)))
+
+    }
+
+  }
 }

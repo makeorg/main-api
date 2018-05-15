@@ -54,7 +54,7 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     }
 
     override def logHistory(command: UserHistoryEvent[_]): Unit = {
-      userHistoryCoordinator ? command
+      userHistoryCoordinator ! command
     }
 
     override def retrieveVoteAndQualifications(

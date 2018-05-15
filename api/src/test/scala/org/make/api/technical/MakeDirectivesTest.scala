@@ -27,7 +27,8 @@ class MakeDirectivesTest
     with OauthTokenGeneratorComponent
     with ShortenedNames
     with MakeApiTestUtils
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with MakeAuthentication {
 
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val idGenerator: IdGenerator = mock[IdGenerator]

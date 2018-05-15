@@ -190,32 +190,30 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       makeOperation("RegisterUser") { requestContext =>
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
-            extractClientIP { clientIp =>
-              onSuccess(
-                userService
-                  .register(
-                    UserRegisterData(
-                      email = request.email,
-                      firstName = request.firstName,
-                      lastName = request.lastName,
-                      password = Some(request.password),
-                      lastIp = clientIp.toOption.map(_.getHostAddress),
-                      dateOfBirth = request.dateOfBirth,
-                      profession = request.profession,
-                      postalCode = request.postalCode,
-                      country = request.country.orElse(requestContext.country).getOrElse("FR"),
-                      language = request.language.orElse(requestContext.language).getOrElse("fr")
-                    ),
-                    requestContext
-                  )
-                  .flatMap { user =>
-                    sessionHistoryCoordinatorService
-                      .convertSession(requestContext.sessionId, user.userId)
-                      .map(_ => user)
-                  }
-              ) { result =>
-                complete(StatusCodes.Created -> UserResponse(result))
-              }
+            onSuccess(
+              userService
+                .register(
+                  UserRegisterData(
+                    email = request.email,
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    password = Some(request.password),
+                    lastIp = requestContext.ipAddress,
+                    dateOfBirth = request.dateOfBirth,
+                    profession = request.profession,
+                    postalCode = request.postalCode,
+                    country = request.country.orElse(requestContext.country).getOrElse("FR"),
+                    language = request.language.orElse(requestContext.language).getOrElse("fr")
+                  ),
+                  requestContext
+                )
+                .flatMap { user =>
+                  sessionHistoryCoordinatorService
+                    .convertSession(requestContext.sessionId, user.userId)
+                    .map(_ => user)
+                }
+            ) { result =>
+              complete(StatusCodes.Created -> UserResponse(result))
             }
           }
         }

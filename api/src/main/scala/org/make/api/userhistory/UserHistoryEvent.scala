@@ -44,6 +44,8 @@ sealed trait UserHistoryEvent[T] extends UserRelatedEvent with MakeSerializable 
   def protagonist: Protagonist
 }
 
+sealed trait TransactionalUserHistoryEvent[T] extends UserHistoryEvent[T]
+
 object UserHistoryEvent {
   implicit val format: RootJsonFormat[UserHistoryEvent[_]] =
     new RootJsonFormat[UserHistoryEvent[_]] {
@@ -110,10 +112,12 @@ object SearchSequenceParameters {
     DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
 }
 
-final case class StartSequenceParameters(slug: Option[String], sequenceId: Option[SequenceId])
+final case class StartSequenceParameters(slug: Option[String],
+                                         sequenceId: Option[SequenceId],
+                                         includedProposals: Seq[ProposalId] = Seq.empty)
 object StartSequenceParameters {
   implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
-    DefaultJsonProtocol.jsonFormat2(StartSequenceParameters.apply)
+    DefaultJsonProtocol.jsonFormat3(StartSequenceParameters.apply)
 }
 
 final case class UserRegistered(email: String,
@@ -282,7 +286,7 @@ object LogUserProposalEvent {
 }
 
 final case class LogUserVoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserVote])
-    extends UserHistoryEvent[UserVote] {
+    extends TransactionalUserHistoryEvent[UserVote] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -295,7 +299,7 @@ object LogUserVoteEvent {
 }
 
 final case class LogUserUnvoteEvent(userId: UserId, requestContext: RequestContext, action: UserAction[UserUnvote])
-    extends UserHistoryEvent[UserUnvote] {
+    extends TransactionalUserHistoryEvent[UserUnvote] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -310,7 +314,7 @@ object LogUserUnvoteEvent {
 final case class LogUserQualificationEvent(userId: UserId,
                                            requestContext: RequestContext,
                                            action: UserAction[UserQualification])
-    extends UserHistoryEvent[UserQualification] {
+    extends TransactionalUserHistoryEvent[UserQualification] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -325,7 +329,7 @@ object LogUserQualificationEvent {
 final case class LogUserUnqualificationEvent(userId: UserId,
                                              requestContext: RequestContext,
                                              action: UserAction[UserUnqualification])
-    extends UserHistoryEvent[UserUnqualification] {
+    extends TransactionalUserHistoryEvent[UserUnqualification] {
   override val protagonist: Protagonist = Citizen
 }
 

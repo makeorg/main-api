@@ -26,7 +26,8 @@ class CrmApiTest
     with MailJetConfigurationComponent
     with IdGeneratorComponent
     with ShortenedNames
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with MakeAuthentication {
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]

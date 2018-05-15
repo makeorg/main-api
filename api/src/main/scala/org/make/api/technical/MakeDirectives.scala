@@ -22,7 +22,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
-  this: IdGeneratorComponent with MakeSettingsComponent =>
+  this: IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
 
   val sessionIdKey: String = "make-session-id"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
@@ -99,10 +99,12 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeHostName        <- optionalHeaderValueByName(HostNameHeader.name)
       maybeIpAddress       <- extractClientIP
       maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
-      maybeUserAgent       <- optionalHeaderValueByType[`User-Agent`](())
+      maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
+      maybeUser            <- optionalMakeOAuth2
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
+        userId = maybeUser.map(_.user.userId),
         requestId = requestId,
         sessionId = SessionId(sessionId),
         externalId = externalId,

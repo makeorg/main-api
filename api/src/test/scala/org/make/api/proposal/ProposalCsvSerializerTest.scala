@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus, OperationTranslation}
@@ -14,7 +15,15 @@ import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
 
-class ProposalCsvSerializerTest extends MakeApiTestUtils with IdGeneratorComponent with MakeSettingsComponent {
+class ProposalCsvSerializerTest
+    extends MakeApiTestUtils
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with MakeDataHandlerComponent {
+
+  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
+
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
 

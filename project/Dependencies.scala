@@ -7,20 +7,23 @@ object Dependencies {
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "5.6.1"
-  private val kamonVersion = "1.0.1"
+  private val kamonVersion = "1.1.2"
+  private val kamonAkkaVersion = "1.0.1"
+  private val kamonAkkaHttpVersion = "1.1.0"
+  private val kamonExecutorsVersion = "1.0.1"
   private val kamonScalaFuturesVersion = "1.0.0"
-  private val kamonAkkaRemoteVersion = "1.0.0"
+  private val kamonAkkaRemoteVersion = "1.0.1"
   private val kamonSystemMetricsVersion = "1.0.0"
-  private val kamonPrometheusVersion = "1.0.0"
+  private val kamonPrometheusVersion = "1.1.1"
   private val circeVersion = "0.9.1"
   val aspectJVersion: String = "1.8.13"
-  val swaggerUiVersion: String = "3.9.2"
+  val swaggerUiVersion: String = "3.14.0"
 
-  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.7.2"
-  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.10.0"
-  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.10.0"
+  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.0"
+  val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.11.0"
+  val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.11.0"
   val commonsLoggingBridge: ModuleID = "org.slf4j"          % "jcl-over-slf4j"   % "1.7.25"
-  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % "2.10.0"
+  val log4jJul: ModuleID = "org.apache.logging.log4j"       % "log4j-jul"        % "2.11.0"
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyEpollMac: ModuleID =
@@ -36,7 +39,7 @@ object Dependencies {
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.5.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.12.0")
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.14.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
@@ -50,12 +53,12 @@ object Dependencies {
 
   val kamonCore: ModuleID = ("io.kamon" %% "kamon-core" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonExecutors: ModuleID =
-    ("io.kamon" %% "kamon-executors" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-executors" % kamonExecutorsVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkka: ModuleID =
-    ("io.kamon" %% "kamon-akka-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka-2.5" % kamonAkkaVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonScalaFutures: ModuleID = "io.kamon" %% "kamon-scala-future" % kamonScalaFuturesVersion
   val kamonAkkaHttp: ModuleID =
-    ("io.kamon" %% "kamon-akka-http-2.5" % kamonVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka-http-2.5" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkkaRemote: ModuleID =
     ("io.kamon" %% "kamon-akka-remote-2.5" % kamonAkkaRemoteVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
@@ -71,7 +74,7 @@ object Dependencies {
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.3.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.2.1"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.2.3"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.1"
   val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "5.0.7"
 
@@ -79,13 +82,13 @@ object Dependencies {
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
-  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.1"
+  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.3"
   val avroSerializer: ModuleID =
     ("io.confluent" % "kafka-avro-serializer" % "3.2.2")
       .exclude("org.slf4j", "slf4j-log4j12")
       .exclude("io.netty", "netty")
 
-  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.2"
+  val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
 
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion

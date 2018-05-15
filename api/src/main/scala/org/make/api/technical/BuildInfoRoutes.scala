@@ -5,10 +5,10 @@ import buildinfo.BuildInfo
 import io.circe.ObjectEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 
 trait BuildInfoRoutes extends MakeDirectives {
-  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
 
   val buildRoutes: Route = buildInfo
 
