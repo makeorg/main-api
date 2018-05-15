@@ -17,6 +17,11 @@ class MakeSettings(config: Config) extends Extension {
     val isSecure: Boolean = config.getBoolean("cookie-session.is-secure")
   }
 
+  object VisitorCookie {
+    val name: String = "make-visitor"
+    val isSecure: Boolean = config.getBoolean("cookie-visitor.is-secure")
+  }
+
   object Oauth {
     val accessTokenLifetime: Int = config.getInt("oauth.access-token-lifetime")
     val refreshTokenLifetime: Int = config.getInt("oauth.refresh-token-lifetime")

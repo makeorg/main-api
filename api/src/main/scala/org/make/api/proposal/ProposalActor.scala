@@ -110,6 +110,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             currentTheme = contextChanges.currentTheme.map(Some(_)).getOrElse(proposal.creationContext.currentTheme),
             requestId = contextChanges.requestId.getOrElse(proposal.creationContext.requestId),
             sessionId = contextChanges.sessionId.getOrElse(proposal.creationContext.sessionId),
+            visitorId = contextChanges.visitorId.orElse(proposal.creationContext.visitorId),
             externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
             country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
             language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
