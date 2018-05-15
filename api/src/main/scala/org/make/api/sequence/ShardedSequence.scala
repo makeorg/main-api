@@ -28,7 +28,7 @@ class ShardedSequence(dateHelper: DateHelper) extends SequenceActor(dateHelper) 
 
   import ShardedSequence._
 
-  context.setReceiveTimeout(2.minutes)
+  context.setReceiveTimeout(20.minutes)
 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSequence)

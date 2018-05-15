@@ -88,7 +88,10 @@ class UserHistoryActor
   }
 
   override val applyEvent: PartialFunction[UserHistoryEvent[_], Option[UserHistory]] = {
-    case event => state.map(s => s.copy(events = event :: s.events))
+    case event =>
+      state.map { s =>
+        s.copy(events = event :: s.events)
+      }.orElse(Some(UserHistory(List(event))))
   }
 
   def applyEventFromState(currentState: Option[UserHistory],

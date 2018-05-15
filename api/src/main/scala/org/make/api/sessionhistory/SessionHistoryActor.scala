@@ -233,8 +233,12 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
   }
 
   override val applyEvent: PartialFunction[SessionHistoryEvent[_], Option[SessionHistory]] = {
-    case transformed: SessionTransformed => state.map(_.copy(events = List(transformed)))
-    case event                           => state.map(s => s.copy(events = event :: s.events))
+    case transformed: SessionTransformed =>
+      state.map(_.copy(events = List(transformed))).orElse(Some(SessionHistory(List(transformed))))
+    case event =>
+      state.map { s =>
+        s.copy(events = event :: s.events)
+      }.orElse(Some(SessionHistory(List(event))))
   }
 }
 
