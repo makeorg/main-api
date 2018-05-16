@@ -10,6 +10,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
+import org.make.core.user.UserId
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
@@ -30,6 +31,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val slugFilter = SlugSearchFilter(slug = "my-awesome-slug")
   val languageFilter = LanguageSearchFilter(language = "en")
   val countryFilter = CountrySearchFilter(country = "GB")
+  val userFilter = UserSearchFilter(userId = UserId("A34343-ERER"))
 
   val filters =
     SearchFilters(
@@ -43,7 +45,8 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       context = None,
       slug = Some(slugFilter),
       language = Some(languageFilter),
-      country = Some(countryFilter)
+      country = Some(countryFilter),
+      user = Some(userFilter)
     )
 
   val sort = Some(IndexedSort(Some("field"), Some(SortOrder.ASC)))
@@ -164,6 +167,14 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       slugSearchFilterResult shouldBe Some(
         ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, "my-awesome-slug")
       )
+    }
+
+    scenario("build UserSearchFilter from Search filter") {
+      Given("a searchFilter")
+      When("call buildUserSearchFilter with SearchQuery")
+      val userSearchFilterResult = SearchFilters.buildUserSearchFilter(searchQuery)
+      Then("result is a termQuery")
+      userSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.userId, "A34343-ERER"))
     }
   }
 }

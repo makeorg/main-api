@@ -73,6 +73,7 @@ class ProposalSearchEngineTest
     ideaId = Some(IdeaId("idea-id")),
     operationId = None
   )
+
   val normalProposal: IndexedProposal = proposal(42, 1, 3)
   val popularProposal: IndexedProposal = proposal(84, 6, 10)
   val controversialProposal: IndexedProposal = proposal(42, 54, 4)

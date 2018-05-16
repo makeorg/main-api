@@ -249,7 +249,7 @@ class ProposalSearchEngineIT
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
       country = "FR",
       language = "fr",
-      userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
+      userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
@@ -594,7 +594,7 @@ class ProposalSearchEngineIT
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
       country = "FR",
       language = "fr",
-      userId = UserId("ef418fad-2d2c-4f49-9b36-bf9d6f282aa2"),
+      userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content =
         "Il faut qu'il/elle vote une loi pour obliger l'industrie pharmaceutique d'investir dans la recherche sur les maladies rares",
       slug =
@@ -980,6 +980,22 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(1)
         result.results.head.slug should be(slug)
+      }
+    }
+
+    scenario("search proposal by user") {
+      val userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5")
+      val query = SearchQuery(
+        Some(
+          SearchFilters(
+            status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending, ProposalStatus.Accepted))),
+            user = Some(UserSearchFilter(userId))
+          )
+        )
+      )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(4)
       }
     }
   }

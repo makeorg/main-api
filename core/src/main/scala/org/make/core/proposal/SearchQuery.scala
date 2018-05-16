@@ -12,6 +12,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
+import org.make.core.user.UserId
 
 /**
   * The class holding the entire search query
@@ -49,7 +50,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          slug: Option[SlugSearchFilter] = None,
                          idea: Option[IdeaSearchFilter] = None,
                          language: Option[LanguageSearchFilter] = None,
-                         country: Option[CountrySearchFilter] = None)
+                         country: Option[CountrySearchFilter] = None,
+                         user: Option[UserSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -66,10 +68,26 @@ object SearchFilters extends ElasticDsl {
             context: Option[ContextSearchFilter] = None,
             idea: Option[IdeaSearchFilter] = None,
             language: Option[LanguageSearchFilter] = None,
-            country: Option[CountrySearchFilter] = None): Option[SearchFilters] = {
+            country: Option[CountrySearchFilter] = None,
+            user: Option[UserSearchFilter] = None): Option[SearchFilters] = {
 
-    (proposals, themes, tags, labels, operation, trending, content, status, slug, context, idea, language, country) match {
-      case (None, None, None, None, None, None, None, None, None, None, None, None, None) => None
+    (
+      proposals,
+      themes,
+      tags,
+      labels,
+      operation,
+      trending,
+      content,
+      status,
+      slug,
+      context,
+      idea,
+      language,
+      country,
+      user
+    ) match {
+      case (None, None, None, None, None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
         Some(
           SearchFilters(
@@ -85,7 +103,8 @@ object SearchFilters extends ElasticDsl {
             slug,
             idea,
             language,
-            country
+            country,
+            user
           )
         )
     }
@@ -114,7 +133,8 @@ object SearchFilters extends ElasticDsl {
       buildSlugSearchFilter(searchQuery),
       buildIdeaSearchFilter(searchQuery),
       buildLanguageSearchFilter(searchQuery),
-      buildCountrySearchFilter(searchQuery)
+      buildCountrySearchFilter(searchQuery),
+      buildUserSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSortDefinition] =
@@ -136,6 +156,16 @@ object SearchFilters extends ElasticDsl {
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId.value))
         case Some(ProposalSearchFilter(proposalIds)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.id, proposalIds.map(_.value)))
+        case _ => None
+      }
+    }
+  }
+
+  def buildUserSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.user match {
+        case Some(UserSearchFilter(userId)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.userId, userId.value))
         case _ => None
       }
     }
@@ -329,6 +359,8 @@ object SearchFilters extends ElasticDsl {
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
+
+case class UserSearchFilter(userId: UserId)
 
 case class ThemeSearchFilter(themeIds: Seq[ThemeId]) {
   validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))

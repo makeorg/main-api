@@ -209,25 +209,18 @@ object IdeaSearchFilters extends ElasticDsl {
 }
 
 case class NameSearchFilter(text: String, fuzzy: Option[String] = None)
-
 case class OperationIdSearchFilter(operationId: OperationId)
 case class ThemeIdSearchFilter(themeId: ThemeId)
-
 case class QuestionSearchFilter(question: String)
 case class CountrySearchFilter(country: String)
 case class LanguageSearchFilter(language: String)
-
 case class StatusSearchFilter(status: Seq[IdeaStatus])
-
 case class ContextSearchFilter(operation: Option[OperationId] = None,
                                source: Option[String] = None,
                                location: Option[String] = None,
                                question: Option[String] = None)
-
 case class SlugSearchFilter(slug: String)
-
 case class IdeaSearchFilter(ideaId: IdeaId)
-
 case class Limit(value: Int)
 
 case class Skip(value: Int)
