@@ -2,20 +2,16 @@ package org.make.api.proposal
 
 import java.util.Date
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.semantic.SimilarIdea
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
-import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
@@ -28,50 +24,28 @@ import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.Future
+
 class ModerationProposalApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with ProposalApi
     with ModerationProposalApi
     with IdeaServiceComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
     with ProposalServiceComponent
-    with MakeSettingsComponent
     with UserServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
-    with ProposalCoordinatorServiceComponent
-    with ReadJournalComponent
-    with ActorSystemComponent {
+    with ProposalCoordinatorServiceComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val proposalService: ProposalService = mock[ProposalService]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(idGenerator.nextId()).thenReturn("next-id")
 
   override val userService: UserService = mock[UserService]
   override val themeService: ThemeService = mock[ThemeService]
   override val operationService: OperationService = mock[OperationService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val actorSystem: ActorSystem = mock[ActorSystem]
-  override val readJournal: ReadJournalComponent.MakeReadJournal = mock[ReadJournalComponent.MakeReadJournal]
 
   private val john = User(
     userId = UserId("my-user-id"),

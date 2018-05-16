@@ -34,12 +34,20 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
 
+  /**
+    * sessionId is set in cookie and header
+    * for web app and native app respectively
+    */
   def sessionId: Directive1[String] =
     for {
       maybeCookieSessionId <- optionalCookie(sessionIdKey)
       maybeSessionId       <- optionalHeaderValueByName(SessionIdHeader.name)
     } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
+  /**
+    * visitorId is set in cookie and header
+    * for web app and native app respectively
+    */
   def visitorId: Directive1[String] =
     for {
       maybeCookieVisitorId <- optionalCookie(visitorIdKey)

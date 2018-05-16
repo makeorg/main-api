@@ -5,10 +5,7 @@ import java.util.Date
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.auth.UserRights
@@ -17,32 +14,13 @@ import org.make.core.user.Role.{RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-class ConfigurationsApiTest
-    extends MakeApiTestUtils
-    with ConfigurationsApi
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with ThemeServiceComponent
-    with MakeSettingsComponent {
+import scala.concurrent.Future
 
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
+class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with ThemeServiceComponent {
+
   override val themeService: ThemeService = mock[ThemeService]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(idGenerator.nextId()).thenReturn("next-id")
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"

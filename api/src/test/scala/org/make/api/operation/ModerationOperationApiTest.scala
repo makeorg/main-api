@@ -6,12 +6,9 @@ import java.util.{Date, UUID}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.sequence.{SequenceResponse, SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
@@ -23,32 +20,22 @@ import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.Future
+
 class ModerationOperationApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with ModerationOperationApi
     with TagServiceComponent
     with SequenceServiceComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
     with OperationServiceComponent
-    with MakeSettingsComponent
     with UserServiceComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val operationService: OperationService = mock[OperationService]
   override val tagService: TagService = mock[TagService]
   override val sequenceService: SequenceService = mock[SequenceService]
   override val userService: UserService = mock[UserService]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
 
   val routes: Route = sealRoute(moderationOperationRoutes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
@@ -252,19 +239,17 @@ class ModerationOperationApiTest
     .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(idGenerator.nextId()).thenReturn("next-id")
 
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None)).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = Some("IT"), openAt = None)).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = None, openAt = Some(LocalDate.parse("2018-02-02")))).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = None, openAt = None)).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None))
+    .thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = Some("IT"), openAt = None))
+    .thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = None, openAt = Some(LocalDate.parse("2018-02-02"))))
+    .thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = None, openAt = None))
+    .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(Future.successful(Seq(Tag("hello"))))
   when(tagService.findByTagIds(Seq(TagId("fakeTag")))).thenReturn(Future.successful(Seq()))
   when(sequenceService.getModerationSequenceById(SequenceId("29625b5a-56da-4539-b195-15303187c20b"))).thenReturn(

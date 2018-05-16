@@ -12,7 +12,7 @@ import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
-import org.make.core.session.SessionId
+import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -1367,6 +1367,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
               currentTheme = Some(ThemeId("my-theme")),
               requestId = Some("my-request-id"),
               sessionId = Some(SessionId("session-id")),
+              visitorId = Some(VisitorId("visitor-id")),
               externalId = Some("external-id"),
               country = Some("BE"),
               language = Some("nl"),
@@ -1391,6 +1392,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           userId = None,
           requestId = "my-request-id",
           sessionId = SessionId("session-id"),
+          visitorId = Some(VisitorId("visitor-id")),
           externalId = "external-id",
           country = Some("BE"),
           detectedCountry = None,

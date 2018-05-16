@@ -2,14 +2,12 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.MakeApiTestBase
+import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.core.idea.IdeaId
-import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.reference.ThemeId
 import org.make.core.user.UserId
 import org.mockito.Mockito
@@ -17,17 +15,10 @@ import org.mockito.Mockito
 import scala.collection.immutable.Seq
 
 class ProposalSearchEngineTest
-    extends MakeApiTestUtils
-    with MakeSettingsComponent
-    with IdGeneratorComponent
+    extends MakeApiTestBase
     with ElasticsearchConfigurationComponent
     with DefaultProposalSearchEngineComponent
-    with MakeAuthentication
-    with MakeDataHandlerComponent {
-
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
+    with MakeAuthentication {
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn("localhost:9200")

@@ -5,45 +5,22 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
-import org.make.core.{RequestContext, ValidationError}
+import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Tag, TagId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
+import org.make.core.{RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-class TagApiTest
-    extends MakeApiTestUtils
-    with TagApi
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with TagServiceComponent
-    with MakeSettingsComponent {
+import scala.concurrent.Future
 
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
+class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
+
   override val tagService: TagService = mock[TagService]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(idGenerator.nextId()).thenReturn("next-id")
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"

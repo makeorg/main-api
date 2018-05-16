@@ -3,16 +3,12 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 import java.util.Date
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.{ActorSystemComponent, MakeApiTestUtils}
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
@@ -26,50 +22,31 @@ import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.Future
+
 class SequenceApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with SequenceApi
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
     with SequenceServiceComponent
-    with MakeSettingsComponent
     with ThemeServiceComponent
     with TagServiceComponent
     with OperationServiceComponent
     with SequenceCoordinatorServiceComponent
-    with SequenceConfigurationComponent
-    with ReadJournalComponent
-    with ActorSystemComponent {
+    with SequenceConfigurationComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val sequenceService: SequenceService = mock[SequenceService]
   override val themeService: ThemeService = mock[ThemeService]
   override val tagService: TagService = mock[TagService]
   override val operationService: OperationService = mock[OperationService]
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
-  override val actorSystem: ActorSystem = mock[ActorSystem]
-  override val readJournal: ReadJournalComponent.MakeReadJournal = mock[ReadJournalComponent.MakeReadJournal]
 
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
   val mainUpdatedAt: Option[ZonedDateTime] = Some(DateHelper.now())
 
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(idGenerator.nextId()).thenReturn("next-id")
   when(themeService.findAll()).thenReturn(
     Future.successful(
       Seq(

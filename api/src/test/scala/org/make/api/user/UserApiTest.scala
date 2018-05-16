@@ -4,35 +4,31 @@ import java.net.InetAddress
 import java.time.{Instant, LocalDate}
 import java.util.Date
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
+import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
-import org.make.api.technical._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.userhistory.UserEvent.ResetPasswordEvent
-import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestUtils}
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
-import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.Future
+
 class UserApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with UserApi
     with UserServiceComponent
     with MakeDataHandlerComponent
@@ -46,35 +42,11 @@ class UserApiTest
     with MakeSettingsComponent
     with ActorSystemComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val socialService: SocialService = mock[SocialService]
   override val facebookApi: FacebookApi = mock[FacebookApi]
-  override val eventBusService: EventBusService = mock[EventBusService]
   override val googleApi: GoogleApi = mock[GoogleApi]
-  override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
-    mock[SessionHistoryCoordinatorService]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(idGenerator.nextId()).thenReturn("some-id")
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-
-  override def userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
-  override def readJournal: MakeReadJournal = mock[MakeReadJournal]
-
-  override lazy val actorSystem: ActorSystem = ActorSystem()
-
-  private val successful: Future[Unit] = Future.successful {}
-  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     userRoutes
