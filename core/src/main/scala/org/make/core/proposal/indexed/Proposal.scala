@@ -117,6 +117,7 @@ final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal]
 
 object ProposalsSearchResult {
   implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
+  implicit val decoder: Decoder[ProposalsSearchResult] = deriveDecoder[ProposalsSearchResult]
 
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
 }
