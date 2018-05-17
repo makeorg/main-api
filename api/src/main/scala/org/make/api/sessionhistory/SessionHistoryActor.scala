@@ -66,7 +66,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
       state.toSeq.flatMap(_.events).map(_.toString).mkString(", ")
     )
 
-    val events: Seq[UserHistoryEvent[_]] = state.toSeq.flatMap(_.events).flatMap {
+    val events: Seq[UserHistoryEvent[_]] = state.toSeq.flatMap(_.events).sortBy(_.action.date.toString).flatMap {
       case event: TransferableToUser[_] => Seq[UserHistoryEvent[_]](event.toUserHistoryEvent(userId))
       case _                            => Seq.empty[UserHistoryEvent[_]]
     }
