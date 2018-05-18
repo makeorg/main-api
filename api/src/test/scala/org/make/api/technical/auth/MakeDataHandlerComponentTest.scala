@@ -10,6 +10,7 @@ import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
+import org.make.core.session.VisitorId
 import org.make.core.user.{Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
@@ -40,6 +41,7 @@ class MakeDataHandlerComponentTest
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val visitorCookieConfiguration = mock[makeSettings.VisitorCookie.type]
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
@@ -51,7 +53,11 @@ class MakeDataHandlerComponentTest
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
+  when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
+  when(visitorCookieConfiguration.isSecure).thenReturn(false)
+  when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
   when(idGenerator.nextId()).thenReturn("some-id")
+  when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 
   val invalidClientId = "invalidClientId"
 

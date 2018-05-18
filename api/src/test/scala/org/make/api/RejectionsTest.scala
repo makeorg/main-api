@@ -8,33 +8,16 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.knutwalker.akka.http.support.CirceHttpSupport
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.{CirceFormatters, ValidationError}
-import org.mockito.Mockito.when
 
 class RejectionsTest
-    extends MakeUnitTest
+    extends MakeApiTestBase
     with ScalatestRouteTest
     with Directives
     with CirceHttpSupport
-    with MakeApiTestUtils
-    with IdGeneratorComponent
     with CirceFormatters
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with MakeDataHandlerComponent {
-
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  when(idGenerator.nextId()).thenReturn("some-id")
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+    with MakeAuthentication {
 
   val route: Route = sealRoute(handleExceptions(MakeApi.exceptionHandler("test", "123")) {
     post {

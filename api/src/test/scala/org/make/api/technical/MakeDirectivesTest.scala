@@ -1,50 +1,27 @@
 package org.make.api.technical
 
 import akka.http.javadsl.model.headers.Origin
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Origin`, `Set-Cookie`, Cookie, HttpOrigin}
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth._
 import org.make.core.RequestContext
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, Matchers}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class MakeDirectivesTest
-    extends FeatureSpec
-    with Matchers
+    extends MakeApiTestBase
     with ScalatestRouteTest
-    with MockitoSugar
-    with MakeDirectives
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
     with OauthTokenGeneratorComponent
     with ShortenedNames
-    with MakeApiTestUtils
-    with MakeSettingsComponent
     with MakeAuthentication {
 
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
 
   when(makeSettings.authorizedCorsUri).thenReturn(Seq("http://make.org"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(idGenerator.nextId()).thenReturn("some-id")
 
   val route: Route = sealRoute(get {
     path("test") {
@@ -90,18 +67,51 @@ class MakeDirectivesTest
 
     scenario("new session id if no cookie is sent") {
       Get("/test") ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "make-session-id")
+
         status should be(StatusCodes.OK)
-        header[`Set-Cookie`] shouldBe defined
-        header[`Set-Cookie`].get.cookie.name shouldBe "make-session-id"
-        header[`Set-Cookie`].get.cookie.secure shouldBe false
-        header[`Set-Cookie`].get.cookie.httpOnly shouldBe true
+
+        maybeSessionCookie.isEmpty shouldBe false
+        maybeSessionCookie.get.secure shouldBe false
+        maybeSessionCookie.get.httpOnly shouldBe true
       }
     }
 
     scenario("no cookie if session id is sent") {
       Get("/test").withHeaders(Cookie("make-session-id" -> "123")) ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         status should be(StatusCodes.OK)
-        header[`Set-Cookie`] shouldBe empty
+        !cookiesHeaders.exists(_.name == "make-session-id") shouldBe true
+      }
+    }
+
+  }
+
+  feature("visitor id management") {
+
+    scenario("new visitor id if no cookie is sent") {
+      Get("/test") ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "make-visitor-id")
+
+        status should be(StatusCodes.OK)
+
+        maybeSessionCookie.isEmpty shouldBe false
+        maybeSessionCookie.get.secure shouldBe false
+        maybeSessionCookie.get.httpOnly shouldBe true
+      }
+    }
+
+    scenario("no cookie if session id is sent") {
+      Get("/test").withHeaders(Cookie("make-session-id" -> "123")) ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        status should be(StatusCodes.OK)
+        !cookiesHeaders.exists(_.name == "make-visitor-id") shouldBe false
       }
     }
 

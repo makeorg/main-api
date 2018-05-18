@@ -4,45 +4,22 @@ import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe._
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{
-  MailJetConfiguration,
-  MailJetConfigurationComponent,
-  MakeSettings,
-  MakeSettingsComponent
-}
+import org.make.api.MakeApiTestBase
+import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmApi, MailJetBaseEvent, MailJetEvent}
+import org.make.core.session.VisitorId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
-import scala.concurrent.duration.Duration
-
 class CrmApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with CrmApi
-    with MakeDataHandlerComponent
-    with EventBusServiceComponent
     with MailJetConfigurationComponent
-    with IdGeneratorComponent
     with ShortenedNames
-    with MakeSettingsComponent
     with MakeAuthentication {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val eventBusService: EventBusService = mock[EventBusService]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
@@ -54,6 +31,7 @@ class CrmApiTest
   when(mailJetConfiguration.userListBatchSize).thenReturn(100)
   when(mailJetConfiguration.url).thenReturn("http://fakeurl.com")
   when(idGenerator.nextId()).thenReturn("some-id")
+  when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 
   val routes: Route = sealRoute(crmRoutes)
 

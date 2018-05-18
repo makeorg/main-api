@@ -5,10 +5,8 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{CountryHeader, IdGenerator, IdGeneratorComponent}
+import org.make.api.MakeApiTestBase
+import org.make.api.technical.CountryHeader
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.sequence.SequenceId
@@ -16,22 +14,10 @@ import org.make.core.user.UserId
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
-class OperationApiTest
-    extends MakeApiTestUtils
-    with OperationApi
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with OperationServiceComponent
-    with MakeSettingsComponent {
+class OperationApiTest extends MakeApiTestBase with OperationApi with OperationServiceComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val operationService: OperationService = mock[OperationService]
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
 
   val routes: Route = sealRoute(operationRoutes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
@@ -104,18 +90,14 @@ class OperationApiTest
     )
   )
 
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(idGenerator.nextId()).thenReturn("next-id")
-
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find(slug = None, country = None, openAt = None)).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None)).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = Some("first-operation"), country = None, openAt = None)).thenReturn(Future.successful(Seq(firstOperation)))
+  when(operationService.find(slug = None, country = None, openAt = None))
+    .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None))
+    .thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = Some("first-operation"), country = None, openAt = None))
+    .thenReturn(Future.successful(Seq(firstOperation)))
 
   feature("get operations") {
     scenario("get all operations") {

@@ -2,30 +2,18 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.MakeApiTestBase
+import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus, OperationTranslation}
-import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.reference.{Theme, ThemeId, ThemeTranslation}
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
 
-class ProposalCsvSerializerTest
-    extends MakeApiTestUtils
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication
-    with MakeDataHandlerComponent {
-
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
+class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication {
 
   val theme: Theme =
     Theme(ThemeId("foo-theme"), Seq(ThemeTranslation("foo-theme", "Foo Theme", "fr")), 42, 42, 42, "FR", "#0ff")

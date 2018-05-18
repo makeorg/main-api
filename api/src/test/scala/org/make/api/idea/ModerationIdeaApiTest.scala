@@ -5,10 +5,10 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.MakeApiTestBase
+import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
@@ -20,33 +20,19 @@ import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.Future
+
 class ModerationIdeaApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with ModerationIdeaApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with IdeaServiceComponent
     with MakeSettingsComponent {
 
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val ideaService: IdeaService = mock[IdeaService]
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  when(idGenerator.nextId()).thenReturn("next-id")
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
@@ -189,7 +175,12 @@ class ModerationIdeaApiTest
       Then("the idea should be saved if valid")
 
       Post("/moderation/ideas")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr", "country": "FR"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr", "country": "FR"}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         val idea: Idea = entityAs[Idea]
@@ -246,8 +237,8 @@ class ModerationIdeaApiTest
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-          status should be(StatusCodes.BadRequest)
-        }
+        status should be(StatusCodes.BadRequest)
+      }
     }
 
     scenario("authenticated admin without country") {

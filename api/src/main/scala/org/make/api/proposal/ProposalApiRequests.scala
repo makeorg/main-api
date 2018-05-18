@@ -11,7 +11,7 @@ import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.reference.{LabelId, TagId, ThemeId}
-import org.make.core.session.SessionId
+import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 
 import scala.annotation.meta.field
@@ -222,6 +222,7 @@ object PatchProposalRequest {
 final case class PatchRequestContext(currentTheme: Option[ThemeId] = None,
                                      requestId: Option[String] = None,
                                      sessionId: Option[SessionId] = None,
+                                     visitorId: Option[VisitorId] = None,
                                      externalId: Option[String] = None,
                                      country: Option[String] = None,
                                      language: Option[String] = None,

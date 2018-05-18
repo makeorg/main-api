@@ -13,18 +13,20 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
-import org.make.core.session.SessionId
+import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.{CirceFormatters, RequestContext, SlugHelper}
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration.DurationInt
 
 trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
 
   val sessionIdKey: String = "make-session-id"
+  val visitorIdKey: String = "make-visitor-id"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
@@ -32,15 +34,30 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
 
+  /**
+    * sessionId is set in cookie and header
+    * for web app and native app respectively
+    */
   def sessionId: Directive1[String] =
     for {
       maybeCookieSessionId <- optionalCookie(sessionIdKey)
       maybeSessionId       <- optionalHeaderValueByName(SessionIdHeader.name)
     } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
+  /**
+    * visitorId is set in cookie and header
+    * for web app and native app respectively
+    */
+  def visitorId: Directive1[String] =
+    for {
+      maybeCookieVisitorId <- optionalCookie(visitorIdKey)
+      maybeVisitorId       <- optionalHeaderValueByName(VisitorIdHeader.name)
+    } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
+
   def addMakeHeaders(requestId: String,
                      routeName: String,
                      sessionId: String,
+                     visitorId: String,
                      startTime: Long,
                      addCookie: Boolean,
                      externalId: String,
@@ -52,7 +69,18 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         RouteNameHeader(routeName),
         ExternalIdHeader(externalId),
         SessionIdHeader(sessionId)
-      ) ++ defaultCorsHeaders(origin)
+      ) ++ defaultCorsHeaders(origin) ++ Seq(
+        `Set-Cookie`(
+          HttpCookie(
+            name = visitorIdKey,
+            value = visitorId,
+            secure = makeSettings.VisitorCookie.isSecure,
+            httpOnly = true,
+            maxAge = Some(365.days.toSeconds),
+            path = Some("/")
+          )
+        )
+      )
 
       if (addCookie) {
         mandatoryHeaders ++ Seq(
@@ -77,15 +105,26 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     val slugifiedName: String = SlugHelper(name)
 
     for {
-      _                    <- operationName(slugifiedName)
-      maybeCookie          <- optionalCookie(sessionIdKey)
-      requestId            <- requestId
-      startTime            <- startTime
-      sessionId            <- sessionId
-      externalId           <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      origin               <- optionalHeaderValueByName(Origin.name)
-      _                    <- makeAuthCookieHandlers()
-      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, startTime, maybeCookie.isEmpty, externalId, origin)
+      _                  <- operationName(slugifiedName)
+      maybeCookie        <- optionalCookie(sessionIdKey)
+      maybeVisitorCookie <- optionalCookie(visitorIdKey)
+      requestId          <- requestId
+      startTime          <- startTime
+      sessionId          <- sessionId
+      visitorId          <- visitorId
+      externalId         <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin             <- optionalHeaderValueByName(Origin.name)
+      _                  <- makeAuthCookieHandlers()
+      _ <- addMakeHeaders(
+        requestId,
+        slugifiedName,
+        sessionId,
+        visitorId,
+        startTime,
+        maybeCookie.isEmpty,
+        externalId,
+        origin
+      )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)
@@ -107,6 +146,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         userId = maybeUser.map(_.user.userId),
         requestId = requestId,
         sessionId = SessionId(sessionId),
+        visitorId = Some(VisitorId(visitorId)),
         externalId = externalId,
         operationId = maybeOperation.map(OperationId(_)),
         source = maybeSource,
@@ -421,4 +461,15 @@ final case class TotalCountHeader(override val value: String) extends ModeledCus
 object TotalCountHeader extends ModeledCustomHeaderCompanion[TotalCountHeader] {
   val name: String = "x-total-count"
   def parse(value: String): Try[TotalCountHeader] = Success(new TotalCountHeader(value))
+}
+
+final case class VisitorIdHeader(override val value: String) extends ModeledCustomHeader[VisitorIdHeader] {
+  override def companion: ModeledCustomHeaderCompanion[VisitorIdHeader] = VisitorIdHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = true
+}
+
+object VisitorIdHeader extends ModeledCustomHeaderCompanion[VisitorIdHeader] {
+  override val name: String = "x-visitor-id"
+  override def parse(value: String): Try[VisitorIdHeader] = Success(new VisitorIdHeader(value))
 }
