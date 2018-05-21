@@ -67,9 +67,11 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = proposal.country.getOrElse(user.country)
-          val language = proposal.language.getOrElse(user.language)
-          val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
+          val country: String = proposal.country.getOrElse(user.country)
+          val language: String = proposal.language.getOrElse(user.language)
+          val authorRoles: Seq[String] = user.roles.map(_.shortName)
+          val templateConfiguration =
+            mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, authorRoles)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
@@ -127,9 +129,11 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = proposal.country.getOrElse(user.country)
-          val language = proposal.language.getOrElse(user.language)
-          val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
+          val country: String = proposal.country.getOrElse(user.country)
+          val language: String = proposal.language.getOrElse(user.language)
+          val authorRoles: Seq[String] = user.roles.map(_.shortName)
+          val templateConfiguration =
+            mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, authorRoles)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(

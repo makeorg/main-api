@@ -21,15 +21,22 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
     parseTemplateConfiguration(config.getConfig("resend-validation-link"), operation, country, language)
   def forgottenPassword(operation: String, country: String, language: String): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("forgotten-password"), operation, country, language)
-  def proposalRefused(operation: String, country: String, language: String): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language)
-  def proposalAccepted(operation: String, country: String, language: String): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language)
+  def proposalRefused(operation: String,
+                      country: String,
+                      language: String,
+                      authorRoles: Seq[String] = Seq.empty): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language, authorRoles)
+  def proposalAccepted(operation: String,
+                       country: String,
+                       language: String,
+                       authorRoles: Seq[String] = Seq.empty): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language, authorRoles)
 
   private def parseTemplateConfiguration(config: Config,
                                          operation: String,
                                          country: String,
-                                         language: String): TemplateConfiguration = {
+                                         language: String,
+                                         authorRoles: Seq[String] = Seq.empty): TemplateConfiguration = {
 
     var templateConfiguration: Config = config
 
@@ -51,6 +58,23 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
 
     if (config.hasPath(s"$operation.$country.$language")) {
       templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
+    }
+
+    authorRoles.foreach { role =>
+      val formatedRole: String = role.toLowerCase.replace("_", "-")
+
+      if (config.hasPath(s"$formatedRole")) {
+        templateConfiguration = config.getConfig(s"$formatedRole").withFallback(templateConfiguration)
+      }
+
+      if (config.hasPath(s"$formatedRole.$country")) {
+        templateConfiguration = config.getConfig(s"$formatedRole.$country").withFallback(templateConfiguration)
+      }
+
+      if (config.hasPath(s"$formatedRole.$country.$language")) {
+        templateConfiguration =
+          config.getConfig(s"$formatedRole.$country.$language").withFallback(templateConfiguration)
+      }
     }
 
     TemplateConfiguration(

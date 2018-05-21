@@ -534,7 +534,12 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.RefuseProposalRequest")
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.RefuseProposalRequest"
+      ),
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")
     )
   )
   @ApiResponses(
