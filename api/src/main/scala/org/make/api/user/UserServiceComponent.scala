@@ -190,7 +190,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
         case Some(user) => Future.successful(user)
         case None       => createUserFromSocial(requestContext, userInfo, clientIp)
-
       }
     }
 

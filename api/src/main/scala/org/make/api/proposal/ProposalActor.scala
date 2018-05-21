@@ -433,7 +433,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         id = proposalId,
         author = ProposalAuthorInfo(
           user.userId,
-          user.firstName,
+          user.firstName.orElse(user.organisationName),
           user.profile.flatMap(_.postalCode),
           user.profile.flatMap(_.dateOfBirth).map { date =>
             ChronoUnit.YEARS.between(date, LocalDate.now(ZoneOffset.UTC)).toInt

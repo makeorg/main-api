@@ -56,32 +56,30 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[ModerationCreateOrganisationRequest]) { request: ModerationCreateOrganisationRequest =>
-                  extractClientIP { clientIp =>
-                    onSuccess(
-                      organisationService
-                        .register(
-                          OrganisationRegisterData(
-                            name = request.name,
-                            email = request.email,
-                            password = Some(request.password),
-                            lastIp = clientIp.toOption.map(_.getHostAddress),
-                            country = request.country.orElse(requestContext.country).getOrElse("FR"),
-                            language = request.language.orElse(requestContext.language).getOrElse("fr")
-                          ),
-                          requestContext
-                        )
-                    ) { result =>
-                      complete(StatusCodes.Created -> UserResponse(result))
-                    }
+                  onSuccess(
+                    organisationService
+                      .register(
+                        OrganisationRegisterData(
+                          name = request.name,
+                          email = request.email,
+                          password = Some(request.password),
+                          avatar = request.avatar,
+                          country = request.country.orElse(requestContext.country).getOrElse("FR"),
+                          language = request.language.orElse(requestContext.language).getOrElse("fr")
+                        ),
+                        requestContext
+                      )
+                  ) { result =>
+                    complete(StatusCodes.Created -> UserResponse(result))
                   }
                 }
               }
+            }
           }
         }
-      }
 
+      }
     }
-  }
   }
 
   val moderationOrganisationRoutes: Route = moderationPostOrganisation
@@ -91,27 +89,21 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
 final case class ModerationCreateOrganisationRequest(name: String,
                                                      email: String,
                                                      password: String,
-                                                     lastIp: Option[String],
+                                                     avatar: Option[String],
                                                      country: Option[String],
                                                      language: Option[String]) {
-  OrganisationValidation.validateCreate(
-    name = name
-  )
+  OrganisationValidation.validateCreate(name = name)
 }
 
-
 object ModerationCreateOrganisationRequest {
-  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] = deriveDecoder[ModerationCreateOrganisationRequest]
+  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] =
+    deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
 private object OrganisationValidation {
   private val maxNameLength = 256
 
   def validateCreate(name: String): Unit = {
-    validate(
-      maxLength("name", maxNameLength, name)
-    )
+    validate(maxLength("name", maxNameLength, name))
   }
 }
-
-

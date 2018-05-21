@@ -81,16 +81,17 @@ case class User(userId: UserId,
                 override val updatedAt: Option[ZonedDateTime] = None,
                 isHardBounce: Boolean = false,
                 lastMailingError: Option[MailingErrorLog] = None,
-                organisation: Option[String] = None)
+                organisationName: Option[String] = None)
     extends MakeSerializable
     with Timestamped {
 
   def fullName: Option[String] = {
-    (firstName, lastName) match {
-      case (None, None)                                    => None
-      case (Some(definedFirstName), None)                  => Some(definedFirstName)
-      case (None, Some(definedLastName))                   => Some(definedLastName)
-      case (Some(definedFirstName), Some(definedLastName)) => Some(s"$definedFirstName $definedLastName")
+    (firstName, lastName, organisationName) match {
+      case (None, None, None)                                 => None
+      case (None, None, Some(definedOrganisationName))        => Some(definedOrganisationName)
+      case (Some(definedFirstName), None, _)                  => Some(definedFirstName)
+      case (None, Some(definedLastName), _)                   => Some(definedLastName)
+      case (Some(definedFirstName), Some(definedLastName), _) => Some(s"$definedFirstName $definedLastName")
     }
   }
 

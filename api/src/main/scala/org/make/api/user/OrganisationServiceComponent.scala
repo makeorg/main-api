@@ -1,17 +1,16 @@
 package org.make.api.user
 
 import com.github.t3hnar.bcrypt._
-import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
+import org.make.core.profile.Profile
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.util.Success
 
 trait OrganisationServiceComponent {
@@ -26,64 +25,75 @@ trait OrganisationService extends ShortenedNames {
 case class OrganisationRegisterData(name: String,
                                     email: String,
                                     password: Option[String],
-                                    lastIp: Option[String],
+                                    avatar: Option[String],
                                     country: String,
                                     language: String)
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
-  this: IdGeneratorComponent
-    with UserTokenGeneratorComponent
-    with PersistentUserServiceComponent
-    with EventBusServiceComponent =>
+  this: IdGeneratorComponent with PersistentUserServiceComponent with EventBusServiceComponent =>
 
   val organisationService: OrganisationService = new OrganisationService {
-
-    val validationTokenExpiresIn: Long = 30.days.toSeconds
 
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
       persistentUserService.get(userId)
     }
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,
-                             lowerCasedEmail: String,
-                             country: String,
-                             language: String,
-                             hashedVerificationToken: String): Future[User] = {
+                                     lowerCasedEmail: String,
+                                     country: String,
+                                     language: String): Future[User] = {
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
         firstName = None,
         lastName = None,
-        lastIp = organisationRegisterData.lastIp,
+        organisationName = Some(organisationRegisterData.name),
+        lastIp = None,
         hashedPassword = organisationRegisterData.password.map(_.bcrypt),
         enabled = true,
         emailVerified = true,
         lastConnection = DateHelper.now(),
-        verificationToken = Some(hashedVerificationToken),
-        verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn)),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleOrganisation),
         country = country,
         language = language,
-        profile = None
+        profile = Some(
+          Profile(
+            dateOfBirth = None,
+            avatarUrl = organisationRegisterData.avatar,
+            profession = None,
+            phoneNumber = None,
+            twitterId = None,
+            facebookId = None,
+            googleId = None,
+            gender = None,
+            genderName = None,
+            postalCode = None,
+            karmaLevel = None,
+            locale = None,
+            optInNewsletter = false
+          )
+        )
       )
       persistentUserService.persist(user)
     }
-
 
     override def register(organisationRegisterData: OrganisationRegisterData,
                           requestContext: RequestContext): Future[User] = {
 
       val country = BusinessConfig.validateCountry(organisationRegisterData.country)
-      val language = BusinessConfig.validateLanguage(organisationRegisterData.country, organisationRegisterData.language)
+      val language =
+        BusinessConfig.validateLanguage(organisationRegisterData.country, organisationRegisterData.language)
 
       val lowerCasedEmail: String = organisationRegisterData.email.toLowerCase()
 
       val result = for {
-        emailExists             <- persistentUserService.emailExists(lowerCasedEmail)
-        hashedVerificationToken <- generateVerificationToken(lowerCasedEmail, emailExists)
-        user                    <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language, hashedVerificationToken)
+        emailExists <- persistentUserService.emailExists(lowerCasedEmail)
+        _           <- verifyEmail(lowerCasedEmail, emailExists)
+        user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language)
       } yield user
 
       result.onComplete {
@@ -104,14 +114,11 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       result
     }
 
-
-    private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
+    private def verifyEmail(lowerCasedEmail: String, emailExists: Boolean): Future[Boolean] = {
       if (emailExists) {
         Future.failed(EmailAlreadyRegisteredException(lowerCasedEmail))
       } else {
-        userTokenGenerator.generateVerificationToken().map {
-          case (_, token) => token
-        }
+        Future.successful(true)
       }
     }
   }

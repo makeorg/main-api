@@ -59,7 +59,7 @@ object PersistentUserServiceComponent {
                             isHardBounce: Boolean,
                             lastMailingErrorDate: Option[ZonedDateTime],
                             lastMailingErrorMessage: Option[String],
-                            organisation: Option[String]) {
+                            organisationName: Option[String]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -87,7 +87,7 @@ object PersistentUserServiceComponent {
             MailingErrorLog(error = message, date = date)
           }
         },
-        organisation = organisation
+        organisationName = organisationName
       )
     }
 
@@ -95,8 +95,8 @@ object PersistentUserServiceComponent {
       UserRights(userId = UserId(uuid), roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq))
     }
 
-    private def toRole: (String)   => Option[Role] = Role.matchRole
-    private def toGender: (String) => Option[Gender] = Gender.matchGender
+    private def toRole: String   => Option[Role] = Role.matchRole
+    private def toGender: String => Option[Gender] = Gender.matchGender
 
     private def toProfile: Option[Profile] = {
       Profile.parseProfile(
@@ -157,7 +157,7 @@ object PersistentUserServiceComponent {
       "is_hard_bounce",
       "last_mailing_error_date",
       "last_mailing_error_message",
-      "organisation"
+      "organisation_name"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -204,7 +204,7 @@ object PersistentUserServiceComponent {
         isHardBounce = resultSet.boolean(userResultName.isHardBounce),
         lastMailingErrorDate = resultSet.zonedDateTimeOpt(userResultName.lastMailingErrorDate),
         lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage),
-        organisation = resultSet.stringOpt(userResultName.organisation)
+        organisationName = resultSet.stringOpt(userResultName.organisationName)
       )
     }
   }
@@ -469,7 +469,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.isHardBounce -> user.isHardBounce,
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
-              column.organisation -> user.organisation
+              column.organisationName -> user.organisationName
             )
         }.execute().apply()
       }).map(_ => user)
@@ -517,7 +517,11 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
-            .set(column.emailVerified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
+            .set(
+              column.emailVerified -> true,
+              column.verificationToken -> None,
+              column.verificationTokenExpiresAt -> None
+            )
             .where(sqls.eq(column.verificationToken, verificationToken))
         }.executeUpdate().apply() match {
           case 1 => true
