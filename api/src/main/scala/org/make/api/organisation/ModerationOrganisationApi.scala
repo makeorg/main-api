@@ -11,10 +11,10 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user._
-import org.make.core.{CirceFormatters, HttpCodes}
+import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, _}
 import org.make.core.auth.UserRights
-import org.make.core.user.UserId
+import org.make.core.user.{Role, UserId}
 import scalaoauth2.provider.AuthInfo
 
 @Api(
@@ -82,7 +82,55 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
     }
   }
 
-  val moderationOrganisationRoutes: Route = moderationPostOrganisation
+  @ApiOperation(value = "put-organisation", httpMethod = "PUT", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserId])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.organisation.ModerationUpdateOrganisationRequest"
+      ),
+      new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string")
+    )
+  )
+  @Path(value = "/{organisationId}")
+  def moderationPutOrganisation: Route = {
+    put {
+      path("moderation" / "organisations" / organisationId) { organisationId =>
+        makeOperation("ModerationUpdateOrganisation") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
+                  provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+                    if (!organisation.roles.contains(Role.RoleOrganisation)) {
+                      complete(StatusCodes.Forbidden)
+                    } else {
+                      onSuccess(
+                        organisationService
+                          .update(
+                            organisationId,
+                            OrganisationUpdateData(name = request.name, email = request.email, avatar = request.avatar)
+                          )
+                      ) { organisationId =>
+                        complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+      }
+    }
+  }
+
+  val moderationOrganisationRoutes: Route = moderationPostOrganisation ~ moderationPutOrganisation
+
+  private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
 }
 
 @ApiModel
@@ -92,25 +140,32 @@ final case class ModerationCreateOrganisationRequest(name: String,
                                                      avatar: Option[String],
                                                      country: Option[String],
                                                      language: Option[String]) {
-  OrganisationValidation.validateCreate(
-    name = name,
-    email = email
-  )
+  OrganisationValidation.validateCreate(name = name, email = email)
 }
 
+object ModerationCreateOrganisationRequest {
+  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] =
+    deriveDecoder[ModerationCreateOrganisationRequest]
+}
 
-object ModerationCreateOrganisationRequest extends CirceFormatters  {
-  implicit val decoder: Decoder[ModerationCreateOrganisationRequest] = deriveDecoder[ModerationCreateOrganisationRequest]
+final case class ModerationUpdateOrganisationRequest(name: Option[String] = None,
+                                                     email: Option[String] = None,
+                                                     avatar: Option[String] = None) {
+  name.foreach(name => OrganisationValidation.valildateUpdate(name = name))
+}
+
+object ModerationUpdateOrganisationRequest {
+  implicit val decoder: Decoder[ModerationUpdateOrganisationRequest] =
+    deriveDecoder[ModerationUpdateOrganisationRequest]
 }
 
 private object OrganisationValidation {
   private val maxNameLength = 256
 
   def validateCreate(name: String, email: String): Unit = {
-    validate(
-      mandatoryField("email", email),
-      mandatoryField("name", name),
-      maxLength("name", maxNameLength, name),
-    )
+    validate(mandatoryField("email", email), mandatoryField("name", name), maxLength("name", maxNameLength, name))
   }
+
+  def valildateUpdate(name: String): Unit =
+    validate(maxLength("name", maxNameLength, name))
 }

@@ -20,6 +20,7 @@ trait OrganisationServiceComponent {
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
+  def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
 }
 
 case class OrganisationRegisterData(name: String,
@@ -28,6 +29,8 @@ case class OrganisationRegisterData(name: String,
                                     avatar: Option[String],
                                     country: String,
                                     language: String)
+
+case class OrganisationUpdateData(name: Option[String], email: Option[String], avatar: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
   this: IdGeneratorComponent with PersistentUserServiceComponent with EventBusServiceComponent =>
@@ -112,6 +115,28 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }
 
       result
+    }
+
+    override def update(organisationId: UserId,
+                        organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]] = {
+      persistentUserService
+        .get(organisationId)
+        .flatMap(_.map { registeredOrganisation =>
+          val updateOrganisation =
+            registeredOrganisation.copy(
+              organisationName = organisationUpdateDate.name,
+              email = organisationUpdateDate.email.getOrElse(registeredOrganisation.email),
+              profile = registeredOrganisation.profile.map(
+                _.copy(
+                  avatarUrl = organisationUpdateDate.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl))
+                )
+              )
+            )
+          persistentUserService.modify(updateOrganisation).map {
+            case Right(organisation) => Some(organisation.userId)
+            case Left(_)             => None
+          }
+        }.getOrElse(Future.successful(None)))
     }
 
     private def verifyEmail(lowerCasedEmail: String, emailExists: Boolean): Future[Boolean] = {

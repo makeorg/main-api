@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
+import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
@@ -224,6 +225,7 @@ trait PersistentUserService {
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
+  def modify(organisation: User): Future[Either[UpdateFailed, User]]
   def requestResetPassword(userId: UserId,
                            resetToken: String,
                            resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
@@ -475,6 +477,34 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       }).map(_ => user)
     }
 
+    override def modify(organisation: User): Future[Either[UpdateFailed, User]] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.organisationName -> organisation.organisationName,
+              column.email -> organisation.email,
+              column.avatarUrl -> organisation.profile.flatMap(_.avatarUrl),
+              column.updatedAt -> nowDate
+            )
+            .where(
+              sqls
+                .eq(column.uuid, organisation.userId.value)
+            )
+        }.executeUpdate().apply()
+      }).flatMap {
+        case 1 => Future.successful(Right(organisation.copy(updatedAt = Some(nowDate))))
+        case 0 =>
+          logger.error(s"Organisation '${organisation.userId.value}' not found")
+          Future.successful(Left(UpdateFailed()))
+        case _ =>
+          logger.error(s"Update of organisation '${organisation.userId.value}' failed - not found")
+          Future.successful(Left(UpdateFailed()))
+      }
+    }
+
     override def requestResetPassword(userId: UserId,
                                       resetToken: String,
                                       resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean] = {
@@ -621,4 +651,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
   }
+}
+
+object DefaultPersistentUserServiceComponent {
+  case class UpdateFailed()
 }

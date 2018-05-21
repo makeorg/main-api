@@ -90,12 +90,11 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
 
     scenario("user with empty first name and last name and non empty organisation name") {
       Given("a user with empty first name and last name and non empty organisation name")
-      val userWithoutFirstnameAndLastName =
-        johnDoe.copy(firstName = None, lastName = None, organisationName = Some("orga"))
+      val userWithOrganisationName =
+        johnDoe.copy(firstName = None, lastName = None, organisationName = Some("John Doe Corp."))
       When("I get the full name")
-      val fullName = userWithoutFirstnameAndLastName.fullName
-      Then("result is orga")
-      fullName shouldBe Some("orga")
+      val fullName = userWithOrganisationName.fullName
+      fullName shouldBe Some("John Doe Corp.")
     }
 
     scenario("user with non empty first name and empty last name") {

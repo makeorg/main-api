@@ -4,6 +4,7 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
+import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -130,6 +131,69 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = "FR",
     language = "fr",
     profile = None
+  )
+
+  val userOrganisationDGSE = User(
+    userId = UserId("DGSE"),
+    email = "dgse@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    organisationName = Some("Direction Générale de la Sécurité Extérieure")
+  )
+
+  val userOrganisationCSIS = User(
+    userId = UserId("CSIS"),
+    email = "csis@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    organisationName = Some("Canadian Security Intelligence Service")
+  )
+
+  val userOrganisationFSB = User(
+    userId = UserId("FSB"),
+    email = "fsb@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleOrganisation),
+    country = "RU",
+    language = "ru",
+    profile = None,
+    organisationName = Some("Federal Security Service")
   )
 
   val johnMailing: User = johnDoe.copy(
@@ -327,6 +391,51 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           maybeUser should be(None)
         }
 
+      }
+    }
+  }
+
+  feature("update an organisation") {
+    scenario("Update the organisation name") {
+      whenReady(persistentUserService.persist(userOrganisationDGSE), Timeout(3.seconds)) { organisation =>
+        organisation.organisationName should be(Some("Direction Générale de la Sécurité Extérieure"))
+        whenReady(
+          persistentUserService.modify(userOrganisationDGSE.copy(organisationName = Some("DGSE Updated"))),
+          Timeout(3.seconds)
+        ) { organisationUpdated =>
+          organisationUpdated shouldBe a[Either[_, User]]
+          organisationUpdated.isRight shouldBe true
+          organisationUpdated.exists(_.organisationName.contains("DGSE Updated")) shouldBe true
+        }
+      }
+    }
+
+    scenario("Update the organisation name and the email") {
+      whenReady(persistentUserService.persist(userOrganisationFSB), Timeout(3.seconds)) { organisation =>
+        organisation.organisationName shouldBe Some("Federal Security Service")
+        organisation.email shouldBe "fsb@secret-agency.com"
+        whenReady(
+          persistentUserService.modify(
+            userOrganisationDGSE.copy(organisationName = Some("FSB Updated"), email = "fsbupdated@secret-agency.com")
+          ),
+          Timeout(3.seconds)
+        ) { organisationUpdated =>
+          organisationUpdated shouldBe a[Either[_, User]]
+          organisationUpdated.isRight shouldBe true
+          organisationUpdated.exists(_.organisationName.contains("FSB Updated")) shouldBe true
+          organisationUpdated.exists(_.email == "fsbupdated@secret-agency.com") shouldBe true
+        }
+      }
+    }
+
+    scenario("Fail organisation update") {
+      whenReady(
+        persistentUserService.modify(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
+        Timeout(3.seconds)
+      ) { organisationFailUpdate =>
+        organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]
+        organisationFailUpdate.isLeft shouldBe true
+        organisationFailUpdate.left.get shouldBe UpdateFailed()
       }
     }
   }
