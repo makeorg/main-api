@@ -63,6 +63,8 @@ object PersistentUserServiceComponent {
       User(
         userId = UserId(uuid),
         email = email,
+        createdAt = Some(createdAt),
+        updatedAt = Some(updatedAt),
         firstName = firstName,
         lastName = lastName,
         lastIp = lastIp,
