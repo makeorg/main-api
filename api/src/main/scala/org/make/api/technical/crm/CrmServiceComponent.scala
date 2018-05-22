@@ -116,8 +116,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
       manageContactMailJetRequest(
         listId = mailJetConfiguration.optInListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.AddNoForce)
+        manageContact = ManageContact(
+          user.email,
+          user.fullName.getOrElse(user.email),
+          action = ManageContactAction.AddNoForce,
+          properties = getPropertiesFromUser(user)
+        )
       ).map { response =>
         logger.info(s"adding user to optin list: $response")
       }
@@ -136,8 +140,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def addUserToHardBounceList(user: User): Future[Unit] = {
       manageContactMailJetRequest(
         listId = mailJetConfiguration.hardBounceListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.AddNoForce)
+        manageContact = ManageContact(
+          user.email,
+          user.fullName.getOrElse(user.email),
+          action = ManageContactAction.AddNoForce,
+          properties = getPropertiesFromUser(user)
+        )
       ).map { response =>
         logger.info(s"adding user to hard bounce list: $response")
       }
@@ -146,8 +154,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def addUserToUnsubscribeList(user: User): Future[Unit] = {
       manageContactMailJetRequest(
         listId = mailJetConfiguration.unsubscribeListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.AddNoForce)
+        manageContact = ManageContact(
+          user.email,
+          user.fullName.getOrElse(user.email),
+          action = ManageContactAction.AddNoForce,
+          properties = getPropertiesFromUser(user)
+        )
       ).map { response =>
         logger.info(s"adding user to unsubscribe list: $response")
       }
@@ -206,7 +218,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       manageContactListMailJetRequest(
         manageContactList = ManageManyContacts(
           contacts = users.map { user =>
-            Contact(email = user.email, name = user.fullName.getOrElse(user.email))
+            Contact(
+              email = user.email,
+              name = user.fullName.getOrElse(user.email),
+              properties = getPropertiesFromUser(user)
+            )
           },
           contactList = Seq(
             ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
@@ -225,7 +241,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       manageContactListMailJetRequest(
         manageContactList = ManageManyContacts(
           contacts = users.map { user =>
-            Contact(email = user.email, name = user.fullName.getOrElse(user.email))
+            Contact(
+              email = user.email,
+              name = user.fullName.getOrElse(user.email),
+              properties = getPropertiesFromUser(user)
+            )
           },
           contactList = Seq(
             ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.AddNoForce),
@@ -247,7 +267,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     userHistory.map(_.events.map(_.action.actionType))
     Some(
       Map(
-        "UserID " -> user.userId.value,
+        "UserId" -> user.userId.value,
         "Firstname" -> user.firstName.getOrElse(""),
         "Zipcode" -> user.profile.flatMap(_.postalCode).getOrElse(""),
         "Date_Of_Birth" -> user.profile.flatMap(_.dateOfBirth.map(_.toString)).getOrElse(""),
@@ -256,22 +276,22 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         "Unsubscribe_Status" -> user.profile.map(_.optInNewsletter.toString).getOrElse(""),
         "Account_Creation_Date" -> user.createdAt
           .map(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm").format(_))
-          .getOrElse(""),
-        "Account_Creation_Source" -> "", // toDo
-        "Account_Creation_Operation" -> "", // toDo
-        "Account_Creation_Country" -> user.country,
-        "Countries_activity" -> "", // toDo
-        "Last_country_activity" -> "", // toDo
-        "Last_language_activity" -> "", // toDo
-        "Total_Number_Proposals" -> "", // toDo
-        "Total number votes" -> "", // toDo
-        "First_Contribution_Date" -> "", // toDo
-        "Last_Contribution_Date" -> "", // toDo
-        "Operation_activity" -> "", // toDo
-        "Active_core" -> "", // toDo
-        "Days_of_Activity" -> "", // toDo
-        "Days_of_Activity_30d" -> "", // toDo
-        "Number_of_themes" -> "" // toDo
+          .getOrElse("")
+        // "Account_creation_source" -> "", // toDo
+        // "Account_Creation_Operation" -> "", // toDo
+        // "Account_Creation_Country" -> user.country,
+        // "Countries_activity" -> "", // toDo
+        // "Last_country_activity" -> "", // toDo
+        // "Last_language_activity" -> "", // toDo
+        // "Total_Number_Proposals" -> "", // toDo
+        // "Total number votes" -> "", // toDo
+        // "First_Contribution_Date" -> "", // toDo
+        // "Last_Contribution_Date" -> "", // toDo
+        // "Operation_activity" -> "", // toDo
+        // "Active_core" -> "", // toDo
+        // "Days_of_Activity" -> "", // toDo
+        // "Days_of_Activity_30d" -> "", // toDo
+        // "Number_of_themes" -> "" // toDo
       )
     )
   }
