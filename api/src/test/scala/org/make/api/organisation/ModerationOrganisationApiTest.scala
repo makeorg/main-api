@@ -137,4 +137,67 @@ class ModerationOrganisationApiTest
       }
     }
   }
+
+  feature("update operation") {
+    scenario("update organisation unauthenticate") {
+      Given("a unauthenticate user")
+      When("I want to update an organisation")
+      Then("I should get an unauthorized error")
+      Put("/moderation/organisations/ABCD")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+        status shouldBe StatusCodes.Unauthorized
+      }
+    }
+
+    scenario("update organisation without admin rights") {
+      Given("a non admin user")
+      When("I want to update an organisation")
+      Then("I should get a forbidden error")
+      Put("/moderation/organisations/ABCD")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("update organisation with admin rights") {
+      Given("a admin user")
+      When("I want to update an organisation")
+      Then("I should get a OK status")
+      when(organisationService.getOrganisation(any[UserId])).thenReturn(Future.successful(Some(fakeOrganisation)))
+      when(organisationService.update(any[UserId], any[OrganisationUpdateData]))
+        .thenReturn(Future.successful(Some(UserId("ABCD"))))
+      Put("/moderation/organisations/ABCD")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+    scenario("update non organisation user") {
+      Given("a admin user")
+      When("I want to update a non organisation user")
+      Then("I should get a Forbidden status")
+      when(organisationService.getOrganisation(any[UserId]))
+        .thenReturn(Future.successful(Some(fakeOrganisation.copy(roles = Seq(RoleCitizen)))))
+      Put("/moderation/organisations/ABCD")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("update non existing organisation") {
+      Given("a admin user")
+      When("I want to update a non existing organisation")
+      Then("I should get a NotFound status")
+      when(organisationService.getOrganisation(any[UserId]))
+        .thenReturn(Future.successful(None))
+      Put("/moderation/organisations/ABCD")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
 }

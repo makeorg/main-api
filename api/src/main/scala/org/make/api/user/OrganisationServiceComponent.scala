@@ -119,24 +119,29 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
     override def update(organisationId: UserId,
                         organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]] = {
-      persistentUserService
-        .get(organisationId)
-        .flatMap(_.map { registeredOrganisation =>
-          val updateOrganisation =
-            registeredOrganisation.copy(
-              organisationName = organisationUpdateDate.name,
-              email = organisationUpdateDate.email.getOrElse(registeredOrganisation.email),
-              profile = registeredOrganisation.profile.map(
-                _.copy(
-                  avatarUrl = organisationUpdateDate.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl))
+      for {
+        emailExists <- updateMailExists(organisationUpdateDate.email.map(_.toLowerCase))
+        _           <- verifyEmail(organisationUpdateDate.email.map(_.toLowerCase).getOrElse(""), emailExists)
+        update <- persistentUserService
+          .get(organisationId)
+          .flatMap(_.map { registeredOrganisation =>
+            val updateOrganisation =
+              registeredOrganisation.copy(
+                organisationName = organisationUpdateDate.name.orElse(registeredOrganisation.organisationName),
+                email = organisationUpdateDate.email.getOrElse(registeredOrganisation.email),
+                profile = registeredOrganisation.profile.map(
+                  _.copy(
+                    avatarUrl =
+                      organisationUpdateDate.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl))
+                  )
                 )
               )
-            )
-          persistentUserService.modify(updateOrganisation).map {
-            case Right(organisation) => Some(organisation.userId)
-            case Left(_)             => None
-          }
-        }.getOrElse(Future.successful(None)))
+            persistentUserService.modify(updateOrganisation).map {
+              case Right(organisation) => Some(organisation.userId)
+              case Left(_)             => None
+            }
+          }.getOrElse(Future.successful(None)))
+      } yield update
     }
 
     private def verifyEmail(lowerCasedEmail: String, emailExists: Boolean): Future[Boolean] = {
@@ -145,6 +150,12 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       } else {
         Future.successful(true)
       }
+    }
+
+    private def updateMailExists(lowerCasedEmail: Option[String]): Future[Boolean] = {
+      lowerCasedEmail.map { mail =>
+        persistentUserService.emailExists(mail)
+      }.getOrElse(Future.successful(false))
     }
   }
 }
