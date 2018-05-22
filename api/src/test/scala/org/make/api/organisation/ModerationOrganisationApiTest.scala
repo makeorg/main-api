@@ -11,7 +11,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.user._
 import org.make.core.auth.UserRights
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleOrganisation}
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator, RoleOrganisation}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -73,9 +73,11 @@ class ModerationOrganisationApiTest
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
   private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
+  private val moderatorAccessToken = AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
 
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
+  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
@@ -85,6 +87,12 @@ class ModerationOrganisationApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future.successful(Some(AuthInfo(UserRights(UserId("user-admin"), roles = Seq(RoleAdmin)), None, None, None)))
+    )
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
+    .thenReturn(
+      Future
+        .successful(Some(AuthInfo(UserRights(UserId("user-moderator"), roles = Seq(RoleModerator)), None, None, None)))
     )
 
   feature("register organisation") {
@@ -197,6 +205,39 @@ class ModerationOrganisationApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
+
+  feature("Get organisations") {
+    scenario("get organisations unauthenticated") {
+      Given("a unauthenticate user")
+      When("I want to get organisations")
+      Then("I should get an unauthorized error")
+      Get("/moderation/organisations") ~> routes ~> check {
+        status shouldBe StatusCodes.Unauthorized
+      }
+    }
+
+    scenario("get organisations without moderation role") {
+      Given("a non admin user")
+      When("I want to get organisations")
+      Then("I should get a forbidden error")
+      Get("/moderation/organisations")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("get organisations with moderation role") {
+      Given("a moderator")
+      When("I want to get organisations")
+      Then("I should get an OK status")
+      when(organisationService.getOrganisations)
+        .thenReturn(Future.successful(Seq(fakeOrganisation)))
+      Get("/moderation/organisations")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
       }
     }
   }

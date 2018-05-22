@@ -19,7 +19,7 @@ trait OrganisationServiceComponent {
 
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
-  def getOrganisations(organisation: Option[String]): Future[Seq[User]]
+  def getOrganisations: Future[Seq[User]]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
 }
@@ -43,8 +43,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       persistentUserService.get(userId)
     }
 
-    override def getOrganisations(organisation: Option[String]): Future[Seq[User]] = {
-      persistentUserService.findByOrganisationLike(organisation)
+    override def getOrganisations: Future[Seq[User]] = {
+      persistentUserService.findAllOrganisations()
     }
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,

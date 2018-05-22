@@ -60,6 +60,27 @@ class OrganisationServiceTest
     profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None))
   )
 
+  val returnedOrganisation2 = User(
+    userId = UserId("AAA-BBB-CCC-DDD"),
+    email = "some@mail.com",
+    firstName = None,
+    lastName = None,
+    organisationName = Some("Jeanne Done Corp."),
+    lastIp = None,
+    hashedPassword = Some("passpass"),
+    enabled = true,
+    emailVerified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleOrganisation),
+    country = "FR",
+    language = "fr",
+    profile = None
+  )
+
   feature("register organisation") {
     scenario("successfully register an organisation") {
       Mockito.reset(eventBusService)
@@ -188,6 +209,32 @@ class OrganisationServiceTest
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
         organisationId.isDefined shouldBe false
+      }
+    }
+  }
+
+  feature("Get organisation") {
+    scenario("get organisation") {
+      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
+
+      whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
+        user shouldBe a[Option[_]]
+        user.isDefined shouldBe true
+        user.get.email shouldBe "any@mail.com"
+      }
+    }
+  }
+
+  feature("Get organisations") {
+    scenario("get organisations") {
+      Mockito
+        .when(persistentUserService.findAllOrganisations())
+        .thenReturn(Future.successful(Seq(returnedOrganisation, returnedOrganisation2)))
+
+      whenReady(organisationService.getOrganisations, Timeout(2.seconds)) { organisationList =>
+        organisationList shouldBe a[Seq[_]]
+        organisationList.size shouldBe 2
+        organisationList.head.email shouldBe "any@mail.com"
       }
     }
   }

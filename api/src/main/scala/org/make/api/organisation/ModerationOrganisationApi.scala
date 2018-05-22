@@ -131,16 +131,14 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
   )
   @Path(value = "/")
-  def moderationGetOrganisation: Route =
+  def moderationGetOrganisations: Route =
     get {
       path("moderation" / "organisations") {
         makeOperation("ModerationGetOrganisations") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
-              parameters('organisation.?) { organisation =>
-                onSuccess(organisationService.getOrganisations(organisation)) { result =>
-                  complete(result.map(UserResponse.apply))
-                }
+              provideAsync(organisationService.getOrganisations) { result =>
+                complete(result.map(UserResponse.apply))
               }
             }
           }
@@ -149,7 +147,8 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
       }
     }
 
-  val moderationOrganisationRoutes: Route = moderationPostOrganisation ~ moderationPutOrganisation
+  val moderationOrganisationRoutes
+    : Route = moderationPostOrganisation ~ moderationPutOrganisation ~ moderationGetOrganisations
 
   private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
 }
@@ -172,7 +171,7 @@ object ModerationCreateOrganisationRequest {
 final case class ModerationUpdateOrganisationRequest(name: Option[String] = None,
                                                      email: Option[String] = None,
                                                      avatar: Option[String] = None) {
-  name.foreach(name => OrganisationValidation.valildateUpdate(name = name))
+  name.foreach(name => OrganisationValidation.validateUpdate(name = name))
 }
 
 object ModerationUpdateOrganisationRequest {
@@ -187,6 +186,6 @@ private object OrganisationValidation {
     validate(mandatoryField("email", email), mandatoryField("name", name), maxLength("name", maxNameLength, name))
   }
 
-  def valildateUpdate(name: String): Unit =
+  def validateUpdate(name: String): Unit =
     validate(maxLength("name", maxNameLength, name))
 }

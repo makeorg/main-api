@@ -218,7 +218,7 @@ trait PersistentUserService {
   def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
-  def findByOrganisationLike(partialOrganisation: Option[String]): Future[Seq[User]]
+  def findAllOrganisations(): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
@@ -306,17 +306,13 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findByOrganisationLike(partialOrganisation: Option[String]): Future[Seq[User]] = {
+    override def findAllOrganisations(): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
-          val whereClause: SQLSyntax = partialOrganisation match {
-            case Some(partialOrga) => sqls.like(userAlias.organisation, s"%$partialOrga%")
-            case None              => sqls.like(userAlias.roles, s"%${RoleOrganisation.shortName}%")
-          }
           select
             .from(PersistentUser.as(userAlias))
-            .where(whereClause)
+            .where(sqls.like(userAlias.roles, s"%${RoleOrganisation.shortName}%"))
         }.map(PersistentUser.apply()).list.apply
       })
 

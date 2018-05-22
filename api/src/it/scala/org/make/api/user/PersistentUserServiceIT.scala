@@ -511,26 +511,11 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       } yield (cia, fbi)
 
       whenReady(futureOrganisations, Timeout(3.seconds)) { _ =>
-        whenReady(persistentUserService.findByOrganisationLike(None), Timeout(3.seconds)) { organisations =>
-          organisations.size should be(2)
+        whenReady(persistentUserService.findAllOrganisations(), Timeout(3.seconds)) { organisations =>
+          organisations.size should be(4)
           organisations.exists(_.userId == UserId("FBI")) should be(true)
           organisations.exists(_.userId == UserId("CIA")) should be(true)
         }
-      }
-    }
-
-    scenario("find existing organisations by their name") {
-      whenReady(persistentUserService.persist(userOrganisationMI5), Timeout(3.seconds)) { _ =>
-        whenReady(persistentUserService.findByOrganisationLike(Some("MI5")), Timeout(3.seconds)) { organisations =>
-          organisations.size should be(1)
-          organisations.exists(_.userId == UserId("MI5")) should be(true)
-        }
-      }
-    }
-
-    scenario("find not existing organisations by their name") {
-      whenReady(persistentUserService.findByOrganisationLike(Some("nothing")), Timeout(3.seconds)) { organisations =>
-        organisations.size should be(0)
       }
     }
   }
