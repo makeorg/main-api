@@ -81,6 +81,18 @@ class OrganisationServiceTest
     profile = None
   )
 
+  feature("Get organisation") {
+    scenario("get organisation") {
+      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
+
+      whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
+        user shouldBe a[Option[_]]
+        user.isDefined shouldBe true
+        user.get.email shouldBe "any@mail.com"
+      }
+    }
+  }
+
   feature("register organisation") {
     scenario("successfully register an organisation") {
       Mockito.reset(eventBusService)
@@ -209,18 +221,6 @@ class OrganisationServiceTest
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
         organisationId.isDefined shouldBe false
-      }
-    }
-  }
-
-  feature("Get organisation") {
-    scenario("get organisation") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
-
-      whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
-        user shouldBe a[Option[_]]
-        user.isDefined shouldBe true
-        user.get.email shouldBe "any@mail.com"
       }
     }
   }
