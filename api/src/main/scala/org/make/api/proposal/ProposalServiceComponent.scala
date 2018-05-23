@@ -14,7 +14,7 @@ import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -52,6 +52,8 @@ trait ProposalService {
                     query: SearchQuery,
                     maybeSeed: Option[Int],
                     requestContext: RequestContext): Future[ProposalsResultSeededResponse]
+
+  def searchProposalsVotedByUser(userId: UserId, requestContext: RequestContext): Future[ProposalsResultResponse]
 
   def propose(user: User,
               requestContext: RequestContext,
@@ -141,6 +143,31 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with IdeaServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
+
+    override def searchProposalsVotedByUser(userId: UserId,
+                                            requestContext: RequestContext): Future[ProposalsResultResponse] = {
+      val votedProposals: Future[Seq[ProposalId]] =
+        userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(userId = userId))
+      votedProposals.flatMap { proposalIds =>
+        if (proposalIds.isEmpty) {
+          Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, seed = None))
+        } else {
+          proposalService.searchForUser(
+            userId = Some(userId),
+            query = SearchQuery(
+              filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
+            ),
+            requestContext = requestContext,
+            maybeSeed = None
+          )
+        }
+      }.map { proposalResultSeededResponse =>
+        ProposalsResultResponse(
+          total = proposalResultSeededResponse.total,
+          results = proposalResultSeededResponse.results
+        )
+      }
+    }
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)

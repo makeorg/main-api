@@ -3,7 +3,6 @@ package org.make.api.user
 import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
@@ -14,8 +13,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
@@ -33,11 +34,11 @@ import org.make.core.profile.Profile
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -46,6 +47,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with SocialServiceComponent
+    with ProposalServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
     with MakeSettingsComponent
@@ -172,6 +174,29 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @Path(value = "/{userId}/votes")
+  @ApiOperation(value = "voted-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
+  )
+  def getVotedProposalsByUser: Route = get {
+    path("user" / userId / "votes") { userId: UserId =>
+      makeOperation("UserVotedProposals") { requestContext =>
+        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+          if (userAuth.user.userId != userId) {
+            complete(StatusCodes.Forbidden)
+          } else {
+            provideAsync(proposalService.searchProposalsVotedByUser(userId = userId, requestContext = requestContext)) {
+              proposalsSearchResult =>
+                complete(proposalsSearchResult)
+            }
+          }
+        }
+      }
+    }
+  }
+
   @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
@@ -223,7 +248,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/:userId/validate/:verificationToken")
+  @Path(value = "/{userId}/validate/:verificationToken")
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def validateAccountRoute: Route = {
     post {
@@ -496,7 +521,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     resetPasswordCheckRoute ~
     resetPasswordRoute ~
     subscribeToNewsLetter ~
-    validateAccountRoute
+    validateAccountRoute ~
+    getVotedProposalsByUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)

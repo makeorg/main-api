@@ -126,6 +126,7 @@ final case class ProposalsResultSeededResponse(total: Int, results: Seq[Proposal
 
 object ProposalsResultSeededResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
+  implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
 final case class VoteResponse(voteKey: VoteKey,

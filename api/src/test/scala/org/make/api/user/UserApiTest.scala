@@ -1,14 +1,16 @@
 package org.make.api.user
 
 import java.net.InetAddress
-import java.time.{Instant, LocalDate}
+import java.time.{Instant, LocalDate, ZonedDateTime}
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.proposal._
+import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
@@ -18,6 +20,9 @@ import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
+import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -25,11 +30,14 @@ import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 class UserApiTest
     extends MakeApiTestBase
     with UserApi
+    with ProposalServiceComponent
     with UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -47,6 +55,24 @@ class UserApiTest
   override val socialService: SocialService = mock[SocialService]
   override val facebookApi: FacebookApi = mock[FacebookApi]
   override val googleApi: GoogleApi = mock[GoogleApi]
+  override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
+    mock[SessionHistoryCoordinatorService]
+  override val proposalService: ProposalService = mock[ProposalService]
+
+  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val oauthConfiguration = mock[makeSettings.Oauth.type]
+
+  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(idGenerator.nextId()).thenReturn("some-id")
+  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
+
+  override val readJournal: MakeReadJournal = mock[MakeReadJournal]
+
+  private val successful: Future[Unit] = Future.successful {}
+  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     userRoutes
@@ -706,6 +732,119 @@ class UserApiTest
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
       Get("/user/me").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("get voted proposals of an user") {
+
+    val paul: User = fakeUser.copy(
+      userId = UserId("11111111-aaaa-2222-bbbb-333333333333"),
+      email = "paul-email@example.com",
+      firstName = Some("paul")
+    )
+    val gaston: User =
+      fakeUser.copy(userId = UserId("22222222-bbbbbb"), email = "gaston-email@example.com", firstName = Some("gaston"))
+
+    val token: String = "TOKEN_GET_USERS_VOTES"
+    val accessToken: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_VOTES", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo: AuthInfo[UserRights] =
+      AuthInfo(UserRights(paul.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(paul.userId)))
+      .thenReturn(Future.successful(Some(paul)))
+
+    val token2: String = "TOKEN_GET_USERS_2"
+    val accessToken2: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_VOTES82", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo2: AuthInfo[UserRights] =
+      AuthInfo(UserRights(gaston.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(gaston.userId)))
+      .thenReturn(Future.successful(Some(paul.copy(userId = gaston.userId))))
+
+    val indexedProposal = IndexedProposal(
+      id = ProposalId("22222222-2222-2222-2222-222222222222"),
+      country = "FR",
+      language = "fr",
+      userId = paul.userId,
+      content = "Il faut que ma proposition d'opération soit en CSV.",
+      slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",
+      createdAt = ZonedDateTime.now,
+      updatedAt = Some(ZonedDateTime.now),
+      votes = Seq.empty,
+      context = None,
+      trending = None,
+      labels = Seq.empty,
+      author = Author(firstName = Some("Paul"), postalCode = Some("11111"), age = Some(26)),
+      themeId = None,
+      tags = Seq.empty,
+      status = ProposalStatus.Accepted,
+      ideaId = None,
+      operationId = None
+    )
+    val proposalResult: ProposalResult =
+      ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
+
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+      .thenReturn(Future.successful(Some(accessToken)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo)))
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token2)))
+      .thenReturn(Future.successful(Some(accessToken2)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    Mockito
+      .when(
+        proposalService
+          .searchProposalsVotedByUser(
+            userId = ArgumentMatchers.eq(paul.userId),
+            requestContext = ArgumentMatchers.any[RequestContext]
+          )
+      )
+      .thenReturn(Future.successful(ProposalsResultResponse(total = 1, results = Seq(proposalResult))))
+    Mockito
+      .when(
+        proposalService
+          .searchProposalsVotedByUser(
+            userId = ArgumentMatchers.eq(gaston.userId),
+            requestContext = ArgumentMatchers.any[RequestContext]
+          )
+      )
+      .thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
+
+    scenario("not authenticated") {
+      Get("/user/11111111-aaaa-2222-bbbb-333333333333/votes") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated but userId parameter is different than connected user id") {
+      Get("/user/xxxxxxxxxxxx/votes").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("authenticated with empty voted proposals") {
+      Get("/user/22222222-bbbbbb/votes").withHeaders(Authorization(OAuth2BearerToken(token2))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[ProposalsResultSeededResponse]
+        result.total should be(0)
+        result.results should be(Seq.empty)
+      }
+    }
+
+    scenario("authenticated with some voted proposals") {
+      Get("/user/11111111-aaaa-2222-bbbb-333333333333/votes")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[ProposalsResultSeededResponse]
+        result.total should be(1)
+        result.results.head.id should be(ProposalId("22222222-2222-2222-2222-222222222222"))
       }
     }
   }

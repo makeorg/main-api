@@ -100,6 +100,10 @@ case class User(userId: UserId,
 
   def resetTokenIsExpired: Boolean =
     resetTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+
+  def hasRole(role: Role): Boolean = {
+    roles.contains(role)
+  }
 }
 
 case class UserId(value: String) extends StringValue
