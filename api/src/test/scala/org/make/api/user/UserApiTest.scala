@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, Status
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
+import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
@@ -845,6 +846,103 @@ class UserApiTest
         val result = entityAs[ProposalsResultSeededResponse]
         result.total should be(1)
         result.results.head.id should be(ProposalId("22222222-2222-2222-2222-222222222222"))
+      }
+    }
+  }
+
+  feature("get user proposals") {
+
+    val sylvain: User =
+      fakeUser.copy(userId = UserId("sylvain-user-id"), email = "sylvain@example.com", firstName = Some("Sylvain"))
+    val vincent: User =
+      fakeUser.copy(userId = UserId("vincent-user-id"), email = "vincent@example.com", firstName = Some("Vincent"))
+
+    val token: String = "TOKEN_GET_USERS_PROPOSALS"
+    val accessToken: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo: AuthInfo[UserRights] =
+      AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+      .thenReturn(Future.successful(Some(sylvain)))
+
+    val token2: String = "TOKEN_GET_USERS_PROPOSALS_2"
+    val accessToken2: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo2: AuthInfo[UserRights] =
+      AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
+      .thenReturn(Future.successful(Some(vincent)))
+
+    val indexedProposal = IndexedProposal(
+      id = ProposalId("333333-3333-3333-3333-33333333"),
+      country = "FR",
+      language = "fr",
+      userId = sylvain.userId,
+      content = "Il faut une proposition de Sylvain",
+      slug = "il-faut-une-proposition-de-sylvain",
+      createdAt = ZonedDateTime.now,
+      updatedAt = Some(ZonedDateTime.now),
+      votes = Seq.empty,
+      context = None,
+      trending = None,
+      labels = Seq.empty,
+      author = Author(firstName = sylvain.firstName, postalCode = Some("11111"), age = Some(22)),
+      themeId = None,
+      tags = Seq.empty,
+      status = ProposalStatus.Accepted,
+      ideaId = None,
+      operationId = None
+    )
+    val proposalResult: ProposalResult =
+      ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
+
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+      .thenReturn(Future.successful(Some(accessToken)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo)))
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token2)))
+      .thenReturn(Future.successful(Some(accessToken2)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    Mockito
+      .when(
+        proposalService
+          .searchForUser(
+            userId = ArgumentMatchers.any[Option[UserId]],
+            query = ArgumentMatchers
+              .eq(SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = sylvain.userId)))))),
+            requestContext = ArgumentMatchers.any[RequestContext],
+            maybeSeed = ArgumentMatchers.any[Option[Int]]
+          )
+      )
+      .thenReturn(
+        Future.successful(ProposalsResultSeededResponse(total = 1, results = Seq(proposalResult), seed = None))
+      )
+
+    scenario("not authenticated") {
+      Get("/user/sylvain-user-id/proposals") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated but userId parameter is different than connected user id") {
+      Get("/user/vincent-user-id/proposals").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("authenticated with some proposals") {
+      Get("/user/sylvain-user-id/proposals")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[ProposalsResultSeededResponse]
+        result.total should be(1)
+        result.results.head.id should be(indexedProposal.id)
       }
     }
   }

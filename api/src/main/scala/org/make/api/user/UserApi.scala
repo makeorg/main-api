@@ -16,7 +16,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse}
+import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
@@ -31,6 +31,7 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
+import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
@@ -511,6 +512,37 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @Path(value = "/{userId}/proposals")
+  @ApiOperation(value = "user-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  def getProposalsByUser: Route = get {
+    path("user" / userId / "proposals") { (userId: UserId) =>
+      makeOperation("UserProposals") { requestContext =>
+        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+          val connectedUserId: UserId = userAuth.user.userId
+          if (connectedUserId != userId) {
+            complete(StatusCodes.Forbidden)
+          } else {
+            provideAsync(
+              proposalService.searchForUser(
+                userId = Some(userId),
+                query = SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = userId))))),
+                requestContext = requestContext,
+                maybeSeed = None
+              )
+            ) { proposalsSearchResult =>
+              complete(proposalsSearchResult)
+            }
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -522,7 +554,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     resetPasswordRoute ~
     subscribeToNewsLetter ~
     validateAccountRoute ~
-    getVotedProposalsByUser
+    getVotedProposalsByUser ~
+    getProposalsByUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
