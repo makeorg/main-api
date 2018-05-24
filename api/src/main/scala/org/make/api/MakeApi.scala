@@ -32,7 +32,11 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinatorComponent
 }
 import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi, _}
-import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
+import org.make.api.tagtype.{
+  DefaultPersistentTagTypeServiceComponent,
+  DefaultTagTypeServiceComponent,
+  ModerationTagTypeApi
+}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
@@ -79,6 +83,7 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultUserServiceComponent
     with DefaultTagServiceComponent
+    with DefaultTagTypeServiceComponent
     with DefaultIdeaServiceComponent
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
@@ -128,6 +133,7 @@ trait MakeApi
     with UserApi
     with TagApi
     with ModerationTagApi
+    with ModerationTagTypeApi
     with ModerationIdeaApi
     with TrackingApi
     with MigrationApi
@@ -206,6 +212,7 @@ trait MakeApi
       classOf[UserApi],
       classOf[TagApi],
       classOf[ModerationTagApi],
+      classOf[ModerationTagTypeApi],
       classOf[ProposalApi],
       classOf[OperationApi],
       classOf[ModerationOperationApi],

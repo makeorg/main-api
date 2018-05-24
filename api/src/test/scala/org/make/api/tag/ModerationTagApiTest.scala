@@ -7,6 +7,8 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCod
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -61,10 +63,6 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     )
 
   val validTagText: String = "tag"
-  val existingValidTagSlug: String = "existing-tag"
-  val existingValidTagText: String = "existing tag"
-  val specificValidTagText: String = "taxes/fiscalité"
-  val specificValidTagSlug: String = "taxes-fiscalite"
   val helloWorldTagText: String = "hello world"
   val helloWorldTagSlug: String = "hello-world"
   val fakeTagText: String = "fake-tag"
@@ -82,16 +80,23 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
   )
 
   val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
-  val specificValidTag: Tag = newTag(specificValidTagText, TagId(specificValidTagSlug))
   val helloWorldTag: Tag = newTag(helloWorldTagText, TagId(helloWorldTagSlug))
   val fakeTag: Tag = newTag(fakeTagText)
   val tag1: Tag = newTag("tag1", TagId("tag1"))
   val tag2: Tag = newTag("tag2", TagId("tag2"))
 
-  when(tagService.createLegacyTag(ArgumentMatchers.eq(validTagText)))
-    .thenReturn(Future.successful(validTag))
-  when(tagService.createLegacyTag(ArgumentMatchers.eq(specificValidTagText)))
-    .thenReturn(Future.successful(specificValidTag))
+  when(
+    tagService.createTag(
+      ArgumentMatchers.eq(validTagText),
+      ArgumentMatchers.any[TagTypeId],
+      ArgumentMatchers.any[Option[OperationId]],
+      ArgumentMatchers.any[Option[ThemeId]],
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[TagDisplay],
+      ArgumentMatchers.any[Float]
+    )
+  ).thenReturn(Future.successful(validTag))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId("valid-tag"))))
@@ -134,9 +139,19 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       Given("an authenticated user with the moderator role")
       When("the user wants to create a tag")
       Then("the tag should be saved if valid")
+      val tagRequest =
+        s"""{
+           |"label": "$validTagText",
+           |"tagTypeId": "1234-1234-1234-1234",
+           |"operationId": "1234-1234-1234-1234",
+           |"themeId": "1234-1234-1234-1234",
+           |"country": "FR",
+           |"language": "fr",
+           |"display": "INHERIT"
+       }""".stripMargin
 
       Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
@@ -175,9 +190,9 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
 
     scenario("valid tag") {
       Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
-      When(s"i get a tag from id '$helloWorldTagSlug'")
-      Then("i should get an ok response")
-      And(s"i should get a tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug")
+      When(s"I get a tag from id '$helloWorldTagSlug'")
+      Then("I should get an ok response")
+      And(s"I should get a tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug")
 
       Get("/moderation/tags/hello-world")
         .withHeaders(Accept(MediaTypes.`application/json`))
@@ -208,17 +223,17 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       }
 
       Given("some registered tags")
-      When("i get list tag")
-      Then("i get a list of all tags")
+      When("I get list tag")
+      Then("I get a list of all tags")
 
       Get("/moderation/tags?_start=0&_end=10&_sort=label&_order=ASC")
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
-        val tags: Seq[TagResponse] = entityAs[Seq[TagResponse]]
+        val tags: Seq[Tag] = entityAs[Seq[Tag]]
         tags.size should be(2)
-        tags(1).id.value should be("tag2")
-        tags(0).id.value should be("tag1")
+        tags(1).tagId.value should be("tag2")
+        tags.head.tagId.value should be("tag1")
       }
     }
   }

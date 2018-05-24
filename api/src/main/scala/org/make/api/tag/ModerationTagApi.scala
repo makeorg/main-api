@@ -4,14 +4,15 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
 import javax.ws.rs.Path
+
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
-import org.make.core.tag.{Tag, TagId}
-import scalaoauth2.provider.AuthInfo
+import org.make.core.tag.{Tag, TagDisplay, TagId}
 
+import scalaoauth2.provider.AuthInfo
 import scala.util.Try
 
 @Api(value = "Moderation Tags")
@@ -79,8 +80,18 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                onSuccess(tagService.createLegacyTag(request.label)) { tag =>
-                  complete(StatusCodes.Created -> TagResponse(tag))
+                onSuccess(
+                  tagService.createTag(
+                    label = request.label,
+                    tagTypeId = request.tagTypeId,
+                    operationId = request.operationId,
+                    themeId = request.themeId,
+                    country = request.country,
+                    language = request.language,
+                    display = request.display.getOrElse(TagDisplay.Inherit)
+                  )
+                ) { tag =>
+                  complete(StatusCodes.Created -> tag)
                 }
               }
             }
@@ -104,9 +115,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagResponse]]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Tag]])))
   @Path(value = "/")
   def moderationlistTags: Route = {
     get {
@@ -134,9 +143,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                       (
                         StatusCodes.OK,
                         List(TotalCountHeader(filteredTags.size.toString)),
-                        filteredTags
-                          .slice(start, end)
-                          .map(TagResponse.apply)
+                        filteredTags.slice(start, end)
                       )
                     )
                   }

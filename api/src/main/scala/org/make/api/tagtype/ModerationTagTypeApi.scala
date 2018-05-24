@@ -109,10 +109,10 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tagtype.UpdateTagTypeRequest")
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tagtype.UpdateTagTypeRequest"),
+      new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string")
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string")))
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.TagType])))
   @Path(value = "/")
   def moderationUpdateTagType: Route = put {
@@ -147,6 +147,15 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
           new AuthorizationScope(scope = "moderator", description = "BO Moderator")
         )
       )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "int", required = true),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "int", required = true),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
