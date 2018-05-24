@@ -14,7 +14,7 @@ import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
@@ -56,20 +56,13 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("GetOrganisationProposals") { requestContext =>
           optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-              if (!organisation.roles.contains(Role.RoleOrganisation)) {
+              if (!organisation.isOrganisation) {
                 complete(StatusCodes.Forbidden)
               } else {
-                onSuccess(
-                  proposalService.search(
+                provideAsync(
+                  proposalService.searchForUser(
                     optionalUserAuth.map(_.user.userId),
-                    SearchQuery(
-                      filters = Some(
-                        SearchFilters(
-                          status = Some(StatusSearchFilter(Seq(ProposalStatus.Accepted))),
-                          user = Some(UserSearchFilter(organisationId))
-                        )
-                      )
-                    ),
+                    SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
                     None,
                     requestContext
                   )

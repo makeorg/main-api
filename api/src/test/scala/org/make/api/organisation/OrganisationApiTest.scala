@@ -1,15 +1,18 @@
 package org.make.api.organisation
 
 import java.time.ZonedDateTime
+import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestUtils
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
+import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserResponse}
+import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -17,8 +20,11 @@ import org.make.core.reference.ThemeId
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
+import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
+import org.mockito.Mockito.when
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -40,7 +46,15 @@ class OrganisationApiTest
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
+  private val validAccessToken = "my-valid-access-token"
+  val tokenCreationDate = new Date()
+  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
 
+  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
+    .thenReturn(
+      Future.successful(Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen)), None, Some("user"), None)))
+    )
   Mockito.when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   Mockito.when(sessionCookieConfiguration.isSecure).thenReturn(false)
   Mockito.when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
@@ -62,6 +76,7 @@ class OrganisationApiTest
             email = "make@make.org",
             firstName = None,
             lastName = None,
+            organisationName = Some("make.org"),
             lastIp = None,
             hashedPassword = None,
             enabled = true,
@@ -119,10 +134,10 @@ class OrganisationApiTest
     .when(organisationService.getOrganisation(UserId("non-existant")))
     .thenReturn(Future.successful(None))
 
-  val proposalsList = ProposalsSearchResult(
+  val proposalsList = ProposalsResultSeededResponse(
     total = 2,
     results = Seq(
-      IndexedProposal(
+      ProposalResult(
         id = ProposalId("proposal-1"),
         country = "FR",
         language = "fr",
@@ -139,10 +154,11 @@ class OrganisationApiTest
         themeId = Some(ThemeId("foo-theme")),
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
-        ideaId = Some(IdeaId("idea-id")),
-        operationId = None
+        idea = Some(IdeaId("idea-id")),
+        operationId = None,
+        myProposal = false
       ),
-      IndexedProposal(
+      ProposalResult(
         id = ProposalId("proposal-2"),
         country = "FR",
         language = "fr",
@@ -159,14 +175,16 @@ class OrganisationApiTest
         themeId = Some(ThemeId("bar-theme")),
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
-        ideaId = Some(IdeaId("other-idea-id")),
-        operationId = None
+        idea = Some(IdeaId("other-idea-id")),
+        operationId = None,
+        myProposal = false
       )
-    )
+    ),
+    None
   )
 
   Mockito
-    .when(proposalService.search(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext]))
+    .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext]))
     .thenReturn(Future.successful(proposalsList))
 
   feature("get organisation") {
@@ -192,8 +210,20 @@ class OrganisationApiTest
       }
     }
 
-    scenario("organisation found") {
+    scenario("search organisation proposals unauthenticated") {
       Get("/organisations/make-org/proposals") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val proposalsSearchResult: ProposalsSearchResult = entityAs[ProposalsSearchResult]
+        proposalsSearchResult.total shouldBe 2
+        proposalsSearchResult.results.size shouldBe 2
+        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
+        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
+      }
+    }
+
+    scenario("search organisation proposals authenticated") {
+      Get("/organisations/make-org/proposals")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsSearchResult: ProposalsSearchResult = entityAs[ProposalsSearchResult]
         proposalsSearchResult.total shouldBe 2
