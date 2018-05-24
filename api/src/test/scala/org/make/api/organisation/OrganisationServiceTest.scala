@@ -1,12 +1,16 @@
 package org.make.api.organisation
 
 import org.make.api.MakeUnitTest
+import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
 import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
+import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
+import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Profile
+import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -25,11 +29,15 @@ class OrganisationServiceTest
     with DefaultOrganisationServiceComponent
     with IdGeneratorComponent
     with PersistentUserServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ProposalServiceComponent
     with EventBusServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val eventBusService: EventBusService = mock[EventBusService]
+  override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
+  override val proposalService: ProposalService = mock[ProposalService]
 
   class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
     override def matches(argument: AnyRef): Boolean =
@@ -237,6 +245,40 @@ class OrganisationServiceTest
         organisationList shouldBe a[Seq[_]]
         organisationList.size shouldBe 2
         organisationList.head.email shouldBe "any@mail.com"
+      }
+    }
+  }
+
+  feature("get proposals voted") {
+    scenario("successfully get proposals voted") {
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+        .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
+
+      Mockito
+        .when(
+          proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext])
+        )
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, Seq.empty, None)))
+
+      val futureProposalsVoted =
+        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, RequestContext.empty)
+
+      whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
+        proposalsList.total shouldBe 2
+      }
+    }
+
+    scenario("successful return when no proposal are voted") {
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+        .thenReturn(Future.successful(Seq.empty))
+
+      val futureProposalsVoted =
+        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, RequestContext.empty)
+
+      whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
+        proposalsList.total shouldBe 0
       }
     }
   }

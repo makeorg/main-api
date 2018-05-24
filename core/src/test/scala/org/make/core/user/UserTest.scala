@@ -80,7 +80,6 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       fullName shouldBe None
     }
 
-<<<<<<< HEAD
     scenario("user with empty first name and last name and non empty organisation name") {
       Given("a user with empty first name and last name and non empty organisation name")
       val userWithOrganisationName =
@@ -90,8 +89,6 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       fullName shouldBe Some("John Doe Corp.")
     }
 
-=======
->>>>>>> feat(user): add organisation column + rename column into user model
     scenario("user with non empty first name and empty last name") {
       Given("a user with a first name John and empty last name")
       val userWithoutFirstnameAndLastName = johnDoe.copy(lastName = None)

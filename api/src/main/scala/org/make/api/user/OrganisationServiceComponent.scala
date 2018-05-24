@@ -178,7 +178,9 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                                    maybeUserId: Option[UserId],
                                    requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
       userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(organisationId)).flatMap {
-        proposalIds =>
+        case proposalIds if proposalIds.isEmpty =>
+          Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, None))
+        case proposalIds =>
           proposalService.searchForUser(
             userId = maybeUserId,
             query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),

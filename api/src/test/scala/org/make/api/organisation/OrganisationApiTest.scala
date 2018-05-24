@@ -21,7 +21,6 @@ import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
@@ -49,8 +48,9 @@ class OrganisationApiTest
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
 
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
+  Mockito.when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
+  Mockito
+    .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
       Future.successful(Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen)), None, Some("user"), None)))
     )
@@ -65,38 +65,33 @@ class OrganisationApiTest
 
   val now: ZonedDateTime = DateHelper.now()
 
+  val returnedOrganisation = User(
+    userId = UserId("make-org"),
+    email = "make@make.org",
+    firstName = None,
+    lastName = None,
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = now,
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleActor),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    createdAt = None,
+    updatedAt = None,
+    lastMailingError = None
+  )
+
   Mockito
     .when(organisationService.getOrganisation(UserId("make-org")))
-    .thenReturn(
-      Future.successful(
-        Some(
-          User(
-            userId = UserId("make-org"),
-            email = "make@make.org",
-            firstName = None,
-            lastName = None,
-            organisationName = Some("make.org"),
-            lastIp = None,
-            hashedPassword = None,
-            enabled = true,
-            emailVerified = true,
-            isOrganisation = true,
-            lastConnection = now,
-            verificationToken = None,
-            verificationTokenExpiresAt = None,
-            resetToken = None,
-            resetTokenExpiresAt = None,
-            roles = Seq(RoleActor),
-            country = "FR",
-            language = "fr",
-            profile = None,
-            createdAt = None,
-            updatedAt = None,
-            lastMailingError = None
-          )
-        )
-      )
-    )
+    .thenReturn(Future.successful(Some(returnedOrganisation)))
 
   Mockito
     .when(organisationService.getOrganisation(UserId("classic-user")))
@@ -243,11 +238,31 @@ class OrganisationApiTest
         )
       )
       .thenReturn(Future.successful(ProposalsResultSeededResponse(2, Seq.empty, None)))
-    scenario("get existing organisation") {
+    scenario("get proposals voted from existing organisation unauthenticated") {
       Get("/organisations/make-org/votes") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val votedProposals: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
         votedProposals.total should be(2)
+      }
+    }
+
+    scenario("get proposals voted from existing organisation authenticated") {
+      Get("/organisations/make-org/votes")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val votedProposals: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        votedProposals.total should be(2)
+      }
+    }
+
+    scenario("get proposals voted from non organisation user") {
+      Mockito
+        .when(organisationService.getOrganisation(ArgumentMatchers.any[UserId]))
+        .thenReturn(
+          Future.successful(Some(returnedOrganisation.copy(roles = Seq(RoleCitizen), isOrganisation = false)))
+        )
+      Get("/organisations/make-org/votes") ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
       }
     }
   }
