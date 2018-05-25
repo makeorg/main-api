@@ -22,8 +22,7 @@ object Role extends StrictLogging {
     RoleModerator.shortName -> RoleModerator,
     RolePolitical.shortName -> RolePolitical,
     RoleCitizen.shortName -> RoleCitizen,
-    RoleActor.shortName -> RoleActor,
-    RoleOrganisation.shortName -> RoleOrganisation
+    RoleActor.shortName -> RoleActor
   )
 
   def matchRole(role: String): Option[Role] = {
@@ -53,10 +52,6 @@ object Role extends StrictLogging {
   case object RoleActor extends Role {
     val shortName: String = "ROLE_ACTOR"
   }
-
-  case object RoleOrganisation extends Role {
-    val shortName: String = "ROLE_ORGANISATION"
-  }
 }
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
@@ -68,6 +63,7 @@ case class User(userId: UserId,
                 hashedPassword: Option[String],
                 enabled: Boolean,
                 emailVerified: Boolean,
+                isOrganisation: Boolean = false,
                 lastConnection: ZonedDateTime,
                 verificationToken: Option[String],
                 verificationTokenExpiresAt: Option[ZonedDateTime],

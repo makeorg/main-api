@@ -11,7 +11,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.user._
 import org.make.core.auth.UserRights
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator, RoleOrganisation}
+import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -56,12 +56,13 @@ class ModerationOrganisationApiTest
     hashedPassword = Some("passpass"),
     enabled = true,
     emailVerified = true,
+    isOrganisation = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
     verificationTokenExpiresAt = None,
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(RoleOrganisation),
+    roles = Seq(RoleActor),
     country = "FR",
     language = "fr",
     profile = None
@@ -187,7 +188,7 @@ class ModerationOrganisationApiTest
       When("I want to update a non organisation user")
       Then("I should get a Forbidden status")
       when(organisationService.getOrganisation(any[UserId]))
-        .thenReturn(Future.successful(Some(fakeOrganisation.copy(roles = Seq(RoleCitizen)))))
+        .thenReturn(Future.successful(Some(fakeOrganisation.copy(roles = Seq(RoleCitizen), isOrganisation = false))))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {

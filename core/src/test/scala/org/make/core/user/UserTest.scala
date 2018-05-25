@@ -2,7 +2,7 @@ package org.make.core.user
 
 import java.time.ZonedDateTime
 
-import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RoleOrganisation, RolePolitical}
+import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 
@@ -67,14 +67,6 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       val role = Role.matchRole("ROLE_ACTOR")
       Then("Role object are returned")
       role shouldBe Some(RoleActor)
-    }
-
-    scenario("pass ROLE_ORGANISATION string to matchRole function") {
-      Given("a Role as a string")
-      When("call matchRole with ROLE_ORGANISATION as Role string")
-      val role = Role.matchRole("ROLE_ORGANISATION")
-      Then("Role object are returned")
-      role shouldBe Some(RoleOrganisation)
     }
   }
 

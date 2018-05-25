@@ -24,19 +24,19 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
   def proposalRefused(operation: String,
                       country: String,
                       language: String,
-                      authorRoles: Seq[String] = Seq.empty): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language, authorRoles)
+                      isOrganisation: Boolean = false): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language, isOrganisation)
   def proposalAccepted(operation: String,
                        country: String,
                        language: String,
-                       authorRoles: Seq[String] = Seq.empty): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language, authorRoles)
+                       isOrganisation: Boolean = false): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language, isOrganisation)
 
   private def parseTemplateConfiguration(config: Config,
                                          operation: String,
                                          country: String,
                                          language: String,
-                                         authorRoles: Seq[String] = Seq.empty): TemplateConfiguration = {
+                                         isOrganisation: Boolean = false): TemplateConfiguration = {
 
     var templateConfiguration: Config = config
 
@@ -60,20 +60,17 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
       templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
     }
 
-    authorRoles.foreach { role =>
-      val formatedRole: String = role.toLowerCase.replace("_", "-")
-
-      if (config.hasPath(s"$formatedRole")) {
-        templateConfiguration = config.getConfig(s"$formatedRole").withFallback(templateConfiguration)
+    if (isOrganisation) {
+      if (config.hasPath("organisation")) {
+        templateConfiguration = config.getConfig("organisation").withFallback(templateConfiguration)
       }
 
-      if (config.hasPath(s"$formatedRole.$country")) {
-        templateConfiguration = config.getConfig(s"$formatedRole.$country").withFallback(templateConfiguration)
+      if (config.hasPath(s"organisation.$country")) {
+        templateConfiguration = config.getConfig(s"organisation.$country").withFallback(templateConfiguration)
       }
 
-      if (config.hasPath(s"$formatedRole.$country.$language")) {
-        templateConfiguration =
-          config.getConfig(s"$formatedRole.$country.$language").withFallback(templateConfiguration)
+      if (config.hasPath(s"organisation.$country.$language")) {
+        templateConfiguration = config.getConfig(s"organisation.$country.$language").withFallback(templateConfiguration)
       }
     }
 

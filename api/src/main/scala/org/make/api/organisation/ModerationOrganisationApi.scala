@@ -14,7 +14,7 @@ import org.make.api.user._
 import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
 @Api(
@@ -103,7 +103,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
               decodeRequest {
                 entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
                   provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-                    if (!organisation.roles.contains(Role.RoleOrganisation)) {
+                    if (!organisation.isOrganisation) {
                       complete(StatusCodes.Forbidden)
                     } else {
                       onSuccess(

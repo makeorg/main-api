@@ -6,7 +6,6 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, S
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
 import org.make.core.profile.Profile
-import org.make.core.user.Role.RoleOrganisation
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -40,7 +39,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
   val organisationService: OrganisationService = new OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
-      persistentUserService.get(userId).map(_.find(_.roles.contains(RoleOrganisation)))
+      persistentUserService.get(userId).map(_.filter(_.isOrganisation))
     }
 
     override def getOrganisations: Future[Seq[User]] = {
@@ -61,12 +60,13 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         hashedPassword = organisationRegisterData.password.map(_.bcrypt),
         enabled = true,
         emailVerified = true,
+        isOrganisation = true,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
         resetTokenExpiresAt = None,
-        roles = Seq(Role.RoleOrganisation),
+        roles = Seq(Role.RoleActor),
         country = country,
         language = language,
         profile = Some(

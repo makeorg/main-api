@@ -69,9 +69,8 @@ class ProposalEmailConsumer(userService: UserService,
         } yield {
           val country: String = proposal.country.getOrElse(user.country)
           val language: String = proposal.language.getOrElse(user.language)
-          val authorRoles: Seq[String] = user.roles.map(_.shortName)
           val templateConfiguration =
-            mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, authorRoles)
+            mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
@@ -131,9 +130,8 @@ class ProposalEmailConsumer(userService: UserService,
         } yield {
           val country: String = proposal.country.getOrElse(user.country)
           val language: String = proposal.language.getOrElse(user.language)
-          val authorRoles: Seq[String] = user.roles.map(_.shortName)
           val templateConfiguration =
-            mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, authorRoles)
+            mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(

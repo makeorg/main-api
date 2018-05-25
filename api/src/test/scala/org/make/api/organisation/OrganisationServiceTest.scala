@@ -7,7 +7,7 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
 import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
 import org.make.core.profile.Profile
-import org.make.core.user.Role.RoleOrganisation
+import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
@@ -16,8 +16,8 @@ import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.RecoverMethods
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class OrganisationServiceTest
@@ -49,12 +49,13 @@ class OrganisationServiceTest
     hashedPassword = Some("passpass"),
     enabled = true,
     emailVerified = true,
+    isOrganisation = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
     verificationTokenExpiresAt = None,
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(RoleOrganisation),
+    roles = Seq(RoleActor),
     country = "FR",
     language = "fr",
     profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None))
@@ -70,12 +71,13 @@ class OrganisationServiceTest
     hashedPassword = Some("passpass"),
     enabled = true,
     emailVerified = true,
+    isOrganisation = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
     verificationTokenExpiresAt = None,
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(RoleOrganisation),
+    roles = Seq(RoleActor),
     country = "FR",
     language = "fr",
     profile = None

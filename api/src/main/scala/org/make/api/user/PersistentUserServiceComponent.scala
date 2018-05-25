@@ -12,7 +12,6 @@ import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.user.Role.RoleOrganisation
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
@@ -37,6 +36,7 @@ object PersistentUserServiceComponent {
                             hashedPassword: String,
                             enabled: Boolean,
                             emailVerified: Boolean,
+                            isOrganisation: Boolean,
                             lastConnection: ZonedDateTime,
                             verificationToken: Option[String],
                             verificationTokenExpiresAt: Option[ZonedDateTime],
@@ -74,6 +74,7 @@ object PersistentUserServiceComponent {
         hashedPassword = Option(hashedPassword),
         enabled = enabled,
         emailVerified = emailVerified,
+        isOrganisation = isOrganisation,
         lastConnection = lastConnection,
         verificationToken = verificationToken,
         verificationTokenExpiresAt = verificationTokenExpiresAt,
@@ -148,6 +149,7 @@ object PersistentUserServiceComponent {
       "hashed_password",
       "enabled",
       "email_verified",
+      "is_organisation",
       "last_connection",
       "verification_token",
       "verification_token_expires_at",
@@ -182,6 +184,7 @@ object PersistentUserServiceComponent {
         hashedPassword = resultSet.string(userResultName.hashedPassword),
         enabled = resultSet.boolean(userResultName.enabled),
         emailVerified = resultSet.boolean(userResultName.emailVerified),
+        isOrganisation = resultSet.boolean(userResultName.isOrganisation),
         lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
         verificationToken = resultSet.stringOpt(userResultName.verificationToken),
         verificationTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.verificationTokenExpiresAt),
@@ -312,7 +315,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.like(userAlias.roles, s"%${RoleOrganisation.shortName}%"))
+            .where(sqls.eq(userAlias.isOrganisation, true))
         }.map(PersistentUser.apply()).list.apply
       })
 
@@ -462,6 +465,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.hashedPassword -> user.hashedPassword,
               column.enabled -> user.enabled,
               column.emailVerified -> user.emailVerified,
+              column.isOrganisation -> user.isOrganisation,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,

@@ -10,7 +10,7 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDat
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserResponse}
 import org.make.core.DateHelper
-import org.make.core.user.Role.RoleOrganisation
+import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId}
 import org.mockito.Mockito
 
@@ -59,12 +59,13 @@ class OrganisationApiTest
             hashedPassword = None,
             enabled = true,
             emailVerified = true,
+            isOrganisation = true,
             lastConnection = now,
             verificationToken = None,
             verificationTokenExpiresAt = None,
             resetToken = None,
             resetTokenExpiresAt = None,
-            roles = Seq(RoleOrganisation),
+            roles = Seq(RoleActor),
             country = "FR",
             language = "fr",
             profile = None,
