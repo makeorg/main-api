@@ -122,8 +122,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           action = ManageContactAction.AddNoForce,
           properties = getPropertiesFromUser(user)
         )
-      ).map { response =>
-        logger.info(s"adding user to optin list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add single to optin list")
       }
     }
 
@@ -132,8 +132,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.optInListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logger.info(s"remove user to optin list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Remove single from optin list")
       }
     }
 
@@ -146,8 +146,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           action = ManageContactAction.AddNoForce,
           properties = getPropertiesFromUser(user)
         )
-      ).map { response =>
-        logger.info(s"adding user to hard bounce list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add single to hardbounce list")
       }
     }
 
@@ -160,14 +160,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           action = ManageContactAction.AddNoForce,
           properties = getPropertiesFromUser(user)
         )
-      ).map { response =>
-        logger.info(s"adding user to unsubscribe list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add single to unsubscribe list")
       }
     }
 
     override def sendEmail(message: SendEmail): Future[Unit] = {
-      sendEmailMailJetRequest(message = message).map { response =>
-        logger.info(s"sent email: $response")
+      sendEmailMailJetRequest(message = message).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Sent email")
       }
     }
 
@@ -176,8 +176,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.hardBounceListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logger.info(s"remove user from hardbounce list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Remove from hardbounce list")
       }
     }
 
@@ -186,12 +186,15 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.unsubscribeListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logger.info(s"remove user from unsubscribe list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Remove from unsubscribe list")
       }
     }
 
     override def addUsersToOptInList(users: Seq[User]): Future[Unit] = {
+      if (users.isEmpty) {
+        Future.successful {}
+      }
       manageContactListMailJetRequest(
         manageContactList = ManageManyContacts(
           contacts = users.map { user =>
@@ -207,8 +210,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
           )
         )
-      ).map { response =>
-        logger.info(s"add users to optin list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add to optin list")
       }
 
       Future.successful {}
@@ -230,8 +233,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
           )
         )
-      ).map { response =>
-        logger.info(s"add users to unsubscribe list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add to unsubscribe list")
       }
 
       Future.successful {}
@@ -253,11 +256,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
           )
         )
-      ).map { response =>
-        logger.info(s"add users to hard bounce list: $response")
+      ).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Add to hardbounce list")
       }
 
       Future.successful {}
+    }
+  }
+
+  def logQueueOfferResult(queueOfferResult: QueueOfferResult, operationName: String): Unit = {
+    queueOfferResult match {
+      case QueueOfferResult.Enqueued    => logger.debug(s"$operationName: element has been consumed")
+      case QueueOfferResult.Dropped     => logger.warn(s"$operationName: element has been ignored because of backpressure")
+      case QueueOfferResult.QueueClosed => logger.warn(s"$operationName: the queue upstream has terminated")
+      case QueueOfferResult.Failure(e) =>
+        logger.warn(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
     }
   }
 
