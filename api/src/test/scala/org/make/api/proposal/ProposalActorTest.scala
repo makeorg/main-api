@@ -1307,7 +1307,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(UserId("Bar")),
         RequestContext.empty,
         voteKey = VoteKey.Agree,
-        vote = None
+        vote = None,
+        organisationInfo = None
       )
 
       expectMsg(Right(Some(voteAgree)))
@@ -1332,7 +1333,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(UserId("Baz")),
         RequestContext.empty,
         voteKey = VoteKey.Disagree,
-        vote = None
+        vote = None,
+        organisationInfo = None
       )
 
       expectMsg(Right(Some(voteDisagree)))

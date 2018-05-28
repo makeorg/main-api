@@ -155,6 +155,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
             .flatMap(_.dateOfBirth)
             .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt)
         ),
+        organisations = proposal.organisations.map(IndexedOrganisationInfo.apply),
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,

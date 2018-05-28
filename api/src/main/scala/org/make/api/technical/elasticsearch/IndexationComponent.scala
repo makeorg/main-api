@@ -24,7 +24,13 @@ import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.api.{migrations, ActorSystemComponent}
 import org.make.core.idea.indexed.IndexedIdea
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
+import org.make.core.proposal.indexed.{
+  Author,
+  IndexedOrganisationInfo,
+  IndexedProposal,
+  IndexedVote,
+  Context => ProposalContext
+}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.{
@@ -259,6 +265,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
             .flatMap(_.dateOfBirth)
             .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt)
         ),
+        organisations = proposal.organisations.map(IndexedOrganisationInfo.apply),
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,

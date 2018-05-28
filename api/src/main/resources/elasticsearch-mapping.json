@@ -428,6 +428,19 @@
             }
           }
         },
+        "organisations": {
+          "type": "object",
+          "properties": {
+            "organisationId": {
+              "type": "keyword",
+              "index": true
+            },
+            "organisationName": {
+              "type": "text",
+              "index": true
+            }
+          }
+        },
         "tags": {
           "type": "object",
           "properties": {

@@ -191,6 +191,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             id = proposalId,
             maybeUserId = command.maybeUserId,
             eventDate = DateHelper.now(),
+            organisationInfo = command.organisationInfo,
             requestContext = command.requestContext,
             voteKey = command.voteKey
           )
@@ -217,6 +218,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           id = proposalId,
           maybeUserId = command.maybeUserId,
           eventDate = DateHelper.now(),
+          organisationInfo = command.organisationInfo,
           requestContext = command.requestContext,
           voteKey = command.voteKey
         )
@@ -975,11 +977,23 @@ object ProposalActor {
   }
 
   def applyProposalVoted(state: ProposalState, event: ProposalVoted): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
-      case vote if vote.key == event.voteKey =>
-        vote.copy(count = vote.count + 1)
-      case vote => vote
-    }))
+    state.copy(
+      proposal = state.proposal.copy(
+        votes = state.proposal.votes.map {
+          case vote if vote.key == event.voteKey =>
+            vote.copy(count = vote.count + 1)
+          case vote => vote
+        },
+        organisations = event.organisationInfo match {
+          case Some(organisationInfo) =>
+            state.proposal.organisations :+ OrganisationInfo(
+              organisationInfo.organisationId,
+              event.organisationInfo.flatMap(_.organisationName)
+            )
+          case _ => state.proposal.organisations
+        }
+      )
+    )
   }
 
   def applyProposalUnvoted(state: ProposalState, event: ProposalUnvoted): ProposalState = {

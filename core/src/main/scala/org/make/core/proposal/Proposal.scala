@@ -64,7 +64,7 @@ object ProposalId {
 
 }
 
-final case class OrganisationInfo(userId: UserId, organisationName: Option[String])
+final case class OrganisationInfo(organisationId: UserId, organisationName: Option[String])
 
 object OrganisationInfo {
   implicit val encoder: ObjectEncoder[OrganisationInfo] = deriveEncoder[OrganisationInfo]

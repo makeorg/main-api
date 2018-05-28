@@ -508,6 +508,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case None => Future.successful(Seq.empty)
       }
     }
+
     private def retrieveVoteHistory(proposalId: ProposalId,
                                     maybeUserId: Option[UserId],
                                     requestContext: RequestContext) = {
@@ -524,6 +525,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       votesHistory
     }
 
+    private def retrieveUser(maybeUserId: Option[UserId]): Future[Option[User]] = {
+      maybeUserId.map { userId =>
+        userService.getUser(userId)
+      }.getOrElse(Future.successful(None))
+    }
+
     override def voteProposal(proposalId: ProposalId,
                               maybeUserId: Option[UserId],
                               requestContext: RequestContext,
@@ -531,13 +538,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
         votes =>
-          proposalCoordinatorService.vote(
-            VoteProposalCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              vote = votes.get(proposalId)
+          retrieveUser(maybeUserId).flatMap(
+            user =>
+              proposalCoordinatorService.vote(
+                VoteProposalCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  organisationInfo =
+                    user.filter(_.isOrganisation).map(user => OrganisationInfo(user.userId, user.organisationName)),
+                  vote = votes.get(proposalId)
+                )
             )
         )
       )

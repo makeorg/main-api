@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -260,17 +260,18 @@ object PublishedProposalEvent {
   final case class ProposalVoted(id: ProposalId,
                                  maybeUserId: Option[UserId],
                                  eventDate: ZonedDateTime,
+                                 organisationInfo: Option[OrganisationInfo],
                                  requestContext: RequestContext,
                                  voteKey: VoteKey)
       extends PublishedProposalEvent {
 
-    override def version(): Int = MakeSerializable.V1
+    override def version(): Int = MakeSerializable.V2
   }
 
   object ProposalVoted {
 
     implicit val formatter: RootJsonFormat[ProposalVoted] =
-      DefaultJsonProtocol.jsonFormat5(ProposalVoted.apply)
+      DefaultJsonProtocol.jsonFormat6(ProposalVoted.apply)
 
   }
 

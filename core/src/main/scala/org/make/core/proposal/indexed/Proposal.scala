@@ -60,6 +60,7 @@ case class IndexedProposal(id: ProposalId,
                            trending: Option[String],
                            labels: Seq[String],
                            author: Author,
+                           organisations: Seq[IndexedOrganisationInfo],
                            country: String,
                            language: String,
                            themeId: Option[ThemeId],
@@ -87,6 +88,19 @@ final case class Author(firstName: Option[String], postalCode: Option[String], a
 object Author {
   implicit val encoder: ObjectEncoder[Author] = deriveEncoder[Author]
   implicit val decoder: Decoder[Author] = deriveDecoder[Author]
+}
+
+final case class IndexedOrganisationInfo(organisationId: UserId, organisationName: Option[String])
+
+object IndexedOrganisationInfo {
+  implicit val encoder: ObjectEncoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
+  implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
+
+  def apply(organisationInfo: OrganisationInfo): IndexedOrganisationInfo =
+    IndexedOrganisationInfo(
+      organisationId = organisationInfo.organisationId,
+      organisationName = organisationInfo.organisationName
+    )
 }
 
 final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
