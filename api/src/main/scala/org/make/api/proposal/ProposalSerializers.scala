@@ -4,10 +4,11 @@ import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.SprayJsonFormatters
+import org.make.core.proposal.OrganisationInfo
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
 import stamina.json._
-import stamina.{V1, V2}
+import stamina.{V1, V2, V3}
 
 object ProposalSerializers extends SprayJsonFormatters {
 
@@ -53,13 +54,15 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
     persister[ProposalLocked]("proposal-locked")
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V2] =
-    persister[ProposalState, V2](
+  private val proposalStateSerializer: JsonPersister[ProposalState, V3] =
+    persister[ProposalState, V3](
       "proposalState",
-      from[V1].to[V2](
-        _.update('proposal / 'language ! set[Option[String]](Some("fr")))
-          .update('proposal / 'country ! set[Option[String]](Some("FR")))
-      )
+      from[V1]
+        .to[V2](
+          _.update('proposal / 'language ! set[Option[String]](Some("fr")))
+            .update('proposal / 'country ! set[Option[String]](Some("FR")))
+        )
+        .to[V3](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
     )
 
   private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
@@ -68,8 +71,11 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
     persister[SimilarProposalsCleared]("similar-proposals-cleared")
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V1] =
-    persister[ProposalPatched]("proposal-tags-updated")
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V2] =
+    persister[ProposalPatched, V2](
+      "proposal-tags-updated",
+      from[V1].to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
+    )
 
   private val proposalAddedToOperationSerializer: JsonPersister[ProposalAddedToOperation, V1] =
     persister[ProposalAddedToOperation]("proposal-added-to-operation")

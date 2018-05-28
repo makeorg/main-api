@@ -25,6 +25,7 @@ final case class Proposal(proposalId: ProposalId,
                           refusalReason: Option[String] = None,
                           tags: Seq[TagId] = Seq.empty,
                           votes: Seq[Vote],
+                          organisations: Seq[OrganisationInfo] = Seq.empty,
                           language: Option[String] = None,
                           country: Option[String] = None,
                           creationContext: RequestContext,
@@ -38,7 +39,7 @@ final case class Proposal(proposalId: ProposalId,
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat19(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat20(Proposal.apply)
 
 }
 
@@ -61,6 +62,16 @@ object ProposalId {
     }
   }
 
+}
+
+final case class OrganisationInfo(userId: UserId, organisationName: Option[String])
+
+object OrganisationInfo {
+  implicit val encoder: ObjectEncoder[OrganisationInfo] = deriveEncoder[OrganisationInfo]
+  implicit val decoder: Decoder[OrganisationInfo] = deriveDecoder[OrganisationInfo]
+
+  implicit lazy val organisationInfoFormatter: RootJsonFormat[OrganisationInfo] =
+    DefaultJsonProtocol.jsonFormat2(OrganisationInfo.apply)
 }
 
 final case class AuthorInfo(userId: UserId, firstName: Option[String], postalCode: Option[String], age: Option[Int])

@@ -111,7 +111,7 @@ object PublishedProposalEvent {
                                    requestContext: RequestContext = RequestContext.empty,
                                    proposal: Proposal)
       extends PublishedProposalEvent {
-    override def version(): Int = MakeSerializable.V1
+    override def version(): Int = MakeSerializable.V2
   }
 
   object ProposalPatched {
