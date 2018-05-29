@@ -66,7 +66,7 @@ class ProposalSearchEngineTest
     context = Some(Context(source = None, operation = None, location = None, question = None)),
     trending = None,
     labels = Seq.empty,
-    author = Author(firstName = Some("Boogie"), postalCode = Some("11111"), age = Some(42)),
+    author = Author(firstName = Some("Boogie"), organisationName = None, postalCode = Some("11111"), age = Some(42)),
     organisations = Seq.empty,
     themeId = Some(ThemeId("foo-theme")),
     tags = Seq.empty,

@@ -1,6 +1,5 @@
 package org.make.api.organisation
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -13,7 +12,6 @@ import org.make.api.user.{OrganisationServiceComponent, UserResponse}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
@@ -29,6 +27,9 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeSettingsComponent =>
 
   @ApiOperation(value = "get-organisation", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @Path(value = "/{organisationId}")
   def getOrganisation: Route =
@@ -47,7 +48,8 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
     value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
   )
   @Path(value = "/{organisationId}/proposals")
   def getOrganisationProposals: Route =
@@ -55,20 +57,16 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
       path("organisations" / organisationId / "proposals") { organisationId =>
         makeOperation("GetOrganisationProposals") { requestContext =>
           optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-              if (!organisation.isOrganisation) {
-                complete(StatusCodes.Forbidden)
-              } else {
-                provideAsync(
-                  proposalService.searchForUser(
-                    optionalUserAuth.map(_.user.userId),
-                    SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
-                    None,
-                    requestContext
-                  )
-                ) { listProposals =>
-                  complete(listProposals)
-                }
+            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
+              provideAsync(
+                proposalService.searchForUser(
+                  optionalUserAuth.map(_.user.userId),
+                  SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
+                  None,
+                  requestContext
+                )
+              ) { listProposals =>
+                complete(listProposals)
               }
             }
           }
@@ -77,6 +75,9 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
     }
 
   @ApiOperation(value = "get-organisation-votes", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
+  )
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
@@ -87,15 +88,11 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
       path("organisations" / organisationId / "votes") { organisationId =>
         makeOperation("GetOrganisationVotes") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-              if (!organisation.isOrganisation) {
-                complete(StatusCodes.Forbidden)
-              } else {
-                onSuccess(
-                  organisationService.getVotedProposals(organisationId, userAuth.map(_.user.userId), requestContext)
-                ) { proposals =>
-                  complete(proposals)
-                }
+            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
+              onSuccess(
+                organisationService.getVotedProposals(organisationId, userAuth.map(_.user.userId), requestContext)
+              ) { proposals =>
+                complete(proposals)
               }
             }
           }

@@ -776,7 +776,7 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(firstName = Some("Paul"), postalCode = Some("11111"), age = Some(26)),
+      author = Author(firstName = Some("Paul"), organisationName = None, postalCode = Some("11111"), age = Some(26)),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq.empty,
@@ -887,7 +887,8 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(firstName = sylvain.firstName, postalCode = Some("11111"), age = Some(22)),
+      author =
+        Author(firstName = sylvain.firstName, organisationName = None, postalCode = Some("11111"), age = Some(22)),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq.empty,

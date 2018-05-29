@@ -418,6 +418,10 @@
               "type": "text",
               "index": true
             },
+            "organisationName": {
+              "type": "text",
+              "index": true
+            },
             "postalCode": {
               "type": "keyword",
               "index": false

@@ -86,6 +86,7 @@ final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
+                                       organisationInfo: Option[OrganisationInfo],
                                        vote: Option[VoteAndQualifications])
     extends ProposalCommand
 

@@ -125,7 +125,7 @@ class DefaultProposalServiceComponentTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(firstName = Some(id.value), postalCode = None, age = None),
+      author = Author(firstName = Some(id.value), organisationName = None, postalCode = None, age = None),
       organisations = Seq.empty,
       country = "FR",
       language = "fr",

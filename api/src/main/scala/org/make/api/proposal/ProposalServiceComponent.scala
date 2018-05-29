@@ -563,13 +563,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
         votes =>
-          proposalCoordinatorService.unvote(
-            UnvoteProposalCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              vote = votes.get(proposalId)
+          retrieveUser(maybeUserId).flatMap(
+            user =>
+              proposalCoordinatorService.unvote(
+                UnvoteProposalCommand(
+                  proposalId = proposalId,
+                  maybeUserId = maybeUserId,
+                  requestContext = requestContext,
+                  voteKey = voteKey,
+                  organisationInfo =
+                    user.filter(_.isOrganisation).map(user => OrganisationInfo(user.userId, user.organisationName)),
+                  vote = votes.get(proposalId)
+                )
             )
         )
       )

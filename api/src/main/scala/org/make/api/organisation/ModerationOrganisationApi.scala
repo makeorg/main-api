@@ -102,19 +102,15 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
-                  provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-                    if (!organisation.isOrganisation) {
-                      complete(StatusCodes.Forbidden)
-                    } else {
-                      onSuccess(
-                        organisationService
-                          .update(
-                            organisationId,
-                            OrganisationUpdateData(name = request.name, email = request.email, avatar = request.avatar)
-                          )
-                      ) { organisationId =>
-                        complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
-                      }
+                  provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
+                    onSuccess(
+                      organisationService
+                        .update(
+                          organisationId,
+                          OrganisationUpdateData(name = request.name, email = request.email, avatar = request.avatar)
+                        )
+                    ) { organisationId =>
+                      complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
                     }
                   }
                 }

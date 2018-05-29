@@ -95,34 +95,7 @@ class OrganisationApiTest
 
   Mockito
     .when(organisationService.getOrganisation(UserId("classic-user")))
-    .thenReturn(
-      Future.successful(
-        Some(
-          User(
-            userId = UserId("classic-user"),
-            email = "classic@user.org",
-            firstName = Some("Classic"),
-            lastName = Some("User"),
-            lastIp = None,
-            hashedPassword = None,
-            enabled = true,
-            emailVerified = true,
-            lastConnection = now,
-            verificationToken = None,
-            verificationTokenExpiresAt = None,
-            resetToken = None,
-            resetTokenExpiresAt = None,
-            roles = Seq(RoleCitizen),
-            country = "FR",
-            language = "fr",
-            profile = None,
-            createdAt = None,
-            updatedAt = None,
-            lastMailingError = None
-          )
-        )
-      )
-    )
+    .thenReturn(Future.successful(None))
 
   Mockito
     .when(organisationService.getOrganisation(UserId("non-existant")))
@@ -144,7 +117,8 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, postalCode = None, age = None),
+        author = Author(firstName = None, organisationName = None, postalCode = None, age = None),
+        organisations = Seq.empty,
         themeId = Some(ThemeId("foo-theme")),
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
@@ -165,7 +139,8 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, postalCode = None, age = None),
+        author = Author(firstName = None, organisationName = None, postalCode = None, age = None),
+        organisations = Seq.empty,
         themeId = Some(ThemeId("bar-theme")),
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
@@ -200,14 +175,14 @@ class OrganisationApiTest
   feature("Get list of organisation proposals") {
     scenario("organisationId does not correspond to an organisation") {
       Get("/organisations/classic-user/proposals") ~> routes ~> check {
-        status shouldBe StatusCodes.Forbidden
+        status shouldBe StatusCodes.NotFound
       }
     }
 
     scenario("search organisation proposals unauthenticated") {
       Get("/organisations/make-org/proposals") ~> routes ~> check {
         status shouldBe StatusCodes.OK
-        val proposalsSearchResult: ProposalsSearchResult = entityAs[ProposalsSearchResult]
+        val proposalsSearchResult: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
         proposalsSearchResult.total shouldBe 2
         proposalsSearchResult.results.size shouldBe 2
         proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
@@ -258,11 +233,9 @@ class OrganisationApiTest
     scenario("get proposals voted from non organisation user") {
       Mockito
         .when(organisationService.getOrganisation(ArgumentMatchers.any[UserId]))
-        .thenReturn(
-          Future.successful(Some(returnedOrganisation.copy(roles = Seq(RoleCitizen), isOrganisation = false)))
-        )
+        .thenReturn(Future.successful(None))
       Get("/organisations/make-org/votes") ~> routes ~> check {
-        status shouldBe StatusCodes.Forbidden
+        status shouldBe StatusCodes.NotFound
       }
     }
   }

@@ -260,6 +260,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
         labels = proposal.labels.map(_.value),
         author = Author(
           firstName = user.firstName,
+          organisationName = user.organisationName,
           postalCode = user.profile.flatMap(_.postalCode),
           age = user.profile
             .flatMap(_.dateOfBirth)

@@ -83,7 +83,10 @@ object Context {
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
 }
 
-final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
+final case class Author(firstName: Option[String],
+                        organisationName: Option[String],
+                        postalCode: Option[String],
+                        age: Option[Int])
 
 object Author {
   implicit val encoder: ObjectEncoder[Author] = deriveEncoder[Author]

@@ -212,6 +212,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           eventDate = DateHelper.now(),
           requestContext = command.requestContext,
           voteKey = vote.voteKey,
+          organisationInfo = command.organisationInfo,
           selectedQualifications = vote.qualificationKeys
         )
         val voteEvent = ProposalVoted(
@@ -293,6 +294,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             eventDate = DateHelper.now(),
             requestContext = command.requestContext,
             voteKey = vote.voteKey,
+            organisationInfo = command.organisationInfo,
             selectedQualifications = vote.qualificationKeys
           )
         ) { event =>
@@ -997,15 +999,24 @@ object ProposalActor {
   }
 
   def applyProposalUnvoted(state: ProposalState, event: ProposalUnvoted): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
-      case vote if vote.key == event.voteKey =>
-        vote.copy(
-          count = vote.count - 1,
-          qualifications =
-            vote.qualifications.map(qualification => applyUnqualifVote(qualification, event.selectedQualifications))
-        )
-      case vote => vote
-    }))
+    state.copy(
+      proposal = state.proposal.copy(
+        votes = state.proposal.votes.map {
+          case vote if vote.key == event.voteKey =>
+            vote.copy(
+              count = vote.count - 1,
+              qualifications =
+                vote.qualifications.map(qualification => applyUnqualifVote(qualification, event.selectedQualifications))
+            )
+          case vote => vote
+        },
+        organisations = event.organisationInfo match {
+          case Some(organisationInfo) =>
+            state.proposal.organisations.filterNot(_.organisationId.value == organisationInfo.organisationId.value)
+          case _ => state.proposal.organisations
+        }
+      )
+    )
   }
 
   def applyUnqualifVote(qualification: Qualification, selectedQualifications: Seq[QualificationKey]): Qualification = {

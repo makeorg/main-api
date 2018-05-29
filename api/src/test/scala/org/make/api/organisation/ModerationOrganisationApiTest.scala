@@ -161,7 +161,7 @@ class ModerationOrganisationApiTest
     scenario("update organisation without admin rights") {
       Given("a non admin user")
       When("I want to update an organisation")
-      Then("I should get a forbidden error")
+      Then("I should get a not found error")
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
@@ -188,11 +188,11 @@ class ModerationOrganisationApiTest
       When("I want to update a non organisation user")
       Then("I should get a Forbidden status")
       when(organisationService.getOrganisation(any[UserId]))
-        .thenReturn(Future.successful(Some(fakeOrganisation.copy(roles = Seq(RoleCitizen), isOrganisation = false))))
+        .thenReturn(Future.successful(None))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
-        status shouldBe StatusCodes.Forbidden
+        status shouldBe StatusCodes.NotFound
       }
     }
 

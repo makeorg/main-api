@@ -520,7 +520,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
   )
   def getProposalsByUser: Route = get {
-    path("user" / userId / "proposals") { (userId: UserId) =>
+    path("user" / userId / "proposals") { userId: UserId =>
       makeOperation("UserProposals") { requestContext =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
           val connectedUserId: UserId = userAuth.user.userId
@@ -636,14 +636,14 @@ case class UserResponse(userId: UserId,
                         organisationName: Option[String],
                         enabled: Boolean,
                         emailVerified: Boolean,
+                        isOrganisation: Boolean,
                         lastConnection: ZonedDateTime,
                         roles: Seq[Role],
                         profile: Option[Profile],
                         country: String,
                         language: String,
                         isHardBounce: Boolean,
-                        lastMailingError: Option[MailingErrorLogResponse],
-                        organisation: Option[String])
+                        lastMailingError: Option[MailingErrorLogResponse])
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
@@ -657,13 +657,13 @@ object UserResponse extends CirceFormatters {
     organisationName = user.organisationName,
     enabled = user.enabled,
     emailVerified = user.emailVerified,
+    isOrganisation = user.isOrganisation,
     lastConnection = user.lastConnection,
     roles = user.roles,
     profile = user.profile,
     country = user.country,
     language = user.language,
     isHardBounce = user.isHardBounce,
-    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
-    organisation = user.organisationName
+    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_))
   )
 }

@@ -278,18 +278,19 @@ object PublishedProposalEvent {
   final case class ProposalUnvoted(id: ProposalId,
                                    maybeUserId: Option[UserId],
                                    eventDate: ZonedDateTime,
+                                   organisationInfo: Option[OrganisationInfo],
                                    requestContext: RequestContext,
                                    voteKey: VoteKey,
                                    selectedQualifications: Seq[QualificationKey])
       extends PublishedProposalEvent {
 
-    override def version(): Int = MakeSerializable.V1
+    override def version(): Int = MakeSerializable.V2
   }
 
   object ProposalUnvoted {
 
     implicit val formatter: RootJsonFormat[ProposalUnvoted] =
-      DefaultJsonProtocol.jsonFormat6(ProposalUnvoted.apply)
+      DefaultJsonProtocol.jsonFormat7(ProposalUnvoted.apply)
   }
 
   final case class ProposalQualified(id: ProposalId,
