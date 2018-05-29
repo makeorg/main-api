@@ -185,7 +185,6 @@ object ManageContactAction {
 }
 
 case class Contact(email: String, name: String, properties: Option[Map[String, String]] = None)
-
 object Contact {
   implicit val encoder: Encoder[Contact] = Encoder.forProduct3("Email", "Name", "Properties") { contact: Contact =>
     (contact.email, contact.name, contact.properties)
@@ -204,5 +203,20 @@ object ManageManyContacts {
   implicit val encoder: Encoder[ManageManyContacts] = Encoder.forProduct2("Contacts", "ContactsLists") {
     manageManyContacts: ManageManyContacts =>
       (manageManyContacts.contacts, manageManyContacts.contactList)
+  }
+}
+
+case class ContactProperty(name: String, value: String)
+object ContactProperty {
+  implicit val encoder: Encoder[ContactProperty] = Encoder.forProduct2("Name", "Value") {
+    contactProperty: ContactProperty =>
+      (contactProperty.name, contactProperty.value)
+  }
+}
+
+case class ContactData(data: Seq[ContactProperty])
+object ContactData {
+  implicit val encoder: Encoder[ContactData] = Encoder.forProduct1("Data") { contactData: ContactData =>
+    (contactData.data)
   }
 }

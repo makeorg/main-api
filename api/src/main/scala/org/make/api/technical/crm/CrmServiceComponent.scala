@@ -1,6 +1,6 @@
 package org.make.api.technical.crm
 
-import java.net.URL
+import java.net.{URL, URLEncoder}
 import java.time.format.DateTimeFormatter
 
 import akka.NotUsed
@@ -32,6 +32,7 @@ trait CrmService {
   def addUserToHardBounceList(user: User): Future[Unit]
   def addUserToUnsubscribeList(user: User): Future[Unit]
   def sendEmail(message: SendEmail): Future[Unit]
+  def updateUserProperties(user: User): Future[Unit]
 
   def addUsersToOptInList(users: Seq[User]): Future[Unit]
   def addUsersToUnsubscribeList(users: Seq[User]): Future[Unit]
@@ -91,6 +92,18 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
         headers = immutable.Seq(authorization),
         entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
+      )
+    doHttpCall(request)
+  }
+
+  def updateContactProperties(contactData: ContactData, email: String): Future[QueueOfferResult] = {
+    val encodedEmail: String = URLEncoder.encode(email, "UTF-8")
+    val request =
+      HttpRequest(
+        method = HttpMethods.PUT,
+        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactdata/$encodedEmail"),
+        headers = immutable.Seq(authorization),
+        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(contactData.asJson))
       )
     doHttpCall(request)
   }
@@ -258,6 +271,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
       ).map { queueOfferResult =>
         logQueueOfferResult(queueOfferResult, "Add to hardbounce list")
+      }
+
+      Future.successful {}
+    }
+
+    override def updateUserProperties(user: User): Future[Unit] = {
+
+      val contactData: Seq[ContactProperty] = getPropertiesFromUser(user)
+        .map(_.map {
+          case (name, value) => ContactProperty(name = name, value = value)
+        }.toSeq)
+        .getOrElse(Seq.empty)
+
+      updateContactProperties(ContactData(data = contactData), user.email).map { queueOfferResult =>
+        logQueueOfferResult(queueOfferResult, "Update user properties")
       }
 
       Future.successful {}
