@@ -19,8 +19,8 @@ import org.make.api.technical.KafkaConsumerActor
 import org.make.api.user.UserService
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{Tag, TagId}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -127,7 +127,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
 
     def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
       tagService
-        .findEnabledByTagIds(tags)
+        .findByTagIds(tags)
         .map(Some(_))
     }
 
@@ -165,7 +165,10 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = tags,
+        //TODO: remove this hack
+        tags = tags.map { tag =>
+          IndexedTag(tag.tagId, tag.label)
+        },
         ideaId = proposal.idea,
         operationId = proposal.operation
       )

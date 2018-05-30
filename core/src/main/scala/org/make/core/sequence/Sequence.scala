@@ -5,13 +5,14 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
+import org.make.core.tag.TagId
 
 final case class SequenceTranslation(slug: String, title: String, language: String) extends MakeSerializable
 

@@ -23,9 +23,9 @@ import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.idea.indexed.IndexedIdea
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedVote, Context => ProposalContext}
+import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedTag, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
-import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
+import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.indexed.{
   IndexedSequence,
   IndexedSequenceProposalId,
@@ -33,6 +33,7 @@ import org.make.core.sequence.indexed.{
   Context => SequenceContext
 }
 import org.make.core.sequence.{Sequence, SequenceId}
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -216,7 +217,7 @@ trait DefaultIndexationComponent extends IndexationComponent {
 
   private def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
     tagService
-      .findEnabledByTagIds(tags)
+      .findByTagIds(tags)
       .map(Some(_))
   }
   private def retrieveThemes(themeIds: Seq[ThemeId]): Future[Option[Seq[Theme]]] = {
@@ -265,7 +266,10 @@ trait DefaultIndexationComponent extends IndexationComponent {
         country = proposal.country.getOrElse("FR"),
         language = proposal.language.getOrElse("fr"),
         themeId = proposal.theme,
-        tags = tags,
+        //TODO: remove this hack
+        tags = tags.map { tag =>
+          IndexedTag(tag.tagId, tag.label)
+        },
         ideaId = proposal.idea,
         operationId = proposal.operation
       )
@@ -300,7 +304,9 @@ trait DefaultIndexationComponent extends IndexationComponent {
             question = sequence.creationContext.question
           )
         ),
-        tags = tags,
+        tags = tags.map { t =>
+          IndexedTag(t.tagId, t.label)
+        },
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
         operationId = sequence.operationId,
         proposals = sequence.proposalIds.map(IndexedSequenceProposalId.apply),

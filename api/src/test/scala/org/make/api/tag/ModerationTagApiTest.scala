@@ -6,9 +6,8 @@ import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToke
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.RequestContext
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -68,33 +67,41 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
   val specificValidTagSlug: String = "taxes-fiscalite"
   val helloWorldTagText: String = "hello world"
   val helloWorldTagSlug: String = "hello-world"
-  val fakeTag: String = "fake-tag"
-  val newTagNameText: String = "new tag name"
-  val newTagNameSlug: String = "new-tag-name"
+  val fakeTagText: String = "fake-tag"
 
-  when(tagService.createTag(ArgumentMatchers.eq(validTagText)))
-    .thenReturn(Future.successful(Tag(validTagText)))
-  when(tagService.createTag(ArgumentMatchers.eq(specificValidTagText)))
-    .thenReturn(Future.successful(Tag(specificValidTagText)))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
+  def newTag(label: String, tagId: TagId = idGenerator.nextTagId()): Tag = Tag(
+    tagId = tagId,
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
+
+  val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
+  val specificValidTag: Tag = newTag(specificValidTagText, TagId(specificValidTagSlug))
+  val helloWorldTag: Tag = newTag(helloWorldTagText, TagId(helloWorldTagSlug))
+  val fakeTag: Tag = newTag(fakeTagText)
+  val tag1: Tag = newTag("tag1", TagId("tag1"))
+  val tag2: Tag = newTag("tag2", TagId("tag2"))
+
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(validTagText)))
+    .thenReturn(Future.successful(validTag))
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(specificValidTagText)))
+    .thenReturn(Future.successful(specificValidTag))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(newTagNameSlug))))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId("valid-tag"))))
+    .thenReturn(Future.successful(Some(validTag)))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(helloWorldTagText))))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(existingValidTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(existingValidTagText))))
-  when(tagService.findAllEnabled())
-    .thenReturn(Future.successful(Seq(Tag("tag1"), Tag("tag2"))))
-
-  when(
-    tagService.updateTag(
-      slug = ArgumentMatchers.eq(TagId(existingValidTagSlug)),
-      newTagLabel = ArgumentMatchers.eq(newTagNameText),
-      requestContext = ArgumentMatchers.any[RequestContext],
-      connectedUserId = ArgumentMatchers.any[Option[UserId]]
-    )
-  ).thenReturn(Future.successful(Some(Tag(newTagNameText))))
+    .thenReturn(Future.successful(Some(helloWorldTag)))
+  when(tagService.findAll())
+    .thenReturn(Future.successful(Seq(tag1, tag2)))
 
   val routes: Route = sealRoute(moderationTagRoutes)
 
@@ -134,47 +141,33 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         status should be(StatusCodes.Created)
       }
     }
-
-    scenario("specific tag") {
-      Given("an authenticated user with the moderator role")
-      When(s"""the user wants to create a specific tag with value "$specificValidTagText"""")
-      Then(s"the created tag's slug should be $specificValidTagSlug")
-
-      Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$specificValidTagText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        val tag: TagResponse = entityAs[TagResponse]
-        tag.id.value should be(specificValidTagSlug)
-      }
-    }
   }
 
   feature("get a tag") {
 
     scenario("tag not exist") {
       Given("an anonymous user")
-      When(s"she wants to get a tag from id '$fakeTag'")
+      When(s"she wants to get a tag from id '$fakeTagText'")
       Then("she should get a not authorized response")
 
-      Get(s"/moderation/tags/$fakeTag") ~> routes ~> check {
+      Get(s"/moderation/tags/$fakeTagText") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
 
       Given("a citizen user")
-      When(s"she wants to get a tag from id '$fakeTag'")
+      When(s"she wants to get a tag from id '$fakeTagText'")
       Then("she should get a forbidden response")
 
-      Get(s"/moderation/tags/$fakeTag")
+      Get(s"/moderation/tags/$fakeTagText")
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
-      Given(s"a moderator user and a tag id '$fakeTag' that not exist")
-      When(s"she wants to get a tag from id '$fakeTag'")
+      Given(s"a moderator user and a tag id '$fakeTagText' that not exist")
+      When(s"she wants to get a tag from id '$fakeTagText'")
       Then("she should get a not found response")
 
-      Get(s"/moderation/tags/$fakeTag")
+      Get(s"/moderation/tags/$fakeTagText")
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }

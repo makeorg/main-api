@@ -9,7 +9,8 @@ import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
 import stamina.Persisters

@@ -8,7 +8,8 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{Tag, ThemeId}
+import org.make.core.reference.ThemeId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 object ProposalElasticsearchFieldNames {
@@ -62,7 +63,7 @@ case class IndexedProposal(id: ProposalId,
                            country: String,
                            language: String,
                            themeId: Option[ThemeId],
-                           tags: Seq[Tag],
+                           tags: Seq[IndexedTag],
                            ideaId: Option[IdeaId],
                            operationId: Option[OperationId])
 
@@ -118,4 +119,11 @@ object ProposalsSearchResult {
   implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
 
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
+}
+
+final case class IndexedTag(tagId: TagId, label: String)
+
+object IndexedTag {
+  implicit val encoder: ObjectEncoder[IndexedTag] = deriveEncoder[IndexedTag]
+  implicit val decoder: Decoder[IndexedTag] = deriveDecoder[IndexedTag]
 }

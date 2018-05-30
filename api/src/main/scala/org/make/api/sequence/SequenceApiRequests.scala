@@ -6,8 +6,9 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.sequence._
+import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
 

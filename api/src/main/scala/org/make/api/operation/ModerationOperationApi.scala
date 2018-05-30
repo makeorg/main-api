@@ -1,12 +1,12 @@
 package org.make.api.operation
 
 import java.time.LocalDate
-import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sequence.{SequenceResponse, SequenceServiceComponent}
 import org.make.api.tag.TagServiceComponent
@@ -15,13 +15,13 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
-import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
-import org.make.core.{reference, HttpCodes, Validation}
+import org.make.core.tag.TagId
+import org.make.core.{tag, HttpCodes, Validation}
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scalaoauth2.provider.AuthInfo
 
 @Api(
   value = "Moderation Operation",
@@ -186,7 +186,7 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
       .validateEquals("slug", Some(s"Slug '$slug' already exist"), operationId, operationIdOfSlug)
   }
 
-  private def tagsValidation(tagIds: Seq[TagId], validTags: Seq[reference.Tag]) = {
+  private def tagsValidation(tagIds: Seq[TagId], validTags: Seq[tag.Tag]) = {
     Validation.validateEquals("tagIds", Some("Some tag ids are invalid"), tagIds.distinct.size, validTags.size)
   }
 

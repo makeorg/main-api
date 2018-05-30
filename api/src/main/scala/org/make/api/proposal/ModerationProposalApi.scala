@@ -1,7 +1,6 @@
 package org.make.api.proposal
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
@@ -26,7 +25,8 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.{DateHelper, HttpCodes, Validation}
 
 import scala.concurrent.ExecutionContext.Implicits.global

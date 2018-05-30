@@ -2,7 +2,8 @@ package org.make.api.migrations
 
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.RequestContext
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 
 object CoreData extends InsertFixtureData {
 

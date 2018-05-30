@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToke
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.core.ValidationError
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
@@ -71,30 +71,32 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
   val fakeTag: String = "fake-tag"
   val newTagNameText: String = "new tag name"
   val newTagNameSlug: String = "new-tag-name"
+  def newTag(label: String, tagId: Option[String] = None): Tag = Tag(
+    tagId = TagId(tagId.getOrElse(label)),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
 
-  when(tagService.createTag(ArgumentMatchers.eq(validTagText)))
-    .thenReturn(Future.successful(Tag(validTagText)))
-  when(tagService.createTag(ArgumentMatchers.eq(specificValidTagText)))
-    .thenReturn(Future.successful(Tag(specificValidTagText)))
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(validTagText)))
+    .thenReturn(Future.successful(newTag(validTagText)))
+  when(tagService.createLegacyTag(ArgumentMatchers.eq(specificValidTagText)))
+    .thenReturn(Future.successful(newTag(specificValidTagText, Some(specificValidTagSlug))))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(newTagNameSlug))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(helloWorldTagText))))
+    .thenReturn(Future.successful(Some(newTag(helloWorldTagText, Some(helloWorldTagSlug)))))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(existingValidTagSlug))))
-    .thenReturn(Future.successful(Some(Tag(existingValidTagText))))
-  when(tagService.findAllEnabled())
-    .thenReturn(Future.successful(Seq(Tag("tag1"), Tag("tag2"))))
-
-  when(
-    tagService.updateTag(
-      slug = ArgumentMatchers.eq(TagId(existingValidTagSlug)),
-      newTagLabel = ArgumentMatchers.eq(newTagNameText),
-      requestContext = ArgumentMatchers.any[RequestContext],
-      connectedUserId = ArgumentMatchers.any[Option[UserId]]
-    )
-  ).thenReturn(Future.successful(Some(Tag(newTagNameText))))
+    .thenReturn(Future.successful(Some(newTag(existingValidTagText, Some(existingValidTagSlug)))))
+  when(tagService.findAll())
+    .thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
   val routes: Route = sealRoute(tagRoutes)
 
@@ -253,20 +255,6 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
         contentError should be(
           Some(ValidationError("label", Some("New tag already exist. Duplicates are not allowed")))
         )
-      }
-    }
-
-    scenario("update tag success") {
-      Given(s"a registered tag with a label '$existingValidTagText' and an id '$existingValidTagSlug'")
-      When(s"i update tag label with id '$existingValidTagSlug' to '$newTagNameText'")
-      Then("i get a success response")
-      Put(s"/tags/$existingValidTagSlug")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$newTagNameText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val tag: Tag = entityAs[Tag]
-        tag.label should be(newTagNameText)
-        tag.tagId.value should be(newTagNameSlug)
       }
     }
 

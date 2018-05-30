@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.{ActorTimeoutException, TimeSettings}
 import org.make.core.proposal._
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, ValidationFailedError}
 

@@ -5,8 +5,9 @@ import java.time.ZonedDateTime
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}

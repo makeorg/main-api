@@ -10,8 +10,8 @@ import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.reference.Tag
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -65,7 +65,17 @@ class OperationServiceIT
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
   val operationId: OperationId = OperationId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
-  val targaryen: Tag = Tag("Targaryen")
+  val targaryen: Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = "Targaryen",
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagType.LEGACY.tagTypeId,
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
 
   val simpleOperation = Operation(
     operationId = operationId,

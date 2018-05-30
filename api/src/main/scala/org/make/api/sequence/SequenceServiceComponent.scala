@@ -19,9 +19,10 @@ import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId}
-import org.make.core.reference.{TagId, ThemeId}
+import org.make.core.reference.ThemeId
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
+import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 

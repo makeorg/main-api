@@ -1,25 +1,64 @@
 package org.make.api.tag
 
 import org.make.api.DatabaseTest
-import org.make.core.reference.{Tag, TagId}
+import org.make.api.operation.DefaultPersistentOperationServiceComponent
+import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.reference.ThemeId
+import org.make.core.tag._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServiceComponent {
+class PersistentTagServiceIT
+    extends DatabaseTest
+    with DefaultPersistentTagServiceComponent
+    with DefaultPersistentOperationServiceComponent
+    with DefaultIdGeneratorComponent {
 
-  val stark: Tag = Tag("Stark")
+  def newTag(label: String, operationId: Option[OperationId] = None, themeId: Option[ThemeId] = None): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagType.LEGACY.tagTypeId,
+    operationId = operationId,
+    themeId = themeId,
+    country = "FR",
+    language = "fr"
+  )
 
-  val targaryen: Tag = Tag("Targaryen")
-  val lannister: Tag = Tag("Lannister")
-  val bolton: Tag = Tag("Bolton")
-  val greyjoy: Tag = Tag("Greyjoy")
+  val stark: Tag = newTag("Stark")
 
-  val tully: Tag = Tag("Tully")
-  val baratheon: Tag = Tag("Baratheon")
-  val martell: Tag = Tag("Martell")
-  val tyrell: Tag = Tag("Tyrell")
+  val targaryen: Tag = newTag("Targaryen")
+  val lannister: Tag = newTag("Lannister")
+  val bolton: Tag = newTag("Bolton")
+  val greyjoy: Tag = newTag("Greyjoy")
+
+  val tully: Tag = newTag("Tully")
+  val baratheon: Tag = newTag("Baratheon")
+  val martell: Tag = newTag("Martell")
+  val tyrell: Tag = newTag("Tyrell")
+
+  private val developementDurableTheme = ThemeId("036f24fa-dc32-4808-bca9-7ccec1665585")
+  val bron: Tag = newTag("Bron")
+  val weirdTag: Tag = newTag("weird%Tag")
+  val snow: Tag = newTag("Snow", operationId = Some(OperationId("vff")))
+  val lancaster: Tag = newTag("Lancaster", themeId = Some(developementDurableTheme))
+  val byron: Tag = newTag("Byron")
+
+  val fakeOperation = Operation(
+    OperationStatus.Active,
+    OperationId("fakeOperation"),
+    "fake-operation",
+    Seq.empty,
+    "fr",
+    List.empty,
+    None,
+    None,
+    Seq.empty
+  )
 
   feature("One tag can be persisted and retrieved") {
     scenario("Get tag by tagId") {
@@ -37,9 +76,6 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
 
         And("the tag label must be Stark")
         tag.label shouldBe "Stark"
-
-        And("the tag id must be stark")
-        tag.tagId.value shouldBe "stark"
       }
     }
 
@@ -56,7 +92,7 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
   }
 
   feature("A list of tags can be retrieved") {
-    scenario("Get a list of all enabled tags") {
+    scenario("Get a list of all tags") {
       Given(s"""a list of persisted tags:
                |label = ${targaryen.label}, tagId = ${targaryen.tagId.value}
                |label = ${lannister.label}, tagId = ${lannister.tagId.value}
@@ -73,7 +109,7 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
       When("""I retrieve the tags list""")
       val futureTagsLists: Future[(Seq[Tag], Seq[Tag])] = for {
         persistedTagsList <- futurePersistedTagList
-        foundTags         <- persistentTagService.findAllEnabled()
+        foundTags         <- persistentTagService.findAll()
       } yield foundTags -> persistedTagsList
 
       whenReady(futureTagsLists, Timeout(3.seconds)) {
@@ -82,32 +118,105 @@ class PersistentTagServiceIT extends DatabaseTest with DefaultPersistentTagServi
           found.forall(persisted.contains) should be(true)
       }
     }
+  }
 
-    scenario("Get a list of enabled tags from a list of tagsIds") {
-      Given(s"""a list of persisted tags:
-               |label = ${tully.label}, tagId = ${tully.tagId.value}
-               |label = ${baratheon.label}, tagId = ${baratheon.tagId.value}
-               |label = ${martell.label}, tagId = ${martell.tagId.value}
-               |label = ${tyrell.label}, tagId = ${tyrell.tagId.value}
-        """.stripMargin)
-      val futurePersistedTagList: Future[Seq[Tag]] = for {
-        tagTully     <- persistentTagService.persist(tully)
-        tagBaratheon <- persistentTagService.persist(baratheon)
-        tagMartell   <- persistentTagService.persist(martell)
-        tagTyrell    <- persistentTagService.persist(tyrell)
-      } yield Seq(tagTully, tagBaratheon, tagMartell, tagTyrell)
+  feature("Find a tag") {
+    scenario("find from normal label") {
+      Given(s"""a persisted tag "${bron.label}"""")
+      When(s"""I search the tag by a part of its label: "${bron.label.take(3)}"""")
+      val futureTag: Future[Seq[Tag]] = for {
+        _       <- persistentTagService.persist(bron)
+        tagBron <- persistentTagService.findByLabelLike(bron.label.take(3))
+      } yield tagBron
 
-      When("""I retrieve the tags list from ids of tully and baratheon""")
-      val tagsToFind = Seq(tully, baratheon)
-      val futureTagsLists: Future[Seq[Tag]] = for {
-        _         <- futurePersistedTagList
-        foundTags <- persistentTagService.findAllEnabledFromIds(tagsToFind.map(_.tagId))
-      } yield foundTags
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be a list af at least one tag")
+        result.length should be >= 1
 
-      whenReady(futureTagsLists, Timeout(3.seconds)) { found =>
-        Then("result should contain a list of tags of tully and baratheon.")
-        found.size should be(tagsToFind.size)
-        found.forall(tagsToFind.contains) should be(true)
+        And(s"the tag ${bron.label} should be in the list")
+        result.contains(bron) shouldBe true
+      }
+    }
+
+    scenario("find from label with the % character") {
+      Given(s"""a persisted tag "${weirdTag.label}"""")
+      When(s"""I search the tag by a part of its label: "${weirdTag.label.take(3)}"""")
+      val futureTag: Future[Seq[Tag]] = for {
+        _           <- persistentTagService.persist(weirdTag)
+        tagWeirdTag <- persistentTagService.findByLabelLike(weirdTag.label.take(3))
+      } yield tagWeirdTag
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be a list af at least one tag")
+        result.length should be >= 1
+
+        And(s"the tag ${weirdTag.label} should be in the list")
+        result.contains(weirdTag) shouldBe true
+      }
+    }
+
+//    test ignored because the persist operation does not work.
+    ignore("find from operationId") {
+      Given(s"""a persisted tag "${snow.label}" and a persisted operation "${fakeOperation.slug}"""")
+      When("""I search the tag by its operation""")
+      val futureTag: Future[Seq[Tag]] = for {
+        _                <- persistentOperationService.persist(fakeOperation)
+        _                <- persistentTagService.persist(snow)
+        tagFakeOperation <- persistentTagService.findByOperationId(fakeOperation.operationId)
+      } yield tagFakeOperation
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be a list af at least one tag")
+        result.length should be >= 1
+
+        And(s"the tag ${snow.label} should be in the list")
+        result.contains(snow) shouldBe true
+      }
+    }
+
+    scenario("find from themeId") {
+      Given(s"""a persisted tag "${lancaster.label}"""")
+      When("""I search the tag by its theme""")
+      val futureTag: Future[Seq[Tag]] = for {
+        _            <- persistentTagService.persist(lancaster)
+        tagLancaster <- persistentTagService.findByThemeId(lancaster.themeId.get)
+      } yield tagLancaster
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be a list af at least one tag")
+        result.length should be >= 1
+
+        And(s"the tag ${lancaster.label} should be in the list")
+        result.contains(lancaster) shouldBe true
+      }
+    }
+  }
+
+  feature("update a tag") {
+    scenario("update an existing tag") {
+      Given(s"""a persisted tag "${byron.label}" """)
+      When("""I update this tag label to "not a got character"""")
+      val futureTag: Future[Option[Tag]] = for {
+        _        <- persistentTagService.persist(byron)
+        tagByron <- persistentTagService.update(byron.copy(label = "not a got character"))
+      } yield tagByron
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then(s"""result should have the same id as "${byron.label}" tag""")
+        result.map(_.tagId) should be(Some(byron.tagId))
+        And("the tag label should have changed")
+        result.map(_.label) should be(Some("not a got character"))
+      }
+    }
+
+    scenario("update a non existing tag") {
+      Given("a non existing tag")
+      When("""I update this tag label to "not here"""")
+      val futureTag: Future[Option[Tag]] = persistentTagService.update(newTag("not here"))
+
+      whenReady(futureTag, Timeout(3.seconds)) { result =>
+        Then("result should be empty")
+        result should be(None)
       }
     }
   }

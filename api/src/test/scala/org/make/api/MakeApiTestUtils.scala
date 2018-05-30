@@ -10,6 +10,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.session.{SessionId, VisitorId}
+import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -58,6 +59,9 @@ trait MakeApiTestBase
   when(visitorCookieConfiguration.isSecure).thenReturn(false)
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
   when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
+
+  when(idGenerator.nextTagId()).thenReturn(TagId("some-id"))
+  when(idGenerator.nextTagTypeId()).thenReturn(TagTypeId("some-id"))
 
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)

@@ -10,6 +10,7 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.auth.UserRights
 import org.make.core.reference._
+import org.make.core.tag.{Tag, TagDisplay, TagTypeId}
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches}
@@ -45,8 +46,19 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(moderatorUserRights, None, Some("moderator"), None))))
 
-  val winterIsComingTags: Seq[Tag] = Seq(Tag("Stark"), Tag("Targaryen"), Tag("Lannister"))
-  val winterIsHereTags: Seq[Tag] = Seq(Tag("White walker"))
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
+  val winterIsComingTags: Seq[Tag] = Seq(newTag("Stark"), newTag("Targaryen"), newTag("Lannister"))
+  val winterIsHereTags: Seq[Tag] = Seq(newTag("White walker"))
   val themesList = Seq(
     Theme(
       themeId = ThemeId("winterIsComingId"),

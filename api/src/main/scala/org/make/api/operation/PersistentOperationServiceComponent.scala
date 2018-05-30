@@ -15,8 +15,8 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import scalikejdbc._
 import spray.json.DefaultJsonProtocol._

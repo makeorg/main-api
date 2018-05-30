@@ -7,7 +7,8 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.{LabelId, TagId, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 
 sealed trait ProposalCommand {

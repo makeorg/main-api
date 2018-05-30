@@ -13,9 +13,11 @@ import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
 import org.make.api.theme.ThemeService
 import org.make.core.RequestContext
-import org.make.core.reference.{Tag, TagId, Theme, ThemeId}
+import org.make.core.proposal.indexed.IndexedTag
+import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence._
 import org.make.core.sequence.indexed._
+import org.make.core.tag.{Tag, TagId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -64,7 +66,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
 
     def retrieveTags(tags: Seq[TagId]): Future[Option[Seq[Tag]]] = {
       tagService
-        .findEnabledByTagIds(tags)
+        .findByTagIds(tags)
         .map(Some(_))
     }
 
@@ -96,7 +98,9 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, tagService: TagServic
             question = sequence.creationContext.question
           )
         ),
-        tags = tags,
+        tags = tags.map { t =>
+          IndexedTag(t.tagId, t.label)
+        },
         themes = themes.map(theme => IndexedSequenceTheme(themeId = theme.themeId, translation = theme.translations)),
         operationId = sequence.operationId,
         proposals = sequence.proposalIds.map(IndexedSequenceProposalId.apply),

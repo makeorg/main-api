@@ -5,12 +5,13 @@ import java.util.UUID
 
 import org.make.api.DatabaseTest
 import org.make.api.tag.DefaultPersistentTagServiceComponent
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.reference.Tag
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -21,7 +22,8 @@ class PersistentOperationServiceIT
     extends DatabaseTest
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentUserServiceComponent
-    with DefaultPersistentTagServiceComponent {
+    with DefaultPersistentTagServiceComponent
+    with DefaultIdGeneratorComponent {
 
   val profile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),
@@ -58,10 +60,22 @@ class PersistentOperationServiceIT
     profile = Some(profile)
   )
 
-  val stark: Tag = Tag("Stark")
-  val targaryen: Tag = Tag("Targaryen")
-  val bolton: Tag = Tag("Bolton")
-  val greyjoy: Tag = Tag("Greyjoy")
+  def newTag(label: String): Tag = Tag(
+    tagId = idGenerator.nextTagId(),
+    label = label,
+    display = TagDisplay.Inherit,
+    weight = 0f,
+    tagTypeId = TagType.LEGACY.tagTypeId,
+    operationId = None,
+    themeId = None,
+    country = "FR",
+    language = "fr"
+  )
+
+  val stark: Tag = newTag("Stark")
+  val targaryen: Tag = newTag("Targaryen")
+  val bolton: Tag = newTag("Bolton")
+  val greyjoy: Tag = newTag("Greyjoy")
   val now: ZonedDateTime = DateHelper.now()
   val sequenceIdFR: SequenceId = SequenceId(UUID.randomUUID().toString)
   val sequenceIdGB: SequenceId = SequenceId(UUID.randomUUID().toString)

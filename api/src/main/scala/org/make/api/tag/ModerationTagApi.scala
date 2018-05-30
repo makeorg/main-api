@@ -1,19 +1,18 @@
 package org.make.api.tag
 
-import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Tag, TagId}
+import org.make.core.tag.{Tag, TagId}
+import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
@@ -80,7 +79,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                onSuccess(tagService.createTag(request.label)) { tag =>
+                onSuccess(tagService.createLegacyTag(request.label)) { tag =>
                   complete(StatusCodes.Created -> TagResponse(tag))
                 }
               }
@@ -117,7 +116,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
             (start, end, sort, order, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
-                  onSuccess(tagService.findAllEnabled()) { tags =>
+                  onSuccess(tagService.findAll()) { tags =>
                     val sortField =
                       try {
                         classOf[Tag].getDeclaredField(sort)

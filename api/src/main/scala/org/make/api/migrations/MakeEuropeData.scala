@@ -6,7 +6,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 import org.make.core.user.{Role, User}
 import org.make.core.{DateHelper, RequestContext}
 

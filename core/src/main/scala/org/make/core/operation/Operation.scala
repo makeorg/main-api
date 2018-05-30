@@ -7,8 +7,8 @@ import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
-import org.make.core.reference.TagId
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
@@ -58,7 +58,6 @@ final case class OperationCountryConfiguration(countryCode: String,
                                                landingSequenceId: SequenceId,
                                                startDate: Option[LocalDate],
                                                endDate: Option[LocalDate])
-
 
 object OperationCountryConfiguration extends CirceFormatters {
   implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =

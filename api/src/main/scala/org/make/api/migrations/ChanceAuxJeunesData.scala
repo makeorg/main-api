@@ -8,7 +8,7 @@ import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter, StatusSearchFilter}
-import org.make.core.reference.TagId
+import org.make.core.tag.TagId
 import org.make.core.user.{Role, User}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
