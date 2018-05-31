@@ -132,18 +132,18 @@ trait TagApi extends MakeAuthenticationDirectives {
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
-                provideAsyncOrNotFound(tagService.getTag(tagId)) { maybeOldTag =>
+                provideAsyncOrNotFound(tagService.getTag(tagId)) { _ =>
                   provideAsyncOrNotFound(
                     tagService.updateTag(
                       tagId = tagId,
                       label = request.label,
-                      display = maybeOldTag.display,
-                      tagTypeId = maybeOldTag.tagTypeId,
-                      weight = maybeOldTag.weight,
-                      operationId = maybeOldTag.operationId,
-                      themeId = maybeOldTag.themeId,
-                      country = maybeOldTag.country,
-                      language = maybeOldTag.language
+                      display = request.display,
+                      tagTypeId = request.tagTypeId,
+                      weight = request.weight,
+                      operationId = request.operationId,
+                      themeId = request.themeId,
+                      country = request.country,
+                      language = request.language
                     )
                   ) { tag =>
                     complete(tag)
@@ -181,7 +181,8 @@ case class UpdateTagRequest(label: String,
                             themeId: Option[ThemeId],
                             country: String,
                             language: String,
-                            display: Option[TagDisplay])
+                            display: TagDisplay,
+                            weight: Float)
 
 object UpdateTagRequest {
   implicit val decoder: Decoder[UpdateTagRequest] = deriveDecoder[UpdateTagRequest]

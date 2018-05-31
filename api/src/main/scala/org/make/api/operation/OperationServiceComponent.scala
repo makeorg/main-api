@@ -7,7 +7,6 @@ import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -55,9 +54,9 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
           for {
             tags <- maybeTags
           } yield {
-            val filtredTag: Seq[TagId] = tags.map(_.tagId)
-            val countriesConfiguration = operation.countriesConfiguration
-              .map(_.copy(tagIds = filtredTag))
+            val countriesConfiguration = operation.countriesConfiguration.map { countryConfig =>
+              countryConfig.copy(tagIds = tags.filter(_.country == countryConfig.countryCode).map(_.tagId))
+            }
 
             operation.copy(countriesConfiguration = countriesConfiguration)
           }

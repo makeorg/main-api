@@ -64,6 +64,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
+            .orderBy(tagAlias.weight, tagAlias.label)
         }.map(PersistentTag.apply()).list.apply
       })
 
@@ -93,11 +94,15 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .leftJoin(PersistentTagType.as(tagTypeAlias))
             .on(tagAlias.tagTypeId, tagTypeAlias.id)
             .where(
-              sqls.eq(tagAlias.display, TagDisplay.Displayed.shortName)
-                .or(sqls.eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                  .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+              sqls
+                .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                .or(
+                  sqls
+                    .eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                    .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
                 )
             )
+            .orderBy(tagAlias.weight, tagAlias.label)
         }.map(PersistentTag.apply()).list.apply
       })
 
@@ -125,6 +130,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.operationId, operationId.value))
+            .orderBy(tagAlias.weight, tagAlias.label)
         }.map(PersistentTag.apply()).list.apply
       })
 
@@ -138,6 +144,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.themeId, themeId.value))
+            .orderBy(tagAlias.weight, tagAlias.label)
         }.map(PersistentTag.apply()).list.apply
       })
 

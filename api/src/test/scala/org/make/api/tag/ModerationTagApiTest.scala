@@ -230,10 +230,10 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
-        val tags: Seq[Tag] = entityAs[Seq[Tag]]
+        val tags: Seq[TagResponse] = entityAs[Seq[TagResponse]]
         tags.size should be(2)
-        tags(1).tagId.value should be("tag2")
-        tags.head.tagId.value should be("tag1")
+        tags(1).id.value should be("tag2")
+        tags.head.id.value should be("tag1")
       }
     }
   }

@@ -71,7 +71,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.CreateTagRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagResponse])))
   @Path(value = "/")
   def moderationCreateTag: Route = post {
     path("moderation" / "tags") {
@@ -91,7 +91,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                     display = request.display.getOrElse(TagDisplay.Inherit)
                   )
                 ) { tag =>
-                  complete(StatusCodes.Created -> tag)
+                  complete(StatusCodes.Created -> TagResponse(tag))
                 }
               }
             }
@@ -115,7 +115,18 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[Tag]])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagResponse]]))
+  )
   @Path(value = "/")
   def moderationlistTags: Route = {
     get {
@@ -143,7 +154,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                       (
                         StatusCodes.OK,
                         List(TotalCountHeader(filteredTags.size.toString)),
-                        filteredTags.slice(start, end)
+                        filteredTags.slice(start, end).map(TagResponse.apply)
                       )
                     )
                   }

@@ -151,8 +151,8 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "int", required = true),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "int", required = true),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string", required = true),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string", required = true),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string", required = true),
       new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")

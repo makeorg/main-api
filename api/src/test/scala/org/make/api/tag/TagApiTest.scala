@@ -204,7 +204,8 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
          |"themeId": "1234-1234-1234-1234",
          |"country": "FR",
          |"language": "fr",
-         |"display": "INHERIT"
+         |"display": "INHERIT",
+         |"weight": "0"
        }""".stripMargin
 
     scenario("update tag with anonymous user") {
