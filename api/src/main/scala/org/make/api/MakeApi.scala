@@ -129,7 +129,6 @@ trait MakeApi
     with DefaultPersistentTagTypeServiceComponent
     with HealthCheckComponent
     with MakeDBExecutionContextComponent
-    with DefaultTagMigrationServiceComponent
     with ElasticSearchApi
     with OperationApi
     with ProposalApi

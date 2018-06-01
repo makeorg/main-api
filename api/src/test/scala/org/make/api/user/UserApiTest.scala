@@ -8,9 +8,14 @@ import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal._
-import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
-import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.proposal.{
+  ProposalResult,
+  ProposalService,
+  ProposalServiceComponent,
+  ProposalsResultSeededResponse,
+  _
+}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
@@ -23,7 +28,6 @@ import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.session.SessionId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -56,8 +60,6 @@ class UserApiTest
   override val socialService: SocialService = mock[SocialService]
   override val facebookApi: FacebookApi = mock[FacebookApi]
   override val googleApi: GoogleApi = mock[GoogleApi]
-  override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
-    mock[SessionHistoryCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
@@ -71,9 +73,6 @@ class UserApiTest
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   override val readJournal: MakeReadJournal = mock[MakeReadJournal]
-
-  private val successful: Future[Unit] = Future.successful {}
-  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     userRoutes
@@ -776,7 +775,13 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(firstName = Some("Paul"), organisationName = None, postalCode = Some("11111"), age = Some(26)),
+      author = Author(
+        firstName = Some("Paul"),
+        organisationName = None,
+        postalCode = Some("11111"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq.empty,
@@ -887,8 +892,13 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author =
-        Author(firstName = sylvain.firstName, organisationName = None, postalCode = Some("11111"), age = Some(22)),
+      author = Author(
+        firstName = sylvain.firstName,
+        organisationName = None,
+        postalCode = Some("11111"),
+        age = Some(22),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq.empty,

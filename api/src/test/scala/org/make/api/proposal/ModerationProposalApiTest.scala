@@ -362,7 +362,7 @@ class ModerationProposalApiTest
     context = None,
     trending = None,
     labels = Seq.empty,
-    author = Author(None, None, None, None),
+    author = Author(None, None, None, None, None),
     organisations = Seq.empty,
     country = "TN",
     language = "ar",

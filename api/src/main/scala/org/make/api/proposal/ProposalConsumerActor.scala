@@ -154,7 +154,8 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
           postalCode = user.profile.flatMap(_.postalCode),
           age = user.profile
             .flatMap(_.dateOfBirth)
-            .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt)
+            .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
+          avatarUrl = user.profile.flatMap(_.avatarUrl)
         ),
         organisations = proposal.organisations.map(IndexedOrganisationInfo.apply),
         country = proposal.country.getOrElse("FR"),

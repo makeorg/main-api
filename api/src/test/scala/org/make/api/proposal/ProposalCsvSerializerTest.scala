@@ -73,7 +73,13 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jenna"), organisationName = None, postalCode = Some("000000"), age = Some(25)),
+      author = Author(
+        firstName = Some("Jenna"),
+        organisationName = None,
+        postalCode = Some("000000"),
+        age = Some(25),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = Some(theme.themeId),
       tags = Seq(),
@@ -122,7 +128,13 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("John"), organisationName = None, postalCode = Some("11111"), age = Some(26)),
+      author = Author(
+        firstName = Some("John"),
+        organisationName = None,
+        postalCode = Some("11111"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),

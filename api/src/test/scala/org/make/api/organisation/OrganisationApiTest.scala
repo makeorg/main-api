@@ -6,11 +6,8 @@ import java.util.Date
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
 import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserResponse}
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
@@ -25,25 +22,16 @@ import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class OrganisationApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with OrganisationApi
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent
     with ProposalServiceComponent
     with OrganisationServiceComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val proposalService: ProposalService = mock[ProposalService]
   override val organisationService: OrganisationService = mock[OrganisationService]
 
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
   private val validAccessToken = "my-valid-access-token"
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
@@ -54,12 +42,6 @@ class OrganisationApiTest
     .thenReturn(
       Future.successful(Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen)), None, Some("user"), None)))
     )
-  Mockito.when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  Mockito.when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  Mockito.when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
-  Mockito.when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  Mockito.when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  Mockito.when(idGenerator.nextId()).thenReturn("next-id")
 
   val routes: Route = sealRoute(organisationRoutes)
 
@@ -117,7 +99,7 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, organisationName = None, postalCode = None, age = None),
+        author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
         organisations = Seq.empty,
         themeId = Some(ThemeId("foo-theme")),
         tags = Seq.empty,
@@ -139,7 +121,7 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, organisationName = None, postalCode = None, age = None),
+        author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
         organisations = Seq.empty,
         themeId = Some(ThemeId("bar-theme")),
         tags = Seq.empty,

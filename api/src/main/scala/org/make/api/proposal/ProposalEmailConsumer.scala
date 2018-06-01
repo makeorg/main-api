@@ -87,7 +87,7 @@ class ProposalEmailConsumer(userService: UserService,
                     "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country
                       .getOrElse("FR")}/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
-                    "firstname" -> user.firstName.getOrElse(""),
+                    "firstname" -> user.fullName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),

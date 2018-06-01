@@ -5,10 +5,10 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestUtils
-import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.MakeApiTestBase
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
-import org.make.api.technical.auth.{MakeDataHandler, MakeDataHandlerComponent}
+import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user._
 import org.make.core.auth.UserRights
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
@@ -19,30 +19,16 @@ import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class ModerationOrganisationApiTest
-    extends MakeApiTestUtils
+    extends MakeApiTestBase
     with ModerationOrganisationApi
     with OrganisationServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent {
 
-  override val makeSettings: MakeSettings = mock[MakeSettings]
   override val organisationService: OrganisationService = mock[OrganisationService]
-  override val idGenerator: IdGenerator = mock[IdGenerator]
-  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
-
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(idGenerator.nextId()).thenReturn("some-id")
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   val routes: Route = sealRoute(moderationOrganisationRoutes)
 

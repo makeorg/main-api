@@ -429,6 +429,10 @@
             "age": {
               "type": "integer",
               "index": false
+            },
+            "avatarUrl": {
+              "type": "text",
+              "index": false
             }
           }
         },

@@ -136,7 +136,7 @@ class ProposalSearchEngineIT
       )
     ),
     context = Some(Context(operation = None, location = None, question = None, source = None)),
-    author = Author(firstName = None, organisationName = None, postalCode = None, age = None),
+    author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
     organisations = Seq.empty,
     themeId = None,
     tags = Seq.empty,
@@ -191,7 +191,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), organisationName = None, postalCode = Some("92876"), age = Some(25)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("92876"),
+        age = Some(25),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
@@ -240,7 +246,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), organisationName = None, postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
@@ -291,7 +303,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), organisationName = None, postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -340,7 +358,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), organisationName = None, postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -389,7 +413,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), organisationName = None, postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -440,7 +470,13 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), organisationName = None, postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -489,7 +525,13 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), organisationName = None, postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -538,7 +580,13 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), organisationName = None, postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -592,7 +640,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Ronald"), organisationName = None, postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Ronald"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -643,7 +697,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), organisationName = None, postalCode = Some("81966"), age = Some(21)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("81966"),
+        age = Some(21),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -694,7 +754,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Ronald"), organisationName = None, postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Ronald"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -745,7 +811,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), organisationName = None, postalCode = Some("81966"), age = Some(21)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("81966"),
+        age = Some(21),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -794,7 +866,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), organisationName = None, postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -843,7 +921,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), organisationName = None, postalCode = Some("92876"), age = Some(25)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("92876"),
+        age = Some(25),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
@@ -893,7 +977,13 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), organisationName = None, postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
