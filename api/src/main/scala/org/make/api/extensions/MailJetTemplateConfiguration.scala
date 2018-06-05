@@ -21,15 +21,22 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
     parseTemplateConfiguration(config.getConfig("resend-validation-link"), operation, country, language)
   def forgottenPassword(operation: String, country: String, language: String): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("forgotten-password"), operation, country, language)
-  def proposalRefused(operation: String, country: String, language: String): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language)
-  def proposalAccepted(operation: String, country: String, language: String): TemplateConfiguration =
-    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language)
+  def proposalRefused(operation: String,
+                      country: String,
+                      language: String,
+                      isOrganisation: Boolean = false): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language, isOrganisation)
+  def proposalAccepted(operation: String,
+                       country: String,
+                       language: String,
+                       isOrganisation: Boolean = false): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language, isOrganisation)
 
   private def parseTemplateConfiguration(config: Config,
                                          operation: String,
                                          country: String,
-                                         language: String): TemplateConfiguration = {
+                                         language: String,
+                                         isOrganisation: Boolean = false): TemplateConfiguration = {
 
     var templateConfiguration: Config = config
 
@@ -51,6 +58,20 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
 
     if (config.hasPath(s"$operation.$country.$language")) {
       templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
+    }
+
+    if (isOrganisation) {
+      if (config.hasPath("organisation")) {
+        templateConfiguration = config.getConfig("organisation").withFallback(templateConfiguration)
+      }
+
+      if (config.hasPath(s"organisation.$country")) {
+        templateConfiguration = config.getConfig(s"organisation.$country").withFallback(templateConfiguration)
+      }
+
+      if (config.hasPath(s"organisation.$country.$language")) {
+        templateConfiguration = config.getConfig(s"organisation.$country.$language").withFallback(templateConfiguration)
+      }
     }
 
     TemplateConfiguration(

@@ -50,7 +50,7 @@ class PersistentOperationServiceIT
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]"),
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),

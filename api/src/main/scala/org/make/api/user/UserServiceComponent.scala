@@ -101,7 +101,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         lastIp = userRegisterData.lastIp,
         hashedPassword = userRegisterData.password.map(_.bcrypt),
         enabled = true,
-        verified = false,
+        emailVerified = false,
         lastConnection = DateHelper.now(),
         verificationToken = Some(hashedVerificationToken),
         verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn)),
@@ -190,7 +190,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
         case Some(user) => Future.successful(user)
         case None       => createUserFromSocial(requestContext, userInfo, clientIp)
-
       }
     }
 
@@ -222,7 +221,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         lastIp = clientIp,
         hashedPassword = None,
         enabled = true,
-        verified = true,
+        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,

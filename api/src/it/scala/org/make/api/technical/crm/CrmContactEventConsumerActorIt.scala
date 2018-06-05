@@ -79,7 +79,7 @@ class CrmContactEventConsumerActorIt
         lastIp = None,
         hashedPassword = None,
         enabled = true,
-        verified = false,
+        emailVerified = false,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,

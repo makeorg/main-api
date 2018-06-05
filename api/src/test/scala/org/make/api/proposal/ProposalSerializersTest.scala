@@ -13,7 +13,7 @@ import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
-import stamina.Persisters
+import stamina.{Persisters, V2}
 import stamina.testkit.StaminaTestKit
 
 class ProposalSerializersTest extends WordSpec with StaminaTestKit {
@@ -90,6 +90,16 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
     val proposalVoted = ProposalVoted(
       id = proposalId,
       eventDate = eventDate,
+      organisationInfo = None,
+      requestContext = requestContext,
+      maybeUserId = Some(userId),
+      voteKey = VoteKey.Disagree
+    )
+
+    val proposalVotedOrganisations = ProposalVoted(
+      id = proposalId,
+      eventDate = eventDate,
+      organisationInfo = Some(OrganisationInfo(UserId("my-user-id"), Some("make.org"))),
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Disagree
@@ -98,6 +108,17 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
     val proposalUnvoted = ProposalUnvoted(
       id = proposalId,
       eventDate = eventDate,
+      organisationInfo = None,
+      requestContext = requestContext,
+      maybeUserId = Some(userId),
+      voteKey = VoteKey.Agree,
+      selectedQualifications = Seq(QualificationKey.LikeIt)
+    )
+
+    val proposalUnvotedOrganisations = ProposalUnvoted(
+      id = proposalId,
+      eventDate = eventDate,
+      organisationInfo = Some(OrganisationInfo(UserId("my-user-id"), Some("make.org"))),
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
@@ -216,7 +237,9 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       sample(proposalRefused),
       sample(proposalPostponed),
       sample(proposalVoted),
+      PersistableSample[V2]("organisations", proposalVotedOrganisations, Some("organisations")),
       sample(proposalUnvoted),
+      PersistableSample[V2]("organisations", proposalUnvotedOrganisations, Some("organisations")),
       sample(proposalQualified),
       sample(proposalUnqualified),
       sample(proposalLocked),

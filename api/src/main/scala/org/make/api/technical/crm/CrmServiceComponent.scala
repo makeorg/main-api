@@ -284,7 +284,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         "Firstname" -> user.firstName.getOrElse(""),
         "Zipcode" -> user.profile.flatMap(_.postalCode).getOrElse(""),
         "Date_Of_Birth" -> user.profile.flatMap(_.dateOfBirth.map(_.toString)).getOrElse(""),
-        "Email_Validation_Status" -> user.verified.toString,
+        "Email_Validation_Status" -> user.emailVerified.toString,
         "Email_Hardbounce_Status" -> user.isHardBounce.toString,
         "Unsubscribe_Status" -> user.profile
           .map(profile => (!profile.optInNewsletter).toString)

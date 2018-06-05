@@ -4,6 +4,7 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
+import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -40,7 +41,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -60,7 +61,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -80,7 +81,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -100,7 +101,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("123456".bcrypt),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -120,7 +121,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastIp = Some("0.0.0.0"),
     hashedPassword = None,
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
@@ -132,12 +133,144 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = None
   )
 
+  val userOrganisationDGSE = User(
+    userId = UserId("DGSE"),
+    email = "dgse@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    organisationName = Some("Direction Générale de la Sécurité Extérieure")
+  )
+
+  val userOrganisationCSIS = User(
+    userId = UserId("CSIS"),
+    email = "csis@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "FR",
+    language = "fr",
+    profile = None,
+    organisationName = Some("Canadian Security Intelligence Service")
+  )
+
+  val userOrganisationFSB = User(
+    userId = UserId("FSB"),
+    email = "fsb@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "RU",
+    language = "ru",
+    profile = None,
+    organisationName = Some("Federal Security Service")
+  )
+
   val johnMailing: User = johnDoe.copy(
     email = "johnmailing@example.com",
     userId = UserId("6"),
     isHardBounce = true,
     lastMailingError =
       Some(MailingErrorLog(error = "my error", date = ZonedDateTime.parse("2018-12-12T12:30:40+01:00[Europe/Paris]")))
+  )
+
+  val userOrganisationCIA = User(
+    userId = UserId("CIA"),
+    email = "cia@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "US",
+    language = "en",
+    profile = None,
+    organisationName = Some("Central Intelligence Agency - CIA")
+  )
+
+  val userOrganisationFBI = User(
+    userId = UserId("FBI"),
+    email = "fbi@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "US",
+    language = "en",
+    profile = None,
+    organisationName = Some("Federal Bureau of Investigation - FBI")
+  )
+
+  val userOrganisationMI5 = User(
+    userId = UserId("MI5"),
+    email = "mi5@secret-agency.com",
+    firstName = None,
+    lastName = None,
+    lastIp = Some("-1.-1.-1.-1"),
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    isOrganisation = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleActor),
+    country = "UK",
+    language = "en",
+    profile = None,
+    organisationName = Some("Military Intelligence, Section 5 - MI5")
   )
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
@@ -151,7 +284,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           |    - firstName: John
           |    - lastName: Doe
           |    - email: doe@example.com
-          |    - verified: true
+          |    - emailVerified: true
           |    - roles: ROLE_ADMIN, ROLE_CITIZEN
         """.stripMargin)
       And("""a John Doe profile with values:
@@ -177,8 +310,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         And("the user last name must Doe")
         user.lastName.get shouldBe "Doe"
 
-        And("the user should be verified")
-        user.verified shouldBe true
+        And("the user email should be verified")
+        user.emailVerified shouldBe true
 
         And("the user roles should be instance of Role")
         user.roles.map(role => {
@@ -274,7 +407,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
               |    - firstName: John
               |    - lastName: Doe
               |    - email: doe@example.com
-              |    - verified: true
+              |    - emailVerified: true
               |    - roles: ROLE_ADMIN, ROLE_CITIZEN
             """.stripMargin)
       When("I search the userId by email doe@example.com")
@@ -327,6 +460,68 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           maybeUser should be(None)
         }
 
+      }
+    }
+  }
+
+  feature("update an organisation") {
+    scenario("Update the organisation name") {
+      whenReady(persistentUserService.persist(userOrganisationDGSE), Timeout(3.seconds)) { organisation =>
+        organisation.organisationName should be(Some("Direction Générale de la Sécurité Extérieure"))
+        whenReady(
+          persistentUserService.modify(userOrganisationDGSE.copy(organisationName = Some("DGSE Updated"))),
+          Timeout(3.seconds)
+        ) { organisationUpdated =>
+          organisationUpdated shouldBe a[Either[_, User]]
+          organisationUpdated.isRight shouldBe true
+          organisationUpdated.exists(_.organisationName.contains("DGSE Updated")) shouldBe true
+        }
+      }
+    }
+
+    scenario("Update the organisation name and the email") {
+      whenReady(persistentUserService.persist(userOrganisationFSB), Timeout(3.seconds)) { organisation =>
+        organisation.organisationName shouldBe Some("Federal Security Service")
+        organisation.email shouldBe "fsb@secret-agency.com"
+        whenReady(
+          persistentUserService.modify(
+            userOrganisationDGSE.copy(organisationName = Some("FSB Updated"), email = "fsbupdated@secret-agency.com")
+          ),
+          Timeout(3.seconds)
+        ) { organisationUpdated =>
+          organisationUpdated shouldBe a[Either[_, User]]
+          organisationUpdated.isRight shouldBe true
+          organisationUpdated.exists(_.organisationName.contains("FSB Updated")) shouldBe true
+          organisationUpdated.exists(_.email == "fsbupdated@secret-agency.com") shouldBe true
+        }
+      }
+    }
+
+    scenario("Fail organisation update") {
+      whenReady(
+        persistentUserService.modify(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
+        Timeout(3.seconds)
+      ) { organisationFailUpdate =>
+        organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]
+        organisationFailUpdate.isLeft shouldBe true
+        organisationFailUpdate.left.get shouldBe UpdateFailed()
+      }
+    }
+  }
+
+  feature("find users by organisation") {
+    scenario("find all organisations") {
+      val futureOrganisations = for {
+        cia <- persistentUserService.persist(userOrganisationCIA)
+        fbi <- persistentUserService.persist(userOrganisationFBI)
+      } yield (cia, fbi)
+
+      whenReady(futureOrganisations, Timeout(3.seconds)) { _ =>
+        whenReady(persistentUserService.findAllOrganisations(), Timeout(3.seconds)) { organisations =>
+          organisations.size should be(4)
+          organisations.exists(_.userId == UserId("FBI")) should be(true)
+          organisations.exists(_.userId == UserId("CIA")) should be(true)
+        }
       }
     }
   }

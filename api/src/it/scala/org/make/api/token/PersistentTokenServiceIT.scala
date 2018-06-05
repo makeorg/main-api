@@ -33,7 +33,7 @@ class PersistentTokenServiceIT
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),

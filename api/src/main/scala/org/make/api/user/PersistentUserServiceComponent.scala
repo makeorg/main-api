@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
+import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
@@ -34,7 +35,8 @@ object PersistentUserServiceComponent {
                             lastIp: Option[String],
                             hashedPassword: String,
                             enabled: Boolean,
-                            verified: Boolean,
+                            emailVerified: Boolean,
+                            isOrganisation: Boolean,
                             lastConnection: ZonedDateTime,
                             verificationToken: Option[String],
                             verificationTokenExpiresAt: Option[ZonedDateTime],
@@ -58,7 +60,8 @@ object PersistentUserServiceComponent {
                             optInNewsletter: Boolean,
                             isHardBounce: Boolean,
                             lastMailingErrorDate: Option[ZonedDateTime],
-                            lastMailingErrorMessage: Option[String]) {
+                            lastMailingErrorMessage: Option[String],
+                            organisationName: Option[String]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -70,7 +73,8 @@ object PersistentUserServiceComponent {
         lastIp = lastIp,
         hashedPassword = Option(hashedPassword),
         enabled = enabled,
-        verified = verified,
+        emailVerified = emailVerified,
+        isOrganisation = isOrganisation,
         lastConnection = lastConnection,
         verificationToken = verificationToken,
         verificationTokenExpiresAt = verificationTokenExpiresAt,
@@ -85,7 +89,8 @@ object PersistentUserServiceComponent {
           lastMailingErrorDate.map { date =>
             MailingErrorLog(error = message, date = date)
           }
-        }
+        },
+        organisationName = organisationName
       )
     }
 
@@ -93,8 +98,8 @@ object PersistentUserServiceComponent {
       UserRights(userId = UserId(uuid), roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq))
     }
 
-    private def toRole: (String)   => Option[Role] = Role.matchRole
-    private def toGender: (String) => Option[Gender] = Gender.matchGender
+    private def toRole: String   => Option[Role] = Role.matchRole
+    private def toGender: String => Option[Gender] = Gender.matchGender
 
     private def toProfile: Option[Profile] = {
       Profile.parseProfile(
@@ -143,7 +148,8 @@ object PersistentUserServiceComponent {
       "last_ip",
       "hashed_password",
       "enabled",
-      "verified",
+      "email_verified",
+      "is_organisation",
       "last_connection",
       "verification_token",
       "verification_token_expires_at",
@@ -154,7 +160,8 @@ object PersistentUserServiceComponent {
       "language",
       "is_hard_bounce",
       "last_mailing_error_date",
-      "last_mailing_error_message"
+      "last_mailing_error_message",
+      "organisation_name"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -176,7 +183,8 @@ object PersistentUserServiceComponent {
         lastIp = resultSet.stringOpt(userResultName.lastIp),
         hashedPassword = resultSet.string(userResultName.hashedPassword),
         enabled = resultSet.boolean(userResultName.enabled),
-        verified = resultSet.boolean(userResultName.verified),
+        emailVerified = resultSet.boolean(userResultName.emailVerified),
+        isOrganisation = resultSet.boolean(userResultName.isOrganisation),
         lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
         verificationToken = resultSet.stringOpt(userResultName.verificationToken),
         verificationTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.verificationTokenExpiresAt),
@@ -200,7 +208,8 @@ object PersistentUserServiceComponent {
         optInNewsletter = resultSet.boolean(userResultName.optInNewsletter),
         isHardBounce = resultSet.boolean(userResultName.isHardBounce),
         lastMailingErrorDate = resultSet.zonedDateTimeOpt(userResultName.lastMailingErrorDate),
-        lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage)
+        lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage),
+        organisationName = resultSet.stringOpt(userResultName.organisationName)
       )
     }
   }
@@ -208,11 +217,11 @@ object PersistentUserServiceComponent {
 }
 
 trait PersistentUserService {
-
   def get(uuid: UserId): Future[Option[User]]
   def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
+  def findAllOrganisations(): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
@@ -220,6 +229,7 @@ trait PersistentUserService {
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
+  def modify(organisation: User): Future[Either[UpdateFailed, User]]
   def requestResetPassword(userId: UserId,
                            resetToken: String,
                            resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
@@ -297,6 +307,20 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
 
       futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    override def findAllOrganisations(): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.isOrganisation, true))
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+
     }
 
     override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
@@ -440,7 +464,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastIp -> user.lastIp,
               column.hashedPassword -> user.hashedPassword,
               column.enabled -> user.enabled,
-              column.verified -> user.verified,
+              column.emailVerified -> user.emailVerified,
+              column.isOrganisation -> user.isOrganisation,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
@@ -464,10 +489,39 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.optInNewsletter -> user.profile.forall(_.optInNewsletter),
               column.isHardBounce -> user.isHardBounce,
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
-              column.lastMailingErrorMessage -> user.lastMailingError.map(_.error)
+              column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
+              column.organisationName -> user.organisationName
             )
         }.execute().apply()
       }).map(_ => user)
+    }
+
+    override def modify(organisation: User): Future[Either[UpdateFailed, User]] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.organisationName -> organisation.organisationName,
+              column.email -> organisation.email,
+              column.avatarUrl -> organisation.profile.flatMap(_.avatarUrl),
+              column.updatedAt -> nowDate
+            )
+            .where(
+              sqls
+                .eq(column.uuid, organisation.userId.value)
+            )
+        }.executeUpdate().apply()
+      }).flatMap {
+        case 1 => Future.successful(Right(organisation.copy(updatedAt = Some(nowDate))))
+        case 0 =>
+          logger.error(s"Organisation '${organisation.userId.value}' not found")
+          Future.successful(Left(UpdateFailed()))
+        case _ =>
+          logger.error(s"Update of organisation '${organisation.userId.value}' failed - not found")
+          Future.successful(Left(UpdateFailed()))
+      }
     }
 
     override def requestResetPassword(userId: UserId,
@@ -512,7 +566,11 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
-            .set(column.verified -> true, column.verificationToken -> None, column.verificationTokenExpiresAt -> None)
+            .set(
+              column.emailVerified -> true,
+              column.verificationToken -> None,
+              column.verificationTokenExpiresAt -> None
+            )
             .where(sqls.eq(column.verificationToken, verificationToken))
         }.executeUpdate().apply() match {
           case 1 => true
@@ -612,4 +670,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     }
 
   }
+}
+
+object DefaultPersistentUserServiceComponent {
+  case class UpdateFailed()
 }

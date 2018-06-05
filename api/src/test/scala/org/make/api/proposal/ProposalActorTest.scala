@@ -82,7 +82,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     lastName = None,
     lastIp = None,
     hashedPassword = None,
-    verified = true,
+    emailVerified = true,
     enabled = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
@@ -93,7 +93,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = "FR",
     language = "fr",
     profile = None,
-    isHardBounce = false,
     lastMailingError = None
   )
 
@@ -1308,7 +1307,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(UserId("Bar")),
         RequestContext.empty,
         voteKey = VoteKey.Agree,
-        vote = None
+        vote = None,
+        organisationInfo = None
       )
 
       expectMsg(Right(Some(voteAgree)))
@@ -1333,7 +1333,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(UserId("Baz")),
         RequestContext.empty,
         voteKey = VoteKey.Disagree,
-        vote = None
+        vote = None,
+        organisationInfo = None
       )
 
       expectMsg(Right(Some(voteDisagree)))

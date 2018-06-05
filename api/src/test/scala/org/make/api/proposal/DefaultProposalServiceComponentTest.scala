@@ -8,9 +8,11 @@ import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHis
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeTest}
 import org.make.core.common.indexed.Sort
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
@@ -18,7 +20,7 @@ import org.make.core.proposal.indexed.{Author, IndexedProposal, ProposalElastics
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches}
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -67,7 +69,7 @@ class DefaultProposalServiceComponentTest
     lastIp = None,
     hashedPassword = None,
     enabled = true,
-    verified = true,
+    emailVerified = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,
     verificationTokenExpiresAt = None,
@@ -95,7 +97,7 @@ class DefaultProposalServiceComponentTest
       lastIp = None,
       hashedPassword = None,
       enabled = true,
-      verified = true,
+      emailVerified = true,
       lastConnection = DateHelper.now(),
       verificationToken = None,
       verificationTokenExpiresAt = None,
@@ -123,7 +125,9 @@ class DefaultProposalServiceComponentTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(firstName = Some(id.value), postalCode = None, age = None),
+      author =
+        Author(firstName = Some(id.value), organisationName = None, postalCode = None, age = None, avatarUrl = None),
+      organisations = Seq.empty,
       country = "FR",
       language = "fr",
       themeId = None,
@@ -425,4 +429,68 @@ class DefaultProposalServiceComponentTest
 
     }
   }
+
+  feature("search proposals by user") {
+
+    val paul: User = user(UserId("paul-user-id"))
+    scenario("user has no votes on the proposals") {
+      Mockito
+        .when(
+          userHistoryCoordinatorService
+            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(userId = paul.userId)))
+        )
+        .thenReturn(Future.successful(Seq.empty))
+
+      whenReady(
+        proposalService.searchProposalsVotedByUser(userId = paul.userId, requestContext = RequestContext.empty),
+        Timeout(3.seconds)
+      ) { proposalResultResponse =>
+        proposalResultResponse.total should be(0)
+        proposalResultResponse.results should be(Seq.empty)
+      }
+    }
+
+    scenario("user has votes on some proposals") {
+
+      val gilProposal1 = indexedProposal(ProposalId("gil-1"))
+      val gilProposal2 = indexedProposal(ProposalId("gil-2"))
+      val gil: User = user(UserId("gil-user-id"))
+      Mockito
+        .when(
+          userHistoryCoordinatorService
+            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(userId = gil.userId)))
+        )
+        .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
+        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+
+      Mockito
+        .when(
+          elasticsearchProposalAPI.searchProposals(
+            ArgumentMatchers.eq(
+              SearchQuery(
+                filters = Some(
+                  SearchFilters(
+                    proposal = Some(ProposalSearchFilter(proposalIds = Seq(gilProposal1.id, gilProposal2.id)))
+                  )
+                )
+              )
+            ),
+            ArgumentMatchers.eq(None)
+          )
+        )
+        .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal1, gilProposal2))))
+
+      whenReady(
+        proposalService.searchProposalsVotedByUser(userId = gil.userId, requestContext = RequestContext.empty),
+        Timeout(3.seconds)
+      ) { proposalsResultResponse =>
+        proposalsResultResponse.total should be(2)
+        proposalsResultResponse.results.head.id should be(gilProposal1.id)
+        proposalsResultResponse.results.last.id should be(gilProposal2.id)
+      }
+    }
+  }
+
 }

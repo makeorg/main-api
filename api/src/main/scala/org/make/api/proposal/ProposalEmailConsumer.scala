@@ -67,10 +67,11 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = proposal.country.getOrElse(user.country)
-          val language = proposal.language.getOrElse(user.language)
-          val templateConfiguration = mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language)
-          if (user.verified && templateConfiguration.enabled) {
+          val country: String = proposal.country.getOrElse(user.country)
+          val language: String = proposal.language.getOrElse(user.language)
+          val templateConfiguration =
+            mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, user.isOrganisation)
+          if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
                 templateId = Some(templateConfiguration.templateId),
@@ -86,7 +87,7 @@ class ProposalEmailConsumer(userService: UserService,
                     "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country
                       .getOrElse("FR")}/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
-                    "firstname" -> user.firstName.getOrElse(""),
+                    "firstname" -> user.fullName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
@@ -127,10 +128,11 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country = proposal.country.getOrElse(user.country)
-          val language = proposal.language.getOrElse(user.language)
-          val templateConfiguration = mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language)
-          if (user.verified && templateConfiguration.enabled) {
+          val country: String = proposal.country.getOrElse(user.country)
+          val language: String = proposal.language.getOrElse(user.language)
+          val templateConfiguration =
+            mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, user.isOrganisation)
+          if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
                 templateId = Some(templateConfiguration.templateId),

@@ -23,6 +23,7 @@ import org.make.api.operation.{
   ModerationOperationApi,
   OperationApi
 }
+import org.make.api.organisation.{ModerationOrganisationApi, OrganisationApi}
 import org.make.api.proposal._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
@@ -31,12 +32,13 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi, _}
+import org.make.api.tag._
 import org.make.api.tagtype.{
   DefaultPersistentTagTypeServiceComponent,
   DefaultTagTypeServiceComponent,
   ModerationTagTypeApi
 }
+import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
@@ -57,17 +59,22 @@ import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
+import org.make.api.user.{
+  DefaultOrganisationServiceComponent,
+  DefaultPersistentUserServiceComponent,
+  DefaultUserServiceComponent,
+  UserApi
+}
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
 import org.make.core.{ValidationError, ValidationFailedError}
-import scalaoauth2.provider._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
+import scalaoauth2.provider._
 
 trait MakeApi
     extends DefaultIdGeneratorComponent
@@ -112,6 +119,7 @@ trait MakeApi
     with DefaultHealthCheckServiceComponent
     with DefaultCrmServiceComponent
     with DefaultTagMigrationServiceComponent
+    with DefaultOrganisationServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
@@ -123,9 +131,7 @@ trait MakeApi
     with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with OperationApi
-    with ModerationOperationApi
     with ProposalApi
-    with ModerationProposalApi
     with SequenceApi
     with CrmApi
     with AuthenticationApi
@@ -138,6 +144,10 @@ trait MakeApi
     with TrackingApi
     with MigrationApi
     with HealthCheckApi
+    with ModerationOperationApi
+    with ModerationOrganisationApi
+    with OrganisationApi
+    with ModerationProposalApi
     with BuildInfoRoutes
     with MailJetConfigurationComponent
     with StrictLogging
@@ -215,8 +225,6 @@ trait MakeApi
       classOf[ModerationTagTypeApi],
       classOf[ProposalApi],
       classOf[OperationApi],
-      classOf[ModerationOperationApi],
-      classOf[ModerationProposalApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi],
       classOf[ModerationIdeaApi],
@@ -224,7 +232,12 @@ trait MakeApi
       classOf[TrackingApi],
       classOf[MigrationApi],
       classOf[HealthCheckApi],
-      classOf[CrmApi]
+      classOf[CrmApi],
+      classOf[ModerationOperationApi],
+      classOf[ModerationProposalApi],
+      classOf[ModerationTagApi],
+      classOf[ModerationOrganisationApi],
+      classOf[OrganisationApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -262,7 +275,9 @@ trait MakeApi
       moderationOperationRoutes ~
       trackingRoutes ~
       migrationRoutes ~
-      healthCheckRoutes
+      healthCheckRoutes ~
+      moderationOrganisationRoutes ~
+      organisationRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

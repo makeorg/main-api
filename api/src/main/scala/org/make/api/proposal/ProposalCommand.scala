@@ -6,7 +6,7 @@ import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
@@ -78,6 +78,7 @@ final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
+                                     organisationInfo: Option[OrganisationInfo],
                                      vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
@@ -85,6 +86,7 @@ final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
+                                       organisationInfo: Option[OrganisationInfo],
                                        vote: Option[VoteAndQualifications])
     extends ProposalCommand
 

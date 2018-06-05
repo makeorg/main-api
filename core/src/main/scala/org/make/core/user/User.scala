@@ -21,7 +21,8 @@ object Role extends StrictLogging {
     RoleAdmin.shortName -> RoleAdmin,
     RoleModerator.shortName -> RoleModerator,
     RolePolitical.shortName -> RolePolitical,
-    RoleCitizen.shortName -> RoleCitizen
+    RoleCitizen.shortName -> RoleCitizen,
+    RoleActor.shortName -> RoleActor
   )
 
   def matchRole(role: String): Option[Role] = {
@@ -47,6 +48,10 @@ object Role extends StrictLogging {
   case object RoleCitizen extends Role {
     val shortName: String = "ROLE_CITIZEN"
   }
+
+  case object RoleActor extends Role {
+    val shortName: String = "ROLE_ACTOR"
+  }
 }
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
@@ -57,7 +62,8 @@ case class User(userId: UserId,
                 lastIp: Option[String],
                 hashedPassword: Option[String],
                 enabled: Boolean,
-                verified: Boolean,
+                emailVerified: Boolean,
+                isOrganisation: Boolean = false,
                 lastConnection: ZonedDateTime,
                 verificationToken: Option[String],
                 verificationTokenExpiresAt: Option[ZonedDateTime],
@@ -70,16 +76,18 @@ case class User(userId: UserId,
                 override val createdAt: Option[ZonedDateTime] = None,
                 override val updatedAt: Option[ZonedDateTime] = None,
                 isHardBounce: Boolean = false,
-                lastMailingError: Option[MailingErrorLog] = None)
+                lastMailingError: Option[MailingErrorLog] = None,
+                organisationName: Option[String] = None)
     extends MakeSerializable
     with Timestamped {
 
   def fullName: Option[String] = {
-    (firstName, lastName) match {
-      case (None, None)                                    => None
-      case (Some(definedFirstName), None)                  => Some(definedFirstName)
-      case (None, Some(definedLastName))                   => Some(definedLastName)
-      case (Some(definedFirstName), Some(definedLastName)) => Some(s"$definedFirstName $definedLastName")
+    (firstName, lastName, organisationName) match {
+      case (None, None, None)                                 => None
+      case (None, None, Some(definedOrganisationName))        => Some(definedOrganisationName)
+      case (Some(definedFirstName), None, _)                  => Some(definedFirstName)
+      case (None, Some(definedLastName), _)                   => Some(definedLastName)
+      case (Some(definedFirstName), Some(definedLastName), _) => Some(s"$definedFirstName $definedLastName")
     }
   }
 
@@ -88,6 +96,10 @@ case class User(userId: UserId,
 
   def resetTokenIsExpired: Boolean =
     resetTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+
+  def hasRole(role: Role): Boolean = {
+    roles.contains(role)
+  }
 }
 
 case class UserId(value: String) extends StringValue

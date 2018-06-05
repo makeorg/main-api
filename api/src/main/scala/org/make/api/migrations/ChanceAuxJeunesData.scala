@@ -30,7 +30,7 @@ object ChanceAuxJeunesData extends InsertFixtureData {
         lastIp = None,
         hashedPassword = None,
         enabled = true,
-        verified = true,
+        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,

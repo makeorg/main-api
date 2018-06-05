@@ -66,13 +66,21 @@ class ProposalSearchEngineTest
     context = Some(Context(source = None, operation = None, location = None, question = None)),
     trending = None,
     labels = Seq.empty,
-    author = Author(firstName = Some("Boogie"), postalCode = Some("11111"), age = Some(42)),
+    author = Author(
+      firstName = Some("Boogie"),
+      organisationName = None,
+      postalCode = Some("11111"),
+      age = Some(42),
+      avatarUrl = None
+    ),
+    organisations = Seq.empty,
     themeId = Some(ThemeId("foo-theme")),
     tags = Seq.empty,
     status = ProposalStatus.Accepted,
     ideaId = Some(IdeaId("idea-id")),
     operationId = None
   )
+
   val normalProposal: IndexedProposal = proposal(42, 1, 3)
   val popularProposal: IndexedProposal = proposal(84, 6, 10)
   val controversialProposal: IndexedProposal = proposal(42, 54, 4)

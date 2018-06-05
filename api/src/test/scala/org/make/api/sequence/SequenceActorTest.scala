@@ -33,7 +33,7 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     lastName = None,
     lastIp = None,
     hashedPassword = None,
-    verified = true,
+    emailVerified = true,
     enabled = true,
     lastConnection = DateHelper.now(),
     verificationToken = None,

@@ -418,6 +418,10 @@
               "type": "text",
               "index": true
             },
+            "organisationName": {
+              "type": "text",
+              "index": true
+            },
             "postalCode": {
               "type": "keyword",
               "index": false
@@ -425,6 +429,23 @@
             "age": {
               "type": "integer",
               "index": false
+            },
+            "avatarUrl": {
+              "type": "text",
+              "index": false
+            }
+          }
+        },
+        "organisations": {
+          "type": "object",
+          "properties": {
+            "organisationId": {
+              "type": "keyword",
+              "index": true
+            },
+            "organisationName": {
+              "type": "text",
+              "index": true
             }
           }
         },

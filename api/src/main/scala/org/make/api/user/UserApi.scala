@@ -3,7 +3,6 @@ package org.make.api.user
 import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
@@ -14,8 +13,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
@@ -30,14 +31,15 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
+import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -46,6 +48,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with SocialServiceComponent
+    with ProposalServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
     with MakeSettingsComponent
@@ -172,6 +175,29 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @Path(value = "/{userId}/votes")
+  @ApiOperation(value = "voted-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
+  )
+  def getVotedProposalsByUser: Route = get {
+    path("user" / userId / "votes") { userId: UserId =>
+      makeOperation("UserVotedProposals") { requestContext =>
+        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+          if (userAuth.user.userId != userId) {
+            complete(StatusCodes.Forbidden)
+          } else {
+            provideAsync(proposalService.searchProposalsVotedByUser(userId = userId, requestContext = requestContext)) {
+              proposalsSearchResult =>
+                complete(proposalsSearchResult)
+            }
+          }
+        }
+      }
+    }
+  }
+
   @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
@@ -223,7 +249,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
-  @Path(value = "/:userId/validate/:verificationToken")
+  @Path(value = "/{userId}/validate/:verificationToken")
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   def validateAccountRoute: Route = {
     post {
@@ -486,6 +512,37 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @Path(value = "/{userId}/proposals")
+  @ApiOperation(value = "user-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  def getProposalsByUser: Route = get {
+    path("user" / userId / "proposals") { userId: UserId =>
+      makeOperation("UserProposals") { requestContext =>
+        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+          val connectedUserId: UserId = userAuth.user.userId
+          if (connectedUserId != userId) {
+            complete(StatusCodes.Forbidden)
+          } else {
+            provideAsync(
+              proposalService.searchForUser(
+                userId = Some(userId),
+                query = SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = userId))))),
+                requestContext = requestContext,
+                maybeSeed = None
+              )
+            ) { proposalsSearchResult =>
+              complete(proposalsSearchResult)
+            }
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -496,7 +553,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     resetPasswordCheckRoute ~
     resetPasswordRoute ~
     subscribeToNewsLetter ~
-    validateAccountRoute
+    validateAccountRoute ~
+    getVotedProposalsByUser ~
+    getProposalsByUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -574,8 +633,10 @@ case class UserResponse(userId: UserId,
                         email: String,
                         firstName: Option[String],
                         lastName: Option[String],
+                        organisationName: Option[String],
                         enabled: Boolean,
-                        verified: Boolean,
+                        emailVerified: Boolean,
+                        isOrganisation: Boolean,
                         lastConnection: ZonedDateTime,
                         roles: Seq[Role],
                         profile: Option[Profile],
@@ -593,8 +654,10 @@ object UserResponse extends CirceFormatters {
     email = user.email,
     firstName = user.firstName,
     lastName = user.lastName,
+    organisationName = user.organisationName,
     enabled = user.enabled,
-    verified = user.verified,
+    emailVerified = user.emailVerified,
+    isOrganisation = user.isOrganisation,
     lastConnection = user.lastConnection,
     roles = user.roles,
     profile = user.profile,

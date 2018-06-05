@@ -71,6 +71,7 @@ final case class ProposalResult(id: ProposalId,
                                 trending: Option[String],
                                 labels: Seq[String],
                                 author: Author,
+                                organisations: Seq[IndexedOrganisationInfo],
                                 country: String,
                                 language: String,
                                 themeId: Option[ThemeId],
@@ -105,6 +106,7 @@ object ProposalResult extends CirceFormatters {
       trending = indexedProposal.trending,
       labels = indexedProposal.labels,
       author = indexedProposal.author,
+      organisations = indexedProposal.organisations,
       country = indexedProposal.country,
       language = indexedProposal.language,
       themeId = indexedProposal.themeId,
@@ -126,6 +128,7 @@ final case class ProposalsResultSeededResponse(total: Int, results: Seq[Proposal
 
 object ProposalsResultSeededResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
+  implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
 final case class VoteResponse(voteKey: VoteKey,

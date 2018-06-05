@@ -60,6 +60,7 @@ case class IndexedProposal(id: ProposalId,
                            trending: Option[String],
                            labels: Seq[String],
                            author: Author,
+                           organisations: Seq[IndexedOrganisationInfo],
                            country: String,
                            language: String,
                            themeId: Option[ThemeId],
@@ -82,11 +83,28 @@ object Context {
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
 }
 
-final case class Author(firstName: Option[String], postalCode: Option[String], age: Option[Int])
+final case class Author(firstName: Option[String],
+                        organisationName: Option[String],
+                        postalCode: Option[String],
+                        age: Option[Int],
+                        avatarUrl: Option[String])
 
 object Author {
   implicit val encoder: ObjectEncoder[Author] = deriveEncoder[Author]
   implicit val decoder: Decoder[Author] = deriveDecoder[Author]
+}
+
+final case class IndexedOrganisationInfo(organisationId: UserId, organisationName: Option[String])
+
+object IndexedOrganisationInfo {
+  implicit val encoder: ObjectEncoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
+  implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
+
+  def apply(organisationInfo: OrganisationInfo): IndexedOrganisationInfo =
+    IndexedOrganisationInfo(
+      organisationId = organisationInfo.organisationId,
+      organisationName = organisationInfo.organisationName
+    )
 }
 
 final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
@@ -117,6 +135,7 @@ final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal]
 
 object ProposalsSearchResult {
   implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
+  implicit val decoder: Decoder[ProposalsSearchResult] = deriveDecoder[ProposalsSearchResult]
 
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
 }

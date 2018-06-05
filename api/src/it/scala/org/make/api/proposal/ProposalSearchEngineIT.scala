@@ -136,7 +136,8 @@ class ProposalSearchEngineIT
       )
     ),
     context = Some(Context(operation = None, location = None, question = None, source = None)),
-    author = Author(firstName = None, postalCode = None, age = None),
+    author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
+    organisations = Seq.empty,
     themeId = None,
     tags = Seq.empty,
     trending = None,
@@ -190,7 +191,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), postalCode = Some("92876"), age = Some(25)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("92876"),
+        age = Some(25),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -238,7 +246,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -249,7 +264,7 @@ class ProposalSearchEngineIT
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
       country = "FR",
       language = "fr",
-      userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
+      userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
@@ -288,7 +303,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       operationId = None
@@ -336,7 +358,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -384,7 +413,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -434,7 +470,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -482,7 +525,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -530,7 +580,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Laura"), postalCode = Some("43324"), age = Some(31)),
+      author = Author(
+        firstName = Some("Laura"),
+        organisationName = None,
+        postalCode = Some("43324"),
+        age = Some(31),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Accepted,
@@ -583,7 +640,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Ronald"), postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Ronald"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -594,7 +658,7 @@ class ProposalSearchEngineIT
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
       country = "FR",
       language = "fr",
-      userId = UserId("ef418fad-2d2c-4f49-9b36-bf9d6f282aa2"),
+      userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content =
         "Il faut qu'il/elle vote une loi pour obliger l'industrie pharmaceutique d'investir dans la recherche sur les maladies rares",
       slug =
@@ -633,7 +697,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("81966"),
+        age = Some(21),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -683,7 +754,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Ronald"), postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Ronald"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -733,7 +811,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Jennifer"), postalCode = Some("81966"), age = Some(21)),
+      author = Author(
+        firstName = Some("Jennifer"),
+        organisationName = None,
+        postalCode = Some("81966"),
+        age = Some(21),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -781,7 +866,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), postalCode = Some("40734"), age = Some(23)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("40734"),
+        age = Some(23),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -829,7 +921,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Valerie"), postalCode = Some("92876"), age = Some(25)),
+      author = Author(
+        firstName = Some("Valerie"),
+        organisationName = None,
+        postalCode = Some("92876"),
+        age = Some(25),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -878,7 +977,14 @@ class ProposalSearchEngineIT
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
-      author = Author(firstName = Some("Craig"), postalCode = Some("41556"), age = Some(26)),
+      author = Author(
+        firstName = Some("Craig"),
+        organisationName = None,
+        postalCode = Some("41556"),
+        age = Some(26),
+        avatarUrl = None
+      ),
+      organisations = Seq.empty,
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
@@ -980,6 +1086,22 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(1)
         result.results.head.slug should be(slug)
+      }
+    }
+
+    scenario("search proposal by user") {
+      val userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5")
+      val query = SearchQuery(
+        Some(
+          SearchFilters(
+            status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending, ProposalStatus.Accepted))),
+            user = Some(UserSearchFilter(userId))
+          )
+        )
+      )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(4)
       }
     }
   }
