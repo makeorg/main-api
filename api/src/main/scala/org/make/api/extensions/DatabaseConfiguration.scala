@@ -1,6 +1,5 @@
 package org.make.api.extensions
 
-import java.sql.Connection
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
@@ -72,22 +71,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
     logLevel = 'debug
   )
 
-  private val databaseName = writeDatasource.getConnection.getCatalog
+  private val dbname = writeDatasource.getConnection.getCatalog
   private val defaultClientId: String = configuration.getString("authentication.default-client-id")
   private val defaultClientSecret: String = configuration.getString("authentication.default-client-secret")
   private val adminFirstName: String = configuration.getString("default-admin.first-name")
   private val adminEmail: String = configuration.getString("default-admin.email")
   private val adminPassword: String = configuration.getString("default-admin.password")
-  logger.debug(s"Creating database with name: $databaseName")
-
-  Try {
-    val connection: Connection = writeDatasource.getConnection
-    connection.prepareStatement(s"CREATE DATABASE IF NOT EXISTS $databaseName").execute()
-    connection.close()
-  } match {
-    case Success(_) =>
-    case Failure(e) => logger.debug(s"Error when creating database: ${e.getMessage}")
-  }
+  logger.debug(s"Creating database with name: $dbname")
 
   val flyway: Flyway = new Flyway()
   val setBaselineVersion: Boolean = configuration.getBoolean("database.migration.init-schema")
@@ -100,7 +90,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   } else {
     flyway.setPlaceholders(
       Map(
-        "dbname" -> databaseName,
+        "dbname" -> dbname,
         "clientId" -> defaultClientId,
         "clientSecret" -> defaultClientSecret,
         "adminEmail" -> adminEmail,

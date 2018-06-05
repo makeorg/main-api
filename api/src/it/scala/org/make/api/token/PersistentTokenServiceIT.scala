@@ -20,8 +20,6 @@ class PersistentTokenServiceIT
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentClientServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40004
-
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val now: ZonedDateTime = DateHelper.now()
 

@@ -1,7 +1,6 @@
 package org.make.api
 
 import com.github.t3hnar.bcrypt._
-import javax.sql.DataSource
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.make.api.docker.DockerCockroachService
@@ -17,17 +16,10 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
   override val readExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 
-  protected def databaseName: String = "makeapitest"
-
-  protected def defaultClientId: String = "clientId"
-  protected def defaultClientSecret: String = "clientSecret"
-  protected def adminFirstName: String = "admin"
-  protected def adminEmail: String = "admin@example.com"
-  protected def adminPassword: String = "passpass".bcrypt
-
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
+    // toDo: remove when resolve DockerCockroachService
     startAllOrFail()
 
     GlobalSettings.loggingSQLErrors = true
@@ -38,22 +30,28 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
       logLevel = 'info
     )
 
-    val dataSource: DataSource = createDataSource
+    val writeDatasource = new BasicDataSource()
+    writeDatasource.setDriverClassName("org.postgresql.Driver")
+    writeDatasource.setUrl(s"jdbc:postgresql://localhost:$defaultCockroachPortExposed/makeapitest")
+    writeDatasource.setUsername("root")
 
-    logger.debug(s"Creating database with name: $databaseName")
+    ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
+    ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = writeDatasource))
 
-    val connection = dataSource.getConnection
-    connection.prepareStatement(s"CREATE DATABASE $databaseName").execute()
-    connection.close()
-
-    ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource))
-    ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource))
+    val dbname: String = "makeapitest"
+    val defaultClientId: String = "clientId"
+    val defaultClientSecret: String = "clientSecret"
+    val adminFirstName: String = "admin"
+    val adminEmail: String = "admin@example.com"
+    val adminPassword: String = "passpass".bcrypt
+    logger.debug(s"Creating database with name: $dbname")
 
     val flyway: Flyway = new Flyway()
-    flyway.setDataSource(dataSource)
+    flyway.setDataSource(writeDatasource)
     flyway.setBaselineOnMigrate(true)
     flyway.setPlaceholders(
       Map(
+        "dbname" -> dbname,
         "clientId" -> defaultClientId,
         "clientSecret" -> defaultClientSecret,
         "adminEmail" -> adminEmail,
@@ -67,14 +65,6 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
       case Failure(e) => logger.warn("Cannot migrate database:", e)
     }
 
-  }
-
-  private def createDataSource: DataSource = {
-    val writeDataSource = new BasicDataSource()
-    writeDataSource.setDriverClassName("org.postgresql.Driver")
-    writeDataSource.setUrl(s"jdbc:postgresql://localhost:$cockroachExposedPort/$databaseName")
-    writeDataSource.setUsername("root")
-    writeDataSource
   }
 
   override protected def afterAll(): Unit = {

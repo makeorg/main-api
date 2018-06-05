@@ -81,11 +81,6 @@ services:
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://elasticsearch:9200/_cluster/health"]
-      interval: 5s
-      timeout: 2s
-      retries: 3
   zookeeper:
     hostname: zookeeper
     image: confluentinc/cp-zookeeper:4.1.0
@@ -124,7 +119,7 @@ services:
         SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
     restart: on-failure:3
   cockroach:
-    image: cockroachdb/cockroach:v2.0.2
+    image: cockroachdb/cockroach:v1.1.5
     hostname: cockroach
     command: start --insecure
     ports:

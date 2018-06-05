@@ -14,8 +14,6 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40002
-
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
 
   val profile = Profile(

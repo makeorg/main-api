@@ -7,14 +7,14 @@ import com.whisk.docker.{DockerContainer, DockerFactory, DockerKit, DockerReadyC
 
 trait DockerCockroachService extends DockerKit {
 
-  private val defaultCockroachPort = 26257
-  protected def cockroachExposedPort: Int
+  val defaultCockroachPort = 26257
+  // toDo: use random port to avoid collisions with parallel execution test
+  val defaultCockroachPortExposed = 36257
 
-  private def cockroachContainer: DockerContainer =
-    DockerContainer(image = "cockroachdb/cockroach:v2.0.2", name = Some(getClass.getSimpleName))
-      .withPorts(defaultCockroachPort -> Some(cockroachExposedPort))
-      .withReadyChecker(DockerReadyChecker.LogLineContains("CockroachDB node starting at"))
-      .withCommand("start", "--insecure")
+  private val cockroachContainer = DockerContainer("cockroachdb/cockroach:v1.1.5")
+    .withPorts(defaultCockroachPort -> Some(defaultCockroachPortExposed))
+    .withReadyChecker(DockerReadyChecker.LogLineContains("CockroachDB node starting at"))
+    .withCommand("start", "--insecure")
 
   abstract override def dockerContainers: List[DockerContainer] =
     cockroachContainer :: super.dockerContainers
