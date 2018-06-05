@@ -31,9 +31,9 @@ trait UserService extends ShortenedNames {
   def getUserByEmail(email: String): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
-  def getOrCreateUserFromSocial(userInfo: UserInfo,
-                                clientIp: Option[String],
-                                requestContext: RequestContext): Future[User]
+  def createOrUpdateUserFromSocial(userInfo: UserInfo,
+                                   clientIp: Option[String],
+                                   requestContext: RequestContext): Future[User]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
@@ -176,14 +176,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       result
     }
 
-    override def getOrCreateUserFromSocial(userInfo: UserInfo,
-                                           clientIp: Option[String],
-                                           requestContext: RequestContext): Future[User] = {
+    override def createOrUpdateUserFromSocial(userInfo: UserInfo,
+                                              clientIp: Option[String],
+                                              requestContext: RequestContext): Future[User] = {
 
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-        case Some(user) => Future.successful(user)
+        case Some(user) => updateUserFromSocial(user, userInfo, clientIp)
         case None       => createUserFromSocial(requestContext, userInfo, clientIp)
       }
     }
@@ -231,6 +231,54 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.persist(user).map { user =>
         publishCreateEventsFromSocial(user = user, requestContext = requestContext)
         user
+      }
+    }
+
+    private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
+      val country = BusinessConfig.validateCountry(userInfo.country)
+      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
+
+      val updatedProfile: Option[Profile] = user.profile.map {
+        _.copy(
+          facebookId = userInfo.facebookId,
+          googleId = userInfo.googleId,
+          avatarUrl = userInfo.picture,
+          gender = userInfo.gender.map {
+            case "male"   => Male
+            case "female" => Female
+            case _        => Other
+          },
+          genderName = userInfo.gender
+        )
+      }.orElse {
+        Profile.parseProfile(
+          facebookId = userInfo.facebookId,
+          googleId = userInfo.googleId,
+          avatarUrl = userInfo.picture,
+          gender = userInfo.gender.map {
+            case "male"   => Male
+            case "female" => Female
+            case _        => Other
+          },
+          genderName = userInfo.gender
+        )
+      }
+      val updatedUser: User =
+        user.copy(
+          firstName = userInfo.firstName,
+          lastName = userInfo.lastName,
+          lastIp = clientIp,
+          country = country,
+          language = language,
+          profile = updatedProfile
+        )
+
+      if (user == updatedUser) {
+        Future.successful(user)
+      } else {
+        persistentUserService.updateSocialUser(updatedUser).map { userUpdated =>
+          if (userUpdated) updatedUser else user
+        }
       }
     }
 

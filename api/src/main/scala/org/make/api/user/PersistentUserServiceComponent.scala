@@ -241,6 +241,7 @@ trait PersistentUserService {
   def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
+  def updateSocialUser(user: User): Future[Boolean]
   def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
@@ -669,6 +670,32 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
     }
 
+    override def updateSocialUser(user: User): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.updatedAt -> DateHelper.now(),
+              column.firstName -> user.firstName,
+              column.lastName -> user.lastName,
+              column.lastIp -> user.lastIp,
+              column.lastConnection -> DateHelper.now(),
+              column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
+              column.facebookId -> user.profile.flatMap(_.facebookId),
+              column.googleId -> user.profile.flatMap(_.googleId),
+              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.genderName -> user.profile.flatMap(_.genderName),
+              column.country -> user.country,
+              column.language -> user.language
+            )
+            .where(sqls.eq(column.uuid, user.userId.value))
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
+      })
+    }
   }
 }
 
