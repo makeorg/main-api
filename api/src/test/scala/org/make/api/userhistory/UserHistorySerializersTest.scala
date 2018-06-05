@@ -2,10 +2,21 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.api.proposal.PublishedProposalEvent.{ProposalAccepted, ProposalLocked, ProposalPostponed, ProposalRefused}
-import org.make.api.sequence.PublishedSequenceEvent.{SequenceCreated, SequenceProposalsAdded, SequenceProposalsRemoved, SequenceUpdated}
-import org.make.api.userhistory.UserHistoryActor.UserHistory
+import org.make.api.proposal.PublishedProposalEvent.{
+  ProposalAccepted,
+  ProposalLocked,
+  ProposalPostponed,
+  ProposalRefused
+}
+import org.make.api.sequence.PublishedSequenceEvent.{
+  SequenceCreated,
+  SequenceProposalsAdded,
+  SequenceProposalsRemoved,
+  SequenceUpdated
+}
+import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
@@ -275,6 +286,15 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       )
     )
 
+    val userVotesAndQualifications = UserVotesAndQualifications(
+      Map(
+        ProposalId("some-proposal") -> VoteAndQualifications(
+          VoteKey.Agree,
+          Seq(QualificationKey.LikeIt, QualificationKey.Doable)
+        )
+      )
+    )
+
     persisters.generateTestsFor(
       sample(userAddProposalsSequenceEvent),
       sample(userUnvoteEvent),
@@ -294,6 +314,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       sample(registerCitizenEvent),
       sample(lockProposalEvent),
       sample(userCreateSequenceEvent),
+      sample(userVotesAndQualifications),
       sample(
         UserHistory(
           List(

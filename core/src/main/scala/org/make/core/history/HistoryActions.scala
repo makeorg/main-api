@@ -3,10 +3,17 @@ package org.make.core.history
 import java.time.ZonedDateTime
 
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 object HistoryActions {
 
   final case class VoteAndQualifications(voteKey: VoteKey, qualificationKeys: Seq[QualificationKey])
+
+  object VoteAndQualifications {
+    implicit val formatter: RootJsonFormat[VoteAndQualifications] =
+      DefaultJsonProtocol.jsonFormat2(VoteAndQualifications.apply)
+  }
 
   sealed trait VoteRelatedAction extends Product with Serializable {
     def proposalId: ProposalId

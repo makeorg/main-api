@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.12"
+  private val akkaVersion = "2.5.13"
   private val akkaHttpVersion = "10.1.1"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"

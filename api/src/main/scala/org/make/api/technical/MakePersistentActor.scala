@@ -35,6 +35,11 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
         self ! Snapshot
       }
       onRecoveryCompleted()
+    case other if unhandledRecover.isDefinedAt(other) => unhandledRecover(other)
+    case _                                            =>
+  }
+
+  protected def unhandledRecover: Receive = {
     case _ =>
   }
 

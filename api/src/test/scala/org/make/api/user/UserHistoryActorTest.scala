@@ -2,11 +2,18 @@ package org.make.api.user
 
 import java.time.temporal.ChronoUnit
 
-import akka.actor.ActorRef
+import akka.actor.Status.Success
+import akka.actor.{ActorRef, ExtendedActorSystem}
+import akka.persistence.inmemory.extension.{InMemorySnapshotStorage, StorageExtension, StorageExtensionImpl}
+import akka.persistence.serialization.{Snapshot, SnapshotSerializer}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.api.proposal.PublishedProposalEvent.ProposalLocked
-import org.make.api.userhistory.UserHistoryActor.{LogAcknowledged, RequestVoteValues, UserHistory}
+import org.make.api.userhistory.UserHistoryActor.{
+  LogAcknowledged,
+  RequestUserVotedProposals,
+  RequestVoteValues,
+  UserHistory
+}
 import org.make.api.userhistory._
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
@@ -15,6 +22,9 @@ import org.make.core.{DateHelper, RequestContext}
 import org.scalatest.GivenWhenThen
 
 class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+
+  private val serializer: SnapshotSerializer = new SnapshotSerializer(system.asInstanceOf[ExtendedActorSystem])
+  private val storageExtension: StorageExtensionImpl = StorageExtension.get(system)
 
   val coordinator: ActorRef =
     system.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name)
@@ -207,7 +217,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         Map(
           proposalId -> VoteAndQualifications(
             VoteKey.Agree,
-            Seq(QualificationKey.Doable, QualificationKey.LikeIt, QualificationKey.PlatitudeAgree)
+            Seq(QualificationKey.LikeIt, QualificationKey.Doable, QualificationKey.PlatitudeAgree)
           )
         )
       )
@@ -400,30 +410,40 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
     }
   }
+  feature("recover from old snapshot") {
 
-  feature("lock set on proposal") {
-    scenario("start moderation and continue to lock") {
-      coordinator ! LogLockProposalEvent(
-        UserId("Mod"),
-        Some("Mod"),
-        RequestContext.empty,
-        UserAction(DateHelper.now(), "lock", ProposalLocked(ProposalId("1234"), UserId("1234")))
+    scenario("empty user history") {
+      val history = UserHistory(Nil)
+
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("empty-user-history", 0, DateHelper.now().toEpochSecond, encodedValue)
+
+      expectMsg(Success(""))
+
+      coordinator ! RequestUserVotedProposals(UserId("empty-user-history"))
+      expectMsg(Seq.empty[ProposalId])
+    }
+
+    scenario("user history with a vote") {
+      val history = UserHistory(
+        List(
+          LogUserVoteEvent(
+            UserId("user-history-with-vote"),
+            RequestContext.empty,
+            UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(ProposalId("voted"), VoteKey.Agree))
+          )
+        )
       )
 
-      coordinator ! GetUserHistory(UserId("Mod"))
-      val history1 = expectMsgType[UserHistory]
-      history1.events.length should be(1)
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("user-history-with-vote", 0, DateHelper.now().toEpochSecond, encodedValue)
 
-      coordinator ! LogLockProposalEvent(
-        UserId("Mod"),
-        Some("Mod"),
-        RequestContext.empty,
-        UserAction(DateHelper.now(), "lock", ProposalLocked(ProposalId("1234"), UserId("1234")))
-      )
+      expectMsg(Success(""))
 
-      coordinator ! GetUserHistory(UserId("Mod"))
-      val history2 = expectMsgType[UserHistory]
-      history2.events.length should be(1)
+      coordinator ! RequestUserVotedProposals(UserId("user-history-with-vote"))
+      expectMsg(Seq(ProposalId("voted")))
     }
   }
 }

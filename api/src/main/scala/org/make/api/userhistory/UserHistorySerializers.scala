@@ -1,6 +1,6 @@
 package org.make.api.userhistory
 
-import org.make.api.userhistory.UserHistoryActor.UserHistory
+import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.SprayJsonFormatters
 import stamina.json._
 import spray.json.DefaultJsonProtocol._
@@ -93,6 +93,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('action / 'arguments / 'includedProposals ! set[Seq[String]](Seq.empty)))
     )
 
+  private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V1] =
+    json.persister[UserVotesAndQualifications]("user-votes-and-qualifications")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       logRegisterCitizenEventSerializer,
@@ -113,6 +116,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logUserRemoveSequenceEventSerializer,
       logGetProposalDuplicatesEventSerializer,
       logUserSearchSequencesEventSerializer,
-      logUserStartSequenceEventSerializer
+      logUserStartSequenceEventSerializer,
+      userVotesAndQualifications
     )
 }
