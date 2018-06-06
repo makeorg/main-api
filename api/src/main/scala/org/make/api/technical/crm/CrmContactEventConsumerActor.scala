@@ -34,13 +34,22 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
 
   override def handleMessage(message: CrmContactEventWrapper): Future[Unit] = {
     message.event.fold(ToCrmContactEvent) match {
-      case event: CrmContactNew         => handleNewContactEvent(event)
-      case event: CrmContactHardBounce  => handleHardBounceEvent(event)
-      case event: CrmContactUnsubscribe => handleUnsubscribeEvent(event)
-      case event: CrmContactSubscribe   => handleSubscribeEvent(event)
-      case _: CrmContactListSync        => handleContactListSyncEvent()
-      case event                        => doNothing(event)
+      case event: CrmContactNew              => handleNewContactEvent(event)
+      case event: CrmContactHardBounce       => handleHardBounceEvent(event)
+      case event: CrmContactUnsubscribe      => handleUnsubscribeEvent(event)
+      case event: CrmContactSubscribe        => handleSubscribeEvent(event)
+      case event: CrmContactUpdateProperties => handleUpdatePropertiesEvent(event)
+      case _: CrmContactListSync             => handleContactListSyncEvent()
+      case event                             => doNothing(event)
     }
+  }
+
+  private def handleUpdatePropertiesEvent(event: CrmContactUpdateProperties): Future[Unit] = {
+    userService
+      .getUser(event.id)
+      .map(_.map { user =>
+        crmService.updateUserProperties(user)
+      })
   }
 
   private def handleNewContactEvent(event: CrmContactNew): Future[Unit] = {

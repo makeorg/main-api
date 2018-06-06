@@ -4,12 +4,7 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MakeSettingsExtension
-import org.make.api.technical.crm.PublishedCrmContactEvent.{
-  CrmContactHardBounce,
-  CrmContactNew,
-  CrmContactSubscribe,
-  CrmContactUnsubscribe
-}
+import org.make.api.technical.crm.PublishedCrmContactEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserUpdateEvent._
 import org.make.core.DateHelper
@@ -37,9 +32,9 @@ class UserCrmConsumerActor(userService: UserService)
       case event: UserCreatedEvent                => handleUserCreatedEvent(event)
       case event: UserUpdatedHardBounceEvent      => handleUserUpdatedHardBounceEvent(event)
       case event: UserUpdatedOptInNewsletterEvent => handleUserUpdatedOptInNewsletterEvent(event)
+      case event: UserUpdateValidatedEvent        => handleUserUpdateValidatedEvent(event)
       case event: UserUpdatedPasswordEvent        => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
-
     }
   }
 
@@ -59,6 +54,14 @@ class UserCrmConsumerActor(userService: UserService)
         } else {
           eventBusService.publish(CrmContactUnsubscribe(id = user.userId, eventDate = DateHelper.now()))
         }
+      }
+    }
+  }
+
+  def handleUserUpdateValidatedEvent(event: UserUpdateValidatedEvent): Future[Unit] = {
+    getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
+      maybeUser.foreach { user =>
+        eventBusService.publish(CrmContactUpdateProperties(id = user.userId, eventDate = DateHelper.now()))
       }
     }
   }

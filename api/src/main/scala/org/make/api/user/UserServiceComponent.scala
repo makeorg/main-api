@@ -8,12 +8,7 @@ import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent.{
-  UserCreatedEvent,
-  UserUpdatedHardBounceEvent,
-  UserUpdatedOptInNewsletterEvent,
-  UserUpdatedPasswordEvent
-}
+import org.make.api.user.UserUpdateEvent._
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.userhistory.UserEvent._
@@ -275,6 +270,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           requestContext = requestContext
         )
       )
+      eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
     }
 
     override def requestPasswordReset(userId: UserId): Future[Boolean] = {

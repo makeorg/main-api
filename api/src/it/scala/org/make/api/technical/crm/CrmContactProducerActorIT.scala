@@ -59,6 +59,7 @@ class CrmContactProducerActorIT
       And("I send a hard bounce contact message to the producer")
       And("I send a unsubscribe contact message to the producer")
       And("I send a subscribe contact message to the producer")
+      And("I send a crm contact user properties update message to the producer")
       Then("I should receive the wrapped version in the consumer")
 
       val newContactEvent: CrmContactNew = CrmContactNew(id = UserId("john-doe"), eventDate = now)
@@ -109,6 +110,19 @@ class CrmContactProducerActorIT
       wrappedSubscribe.date.getDayOfMonth shouldBe (now.getDayOfMonth)
       wrappedSubscribe.date.getMonth shouldBe (now.getMonth)
       wrappedSubscribe.date.getYear shouldBe (now.getYear)
+
+      val crmContactUpdatePropertiesEvent: CrmContactUpdateProperties =
+        CrmContactUpdateProperties(id = UserId("john-doe5"), eventDate = now)
+      actorSystem.eventStream.publish(crmContactUpdatePropertiesEvent)
+
+      val wrappedCrmContactUpdateProperties = probe.expectMsgType[CrmContactEventWrapper](2.minutes)
+      actorSystem.eventStream.publish(wrappedCrmContactUpdateProperties)
+      wrappedCrmContactUpdateProperties.id shouldBe ("john-doe5")
+      wrappedCrmContactUpdateProperties.version > 0 shouldBe (true)
+      wrappedCrmContactUpdateProperties.event.fold(ToCrmContactEvent) shouldBe (crmContactUpdatePropertiesEvent)
+      wrappedCrmContactUpdateProperties.date.getDayOfMonth shouldBe (now.getDayOfMonth)
+      wrappedCrmContactUpdateProperties.date.getMonth shouldBe (now.getMonth)
+      wrappedCrmContactUpdateProperties.date.getYear shouldBe (now.getYear)
 
       // Clean up stuff
       producer ! PoisonPill

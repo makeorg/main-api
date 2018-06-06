@@ -25,6 +25,7 @@ import org.make.api.technical.{
   MakeAuthenticationDirectives,
   ReadJournalComponent
 }
+import org.make.api.user.UserUpdateEvent.UserUpdateValidatedEvent
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
@@ -274,6 +275,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                         requestContext = requestContext
                       )
                     )
+                    eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
+
                     result
                   }
               ) { _ =>

@@ -282,6 +282,36 @@ class CrmContactEventConsumerActorIt
       probe.expectMsg(500 millis, "crmService.removeUserFromUnsubscribeList subscribe hard bounce called")
       probe.expectNoMessage(500 millis)
 
+      Given("a crm contact update properties event to consume with a user")
+      val contactUpdatePropertiesUser: User = johnDoeUser.copy(userId = UserId("user7"))
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("user7"))))
+        .thenReturn(Future.successful(Some(contactUpdatePropertiesUser)))
+      Mockito
+        .when(crmService.updateUserProperties(ArgumentMatchers.eq(contactUpdatePropertiesUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.updateUserProperties called"
+          Future.successful {}
+        })
+      val updateCrmContactUpdatePropertiesEvent: CrmContactUpdateProperties =
+        CrmContactUpdateProperties(id = contactUpdatePropertiesUser.userId)
+      val wrappedCrmContactUpdatePropertiesEvent: CrmContactEventWrapper = CrmContactEventWrapper(
+        version = MakeSerializable.V1,
+        id = "some-event",
+        date = nowDate,
+        eventType = "CrmContactUpdatePropertiesEvent",
+        event = CrmContactEventWrapper.wrapEvent(updateCrmContactUpdatePropertiesEvent)
+      )
+
+      When("I send an update properties contact event")
+
+      producer.send(
+        new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedCrmContactUpdatePropertiesEvent)
+      )
+
+      Then("message is consumed and crmService is called to update data")
+      probe.expectMsg(500 millis, "crmService.updateUserProperties called")
+
     }
   }
 

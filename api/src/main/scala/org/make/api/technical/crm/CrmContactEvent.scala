@@ -20,7 +20,13 @@ sealed trait PublishedCrmContactEvent extends CrmContactEvent {
 object PublishedCrmContactEvent {
 
   type AnyCrmContactEvent =
-    CrmContactNew :+: CrmContactHardBounce :+: CrmContactUnsubscribe :+: CrmContactSubscribe :+: CrmContactListSync :+: CNil
+    CrmContactNew :+:
+      CrmContactHardBounce :+:
+      CrmContactUnsubscribe :+:
+      CrmContactSubscribe :+:
+      CrmContactListSync :+:
+      CrmContactUpdateProperties :+:
+      CNil
 
   final case class CrmContactEventWrapper(version: Int,
                                           id: String,
@@ -31,11 +37,12 @@ object PublishedCrmContactEvent {
 
   object CrmContactEventWrapper {
     def wrapEvent(event: PublishedCrmContactEvent): AnyCrmContactEvent = event match {
-      case e: CrmContactNew         => Coproduct[AnyCrmContactEvent](e)
-      case e: CrmContactHardBounce  => Coproduct[AnyCrmContactEvent](e)
-      case e: CrmContactUnsubscribe => Coproduct[AnyCrmContactEvent](e)
-      case e: CrmContactSubscribe   => Coproduct[AnyCrmContactEvent](e)
-      case e: CrmContactListSync    => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactNew              => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactHardBounce       => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactUnsubscribe      => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactSubscribe        => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactListSync         => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactUpdateProperties => Coproduct[AnyCrmContactEvent](e)
     }
   }
 
@@ -45,6 +52,9 @@ object PublishedCrmContactEvent {
     implicit val atCrmContactUnsubscribe: Case.Aux[CrmContactUnsubscribe, CrmContactUnsubscribe] = at(identity)
     implicit val atCrmContactSubscribe: Case.Aux[CrmContactSubscribe, CrmContactSubscribe] = at(identity)
     implicit val atCrmContactListSync: Case.Aux[CrmContactListSync, CrmContactListSync] = at(identity)
+    implicit val atCrmContactUpdateProperties: Case.Aux[CrmContactUpdateProperties, CrmContactUpdateProperties] = at(
+      identity
+    )
   }
 
   final case class CrmContactNew(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
@@ -52,6 +62,15 @@ object PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
   object CrmContactNew {
+    implicit val formatter: RootJsonFormat[CrmContactNew] =
+      DefaultJsonProtocol.jsonFormat2(CrmContactNew.apply)
+  }
+
+  final case class CrmContactUpdateProperties(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+      extends PublishedCrmContactEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+  object CrmContactUpdateProperties {
     implicit val formatter: RootJsonFormat[CrmContactNew] =
       DefaultJsonProtocol.jsonFormat2(CrmContactNew.apply)
   }
