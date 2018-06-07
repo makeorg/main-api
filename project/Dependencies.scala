@@ -76,7 +76,7 @@ object Dependencies {
 
   val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.2.3"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.2"
-  val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "5.1.0"
+  val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "5.1.1"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
