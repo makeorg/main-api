@@ -13,6 +13,8 @@ class PersistentTagTypeServiceIT
     with DefaultPersistentTagTypeServiceComponent
     with DefaultIdGeneratorComponent {
 
+  override protected val cockroachExposedPort: Int = 40009
+
   def newTagType(label: String): TagType =
     TagType(tagTypeId = idGenerator.nextTagTypeId(), label = label, display = TagTypeDisplay.Displayed)
 

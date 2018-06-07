@@ -26,6 +26,8 @@ class OperationServiceIT
     with DefaultPersistentTagServiceComponent
     with DefaultIdGeneratorComponent {
 
+  override protected val cockroachExposedPort: Int = 40007
+
   val profile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-02")),
     avatarUrl = Some("https://www.example.com"),

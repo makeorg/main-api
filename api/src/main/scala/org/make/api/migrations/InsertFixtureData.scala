@@ -5,6 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.{FixtureDataLine, ProposalToAccept}
 import org.make.api.proposal.ValidateProposalRequest
+import org.make.core.idea.Idea
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
 import org.make.core.reference.{LabelId, ThemeId}
@@ -74,6 +75,26 @@ trait InsertFixtureData extends Migration with StrictLogging {
   case class UserMinimalData(email: String, country: String, language: String)
 
   override def migrate(api: MakeApi): Future[Unit] = {
+
+    def retrieveOrInsertIdea(name: String,
+                             language: String,
+                             country: String,
+                             operationId: Option[OperationId],
+                             themeId: Option[ThemeId]): Future[Idea] = {
+      api.ideaService.fetchOneByName(name).flatMap {
+        case Some(idea) => Future.successful(idea)
+        case None =>
+          api.ideaService.insert(
+            name = name,
+            language = Some(language),
+            country = Some(country),
+            operationId = operationId,
+            question = None,
+            themeId = themeId
+          )
+      }
+    }
+
     val csv: Seq[FixtureDataLine] =
       Source.fromResource(dataResource).getLines().toSeq.drop(1).flatMap(extractDataLine)
 
@@ -117,12 +138,11 @@ trait InsertFixtureData extends Migration with StrictLogging {
               for {
                 user <- retryableFuture(api.persistentUserService.findByEmail(proposalsToAccept.userEmail)).map(_.get)
                 idea <- retryableFuture(
-                  api.ideaService.insert(
+                  retrieveOrInsertIdea(
                     name = proposalsToAccept.content,
-                    language = Some(proposalsToAccept.language),
-                    country = Some(proposalsToAccept.country),
+                    language = proposalsToAccept.language,
+                    country = proposalsToAccept.country,
                     operationId = proposalsToAccept.operation,
-                    question = None,
                     themeId = proposalsToAccept.theme
                   )
                 )
