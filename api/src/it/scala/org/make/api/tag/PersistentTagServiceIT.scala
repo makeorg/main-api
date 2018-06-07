@@ -17,6 +17,8 @@ class PersistentTagServiceIT
     with DefaultPersistentOperationServiceComponent
     with DefaultIdGeneratorComponent {
 
+  override protected val cockroachExposedPort: Int = 40003
+
   def newTag(label: String, operationId: Option[OperationId] = None, themeId: Option[ThemeId] = None): Tag = Tag(
     tagId = idGenerator.nextTagId(),
     label = label,

@@ -11,6 +11,8 @@ import scala.concurrent.duration.DurationInt
 
 class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaServiceComponent {
 
+  override protected val cockroachExposedPort: Int = 40005
+
   val simpleIdea: Idea =
     Idea(IdeaId("foo-idea"), "fooIdea", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
   val completeIdea: Idea = Idea(

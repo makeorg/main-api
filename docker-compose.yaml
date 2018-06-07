@@ -36,7 +36,7 @@ services:
         SCHEMA_REGISTRY_LISTENERS: http://kafka:8081
     restart: on-failure:2
   cockroach:
-    image: cockroachdb/cockroach:v1.1.5
+    image: cockroachdb/cockroach:v2.0.2
     command: start --insecure
     ports:
       - 26257:26257
@@ -65,6 +65,11 @@ services:
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://elasticsearch:9200/_cluster/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
   semantic:
     image: nexus.prod.makeorg.tech/make-semantic:preproduction-latest
     ports:

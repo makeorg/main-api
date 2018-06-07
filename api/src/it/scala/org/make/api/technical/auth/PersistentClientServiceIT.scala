@@ -96,4 +96,6 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       }
     }
   }
+
+  override protected val cockroachExposedPort: Int = 40006
 }
