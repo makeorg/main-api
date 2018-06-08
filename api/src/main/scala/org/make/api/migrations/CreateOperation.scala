@@ -91,6 +91,28 @@ trait CreateOperation extends Migration {
                       operationId = Some(operationId),
                       themeIds = Seq.empty
                     )
+
+                    val configuration: CountryConfiguration = findConfiguration(sequence.country, sequence.language)
+                    Future
+                      .traverse(configuration.tags) { tag =>
+                        retryableFuture(
+                          api.tagService.getTag(tag).map { maybeFoundTag =>
+                            maybeFoundTag.map { foundTag =>
+                              api.tagService.updateTag(
+                                tagId = foundTag.tagId,
+                                label = foundTag.label,
+                                display = foundTag.display,
+                                tagTypeId = foundTag.tagTypeId,
+                                weight = foundTag.weight,
+                                operationId = Some(operationId),
+                                themeId = None,
+                                country = sequence.country,
+                                language = sequence.language
+                              )
+                            }
+                          }
+                        )
+                      }
                   }
                 }
             )
