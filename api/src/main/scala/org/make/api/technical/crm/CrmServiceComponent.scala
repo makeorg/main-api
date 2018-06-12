@@ -14,7 +14,6 @@ import io.circe.Printer
 import io.circe.syntax._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
-import org.make.api.userhistory.UserHistoryActor.UserHistory
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.user.User
 
@@ -304,8 +303,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
   private def getPropertiesFromUser(user: User): Option[Map[String, String]] = {
 
-    val userHistory: Future[UserHistory] = userHistoryCoordinatorService.userHistory(user.userId)
-    userHistory.map(_.events.map(_.action.actionType))
     Some(
       Map(
         "UserId" -> user.userId.value,

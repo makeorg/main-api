@@ -3,6 +3,7 @@ package org.make.api.sessionhistory
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
+import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor.{SessionClosed, SessionHistory}
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
@@ -25,9 +26,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 class SessionHistoryActor(userHistoryCoordinator: ActorRef)
-    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]]) {
+    extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
+    with MakeSettingsExtension {
 
   implicit val timeout: Timeout = defaultTimeout
+  private val maxEvents: Int = settings.maxUserHistoryEvents
 
   def sessionId: SessionId = SessionId(self.path.name)
 
@@ -237,7 +240,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
       state.map(_.copy(events = List(transformed))).orElse(Some(SessionHistory(List(transformed))))
     case event =>
       state.map { s =>
-        s.copy(events = event :: s.events)
+        s.copy(events = (event :: s.events).take(maxEvents))
       }.orElse(Some(SessionHistory(List(event))))
   }
 }

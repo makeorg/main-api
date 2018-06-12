@@ -429,5 +429,3 @@ object LogUserStartSequenceEvent {
     DefaultJsonProtocol.jsonFormat(LogUserStartSequenceEvent.apply, "userId", "context", "action")
 
 }
-
-final case class GetUserHistory(userId: UserId) extends UserRelatedEvent
