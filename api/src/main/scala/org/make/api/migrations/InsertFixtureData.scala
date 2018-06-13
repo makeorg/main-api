@@ -100,7 +100,7 @@ trait InsertFixtureData extends Migration with StrictLogging {
 
     val users = createUsers(csv, api)
 
-    val proposalsToAccept = csv.map { line =>
+    val proposalsToAccept: Seq[ProposalToAccept] = csv.map { line =>
       ProposalToAccept(
         line.content,
         line.country,
