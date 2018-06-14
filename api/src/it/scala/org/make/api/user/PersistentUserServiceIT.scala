@@ -683,6 +683,40 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   }
 
+  feature("update existing social user") {
+    scenario("non existing user") {
+      val futureUpdate: Future[Boolean] = for {
+        user <- persistentUserService.persist(
+          socialUser.copy(userId = UserId("new social"), email = "1" + socialUser.email)
+        )
+        update <- persistentUserService.updateSocialUser(user)
+      } yield update
+      whenReady(futureUpdate, Timeout(3.seconds)) { update =>
+        update should be(true)
+      }
+    }
+
+    scenario("existing user updates") {
+      val futureUpdate: Future[Boolean] = for {
+        user <- persistentUserService.persist(
+          socialUser.copy(userId = UserId("new new social"), email = "2" + socialUser.email)
+        )
+        update <- persistentUserService.updateSocialUser(
+          user.copy(email = "to_be@ignored.fake", firstName = Some("new firstName"))
+        )
+      } yield update
+      whenReady(futureUpdate, Timeout(3.seconds)) { update =>
+        update should be(true)
+        whenReady(persistentUserService.get(UserId("new new social")), Timeout(3.seconds)) { maybeUpdatedUser =>
+          maybeUpdatedUser.isDefined should be(true)
+          val updatedUser = maybeUpdatedUser.get
+          updatedUser.email should be("2" + socialUser.email)
+          updatedUser.firstName should be(Some("new firstName"))
+        }
+      }
+    }
+  }
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     futureJohnMailing2 =
