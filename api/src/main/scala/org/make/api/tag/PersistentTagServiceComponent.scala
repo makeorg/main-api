@@ -45,6 +45,7 @@ trait PersistentTagService {
   def findAll(): Future[Seq[Tag]]
   def findAllFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]]
   def findAllDisplayed(): Future[Seq[Tag]]
+  def findByLabel(label: String): Future[Seq[Tag]]
   def findByLabelLike(partialLabel: String): Future[Seq[Tag]]
   def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
   def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
@@ -137,6 +138,20 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                 )
             )
             .orderBy(tagAlias.weight, tagAlias.label)
+        }.map(PersistentTag.apply()).list.apply
+      })
+
+      futurePersistentTags.map(_.map(_.toTag))
+    }
+
+    def findByLabel(label: String): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val preparedLabel: String = label.replace("%", "\\%")
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.eq(tagAlias.label, preparedLabel))
         }.map(PersistentTag.apply()).list.apply
       })
 
@@ -292,8 +307,10 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               )
 
           val queryOrdered = (sort, order) match {
-            case (Some("label"), Some("desc")) => query.orderBy(tagAlias.label).desc.offset(start)
-            case (Some("label"), _)            => query.orderBy(tagAlias.label).asc.offset(start)
+            case (Some("label"), Some("DESC"))  => query.orderBy(tagAlias.label).desc.offset(start)
+            case (Some("label"), _)             => query.orderBy(tagAlias.label).asc.offset(start)
+            case (Some("weight"), Some("DESC")) => query.orderBy(tagAlias.weight).desc.offset(start)
+            case (Some("weight"), _)            => query.orderBy(tagAlias.weight).asc.offset(start)
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
               query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)

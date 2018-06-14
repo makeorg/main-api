@@ -277,7 +277,7 @@ class TagServiceTest
         .when(persistentTagService.findByLabelLike(ArgumentMatchers.eq("label")))
         .thenReturn(Future.successful(Seq(newTag("label tag1"), newTag("label tag2"))))
 
-      val futureTags: Future[Seq[Tag]] = tagService.searchByLabel("label")
+      val futureTags: Future[Seq[Tag]] = tagService.searchByLabel("label", like = true)
 
       whenReady(futureTags, Timeout(3.seconds)) { tags =>
         Then("i get tags 'label tag1' and 'label tag2'")
