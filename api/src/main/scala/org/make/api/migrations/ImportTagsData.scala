@@ -42,23 +42,23 @@ trait ImportTagsData extends Migration with StrictLogging {
     val tags: Seq[ImportTagsData.TagsDataLine] =
       Source.fromResource(dataResource).getLines().toSeq.drop(1).flatMap(extractDataLine)
 
-
-    api.tagService.findByOperationId(operationId)
-
-    sequentially(tags) { tag =>
-      api.tagService
-        .createTag(
-          label = tag.label,
-          tagTypeId = tag.tagTypeId,
-          operationId = Some(operationId),
-          themeId = None,
-          country = tag.country,
-          language = tag.language,
-          display = tag.tagDisplay,
-          weight = tag.weight
-        ).flatMap {
-          case _ => Future.successful {}
-      }
+    api.tagService.findByOperationId(operationId).flatMap {
+      case operationTags if operationTags.isEmpty =>
+        sequentially(tags) { tag =>
+          api.tagService
+            .createTag(
+              label = tag.label,
+              tagTypeId = tag.tagTypeId,
+              operationId = Some(operationId),
+              themeId = None,
+              country = tag.country,
+              language = tag.language,
+              display = tag.tagDisplay,
+              weight = tag.weight
+            )
+            .flatMap(_ => Future.successful {})
+        }
+      case _ => Future.successful {}
     }
   }
 }
@@ -71,6 +71,3 @@ object ImportTagsData {
                           country: String,
                           language: String)
 }
-
-
-

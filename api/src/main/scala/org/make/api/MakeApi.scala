@@ -262,6 +262,7 @@ trait MakeApi
       userRoutes ~
       tagRoutes ~
       moderationTagRoutes ~
+      moderationTagTypeRoutes ~
       proposalRoutes ~
       moderationProposalRoutes ~
       sequenceRoutes ~
