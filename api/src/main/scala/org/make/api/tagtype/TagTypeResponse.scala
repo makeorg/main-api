@@ -11,7 +11,8 @@ import scala.annotation.meta.field
 final case class TagTypeResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "12345678-90ab-cdef-1234-567890abcdef") id: TagTypeId,
   label: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED or HIDDEN") display: TagTypeDisplay
+  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED or HIDDEN") display: TagTypeDisplay,
+  weight: Float
 )
 
 object TagTypeResponse {
@@ -19,5 +20,5 @@ object TagTypeResponse {
   implicit val decoder: Decoder[TagTypeResponse] = deriveDecoder[TagTypeResponse]
 
   def apply(tagType: TagType): TagTypeResponse =
-    TagTypeResponse(id = tagType.tagTypeId, label = tagType.label, display = tagType.display)
+    TagTypeResponse(id = tagType.tagTypeId, label = tagType.label, display = tagType.display, weight = tagType.weight)
 }
