@@ -28,6 +28,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
   @ApiOperation(value = "migrate-tags", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "/migrate-tags")
+  @Deprecated
   def migrationTagsNewModel: Route = {
     post {
       path("migrations" / "migrate-tags") {

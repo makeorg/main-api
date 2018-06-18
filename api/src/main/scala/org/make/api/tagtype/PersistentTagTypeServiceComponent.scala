@@ -55,6 +55,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
           withSQL {
             select
               .from(PersistentTagType.as(tagTypeAlias))
+              .orderBy(tagTypeAlias.weightType)
           }.map(PersistentTagType.apply()).list.apply
       })
 
@@ -70,6 +71,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
             select
               .from(PersistentTagType.as(tagTypeAlias))
               .where(sqls.in(tagTypeAlias.id, uniqueTagTypesIds))
+              .orderBy(tagTypeAlias.weightType)
           }.map(PersistentTagType.apply()).list.apply
       })
 
@@ -86,6 +88,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               column.id -> tagType.tagTypeId.value,
               column.label -> tagType.label,
               column.display -> tagType.display.shortName,
+              column.weightType -> tagType.weight,
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
             )
@@ -125,15 +128,16 @@ object DefaultPersistentTagTypeServiceComponent {
   case class PersistentTagType(id: String,
                                label: String,
                                display: TagTypeDisplay,
+                               weightType: Float,
                                createdAt: ZonedDateTime,
                                updatedAt: ZonedDateTime) {
     def toTagType: TagType =
-      TagType(tagTypeId = TagTypeId(id), label = label, display = display)
+      TagType(tagTypeId = TagTypeId(id), label = label, display = display, weight = weightType)
   }
 
   object PersistentTagType extends SQLSyntaxSupport[PersistentTagType] with ShortenedNames with StrictLogging {
 
-    override val columnNames: Seq[String] = Seq("id", "label", "display", "created_at", "updated_at")
+    override val columnNames: Seq[String] = Seq("id", "label", "display", "weight_type", "created_at", "updated_at")
 
     override val tableName: String = "tag_type"
 
@@ -146,6 +150,7 @@ object DefaultPersistentTagTypeServiceComponent {
         id = resultSet.string(tagTypeResultName.id),
         label = resultSet.string(tagTypeResultName.label),
         display = TagTypeDisplay.matchTagTypeDisplayOrDefault(resultSet.string(tagTypeResultName.display)),
+        weightType = resultSet.float(tagTypeResultName.weightType),
         createdAt = resultSet.zonedDateTime(tagTypeResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(tagTypeResultName.updatedAt)
       )
