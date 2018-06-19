@@ -121,6 +121,17 @@ object Validation extends StrictLogging {
     validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
+  def validMatch(fieldName: String,
+                 fieldValue: => String,
+                 message: Option[String] = None,
+                 regex: Regex): Requirement = {
+    val condition: () => Boolean = () => {
+      val value: String = fieldValue
+      exists(value) && regex.findFirstIn(value).isDefined
+    }
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+  }
+
   def validChoices(fieldName: String,
                    message: Option[String] = None,
                    userChoices: Seq[_],

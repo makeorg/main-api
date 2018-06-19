@@ -17,6 +17,17 @@ trait TagServiceComponent {
   def tagService: TagService
 }
 
+case class TagFilter(label: Option[String] = None,
+                     tagTypeId: Option[TagTypeId] = None,
+                     operationId: Option[OperationId] = None,
+                     themeId: Option[ThemeId] = None,
+                     country: Option[String] = None,
+                     language: Option[String] = None,
+)
+object TagFilter {
+  val empty: TagFilter = TagFilter()
+}
+
 trait TagService extends ShortenedNames {
   def getTag(slug: TagId): Future[Option[Tag]]
   def createLegacyTag(label: String): Future[Tag]
@@ -44,6 +55,11 @@ trait TagService extends ShortenedNames {
                 country: String,
                 language: String): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
+  def search(start: Int,
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             tagFilter: TagFilter = TagFilter.empty): Future[Seq[Tag]]
 }
 
 trait DefaultTagServiceComponent
@@ -177,6 +193,29 @@ trait DefaultTagServiceComponent
             )
         case None => Future.successful(None)
       }
+    }
+
+    override def search(start: Int,
+                        end: Option[Int],
+                        sort: Option[String],
+                        order: Option[String],
+                        tagFilter: TagFilter): Future[Seq[Tag]] = {
+
+      persistentTagService.search(
+        start,
+        end,
+        sort,
+        order,
+        PersistentTagFilter(
+          tagFilter.label,
+          tagFilter.operationId,
+          tagFilter.tagTypeId,
+          tagFilter.themeId,
+          tagFilter.country,
+          tagFilter.language
+        )
+      )
+
     }
   }
 }

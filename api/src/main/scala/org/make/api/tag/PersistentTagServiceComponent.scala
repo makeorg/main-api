@@ -32,6 +32,21 @@ trait PersistentTagService {
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
+  def search(start: Int,
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
+}
+
+case class PersistentTagFilter(label: Option[String],
+                               operationId: Option[OperationId],
+                               tagTypeId: Option[TagTypeId],
+                               themeId: Option[ThemeId],
+                               country: Option[String],
+                               language: Option[String])
+object PersistentTagFilter {
+  def empty: PersistentTagFilter = PersistentTagFilter(None, None, None, None, None, None)
 }
 
 trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent {
@@ -230,6 +245,50 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       result
     }
 
+    override def search(start: Int,
+                        end: Option[Int],
+                        sort: Option[String],
+                        order: Option[String],
+                        persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            select
+              .from(PersistentTag.as(tagAlias))
+              .where(
+                sqls.toAndConditionOpt(
+                  persistentTagFilter.label
+                    .map(
+                      label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
+                    ),
+                  persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                  persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
+                  persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
+                  persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country)),
+                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language))
+                )
+              )
+
+          val queryOrdered = (sort, order) match {
+            case (Some("label"), Some("desc")) => query.orderBy(tagAlias.label).desc.offset(start)
+            case (Some("label"), _)            => query.orderBy(tagAlias.label).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
+            case (_, _) => query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered
+          }
+        }.map(PersistentTag.apply()).list.apply
+      })
+
+      futurePersistentTags.map(_.map(_.toTag))
+    }
   }
 }
 
