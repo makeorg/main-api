@@ -76,8 +76,8 @@ trait DefaultSemanticComponent extends SemanticComponent {
         response.flatMap {
           case HttpResponse(StatusCodes.OK, _, entity, _) => {
             Unmarshal(entity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
-              logSimilarIdeas(indexedProposal, similarIdeas)
-              buildSimilarIdeas(similarIdeas)
+              logSimilarIdeas(indexedProposal, similarIdeas.similar, similarIdeas.algoLabel.getOrElse("Semantic API"))
+              buildSimilarIdeas(similarIdeas.similar)
             }
           }
 
@@ -87,26 +87,28 @@ trait DefaultSemanticComponent extends SemanticComponent {
     }
   }
 
-  def logSimilarIdeas(indexedProposal: IndexedProposal, similarProposals: SimilarIdeasResponse): Unit = {
+  def logSimilarIdeas(indexedProposal: IndexedProposal,
+                      similarProposals: Seq[ScoredProposal],
+                      algoLabel: String): Unit = {
     eventBusService.publish(
       PredictDuplicateEvent(
         proposalId = indexedProposal.id,
-        predictedDuplicates = similarProposals.similar.map(_.proposal.id),
-        predictedScores = similarProposals.similar.map(_.score.score),
-        algoLabel = "Semantic API"
+        predictedDuplicates = similarProposals.map(_.proposal.id),
+        predictedScores = similarProposals.map(_.score.score),
+        algoLabel = algoLabel
       )
     )
   }
 
-  def buildSimilarIdeas(similarIdeas: SimilarIdeasResponse): Future[Seq[SimilarIdea]] = {
-    val similarIdeaIds: Seq[IdeaId] = similarIdeas.similar.map(p => p.proposal.ideaId).flatten.map(IdeaId(_))
+  def buildSimilarIdeas(similarIdeas: Seq[ScoredProposal]): Future[Seq[SimilarIdea]] = {
+    val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId).map(IdeaId(_))
 
     ideaService
       .fetchAllByIdeaIds(similarIdeaIds)
       .map { ideas =>
         val ideasById: Map[IdeaId, Idea] = ideas.map(idea => (idea.ideaId, idea)).toMap[IdeaId, Idea]
 
-        similarIdeas.similar.map(
+        similarIdeas.map(
           p =>
             SimilarIdea(
               ideaId = IdeaId(p.proposal.ideaId.get),
@@ -189,7 +191,7 @@ object ScoredProposal {
   implicit val decoder: Decoder[ScoredProposal] = deriveDecoder[ScoredProposal]
 }
 
-case class SimilarIdeasResponse(similar: Seq[ScoredProposal])
+case class SimilarIdeasResponse(similar: Seq[ScoredProposal], algoLabel: Option[String])
 
 object SimilarIdeasResponse {
   implicit val decoder: Decoder[SimilarIdeasResponse] = deriveDecoder[SimilarIdeasResponse]
