@@ -89,7 +89,7 @@ services:
 networks:
   makeapi:
     driver_opts:
-      o: 'com.docker.network.driver.mtu=1450'
+      'com.docker.network.driver.mtu': 1450
     ipam:
       driver: default
       config:
