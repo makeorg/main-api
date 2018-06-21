@@ -4,15 +4,16 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.swagger.annotations._
 import javax.ws.rs.Path
-
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
-import org.make.core.tag.{Tag, TagDisplay, TagId}
-
+import org.make.core.operation.OperationId
+import org.make.core.reference.ThemeId
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.{HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
+
 import scala.util.Try
 
 @Api(value = "Moderation Tags")
@@ -119,9 +120,14 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     value = Array(
       new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string", required = true),
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "label", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "tagTypeId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
@@ -132,29 +138,76 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     get {
       path("moderation" / "tags") {
         makeOperation("ModerationSearchTag") { _ =>
-          parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order, 'label.?)) {
-            (start, end, sort, order, label_filter) =>
+          parameters(
+            (
+              '_start.as[Int].?,
+              '_end.as[Int].?,
+              '_sort.?,
+              '_order.?,
+              'label.?,
+              'tagTypeId.?,
+              'operationId.?,
+              'themeId.?,
+              'country.?,
+              'language.?
+            )
+          ) {
+            (start,
+             end,
+             sort,
+             order,
+             maybeLabel,
+             maybeTagTypeId,
+             maybeOperationId,
+             maybeThemeId,
+             maybeCountry,
+             maybeLanguage) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
-                  onSuccess(tagService.findAll()) { tags =>
-                    val sortField =
-                      try {
-                        classOf[Tag].getDeclaredField(sort)
-                      } catch {
-                        case _: Throwable => classOf[Tag].getDeclaredField("label")
-                      }
-                    sortField.setAccessible(true)
-                    val cmp = (a: Object, b: Object, order: String) => {
-                      if (order == "DESC") a.toString < b.toString else a.toString > b.toString
-                    }
-                    val filteredTags = tags
-                      .filter(t => label_filter.forall(t.label.contains(_)))
-                      .sortWith((_, _) => cmp(sortField.get(_), sortField.get(_), order))
+
+                  sort.foreach { sortValue =>
+                    Validation.validate(
+                      Validation.validChoices("_sort", Some("Invalid sort"), Seq(sortValue), Seq("label"))
+                    )
+                  }
+                  order.foreach { orderValue =>
+                    Validation.validate(
+                      Validation
+                        .validChoices("_order", Some("Invalid order"), Seq(orderValue.toLowerCase), Seq("desc", "asc"))
+                    )
+                  }
+                  maybeCountry.foreach { country =>
+                    Validation.validate(
+                      Validation.validMatch("country", country, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
+                    )
+                  }
+                  maybeLanguage.foreach { language =>
+                    Validation.validate(
+                      Validation.validMatch("language", language, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
+                    )
+                  }
+
+                  onSuccess(
+                    tagService.search(
+                      start.getOrElse(0),
+                      end,
+                      sort,
+                      order,
+                      TagFilter(
+                        label = maybeLabel,
+                        tagTypeId = maybeTagTypeId.map(TagTypeId(_)),
+                        operationId = maybeOperationId.map(OperationId(_)),
+                        themeId = maybeThemeId.map(ThemeId(_)),
+                        country = maybeCountry,
+                        language = maybeLanguage
+                      )
+                    )
+                  ) { filteredTags =>
                     complete(
                       (
                         StatusCodes.OK,
                         List(TotalCountHeader(filteredTags.size.toString)),
-                        filteredTags.slice(start, end).map(TagResponse.apply)
+                        filteredTags.map(TagResponse.apply)
                       )
                     )
                   }

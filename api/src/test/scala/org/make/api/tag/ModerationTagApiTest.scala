@@ -107,6 +107,15 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     .thenReturn(Future.successful(Some(helloWorldTag)))
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(tag1, tag2)))
+  when(
+    tagService.search(
+      ArgumentMatchers.any[Int],
+      ArgumentMatchers.any[Option[Int]],
+      ArgumentMatchers.eq(Some("label")),
+      ArgumentMatchers.eq(Some("ASC")),
+      ArgumentMatchers.any[TagFilter]
+    )
+  ).thenReturn(Future.successful(Seq(tag1, tag2)))
 
   val routes: Route = sealRoute(moderationTagRoutes)
 
