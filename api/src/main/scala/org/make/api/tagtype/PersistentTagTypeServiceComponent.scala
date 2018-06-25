@@ -42,6 +42,7 @@ trait PersistentTagTypeService {
   def findAll(): Future[Seq[TagType]]
   def findAllFromIds(tagTypesIds: Seq[TagTypeId]): Future[Seq[TagType]]
   def persist(tagType: TagType): Future[TagType]
+  def update(tagType: TagType): Future[Option[TagType]]
   def remove(tagTypeId: TagTypeId): Future[Int]
 }
 
@@ -115,6 +116,31 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
       }).map(_ => tagType)
     }
 
+    override def update(tagType: TagType): Future[Option[TagType]] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          scalikejdbc
+            .update(PersistentTagType)
+            .set(
+              column.label -> tagType.label,
+              column.display -> tagType.display.shortName,
+              column.weightType -> tagType.weight,
+              column.updatedAt -> DateHelper.now
+            )
+            .where(
+              sqls
+                .eq(column.id, tagType.tagTypeId.value)
+            )
+        }.executeUpdate().apply()
+      }).map {
+        case 1 => Some(tagType)
+        case 0 =>
+          logger.error(s"TagType '${tagType.tagTypeId.value}' not found")
+          None
+      }
+    }
+
     override def remove(tagTypeId: TagTypeId): Future[Int] = {
       implicit val context: EC = writeExecutionContext
       val result: Future[Int] = Future(NamedDB('WRITE).retryableTx { implicit session =>
@@ -147,7 +173,7 @@ object DefaultPersistentTagTypeServiceComponent {
   case class PersistentTagType(id: String,
                                label: String,
                                display: TagTypeDisplay,
-                               weightType: Float,
+                               weightType: Int,
                                createdAt: ZonedDateTime,
                                updatedAt: ZonedDateTime) {
     def toTagType: TagType =
@@ -169,7 +195,7 @@ object DefaultPersistentTagTypeServiceComponent {
         id = resultSet.string(tagTypeResultName.id),
         label = resultSet.string(tagTypeResultName.label),
         display = TagTypeDisplay.matchTagTypeDisplayOrDefault(resultSet.string(tagTypeResultName.display)),
-        weightType = resultSet.float(tagTypeResultName.weightType),
+        weightType = resultSet.int(tagTypeResultName.weightType),
         createdAt = resultSet.zonedDateTime(tagTypeResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(tagTypeResultName.updatedAt)
       )

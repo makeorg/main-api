@@ -45,9 +45,6 @@ class PersistentTagTypeServiceIT
   val greyjoy: TagType = newTagType("Greyjoy")
 
   val tully: TagType = newTagType("Tully")
-  val baratheon: TagType = newTagType("Baratheon")
-  val martell: TagType = newTagType("Martell")
-  val tyrell: TagType = newTagType("Tyrell")
 
   feature("One tagType can be persisted and retrieved") {
     scenario("Get tagType by tagTypeId") {
@@ -101,6 +98,35 @@ class PersistentTagTypeServiceIT
         case (persisted, found) =>
           Then("result should contain a list of tagTypes of targaryen, lannister, bolton and greyjoy.")
           found.forall(persisted.contains) should be(true)
+      }
+    }
+  }
+
+  feature("One tagType can be updated") {
+    scenario("Update tagType") {
+      Given(s"""a persisted tagType "${tully.label}"""")
+      When("I update the tagType label and weight")
+      val futureTagType: Future[Option[TagType]] = for {
+        _            <- persistentTagTypeService.persist(tully)
+        tagTypeStark <- persistentTagTypeService.update(tully.copy(label = "new tully", weight = 42))
+      } yield tagTypeStark
+
+      whenReady(futureTagType, Timeout(3.seconds)) { result =>
+        Then("the tagType label must have changed")
+        result.map(_.tagTypeId.value) shouldBe Some(tully.tagTypeId.value)
+        result.map(_.label) shouldBe Some("new tully")
+        result.map(_.weight) shouldBe Some(42)
+      }
+    }
+
+    scenario("Update tagType that does not exists") {
+      Given("""a nonexistent tagType "fake"""")
+      When("I update the fake tagType")
+      val futureTagTypeId: Future[Option[TagType]] = persistentTagTypeService.update(newTagType("fake"))
+
+      whenReady(futureTagTypeId, Timeout(3.seconds)) { result =>
+        Then("result should be None")
+        result shouldBe None
       }
     }
   }
