@@ -21,6 +21,8 @@ package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, randomScore}
+import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
@@ -424,3 +426,24 @@ case class IdeaSearchFilter(ideaId: IdeaId)
 case class Limit(value: Int)
 
 case class Skip(value: Int)
+
+// Sort Algorithms
+
+sealed trait SortAlgorithm {
+  val shortName: String
+  def sortDefinition(request: SearchDefinition): SearchDefinition
+}
+
+case class RandomAlgorithm(maybeSeed: Option[Int] = None) extends SortAlgorithm {
+  override val shortName: String = "random"
+
+  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+    (
+      for {
+        seed  <- maybeSeed
+        query <- request.query
+      } yield request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
+    ).getOrElse(request)
+
+  }
+}
