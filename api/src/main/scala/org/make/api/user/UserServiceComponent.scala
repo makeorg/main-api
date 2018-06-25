@@ -168,7 +168,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               postalCode = user.profile.flatMap(_.postalCode),
               country = user.country,
               language = user.language,
-              social = false
+              isSocialLogin = false
             )
           )
         case _ =>
@@ -308,7 +308,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           postalCode = user.profile.flatMap(_.postalCode),
           country = user.country,
           language = user.language,
-          social = true
+          isSocialLogin = true
         )
       )
 
@@ -318,7 +318,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           country = user.country,
           language = user.language,
           requestContext = requestContext,
-          social = true
+          isSocialLogin = true
         )
       )
       eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))

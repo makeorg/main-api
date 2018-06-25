@@ -132,7 +132,7 @@ object UserEvent {
                                  postalCode: Option[String],
                                  override val country: String = "FR",
                                  override val language: String = "fr",
-                                 social: Boolean = false)
+                                 isSocialLogin: Boolean = false)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -154,7 +154,7 @@ object UserEvent {
                                              override val country: String = "FR",
                                              override val language: String = "fr",
                                              override val requestContext: RequestContext = RequestContext.empty,
-                                             social: Boolean = false)
+                                             isSocialLogin: Boolean = false)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }

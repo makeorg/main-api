@@ -273,7 +273,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                         country = user.country,
                         language = user.language,
                         requestContext = requestContext,
-                        social = false
+                        isSocialLogin = false
                       )
                     )
                     eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
