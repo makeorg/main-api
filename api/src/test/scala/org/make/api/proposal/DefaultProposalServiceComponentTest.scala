@@ -175,7 +175,7 @@ class DefaultProposalServiceComponentTest
     scenario("no proposal matching criteria") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("vff")), matches(None)))
+        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("vff"))))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
@@ -196,7 +196,7 @@ class DefaultProposalServiceComponentTest
     scenario("no proposal can be locked") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("no-proposal-to-lock")), matches(None)))
+        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("no-proposal-to-lock"))))
         .thenReturn(
           Future
             .successful(
@@ -291,7 +291,7 @@ class DefaultProposalServiceComponentTest
     scenario("second proposal can be locked") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-second")), matches(None)))
+        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-second"))))
         .thenReturn(
           Future
             .successful(
@@ -381,7 +381,7 @@ class DefaultProposalServiceComponentTest
     scenario("first proposal can be locked") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-first")), matches(None)))
+        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-first"))))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("lockable")))))
@@ -495,8 +495,7 @@ class DefaultProposalServiceComponentTest
                   )
                 )
               )
-            ),
-            ArgumentMatchers.eq(None)
+            )
           )
         )
         .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal1, gilProposal2))))

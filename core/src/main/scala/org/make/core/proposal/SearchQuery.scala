@@ -21,6 +21,8 @@ package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, randomScore}
+import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
@@ -36,16 +38,25 @@ import org.make.core.user.UserId
 /**
   * The class holding the entire search query
   *
-  * @param filters sequence of search filters
-  * @param sort   sequence of sorts options
-  * @param limit   number of items to fetch
-  * @param skip    number of items to skip
+  * @param filters        sequence of search filters
+  * @param sort           sequence of sorts options
+  * @param limit          number of items to fetch
+  * @param skip           number of items to skip
+  * @param language       language to boost the query for. NOT A FILTER.
+  * @param sortAlgorithm algorithm used for sorting
   */
 case class SearchQuery(filters: Option[SearchFilters] = None,
                        sort: Option[IndexedSort] = None,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None,
-                       language: Option[String] = None)
+                       language: Option[String] = None,
+                       sortAlgorithm: Option[SortAlgorithm] = None) {
+  def getSeed: Option[Int] =
+    sortAlgorithm.flatMap {
+      case RandomAlgorithm(seed) => seed
+      case _                     => None
+    }
+}
 
 /**
   * The class holding the filters
@@ -415,3 +426,24 @@ case class IdeaSearchFilter(ideaId: IdeaId)
 case class Limit(value: Int)
 
 case class Skip(value: Int)
+
+// Sort Algorithms
+
+sealed trait SortAlgorithm {
+  val shortName: String
+  def sortDefinition(request: SearchDefinition): SearchDefinition
+}
+
+case class RandomAlgorithm(maybeSeed: Option[Int] = None) extends SortAlgorithm {
+  override val shortName: String = "random"
+
+  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+    (
+      for {
+        seed  <- maybeSeed
+        query <- request.query
+      } yield request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
+    ).getOrElse(request)
+
+  }
+}

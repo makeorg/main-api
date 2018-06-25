@@ -555,7 +555,6 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                 userId = Some(userId),
                 query = SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = userId))))),
                 requestContext = requestContext,
-                maybeSeed = None
               )
             ) { proposalsSearchResult =>
               complete(proposalsSearchResult)

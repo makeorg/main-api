@@ -203,7 +203,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
           proposalService.searchForUser(
             userId = maybeUserId,
             query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
-            maybeSeed = None,
             requestContext = requestContext
           )
       }
