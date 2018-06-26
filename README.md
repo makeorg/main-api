@@ -98,3 +98,6 @@ and set versions accordingly
 
 See: https://forum.cockroachlabs.com/t/connecting-to-an-ssl-secure-server-using-jdbc-java-and-client-certificate-authentication/400
 
+## License
+
+This project is licenced under the AGPL license V3 or later. See [license](LICENSE.md)
