@@ -160,7 +160,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                         value = social.token.access_token,
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
-                        maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                        maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
                         path = Some("/")
                       )
                     )

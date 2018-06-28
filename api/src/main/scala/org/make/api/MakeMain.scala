@@ -1,9 +1,12 @@
 package org.make.api
 
+import java.nio.file.{Files, Paths}
+
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
@@ -29,8 +32,17 @@ object MakeMain extends App with StrictLogging with MakeApi {
   Kamon.addReporter(new PrometheusReporter())
   SystemMetrics.startCollecting()
 
+  private val configuration: Config = {
+    val extraConfigPath = Paths.get("/var/run/secrets/make-api.conf")
+    if (Files.exists(extraConfigPath) && !Files.isDirectory(extraConfigPath)) {
+      ConfigFactory.parseFile(extraConfigPath.toFile).withFallback(ConfigFactory.load())
+    } else {
+      ConfigFactory.load()
+    }
+  }
+
   override implicit val actorSystem: ExtendedActorSystem =
-    ActorSystem.apply("make-api").asInstanceOf[ExtendedActorSystem]
+    ActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
 
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
   actorSystem.registerExtension(ElasticsearchConfiguration)

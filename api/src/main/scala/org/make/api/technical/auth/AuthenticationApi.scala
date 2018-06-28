@@ -123,7 +123,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                 value = grantResult.accessToken,
                 secure = makeSettings.SessionCookie.isSecure,
                 httpOnly = true,
-                maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
                 path = Some("/")
               )
             )
@@ -167,7 +167,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                         value = idGenerator.nextId(),
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
-                        maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+                        maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
                         path = Some("/")
                       )
                     ),

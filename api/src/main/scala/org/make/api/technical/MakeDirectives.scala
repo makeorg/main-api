@@ -90,7 +90,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
               value = sessionId,
               secure = makeSettings.SessionCookie.isSecure,
               httpOnly = true,
-              maxAge = Some(makeSettings.SessionCookie.lifetime.toMillis),
+              maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
               path = Some("/")
             )
           )
