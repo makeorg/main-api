@@ -167,7 +167,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               dateOfBirth = user.profile.flatMap(_.dateOfBirth),
               postalCode = user.profile.flatMap(_.postalCode),
               country = user.country,
-              language = user.language
+              language = user.language,
+              isSocialLogin = false
             )
           )
         case _ =>
@@ -306,7 +307,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           dateOfBirth = user.profile.flatMap(_.dateOfBirth),
           postalCode = user.profile.flatMap(_.postalCode),
           country = user.country,
-          language = user.language
+          language = user.language,
+          isSocialLogin = true
         )
       )
 
@@ -315,7 +317,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           userId = user.userId,
           country = user.country,
           language = user.language,
-          requestContext = requestContext
+          requestContext = requestContext,
+          isSocialLogin = true
         )
       )
       eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
