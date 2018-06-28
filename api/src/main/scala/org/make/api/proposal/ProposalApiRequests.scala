@@ -144,8 +144,9 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
 
     val randomSeed: Int = seed.getOrElse(Random.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = sortAlgorithm match {
-      case Some(name) if name == RandomAlgorithm().shortName => Some(RandomAlgorithm(Some(randomSeed)))
-      case None                                              =>
+      case Some(name) if name == RandomAlgorithm().shortName    => Some(RandomAlgorithm(Some(randomSeed)))
+      case Some(name) if name == ActorVoteAlgorithm().shortName => Some(ActorVoteAlgorithm(Some(randomSeed)))
+      case None                                                 =>
         // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
         isRandom.flatMap { randomise =>
           if (randomise) {

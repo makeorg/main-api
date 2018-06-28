@@ -30,25 +30,28 @@ trait DockerElasticsearchService extends DockerKit {
 
   val defaultElasticsearchHttpPort = 9200
   val defaultElasticsearchClientPort = 9300
-  val defaultElasticsearchPortExposed = 9998
+
+  // Port range: [30000-30999]
+  def elasticsearchExposedPort: Int
 
   val defaultElasticsearchIndex = "proposals"
   val defaultElasticsearchDocType = "proposal"
 
-  private val elasticSearchContainer = DockerContainer("makeorg/make-elasticsearch:5.6.6")
-    .withPorts(defaultElasticsearchHttpPort -> Some(defaultElasticsearchPortExposed))
-    .withEnv(
-      "xpack.security.enabled=false",
-      "transport.host=localhost",
-      "ES_JVM_OPTIONS=-Xmx256M -Xms256M",
-      "ES_JAVA_OPTS=-Xmx256M -Xms256M"
-    )
-    .withReadyChecker(
-      DockerReadyChecker
-        .HttpResponseCode(defaultElasticsearchHttpPort, "/")
-        .within(100.millis)
-        .looped(300, 1.second)
-    )
+  private def elasticSearchContainer =
+    DockerContainer("makeorg/make-elasticsearch:5.6.6")
+      .withPorts(defaultElasticsearchHttpPort -> Some(elasticsearchExposedPort))
+      .withEnv(
+        "xpack.security.enabled=false",
+        "transport.host=localhost",
+        "ES_JVM_OPTIONS=-Xmx256M -Xms256M",
+        "ES_JAVA_OPTS=-Xmx256M -Xms256M"
+      )
+      .withReadyChecker(
+        DockerReadyChecker
+          .HttpResponseCode(defaultElasticsearchHttpPort, "/")
+          .within(100.millis)
+          .looped(300, 1.second)
+      )
 
   abstract override def dockerContainers: List[DockerContainer] =
     elasticSearchContainer :: super.dockerContainers
