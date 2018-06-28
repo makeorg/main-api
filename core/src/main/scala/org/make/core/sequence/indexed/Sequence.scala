@@ -98,7 +98,7 @@ object Context {
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
 }
 
-final case class SequencesSearchResult(total: Int, results: Seq[IndexedSequence])
+final case class SequencesSearchResult(total: Long, results: Seq[IndexedSequence])
 
 object SequencesSearchResult {
   implicit val encoder: ObjectEncoder[SequencesSearchResult] = deriveEncoder[SequencesSearchResult]

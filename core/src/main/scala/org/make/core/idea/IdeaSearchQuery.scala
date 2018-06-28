@@ -22,8 +22,7 @@ package org.make.core.idea
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
@@ -118,19 +117,19 @@ object IdeaSearchFilters extends ElasticDsl {
   }
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    def languageOmission(boostedLanguage: String): Float =
+    def languageOmission(boostedLanguage: String): Double =
       if (ideaSearchQuery.language.contains(boostedLanguage)) 1 else 0
 
     val query: Option[QueryDefinition] = for {
       filters                            <- ideaSearchQuery.filters
       NameSearchFilter(text, maybeFuzzy) <- filters.name
     } yield {
-      val fieldsBoosts = Map(
-        IdeaElasticsearchFieldNames.name -> 3F,
-        IdeaElasticsearchFieldNames.nameFr -> 2F * languageOmission("fr"),
-        IdeaElasticsearchFieldNames.nameEn -> 2F * languageOmission("en"),
-        IdeaElasticsearchFieldNames.nameIt -> 2F * languageOmission("it"),
-        IdeaElasticsearchFieldNames.nameGeneral -> 1F
+      val fieldsBoosts: Map[String, Double] = Map(
+        IdeaElasticsearchFieldNames.name -> 3D,
+        IdeaElasticsearchFieldNames.nameFr -> 2D * languageOmission("fr"),
+        IdeaElasticsearchFieldNames.nameEn -> 2D * languageOmission("en"),
+        IdeaElasticsearchFieldNames.nameIt -> 2D * languageOmission("it"),
+        IdeaElasticsearchFieldNames.nameGeneral -> 1D
       ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
         case Some(fuzzy) =>

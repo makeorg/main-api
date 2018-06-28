@@ -29,7 +29,7 @@ import cats.implicits._
 import com.sksamuel.elastic4s.http.ElasticDsl.{aliases, _}
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
-import com.sksamuel.elastic4s.http.index.admin.IndicesAliasResponse
+import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.idea._
@@ -117,12 +117,12 @@ trait DefaultIndexationComponent extends IndexationComponent {
       }
     }
 
-    private def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[IndicesAliasResponse] = {
+    private def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[AliasActionResponse] = {
       if (indexes.isEmpty) {
         logger.error("indexes with alias is empty")
       }
 
-      elasticsearchConfiguration.client.execute {
+      elasticsearchConfiguration.client.executeAsFuture {
         aliases(addAlias(elasticsearchConfiguration.aliasName).on(newIndexName), indexes.map { index =>
           removeAlias(elasticsearchConfiguration.aliasName).on(index)
         }: _*)
@@ -130,21 +130,22 @@ trait DefaultIndexationComponent extends IndexationComponent {
     }
 
     private def executeSetAlias(newIndexName: String): Future[Done] = {
-      client.execute {
-        getAlias(Seq(elasticsearchConfiguration.aliasName))
+      client.executeAsFuture {
+        getAliases(Seq.empty, Seq(elasticsearchConfiguration.aliasName))
       }.onComplete {
-        case Success(getAliasResponse) => addAndRemoveAlias(newIndexName, getAliasResponse.keys.toSeq)
-        case Failure(e)                => logger.error("fail to retrieve ES alias", e)
-        case _                         => logger.error("fail to retrieve ES alias")
+        case Success(getAliasResponse) =>
+          addAndRemoveAlias(newIndexName, getAliasResponse.mappings.keys.map(_.name).toSeq)
+        case Failure(e) => logger.error("fail to retrieve ES alias", e)
+        case _          => logger.error("fail to retrieve ES alias")
       }
 
       Future.successful(Done)
     }
 
     private def executeCreateIndex(newIndexName: String): Future[CreateIndexResponse] = {
-      elasticsearchConfiguration.client.execute {
+      elasticsearchConfiguration.client.executeAsFuture(
         createIndex(newIndexName).source(elasticsearchConfiguration.elasticsearchMapping)
-      }
+      )
     }
 
     private def executeIndexProposalsAndSequences(newIndexName: String): Future[Done] = {

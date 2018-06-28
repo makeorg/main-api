@@ -136,14 +136,14 @@ object ProposalResult extends CirceFormatters {
     )
 }
 
-final case class ProposalsResultResponse(total: Int, results: Seq[ProposalResult])
+final case class ProposalsResultResponse(total: Long, results: Seq[ProposalResult])
 
 object ProposalsResultResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultResponse] = deriveEncoder[ProposalsResultResponse]
   implicit val decoder: Decoder[ProposalsResultResponse] = deriveDecoder[ProposalsResultResponse]
 }
 
-final case class ProposalsResultSeededResponse(total: Int, results: Seq[ProposalResult], seed: Option[Int])
+final case class ProposalsResultSeededResponse(total: Long, results: Seq[ProposalResult], seed: Option[Int])
 
 object ProposalsResultSeededResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]

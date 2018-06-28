@@ -72,8 +72,8 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   def getCurrentIndexName: Future[String] = {
     client
-      .execute(getAlias(Seq(aliasName)))
-      .map(_.keys.headOption.getOrElse(""))
+      .executeAsFuture(getAliases(Seq.empty, Seq(aliasName)))
+      .map(_.mappings.headOption.map { case (index, _) => index.name }.getOrElse(""))
       .recover {
         case e: Exception =>
           logger.error("fail to retrieve ES alias", e)
@@ -83,27 +83,25 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   private def createInitialIndexAndAlias(): Unit = {
     val newIndexName = createIndexName
-    client.execute {
-      createIndex(newIndexName).source(elasticsearchMapping)
-    }.onComplete {
-      case Success(_) =>
-        logger.info(s"Elasticsearch index $indexName created")
-        client.execute {
-          aliases(addAlias(aliasName).on(newIndexName))
-        }.onComplete {
-          case Success(_) =>
-            logger.info(s"Elasticsearch alias $aliasName created")
-          case Failure(e) =>
-            logger.error(s"Error when creating Elasticsearch alias $aliasName", e)
-        }
-      case Failure(e) =>
-        logger.error(s"Error when creating Elasticsearch index $indexName", e)
-    }
+    client
+      .executeAsFuture(createIndex(newIndexName).source(elasticsearchMapping))
+      .onComplete {
+        case Success(_) =>
+          logger.info(s"Elasticsearch index $indexName created")
+          client
+            .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
+            .onComplete {
+              case Success(_) =>
+                logger.info(s"Elasticsearch alias $aliasName created")
+              case Failure(e) =>
+                logger.error(s"Error when creating Elasticsearch alias $aliasName", e)
+            }
+        case Failure(e) =>
+          logger.error(s"Error when creating Elasticsearch index $indexName", e)
+      }
   }
 
-  client.execute {
-    aliasExists(aliasName)
-  }.onComplete {
+  client.executeAsFuture(aliasExists(aliasName)).onComplete {
     case Success(AliasExistsResponse(true)) =>
       logger.info(s"Elasticsearch alias $aliasName exist")
     case Success(AliasExistsResponse(false)) =>

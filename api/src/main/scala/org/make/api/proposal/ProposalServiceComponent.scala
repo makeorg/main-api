@@ -25,8 +25,8 @@ import akka.Done
 import akka.stream.ActorMaterializer
 import cats.data.OptionT
 import cats.implicits._
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
-import org.elasticsearch.search.sort.SortOrder
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.semantic.{SemanticComponent, SimilarIdea}
@@ -269,7 +269,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 .searchProposals(
                   SearchQuery(
                     filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaId)))),
-                    limit = Some(countProposals)
+                    limit = Some(countProposals.toInt)
                   )
                 )
                 .map(_.results.filter(ideaProposal => proposal.proposalId.value != ideaProposal.id.value))

@@ -19,9 +19,9 @@
 
 package org.make.core.common.indexed
 
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
-import org.elasticsearch.search.sort.SortOrder
 import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}

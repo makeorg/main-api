@@ -156,12 +156,12 @@ object IndexedQualification {
 }
 
 final case class IndexedScores(boost: Double = 0,
-                              engagement: Double,
-                              adhesion: Double,
-                              realistic:  Double,
-                              topScore: Double,
-                              controversy: Double,
-                              rejection: Double)
+                               engagement: Double,
+                               adhesion: Double,
+                               realistic: Double,
+                               topScore: Double,
+                               controversy: Double,
+                               rejection: Double)
 
 object IndexedScores {
   implicit val encoder: ObjectEncoder[IndexedScores] = deriveEncoder[IndexedScores]
@@ -170,7 +170,7 @@ object IndexedScores {
   def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0)
 }
 
-final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])
+final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])
 
 object ProposalsSearchResult {
   implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]

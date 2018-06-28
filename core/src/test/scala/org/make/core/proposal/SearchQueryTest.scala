@@ -21,8 +21,7 @@ package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
@@ -150,10 +149,10 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       Then("result is a multiMatchQuery")
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.contentGeneral -> 1F,
-          ProposalElasticsearchFieldNames.contentEn -> 2F,
-          ProposalElasticsearchFieldNames.content -> 3F,
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5F
+          ProposalElasticsearchFieldNames.contentGeneral -> 1D,
+          ProposalElasticsearchFieldNames.contentEn -> 2D,
+          ProposalElasticsearchFieldNames.content -> 3D,
+          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D
         )
       contentSearchFilterResult shouldBe Some(ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts))
     }
@@ -164,7 +163,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
       Then("result is a multiMatchQuery")
       val fieldsBoosts =
-        Map(ProposalElasticsearchFieldNames.contentGeneral -> 1F, ProposalElasticsearchFieldNames.content -> 3F)
+        Map(ProposalElasticsearchFieldNames.contentGeneral -> 1D, ProposalElasticsearchFieldNames.content -> 3D)
       contentSearchFilterResult shouldBe Some(ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts))
     }
 
