@@ -41,8 +41,7 @@ case class TagFilter(label: Option[String] = None,
                      operationId: Option[OperationId] = None,
                      themeId: Option[ThemeId] = None,
                      country: Option[String] = None,
-                     language: Option[String] = None,
-)
+                     language: Option[String] = None)
 object TagFilter {
   val empty: TagFilter = TagFilter()
 }
@@ -63,7 +62,7 @@ trait TagService extends ShortenedNames {
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
   def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
-  def searchByLabel(partialLabel: String): Future[Seq[Tag]]
+  def searchByLabel(partialLabel: String, like: Boolean): Future[Seq[Tag]]
   def updateTag(tagId: TagId,
                 label: String,
                 display: TagDisplay,
@@ -178,11 +177,13 @@ trait DefaultTagServiceComponent
       }
     }
 
-    override def searchByLabel(partialLabel: String): Future[Seq[Tag]] = {
+    override def searchByLabel(partialLabel: String, like: Boolean): Future[Seq[Tag]] = {
       if (partialLabel.isEmpty) {
         persistentTagService.findAll()
-      } else {
+      } else if (like) {
         persistentTagService.findByLabelLike(partialLabel)
+      } else {
+        persistentTagService.findByLabel(partialLabel)
       }
     }
 

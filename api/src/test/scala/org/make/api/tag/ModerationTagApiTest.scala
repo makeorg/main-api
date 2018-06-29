@@ -92,14 +92,15 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     display = TagDisplay.Inherit,
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
-    operationId = None,
+    operationId = Some(OperationId("operation-id")),
     themeId = None,
     country = "FR",
     language = "fr"
   )
 
   val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
-  val helloWorldTag: Tag = newTag(helloWorldTagText, TagId(helloWorldTagSlug))
+  val helloWorldTagId: String = "hello-world"
+  val helloWorldTag: Tag = newTag(helloWorldTagText, TagId(helloWorldTagId))
   val fakeTag: Tag = newTag(fakeTagText)
   val tag1: Tag = newTag("tag1", TagId("tag1"))
   val tag2: Tag = newTag("tag2", TagId("tag2"))
@@ -116,13 +117,15 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Float]
     )
   ).thenReturn(Future.successful(validTag))
+  when(tagService.searchByLabel(ArgumentMatchers.eq(validTagText), ArgumentMatchers.any[Boolean]))
+    .thenReturn(Future.successful(Seq(validTag)))
+  when(tagService.searchByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), ArgumentMatchers.any[Boolean]))
+    .thenReturn(Future.successful(Seq.empty))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId("valid-tag"))))
     .thenReturn(Future.successful(Some(validTag)))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
-    .thenReturn(Future.successful(None))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagSlug))))
+  when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagId))))
     .thenReturn(Future.successful(Some(helloWorldTag)))
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(tag1, tag2)))
@@ -135,6 +138,38 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[TagFilter]
     )
   ).thenReturn(Future.successful(Seq(tag1, tag2)))
+
+  when(
+    tagService.updateTag(
+      ArgumentMatchers.eq(TagId(helloWorldTagId)),
+      ArgumentMatchers.eq(s"$validTagText UPDATED"),
+      ArgumentMatchers.any[TagDisplay],
+      ArgumentMatchers.any[TagTypeId],
+      ArgumentMatchers.any[Float],
+      ArgumentMatchers.any[Option[OperationId]],
+      ArgumentMatchers.any[Option[ThemeId]],
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[String]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(newTag(s"$validTagText UPDATED", TagId(helloWorldTagId)).copy(tagTypeId = TagTypeId("1234-1234-1234-1234")))
+    )
+  )
+
+  when(
+    tagService.updateTag(
+      ArgumentMatchers.eq(TagId(fakeTagText)),
+      ArgumentMatchers.eq(s"$validTagText UPDATED"),
+      ArgumentMatchers.any[TagDisplay],
+      ArgumentMatchers.any[TagTypeId],
+      ArgumentMatchers.any[Float],
+      ArgumentMatchers.any[Option[OperationId]],
+      ArgumentMatchers.any[Option[ThemeId]],
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[String]
+    )
+  ).thenReturn(Future.successful(None))
 
   val routes: Route = sealRoute(moderationTagRoutes)
 
@@ -172,7 +207,6 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
            |"label": "$validTagText",
            |"tagTypeId": "1234-1234-1234-1234",
            |"operationId": "1234-1234-1234-1234",
-           |"themeId": "1234-1234-1234-1234",
            |"country": "FR",
            |"language": "fr",
            |"display": "INHERIT"
@@ -182,6 +216,63 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
+      }
+
+      Given("an authenticated user with the moderator role")
+      When("the user wants to create a tag with duplicate label into context")
+      Then("the status should be BadRequest")
+      val tagRequestDuplicate =
+        s"""{
+           |"label": "$validTagText",
+           |"tagTypeId": "1234-1234-1234-1234",
+           |"operationId": "operation-id",
+           |"country": "FR",
+           |"language": "fr",
+           |"display": "INHERIT"
+       }""".stripMargin
+
+      Post("/moderation/tags")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestDuplicate))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+
+      Given("an authenticated user with the moderator role")
+      When("the user wants to create a tag without operation nor theme")
+      Then("the status should be BadRequest")
+      val tagRequestEmpty =
+        s"""{
+           |"label": "$validTagText",
+           |"tagTypeId": "1234-1234-1234-1234",
+           |"country": "FR",
+           |"language": "fr",
+           |"display": "INHERIT"
+       }""".stripMargin
+
+      Post("/moderation/tags")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+
+      Given("an authenticated user with the moderator role")
+      When("the user wants to create a tag with operation and theme")
+      Then("the status should be BadRequest")
+      val tagRequestFull =
+        s"""{
+           |"label": "$validTagText",
+           |"tagTypeId": "1234-1234-1234-1234",
+           |"operationId": "1234-1234-1234-1234",
+           |"themeId": "4321-4321-4321-4321",
+           |"country": "FR",
+           |"language": "fr",
+           |"display": "INHERIT"
+       }""".stripMargin
+
+      Post("/moderation/tags")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestFull))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
   }
@@ -218,7 +309,7 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
 
     scenario("valid tag") {
       Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
-      When(s"I get a tag from id '$helloWorldTagSlug'")
+      When(s"I get a tag from id '$helloWorldTagId'")
       Then("I should get an ok response")
       And(s"I should get a tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug")
 
@@ -264,5 +355,73 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         tags.head.id.value should be("tag1")
       }
     }
+  }
+
+  feature("update a tag") {
+    val updateTagRequest =
+      s"""{
+         |"label": "$validTagText UPDATED",
+         |"tagTypeId": "1234-1234-1234-1234",
+         |"operationId": "1234-1234-1234-1234",
+         |"country": "FR",
+         |"language": "fr",
+         |"display": "INHERIT",
+         |"weight": "0"
+       }""".stripMargin
+
+    scenario("update tag with anonymous user") {
+      Given("unauthenticated user")
+      When(s"I update tag from id '$fakeTag")
+      Then("I get an unauthorized response")
+      Put(s"/moderation/tags/$fakeTag") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("update tag with citizen user") {
+      Given("an authenticated user with role citizen")
+      When(s"I update tag from id '$fakeTag")
+      Then("I get a forbidden response")
+      Put(s"/moderation/tags/$fakeTag")
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("update non existing tag as moderator") {
+      Given("an authenticated user with role moderator")
+      When("I update non existing tag")
+      Then("I get a not found response")
+      Put(s"/moderation/tags/$fakeTagText")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("update tag with an invalid request") {
+      Given("a registered tag")
+      When("I update tag with an invalid body")
+      Then("I get a bad request response")
+      Put(s"/moderation/tags/$fakeTagText")
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("update tag") {
+      Given("a registered tag 'hello-world'")
+      When("I update tag label to 'hello-world UPDATED'")
+      Then("I get an OK response")
+      Put(s"/moderation/tags/$helloWorldTagId")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val tag: Tag = entityAs[Tag]
+        tag.tagId.value should be(helloWorldTagId)
+        tag.tagTypeId should be(TagTypeId("1234-1234-1234-1234"))
+      }
+    }
+
   }
 }

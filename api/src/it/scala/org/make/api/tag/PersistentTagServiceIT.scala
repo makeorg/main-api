@@ -181,6 +181,35 @@ class PersistentTagServiceIT
       }
     }
 
+    scenario("find a tag with exact label") {
+      Given(s"""a persisted tag "${baratheon.label}"""")
+      When(s"""I search the tag by its label: "${baratheon.label}"""")
+      val futureTag1: Future[Seq[Tag]] = for {
+        _            <- persistentTagService.persist(baratheon)
+        tagBaratheon <- persistentTagService.findByLabel(baratheon.label)
+      } yield tagBaratheon
+
+      whenReady(futureTag1, Timeout(3.seconds)) { result =>
+        Then("result should be a list af at least one tag")
+        result.length should be >= 1
+
+        And(s"the tag ${baratheon.label} should be in the list")
+        result.contains(baratheon) shouldBe true
+      }
+
+      Given(s"""a persisted tag "${tully.label}"""")
+      When(s"""I search the tag by a part of its label: "${tully.label.take(3)}"""")
+      val futureTag2: Future[Seq[Tag]] = for {
+        _        <- persistentTagService.persist(tully)
+        tagTully <- persistentTagService.findByLabel(tully.label.take(3))
+      } yield tagTully
+
+      whenReady(futureTag2, Timeout(3.seconds)) { result =>
+        And(s"the tag ${tully.label} should not be in the list")
+        result.contains(tully) shouldBe false
+      }
+    }
+
 //    test ignored because the persist operation does not work.
     ignore("find from operationId") {
       Given(s"""a persisted tag "${snow.label}" and a persisted operation "${fakeOperation.slug}"""")

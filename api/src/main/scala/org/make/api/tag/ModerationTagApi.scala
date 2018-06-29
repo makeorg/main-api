@@ -21,6 +21,8 @@ package org.make.api.tag
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -30,7 +32,7 @@ import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.{HttpCodes, Validation}
+import org.make.core.{tag, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
@@ -100,18 +102,57 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                onSuccess(
-                  tagService.createTag(
-                    label = request.label,
-                    tagTypeId = request.tagTypeId,
-                    operationId = request.operationId,
-                    themeId = request.themeId,
-                    country = request.country,
-                    language = request.language,
-                    display = request.display.getOrElse(TagDisplay.Inherit)
+                provideAsync(tagService.searchByLabel(request.label, like = false)) { tagList =>
+                  val duplicateLabel = tagList.find { tag =>
+                    (tag.operationId.isDefined && tag.operationId == request.operationId) ||
+                    (tag.themeId.isDefined && tag.themeId == request.themeId)
+                  }
+                  Validation.validate(
+                    Validation.requireNotPresent(
+                      fieldName = "label",
+                      fieldValue = duplicateLabel,
+                      message = Some("Tag label already exist in this context. Duplicates are not allowed")
+                    )
                   )
-                ) { tag =>
-                  complete(StatusCodes.Created -> TagResponse(tag))
+                  Validation.validate(
+                    Validation.requirePresent(
+                      fieldName = "operationId / themeId",
+                      fieldValue = request.operationId.orElse(request.themeId),
+                      message = Some("operation or theme should not be empty")
+                    )
+                  )
+                  if (request.operationId.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "themeId",
+                        fieldValue = request.themeId,
+                        message = Some("Tag can not have both operation and theme")
+                      )
+                    )
+                  }
+                  if (request.themeId.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "operationId",
+                        fieldValue = request.operationId,
+                        message = Some("Tag can not have both operation and theme")
+                      )
+                    )
+                  }
+                  onSuccess(
+                    tagService.createTag(
+                      label = request.label,
+                      tagTypeId = request.tagTypeId,
+                      operationId = request.operationId,
+                      themeId = request.themeId,
+                      country = request.country,
+                      language = request.language,
+                      display = request.display.getOrElse(TagDisplay.Inherit),
+                      weight = request.weight.getOrElse(0f)
+                    )
+                  ) { tag =>
+                    complete(StatusCodes.Created -> TagResponse(tag))
+                  }
                 }
               }
             }
@@ -137,8 +178,8 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "label", paramType = "query", dataType = "string"),
@@ -184,11 +225,6 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
 
-                  sort.foreach { sortValue =>
-                    Validation.validate(
-                      Validation.validChoices("_sort", Some("Invalid sort"), Seq(sortValue), Seq("label"))
-                    )
-                  }
                   order.foreach { orderValue =>
                     Validation.validate(
                       Validation
@@ -238,8 +274,125 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
     }
   }
 
-  val moderationTagRoutes: Route = moderationGetTag ~ moderationCreateTag ~ moderationlistTags
+  @ApiOperation(
+    value = "update-tag",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tag.UpdateTagRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
+  @Path(value = "/{tagId}")
+  def moderationUpdateTag: Route = put {
+    path("moderation" / "tags" / moderationTagId) { tagId =>
+      makeOperation("ModerationUpdateTag") { _ =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireModerationRole(auth.user) {
+            decodeRequest {
+              entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
+                provideAsync(tagService.searchByLabel(request.label, like = false)) { tagList =>
+                  val duplicateLabel = tagList.find { tag =>
+                    (tag.tagId != tagId) &&
+                    (tag.operationId.isDefined && tag.operationId == request.operationId) ||
+                    (tag.themeId.isDefined && tag.themeId == request.themeId)
+                  }
+                  Validation.validate(
+                    Validation.requireNotPresent(
+                      fieldName = "label",
+                      fieldValue = duplicateLabel,
+                      message = Some("Tag label already exist in this context. Duplicates are not allowed")
+                    )
+                  )
+                  Validation.validate(
+                    Validation.requirePresent(
+                      fieldName = "operation/theme",
+                      fieldValue = request.operationId.orElse(request.themeId),
+                      message = Some("operation or theme should not be empty")
+                    )
+                  )
+                  if (request.operationId.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "theme",
+                        fieldValue = request.themeId,
+                        message = Some("Tag can not have both operation and theme")
+                      )
+                    )
+                  }
+                  if (request.themeId.nonEmpty) {
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "operation",
+                        fieldValue = request.operationId,
+                        message = Some("Tag can not have both operation and theme")
+                      )
+                    )
+                  }
+                  provideAsyncOrNotFound(
+                    tagService.updateTag(
+                      tagId = tagId,
+                      label = request.label,
+                      display = request.display,
+                      tagTypeId = request.tagTypeId,
+                      weight = request.weight,
+                      operationId = request.operationId,
+                      themeId = request.themeId,
+                      country = request.country,
+                      language = request.language
+                    )
+                  ) { tag =>
+                    complete(tag)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  val moderationTagRoutes: Route = moderationGetTag ~ moderationCreateTag ~ moderationlistTags ~ moderationUpdateTag
 
   val moderationTagId: PathMatcher1[TagId] =
     Segment.flatMap(id => Try(TagId(id)).toOption)
+}
+
+case class CreateTagRequest(label: String,
+                            tagTypeId: TagTypeId,
+                            operationId: Option[OperationId],
+                            themeId: Option[ThemeId],
+                            country: String,
+                            language: String,
+                            display: Option[TagDisplay],
+                            weight: Option[Float])
+
+object CreateTagRequest {
+  implicit val decoder: Decoder[CreateTagRequest] = deriveDecoder[CreateTagRequest]
+}
+
+case class UpdateTagRequest(label: String,
+                            tagTypeId: TagTypeId,
+                            operationId: Option[OperationId],
+                            themeId: Option[ThemeId],
+                            country: String,
+                            language: String,
+                            display: TagDisplay,
+                            weight: Float)
+
+object UpdateTagRequest {
+  implicit val decoder: Decoder[UpdateTagRequest] = deriveDecoder[UpdateTagRequest]
 }
