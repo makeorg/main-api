@@ -57,6 +57,7 @@ abstract class ProducerActor[Wrapper, Event]
     props.put(ProducerConfig.RETRIES_CONFIG, "3")
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, "16384")
     props.put(ProducerConfig.LINGER_MS_CONFIG, "1")
+    props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "org.make.api.technical.MakePartitioner")
     props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "33554432")
     val valueSerializer: Serializer[Wrapper] =
       new MakeKafkaAvroSerializer[Wrapper](kafkaConfiguration.schemaRegistry, schema, format)

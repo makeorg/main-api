@@ -40,7 +40,7 @@ abstract class BasicProducerActor[Wrapper <: Sharded, Event] extends ProducerAct
 
   protected def convert(event: Event): Wrapper
 
-  override protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
-    sendRecord(kafkaTopic, record.id, record)
+  override protected def sendRecord(kafkaTopic: String, id: String, record: Wrapper): Unit = {
+    sendRecord(kafkaTopic, record)
   }
 }
