@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.theme
 
 import org.make.api.MakeUnitTest
@@ -31,8 +50,7 @@ class ThemeServiceTest
 
   val fooTheme = Theme(
     themeId = ThemeId("foo"),
-    translations =
-      Seq(ThemeTranslation(slug = SlugHelper("foo"), title = "Foo", language = "lg")),
+    translations = Seq(ThemeTranslation(slug = SlugHelper("foo"), title = "Foo", language = "lg")),
     actionsCount = 7,
     proposalsCount = 0,
     votesCount = 0,
@@ -43,8 +61,7 @@ class ThemeServiceTest
 
   val barTheme = Theme(
     themeId = ThemeId("bar"),
-    translations =
-      Seq(ThemeTranslation(slug = SlugHelper("bar"), title = "Bar", language = "lg")),
+    translations = Seq(ThemeTranslation(slug = SlugHelper("bar"), title = "Bar", language = "lg")),
     actionsCount = 7,
     proposalsCount = 0,
     votesCount = 0,
@@ -83,7 +100,6 @@ class ThemeServiceTest
         .when(elasticsearchProposalAPI.countVotedProposals(any[SearchQuery]))
         .thenReturn(Future.successful(10))
 
-
       Mockito
         .when(tagService.findByThemeId(any[ThemeId]))
         .thenReturn(Future.successful(Seq.empty))
@@ -116,7 +132,6 @@ class ThemeServiceTest
       Mockito
         .when(tagService.findByThemeId(ArgumentMatchers.eq(ThemeId("bar"))))
         .thenReturn(Future.successful(Seq.empty))
-
 
       val futureThemes = themeService.findAll()
 

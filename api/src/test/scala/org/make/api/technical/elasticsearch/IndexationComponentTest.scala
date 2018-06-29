@@ -1,12 +1,41 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.technical.elasticsearch
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
-import org.make.api.proposal.{ProposalCoordinatorService, ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.proposal.{
+  ProposalCoordinatorService,
+  ProposalCoordinatorServiceComponent,
+  ProposalSearchEngine,
+  ProposalSearchEngineComponent
+}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
-import org.make.api.sequence.{SequenceCoordinatorService, SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
+import org.make.api.sequence.{
+  SequenceCoordinatorService,
+  SequenceCoordinatorServiceComponent,
+  SequenceSearchEngine,
+  SequenceSearchEngineComponent
+}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
@@ -22,24 +51,24 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class IndexationComponentTest
-  extends MakeUnitTest
-  with DefaultIndexationComponent
-  with ElasticsearchConfigurationComponent
-  with StrictLogging
-  with ActorSystemComponent
-  with ProposalCoordinatorServiceComponent
-  with SequenceCoordinatorServiceComponent
-  with ReadJournalComponent
-  with UserServiceComponent
-  with TagServiceComponent
-  with DefaultPersistentTagTypeServiceComponent
-  with ThemeServiceComponent
-  with ProposalSearchEngineComponent
-  with SequenceSearchEngineComponent
-  with IdeaSearchEngineComponent
-  with DefaultPersistentIdeaServiceComponent
-  with MakeDBExecutionContextComponent
-  with SemanticComponent {
+    extends MakeUnitTest
+    with DefaultIndexationComponent
+    with ElasticsearchConfigurationComponent
+    with StrictLogging
+    with ActorSystemComponent
+    with ProposalCoordinatorServiceComponent
+    with SequenceCoordinatorServiceComponent
+    with ReadJournalComponent
+    with UserServiceComponent
+    with TagServiceComponent
+    with DefaultPersistentTagTypeServiceComponent
+    with ThemeServiceComponent
+    with ProposalSearchEngineComponent
+    with SequenceSearchEngineComponent
+    with IdeaSearchEngineComponent
+    with DefaultPersistentIdeaServiceComponent
+    with MakeDBExecutionContextComponent
+    with SemanticComponent {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val elasticsearchSequenceAPI: SequenceSearchEngine = mock[SequenceSearchEngine]

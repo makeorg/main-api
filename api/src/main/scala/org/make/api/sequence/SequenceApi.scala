@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.sequence
 
 import javax.ws.rs.Path
@@ -172,44 +191,43 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
               decodeRequest {
                 entity(as[UpdateSequenceRequest]) { request: UpdateSequenceRequest =>
                   provideAsync(themeService.findByIds(request.themeIds.getOrElse(Seq.empty))) { themes =>
-                    provideAsync(
-                      request.operation.map(operationService.findOne(_)).getOrElse(Future.successful(None))
-                    ) { operation =>
-                      val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
-                      Validation.validate(
-                        Validation.validateEquals(
-                          "themeIds",
-                          Some("Some theme ids are invalid"),
-                          requestThemesSize,
-                          themes.size
-                        )
-                      )
-
-                      if (request.status.nonEmpty) {
+                    provideAsync(request.operation.map(operationService.findOne(_)).getOrElse(Future.successful(None))) {
+                      operation =>
+                        val requestThemesSize: Int = request.themeIds.getOrElse(Seq.empty).distinct.size
                         Validation.validate(
-                          Validation
-                            .validChoices(
-                              "status",
-                              Some("Invalid status"),
-                              Seq(request.status.get),
-                              SequenceStatus.statusMap.keys.toList
-                            )
+                          Validation.validateEquals(
+                            "themeIds",
+                            Some("Some theme ids are invalid"),
+                            requestThemesSize,
+                            themes.size
+                          )
                         )
-                      }
 
-                      provideAsyncOrNotFound(
-                        sequenceService.update(
-                          sequenceId = sequenceId,
-                          moderatorId = auth.user.userId,
-                          requestContext = requestContext,
-                          title = request.title,
-                          status = request.status.map(SequenceStatus.statusMap),
-                          operationId = operation.map(_.operationId),
-                          themeIds = themes.map(_.themeId)
-                        )
-                      ) { sequenceResponse =>
-                        complete(StatusCodes.OK -> sequenceResponse)
-                      }
+                        if (request.status.nonEmpty) {
+                          Validation.validate(
+                            Validation
+                              .validChoices(
+                                "status",
+                                Some("Invalid status"),
+                                Seq(request.status.get),
+                                SequenceStatus.statusMap.keys.toList
+                              )
+                          )
+                        }
+
+                        provideAsyncOrNotFound(
+                          sequenceService.update(
+                            sequenceId = sequenceId,
+                            moderatorId = auth.user.userId,
+                            requestContext = requestContext,
+                            title = request.title,
+                            status = request.status.map(SequenceStatus.statusMap),
+                            operationId = operation.map(_.operationId),
+                            themeIds = themes.map(_.themeId)
+                          )
+                        ) { sequenceResponse =>
+                          complete(StatusCodes.OK -> sequenceResponse)
+                        }
                     }
                   }
                 }
