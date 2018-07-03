@@ -594,11 +594,11 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
 
       val testProposal = fakeProposalQualif(ProposalId("tested"), votes)
-      val testProposalScore = ProposalScorer.score(testProposal)
+      val testProposalScore = ProposalScorerHelper.score(testProposal)
 
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
       val trials = 1000
-      val samples = (1 to trials).map(i => ProposalScorer.sampleScore(testProposal))
+      val samples = (1 to trials).map(i => ProposalScorerHelper.sampleScore(testProposal))
 
       testProposal.votes.map(_.count).sum should be(100)
       samples.max should be > testProposalScore + 0.1
@@ -614,8 +614,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
       val testProposal: Proposal = fakeProposalQualif(ProposalId("tested"), votes)
 
-      val testProposalScore: Double = ProposalScorer.score(testProposal)
-      val testProposalScoreSample: Double = ProposalScorer.sampleScore(testProposal)
+      val testProposalScore: Double = ProposalScorerHelper.score(testProposal)
+      val testProposalScoreSample: Double = ProposalScorerHelper.sampleScore(testProposal)
 
       testProposalScore should be > 0.0
       testProposalScoreSample should be > 0.0
@@ -642,21 +642,17 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val sortedProposals: Seq[ProposalId] = testedProposals
-        .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorer.sampleScore(p)))
+        .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorerHelper.sampleScore(p)))
         .sortWith(_.score > _.score)
         .map(sp => sp.proposal.proposalId)
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 1000)
           .map(
-            i =>
-              (
-                selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).proposalId ->
-                  1
-            )
+            i => selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).proposalId -> 1
           )
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
@@ -697,7 +693,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(sequenceConfiguration, testedProposals, 10)
       chosen.length should be(10)
@@ -742,7 +738,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[Proposal] = selectionAlgorithm.chooseTestedProposals(noBanditConfiguration, testedProposals, 10)
       chosen.length should be(10)
@@ -787,7 +783,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[Proposal] =
         selectionAlgorithm.chooseTestedProposals(noBanditRatioConfiguration, testedProposals, 10)
@@ -824,7 +820,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[Proposal] =
         selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
@@ -884,7 +880,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[Proposal] =
         selectionAlgorithm.chooseTestedProposals(scoreThresholdConfiguration, testedProposals, 10)
@@ -962,7 +958,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
       ideas.length should be(5)
 
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
       val counts = new mutable.HashMap[IdeaId, Int]() {
         override def default(key: IdeaId) = 0
       }
@@ -1009,7 +1005,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
       ideas.length should be(5)
 
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
       val counts = new mutable.HashMap[IdeaId, Int]() {
         override def default(key: IdeaId) = 0
       }
@@ -1066,7 +1062,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       UniformRandom.random = new Random(0)
-      ProposalScorer.random = new MersenneTwister(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
       selectionAlgorithm.random = new Random(0)
 
       val chosen: Seq[Proposal] =
