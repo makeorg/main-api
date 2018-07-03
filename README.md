@@ -52,13 +52,37 @@ There are two methods here:
     - 'Edit configurations' -> 'Add new configuration' -> 'SBT Task'
     - Define the task as `api/run`
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
-    - Set the config resource: `-Dconfig.resource=default-application.conf`
     - Set the javaagent: type `sbt "show aspectj:aspectjWeaverOptions"` and copy the javaagent in vm parameters.
 
 
 ### Access the Api documentation
 
 When application is running you can access to the swagger interface from the address: [http://localhost:9000/swagger](http://localhost:9000/swagger)
+
+## Sending emails
+
+Create the file `/etc/make/make-api.conf` with the following content:
+
+```hocon
+make-api {
+  mail-jet {
+    api-key = "transactional-emails-api-key"
+    api-key = ${?MAILJET_API_KEY}
+    secret-key = "transactional-emails-secret-key"
+    secret-key = ${?MAILJET_SECRET_KEY}
+    campaign-api-key = "contact-list-api-key"
+    campaign-api-key = ${?CAMPAIGN_MAILJET_API_KEY}
+    campaign-secret-key = "contact-list-secret-key"
+    campaign-secret-key = ${?CAMPAIGN_MAILJET_SECRET_KEY}
+    basic-auth-login = "make-mailjet"
+    basic-auth-login = ${?MAILJET_AUTH_LOGIN}
+    basic-auth-password = "mail-jet-callback-password"
+    basic-auth-password = ${?MAILJET_AUTH_PASSWORD}
+  }
+}
+```
+
+replacing the different secrets with their real value.
 
 ## package the application as a docker image locally
 

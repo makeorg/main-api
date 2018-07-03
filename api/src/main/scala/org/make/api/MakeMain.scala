@@ -52,11 +52,13 @@ object MakeMain extends App with StrictLogging with MakeApi {
   SystemMetrics.startCollecting()
 
   private val configuration: Config = {
-    val extraConfigPath = Paths.get("/var/run/secrets/make-api.conf")
+    val defaultConfiguration = ConfigFactory.load()
+    val configurationPath = defaultConfiguration.getString("make-api.secrets-configuration-path")
+    val extraConfigPath = Paths.get(configurationPath)
     if (Files.exists(extraConfigPath) && !Files.isDirectory(extraConfigPath)) {
-      ConfigFactory.parseFile(extraConfigPath.toFile).withFallback(ConfigFactory.load())
+      ConfigFactory.parseFile(extraConfigPath.toFile).resolve().withFallback(defaultConfiguration)
     } else {
-      ConfigFactory.load()
+      defaultConfiguration
     }
   }
 
