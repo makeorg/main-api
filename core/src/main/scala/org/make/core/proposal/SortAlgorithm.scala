@@ -60,3 +60,12 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
     }.getOrElse(request)
   }
 }
+
+case object AlgorithmSelector {
+  def select(sortAlgorithm: Option[String], randomSeed: Int): Option[SortAlgorithm] = sortAlgorithm match {
+    case Some(name) if name == RandomAlgorithm().shortName    => Some(RandomAlgorithm(Some(randomSeed)))
+    case Some(name) if name == ActorVoteAlgorithm().shortName => Some(ActorVoteAlgorithm(Some(randomSeed)))
+    case _                                                    => None
+  }
+
+}

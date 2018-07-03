@@ -143,20 +143,16 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
       )
 
     val randomSeed: Int = seed.getOrElse(Random.nextInt())
-    val searchSortAlgorithm: Option[SortAlgorithm] = sortAlgorithm match {
-      case Some(name) if name == RandomAlgorithm().shortName    => Some(RandomAlgorithm(Some(randomSeed)))
-      case Some(name) if name == ActorVoteAlgorithm().shortName => Some(ActorVoteAlgorithm(Some(randomSeed)))
-      case None                                                 =>
-        // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
-        isRandom.flatMap { randomise =>
-          if (randomise) {
-            Some(RandomAlgorithm(Some(randomSeed)))
-          } else {
-            None
-          }
+    val searchSortAlgorithm: Option[SortAlgorithm] = AlgoSelector
+      .select(sortAlgorithm, randomSeed)
+      // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
+      .orElse(isRandom.flatMap { randomise =>
+        if (randomise) {
+          Some(RandomAlgorithm(Some(randomSeed)))
+        } else {
+          None
         }
-    }
-
+      })
     SearchQuery(
       filters = filters,
       sort = sort.map(_.toSort),
