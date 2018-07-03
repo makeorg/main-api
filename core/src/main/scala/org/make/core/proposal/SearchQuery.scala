@@ -242,6 +242,7 @@ object SearchFilters extends ElasticDsl {
     operationFilter
   }
 
+  @Deprecated
   def buildTrendingSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
     searchQuery.filters.flatMap {
       _.trending match {

@@ -134,7 +134,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean")
+      new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string")
     )
   )
   def search: Route = {
@@ -162,7 +163,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                 'order.?,
                 'limit.as[Int].?,
                 'skip.as[Int].?,
-                'isRandom.as[Boolean].?
+                'isRandom.as[Boolean].?,
+                'sortAlgorithm.?
               )
             ) {
               (proposalIds,
@@ -183,7 +185,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                order,
                limit,
                skip,
-               isRandom) =>
+               isRandom,
+               sortAlgorithm) =>
                 Validation.validate(Seq(country.map { countryValue =>
                   Validation.validChoices(
                     fieldName = "country",
@@ -210,6 +213,13 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     Seq(orderValue),
                     Order.orders.keys.toSeq
                   )
+                }, sortAlgorithm.map { sortAlgo =>
+                  Validation.validChoices(
+                    fieldName = "sortAlgorithm",
+                    message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.sortAlgorithmsName}"),
+                    Seq(sortAlgo),
+                    AlgorithmSelector.sortAlgorithmsName
+                  )
                 }).flatten: _*)
 
                 val contextFilterRequest: Option[ContextFilterRequest] =
@@ -235,7 +245,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                   sort = sortRequest,
                   limit = limit,
                   skip = skip,
-                  isRandom = isRandom
+                  isRandom = isRandom,
+                  sortAlgorithm = sortAlgorithm
                 )
                 provideAsync(
                   proposalService
