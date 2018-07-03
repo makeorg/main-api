@@ -81,7 +81,6 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
                 proposalService.searchForUser(
                   optionalUserAuth.map(_.user.userId),
                   SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
-                  None,
                   requestContext
                 )
               ) { listProposals =>

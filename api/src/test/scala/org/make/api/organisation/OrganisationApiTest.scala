@@ -154,7 +154,7 @@ class OrganisationApiTest
   )
 
   Mockito
-    .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext]))
+    .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
     .thenReturn(Future.successful(proposalsList))
 
   feature("get organisation") {

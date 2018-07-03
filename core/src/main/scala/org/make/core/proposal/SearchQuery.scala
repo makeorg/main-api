@@ -36,16 +36,25 @@ import org.make.core.user.UserId
 /**
   * The class holding the entire search query
   *
-  * @param filters sequence of search filters
-  * @param sort   sequence of sorts options
-  * @param limit   number of items to fetch
-  * @param skip    number of items to skip
+  * @param filters        sequence of search filters
+  * @param sort           sequence of sorts options
+  * @param limit          number of items to fetch
+  * @param skip           number of items to skip
+  * @param language       language to boost the query for. NOT A FILTER.
+  * @param sortAlgorithm algorithm used for sorting
   */
 case class SearchQuery(filters: Option[SearchFilters] = None,
                        sort: Option[IndexedSort] = None,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None,
-                       language: Option[String] = None)
+                       language: Option[String] = None,
+                       sortAlgorithm: Option[SortAlgorithm] = None) {
+  def getSeed: Option[Int] =
+    sortAlgorithm.flatMap {
+      case RandomAlgorithm(seed) => seed
+      case _                     => None
+    }
+}
 
 /**
   * The class holding the filters

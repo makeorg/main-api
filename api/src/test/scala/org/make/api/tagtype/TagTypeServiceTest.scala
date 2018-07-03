@@ -36,9 +36,6 @@ class TagTypeServiceTest
 
   override val persistentTagTypeService: PersistentTagTypeService = mock[PersistentTagTypeService]
 
-//  def newTagType(label: String, tagTypeId: TagTypeId = idGenerator.nextTagTypeId()): TagType =
-//    TagType(tagTypeId = tagTypeId, label = label, display = TagTypeDisplay.Displayed)
-
   feature("get tagType") {
     scenario("get tagType from TagTypeId") {
       tagTypeService.getTagType(TagTypeId("valid-tagType"))
@@ -60,7 +57,7 @@ class TagTypeServiceTest
         .when(persistentTagTypeService.persist(ArgumentMatchers.any[TagType]))
         .thenReturn(Future.successful(tagType))
 
-      val futureNewTagType: Future[TagType] = tagTypeService.createTagType("new tagType", TagTypeDisplay.Displayed)
+      val futureNewTagType: Future[TagType] = tagTypeService.createTagType("new tagType", TagTypeDisplay.Displayed, 0)
 
       whenReady(futureNewTagType, Timeout(3.seconds)) { _ =>
         Mockito.verify(persistentTagTypeService).persist(ArgumentMatchers.any[TagType])
@@ -109,13 +106,14 @@ class TagTypeServiceTest
         .when(persistentTagTypeService.get(TagTypeId("1234567890")))
         .thenReturn(Future.successful(Some(oldTagType)))
       Mockito
-        .when(persistentTagTypeService.persist(ArgumentMatchers.any[TagType]))
-        .thenReturn(Future.successful(newTagType))
+        .when(persistentTagTypeService.update(ArgumentMatchers.any[TagType]))
+        .thenReturn(Future.successful(Some(newTagType)))
 
       val futureTagType: Future[Option[TagType]] = tagTypeService.updateTagType(
         tagTypeId = oldTagType.tagTypeId,
         newTagTypeLabel = "new tagType",
-        newTagTypeDisplay = TagTypeDisplay.Displayed
+        newTagTypeDisplay = TagTypeDisplay.Displayed,
+        newTagTypeWeight = 42
       )
 
       whenReady(futureTagType, Timeout(3.seconds)) { tagType =>
@@ -129,7 +127,8 @@ class TagTypeServiceTest
       val futureTagType: Future[Option[TagType]] = tagTypeService.updateTagType(
         tagTypeId = TagTypeId("non-existent-tagType"),
         newTagTypeLabel = "new non existent tagType",
-        newTagTypeDisplay = TagTypeDisplay.Displayed
+        newTagTypeDisplay = TagTypeDisplay.Displayed,
+        newTagTypeWeight = 42
       )
 
       whenReady(futureTagType) { tagType =>

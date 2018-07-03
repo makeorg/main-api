@@ -96,7 +96,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     .searchForUser(
                       userId = userAuth.map(_.user.userId),
                       query = request.toSearchQuery(requestContext),
-                      maybeSeed = request.randomScoreSeed,
                       requestContext = requestContext
                     )
                 ) { proposals =>
@@ -243,7 +242,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                     .searchForUser(
                       userId = userAuth.map(_.user.userId),
                       query = searchRequest.toSearchQuery(requestContext),
-                      maybeSeed = searchRequest.randomScoreSeed,
                       requestContext = requestContext
                     )
                 ) { proposals =>

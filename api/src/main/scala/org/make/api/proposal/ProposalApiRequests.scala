@@ -120,15 +120,9 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                sort: Option[SortRequest] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
-                               isRandom: Option[Boolean] = Some(false)) {
+                               @Deprecated isRandom: Option[Boolean] = Some(false),
+                               sortAlgorithm: Option[String] = None) {
 
-  val randomScoreSeed: Option[Int] = isRandom.flatMap { randomise =>
-    if (randomise) {
-      Some(seed.getOrElse(Random.nextInt()))
-    } else {
-      None
-    }
-  }
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val fuzziness = "AUTO"
     val filters: Option[SearchFilters] =
@@ -148,12 +142,27 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         country = country.map(CountrySearchFilter.apply)
       )
 
+    val randomSeed: Int = seed.getOrElse(Random.nextInt())
+    val searchSortAlgorithm: Option[SortAlgorithm] = sortAlgorithm match {
+      case Some(name) if name == RandomAlgorithm().shortName => Some(RandomAlgorithm(Some(randomSeed)))
+      case None                                              =>
+        // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
+        isRandom.flatMap { randomise =>
+          if (randomise) {
+            Some(RandomAlgorithm(Some(randomSeed)))
+          } else {
+            None
+          }
+        }
+    }
+
     SearchQuery(
       filters = filters,
       sort = sort.map(_.toSort),
       limit = limit,
       skip = skip,
-      language = requestContext.language
+      language = requestContext.language,
+      sortAlgorithm = searchSortAlgorithm
     )
   }
 }

@@ -160,7 +160,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                           status = Some(Seq(Accepted)),
                           limit = Some(5000) //TODO get limit value for export into config files
                         ).toSearchQuery(requestContext),
-                        maybeSeed = None,
                         requestContext = requestContext
                       )
                     ) { proposals =>
@@ -233,7 +232,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     proposalService.search(
                       userId = Some(userAuth.user.userId),
                       query = request.toSearchQuery(requestContext),
-                      maybeSeed = None,
                       requestContext = requestContext
                     )
                   ) { proposals =>
@@ -415,7 +413,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     proposalService.search(
                       userId = Some(userAuth.user.userId),
                       query = exhaustiveSearchRequest.toSearchQuery(requestContext),
-                      maybeSeed = None,
                       requestContext = requestContext
                     )
                   ) { proposals =>

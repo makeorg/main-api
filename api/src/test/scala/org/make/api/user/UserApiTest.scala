@@ -948,8 +948,7 @@ class UserApiTest
             userId = ArgumentMatchers.any[Option[UserId]],
             query = ArgumentMatchers
               .eq(SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = sylvain.userId)))))),
-            requestContext = ArgumentMatchers.any[RequestContext],
-            maybeSeed = ArgumentMatchers.any[Option[Int]]
+            requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
       .thenReturn(

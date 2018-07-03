@@ -101,7 +101,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagTypeRequest]) { request: CreateTagTypeRequest =>
-                onSuccess(tagTypeService.createTagType(request.label, request.display)) { tagType =>
+                onSuccess(tagTypeService.createTagType(request.label, request.display, request.weight)) { tagType =>
                   complete(StatusCodes.Created -> TagTypeResponse(tagType))
                 }
               }
@@ -133,7 +133,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.TagType])))
-  @Path(value = "/")
+  @Path(value = "/{tagTypeId}")
   def moderationUpdateTagType: Route = put {
     path("moderation" / "tag-types" / moderationTagTypeId) { moderationTagTypeId =>
       makeOperation("ModerationRegisterTagType") { _ =>
@@ -142,7 +142,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
             decodeRequest {
               entity(as[UpdateTagTypeRequest]) { request: UpdateTagTypeRequest =>
                 provideAsyncOrNotFound(
-                  tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display)
+                  tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display, request.weight)
                 ) { tagType =>
                   complete(TagTypeResponse(tagType))
                 }
@@ -170,10 +170,10 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string", required = true),
-      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string", required = true),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")
     )
   )
@@ -185,7 +185,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
     get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
-          parameters(('_start.as[Int], '_end.as[Int], '_sort, '_order, 'label.?)) {
+          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'label.?)) {
             (start, end, sort, order, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
@@ -196,7 +196,7 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
                       (
                         StatusCodes.OK,
                         List(TotalCountHeader(filteredTagTypes.size.toString)),
-                        filteredTagTypes.slice(start, end).map(TagTypeResponse.apply)
+                        filteredTagTypes.slice(start.getOrElse(0), end.getOrElse(10)).map(TagTypeResponse.apply)
                       )
                     )
                   }
@@ -215,13 +215,13 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
     Segment.flatMap(id => Try(TagTypeId(id)).toOption)
 }
 
-case class CreateTagTypeRequest(label: String, display: TagTypeDisplay)
+case class CreateTagTypeRequest(label: String, display: TagTypeDisplay, weight: Int)
 
 object CreateTagTypeRequest {
   implicit val decoder: Decoder[CreateTagTypeRequest] = deriveDecoder[CreateTagTypeRequest]
 }
 
-case class UpdateTagTypeRequest(label: String, display: TagTypeDisplay)
+case class UpdateTagTypeRequest(label: String, display: TagTypeDisplay, weight: Int)
 
 object UpdateTagTypeRequest {
   implicit val decoder: Decoder[UpdateTagTypeRequest] = deriveDecoder[UpdateTagTypeRequest]

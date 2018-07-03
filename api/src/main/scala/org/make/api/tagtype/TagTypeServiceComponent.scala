@@ -31,12 +31,13 @@ trait TagTypeServiceComponent {
 
 trait TagTypeService {
   def getTagType(tagTypeId: TagTypeId): Future[Option[TagType]]
-  def createTagType(label: String, display: TagTypeDisplay): Future[TagType]
+  def createTagType(label: String, display: TagTypeDisplay, weight: Int): Future[TagType]
   def findAll(): Future[Seq[TagType]]
   def findByTagTypeIds(tagIds: Seq[TagTypeId]): Future[Seq[TagType]]
   def updateTagType(tagTypeId: TagTypeId,
                     newTagTypeLabel: String,
-                    newTagTypeDisplay: TagTypeDisplay): Future[Option[TagType]]
+                    newTagTypeDisplay: TagTypeDisplay,
+                    newTagTypeWeight: Int): Future[Option[TagType]]
 }
 
 trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
@@ -48,9 +49,9 @@ trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
       persistentTagTypeService.get(slug)
     }
 
-    override def createTagType(label: String, display: TagTypeDisplay): Future[TagType] = {
+    override def createTagType(label: String, display: TagTypeDisplay, weight: Int): Future[TagType] = {
       persistentTagTypeService.persist(
-        TagType(tagTypeId = idGenerator.nextTagTypeId(), label = label, display = display)
+        TagType(tagTypeId = idGenerator.nextTagTypeId(), label = label, display = display, weight = weight)
       )
     }
 
@@ -64,12 +65,12 @@ trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
 
     override def updateTagType(tagTypeId: TagTypeId,
                                newTagTypeLabel: String,
-                               newTagTypeDisplay: TagTypeDisplay): Future[Option[TagType]] = {
+                               newTagTypeDisplay: TagTypeDisplay,
+                               newTagTypeWeight: Int): Future[Option[TagType]] = {
       getTagType(tagTypeId).flatMap {
         case Some(tagType) =>
           persistentTagTypeService
-            .persist(tagType.copy(label = newTagTypeLabel, display = newTagTypeDisplay))
-            .map(Some(_))
+            .update(tagType.copy(label = newTagTypeLabel, display = newTagTypeDisplay, weight = newTagTypeWeight))
         case None => Future.successful(None)
       }
     }

@@ -62,14 +62,10 @@ trait ProposalService {
 
   def getSimilar(userId: UserId, proposalId: ProposalId, requestContext: RequestContext): Future[Seq[SimilarIdea]]
 
-  def search(userId: Option[UserId],
-             query: SearchQuery,
-             maybeSeed: Option[Int],
-             requestContext: RequestContext): Future[ProposalsSearchResult]
+  def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
 
   def searchForUser(userId: Option[UserId],
                     query: SearchQuery,
-                    maybeSeed: Option[Int],
                     requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 
   def searchProposalsVotedByUser(userId: UserId, requestContext: RequestContext): Future[ProposalsResultResponse]
@@ -176,8 +172,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             query = SearchQuery(
               filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
             ),
-            requestContext = requestContext,
-            maybeSeed = None
+            requestContext = requestContext
           )
         }
       }.map { proposalResultSeededResponse =>
@@ -304,7 +299,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def search(maybeUserId: Option[UserId],
                         query: SearchQuery,
-                        maybeSeed: Option[Int],
                         requestContext: RequestContext): Future[ProposalsSearchResult] = {
       query.filters.foreach(_.content.foreach { content =>
         maybeUserId match {
@@ -330,7 +324,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             )
         }
       })
-      elasticsearchProposalAPI.searchProposals(query, maybeSeed)
+      elasticsearchProposalAPI.searchProposals(query)
     }
 
     def mergeVoteResults(maybeUserId: Option[UserId],
@@ -348,10 +342,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def searchForUser(maybeUserId: Option[UserId],
                                query: SearchQuery,
-                               seed: Option[Int],
                                requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      search(maybeUserId, query, seed, requestContext).flatMap { searchResult =>
+      search(maybeUserId, query, requestContext).flatMap { searchResult =>
         maybeUserId match {
           case Some(userId) =>
             userHistoryCoordinatorService
@@ -365,7 +358,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
         }
       }.map { proposalResultResponse =>
-        ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, seed)
+        ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
       }
     }
 
@@ -713,7 +706,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       userService.getUser(moderator).flatMap { user =>
         search(
           maybeUserId = Some(moderator),
-          maybeSeed = None,
           requestContext = requestContext,
           query = SearchQuery(
             filters = Some(

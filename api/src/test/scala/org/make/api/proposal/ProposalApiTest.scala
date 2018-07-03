@@ -302,7 +302,7 @@ class ProposalApiTest
   )
   when(
     proposalService
-      .searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext])
+      .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(1, Seq(proposalResult), Some(42))))
 
   private def proposal(id: ProposalId): ProposalResponse = {

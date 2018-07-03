@@ -275,9 +275,7 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
 
       Mockito
-        .when(
-          proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[Option[Int]], any[RequestContext])
-        )
+        .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, Seq.empty, None)))
 
       val futureProposalsVoted =

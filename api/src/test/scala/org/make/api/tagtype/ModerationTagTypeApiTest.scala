@@ -86,7 +86,11 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
 
     when(
       tagTypeService
-        .createTagType(ArgumentMatchers.eq(validTagType.label), ArgumentMatchers.eq(validTagType.display))
+        .createTagType(
+          ArgumentMatchers.eq(validTagType.label),
+          ArgumentMatchers.eq(validTagType.display),
+          ArgumentMatchers.eq(validTagType.weight)
+        )
     ).thenReturn(Future.successful(validTagType))
 
     scenario("unauthorize unauthenticated") {
@@ -108,7 +112,9 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
 
     scenario("allow authenticated moderator") {
       Post("/moderation/tag-types")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "valid TagType", "display":"HIDDEN"}"""))
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"label": "valid TagType", "display":"HIDDEN", "weight": 0}""")
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
@@ -165,14 +171,16 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
       tagTypeService.updateTagType(
         ArgumentMatchers.eq(TagTypeId("fake-tag-type")),
         ArgumentMatchers.any[String],
-        ArgumentMatchers.any[TagTypeDisplay]
+        ArgumentMatchers.any[TagTypeDisplay],
+        ArgumentMatchers.any[Int]
       )
     ).thenReturn(Future.successful(None))
     when(
       tagTypeService.updateTagType(
         ArgumentMatchers.eq(helloWorldTagType.tagTypeId),
         ArgumentMatchers.eq("new label"),
-        ArgumentMatchers.eq(TagTypeDisplay.Hidden)
+        ArgumentMatchers.eq(TagTypeDisplay.Hidden),
+        ArgumentMatchers.any[Int]
       )
     ).thenReturn(Future.successful(Some(newHelloWorldTagType)))
 
@@ -194,7 +202,9 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
 
     scenario("allow authenticated moderator on existing tag type") {
       Put("/moderation/tag-types/hello-tag-type")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN"}"""))
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN", "weight": 0}""")
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tagType: TagTypeResponse = entityAs[TagTypeResponse]
@@ -206,7 +216,9 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
 
     scenario("not found and allow authenticated moderator on a non existing tag type") {
       Put("/moderation/tag-types/fake-tag-type")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN"}"""))
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN", "weight": 0}""")
+        )
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
