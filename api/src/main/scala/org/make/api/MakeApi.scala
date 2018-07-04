@@ -137,7 +137,6 @@ trait MakeApi
     with DefaultReadJournalComponent
     with DefaultHealthCheckServiceComponent
     with DefaultCrmServiceComponent
-    with DefaultTagMigrationServiceComponent
     with DefaultOrganisationServiceComponent
     with ElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent

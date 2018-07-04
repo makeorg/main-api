@@ -96,7 +96,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               language = language,
               gender = facebookUserInfo.gender,
               facebookId = Some(facebookUserInfo.id),
-              picture = Option(facebookUserInfo.picture.data.url)
+              picture = Option(facebookUserInfo.picture)
             )
         case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }
