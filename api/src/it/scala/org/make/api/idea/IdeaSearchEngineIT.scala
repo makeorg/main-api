@@ -59,9 +59,11 @@ class IdeaSearchEngineIT
   private val eSIndexName: String = "ideaittest"
   private val eSDocType: String = "idea"
 
+  override val elasticsearchExposedPort: Int = 30001
+
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$defaultElasticsearchPortExposed")
+  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
@@ -114,7 +116,7 @@ class IdeaSearchEngineIT
 
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
-    val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
+    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val ideaMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] = Http().singleRequest(
       HttpRequest(
@@ -135,7 +137,7 @@ class IdeaSearchEngineIT
     val pool: Flow[(HttpRequest, IdeaId), (Try[HttpResponse], IdeaId), Http.HostConnectionPool] =
       Http().cachedHostConnectionPool[IdeaId](
         "localhost",
-        defaultElasticsearchPortExposed,
+        elasticsearchExposedPort,
         ConnectionPoolSettings(system).withMaxConnections(3)
       )
 

@@ -57,9 +57,11 @@ class ProposalSearchEngineIT
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
+  override val elasticsearchExposedPort: Int = 30000
+
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$defaultElasticsearchPortExposed")
+  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(defaultElasticsearchIndex)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchIndex)
 
@@ -71,7 +73,7 @@ class ProposalSearchEngineIT
 
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
-    val elasticsearchEndpoint = s"http://localhost:$defaultElasticsearchPortExposed"
+    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val proposalMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
@@ -92,7 +94,7 @@ class ProposalSearchEngineIT
     val pool: Flow[(HttpRequest, ProposalId), (Try[HttpResponse], ProposalId), Http.HostConnectionPool] =
       Http().cachedHostConnectionPool[ProposalId](
         "localhost",
-        defaultElasticsearchPortExposed,
+        elasticsearchExposedPort,
         ConnectionPoolSettings(system).withMaxConnections(3)
       )
 

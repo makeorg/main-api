@@ -51,8 +51,8 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
                        sortAlgorithm: Option[SortAlgorithm] = None) {
   def getSeed: Option[Int] =
     sortAlgorithm.flatMap {
-      case RandomAlgorithm(seed) => seed
-      case _                     => None
+      case algorithm: RandomBaseAlgorithm => algorithm.maybeSeed
+      case _                              => None
     }
 }
 
