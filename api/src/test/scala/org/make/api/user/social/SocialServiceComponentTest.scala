@@ -25,12 +25,8 @@ import org.make.api.MakeUnitTest
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.user.social.models.UserInfo
-import org.make.api.user.social.models.facebook.{
-  FacebookUserPicture,
-  FacebookUserPictureData,
-  UserInfo => FacebookUserInfos
-}
-import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfos}
+import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
+import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Male
@@ -355,8 +351,7 @@ class SocialServiceComponentTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         lastName = Some("user"),
-        gender = None,
-        picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture"))
+        gender = None
       )
 
       val userFromFacebook = User(
@@ -398,7 +393,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
       )
 
       Mockito
@@ -429,7 +424,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some("facebook.com/picture")
+            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -448,8 +443,7 @@ class SocialServiceComponentTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         lastName = Some("user"),
-        gender = Some("male"),
-        picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture"))
+        gender = Some("male")
       )
 
       val userFromFacebook = User(
@@ -492,7 +486,7 @@ class SocialServiceComponentTest
         gender = Some("male"),
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
       )
 
       Mockito
@@ -524,7 +518,7 @@ class SocialServiceComponentTest
             gender = Some("male"),
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some("facebook.com/picture")
+            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -543,8 +537,7 @@ class SocialServiceComponentTest
         email = Some("facebook@make.org"),
         firstName = None,
         lastName = None,
-        gender = None,
-        picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture"))
+        gender = None
       )
 
       val userFromFacebook = User(
@@ -586,7 +579,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
       )
 
       Mockito
@@ -617,7 +610,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some("facebook.com/picture")
+            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -634,7 +627,6 @@ class SocialServiceComponentTest
       val facebookData = FacebookUserInfos(
         id = "444444",
         email = Some("facebook@make.org"),
-        picture = FacebookUserPicture(data = FacebookUserPictureData(isSilouhette = true, url = "facebook.com/picture")),
         firstName = Some("facebook"),
         lastName = Some("USER"),
         gender = None
