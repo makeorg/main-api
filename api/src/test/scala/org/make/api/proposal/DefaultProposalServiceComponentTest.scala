@@ -35,7 +35,7 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Author, IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
+import org.make.core.proposal.indexed._
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches}
@@ -141,6 +141,7 @@ class DefaultProposalServiceComponentTest
       createdAt = DateHelper.now(),
       updatedAt = None,
       votes = Seq.empty,
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq.empty,

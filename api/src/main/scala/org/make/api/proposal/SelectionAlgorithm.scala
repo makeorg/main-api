@@ -235,7 +235,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
 
     def chooseChampion(proposals: Seq[Proposal]): Proposal = {
-      val scoredProposal: Seq[ScoredProposal] = proposals.map(p => ScoredProposal(p, ProposalScorerHelper.score(p)))
+      val scoredProposal: Seq[ScoredProposal] = proposals.map(p => ScoredProposal(p, ProposalScorerHelper.topScore(p)))
       scoredProposal.maxBy(_.score).proposal
     }
 

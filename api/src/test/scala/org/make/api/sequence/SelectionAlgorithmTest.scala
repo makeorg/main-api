@@ -594,7 +594,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
 
       val testProposal = fakeProposalQualif(ProposalId("tested"), votes)
-      val testProposalScore = ProposalScorerHelper.score(testProposal)
+      val testProposalScore = ProposalScorerHelper.topScore(testProposal)
 
       ProposalScorerHelper.random = new MersenneTwister(0)
       val trials = 1000
@@ -614,7 +614,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       )
       val testProposal: Proposal = fakeProposalQualif(ProposalId("tested"), votes)
 
-      val testProposalScore: Double = ProposalScorerHelper.score(testProposal)
+      val testProposalScore: Double = ProposalScorerHelper.topScore(testProposal)
       val testProposalScoreSample: Double = ProposalScorerHelper.sampleScore(testProposal)
 
       testProposalScore should be > 0.0

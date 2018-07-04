@@ -45,7 +45,7 @@ object ProposalScorerHelper extends StrictLogging {
   def qualificationCounts(proposal: Proposal, voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
     proposal.votes
       .filter(_.key == voteKey)
-      .map(_.qualifications.filter(_.key == qualificationKey).map(_.count).sum)
+      .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.count))
       .sum
   }
 
@@ -102,12 +102,12 @@ object ProposalScorerHelper extends StrictLogging {
     realistic(scoreCounts(proposal))
   }
 
-  def score(counts: ScoreCounts): Double = {
+  def topScore(counts: ScoreCounts): Double = {
     engagement(counts) + adhesion(counts) + 2 * realistic(counts)
   }
 
-  def score(proposal: Proposal): Double = {
-    score(scoreCounts(proposal))
+  def topScore(proposal: Proposal): Double = {
+    topScore(scoreCounts(proposal))
   }
 
   def controversy(counts: ScoreCounts): Double = {
@@ -116,6 +116,14 @@ object ProposalScorerHelper extends StrictLogging {
 
   def controversy(proposal: Proposal): Double = {
     controversy(scoreCounts(proposal))
+  }
+
+  def rejection(counts: ScoreCounts): Double = {
+    -1 * adhesion(counts)
+  }
+
+  def rejection(proposal: Proposal): Double = {
+    rejection(scoreCounts(proposal))
   }
 
   /*
@@ -207,7 +215,7 @@ object ProposalScorerHelper extends StrictLogging {
     val realisticEstimate: RateEstimate =
       rateEstimate(math.max(counts.doableCount, counts.impossibleCount), counts.votes - counts.neutralCount)
 
-    val scoreEstimate: Double = score(counts)
+    val scoreEstimate: Double = topScore(counts)
     val confidenceInterval: Double = 2 * math.sqrt(
       math.pow(engagementEstimate.sd, 2) +
         math.pow(adhesionEstimate.sd, 2) +

@@ -82,6 +82,7 @@ class ProposalSearchEngineTest
         )
       )
     ),
+    scores = IndexedScores.empty,
     context = Some(Context(source = None, operation = None, location = None, question = None)),
     trending = None,
     labels = Seq.empty,

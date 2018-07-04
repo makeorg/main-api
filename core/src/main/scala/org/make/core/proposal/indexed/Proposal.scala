@@ -68,6 +68,7 @@ object ProposalElasticsearchFieldNames {
   val organisations: String = "organisations"
   val organisationId: String = "organisations.organisationId"
   val organisationName: String = "organisations.organisationName"
+  val scores: String = "scores"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -78,6 +79,7 @@ case class IndexedProposal(id: ProposalId,
                            createdAt: ZonedDateTime,
                            updatedAt: Option[ZonedDateTime],
                            votes: Seq[IndexedVote],
+                           scores: IndexedScores,
                            context: Option[Context],
                            trending: Option[String],
                            labels: Seq[String],
@@ -151,6 +153,21 @@ object IndexedQualification {
 
   def apply(qualification: Qualification): IndexedQualification =
     IndexedQualification(key = qualification.key, count = qualification.count)
+}
+
+final case class IndexedScores(boost: Double = 0,
+                              engagement: Double,
+                              adhesion: Double,
+                              realistic:  Double,
+                              topScore: Double,
+                              controversy: Double,
+                              rejection: Double)
+
+object IndexedScores {
+  implicit val encoder: ObjectEncoder[IndexedScores] = deriveEncoder[IndexedScores]
+  implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
+
+  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0)
 }
 
 final case class ProposalsSearchResult(total: Int, results: Seq[IndexedProposal])
