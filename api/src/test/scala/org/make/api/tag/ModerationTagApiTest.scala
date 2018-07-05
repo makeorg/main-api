@@ -171,6 +171,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     )
   ).thenReturn(Future.successful(None))
 
+  when(tagService.count(ArgumentMatchers.any[TagFilter])).thenReturn(Future.successful(2))
+
   val routes: Route = sealRoute(moderationTagRoutes)
 
   feature("create a tag") {
