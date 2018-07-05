@@ -110,14 +110,14 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                tagsIds: Option[Seq[TagId]] = None,
                                labelsIds: Option[Seq[LabelId]] = None,
                                operationId: Option[OperationId] = None,
-                               trending: Option[String] = None,
+                               @Deprecated trending: Option[String] = None,
                                content: Option[String] = None,
                                slug: Option[String] = None,
                                seed: Option[Int] = None,
                                context: Option[ContextFilterRequest] = None,
                                language: Option[String] = None,
                                country: Option[String] = None,
-                               sort: Option[SortRequest] = None,
+                               @Deprecated sort: Option[SortRequest] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
                                @Deprecated isRandom: Option[Boolean] = Some(false),
@@ -143,20 +143,16 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
       )
 
     val randomSeed: Int = seed.getOrElse(Random.nextInt())
-    val searchSortAlgorithm: Option[SortAlgorithm] = sortAlgorithm match {
-      case Some(name) if name == RandomAlgorithm().shortName    => Some(RandomAlgorithm(Some(randomSeed)))
-      case Some(name) if name == ActorVoteAlgorithm().shortName => Some(ActorVoteAlgorithm(Some(randomSeed)))
-      case None                                                 =>
-        // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
-        isRandom.flatMap { randomise =>
-          if (randomise) {
-            Some(RandomAlgorithm(Some(randomSeed)))
-          } else {
-            None
-          }
+    val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
+      .select(sortAlgorithm, randomSeed)
+      // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
+      .orElse(isRandom.flatMap { randomise =>
+        if (randomise) {
+          Some(RandomAlgorithm(Some(randomSeed)))
+        } else {
+          None
         }
-    }
-
+      })
     SearchQuery(
       filters = filters,
       sort = sort.map(_.toSort),
