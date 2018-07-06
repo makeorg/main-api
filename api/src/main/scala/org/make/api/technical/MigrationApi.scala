@@ -58,7 +58,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
                 migrations
                   .sequentially(fbUsers) { user =>
                     val avatarUrl: String = user.profile
-                      .map(profile => s"https://graph.facebook.com/v3.0/${profile.facebookId}/picture")
+                      .map(profile => s"https://graph.facebook.com/v3.0/${profile.facebookId.getOrElse("")}/picture")
                       .getOrElse("")
                     persistentUserService.updateAvatarUrl(user.userId, avatarUrl).map(_ => {})
                   }
