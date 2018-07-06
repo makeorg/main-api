@@ -43,6 +43,7 @@ trait IdeaSearchEngine {
   def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]]
   def searchIdeas(query: IdeaSearchQuery): Future[IdeaSearchResult]
   def indexIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexIdeas(records: Seq[IndexedIdea], mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateIdea(record: IndexedIdea, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
@@ -58,7 +59,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
     private val esClient = ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     private val client = HttpClient(esClient)
 
-    private val ideaAlias: IndexAndType = elasticsearchConfiguration.aliasName / IdeaSearchEngine.ideaIndexName
+    private val ideaAlias: IndexAndType = elasticsearchConfiguration.ideaAliasName / IdeaSearchEngine.ideaIndexName
 
     override def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]] = {
       client.executeAsFuture(get(id = ideaId.value).from(ideaAlias)).map(_.toOpt[IndexedIdea])
@@ -85,6 +86,18 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
       val index = maybeIndex.getOrElse(ideaAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.ideaId.value))
+        .map { _ =>
+          Done
+        }
+    }
+
+    override def indexIdeas(records: Seq[IndexedIdea], maybeIndex: Option[IndexAndType] = None): Future[Done] = {
+      logger.debug(s"Saving ${records.size} in Elasticsearch")
+      val index = maybeIndex.getOrElse(ideaAlias)
+      client
+        .executeAsFuture(bulk(records.map { record =>
+          indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.ideaId.value)
+        }))
         .map { _ =>
           Done
         }

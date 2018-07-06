@@ -44,6 +44,7 @@ trait SequenceSearchEngine {
   def findSequenceBySlug(slugSequence: String): Future[Option[IndexedSequence]]
   def searchSequences(query: SearchQuery): Future[SequencesSearchResult]
   def indexSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexSequences(records: Seq[IndexedSequence], mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
@@ -63,8 +64,8 @@ trait DefaultSequenceSearchEngineComponent
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    private val sequenceAlias
-      : IndexAndType = elasticsearchConfiguration.aliasName / SequenceSearchEngine.sequenceIndexName
+    private val sequenceAlias: IndexAndType =
+      elasticsearchConfiguration.sequenceAliasName / SequenceSearchEngine.sequenceIndexName
 
     override def findSequenceById(sequenceId: SequenceId): Future[Option[IndexedSequence]] = {
       client.executeAsFuture(get(id = sequenceId.value).from(sequenceAlias)).map(_.toOpt[IndexedSequence])
@@ -111,9 +112,18 @@ trait DefaultSequenceSearchEngineComponent
       val index = mayBeIndex.getOrElse(sequenceAlias)
       client.executeAsFuture {
         indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
-      }.map { _ =>
-        Done
-      }
+      }.map(_ => Done)
+    }
+
+    override def indexSequences(records: Seq[IndexedSequence],
+                                mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      logger.debug(s"Saving in Elasticsearch: $records")
+      val index = mayBeIndex.getOrElse(sequenceAlias)
+      client.executeAsFuture {
+        bulk(records.map { record =>
+          indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
+        })
+      }.map(_ => Done)
     }
 
     override def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {

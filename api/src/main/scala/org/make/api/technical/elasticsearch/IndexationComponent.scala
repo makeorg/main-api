@@ -22,8 +22,10 @@ package org.make.api.technical.elasticsearch
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-import akka.Done
-import akka.stream.ActorMaterializer
+import akka.stream._
+import akka.stream.scaladsl.GraphDSL.Implicits._
+import akka.stream.scaladsl._
+import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.http.ElasticDsl.{aliases, _}
@@ -32,8 +34,14 @@ import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.idea._
-import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalScorerHelper, ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.proposal.{
+  ProposalCoordinatorServiceComponent,
+  ProposalScorerHelper,
+  ProposalSearchEngine,
+  ProposalSearchEngineComponent
+}
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
@@ -41,25 +49,46 @@ import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.api.{ActorSystemComponent, migrations}
+import org.make.core.idea.Idea
 import org.make.core.idea.indexed.IndexedIdea
-import org.make.core.proposal.indexed.{Author, IndexedOrganisationInfo, IndexedProposal, IndexedScores, IndexedVote, Context => ProposalContext}
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.ProposalId
+import org.make.core.proposal.indexed.{
+  Author,
+  IndexedOrganisationInfo,
+  IndexedProposal,
+  IndexedScores,
+  IndexedVote,
+  Context => ProposalContext
+}
 import org.make.core.reference.{Theme, ThemeId}
-import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, IndexedSequenceTheme, Context => SequenceContext}
-import org.make.core.sequence.{Sequence, SequenceId}
+import org.make.core.sequence.SequenceId
+import org.make.core.sequence.indexed.{
+  IndexedSequence,
+  IndexedSequenceProposalId,
+  IndexedSequenceTheme,
+  Context => SequenceContext
+}
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationDouble
 import scala.util.{Failure, Success}
 
 trait IndexationComponent {
   def indexationService: IndexationService
 }
 
+sealed trait EntitiesToIndex
+case object IndexIdeas extends EntitiesToIndex
+case object IndexProposals extends EntitiesToIndex
+case object IndexSequences extends EntitiesToIndex
+
 trait IndexationService {
-  def reindexData(force: Boolean): Future[Done]
-  def schemaIsUpToDate(): Future[Boolean]
+  def reindexData(forceIdeas: Boolean, forceProposals: Boolean, forceSequences: Boolean): Future[Done]
+  def indicesNotUpToDate(forceIdeas: Boolean,
+                         forceProposals: Boolean,
+                         forceSequences: Boolean): Future[Set[EntitiesToIndex]]
 }
 
 //TODO: test this component
@@ -88,53 +117,84 @@ trait DefaultIndexationComponent extends IndexationComponent {
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    override def reindexData(force: Boolean): Future[Done] = {
-      logger.info(s"Elasticsearch Reindexation: Check schema is up to date - force $force")
-
-      schemaIsUpToDate().map { isUpToDate =>
-        logger.info(s"Elasticsearch Reindexation: Check schema is up to date - isUpToDate $isUpToDate")
-        if (!isUpToDate || force) {
-          val newIndexName = elasticsearchConfiguration.createIndexName
-          logger.info("Elasticsearch Reindexation: Begin")
-
+    override def reindexData(forceIdeas: Boolean = false,
+                             forceProposals: Boolean = false,
+                             forceSequences: Boolean = false): Future[Done] = {
+      logger.info(s"Elasticsearch Reindexation")
+      indicesNotUpToDate(forceIdeas, forceProposals, forceSequences).map { indicesNotUpToDate =>
+        if (indicesNotUpToDate.contains(IndexIdeas)) {
+          logger.info("Reindexing ideas")
+          val ideaIndexName = elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.ideaAliasName)
           for {
-            _      <- executeCreateIndex(newIndexName)
-            _      <- executeIndexProposalsAndSequences(newIndexName)
-            _      <- executeIndexIdeas(newIndexName)
-            result <- executeSetAlias(newIndexName)
-          } yield result
+            _           <- executeCreateIndex(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
+            resultIdeas <- executeIndexIdeas(ideaIndexName)
+            _           <- executeSetAlias(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
+          } yield resultIdeas
+        }
+        if (indicesNotUpToDate.contains(IndexProposals) || indicesNotUpToDate.contains(IndexSequences)) {
+          reindexProposalsAndSequences(
+            indicesNotUpToDate.contains(IndexProposals),
+            indicesNotUpToDate.contains(IndexSequences),
+            elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.proposalAliasName),
+            elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.sequenceAliasName)
+          )
+        }
+      }.flatMap { _ =>
+        Future.successful(Done)
+      }
+    }
+
+    override def indicesNotUpToDate(forceIdeas: Boolean,
+                                    forceProposals: Boolean,
+                                    forceSequences: Boolean): Future[Set[EntitiesToIndex]] = {
+      if (forceIdeas && forceProposals && forceSequences) {
+        Future.successful(Set(IndexIdeas, IndexProposals, IndexSequences))
+      } else {
+        val currentHashes: Map[EntitiesToIndex, String] = Map(
+          IndexIdeas -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.ideaAliasName),
+          IndexProposals -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.proposalAliasName),
+          IndexSequences -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.sequenceAliasName)
+        )
+        elasticsearchConfiguration.getCurrentIndicesName.map { currentIndices =>
+          var result: Set[EntitiesToIndex] = Set.empty
+          if (forceIdeas) {
+            result += IndexIdeas
+          }
+          if (forceProposals) {
+            result += IndexProposals
+          }
+          if (forceSequences) {
+            result += IndexSequences
+          }
+          result ++= currentHashes.flatMap {
+            case (entitiesToIndex, hash) if !currentIndices.contains(hash) => Some(entitiesToIndex)
+            case _                                                         => None
+          }.toSet
+          result
         }
       }
-
-      Future.successful(Done)
     }
 
-    override def schemaIsUpToDate(): Future[Boolean] = {
-      val hash = elasticsearchConfiguration.getHashFromIndex(elasticsearchConfiguration.createIndexName)
-
-      elasticsearchConfiguration.getCurrentIndexName.map { index =>
-        elasticsearchConfiguration.getHashFromIndex(index) == hash
-      }
-    }
-
-    private def addAndRemoveAlias(newIndexName: String, indexes: Seq[String]): Future[AliasActionResponse] = {
+    private def addAndRemoveAlias(aliasName: String,
+                                  newIndexName: String,
+                                  indexes: Seq[String]): Future[AliasActionResponse] = {
       if (indexes.isEmpty) {
         logger.error("indexes with alias is empty")
       }
 
       elasticsearchConfiguration.client.executeAsFuture {
-        aliases(addAlias(elasticsearchConfiguration.aliasName).on(newIndexName), indexes.map { index =>
-          removeAlias(elasticsearchConfiguration.aliasName).on(index)
+        aliases(addAlias(aliasName).on(newIndexName), indexes.map { index =>
+          removeAlias(aliasName).on(index)
         }: _*)
       }
     }
 
-    private def executeSetAlias(newIndexName: String): Future[Done] = {
+    private def executeSetAlias(aliasName: String, indexName: String): Future[Done] = {
       client.executeAsFuture {
-        getAliases(Seq.empty, Seq(elasticsearchConfiguration.aliasName))
+        getAliases(Seq.empty, Seq(aliasName))
       }.onComplete {
         case Success(getAliasResponse) =>
-          addAndRemoveAlias(newIndexName, getAliasResponse.mappings.keys.map(_.name).toSeq)
+          addAndRemoveAlias(aliasName, indexName, getAliasResponse.mappings.keys.map(_.name).toSeq)
         case Failure(e) => logger.error("fail to retrieve ES alias", e)
         case _          => logger.error("fail to retrieve ES alias")
       }
@@ -142,85 +202,163 @@ trait DefaultIndexationComponent extends IndexationComponent {
       Future.successful(Done)
     }
 
-    private def executeCreateIndex(newIndexName: String): Future[CreateIndexResponse] = {
+    private def executeCreateIndex(aliasName: String, indexName: String): Future[CreateIndexResponse] = {
       elasticsearchConfiguration.client.executeAsFuture(
-        createIndex(newIndexName).source(elasticsearchConfiguration.elasticsearchMapping)
+        createIndex(indexName).source(elasticsearchConfiguration.mappingForAlias(aliasName))
       )
     }
 
-    private def executeIndexProposalsAndSequences(newIndexName: String): Future[Done] = {
+    def reindexProposalsAndSequences(indexProposals: Boolean,
+                                     indexSequences: Boolean,
+                                     proposalIndexName: String,
+                                     sequenceIndexName: String): Future[Done] = {
+      def futureCreateIndices: Future[Unit] =
+        (indexProposals, indexSequences) match {
+          case (true, true) =>
+            val createSequenceIndex =
+              executeCreateIndex(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName)
+            executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
+              .flatMap(_ => createSequenceIndex)
+              .map(_ => {})
+          case (true, _) =>
+            executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName).map(_ => {})
+          case (_, true) =>
+            executeCreateIndex(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName).map(_ => {})
+          case _ => Future.successful({})
+        }
+
+      def futureSetAliases: Future[Unit] =
+        (indexProposals, indexSequences) match {
+          case (true, true) =>
+            val setSequenceAlias = executeSetAlias(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName)
+            executeSetAlias(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
+              .flatMap(_ => setSequenceAlias)
+              .map(_ => {})
+          case (true, _) =>
+            executeSetAlias(elasticsearchConfiguration.proposalAliasName, proposalIndexName).map(_ => {})
+          case (_, true) =>
+            executeSetAlias(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName).map(_ => {})
+          case _ => Future.successful({})
+        }
+
+      for {
+        _ <- futureCreateIndices
+        _ <- executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
+        resultIndexation <- executeIndexProposalsAndSequences(
+          indexProposals,
+          indexSequences,
+          proposalIndexName,
+          sequenceIndexName
+        )
+        _ <- futureSetAliases
+      } yield resultIndexation
+    }
+
+    private def executeIndexProposalsAndSequences(
+      indexProposals: Boolean,
+      indexSequences: Boolean,
+      proposalIndexName: String,
+      sequenceIndexName: String
+    )(implicit mat: Materializer): Future[Done] = {
       val start = System.currentTimeMillis()
       val parallelism = 5
-      val result = readJournal
-        .currentPersistenceIds()
-        .mapAsync(parallelism) { persistenceId =>
-          getIndexedProposal(ProposalId(persistenceId)).flatMap {
-            case result @ Some(_) => Future.successful(result)
-            case None =>
-              getIndexedSequence(SequenceId(persistenceId))
-          }
-        }
-        .filter(_.isDefined)
-        .map(_.get)
-        .mapAsync(parallelism) {
 
-          case indexedProposal: IndexedProposal =>
-            elasticsearchProposalAPI
-              .indexProposal(indexedProposal, Some(IndexAndType(newIndexName, ProposalSearchEngine.proposalIndexName)))
-              .recoverWith {
-                case e =>
-                  logger.error(s"indexing proposal ${indexedProposal.id.value} failed", e)
-                  Future.successful(Done)
-              }
-              .flatMap(_ => semanticService.indexProposal(indexedProposal))
-              .recoverWith {
-                case e =>
-                  logger.error(s"indexing proposal ${indexedProposal.id.value} in semantic failed", e)
-                  Future.successful(Done)
-              }
+      val source: Source[String, NotUsed] = readJournal.currentPersistenceIds()
+      val sink = Sink.ignore
 
-          case indexedSequence: IndexedSequence =>
-            elasticsearchSequenceAPI
-              .indexSequence(indexedSequence, Some(IndexAndType(newIndexName, SequenceSearchEngine.sequenceIndexName)))
-              .recoverWith {
-                case e =>
-                  logger.error(s"indexing sequence ${indexedSequence.id.value} failed", e)
-                  Future.successful(Done)
-              }
-        }
-        .runForeach { done =>
-          logger.debug("proposal and sequence flow ended with result {}", done)
-        }
+      val indexationFlow: Flow[String, Done, NotUsed] = Flow.fromGraph[String, Done, NotUsed](GraphDSL.create() {
+        implicit builder: GraphDSL.Builder[NotUsed] =>
+          val bcast = builder.add(Broadcast[String](2))
+          val merge = builder.add(Merge[Done](2))
+
+          val maybeIndexedProposal: Flow[String, Option[IndexedProposal], NotUsed] =
+            Flow[String].mapAsync(parallelism)(persistenceId => getIndexedProposal(ProposalId(persistenceId)))
+
+          val maybeIndexedSequence: Flow[String, Option[IndexedSequence], NotUsed] =
+            Flow[String].mapAsync(parallelism)(persistenceId => getIndexedSequence(SequenceId(persistenceId)))
+
+          val runIndexProposals: Flow[Seq[IndexedProposal], Done, NotUsed] =
+            Flow[Seq[IndexedProposal]]
+              .mapAsync(parallelism)(proposals => executeIndexProposals(proposals, proposalIndexName))
+
+          val runIndexSequences: Flow[Seq[IndexedSequence], Done, NotUsed] =
+            Flow[Seq[IndexedSequence]]
+              .mapAsync(parallelism)(sequences => executeIndexSequences(sequences, sequenceIndexName))
+
+          def filterIsDefined[T]: Flow[Option[T], T, NotUsed] = Flow[Option[T]].filter(_.isDefined).map(_.get)
+
+          def grouped[T]: Flow[T, Seq[T], NotUsed] = Flow[T].groupedWithin(100, 500.milliseconds)
+
+          val filterExecuteProposals: Flow[String, String, NotUsed] = Flow[String].filter(_ => indexProposals)
+          val filterExecuteSequences: Flow[String, String, NotUsed] = Flow[String].filter(_ => indexSequences)
+
+          bcast.out(0)               ~> filterExecuteProposals ~> maybeIndexedProposal ~> filterIsDefined[IndexedProposal] ~>
+            grouped[IndexedProposal] ~> runIndexProposals      ~> merge
+          bcast.out(1)               ~> filterExecuteSequences ~> maybeIndexedSequence ~> filterIsDefined[IndexedSequence] ~>
+            grouped[IndexedSequence] ~> runIndexSequences      ~> merge
+
+          FlowShape(bcast.in, merge.out)
+      })
+
+      val result: Future[Done] = source.via(indexationFlow).runWith(sink)
 
       result.onComplete {
-        case Success(_) => logger.info("proposal indexation success in {} ms", System.currentTimeMillis() - start)
-        case Failure(e) => logger.error(s"proposal indexation failed in ${System.currentTimeMillis() - start} ms", e)
+        case Success(_) =>
+          logger.info("proposal and/or sequence indexation success in {} ms", System.currentTimeMillis() - start)
+        case Failure(e) =>
+          logger.error(s"proposal and/or sequence indexation failed in ${System.currentTimeMillis() - start} ms", e)
       }
 
       result
     }
   }
 
-  private def executeIndexIdeas(newIndexName: String): Future[Done] = {
+  private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] =
+    elasticsearchProposalAPI
+      .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalIndexName)))
+      .recoverWith {
+        case e =>
+          logger.error(s"Indexing proposals failed", e)
+          Future.successful(Done)
+      }
+      .flatMap(_ => Future.traverse(proposals)(semanticService.indexProposal).map(_ => Done))
+      .recoverWith {
+        case e =>
+          logger.error("indexaliasNameing a proposal in semantic failed", e)
+          Future.successful(Done)
+      }
+
+  private def executeIndexSequences(sequences: Seq[IndexedSequence], indexName: String): Future[Done] =
+    elasticsearchSequenceAPI
+      .indexSequences(sequences, Some(IndexAndType(indexName, SequenceSearchEngine.sequenceIndexName)))
+      .recoverWith {
+        case e =>
+          logger.error("Indexing sequences failed", e)
+          Future.successful(Done)
+      }
+
+  private def executeIndexIdeas(indexName: String)(implicit mat: Materializer): Future[Done] = {
     val start = System.currentTimeMillis()
 
     val result = persistentIdeaService
       .findAll(IdeaFiltersRequest.empty)
       .flatMap { ideas =>
         logger.info(s"Ideas to index: ${ideas.size}")
-        migrations.sequentially(ideas) { idea =>
-          elasticsearchIdeaAPI
-            .indexIdea(
-              IndexedIdea.createFromIdea(idea),
-              Some(IndexAndType(newIndexName, IdeaSearchEngine.ideaIndexName))
-            )
-            .map(_ => {})
-            .recoverWith {
-              case e =>
-                logger.error(s"indexing idea with id ${idea.ideaId.value} failed", e)
-                Future.successful(Done)
-            }
-        }
+        Source[Idea](immutable.Seq(ideas: _*))
+          .groupedWithin(100, 500.milliseconds)
+          .mapAsync(3) { ideas =>
+            elasticsearchIdeaAPI
+              .indexIdeas(
+                ideas.map(IndexedIdea.createFromIdea),
+                Some(IndexAndType(indexName, IdeaSearchEngine.ideaIndexName))
+              )
+              .recoverWith {
+                case e =>
+                  logger.error(s"Indexing ideas failed", e)
+                  Future.successful(Done)
+              }
+          }
+          .runWith(Sink.ignore)
       }
 
     result.onComplete {
@@ -239,12 +377,8 @@ trait DefaultIndexationComponent extends IndexationComponent {
   }
 
   private def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
-
-    val futureMayBeProposal: Future[Option[Proposal]] =
-      proposalCoordinatorService.getProposal(proposalId)
-
     val maybeResult: OptionT[Future, IndexedProposal] = for {
-      proposal <- OptionT(futureMayBeProposal)
+      proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
     } yield {
@@ -298,12 +432,8 @@ trait DefaultIndexationComponent extends IndexationComponent {
   }
 
   private def getIndexedSequence(sequenceId: SequenceId): Future[Option[IndexedSequence]] = {
-
-    val futureMayBeSequence: Future[Option[Sequence]] =
-      sequenceCoordinatorService.getSequence(sequenceId)
-
     val maybeResult: OptionT[Future, IndexedSequence] = for {
-      sequence <- OptionT(futureMayBeSequence)
+      sequence <- OptionT(sequenceCoordinatorService.getSequence(sequenceId))
       themes   <- OptionT(retrieveThemes(sequence.themeIds))
     } yield {
       IndexedSequence(

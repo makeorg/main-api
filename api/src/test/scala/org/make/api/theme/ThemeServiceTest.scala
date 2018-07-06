@@ -94,7 +94,7 @@ class ThemeServiceTest
 
       Mockito
         .when(elasticsearchProposalAPI.countProposals(any[SearchQuery]))
-        .thenReturn(Future.successful(5))
+        .thenReturn(Future.successful(5L))
 
       Mockito
         .when(elasticsearchProposalAPI.countVotedProposals(any[SearchQuery]))

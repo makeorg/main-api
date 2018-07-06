@@ -41,7 +41,7 @@ class ProposalSearchEngineTest
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn("localhost:9200")
-  Mockito.when(elasticsearchConfiguration.aliasName).thenReturn("fakeAliasName")
+  Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn("fakeAliasName")
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn("fakeIndexName")
 
   def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = IndexedProposal(

@@ -52,6 +52,7 @@ trait ProposalSearchEngine {
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexProposals(records: Seq[IndexedProposal], mayBeIndex: Option[IndexAndType] = None): Future[Done]
   def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
 }
 
@@ -68,8 +69,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
     )
 
-    private val proposalAlias
-      : IndexAndType = elasticsearchConfiguration.aliasName / ProposalSearchEngine.proposalIndexName
+    private val proposalAlias: IndexAndType =
+      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
@@ -140,14 +141,12 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val request = searchWithType(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
-        .aggs {
-          sumAgg("total_votes", "votes.count")
-        }
+        .aggregations(sumAgg("total_votes", "votes.count"))
 
       logger.debug(client.show(request))
 
       client.executeAsFuture(request).map { response =>
-        response.aggregations.data("total_votes").asInstanceOf[Double].toInt
+        response.aggregations.sum("total_votes").valueOpt.map(_.toInt).getOrElse(0)
       }
     }
 
@@ -176,6 +175,19 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       logger.debug(s"$index -> Saving in Elasticsearch: $record")
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value))
+        .map(_ => Done)
+    }
+
+    override def indexProposals(proposals: Seq[IndexedProposal],
+                                mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+      val records: Seq[IndexedProposal] =
+        proposals.map(proposal => proposal.copy(trending = proposalTrendingMode(proposal)))
+      val index = mayBeIndex.getOrElse(proposalAlias)
+      logger.debug(s"$index -> Saving in Elasticsearch: $records")
+      client
+        .executeAsFuture(bulk(records.map { record =>
+          indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
+        }))
         .map(_ => Done)
     }
 
