@@ -88,7 +88,7 @@ services:
       retries: 3
   zookeeper:
     hostname: zookeeper
-    image: confluentinc/cp-zookeeper:4.1.0
+    image: confluentinc/cp-zookeeper:4.1.1
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
@@ -96,7 +96,7 @@ services:
     networks:
       - makeapi
   kafka:
-    image: confluentinc/cp-kafka:4.1.0
+    image: confluentinc/cp-kafka:4.1.1
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
@@ -113,7 +113,7 @@ services:
       - zookeeper
   schema-registry:
     hostname: schema-registry
-    image: confluentinc/cp-schema-registry:4.1.0
+    image: confluentinc/cp-schema-registry:4.1.1
     depends_on:
       - kafka
     networks:

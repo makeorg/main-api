@@ -31,12 +31,6 @@ daemonUser in Docker := "user"
 packageName in Docker := "make-api"
 
 dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/version || exit 1")
-dockerCommands := {
-  val originalCommands = dockerCommands.value
-  originalCommands.take(2) ++
-    Seq(Cmd("RUN", "yum install -y gcc blas lapack arpack && yum clean all")) ++
-    originalCommands.drop(2)
-}
 
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
