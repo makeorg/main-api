@@ -89,6 +89,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -144,6 +145,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),

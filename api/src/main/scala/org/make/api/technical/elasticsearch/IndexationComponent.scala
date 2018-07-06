@@ -33,7 +33,7 @@ import com.sksamuel.elastic4s.http.index.admin.IndicesAliasResponse
 import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.idea._
-import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalScorerHelper, ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
 import org.make.api.tag.TagServiceComponent
@@ -41,23 +41,12 @@ import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.api.{migrations, ActorSystemComponent}
+import org.make.api.{ActorSystemComponent, migrations}
 import org.make.core.idea.indexed.IndexedIdea
-import org.make.core.proposal.indexed.{
-  Author,
-  IndexedOrganisationInfo,
-  IndexedProposal,
-  IndexedVote,
-  Context => ProposalContext
-}
+import org.make.core.proposal.indexed.{Author, IndexedOrganisationInfo, IndexedProposal, IndexedScores, IndexedVote, Context => ProposalContext}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.reference.{Theme, ThemeId}
-import org.make.core.sequence.indexed.{
-  IndexedSequence,
-  IndexedSequenceProposalId,
-  IndexedSequenceTheme,
-  Context => SequenceContext
-}
+import org.make.core.sequence.indexed.{IndexedSequence, IndexedSequenceProposalId, IndexedSequenceTheme, Context => SequenceContext}
 import org.make.core.sequence.{Sequence, SequenceId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -267,6 +256,14 @@ trait DefaultIndexationComponent extends IndexationComponent {
         createdAt = proposal.createdAt.get,
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
+        scores = IndexedScores(
+          engagement = ProposalScorerHelper.engagement(proposal),
+          adhesion = ProposalScorerHelper.adhesion(proposal),
+          realistic = ProposalScorerHelper.realistic(proposal),
+          topScore = ProposalScorerHelper.topScore(proposal),
+          controversy = ProposalScorerHelper.controversy(proposal),
+          rejection = ProposalScorerHelper.rejection(proposal)
+        ),
         context = Some(
           ProposalContext(
             operation = proposal.creationContext.operationId,

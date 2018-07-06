@@ -195,11 +195,11 @@ class OrganisationApiTest
       Get("/organisations/make-org/proposals")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
-        val proposalsSearchResult: ProposalsSearchResult = entityAs[ProposalsSearchResult]
-        proposalsSearchResult.total shouldBe 2
-        proposalsSearchResult.results.size shouldBe 2
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
+        val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        proposalsResultSeededResponse.total shouldBe 2
+        proposalsResultSeededResponse.results.size shouldBe 2
+        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
+        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
       }
     }
   }

@@ -157,6 +157,14 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
         createdAt = proposal.createdAt.get,
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
+        scores = IndexedScores(
+          engagement = ProposalScorerHelper.engagement(proposal),
+          adhesion = ProposalScorerHelper.adhesion(proposal),
+          realistic = ProposalScorerHelper.realistic(proposal),
+          topScore = ProposalScorerHelper.topScore(proposal),
+          controversy = ProposalScorerHelper.controversy(proposal),
+          rejection = ProposalScorerHelper.rejection(proposal)
+        ),
         context = Some(
           Context(
             operation = proposal.creationContext.operationId,

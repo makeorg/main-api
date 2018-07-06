@@ -378,6 +378,39 @@
             }
           }
         },
+        "scores": {
+          "type": "object",
+          "properties": {
+            "boost": {
+              "type": "double",
+              "index": true
+            },
+            "engagement": {
+              "type": "double",
+              "index": true
+            },
+            "adhesion": {
+              "type": "double",
+              "index": true
+            },
+            "realistic": {
+              "type": "double",
+              "index": true
+            },
+            "topScore": {
+              "type": "double",
+              "index": true
+            },
+            "controversy": {
+              "type": "double",
+              "index": true
+            },
+            "rejection": {
+              "type": "double",
+              "index": true
+            }
+          }
+        },
         "slug": {
           "type": "keyword",
           "index": true

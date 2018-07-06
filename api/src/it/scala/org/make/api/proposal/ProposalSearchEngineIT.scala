@@ -156,6 +156,7 @@ class ProposalSearchEngineIT
         )
       )
     ),
+    scores = IndexedScores.empty,
     context = Some(Context(operation = None, location = None, question = None, source = None)),
     author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
     organisations = Seq.empty,
@@ -209,6 +210,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -264,6 +266,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -319,6 +322,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -376,6 +380,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -431,6 +436,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -488,6 +494,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -543,6 +550,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -598,6 +606,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -658,6 +667,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -715,6 +725,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -772,6 +783,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -829,6 +841,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -884,6 +897,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -939,6 +953,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -995,6 +1010,7 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
