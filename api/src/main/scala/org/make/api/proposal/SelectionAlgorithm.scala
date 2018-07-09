@@ -192,7 +192,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           proposals = proposals.filter(
             p =>
               p.proposalId != chosen.proposalId &&
-                !isSameIdea(p.idea, chosen.idea)
+                !isSameIdea(p.idea, chosen.idea) &&
+                p.author != chosen.author
           ),
           algorithm = algorithm
         )
