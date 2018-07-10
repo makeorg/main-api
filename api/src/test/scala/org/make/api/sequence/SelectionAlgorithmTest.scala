@@ -68,7 +68,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
                    createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
-      author = UserId("fake"),
+      author = UserId(s"fake-$id"),
       content = "fake",
       slug = "fake",
       status = ProposalStatus.Accepted,
@@ -95,7 +95,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
                          createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
-      author = UserId("fake"),
+      author = UserId(s"fake-$id"),
       content = "fake",
       slug = "fake",
       status = ProposalStatus.Accepted,
@@ -651,9 +651,7 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 1000)
-          .map(
-            i => selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).proposalId -> 1
-          )
+          .map(i => selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).proposalId -> 1)
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
           .toSeq
@@ -974,8 +972,6 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         case (i, p) => (i, p.toDouble / samples)
       }
 
-      logger.debug(proportions.mkString(", "))
-
       val confidenceInterval: Double = 0.03
       proportions(IdeaId("Idea20")) should equal(1.0 +- confidenceInterval)
       proportions(IdeaId("Idea15")) should equal(0.13 +- confidenceInterval)
@@ -1038,23 +1034,23 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
         banditMinCount = 1,
         banditProposalsRatio = 0.0,
         ideaCompetitionEnabled = true,
-        ideaCompetitionTargetCount = 10,
-        ideaCompetitionControversialRatio = 0.1,
-        ideaCompetitionControversialCount = 10
+        ideaCompetitionTargetCount = 20,
+        ideaCompetitionControversialRatio = 0.0,
+        ideaCompetitionControversialCount = 2
       )
 
-      val testedProposals: Seq[Proposal] = (1 to 20).map { i =>
+      val testedProposals: Seq[Proposal] = (1 to 100).map { i =>
         val a = 600
         val d = 200
         val n = 200
         val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
           VoteKey.Agree -> (
             a ->
-              Map(QualificationKey.LikeIt -> 16 * i)
+              Map(QualificationKey.LikeIt -> 3 * i)
           ),
           VoteKey.Disagree -> (
             d ->
-              Map(QualificationKey.NoWay -> 16 * (21 - i))
+              Map(QualificationKey.NoWay -> 3 * (101 - i))
           ),
           VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
         )
@@ -1085,8 +1081,8 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       }
 
       val confidenceInterval: Double = 0.03
-      proportions(ProposalId("testedProposal20")) should equal(0.9 +- confidenceInterval)
-      proportions(ProposalId("testedProposal10")) should equal(0.2 +- confidenceInterval)
+      proportions(ProposalId("testedProposal100")) should equal(1.0 +- confidenceInterval)
+      proportions(ProposalId("testedProposal51")) should equal(0.347 +- confidenceInterval)
     }
   }
 }

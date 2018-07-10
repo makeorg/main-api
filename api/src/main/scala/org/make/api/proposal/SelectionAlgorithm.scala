@@ -277,11 +277,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // select ideas
       val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.ideaCompetitionEnabled) {
         val champions: Map[IdeaId, Proposal] = ideas.mapValues(chooseChampion(_))
-        if (random.nextFloat() < sequenceConfiguration.ideaCompetitionControversialRatio) {
+        val topIdeas: Seq[IdeaId] =
           selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
-        } else {
+        val topControversial: Seq[IdeaId] =
           selectIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionTargetCount)
-        }
+        topIdeas ++ topControversial
       } else {
         ideas.keys.toSeq
       }
