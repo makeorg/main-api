@@ -103,7 +103,7 @@ class ProposalEmailConsumer(userService: UserService,
                 ),
                 variables = Some(
                   Map(
-                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}/#/${proposal.country
+                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=publication&utm_content=cta_share#/${proposal.country
                       .getOrElse("FR")}/proposal/${proposal.slug}",
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.fullName.getOrElse(""),

@@ -130,7 +130,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
           if (registration.enabled) {
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}/#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
               s"?operation=${event.requestContext.operationId
                 .map(_.value)
                 .getOrElse(operationSlug)}&language=$language&country=$country"
@@ -238,7 +238,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
           if (resendAccountValidationLink.enabled) {
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}/#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
             eventBusService.publish(
               SendEmail.create(
