@@ -514,6 +514,35 @@ class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComp
       sequenceProposals.contains(ProposalId("testedProposal11")) should be(false)
       sequenceProposals.contains(ProposalId("testedProposal12")) should be(false)
     }
+
+    scenario("most engaging first") {
+
+      val newProposalIds: Seq[ProposalId] = (1 to defaultSize / 2).map(i    => ProposalId(s"newProposal$i"))
+      val testedProposalIds: Seq[ProposalId] = (1 to defaultSize / 2).map(i => ProposalId(s"testedProposal$i"))
+
+      val newProposals: Seq[Proposal] =
+        newProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 0)))
+
+      val testedProposals: Seq[Proposal] =
+        testedProposalIds.zipWithIndex.map {
+          case (id, i) =>
+            fakeProposal(id, Map(VoteKey.Agree -> (800 + i * 10), VoteKey.Neutral -> (200 - i * 20)))
+        }
+
+      val testedProposalsRandom = Random.shuffle(testedProposals)
+
+      val sequenceProposals =
+        selectionAlgorithm.selectProposalsForSequence(
+          defaultSize,
+          sequenceConfiguration,
+          newProposals ++ testedProposalsRandom,
+          Seq.empty,
+          Seq.empty
+        )
+
+      sequenceProposals.size should be(12)
+      sequenceProposals.head should be(ProposalId("testedProposal6"))
+    }
   }
 
   feature("allocate votes inversely proportional to current vote count") {
