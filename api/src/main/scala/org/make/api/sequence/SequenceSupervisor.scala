@@ -24,6 +24,7 @@ import org.make.api.MakeBackoffSupervisor
 import org.make.api.technical.ShortenedNames
 import org.make.api.theme.ThemeService
 import org.make.core.DateHelper
+import org.make.api._
 
 class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeService)
     extends Actor
@@ -40,7 +41,7 @@ class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeSe
 
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        SequenceUserHistoryConsumerActor.props(userHistoryCoordinator),
+        SequenceUserHistoryConsumerActor.props(userHistoryCoordinator).withDispatcher(kafkaDispatcher),
         SequenceUserHistoryConsumerActor.name
       )
       context.actorOf(props, name)
@@ -48,7 +49,8 @@ class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeSe
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         SequenceConsumerActor
-          .props(sequenceCoordinator = sequenceCoordinator, themeService = themeService),
+          .props(sequenceCoordinator = sequenceCoordinator, themeService = themeService)
+          .withDispatcher(kafkaDispatcher),
         SequenceConsumerActor.name
       )
       context.actorOf(props, name)

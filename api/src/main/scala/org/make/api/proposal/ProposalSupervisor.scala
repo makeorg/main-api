@@ -20,7 +20,7 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.MakeBackoffSupervisor
+import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 import org.make.api.operation.OperationService
 import org.make.api.semantic.SemanticService
 import org.make.api.sequence.SequenceService
@@ -58,7 +58,7 @@ class ProposalSupervisor(userService: UserService,
 
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalUserHistoryConsumerActor.props(userHistoryCoordinator),
+        ProposalUserHistoryConsumerActor.props(userHistoryCoordinator).withDispatcher(kafkaDispatcher),
         ProposalUserHistoryConsumerActor.name
       )
       context.actorOf(props, name)
@@ -66,7 +66,9 @@ class ProposalSupervisor(userService: UserService,
 
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalEmailConsumerActor.props(userService, this.proposalCoordinatorService, operationService),
+        ProposalEmailConsumerActor
+          .props(userService, this.proposalCoordinatorService, operationService)
+          .withDispatcher(kafkaDispatcher),
         ProposalEmailConsumerActor.name
       )
       context.actorOf(props, name)
@@ -81,7 +83,8 @@ class ProposalSupervisor(userService: UserService,
             sequenceService,
             operationService,
             semanticService
-          ),
+          )
+          .withDispatcher(kafkaDispatcher),
         ProposalConsumerActor.name
       )
       context.actorOf(props, name)

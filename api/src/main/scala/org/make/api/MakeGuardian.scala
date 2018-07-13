@@ -94,7 +94,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          MailJetEventConsumerActor.props(makeApi.userService),
+          MailJetEventConsumerActor.props(makeApi.userService).withDispatcher(kafkaDispatcher),
           MailJetEventConsumerActor.name
         )
       context.actorOf(props, name)
@@ -103,7 +103,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          CrmContactEventConsumerActor.props(makeApi.userService, makeApi.crmService),
+          CrmContactEventConsumerActor.props(makeApi.userService, makeApi.crmService).withDispatcher(kafkaDispatcher),
           CrmContactEventConsumerActor.name
         )
       context.actorOf(props, name)

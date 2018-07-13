@@ -20,7 +20,7 @@
 package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.MakeBackoffSupervisor
+import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.OperationService
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
@@ -54,14 +54,17 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(UserCrmConsumerActor.props(userService), UserCrmConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(
+          UserCrmConsumerActor.props(userService).withDispatcher(kafkaDispatcher),
+          UserCrmConsumerActor.name
+        )
       context.actorOf(props, name)
     }
 
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          UserHistoryConsumerActor.props(userHistoryCoordinator),
+          UserHistoryConsumerActor.props(userHistoryCoordinator).withDispatcher(kafkaDispatcher),
           UserHistoryConsumerActor.name
         )
       context.actorOf(props, name)
