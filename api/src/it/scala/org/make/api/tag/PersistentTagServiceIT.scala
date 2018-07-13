@@ -536,4 +536,102 @@ class PersistentTagServiceIT
 
     }
   }
+
+  feature("count tags") {
+    val fooTagType: TagType =
+      TagType(tagTypeId = TagTypeId("foo"), label = "Foo", display = TagTypeDisplay.Displayed)
+    val barTagType: TagType =
+      TagType(tagTypeId = TagTypeId("bar"), label = "Bar", display = TagTypeDisplay.Displayed)
+    val fooOperationId: OperationId = OperationId("fooOperation")
+    val fooThemeId: ThemeId = ThemeId("fooTheme")
+
+    val foo: Tag =
+      targaryen.copy(
+        tagId = TagId("foo"),
+        tagTypeId = fooTagType.tagTypeId,
+        label = "foolabel",
+        operationId = Some(fooOperationId),
+        country = "FR",
+        language = "fr"
+      )
+    val bar: Tag =
+      targaryen.copy(
+        tagId = TagId("bar"),
+        tagTypeId = fooTagType.tagTypeId,
+        label = "barlabel",
+        operationId = Some(fooOperationId),
+        country = "FR",
+        language = "br"
+      )
+    val baz: Tag =
+      targaryen.copy(
+        tagId = TagId("baz"),
+        tagTypeId = fooTagType.tagTypeId,
+        label = "bazlabel",
+        themeId = Some(fooThemeId),
+        country = "FR",
+        language = "fr"
+      )
+
+    val baseTheme: Theme = Theme(
+      themeId = fooThemeId,
+      translations = Seq.empty,
+      actionsCount = 0,
+      proposalsCount = 0,
+      votesCount = 0,
+      country = "FR",
+      color = "",
+      gradient = None,
+      tags = Seq.empty
+    )
+    scenario("Search tags by label") {
+
+      val persistedTags: Future[Seq[Tag]] = for {
+      _ <- persistentThemeService.persist(baseTheme.copy(themeId = fooThemeId))
+      _ <- persistentOperationService.persist(
+        fakeOperation.copy(
+          operationId = fooOperationId,
+          slug = "foo-operation",
+          countriesConfiguration = Seq(
+            OperationCountryConfiguration(
+              countryCode = "FR",
+              tagIds = Seq.empty,
+              landingSequenceId = SequenceId("fr"),
+              startDate = None,
+              endDate = None
+            )
+          )
+        )
+      )
+      _        <- persistentTagTypeService.persist(fooTagType)
+      _        <- persistentTagTypeService.persist(barTagType)
+      foo   <- persistentTagService.persist(foo)
+      bar   <- persistentTagService.persist(bar)
+      baz   <- persistentTagService.persist(baz)
+      } yield Seq(foo, bar, baz)
+
+      val tagList: Seq[String] = Seq(foo, bar, baz).map { tag =>
+        s"label = ${tag.label}, tagId = ${tag.tagId.value}, operationId = ${tag.operationId.map(_.value).getOrElse("None")}"
+      }
+
+
+      Given(s"a list of persisted tags: \n ${tagList.mkString("\n")}")
+
+      When("I count tags filtred")
+      val futureCountTags: Future[(Int, Int, Int)] = for {
+        _              <- persistedTags
+        countWithLabel <- persistentTagService.count(PersistentTagFilter.empty.copy(label = Some("barlabel")))
+        countWithThemeId <- persistentTagService.count(PersistentTagFilter.empty.copy(themeId = Some(fooThemeId)))
+        countWithOperationId <- persistentTagService.count(PersistentTagFilter.empty.copy(operationId = Some(fooOperationId)))
+      } yield (countWithLabel, countWithThemeId, countWithOperationId)
+
+      whenReady(futureCountTags, Timeout(3.seconds)) {
+        case (countWithLabel, countWithThemeId, countWithOperationId) =>
+          Then("I get the count of tags")
+            countWithLabel should be(1)
+            countWithThemeId should be(1)
+            countWithOperationId should be(2)
+      }
+    }
+  }
 }
