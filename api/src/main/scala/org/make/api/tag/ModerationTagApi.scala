@@ -242,12 +242,8 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                     )
                   }
 
-                  onSuccess(
-                    tagService.search(
-                      start.getOrElse(0),
-                      end,
-                      sort,
-                      order,
+                  provideAsync(
+                    tagService.count(
                       TagFilter(
                         label = maybeLabel,
                         tagTypeId = maybeTagTypeId.map(TagTypeId(_)),
@@ -257,14 +253,27 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                         language = maybeLanguage
                       )
                     )
-                  ) { filteredTags =>
-                    complete(
-                      (
-                        StatusCodes.OK,
-                        List(TotalCountHeader(filteredTags.size.toString)),
-                        filteredTags.map(TagResponse.apply)
+                  ) { count =>
+                    onSuccess(
+                      tagService.search(
+                        start.getOrElse(0),
+                        end,
+                        sort,
+                        order,
+                        TagFilter(
+                          label = maybeLabel,
+                          tagTypeId = maybeTagTypeId.map(TagTypeId(_)),
+                          operationId = maybeOperationId.map(OperationId(_)),
+                          themeId = maybeThemeId.map(ThemeId(_)),
+                          country = maybeCountry,
+                          language = maybeLanguage
+                        )
                       )
-                    )
+                    ) { filteredTags =>
+                      complete(
+                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), filteredTags.map(TagResponse.apply))
+                      )
+                    }
                   }
                 }
               }

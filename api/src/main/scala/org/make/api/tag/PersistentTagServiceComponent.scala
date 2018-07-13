@@ -57,6 +57,7 @@ trait PersistentTagService {
              sort: Option[String],
              order: Option[String],
              persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
+  def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
 case class PersistentTagFilter(label: Option[String],
@@ -307,10 +308,10 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               )
 
           val queryOrdered = (sort, order) match {
-            case (Some("label"), Some("DESC"))  => query.orderBy(tagAlias.label).desc.offset(start)
-            case (Some("label"), _)             => query.orderBy(tagAlias.label).asc.offset(start)
-            case (Some("weight"), Some("DESC")) => query.orderBy(tagAlias.weight).desc.offset(start)
-            case (Some("weight"), _)            => query.orderBy(tagAlias.weight).asc.offset(start)
+            case (Some(field), Some("DESC")) if PersistentTag.columnNames.contains(field) =>
+              query.orderBy(tagAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentTag.columnNames.contains(field) =>
+              query.orderBy(tagAlias.field(field)).asc.offset(start)
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
               query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
@@ -324,6 +325,31 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       })
 
       futurePersistentTags.map(_.map(_.toTag))
+    }
+
+    override def count(persistentTagFilter: PersistentTagFilter): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+
+          select(sqls.count)
+            .from(PersistentTag.as(tagAlias))
+            .where(
+              sqls.toAndConditionOpt(
+                persistentTagFilter.label
+                  .map(
+                    label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
+                  ),
+                persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
+                persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
+                persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country)),
+                persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language))
+              )
+            )
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
     }
   }
 }

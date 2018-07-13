@@ -78,6 +78,7 @@ trait TagService extends ShortenedNames {
              sort: Option[String],
              order: Option[String],
              tagFilter: TagFilter = TagFilter.empty): Future[Seq[Tag]]
+  def count(tagFilter: TagFilter = TagFilter.empty): Future[Int]
 }
 
 trait DefaultTagServiceComponent
@@ -236,6 +237,19 @@ trait DefaultTagServiceComponent
         )
       )
 
+    }
+
+    override def count(tagFilter: TagFilter = TagFilter.empty): Future[Int] = {
+      persistentTagService.count(
+        PersistentTagFilter(
+          tagFilter.label,
+          tagFilter.operationId,
+          tagFilter.tagTypeId,
+          tagFilter.themeId,
+          tagFilter.country,
+          tagFilter.language
+        )
+      )
     }
   }
 }
