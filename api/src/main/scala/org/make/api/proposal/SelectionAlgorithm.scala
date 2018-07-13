@@ -171,10 +171,45 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val testedIncludedProposals: Seq[Proposal] =
         chooseTestedProposals(sequenceConfiguration, remainingProposals, testedProposalCount)
 
-      // build sequence
-      val sequence: Seq[ProposalId] = includeList ++ Random.shuffle(
-        newIncludedProposals.map(_.proposalId) ++ testedIncludedProposals.map(_.proposalId)
+      buildSequence(
+        proposals,
+        availableProposals,
+        includeList,
+        newIncludedProposals,
+        testedIncludedProposals,
+        targetLength
       )
+    }
+
+    /**
+      * Build the sequence
+      *
+      * first: included proposals
+      * then: most engaging tested proposals
+      * finally: randomized new + tested proposals
+      *
+      */
+    def buildSequence(proposals: Seq[Proposal],
+                      availableProposals: Seq[Proposal],
+                      includeList: Seq[ProposalId],
+                      newIncludedProposals: Seq[Proposal],
+                      testedIncludedProposals: Seq[Proposal],
+                      targetLength: Int): Seq[ProposalId] = {
+
+      // pick most engaging
+      val sortedTestedProposal: Seq[Proposal] =
+        testedIncludedProposals.sortBy(p => -1 * ProposalScorerHelper.engagement(p))
+
+      // build sequence
+      val sequence: Seq[ProposalId] = if (sortedTestedProposal.length > 0) {
+        includeList ++ Seq(sortedTestedProposal.head.proposalId) ++ Random.shuffle(
+          newIncludedProposals.map(_.proposalId) ++ sortedTestedProposal.tail.map(_.proposalId)
+        )
+      } else {
+        includeList ++ Random.shuffle(newIncludedProposals.map(_.proposalId))
+      }
+
+      // special case for campaign bootstrap, should be almost never used
       if (sequence.size < targetLength) {
         complementSequence(sequence, targetLength, proposals, availableProposals)
       } else {
@@ -192,7 +227,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           proposals = proposals.filter(
             p =>
               p.proposalId != chosen.proposalId &&
-                !isSameIdea(p.idea, chosen.idea)
+                !isSameIdea(p.idea, chosen.idea) &&
+                p.author != chosen.author
           ),
           algorithm = algorithm
         )
@@ -276,11 +312,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       // select ideas
       val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.ideaCompetitionEnabled) {
         val champions: Map[IdeaId, Proposal] = ideas.mapValues(chooseChampion(_))
-        if (random.nextFloat() < sequenceConfiguration.ideaCompetitionControversialRatio) {
+        val topIdeas: Seq[IdeaId] =
           selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
-        } else {
+        val topControversial: Seq[IdeaId] =
           selectIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionTargetCount)
-        }
+        topIdeas ++ topControversial
       } else {
         ideas.keys.toSeq
       }
