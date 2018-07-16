@@ -131,6 +131,7 @@ trait MakeApi
     with DefaultUserHistoryCoordinatorServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultProposalCoordinatorServiceComponent
+    with DefaultProposalIndexerServiceComponent
     with DefaultOperationServiceComponent
     with DefaultSequenceCoordinatorServiceComponent
     with DefaultSequenceSearchEngineComponent

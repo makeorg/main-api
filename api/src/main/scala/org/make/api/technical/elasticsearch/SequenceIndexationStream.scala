@@ -1,13 +1,13 @@
 package org.make.api.technical.elasticsearch
 
-import cats.implicits._
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Flow
+import akka.{Done, NotUsed}
 import cats.data.OptionT
+import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.sequence.{SequenceCoordinatorServiceComponent, SequenceSearchEngine, SequenceSearchEngineComponent}
-import org.make.api.theme.ThemeServiceComponent
+import org.make.api.theme.PersistentThemeServiceComponent
 import org.make.core.reference.{Theme, ThemeId}
 import org.make.core.sequence.SequenceId
 import org.make.core.sequence.indexed.{
@@ -23,18 +23,18 @@ import scala.concurrent.Future
 trait SequenceIndexationStream
     extends IndexationStream
     with SequenceCoordinatorServiceComponent
-    with ThemeServiceComponent
+    with PersistentThemeServiceComponent
     with SequenceSearchEngineComponent
     with StrictLogging {
 
   object SequenceStream {
-    val maybeIndexedSequence: Flow[String, Option[IndexedSequence], NotUsed] =
-      Flow[String].mapAsync(parallelism)(persistenceId => getIndexedSequence(SequenceId(persistenceId)))
+    val maybeIndexedSequence: Flow[SequenceId, Option[IndexedSequence], NotUsed] =
+      Flow[SequenceId].mapAsync(parallelism)(sequenceId => getIndexedSequence(sequenceId))
 
     def runIndexSequences(sequenceIndexName: String): Flow[Seq[IndexedSequence], Done, NotUsed] =
       Flow[Seq[IndexedSequence]].mapAsync(parallelism)(sequences => executeIndexSequences(sequences, sequenceIndexName))
 
-    def flowIndexSequences(sequenceIndexName: String): Flow[String, Done, NotUsed] =
+    def flowIndexSequences(sequenceIndexName: String): Flow[SequenceId, Done, NotUsed] =
       maybeIndexedSequence
         .via(filterIsDefined[IndexedSequence])
         .via(grouped[IndexedSequence])
@@ -42,7 +42,7 @@ trait SequenceIndexationStream
   }
 
   private def retrieveThemes(themeIds: Seq[ThemeId]): Future[Option[Seq[Theme]]] = {
-    themeService
+    persistentThemeService
       .findAll()
       .map(_.filter(theme => themeIds.contains(theme.themeId)))
       .map(Some(_))
@@ -79,7 +79,7 @@ trait SequenceIndexationStream
     maybeResult.value
   }
 
-  private def executeIndexSequences(sequences: Seq[IndexedSequence], indexName: String): Future[Done] =
+  private def executeIndexSequences(sequences: Seq[IndexedSequence], indexName: String): Future[Done] = {
     elasticsearchSequenceAPI
       .indexSequences(sequences, Some(IndexAndType(indexName, SequenceSearchEngine.sequenceIndexName)))
       .recoverWith {
@@ -87,5 +87,6 @@ trait SequenceIndexationStream
           logger.error("Indexing sequences failed", e)
           Future.successful(Done)
       }
+  }
 
 }

@@ -3,7 +3,9 @@ package org.make.api.technical.elasticsearch
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-import akka.stream.scaladsl.Flow
+import akka.stream.FlowShape
+import akka.stream.scaladsl.GraphDSL.Implicits._
+import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
 import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
@@ -41,17 +43,71 @@ trait ProposalIndexationStream
     with StrictLogging {
 
   object ProposalStream {
-    val maybeIndexedProposal: Flow[String, Option[IndexedProposal], NotUsed] =
-      Flow[String].mapAsync(parallelism)(persistenceId => getIndexedProposal(ProposalId(persistenceId)))
+    val maybeIndexedProposal: Flow[ProposalId, Option[IndexedProposal], NotUsed] =
+      Flow[ProposalId].mapAsync(parallelism)(proposalId => getIndexedProposal(proposalId))
 
     def runIndexProposals(proposalIndexName: String): Flow[Seq[IndexedProposal], Done, NotUsed] =
       Flow[Seq[IndexedProposal]].mapAsync(parallelism)(proposals => executeIndexProposals(proposals, proposalIndexName))
 
-    def flowIndexProposals(proposalIndexName: String): Flow[String, Done, NotUsed] =
+    val findOrElseIndexedProposal: Flow[IndexedProposal, ProposalFlow, NotUsed] =
+      Flow[IndexedProposal]
+        .mapAsync(parallelism) { proposal =>
+          elasticsearchProposalAPI.findProposalById(proposal.id).map {
+            case Some(_) => UpdateProposalFlow(proposal)
+            case _       => IndexProposalFlow(proposal)
+          }
+        }
+
+    val indexProposals: Flow[Seq[IndexedProposal], Seq[IndexedProposal], NotUsed] =
+      Flow[Seq[IndexedProposal]].mapAsync(singleAsync) { proposals =>
+        elasticsearchProposalAPI.indexProposals(proposals)
+      }
+
+    val updateProposals: Flow[Seq[IndexedProposal], Seq[IndexedProposal], NotUsed] =
+      Flow[Seq[IndexedProposal]].mapAsync(singleAsync) { proposals =>
+        elasticsearchProposalAPI.updateProposals(proposals)
+      }
+
+    val semanticIndex: Flow[Seq[IndexedProposal], Done, NotUsed] =
+      Flow[Seq[IndexedProposal]].mapAsync(parallelism) { proposals =>
+        semanticService.indexProposals(proposals).map(_ => Done)
+      }
+
+    def flowIndexProposals(proposalIndexName: String): Flow[ProposalId, Done, NotUsed] =
       maybeIndexedProposal
         .via(filterIsDefined[IndexedProposal])
         .via(grouped[IndexedProposal])
         .via(runIndexProposals(proposalIndexName))
+
+    val indexOrUpdateFlow: Flow[ProposalId, Seq[IndexedProposal], NotUsed] =
+      Flow.fromGraph[ProposalId, Seq[IndexedProposal], NotUsed](GraphDSL.create() {
+        implicit builder: GraphDSL.Builder[NotUsed] =>
+          val source = builder.add(maybeIndexedProposal)
+          val partition = builder.add(Partition[ProposalFlow](outputPorts = 2, partitioner = {
+            case IndexProposalFlow(_)  => 0
+            case UpdateProposalFlow(_) => 1
+          }))
+          val merge = builder.add(Merge[Seq[IndexedProposal]](2))
+
+          val filterIndex: Flow[ProposalFlow, IndexedProposal, NotUsed] =
+            Flow[ProposalFlow].filter {
+              case IndexProposalFlow(_)  => true
+              case UpdateProposalFlow(_) => false
+            }.map(_.proposal)
+
+          val filterUpdate: Flow[ProposalFlow, IndexedProposal, NotUsed] =
+            Flow[ProposalFlow].filter {
+              case IndexProposalFlow(_)  => false
+              case UpdateProposalFlow(_) => true
+            }.map(_.proposal)
+
+          source.out ~> filterIsDefined[IndexedProposal] ~> findOrElseIndexedProposal ~> partition.in
+
+          partition.out(0) ~> filterIndex  ~> grouped[IndexedProposal] ~> indexProposals  ~> merge
+          partition.out(1) ~> filterUpdate ~> grouped[IndexedProposal] ~> updateProposals ~> merge
+
+          FlowShape(source.in, merge.out)
+      })
   }
 
   private def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
@@ -109,19 +165,23 @@ trait ProposalIndexationStream
     maybeResult.value
   }
 
-  private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] =
+  private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] = {
     elasticsearchProposalAPI
       .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalIndexName)))
+      .flatMap { proposals =>
+        semanticService.indexProposals(proposals).map(_ => Done)
+      }
       .recoverWith {
         case e =>
-          logger.error(s"Indexing proposals failed", e)
+          logger.error("Indexing proposals in proposal index OR in semantic index failed", e)
           Future.successful(Done)
       }
-      .flatMap(_ => Future.traverse(proposals)(semanticService.indexProposal).map(_ => Done))
-      .recoverWith {
-        case e =>
-          logger.error("indexaliasNameing a proposal in semantic failed", e)
-          Future.successful(Done)
-      }
+  }
 
 }
+
+sealed trait ProposalFlow {
+  val proposal: IndexedProposal
+}
+case class IndexProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow
+case class UpdateProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow

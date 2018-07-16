@@ -19,7 +19,6 @@
 
 package org.make.api.proposal
 
-import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
@@ -30,6 +29,7 @@ import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType, RefreshPoli
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
+import org.make.core.DateHelper._
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
@@ -51,9 +51,10 @@ trait ProposalSearchEngine {
   def countProposals(searchQuery: SearchQuery): Future[Long]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
-  def indexProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
-  def indexProposals(records: Seq[IndexedProposal], mayBeIndex: Option[IndexAndType] = None): Future[Done]
-  def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done]
+  def indexProposals(records: Seq[IndexedProposal],
+                     mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
+  def updateProposals(records: Seq[IndexedProposal],
+                      mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
 }
 
 object ProposalSearchEngine {
@@ -91,8 +92,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .query(if (random) randomQuery else query)
         .size(size.getOrElse(defaultMax))
 
-      logger.debug(client.show(request))
-
       client.executeAsFuture(request).map {
         _.to[IndexedProposal]
       }
@@ -112,8 +111,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         request = sortAlgorithm.sortDefinition(request)
       }
 
-      logger.debug(client.show(request))
-
       client.executeAsFuture(request).map { response =>
         ProposalsSearchResult(total = response.totalHits, results = response.to[IndexedProposal])
       }
@@ -126,8 +123,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val request = searchWithType(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
-
-      logger.debug(client.show(request))
 
       client.executeAsFuture(request).map { response =>
         response.totalHits
@@ -142,8 +137,6 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val request = searchWithType(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
         .aggregations(sumAgg("total_votes", "votes.count"))
-
-      logger.debug(client.show(request))
 
       client.executeAsFuture(request).map { response =>
         response.aggregations.sum("total_votes").valueOpt.map(_.toInt).getOrElse(0)
@@ -169,34 +162,38 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def indexProposal(proposal: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
-      val record: IndexedProposal = proposal.copy(trending = proposalTrendingMode(proposal))
-      val index = mayBeIndex.getOrElse(proposalAlias)
-      logger.debug(s"$index -> Saving in Elasticsearch: $record")
-      client
-        .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value))
-        .map(_ => Done)
-    }
-
     override def indexProposals(proposals: Seq[IndexedProposal],
-                                mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
-      val records: Seq[IndexedProposal] =
-        proposals.map(proposal => proposal.copy(trending = proposalTrendingMode(proposal)))
+                                mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]] = {
+      val records = proposals
+        .groupBy(_.id)
+        .map {
+          case (_, duplicatedProposals) =>
+            val proposal = duplicatedProposals.maxBy(_.updatedAt)
+            proposal.copy(trending = proposalTrendingMode(proposal))
+        }
       val index = mayBeIndex.getOrElse(proposalAlias)
-      logger.debug(s"$index -> Saving in Elasticsearch: $records")
       client
         .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
         }))
-        .map(_ => Done)
+        .map(_ => records.toSeq)
     }
 
-    override def updateProposal(record: IndexedProposal, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
+    override def updateProposals(proposals: Seq[IndexedProposal],
+                                 mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]] = {
+      val records = proposals
+        .groupBy(_.id)
+        .map {
+          case (_, duplicatedProposals) =>
+            val proposal = duplicatedProposals.maxBy(_.updatedAt)
+            proposal.copy(trending = proposalTrendingMode(proposal))
+        }
       val index = mayBeIndex.getOrElse(proposalAlias)
-      logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
-        .executeAsFuture((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
-        .map(_ => Done)
+        .executeAsFuture(bulk(records.map { record =>
+          (update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE)
+        }))
+        .map(_ => records.toSeq)
     }
   }
 

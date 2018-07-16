@@ -22,7 +22,6 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -1148,9 +1147,16 @@ class ProposalSearchEngineIT
   }
 
   feature("saving new proposal") {
-    scenario("should return done") {
-      whenReady(elasticsearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
-        result should be(Done)
+    scenario("should return distinct new") {
+      val proposal1 = newProposal
+      val proposal2 = newProposal
+      whenReady(
+        elasticsearchProposalAPI.indexProposals(Seq(proposal1, proposal1, proposal1, proposal2)),
+        Timeout(3.seconds)
+      ) { result =>
+        result.size should be(2)
+        result.exists(_.id == proposal1.id) should be(true)
+        result.exists(_.id == proposal2.id) should be(true)
       }
     }
   }

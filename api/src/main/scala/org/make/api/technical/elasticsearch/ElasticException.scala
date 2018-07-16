@@ -22,5 +22,9 @@ package org.make.api.technical.elasticsearch
 import com.sksamuel.elastic4s.http.ElasticError
 
 case class ElasticException(message: String) extends RuntimeException(message) {
-  def this(elasticError: ElasticError) = this(s"${elasticError.reason} ${elasticError.causedBy.map(_.toString)}")
+  def this(elasticError: ElasticError) =
+    this(s"${elasticError.reason} ${elasticError.causedBy.map(_.toString)}")
+
+  def this(elasticError: ElasticError, relatedRequest: String) =
+    this(s"${elasticError.reason} ${elasticError.causedBy.map(_.toString)}\nCaused by request: $relatedRequest ")
 }

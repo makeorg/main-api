@@ -33,6 +33,8 @@ import org.make.api.ActorSystemComponent
 import org.make.api.idea._
 import org.make.api.technical.ReadJournalComponent
 import org.make.core.idea.Idea
+import org.make.core.proposal.ProposalId
+import org.make.core.sequence.SequenceId
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -100,12 +102,13 @@ trait DefaultIndexationComponent
     override def indicesToReindex(forceIdeas: Boolean,
                                   forceProposals: Boolean,
                                   forceSequences: Boolean): Future[Set[EntitiesToIndex]] = {
-      val currentHashes: Map[EntitiesToIndex, String] = Map(
+      val hashes: Map[EntitiesToIndex, String] = Map(
         IndexIdeas -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.ideaAliasName),
         IndexProposals -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.proposalAliasName),
         IndexSequences -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.sequenceAliasName)
       )
       elasticsearchConfiguration.getCurrentIndicesName.map { currentIndices =>
+        val currentHashes: Seq[String] = currentIndices.map(elasticsearchConfiguration.getHashFromIndex)
         var result: Set[EntitiesToIndex] = Set.empty
         if (forceIdeas) {
           result += IndexIdeas
@@ -116,10 +119,11 @@ trait DefaultIndexationComponent
         if (forceSequences) {
           result += IndexSequences
         }
-        result ++= currentHashes.flatMap {
-          case (entitiesToIndex, hash) if !currentIndices.contains(hash) => Some(entitiesToIndex)
-          case _                                                         => None
+        result ++= hashes.flatMap {
+          case (entitiesToIndex, hash) if !currentHashes.contains(hash) => Some(entitiesToIndex)
+          case _                                                        => None
         }.toSet
+
         result
       }
     }
@@ -139,16 +143,18 @@ trait DefaultIndexationComponent
     }
 
     private def executeSetAlias(aliasName: String, indexName: String): Future[Done] = {
+
+      logger.info(s"calling executeSetAlias for $aliasName - $indexName")
+
       client.executeAsFuture {
         getAliases(Seq.empty, Seq(aliasName))
-      }.onComplete {
-        case Success(getAliasResponse) =>
-          addAndRemoveAlias(aliasName, indexName, getAliasResponse.mappings.keys.map(_.name).toSeq)
-        case Failure(e) => logger.error("fail to retrieve ES alias", e)
-        case _          => logger.error("fail to retrieve ES alias")
+      }.flatMap { getAliasResponse =>
+        addAndRemoveAlias(aliasName, indexName, getAliasResponse.mappings.keys.map(_.name).toSeq).map(_ => Done)
+      }.recoverWith {
+        case e =>
+          logger.error("fail to retrieve ES alias", e)
+          Future.successful(Done)
       }
-
-      Future.successful(Done)
     }
 
     private def executeCreateIndex(aliasName: String, indexName: String): Future[CreateIndexResponse] = {
@@ -192,7 +198,6 @@ trait DefaultIndexationComponent
 
       for {
         _ <- futureCreateIndices
-        _ <- executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
         resultIndexation <- executeIndexProposalsAndSequences(
           indexProposals,
           indexSequences,
@@ -219,8 +224,10 @@ trait DefaultIndexationComponent
           val bcast = builder.add(Broadcast[String](2))
           val merge = builder.add(Merge[Done](2))
 
-          val filterExecuteProposals: Flow[String, String, NotUsed] = Flow[String].filter(_ => indexProposals)
-          val filterExecuteSequences: Flow[String, String, NotUsed] = Flow[String].filter(_ => indexSequences)
+          val filterExecuteProposals: Flow[String, ProposalId, NotUsed] =
+            Flow[String].filter(_ => indexProposals).map(ProposalId.apply)
+          val filterExecuteSequences: Flow[String, SequenceId, NotUsed] =
+            Flow[String].filter(_ => indexSequences).map(SequenceId.apply)
 
           bcast.out(0) ~> filterExecuteProposals ~> ProposalStream.flowIndexProposals(proposalIndexName) ~> merge
           bcast.out(1) ~> filterExecuteSequences ~> SequenceStream.flowIndexSequences(sequenceIndexName) ~> merge

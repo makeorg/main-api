@@ -47,6 +47,8 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
   val ideaAliasName: String = configuration.getString("idea-alias-name")
   val proposalAliasName: String = configuration.getString("proposal-alias-name")
   val sequenceAliasName: String = configuration.getString("sequence-alias-name")
+  val entityBufferSize: Int = configuration.getInt("buffer-size")
+  val entityBulkSize: Int = configuration.getInt("bulk-size")
 
   // create index
   val elasticsearchIdeaMapping: String =

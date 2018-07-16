@@ -40,7 +40,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
-import org.make.api.theme.{ThemeService, ThemeServiceComponent}
+import org.make.api.theme.{PersistentThemeService, PersistentThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.mockito.ArgumentMatchers
@@ -62,7 +62,7 @@ class IndexationComponentTest
     with UserServiceComponent
     with TagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
-    with ThemeServiceComponent
+    with PersistentThemeServiceComponent
     with ProposalSearchEngineComponent
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
@@ -82,7 +82,7 @@ class IndexationComponentTest
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val readJournal: MakeReadJournal = mock[MakeReadJournal]
   override val semanticService: SemanticService = mock[SemanticService]
-  override val themeService: ThemeService = mock[ThemeService]
+  override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val tagService: TagService = mock[TagService]
 
 //  val indexName = "make-index"
@@ -90,9 +90,13 @@ class IndexationComponentTest
   when(elasticsearchConfiguration.proposalAliasName).thenReturn("proposal")
   when(elasticsearchConfiguration.sequenceAliasName).thenReturn("sequence")
 
-  private val ideaHash = "idea-hash"
-  private val proposalHash = "proposal-hash"
-  private val sequenceHash = "sequence-hash"
+  private val ideaHash = "idea#hash"
+  private val proposalHash = "proposal#hash"
+  private val sequenceHash = "sequence#hash"
+
+  when(elasticsearchConfiguration.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
+  when(elasticsearchConfiguration.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
+  when(elasticsearchConfiguration.getHashFromIndex(sequenceHash)).thenReturn(sequenceHash)
 
   when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
   when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)

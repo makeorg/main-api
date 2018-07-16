@@ -74,15 +74,12 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
 
-      logger.debug(client.show(request))
-
       client
         .executeAsFuture(request)
         .map(response => IdeaSearchResult(total = response.totalHits, results = response.to[IndexedIdea]))
     }
 
     override def indexIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
-      logger.debug(s"Saving in Elasticsearch: $record")
       val index = maybeIndex.getOrElse(ideaAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.ideaId.value))
@@ -92,7 +89,6 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
     }
 
     override def indexIdeas(records: Seq[IndexedIdea], maybeIndex: Option[IndexAndType] = None): Future[Done] = {
-      logger.debug(s"Saving ${records.size} in Elasticsearch")
       val index = maybeIndex.getOrElse(ideaAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
@@ -105,7 +101,6 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
 
     override def updateIdea(record: IndexedIdea, maybeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = maybeIndex.getOrElse(ideaAlias)
-      logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
         .executeAsFuture((update(id = record.ideaId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)

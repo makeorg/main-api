@@ -70,9 +70,9 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
               makeOperation("ReindexingData") { _ =>
                 provideAsync(
                   indexationService.reindexData(
-                    request.forceIdeas.orElse(request.forceAll).getOrElse(false),
-                    request.forceProposals.orElse(request.forceAll).getOrElse(false),
-                    request.forceSequences.orElse(request.forceAll).getOrElse(false)
+                    Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                    Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                    Seq(request.forceAll, request.forceSequences).flatten.contains(true)
                   )
                 ) { result =>
                   complete(StatusCodes.NoContent)
@@ -89,10 +89,12 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
 }
 
 @ApiModel
-final case class ReindexRequest(@(ApiModelProperty @field)(example = "true") forceIdeas: Option[Boolean],
-                                @(ApiModelProperty @field)(example = "true") forceProposals: Option[Boolean],
-                                @(ApiModelProperty @field)(example = "true") forceSequences: Option[Boolean],
-                                @(ApiModelProperty @field)(example = "true") forceAll: Option[Boolean])
+final case class ReindexRequest(
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceIdeas: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceProposals: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceSequences: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceAll: Option[Boolean]
+)
 
 object ReindexRequest {
   implicit val decoder: Decoder[ReindexRequest] = deriveDecoder[ReindexRequest]

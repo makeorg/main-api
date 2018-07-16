@@ -79,8 +79,6 @@ trait DefaultSequenceSearchEngineComponent
         .from(0)
         .size(1)
 
-      logger.debug(client.show(request))
-
       client.executeAsFuture {
         request
       }.map(_.to[IndexedSequence]).map {
@@ -98,8 +96,6 @@ trait DefaultSequenceSearchEngineComponent
         .from(SearchFilters.getSkipSearch(searchQuery))
         .size(SearchFilters.getLimitSearch(searchQuery))
 
-      logger.debug(client.show(request))
-
       client.executeAsFuture {
         request
       }.map { response =>
@@ -108,7 +104,6 @@ trait DefaultSequenceSearchEngineComponent
     }
 
     override def indexSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
-      logger.debug(s"Saving in Elasticsearch: $record")
       val index = mayBeIndex.getOrElse(sequenceAlias)
       client.executeAsFuture {
         indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.id.value)
@@ -117,7 +112,6 @@ trait DefaultSequenceSearchEngineComponent
 
     override def indexSequences(records: Seq[IndexedSequence],
                                 mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
-      logger.debug(s"Saving in Elasticsearch: $records")
       val index = mayBeIndex.getOrElse(sequenceAlias)
       client.executeAsFuture {
         bulk(records.map { record =>
@@ -128,7 +122,6 @@ trait DefaultSequenceSearchEngineComponent
 
     override def updateSequence(record: IndexedSequence, mayBeIndex: Option[IndexAndType] = None): Future[Done] = {
       val index = mayBeIndex.getOrElse(sequenceAlias)
-      logger.debug(s"$index -> Updating in Elasticsearch: $record")
       client
         .executeAsFuture((update(id = record.id.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
         .map(_ => Done)

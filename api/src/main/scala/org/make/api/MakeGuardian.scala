@@ -60,15 +60,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch(
       context.actorOf(
         ProposalSupervisor
-          .props(
-            makeApi.userService,
-            userHistoryCoordinator,
-            sessionHistoryCoordinator,
-            makeApi.tagService,
-            makeApi.sequenceService,
-            makeApi.operationService,
-            makeApi.semanticService
-          ),
+          .props(userHistoryCoordinator, sessionHistoryCoordinator, makeApi),
         ProposalSupervisor.name
       )
     )
