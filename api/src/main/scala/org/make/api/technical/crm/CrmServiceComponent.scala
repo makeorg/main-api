@@ -21,11 +21,14 @@ package org.make.api.technical.crm
 
 import java.net.{URL, URLEncoder}
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Executors, ThreadFactory}
 
 import akka.NotUsed
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.persistence.query.EventEnvelope
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
@@ -33,13 +36,13 @@ import io.circe.Printer
 import io.circe.syntax._
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.user.User
+import org.make.api.technical.ReadJournalComponent
+import org.make.api.userhistory._
+import org.make.core.user.{User, UserId}
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
@@ -61,7 +64,17 @@ trait CrmServiceComponent {
 }
 
 trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging {
-  self: MailJetConfigurationComponent with ActorSystemComponent with UserHistoryCoordinatorServiceComponent =>
+  self: MailJetConfigurationComponent
+    with ActorSystemComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ReadJournalComponent =>
+
+  implicit val executionContext: ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10, new ThreadFactory {
+      val counter = new AtomicInteger()
+      override def newThread(runnable: Runnable): Thread =
+        new Thread(runnable, "crm-batch-" + counter.getAndIncrement())
+    }))
 
   lazy val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
   lazy val url = new URL(mailJetConfiguration.url)
@@ -144,17 +157,18 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   override def crmService: CrmService = new CrmService {
 
     override def addUserToOptInList(user: User): Future[Unit] = {
-
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.optInListId,
-        manageContact = ManageContact(
-          user.email,
-          user.fullName.getOrElse(user.email),
-          action = ManageContactAction.AddNoForce,
-          properties = getPropertiesFromUser(user)
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add single to optin list")
+      getPropertiesFromUser(user).flatMap { properties =>
+        manageContactMailJetRequest(
+          listId = mailJetConfiguration.optInListId,
+          manageContact = ManageContact(
+            user.email,
+            user.fullName.getOrElse(user.email),
+            action = ManageContactAction.AddNoForce,
+            properties = Some(properties)
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add single to optin list")
+        }
       }
     }
 
@@ -169,30 +183,34 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
 
     override def addUserToHardBounceList(user: User): Future[Unit] = {
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.hardBounceListId,
-        manageContact = ManageContact(
-          user.email,
-          user.fullName.getOrElse(user.email),
-          action = ManageContactAction.AddNoForce,
-          properties = getPropertiesFromUser(user)
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add single to hardbounce list")
+      getPropertiesFromUser(user).flatMap { properties =>
+        manageContactMailJetRequest(
+          listId = mailJetConfiguration.hardBounceListId,
+          manageContact = ManageContact(
+            user.email,
+            user.fullName.getOrElse(user.email),
+            action = ManageContactAction.AddNoForce,
+            properties = Some(properties)
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add single to hardbounce list")
+        }
       }
     }
 
     override def addUserToUnsubscribeList(user: User): Future[Unit] = {
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.unsubscribeListId,
-        manageContact = ManageContact(
-          user.email,
-          user.fullName.getOrElse(user.email),
-          action = ManageContactAction.AddNoForce,
-          properties = getPropertiesFromUser(user)
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add single to unsubscribe list")
+      getPropertiesFromUser(user).flatMap { properties =>
+        manageContactMailJetRequest(
+          listId = mailJetConfiguration.unsubscribeListId,
+          manageContact = ManageContact(
+            user.email,
+            user.fullName.getOrElse(user.email),
+            action = ManageContactAction.AddNoForce,
+            properties = Some(properties)
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add single to unsubscribe list")
+        }
       }
     }
 
@@ -226,84 +244,112 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       if (users.isEmpty) {
         Future.successful {}
       }
-      manageContactListMailJetRequest(
-        manageContactList = ManageManyContacts(
-          contacts = users.map { user =>
-            Contact(
-              email = user.email,
-              name = user.fullName.getOrElse(user.email),
-              properties = getPropertiesFromUser(user)
-            )
-          },
-          contactList = Seq(
-            ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
-            ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
-            ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
-          )
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add to optin list")
-      }
 
-      Future.successful {}
+      val properties: Future[Map[UserId, Map[String, String]]] = Future
+        .traverse(users) { user =>
+          getPropertiesFromUser(user).map { properties =>
+            user.userId -> properties
+          }
+        }
+        .map(_.toMap)
+
+      properties.map { properties =>
+        manageContactListMailJetRequest(
+          manageContactList = ManageManyContacts(
+            contacts = users.map { user =>
+              Contact(
+                email = user.email,
+                name = user.fullName.getOrElse(user.email),
+                properties = properties.get(user.userId)
+              )
+            },
+            contactList = Seq(
+              ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
+              ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
+              ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
+            )
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add to optin list")
+        }
+
+      }
     }
 
     override def addUsersToUnsubscribeList(users: Seq[User]): Future[Unit] = {
-      manageContactListMailJetRequest(
-        manageContactList = ManageManyContacts(
-          contacts = users.map { user =>
-            Contact(
-              email = user.email,
-              name = user.fullName.getOrElse(user.email),
-              properties = getPropertiesFromUser(user)
-            )
-          },
-          contactList = Seq(
-            ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
-            ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.AddNoForce),
-            ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
-          )
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add to unsubscribe list")
-      }
+      val properties: Future[Map[UserId, Map[String, String]]] = Future
+        .traverse(users) { user =>
+          getPropertiesFromUser(user).map { properties =>
+            user.userId -> properties
+          }
+        }
+        .map(_.toMap)
 
-      Future.successful {}
+      properties.map { properties =>
+
+        manageContactListMailJetRequest(
+          manageContactList = ManageManyContacts(
+            contacts = users.map { user =>
+              Contact(
+                email = user.email,
+                name = user.fullName.getOrElse(user.email),
+                properties = properties.get(user.userId)
+              )
+            },
+            contactList = Seq(
+              ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
+              ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.AddNoForce),
+              ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
+            )
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add to unsubscribe list")
+        }
+      }
     }
 
     override def addUsersToHardBounceList(users: Seq[User]): Future[Unit] = {
-      manageContactListMailJetRequest(
-        manageContactList = ManageManyContacts(
-          contacts = users.map { user =>
-            Contact(
-              email = user.email,
-              name = user.fullName.getOrElse(user.email),
-              properties = getPropertiesFromUser(user)
-            )
-          },
-          contactList = Seq(
-            ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.AddNoForce),
-            ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
-            ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
-          )
-        )
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Add to hardbounce list")
-      }
+      val properties: Future[Map[UserId, Map[String, String]]] = Future
+        .traverse(users) { user =>
+          getPropertiesFromUser(user).map { properties =>
+            user.userId -> properties
+          }
+        }
+        .map(_.toMap)
 
-      Future.successful {}
+      properties.map { properties =>
+        manageContactListMailJetRequest(
+          manageContactList = ManageManyContacts(
+            contacts = users.map { user =>
+              Contact(
+                email = user.email,
+                name = user.fullName.getOrElse(user.email),
+                properties = properties.get(user.userId)
+              )
+            },
+            contactList = Seq(
+              ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.AddNoForce),
+              ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
+              ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
+            )
+          )
+        ).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Add to hardbounce list")
+        }
+
+      }
     }
 
     override def updateUserProperties(user: User): Future[Unit] = {
 
-      val contactData: Seq[ContactProperty] = getPropertiesFromUser(user)
-        .map(_.map {
+      getPropertiesFromUser(user).flatMap { properties =>
+        val contactData = properties.map{
           case (name, value) => ContactProperty(name = name, value = value)
-        }.toSeq)
-        .getOrElse(Seq.empty)
+        }.toSeq
 
-      updateContactProperties(ContactData(data = contactData), user.email).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Update user properties")
+        updateContactProperties(ContactData(data = contactData), user.email).map { queueOfferResult =>
+          logQueueOfferResult(queueOfferResult, "Update user properties")
+        }
       }
 
       Future.successful {}
@@ -320,10 +366,57 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
   }
 
-  private def getPropertiesFromUser(user: User): Option[Map[String, String]] = {
+  private def getPropertiesFromUser(user: User): Future[Map[String, String]] = {
 
-    Some(
-      Map(
+    val events: Source[EventEnvelope, NotUsed] =
+      readJournal.currentEventsByPersistenceId(user.userId.value, 0, Long.MaxValue)
+    implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+
+    val userProperties: Future[UserProperties] = events.runFold(UserProperties()) {
+      (accumulator: UserProperties, enveloppe: EventEnvelope) =>
+        enveloppe.event match {
+          case event: LogRegisterCitizenEvent =>
+            accumulator.copy(
+              accountCreationSource = event.requestContext.source,
+              accountCreationOperation = event.requestContext.operationId.map(_.value),
+              accountCreationCountry = event.requestContext.country
+            )
+          case event: LogUserProposalEvent =>
+            accumulator.copy(
+              totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1),
+              lastCountryActivity = event.requestContext.country,
+              lastLanguageActivity = event.requestContext.language,
+              countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+              firstContributionDate = if (accumulator.firstContributionDate.isEmpty) {
+                Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+              } else {
+                accumulator.firstContributionDate
+              },
+              lastContributionDate = Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+            )
+          case event: LogUserVoteEvent =>
+            accumulator.copy(
+              totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1),
+              lastContributionDate = Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+            )
+          case event: LogUserUnvoteEvent =>
+            accumulator.copy(
+              lastContributionDate = Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+            )
+          case event: LogUserQualificationEvent =>
+            accumulator.copy(
+              lastContributionDate = Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+            )
+          case event: LogUserUnqualificationEvent =>
+            accumulator.copy(
+              lastContributionDate = Some(event.action.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")))
+            )
+        }
+
+    }
+
+    userProperties.map { userProperty =>
+      Map[String, String](
         "UserId" -> user.userId.value,
         "Firstname" -> user.firstName.getOrElse(""),
         "Zipcode" -> user.profile.flatMap(_.postalCode).getOrElse(""),
@@ -335,23 +428,47 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           .getOrElse("false"),
         "Account_Creation_Date" -> user.createdAt
           .map(DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm").format(_))
-          .getOrElse("")
-        // "Account_creation_source" -> "", // toDo
-        // "Account_Creation_Operation" -> "", // toDo
-        // "Account_Creation_Country" -> user.country,
-        // "Countries_activity" -> "", // toDo
-        // "Last_country_activity" -> "", // toDo
-        // "Last_language_activity" -> "", // toDo
-        // "Total_Number_Proposals" -> "", // toDo
-        // "Total number votes" -> "", // toDo
-        // "First_Contribution_Date" -> "", // toDo
-        // "Last_Contribution_Date" -> "", // toDo
-        // "Operation_activity" -> "", // toDo
-        // "Active_core" -> "", // toDo
-        // "Days_of_Activity" -> "", // toDo
-        // "Days_of_Activity_30d" -> "", // toDo
-        // "Number_of_themes" -> "" // toDo
-      )
-    )
+          .getOrElse(""),
+        "Account_creation_source" -> userProperty.accountCreationSource.getOrElse(""),
+        "Account_Creation_Operation" -> userProperty.accountCreationOperation.getOrElse(""),
+        "Account_Creation_Country" -> userProperty.accountCreationCountry.getOrElse(""),
+        "Countries_activity" -> userProperty.countriesActivity.mkString(","),
+        "Last_country_activity" -> userProperty.lastCountryActivity.getOrElse(""),
+        "Last_language_activity" -> userProperty.lastLanguageActivity.getOrElse(""),
+        "Total_Number_Proposals" -> userProperty.totalNumberProposals.map(_.toString).getOrElse(""),
+        "Total_number_votes" -> userProperty.totalNumbervotes.map(_.toString).getOrElse(""),
+        "First_Contribution_Date" -> userProperty.firstContributionDate.getOrElse(""),
+        "Last_Contribution_Date" -> userProperty.lastContributionDate.getOrElse(""),
+        "Operation_activity" -> userProperty.operationActivity.mkString(","),
+        "Active_core" -> userProperty.activeCore.getOrElse(""),
+        "Days_of_Activity" -> userProperty.daysOfActivity.map(_.toString).getOrElse(""),
+        "Days_of_Activity_30d" -> userProperty.daysOfActivity.map(_.toString).getOrElse(""),
+        "Number_of_themes" -> userProperty.numberOfThemes.map(_.toString).getOrElse(""),
+        "User_type" -> {
+          if (user.isOrganisation) { "B2B" } else { "B2C" }
+        }
+      ).filter {
+        case (_, value) if value.isEmpty => false
+        case _                           => true
+      }
+    }
+
   }
 }
+
+final case class UserProperties(accountCreationSource: Option[String] = None,
+                                accountCreationOperation: Option[String] = None,
+                                accountCreationCountry: Option[String] = None,
+                                countriesActivity: Seq[String] = Seq.empty,
+                                lastCountryActivity: Option[String] = None,
+                                lastLanguageActivity: Option[String] = None,
+                                totalNumberProposals: Option[Int] = None,
+                                totalNumbervotes: Option[Int] = None,
+                                firstContributionDate: Option[String] = None,
+                                lastContributionDate: Option[String] = None,
+                                operationActivity: Seq[String] = Seq.empty,
+                                activeCore: Option[String] = None,
+                                daysOfActivity: Option[Int] = None,
+                                daysOfActivity30d: Option[Int] = None,
+                                numberOfThemes: Option[Int] = None,
+                                userType: Option[String] = None)
