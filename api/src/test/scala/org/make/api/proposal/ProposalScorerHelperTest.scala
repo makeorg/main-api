@@ -21,7 +21,7 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import org.make.api.MakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
@@ -31,7 +31,7 @@ import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
 
-class ProposalScorerHelperTest extends MakeTest {
+class ProposalScorerHelperTest extends MakeUnitTest {
 
   def createProposal(nbVoteAgree: Int = 0,
                      nbVoteDisagree: Int = 0,
@@ -127,11 +127,15 @@ class ProposalScorerHelperTest extends MakeTest {
 
   feature("count qualification by voteKey and qualification key") {
     scenario("count qualification when proposal has no vote") {
-      ProposalScorerHelper.qualificationCounts(proposalWithoutvote, VoteKey.Neutral, QualificationKey.NoOpinion) should be(0)
+      ProposalScorerHelper.qualificationCounts(proposalWithoutvote, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
+        0
+      )
     }
 
     scenario("count vote when proposal has vote and qualification") {
-      ProposalScorerHelper.qualificationCounts(proposalWithVoteandQualification, VoteKey.Agree, QualificationKey.LikeIt) should be(10)
+      ProposalScorerHelper.qualificationCounts(proposalWithVoteandQualification, VoteKey.Agree, QualificationKey.LikeIt) should be(
+        10
+      )
     }
   }
 

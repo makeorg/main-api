@@ -22,7 +22,7 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.MakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal._
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
@@ -36,7 +36,7 @@ import org.make.core.{proposal, DateHelper, RequestContext}
 import org.scalatest.PrivateMethodTester
 
 class SequenceServiceComponentTest
-    extends MakeTest
+    extends MakeUnitTest
     with PrivateMethodTester
     with DefaultSequenceServiceComponent
     with SequenceConfigurationComponent

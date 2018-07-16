@@ -29,7 +29,7 @@ import org.make.api.technical._
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.api.{ActorSystemComponent, MakeTest}
+import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
@@ -46,7 +46,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class DefaultProposalServiceComponentTest
-    extends MakeTest
+    extends MakeUnitTest
     with DefaultProposalServiceComponent
     with IdGeneratorComponent
     with ProposalServiceComponent

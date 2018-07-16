@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
 import org.apache.commons.math3.random.MersenneTwister
-import org.make.api.MakeTest
+import org.make.api.MakeUnitTest
 import org.make.api.proposal._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
@@ -44,7 +44,7 @@ class Switch {
   }
 }
 
-class SelectionAlgorithmTest extends MakeTest with DefaultSelectionAlgorithmComponent {
+class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithmComponent {
 
   val sequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence"),
