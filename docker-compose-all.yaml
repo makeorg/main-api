@@ -14,6 +14,7 @@ services:
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
+      - SEMANTIC_URL=http://semantic:9001
     networks:
       - makeapi
     depends_on:
@@ -36,6 +37,7 @@ services:
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
+      - SEMANTIC_URL=http://semantic:9001
     networks:
       - makeapi
     depends_on:
@@ -59,6 +61,7 @@ services:
       - JDBC_URL=jdbc:postgresql://cockroach:26257/makeapi
       - ZOOKEEPER_URL=zookeeper:2181
       - CASSANDRA_0=cassandra
+      - SEMANTIC_URL=http://semantic:9001
     networks:
       - makeapi
     depends_on:
@@ -68,6 +71,17 @@ services:
       - elasticsearch
       - cassandra
       - api2
+  semantic:
+    image: nexus.prod.makeorg.tech/make-semantic:preproduction-latest
+    ports:
+      - 9001:9001
+    environment:
+      ES_URL: "elasticsearch:9200"
+    depends_on:
+      - elasticsearch
+    networks:
+      - makeapi
+    restart: on-failure:2
   elasticsearch:
     image: makeorg/make-elasticsearch:5.6.6
     hostname: elasticsearch
