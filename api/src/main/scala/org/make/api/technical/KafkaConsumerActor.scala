@@ -35,9 +35,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
-/*
- * TODO: This actor should not use default execution context
- */
 abstract class KafkaConsumerActor[T]
     extends Actor
     with KafkaConfigurationExtension
