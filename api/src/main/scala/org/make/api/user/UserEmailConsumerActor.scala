@@ -30,6 +30,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
+import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -60,7 +61,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   }
 
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
-    userService.getUser(event.userId).map { maybeUser =>
+    getUserWithValidEmail(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         val language = event.language
         val country = event.country
@@ -106,7 +107,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   }
 
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
-    userService.getUser(event.userId).map { maybeUser =>
+    getUserWithValidEmail(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         val language = event.language
         val country = event.country
@@ -166,7 +167,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   }
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
-    userService.getUser(event.userId).map { maybeUser =>
+    getUserWithValidEmail(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         val language = event.language
         val country = event.country
@@ -222,7 +223,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
     * @return Future[Unit]
     */
   private def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
-    userService.getUser(event.userId).map { maybeUser =>
+    getUserWithValidEmail(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         val language = event.requestContext.language.getOrElse("fr")
         val country = event.requestContext.country.getOrElse("FR")
@@ -267,6 +268,15 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
           }
         }
       }
+    }
+  }
+
+  private def getUserWithValidEmail(userId: UserId): Future[Option[User]] = {
+    userService.getUser(userId).map {
+      case Some(user) if user.isHardBounce =>
+        log.info(s"an hardbounced user (${user.email}) will be ignored by email consumer")
+        None
+      case other => other
     }
   }
 }
