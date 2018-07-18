@@ -78,17 +78,25 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
                      sessionId: String,
                      visitorId: String,
                      startTime: Long,
-                     addCookie: Boolean,
                      externalId: String,
                      origin: Option[String]): Directive0 = {
     respondWithDefaultHeaders {
-      val mandatoryHeaders: immutable.Seq[HttpHeader] = immutable.Seq(
+      immutable.Seq(
         RequestTimeHeader(startTime),
         RequestIdHeader(requestId),
         RouteNameHeader(routeName),
         ExternalIdHeader(externalId),
-        SessionIdHeader(sessionId)
-      ) ++ defaultCorsHeaders(origin) ++ Seq(
+        SessionIdHeader(sessionId),
+        `Set-Cookie`(
+          HttpCookie(
+            name = sessionIdKey,
+            value = sessionId,
+            secure = makeSettings.SessionCookie.isSecure,
+            httpOnly = true,
+            maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+            path = Some("/")
+          )
+        ),
         `Set-Cookie`(
           HttpCookie(
             name = visitorIdKey,
@@ -99,24 +107,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             path = Some("/")
           )
         )
-      )
-
-      if (addCookie) {
-        mandatoryHeaders ++ Seq(
-          `Set-Cookie`(
-            HttpCookie(
-              name = sessionIdKey,
-              value = sessionId,
-              secure = makeSettings.SessionCookie.isSecure,
-              httpOnly = true,
-              maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-              path = Some("/")
-            )
-          )
-        )
-      } else {
-        mandatoryHeaders
-      }
+      ) ++ defaultCorsHeaders(origin)
     }
   }
 
@@ -124,26 +115,15 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     val slugifiedName: String = SlugHelper(name)
 
     for {
-      _                  <- operationName(slugifiedName)
-      maybeCookie        <- optionalCookie(sessionIdKey)
-      maybeVisitorCookie <- optionalCookie(visitorIdKey)
-      requestId          <- requestId
-      startTime          <- startTime
-      sessionId          <- sessionId
-      visitorId          <- visitorId
-      externalId         <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      origin             <- optionalHeaderValueByName(Origin.name)
-      _                  <- makeAuthCookieHandlers()
-      _ <- addMakeHeaders(
-        requestId,
-        slugifiedName,
-        sessionId,
-        visitorId,
-        startTime,
-        maybeCookie.isEmpty,
-        externalId,
-        origin
-      )
+      _                    <- operationName(slugifiedName)
+      requestId            <- requestId
+      startTime            <- startTime
+      sessionId            <- sessionId
+      visitorId            <- visitorId
+      externalId           <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin               <- optionalHeaderValueByName(Origin.name)
+      _                    <- makeAuthCookieHandlers()
+      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, visitorId, startTime, externalId, origin)
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)

@@ -1006,10 +1006,12 @@ object ProposalActor {
           case vote => vote
         },
         organisations = event.organisationInfo match {
-          case Some(organisationInfo) =>
+          case Some(organisationInfo)
+              if !state.proposal.organisations
+                .exists(_.organisationId.value == organisationInfo.organisationId.value) =>
             state.proposal.organisations :+ OrganisationInfo(
               organisationInfo.organisationId,
-              event.organisationInfo.flatMap(_.organisationName)
+              organisationInfo.organisationName
             )
           case _ => state.proposal.organisations
         }

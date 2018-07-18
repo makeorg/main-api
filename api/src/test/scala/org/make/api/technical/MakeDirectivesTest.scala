@@ -98,12 +98,12 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("no cookie if session id is sent") {
+    scenario("cookie exists if session id is sent") {
       Get("/test").withHeaders(Cookie("make-session-id" -> "123")) ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         status should be(StatusCodes.OK)
-        !cookiesHeaders.exists(_.name == "make-session-id") shouldBe true
+        cookiesHeaders.exists(_.name == "make-session-id") shouldBe true
       }
     }
 
