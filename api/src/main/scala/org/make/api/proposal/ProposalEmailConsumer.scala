@@ -110,7 +110,8 @@ class ProposalEmailConsumer(userService: UserService,
                     "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
-                    "source" -> event.requestContext.source.getOrElse("")
+                    "source" -> event.requestContext.source.getOrElse(""),
+                    "organisation_name" -> user.organisationName.getOrElse("")
                   )
                 ),
                 customCampaign = templateConfiguration.customCampaign,
@@ -171,7 +172,8 @@ class ProposalEmailConsumer(userService: UserService,
                     "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
-                    "source" -> event.requestContext.source.getOrElse("")
+                    "source" -> event.requestContext.source.getOrElse(""),
+                    "organisation_name" -> user.organisationName.getOrElse("")
                   )
                 ),
                 customCampaign = templateConfiguration.customCampaign,
