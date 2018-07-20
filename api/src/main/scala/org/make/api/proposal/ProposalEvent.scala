@@ -75,7 +75,7 @@ object PublishedProposalEvent {
 
   type AnyProposalEvent =
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
-      ProposalUpdated :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
+      ProposalUpdated :+: ReindexProposal :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
       SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+: ProposalAddedToOperation :+:
       ProposalRemovedFromOperation :+: CNil
 
@@ -94,6 +94,7 @@ object PublishedProposalEvent {
       case e: ProposalPostponed            => Coproduct[AnyProposalEvent](e)
       case e: ProposalViewed               => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated              => Coproduct[AnyProposalEvent](e)
+      case e: ReindexProposal              => Coproduct[AnyProposalEvent](e)
       case e: ProposalVoted                => Coproduct[AnyProposalEvent](e)
       case e: ProposalUnvoted              => Coproduct[AnyProposalEvent](e)
       case e: ProposalQualified            => Coproduct[AnyProposalEvent](e)
@@ -109,6 +110,7 @@ object PublishedProposalEvent {
   object ToProposalEvent extends Poly1 {
     implicit val atProposalViewed: Case.Aux[ProposalViewed, ProposalViewed] = at(identity)
     implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
+    implicit val atProposalTagsUpdated: Case.Aux[ReindexProposal, ReindexProposal] = at(identity)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
     implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
@@ -212,6 +214,18 @@ object PublishedProposalEvent {
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
       DefaultJsonProtocol.jsonFormat13(ProposalUpdated.apply)
 
+  }
+
+  final case class ReindexProposal(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
+      extends PublishedProposalEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  object ReindexProposal {
+    val actionType: String = "proposals-tags-updated"
+
+    implicit val formatter: RootJsonFormat[ReindexProposal] =
+      DefaultJsonProtocol.jsonFormat3(ReindexProposal.apply)
   }
 
   final case class ProposalAccepted(id: ProposalId,

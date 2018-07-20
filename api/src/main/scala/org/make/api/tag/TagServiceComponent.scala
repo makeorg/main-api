@@ -19,13 +19,14 @@
 
 package org.make.api.tag
 
-import org.make.api.ActorSystemComponent
-import org.make.api.proposal.ProposalCoordinatorServiceComponent
-import org.make.api.sequence.SequenceCoordinatorServiceComponent
-import org.make.api.tagtype.PersistentTagTypeServiceComponent
+import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
+import org.make.api.tagtype.{PersistentTagTypeServiceComponent, TagTypeServiceComponent}
 import org.make.api.technical._
+import org.make.core.{DateHelper, RequestContext}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.IndexedTag
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.reference.ThemeId
 import org.make.core.tag._
 
@@ -57,7 +58,7 @@ trait TagService extends ShortenedNames {
                 language: String,
                 display: TagDisplay = TagDisplay.Inherit,
                 weight: Float = 0f): Future[Tag]
-  def findAll(): Future[Seq[Tag]]
+  def findAll(displayed: Boolean = false): Future[Seq[Tag]]
   def findAllDisplayed(): Future[Seq[Tag]]
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
@@ -71,7 +72,8 @@ trait TagService extends ShortenedNames {
                 operationId: Option[OperationId],
                 themeId: Option[ThemeId],
                 country: String,
-                language: String): Future[Option[Tag]]
+                language: String,
+                requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
   def search(start: Int,
              end: Option[Int],
@@ -84,13 +86,10 @@ trait TagService extends ShortenedNames {
 trait DefaultTagServiceComponent
     extends TagServiceComponent
     with ShortenedNames
-    with EventBusServiceComponent
-    with ReadJournalComponent
-    with ProposalCoordinatorServiceComponent
-    with SequenceCoordinatorServiceComponent
-    with ActorSystemComponent
+    with ProposalSearchEngineComponent
+    with TagTypeServiceComponent
     with PersistentTagTypeServiceComponent {
-  this: PersistentTagServiceComponent with IdGeneratorComponent =>
+  this: PersistentTagServiceComponent with EventBusServiceComponent with IdGeneratorComponent =>
 
   val tagService: TagService = new TagService {
 
@@ -98,8 +97,12 @@ trait DefaultTagServiceComponent
       persistentTagService.get(tagId)
     }
 
-    override def findAll(): Future[Seq[Tag]] = {
-      persistentTagService.findAll()
+    override def findAll(displayed: Boolean): Future[Seq[Tag]] = {
+      if (displayed) {
+        findAllDisplayed()
+      } else {
+        persistentTagService.findAll()
+      }
     }
 
     override def findAllDisplayed(): Future[Seq[Tag]] = {
@@ -196,14 +199,18 @@ trait DefaultTagServiceComponent
                            operationId: Option[OperationId],
                            themeId: Option[ThemeId],
                            country: String,
-                           language: String): Future[Option[Tag]] = {
+                           language: String,
+                           requestContext: RequestContext): Future[Option[Tag]] = {
       persistentTagService.get(tagId).flatMap {
         case Some(tag) =>
-          persistentTagService
-            .update(
+          for {
+            tagType <- tagTypeService.getTagType(tagTypeId)
+            updateTag <- persistentTagService.update(
               tag.copy(
                 label = label,
-                display = display,
+                display =
+                  if (tagType.exists(_.display.shortName == TagTypeDisplay.Hidden.shortName)) TagDisplay.Hidden
+                  else display,
                 tagTypeId = tagTypeId,
                 weight = weight,
                 operationId = operationId,
@@ -212,6 +219,12 @@ trait DefaultTagServiceComponent
                 language = language
               )
             )
+            _ <- elasticsearchProposalAPI
+              .searchProposals(SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(tagId)))))))
+              .map(_.results.foreach { proposal =>
+                eventBusService.publish(ReindexProposal(proposal.id, DateHelper.now(), requestContext))
+              })
+          } yield updateTag
         case None => Future.successful(None)
       }
     }

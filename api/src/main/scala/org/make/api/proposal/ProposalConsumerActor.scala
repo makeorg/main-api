@@ -66,6 +66,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
       case event: ProposalUpdated =>
         onSimilarProposalsUpdated(event.id, event.similarProposals)
         onCreateOrUpdate(event)
+      case event: ReindexProposal  => onCreateOrUpdate(event)
       case event: ProposalProposed => onCreateOrUpdate(event)
       case event: ProposalAccepted =>
         onSimilarProposalsUpdated(event.id, event.similarProposals)
