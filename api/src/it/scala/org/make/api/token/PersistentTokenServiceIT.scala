@@ -27,6 +27,7 @@ import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, Def
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -59,8 +60,8 @@ class PersistentTokenServiceIT
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
   val exampleClient = Client(

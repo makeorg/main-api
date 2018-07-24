@@ -25,7 +25,7 @@ import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.core.RequestContext
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Language, ThemeId}
 import org.make.core.sequence._
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
@@ -107,7 +107,8 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
           updatedAt = Some(eventDate),
           status = SequenceStatus.Unpublished,
           creationContext = requestContext,
-          sequenceTranslation = Seq(SequenceTranslation(slug = "the-sequence", title = "The sequence", language = "en")),
+          sequenceTranslation =
+            Seq(SequenceTranslation(slug = "the-sequence", title = "The sequence", language = Language("en"))),
           events = List(
             SequenceAction(
               date = eventDate,
@@ -131,7 +132,8 @@ class SequenceSerializersTest extends WordSpec with StaminaTestKit {
       updatedAt = Some(eventDate),
       status = SequenceStatus.Unpublished,
       creationContext = requestContext,
-      sequenceTranslation = Seq(SequenceTranslation(slug = "the-sequence", title = "The sequence", language = "en")),
+      sequenceTranslation =
+        Seq(SequenceTranslation(slug = "the-sequence", title = "The sequence", language = Language("en"))),
       events = List(
         SequenceAction(date = eventDate, user = userId, actionType = "test", arguments = Map("test" -> "test-value"))
       ),

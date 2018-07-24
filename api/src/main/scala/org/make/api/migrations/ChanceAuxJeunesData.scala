@@ -27,6 +27,7 @@ import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter, StatusSearchFilter}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{Role, User}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
@@ -56,8 +57,8 @@ object ChanceAuxJeunesData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = MakeEuropeOperation.defaultLanguage,
-        language = MakeEuropeOperation.defaultLanguage,
+        country = ChanceAuxJeunesOperation.countryConfigurations.head.country,
+        language = ChanceAuxJeunesOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())
       )
@@ -111,7 +112,7 @@ object ChanceAuxJeunesData extends InsertFixtureData {
       }
   }
 
-  case class ProposalToInsert(content: String, country: String, language: String, userEmail: String)
+  case class ProposalToInsert(content: String, country: Country, language: Language, userEmail: String)
 
   override def migrate(api: MakeApi): Future[Unit] = {
     val csv: Seq[FixtureDataLine] =
@@ -172,8 +173,8 @@ object ChanceAuxJeunesData extends InsertFixtureData {
             operation = Some(operationId),
             tags = tags.split('|').toSeq.map(TagId.apply),
             labels = Seq.empty,
-            country = country,
-            language = language
+            country = Country(country),
+            language = Language(language)
           )
         )
       case _ => None

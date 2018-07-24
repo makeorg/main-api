@@ -21,6 +21,7 @@ package org.make.core.user
 
 import java.time.ZonedDateTime
 
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
@@ -42,8 +43,8 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 

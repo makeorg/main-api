@@ -29,7 +29,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -50,106 +50,107 @@ trait PersistentIdeaService {
 trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentIdeaService = new PersistentIdeaService with ShortenedNames with StrictLogging {
+  override lazy val persistentIdeaService: PersistentIdeaService =
+    new PersistentIdeaService with ShortenedNames with StrictLogging {
 
-    private val ideaAlias = PersistentIdea.ideaAlias
-    private val column = PersistentIdea.column
+      private val ideaAlias = PersistentIdea.ideaAlias
+      private val column = PersistentIdea.column
 
-    override def findOne(ideaId: IdeaId): Future[Option[Idea]] = {
-      implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentIdea.as(ideaAlias))
-            .where(sqls.eq(ideaAlias.id, ideaId.value))
-        }.map(PersistentIdea.apply()).single.apply
-      })
+      override def findOne(ideaId: IdeaId): Future[Option[Idea]] = {
+        implicit val context: EC = readExecutionContext
+        val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL {
+            select
+              .from(PersistentIdea.as(ideaAlias))
+              .where(sqls.eq(ideaAlias.id, ideaId.value))
+          }.map(PersistentIdea.apply()).single.apply
+        })
 
-      futurePersistentTag.map(_.map(_.toIdea))
-    }
+        futurePersistentTag.map(_.map(_.toIdea))
+      }
 
-    override def findOneByName(name: String): Future[Option[Idea]] = {
-      implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentIdea.as(ideaAlias))
-            .where(sqls.eq(ideaAlias.name, name))
-        }.map(PersistentIdea.apply()).single.apply
-      })
+      override def findOneByName(name: String): Future[Option[Idea]] = {
+        implicit val context: EC = readExecutionContext
+        val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL {
+            select
+              .from(PersistentIdea.as(ideaAlias))
+              .where(sqls.eq(ideaAlias.name, name))
+          }.map(PersistentIdea.apply()).single.apply
+        })
 
-      futurePersistentTag.map(_.map(_.toIdea))
-    }
+        futurePersistentTag.map(_.map(_.toIdea))
+      }
 
-    override def findAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
-      implicit val context: EC = readExecutionContext
+      override def findAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
+        implicit val context: EC = readExecutionContext
 
-      val futurePersistentIdeas = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentIdea.as(ideaAlias))
-            .where(
-              sqls.toAndConditionOpt(
-                ideaFilters.language.map(language       => sqls.eq(ideaAlias.language, language)),
-                ideaFilters.country.map(country         => sqls.eq(ideaAlias.country, country)),
-                ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId)),
-                ideaFilters.question.map(question       => sqls.eq(ideaAlias.question, question))
+        val futurePersistentIdeas = Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL {
+            select
+              .from(PersistentIdea.as(ideaAlias))
+              .where(
+                sqls.toAndConditionOpt(
+                  ideaFilters.language.map(language       => sqls.eq(ideaAlias.language, language.value)),
+                  ideaFilters.country.map(country         => sqls.eq(ideaAlias.country, country.value)),
+                  ideaFilters.operationId.map(operationId => sqls.eq(ideaAlias.operationId, operationId.value)),
+                  ideaFilters.question.map(question       => sqls.eq(ideaAlias.question, question))
+                )
               )
-            )
-        }.map(PersistentIdea.apply()).list.apply
-      })
+          }.map(PersistentIdea.apply()).list.apply
+        })
 
-      futurePersistentIdeas.map(_.map(_.toIdea))
+        futurePersistentIdeas.map(_.map(_.toIdea))
+      }
+
+      def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]] = {
+        implicit val cxt: EC = readExecutionContext
+        val futurePersistentIdeas = Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL {
+            select
+              .from(PersistentIdea.as(ideaAlias))
+              .where(sqls.in(ideaAlias.id, ids.map(_.value)))
+          }.map(PersistentIdea.apply()).list.apply
+        })
+
+        futurePersistentIdeas.map(_.map(_.toIdea))
+      }
+
+      override def persist(idea: Idea): Future[Idea] = {
+        implicit val context: EC = writeExecutionContext
+        Future(NamedDB('WRITE).retryableTx { implicit session =>
+          withSQL {
+            insert
+              .into(PersistentIdea)
+              .namedValues(
+                column.id -> idea.ideaId.value,
+                column.name -> idea.name,
+                column.language -> idea.language.map(_.value),
+                column.country -> idea.country.map(_.value),
+                column.question -> idea.question,
+                column.operationId -> idea.operationId.map(_.value),
+                column.themeId -> idea.themeId.map(_.value),
+                column.createdAt -> DateHelper.now,
+                column.updatedAt -> DateHelper.now
+              )
+          }.execute().apply()
+        }).map(_ => idea)
+      }
+
+      override def modify(ideaId: IdeaId, name: String): Future[Int] = {
+        implicit val context: EC = writeExecutionContext
+        Future(NamedDB('WRITE).retryableTx { implicit session =>
+          withSQL {
+            update(PersistentIdea)
+              .set(column.name -> name, column.updatedAt -> DateHelper.now)
+              .where(
+                sqls
+                  .eq(column.id, ideaId.value)
+              )
+          }.update().apply()
+        })
+      }
     }
-
-    def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]] = {
-      implicit val cxt: EC = readExecutionContext
-      val futurePersistentIdeas = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentIdea.as(ideaAlias))
-            .where(sqls.in(ideaAlias.id, ids.map(_.value)))
-        }.map(PersistentIdea.apply()).list.apply
-      })
-
-      futurePersistentIdeas.map(_.map(_.toIdea))
-    }
-
-    override def persist(idea: Idea): Future[Idea] = {
-      implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
-        withSQL {
-          insert
-            .into(PersistentIdea)
-            .namedValues(
-              column.id -> idea.ideaId.value,
-              column.name -> idea.name,
-              column.language -> idea.language,
-              column.country -> idea.country,
-              column.question -> idea.question,
-              column.operationId -> idea.operationId.map(_.value),
-              column.themeId -> idea.themeId.map(_.value),
-              column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now
-            )
-        }.execute().apply()
-      }).map(_ => idea)
-    }
-
-    override def modify(ideaId: IdeaId, name: String): Future[Int] = {
-      implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
-        withSQL {
-          update(PersistentIdea)
-            .set(column.name -> name, column.updatedAt -> DateHelper.now)
-            .where(
-              sqls
-                .eq(column.id, ideaId.value)
-            )
-        }.update().apply()
-      })
-    }
-  }
 }
 
 object DefaultPersistentIdeaServiceComponent {
@@ -167,8 +168,8 @@ object DefaultPersistentIdeaServiceComponent {
       Idea(
         ideaId = IdeaId(id),
         name = name,
-        language = language,
-        country = country,
+        language = language.map(Language(_)),
+        country = country.map(Country(_)),
         question = question,
         operationId = operationId.map(operationId => OperationId(operationId)),
         themeId = themeId.map(themeId             => ThemeId(themeId)),

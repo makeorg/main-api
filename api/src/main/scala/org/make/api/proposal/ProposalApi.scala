@@ -19,12 +19,12 @@
 
 package org.make.api.proposal
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -37,17 +37,18 @@ import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.{DateHelper, HttpCodes, Validation}
+import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
+import scalaoauth2.provider.AuthInfo
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
-trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
+trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: ProposalServiceComponent
     with ThemeServiceComponent
     with MakeDataHandlerComponent
@@ -145,11 +146,11 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters(
               (
-                'proposalIds.as(CsvSeq[String]).?,
-                'themesIds.as(CsvSeq[String]).?,
-                'tagsIds.as(CsvSeq[String]).?,
-                'labelsIds.as(CsvSeq[String]).?,
-                'operationId.?,
+                'proposalIds.as[immutable.Seq[ProposalId]].?,
+                'themesIds.as[immutable.Seq[ThemeId]].?,
+                'tagsIds.as[immutable.Seq[TagId]].?,
+                'labelsIds.as[immutable.Seq[LabelId]].?,
+                'operationId.as[OperationId].?,
                 'trending.?,
                 'content.?,
                 'slug.?,
@@ -157,8 +158,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                 'source.?,
                 'location.?,
                 'question.?,
-                'language.?,
-                'country.?,
+                'language.as[Language].?,
+                'country.as[Country].?,
                 'sort.?,
                 'order.?,
                 'limit.as[Int].?,
@@ -167,32 +168,32 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
                 'sortAlgorithm.?
               )
             ) {
-              (proposalIds,
-               themesIds,
-               tagsIds,
-               labelsIds,
-               operationId,
-               trending,
-               content,
-               slug,
-               seed,
-               source,
-               location,
-               question,
-               language,
-               country,
-               sort,
-               order,
-               limit,
-               skip,
-               isRandom,
-               sortAlgorithm) =>
+              (proposalIds: Option[Seq[ProposalId]],
+               themesIds: Option[Seq[ThemeId]],
+               tagsIds: Option[Seq[TagId]],
+               labelsIds: Option[Seq[LabelId]],
+               operationId: Option[OperationId],
+               trending: Option[String],
+               content: Option[String],
+               slug: Option[String],
+               seed: Option[Int],
+               source: Option[String],
+               location: Option[String],
+               question: Option[String],
+               language: Option[Language],
+               country: Option[Country],
+               sort: Option[String],
+               order: Option[String],
+               limit: Option[Int],
+               skip: Option[Int],
+               isRandom: Option[Boolean],
+               sortAlgorithm: Option[String]) =>
                 Validation.validate(Seq(country.map { countryValue =>
                   Validation.validChoices(
                     fieldName = "country",
                     message =
                       Some(s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"),
-                    Seq(countryValue.toUpperCase),
+                    Seq(countryValue),
                     BusinessConfig.supportedCountries.map(_.countryCode)
                   )
                 }, sort.map { sortValue =>
@@ -224,24 +225,24 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
 
                 val contextFilterRequest: Option[ContextFilterRequest] =
                   operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-                    ContextFilterRequest(operationId.map(OperationId.apply), source, location, question)
+                    ContextFilterRequest(operationId, source, location, question)
                   }
                 val sortRequest: Option[SortRequest] = sort.orElse(order).map { _ =>
                   SortRequest(sort, order.flatMap(Order.matchOrder))
                 }
                 val searchRequest: SearchRequest = SearchRequest(
-                  proposalIds = proposalIds.map(_.map(ProposalId.apply)),
-                  themesIds = themesIds.map(_.map(ThemeId.apply)),
-                  tagsIds = tagsIds.map(_.map(TagId.apply)),
-                  labelsIds = labelsIds.map(_.map(LabelId.apply)),
-                  operationId = operationId.map(OperationId.apply),
+                  proposalIds = proposalIds,
+                  themesIds = themesIds,
+                  tagsIds = tagsIds,
+                  labelsIds = labelsIds,
+                  operationId = operationId,
                   trending = trending,
                   content = content,
                   slug = slug,
                   seed = seed,
                   context = contextFilterRequest,
-                  language = language.map(_.toLowerCase),
-                  country = country.map(_.toUpperCase),
+                  language = language,
+                  country = country,
                   sort = sortRequest,
                   limit = limit,
                   skip = skip,
@@ -486,5 +487,4 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging {
 
   val proposalId: PathMatcher1[ProposalId] =
     Segment.flatMap(id => Try(ProposalId(id)).toOption)
-
 }

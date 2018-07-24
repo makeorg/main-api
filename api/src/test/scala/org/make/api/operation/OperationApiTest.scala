@@ -28,6 +28,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.technical.CountryHeader
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 import org.mockito.Mockito._
@@ -47,10 +48,10 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
     translations = Seq(
-      OperationTranslation(title = "première operation", language = "fr"),
-      OperationTranslation(title = "first operation", language = "en")
+      OperationTranslation(title = "première operation", language = Language("fr")),
+      OperationTranslation(title = "first operation", language = Language("en"))
     ),
-    defaultLanguage = "fr",
+    defaultLanguage = Language("fr"),
     events = List(
       OperationAction(
         date = now,
@@ -63,14 +64,14 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
     updatedAt = Some(DateHelper.now()),
     countriesConfiguration = Seq(
       OperationCountryConfiguration(
-        countryCode = "BR",
+        countryCode = Country("BR"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-BR"),
         startDate = None,
         endDate = None
       ),
       OperationCountryConfiguration(
-        countryCode = "GB",
+        countryCode = Country("GB"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-GB"),
         startDate = None,
@@ -84,10 +85,10 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
     translations = Seq(
-      OperationTranslation(title = "secondo operazione", language = "it"),
-      OperationTranslation(title = "second operation", language = "en")
+      OperationTranslation(title = "secondo operazione", language = Language("it")),
+      OperationTranslation(title = "second operation", language = Language("en"))
     ),
-    defaultLanguage = "it",
+    defaultLanguage = Language("it"),
     events = List(
       OperationAction(
         date = now,
@@ -100,7 +101,7 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
     updatedAt = Some(DateHelper.now()),
     countriesConfiguration = Seq(
       OperationCountryConfiguration(
-        countryCode = "IT",
+        countryCode = Country("IT"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("second-sequence-id"),
         startDate = None,
@@ -142,16 +143,20 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
         operationResponseList.length should be(1)
         operationResponseList.head.slug should be(secondOperation.slug)
         operationResponseList.head.operationId.value should be(secondOperation.operationId.value)
-        operationResponseList.head.translations.filter(_.language == "it").head.title should be("secondo operazione")
-        operationResponseList.head.translations.filter(_.language == "en").head.title should be("second operation")
-        operationResponseList.head.defaultLanguage should be("it")
+        operationResponseList.head.translations.filter(_.language == Language("it")).head.title should be(
+          "secondo operazione"
+        )
+        operationResponseList.head.translations.filter(_.language == Language("en")).head.title should be(
+          "second operation"
+        )
+        operationResponseList.head.defaultLanguage should be(Language("it"))
         operationResponseList.head.sequenceLandingId.value should be(
           secondOperation.countriesConfiguration.head.landingSequenceId.value
         )
         operationResponseList.head.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.countriesConfiguration.length should be(1)
-        operationResponseList.head.countriesConfiguration.head.countryCode should be("IT")
+        operationResponseList.head.countriesConfiguration.head.countryCode should be(Country("IT"))
         operationResponseList.head.countriesConfiguration.head.tagIds should be(Seq.empty)
       }
     }
@@ -168,16 +173,16 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
         val operationResponse: OperationResponse = entityAs[OperationResponse]
         operationResponse.slug should be(firstOperation.slug)
         operationResponse.operationId.value should be(firstOperation.operationId.value)
-        operationResponse.translations.filter(_.language == "fr").head.title should be("première operation")
-        operationResponse.translations.filter(_.language == "en").head.title should be("first operation")
-        operationResponse.defaultLanguage should be("fr")
+        operationResponse.translations.filter(_.language == Language("fr")).head.title should be("première operation")
+        operationResponse.translations.filter(_.language == Language("en")).head.title should be("first operation")
+        operationResponse.defaultLanguage should be(Language("fr"))
         operationResponse.sequenceLandingId.value should be(
           firstOperation.countriesConfiguration.head.landingSequenceId.value
         )
         operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.countriesConfiguration.length should be(2)
-        operationResponse.countriesConfiguration.head.countryCode should be("BR")
+        operationResponse.countriesConfiguration.head.countryCode should be(Country("BR"))
         operationResponse.countriesConfiguration.head.tagIds should be(Seq.empty)
       }
     }
@@ -195,14 +200,14 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
         val operationResponse: OperationResponse = entityAs[OperationResponse]
         operationResponse.slug should be(firstOperation.slug)
         operationResponse.operationId.value should be(firstOperation.operationId.value)
-        operationResponse.translations.filter(_.language == "fr").head.title should be("première operation")
-        operationResponse.translations.filter(_.language == "en").head.title should be("first operation")
-        operationResponse.defaultLanguage should be("fr")
+        operationResponse.translations.filter(_.language == Language("fr")).head.title should be("première operation")
+        operationResponse.translations.filter(_.language == Language("en")).head.title should be("first operation")
+        operationResponse.defaultLanguage should be(Language("fr"))
         operationResponse.sequenceLandingId.value should be("first-sequence-id-GB")
         operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.countriesConfiguration.length should be(2)
-        operationResponse.countriesConfiguration.head.countryCode should be("BR")
+        operationResponse.countriesConfiguration.head.countryCode should be(Country("BR"))
         operationResponse.countriesConfiguration.head.tagIds should be(Seq.empty)
       }
     }

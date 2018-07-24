@@ -30,6 +30,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.userhistory.UserEvent.UserValidatedAccountEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
+import org.make.core.reference.{Country, Language}
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -92,8 +93,8 @@ class UserServiceTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = Some(fooProfile),
     createdAt = Some(zonedDateTimeInThePast)
   )
@@ -144,8 +145,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(returnedProfile)
       )
 
@@ -164,8 +165,8 @@ class UserServiceTest
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-          country = "FR",
-          language = "fr"
+          country = Country("FR"),
+          language = Language("fr")
         ),
         RequestContext.empty
       )
@@ -227,8 +228,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(returnedProfile)
       )
 
@@ -300,8 +301,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(returnedProfileWithGender)
       )
 
@@ -378,8 +379,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(returnedProfile)
       )
 
@@ -446,8 +447,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(RoleCitizen),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(returnedProfile)
       )
 
@@ -477,8 +478,8 @@ class UserServiceTest
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-          country = "FR",
-          language = "fr"
+          country = Country("FR"),
+          language = Language("fr")
         ),
         RequestContext.empty
       )
@@ -503,8 +504,8 @@ class UserServiceTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None
       )
 

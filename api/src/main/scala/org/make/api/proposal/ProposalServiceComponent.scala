@@ -41,7 +41,7 @@ import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 
@@ -76,8 +76,8 @@ trait ProposalService {
               content: String,
               operation: Option[OperationId],
               theme: Option[ThemeId],
-              language: Option[String],
-              country: Option[String]): Future[ProposalId]
+              language: Option[Language],
+              country: Option[Country]): Future[ProposalId]
 
   // toDo: add theme
   def update(proposalId: ProposalId,
@@ -137,8 +137,8 @@ trait ProposalService {
 
   def searchAndLockProposalToModerate(operationId: Option[OperationId],
                                       themeId: Option[ThemeId],
-                                      country: String,
-                                      language: String,
+                                      country: Country,
+                                      language: Language,
                                       moderator: UserId,
                                       requestContext: RequestContext): Future[Option[ProposalResponse]]
 }
@@ -368,8 +368,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          content: String,
                          operation: Option[OperationId],
                          theme: Option[ThemeId],
-                         language: Option[String],
-                         country: Option[String]): Future[ProposalId] = {
+                         language: Option[Language],
+                         country: Option[Country]): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -698,8 +698,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def searchAndLockProposalToModerate(operationId: Option[OperationId],
                                                  themeId: Option[ThemeId],
-                                                 country: String,
-                                                 language: String,
+                                                 country: Country,
+                                                 language: Language,
                                                  moderator: UserId,
                                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
 
@@ -712,8 +712,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               SearchFilters(
                 operation = operationId.map(OperationSearchFilter.apply),
                 theme = themeId.map(theme => Seq(theme)).map(ThemeSearchFilter.apply),
-                country = Some(CountrySearchFilter(country.toUpperCase())),
-                language = Some(LanguageSearchFilter(language.toLowerCase())),
+                country = Some(CountrySearchFilter(country)),
+                language = Some(LanguageSearchFilter(language)),
                 status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
               )
             ),

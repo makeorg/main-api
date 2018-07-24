@@ -26,6 +26,7 @@ import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.core.proposal.ProposalId
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence._
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
@@ -60,8 +61,8 @@ class SequenceActorTest extends ShardingActorTest with GivenWhenThen with Strict
     verificationTokenExpiresAt = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 

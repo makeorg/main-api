@@ -22,7 +22,7 @@ package org.make.api.proposal
 import org.make.core.operation.Operation
 import org.make.core.proposal.VoteKey
 import org.make.core.proposal.indexed.{IndexedProposal, IndexedVote}
-import org.make.core.reference.Theme
+import org.make.core.reference.{Language, Theme}
 
 object ProposalCsvSerializer {
 
@@ -42,7 +42,7 @@ object ProposalCsvSerializer {
           .find(_.themeId.value == proposal.themeId.map(_.value).getOrElse(""))
           .flatMap { theme =>
             theme.translations
-              .find(_.language == "fr") // TODO get language from config files
+              .find(_.language == Language("fr")) // TODO get language from config files
               .map(START + _.title + END)
           }
           .getOrElse(""),

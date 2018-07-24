@@ -31,6 +31,7 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Male
 import org.make.core.profile.Profile
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -100,8 +101,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None,
@@ -131,7 +132,14 @@ class SocialServiceComponentTest
 
       When("login google user")
       val tokenResposnse =
-        socialService.login("google", "googleToken-a user logged via google", "FR", "fr", None, RequestContext.empty)
+        socialService.login(
+          "google",
+          "googleToken-a user logged via google",
+          Country("FR"),
+          Language("fr"),
+          None,
+          RequestContext.empty
+        )
 
       whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
         Then("my program call getOrCreateUserFromSocial with google data")
@@ -193,8 +201,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None
@@ -223,7 +231,14 @@ class SocialServiceComponentTest
 
       When("login google user")
       val tokenResposnse =
-        socialService.login("google", "googleToken-a user logged via google", "FR", "fr", None, RequestContext.empty)
+        socialService.login(
+          "google",
+          "googleToken-a user logged via google",
+          Country("FR"),
+          Language("fr"),
+          None,
+          RequestContext.empty
+        )
 
       whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
         Then("my program call getOrCreateUserFromSocial with google data")
@@ -285,8 +300,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None
@@ -315,7 +330,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login("google", "token", "FR", "fr", None, RequestContext.empty)
+        socialService.login("google", "token", Country("FR"), Language("fr"), None, RequestContext.empty)
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
@@ -334,7 +349,8 @@ class SocialServiceComponentTest
         .thenReturn(Future.failed(new Exception("invalid token from google")))
 
       When("login user from google")
-      val futureTokenResposnse = socialService.login("google", "token", "FR", "fr", None, RequestContext.empty)
+      val futureTokenResposnse =
+        socialService.login("google", "token", Country("FR"), Language("fr"), None, RequestContext.empty)
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]
@@ -369,8 +385,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None
@@ -410,7 +426,14 @@ class SocialServiceComponentTest
 
       When("login facebook user")
       val tokenResponse =
-        socialService.login("facebook", "facebookToken-444444", "FR", "fr", None, RequestContext.empty)
+        socialService.login(
+          "facebook",
+          "facebookToken-444444",
+          Country("FR"),
+          Language("fr"),
+          None,
+          RequestContext.empty
+        )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
 
@@ -461,8 +484,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Profile.parseProfile(gender = Some(Male), genderName = Some("male")),
         createdAt = None,
         updatedAt = None
@@ -503,7 +526,14 @@ class SocialServiceComponentTest
 
       When("login facebook user")
       val tokenResponse =
-        socialService.login("facebook", "facebookToken-444444", "FR", "fr", None, RequestContext.empty)
+        socialService.login(
+          "facebook",
+          "facebookToken-444444",
+          Country("FR"),
+          Language("fr"),
+          None,
+          RequestContext.empty
+        )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
 
@@ -555,8 +585,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None
@@ -596,7 +626,14 @@ class SocialServiceComponentTest
 
       When("login facebook user")
       val tokenResponse =
-        socialService.login("facebook", "facebookToken-444444", "FR", "fr", None, RequestContext.empty)
+        socialService.login(
+          "facebook",
+          "facebookToken-444444",
+          Country("FR"),
+          Language("fr"),
+          None,
+          RequestContext.empty
+        )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
 
@@ -647,8 +684,8 @@ class SocialServiceComponentTest
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = None,
         createdAt = None,
         updatedAt = None
@@ -677,7 +714,7 @@ class SocialServiceComponentTest
 
       When("login user from facebook")
       val futureTokenResposnse =
-        socialService.login("facebook", "facebookToken2", "FR", "fr", None, RequestContext.empty)
+        socialService.login("facebook", "facebookToken2", Country("FR"), Language("fr"), None, RequestContext.empty)
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
@@ -697,7 +734,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login("facebook", "facebookToken3", "FR", "fr", None, RequestContext.empty)
+        socialService.login("facebook", "facebookToken3", Country("FR"), Language("fr"), None, RequestContext.empty)
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]
@@ -712,7 +749,7 @@ class SocialServiceComponentTest
 
       When("login user from instagram")
       val futureTokenResposnse =
-        socialService.login("instagram", "token", "FR", "fr", None, RequestContext.empty)
+        socialService.login("instagram", "token", Country("FR"), Language("fr"), None, RequestContext.empty)
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]

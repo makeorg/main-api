@@ -138,7 +138,13 @@ class ProposalConsumerActor(sequenceService: SequenceService,
 
 object ProposalConsumerActor {
   type ProposalConsumerActorDependencies =
-    UserServiceComponent with TagServiceComponent with SequenceServiceComponent with OperationServiceComponent with SemanticComponent with ProposalSearchEngineComponent with ProposalIndexerServiceComponent
+    UserServiceComponent
+      with TagServiceComponent
+      with SequenceServiceComponent
+      with OperationServiceComponent
+      with SemanticComponent
+      with ProposalSearchEngineComponent
+      with ProposalIndexerServiceComponent
 
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             dependencies: ProposalConsumerActorDependencies): Props =

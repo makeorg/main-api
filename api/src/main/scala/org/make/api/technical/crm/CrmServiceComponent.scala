@@ -374,16 +374,16 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               accumulator.copy(
                 accountCreationSource = event.requestContext.source,
                 accountCreationOperation = event.requestContext.operationId.map(_.value),
-                accountCreationCountry = event.requestContext.country,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                accountCreationCountry = event.requestContext.country.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value)
               )
             case event: LogUserProposalEvent =>
               accumulator.copy(
                 totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
-                lastCountryActivity = event.requestContext.country,
-                lastLanguageActivity = event.requestContext.language,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                lastCountryActivity = event.requestContext.country.map(_.value),
+                lastLanguageActivity = event.requestContext.language.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
                 firstContributionDate = if (accumulator.firstContributionDate.isEmpty) {
                   Some(event.action.date.format(dateFormatter))
@@ -412,9 +412,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               accumulator.copy(
                 totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
                 lastContributionDate = Some(event.action.date.format(dateFormatter)),
-                lastCountryActivity = event.requestContext.country,
-                lastLanguageActivity = event.requestContext.language,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                lastCountryActivity = event.requestContext.country.map(_.value),
+                lastLanguageActivity = event.requestContext.language.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
                 activeCore = if (accumulator.activeCore.isEmpty && event.requestContext.source.contains("core")) {
                   Some(true)
@@ -436,9 +436,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             case event: LogUserUnvoteEvent =>
               accumulator.copy(
                 lastContributionDate = Some(event.action.date.format(dateFormatter)),
-                lastCountryActivity = event.requestContext.country,
-                lastLanguageActivity = event.requestContext.language,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                lastCountryActivity = event.requestContext.country.map(_.value),
+                lastLanguageActivity = event.requestContext.language.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
                 activeCore = if (accumulator.activeCore.isEmpty && event.requestContext.source.contains("core")) {
                   Some(true)
@@ -460,9 +460,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             case event: LogUserQualificationEvent =>
               accumulator.copy(
                 lastContributionDate = Some(event.action.date.format(dateFormatter)),
-                lastCountryActivity = event.requestContext.country,
-                lastLanguageActivity = event.requestContext.language,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                lastCountryActivity = event.requestContext.country.map(_.value),
+                lastLanguageActivity = event.requestContext.language.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
                 activeCore = if (accumulator.activeCore.isEmpty && event.requestContext.source.contains("core")) {
                   Some(true)
@@ -484,9 +484,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             case event: LogUserUnqualificationEvent =>
               accumulator.copy(
                 lastContributionDate = Some(event.action.date.format(dateFormatter)),
-                lastCountryActivity = event.requestContext.country,
-                lastLanguageActivity = event.requestContext.language,
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country,
+                lastCountryActivity = event.requestContext.country.map(_.value),
+                lastLanguageActivity = event.requestContext.language.map(_.value),
+                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
                 operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
                 activeCore = if (accumulator.activeCore.isEmpty && event.requestContext.source.contains("core")) {
                   Some(true)

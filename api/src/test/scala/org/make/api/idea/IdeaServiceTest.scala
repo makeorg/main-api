@@ -24,6 +24,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent}
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
+import org.make.core.reference.Language
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -53,7 +54,9 @@ class IdeaServiceTest
         .thenReturn(Future.successful(IdeaSearchResult.empty))
 
       val futureIdeas =
-        ideaService.fetchAll(IdeaSearchQuery(filters = None, limit = None, skip = None, language = Some("en")))
+        ideaService.fetchAll(
+          IdeaSearchQuery(filters = None, limit = None, skip = None, language = Some(Language("en")))
+        )
 
       whenReady(futureIdeas, Timeout(3.seconds)) { ideas =>
         ideas.total shouldBe 0

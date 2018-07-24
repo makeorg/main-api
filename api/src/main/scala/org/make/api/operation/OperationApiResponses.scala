@@ -26,6 +26,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.user.UserResponse
 import org.make.core.CirceFormatters
 import org.make.core.operation._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.User
 
@@ -33,7 +34,7 @@ final case class OperationResponse(operationId: OperationId,
                                    status: OperationStatus,
                                    slug: String,
                                    translations: Seq[OperationTranslation] = Seq.empty,
-                                   defaultLanguage: String,
+                                   defaultLanguage: Language,
                                    @Deprecated sequenceLandingId: SequenceId,
                                    createdAt: Option[ZonedDateTime],
                                    updatedAt: Option[ZonedDateTime],
@@ -43,7 +44,7 @@ object OperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[OperationResponse] = deriveEncoder[OperationResponse]
   implicit val decoder: Decoder[OperationResponse] = deriveDecoder[OperationResponse]
 
-  def apply(operation: Operation, countryCode: Option[String]): OperationResponse = {
+  def apply(operation: Operation, countryCode: Option[Country]): OperationResponse = {
     OperationResponse(
       operationId = operation.operationId,
       status = operation.status,
@@ -65,7 +66,7 @@ final case class ModerationOperationResponse(operationId: OperationId,
                                              status: OperationStatus,
                                              slug: String,
                                              translations: Seq[OperationTranslation] = Seq.empty,
-                                             defaultLanguage: String,
+                                             defaultLanguage: Language,
                                              @Deprecated sequenceLandingId: SequenceId,
                                              createdAt: Option[ZonedDateTime],
                                              updatedAt: Option[ZonedDateTime],
@@ -78,7 +79,7 @@ object ModerationOperationResponse extends CirceFormatters {
 
   def apply(operation: Operation,
             operationActionUsers: Seq[User],
-            countryCode: Option[String]): ModerationOperationResponse = {
+            countryCode: Option[Country]): ModerationOperationResponse = {
     val events: Seq[OperationActionResponse] = operation.events.map { action =>
       OperationActionResponse(
         date = action.date,

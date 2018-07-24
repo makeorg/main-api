@@ -28,7 +28,7 @@ import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -43,8 +43,8 @@ trait IdeaService extends ShortenedNames {
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
   def insert(name: String,
-             language: Option[String],
-             country: Option[String],
+             language: Option[Language],
+             country: Option[Country],
              operationId: Option[OperationId],
              themeId: Option[ThemeId],
              question: Option[String]): Future[Idea]
@@ -73,8 +73,8 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
     }
 
     override def insert(name: String,
-                        language: Option[String],
-                        country: Option[String],
+                        language: Option[Language],
+                        country: Option[Country],
                         operationId: Option[OperationId],
                         themeId: Option[ThemeId],
                         question: Option[String]): Future[Idea] = {

@@ -26,6 +26,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.api.sequence.SequenceResponse
 import org.make.core.operation.{OperationCountryConfiguration, OperationTranslation}
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceStatus
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -43,13 +44,13 @@ trait CreateOperation extends Migration {
   val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
 
   def operationSlug: String
-  def defaultLanguage: String
+  def defaultLanguage: Language
 
   def countryConfigurations: Seq[CountryConfiguration]
 
-  case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: String, language: String)
+  case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 
-  private def findConfiguration(country: String, language: String): CountryConfiguration = {
+  private def findConfiguration(country: Country, language: Language): CountryConfiguration = {
     countryConfigurations
       .find(configuration => configuration.country == country && configuration.language == language)
       .getOrElse(CountryConfiguration(country, language, Seq.empty, "", startDate = LocalDate.now(), endDate = None))
@@ -140,8 +141,8 @@ trait CreateOperation extends Migration {
 }
 
 object CreateOperation {
-  final case class CountryConfiguration(country: String,
-                                        language: String,
+  final case class CountryConfiguration(country: Country,
+                                        language: Language,
                                         tags: Seq[TagId],
                                         title: String,
                                         startDate: LocalDate,

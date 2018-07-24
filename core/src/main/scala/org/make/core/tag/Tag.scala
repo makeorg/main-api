@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -97,8 +97,8 @@ final case class Tag(tagId: TagId,
                      weight: Float,
                      operationId: Option[OperationId],
                      themeId: Option[ThemeId],
-                     country: String,
-                     language: String)
+                     country: Country,
+                     language: Language)
     extends MakeSerializable
 
 object Tag {

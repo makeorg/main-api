@@ -21,6 +21,7 @@ package org.make.api.semantic
 
 import java.util.concurrent.Executors
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
@@ -36,8 +37,10 @@ import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.EventBusServiceComponent
 import org.make.core.idea.{Idea, IdeaId}
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.reference.{Country, Language, ThemeId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -64,7 +67,7 @@ trait DefaultSemanticComponent extends SemanticComponent {
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
 
   override lazy val semanticService: SemanticService = new SemanticService {
-    private implicit val system = actorSystem
+    private implicit val system: ActorSystem = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     override def indexProposal(indexedProposal: IndexedProposal): Future[Unit] = {
@@ -109,14 +112,13 @@ trait DefaultSemanticComponent extends SemanticComponent {
           )
 
         response.flatMap {
-          case HttpResponse(StatusCodes.OK, _, entity, _) => {
-            Unmarshal(entity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
+          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+            Unmarshal(responseEntity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
               logSimilarIdeas(indexedProposal, similarIdeas.similar, similarIdeas.algoLabel.getOrElse("Semantic API"))
               buildSimilarIdeas(similarIdeas.similar)
             }
-          }
 
-          case response => Future.failed(new RuntimeException(s"Error with semantic request: $response"))
+          case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
         }
       }
     }
@@ -136,8 +138,9 @@ trait DefaultSemanticComponent extends SemanticComponent {
   }
 
   def buildSimilarIdeas(similarIdeas: Seq[ScoredProposal]): Future[Seq[SimilarIdea]] = {
-    val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId).map(IdeaId(_))
+    val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId)
 
+    // TODO: avoid calling .get on options
     ideaService
       .fetchAllByIdeaIds(similarIdeaIds)
       .map { ideas =>
@@ -146,8 +149,8 @@ trait DefaultSemanticComponent extends SemanticComponent {
         similarIdeas.map(
           p =>
             SimilarIdea(
-              ideaId = IdeaId(p.proposal.ideaId.get),
-              ideaName = ideasById(IdeaId(p.proposal.ideaId.get)).name,
+              ideaId = p.proposal.ideaId.get,
+              ideaName = ideasById(p.proposal.ideaId.get).name,
               proposalId = p.proposal.id,
               proposalContent = p.proposal.content,
               score = p.score.score
@@ -160,11 +163,11 @@ trait DefaultSemanticComponent extends SemanticComponent {
 
 final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: ProposalId,
                                   source: String,
-                                  operationId: Option[String],
-                                  themeId: Option[String],
-                                  country: String,
-                                  language: String,
-                                  ideaId: Option[String],
+                                  operationId: Option[OperationId],
+                                  themeId: Option[ThemeId],
+                                  country: Country,
+                                  language: Language,
+                                  ideaId: Option[IdeaId],
                                   content: String)
 
 object SemanticProposal {
@@ -175,27 +178,14 @@ object SemanticProposal {
     new SemanticProposal(
       id = indexedProposal.id,
       source = indexedProposal.context.flatMap(_.source).getOrElse("core"),
-      operationId = indexedProposal.operationId.map(_.value),
-      themeId = indexedProposal.themeId.map(_.value),
+      operationId = indexedProposal.operationId,
+      themeId = indexedProposal.themeId,
       country = indexedProposal.country,
       language = indexedProposal.language,
-      ideaId = indexedProposal.ideaId.map(_.value),
+      ideaId = indexedProposal.ideaId,
       content = indexedProposal.content
     )
   }
-}
-
-final case class SemanticIdea(@ApiModelProperty(dataType = "string") id: ProposalId,
-                              source: String,
-                              operationId: Option[String],
-                              themeId: Option[String],
-                              country: String,
-                              language: String,
-                              ideaId: String,
-                              content: String)
-
-object SemanticIdea {
-  implicit val decoder: Decoder[SemanticIdea] = deriveDecoder[SemanticIdea]
 }
 
 case class SimilarIdeasRequest(proposal: SemanticProposal, nSimilar: Int)
@@ -207,15 +197,11 @@ object SimilarIdeasRequest {
 case class SimilarityScore(score: Double)
 
 object SimilarityScore {
-  implicit val encoder: Encoder[SimilarityScore] = new Encoder[SimilarityScore] {
-    final def apply(a: SimilarityScore): Json = a.score.asJson
-  }
+  implicit val encoder: Encoder[SimilarityScore] = _.score.asJson
 
-  implicit val decoder: Decoder[SimilarityScore] = new Decoder[SimilarityScore] {
-    final def apply(c: HCursor): Decoder.Result[SimilarityScore] = c.as[Double] match {
-      case Right(value)  => Right(SimilarityScore(value))
-      case Left(failure) => Left(failure)
-    }
+  implicit val decoder: Decoder[SimilarityScore] = _.as[Double] match {
+    case Right(value)  => Right(SimilarityScore(value))
+    case Left(failure) => Left(failure)
   }
 }
 

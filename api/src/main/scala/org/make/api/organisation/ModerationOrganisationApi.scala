@@ -33,6 +33,7 @@ import org.make.api.user._
 import org.make.core.HttpCodes
 import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
@@ -83,8 +84,8 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                           email = request.email,
                           password = Some(request.password),
                           avatar = request.avatar,
-                          country = request.country.orElse(requestContext.country).getOrElse("FR"),
-                          language = request.language.orElse(requestContext.language).getOrElse("fr")
+                          country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
+                          language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
                         ),
                         requestContext
                       )
@@ -177,8 +178,8 @@ final case class ModerationCreateOrganisationRequest(name: String,
                                                      email: String,
                                                      password: String,
                                                      avatar: Option[String],
-                                                     country: Option[String],
-                                                     language: Option[String]) {
+                                                     country: Option[Country],
+                                                     language: Option[Language]) {
   OrganisationValidation.validateCreate(name = name, email = email)
 }
 

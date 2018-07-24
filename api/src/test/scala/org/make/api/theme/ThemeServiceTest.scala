@@ -50,22 +50,22 @@ class ThemeServiceTest
 
   val fooTheme = Theme(
     themeId = ThemeId("foo"),
-    translations = Seq(ThemeTranslation(slug = SlugHelper("foo"), title = "Foo", language = "lg")),
+    translations = Seq(ThemeTranslation(slug = SlugHelper("foo"), title = "Foo", language = Language("lg"))),
     actionsCount = 7,
     proposalsCount = 0,
     votesCount = 0,
-    country = "WE",
+    country = Country("WE"),
     color = "#00FFFF",
     gradient = Some(GradientColor("#0FF", "#0F0"))
   )
 
   val barTheme = Theme(
     themeId = ThemeId("bar"),
-    translations = Seq(ThemeTranslation(slug = SlugHelper("bar"), title = "Bar", language = "lg")),
+    translations = Seq(ThemeTranslation(slug = SlugHelper("bar"), title = "Bar", language = Language("lg"))),
     actionsCount = 7,
     proposalsCount = 0,
     votesCount = 0,
-    country = "WE",
+    country = Country("WE"),
     color = "#00FFFF",
     gradient = Some(GradientColor("#0FF", "#0F0"))
   )
@@ -78,8 +78,8 @@ class ThemeServiceTest
     weight = 1,
     themeId = Some(ThemeId("fooTheme")),
     operationId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   feature("get all themes") {

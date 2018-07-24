@@ -28,7 +28,7 @@ import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -46,7 +46,7 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
                        sort: Option[IndexedSort] = None,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None,
-                       language: Option[String] = None,
+                       language: Option[Language] = None,
                        sortAlgorithm: Option[SortAlgorithm] = None) {
   def getSeed: Option[Int] =
     sortAlgorithm.flatMap {
@@ -303,7 +303,7 @@ object SearchFilters extends ElasticDsl {
 
   def buildContentSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
     def languageOmission(boostedLanguage: String): Double =
-      if (searchQuery.language.contains(boostedLanguage)) 1 else 0
+      if (searchQuery.language.contains(Language(boostedLanguage))) 1 else 0
 
     val query: Option[QueryDefinition] = for {
       filters                               <- searchQuery.filters

@@ -25,7 +25,7 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 
 /**
   * The class holding the entire search query
@@ -39,7 +39,7 @@ case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
                            skip: Option[Int] = None,
                            sort: Option[String] = None,
                            order: Option[String] = None,
-                           language: Option[String] = None)
+                           language: Option[Language] = None)
 
 /**
   * The class holding the filters
@@ -118,7 +118,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
   def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
     def languageOmission(boostedLanguage: String): Double =
-      if (ideaSearchQuery.language.contains(boostedLanguage)) 1 else 0
+      if (ideaSearchQuery.language.contains(Language(boostedLanguage))) 1 else 0
 
     val query: Option[QueryDefinition] = for {
       filters                            <- ideaSearchQuery.filters
@@ -190,7 +190,7 @@ object IdeaSearchFilters extends ElasticDsl {
     ideaSearchQuery.filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.country, country))
+          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.country, country.value))
         case _ => None
       }
     }
@@ -200,7 +200,7 @@ object IdeaSearchFilters extends ElasticDsl {
     ideaSearchQuery.filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.language, language))
+          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.language, language.value))
         case _ => None
       }
     }
@@ -230,8 +230,8 @@ case class NameSearchFilter(text: String, fuzzy: Option[String] = None)
 case class OperationIdSearchFilter(operationId: OperationId)
 case class ThemeIdSearchFilter(themeId: ThemeId)
 case class QuestionSearchFilter(question: String)
-case class CountrySearchFilter(country: String)
-case class LanguageSearchFilter(language: String)
+case class CountrySearchFilter(country: Country)
+case class LanguageSearchFilter(language: Language)
 case class StatusSearchFilter(status: Seq[IdeaStatus])
 case class ContextSearchFilter(operation: Option[OperationId] = None,
                                source: Option[String] = None,

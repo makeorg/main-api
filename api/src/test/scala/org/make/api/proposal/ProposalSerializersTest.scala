@@ -28,7 +28,7 @@ import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
@@ -56,8 +56,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       content = "my proposal",
       operation = Some(OperationId("my-operation")),
       theme = Some(ThemeId("theme-id")),
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
 
     val proposalViewed = ProposalViewed(id = proposalId, eventDate = eventDate, requestContext = requestContext)
@@ -215,8 +215,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       status = ProposalStatus.Accepted,
       refusalReason = Some("because"),
       tags = Seq(TagId("tag-1"), TagId("tag-2")),
-      language = Some("fr"),
-      country = Some("FR"),
+      language = Some(Language("fr")),
+      country = Some(Country("FR")),
       creationContext = requestContext,
       idea = Some(IdeaId("idea-id")),
       operation = Some(OperationId("operation-id")),

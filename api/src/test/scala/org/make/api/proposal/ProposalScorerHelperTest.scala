@@ -26,7 +26,7 @@ import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
@@ -47,8 +47,8 @@ class ProposalScorerHelperTest extends MakeUnitTest {
                      nbQualificationDoNotCare: Int = 0): Proposal = Proposal(
     proposalId = ProposalId("99999999-9999-9999-9999-999999999999"),
     slug = "il-faut-faire-une-proposition",
-    country = Some("FR"),
-    language = Some("fr"),
+    country = Some(Country("FR")),
+    language = Some(Language("fr")),
     content = "Il faut faire une proposition",
     author = UserId("99999999-9999-9999-9999-999999999999"),
     labels = Seq.empty,

@@ -26,13 +26,13 @@ import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Language, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
-final case class SequenceTranslation(slug: String, title: String, language: String) extends MakeSerializable
+final case class SequenceTranslation(slug: String, title: String, language: Language) extends MakeSerializable
 
 object SequenceTranslation {
   implicit val encoder: ObjectEncoder[SequenceTranslation] = deriveEncoder[SequenceTranslation]

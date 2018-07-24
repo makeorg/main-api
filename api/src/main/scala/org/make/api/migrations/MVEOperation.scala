@@ -22,17 +22,18 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
 object MVEOperation extends CreateOperation {
   override val operationSlug: String = "mieux-vivre-ensemble"
 
-  override val defaultLanguage: String = "fr"
+  override val defaultLanguage: Language = Language("fr")
 
   override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
     CountryConfiguration(
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       title = "Comment mieux vivre ensemble ?",
       startDate = LocalDate.parse("2018-03-12"),
       endDate = None,

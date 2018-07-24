@@ -21,16 +21,17 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
 object VffOperation extends CreateOperation {
 
   override val operationSlug: String = "vff"
-  override val defaultLanguage: String = "fr"
+  override val defaultLanguage: Language = Language("fr")
   override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
     CountryConfiguration(
-      "FR",
-      "fr",
+      Country("FR"),
+      Language("fr"),
       Seq(
         TagId("signalement"),
         TagId("police-justice"),
@@ -58,8 +59,8 @@ object VffOperation extends CreateOperation {
       startDate = LocalDate.parse("2018-01-01")
     ),
     CountryConfiguration(
-      "IT",
-      "it",
+      Country("IT"),
+      Language("it"),
       Seq(
         TagId("avviso"),
         TagId("polizia-giustizia"),
@@ -87,8 +88,8 @@ object VffOperation extends CreateOperation {
       startDate = LocalDate.parse("2018-03-01")
     ),
     CountryConfiguration(
-      "GB",
-      "en",
+      Country("GB"),
+      Language("en"),
       Seq(
         TagId("description"),
         TagId("police-justice"),

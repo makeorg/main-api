@@ -27,7 +27,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus, OperationTranslation}
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.{Theme, ThemeId, ThemeTranslation}
+import org.make.core.reference._
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
@@ -35,13 +35,21 @@ import scala.collection.immutable.Seq
 class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication {
 
   val theme: Theme =
-    Theme(ThemeId("foo-theme"), Seq(ThemeTranslation("foo-theme", "Foo Theme", "fr")), 42, 42, 42, "FR", "#0ff")
+    Theme(
+      ThemeId("foo-theme"),
+      Seq(ThemeTranslation("foo-theme", "Foo Theme", Language("fr"))),
+      42,
+      42,
+      42,
+      Country("FR"),
+      "#0ff"
+    )
   val operation: Operation = Operation(
     OperationStatus.Active,
     OperationId("bar-operation"),
     "bar-operation",
-    Seq(OperationTranslation("Bar Operation", "fr")),
-    "fr",
+    Seq(OperationTranslation("Bar Operation", Language("fr"))),
+    Language("fr"),
     List.empty,
     None,
     None,
@@ -53,8 +61,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
   val proposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("11111111-1111-1111-1111-111111111111"),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       userId = UserId("11111111-2222-3333-4444-555555555555"),
       content = "Il faut que ma proposition soit au format CSV.",
       slug = "il-faut-que-ma-proposition-soit-au-format-csv",
@@ -109,8 +117,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
     ),
     IndexedProposal(
       id = ProposalId("22222222-2222-2222-2222-222222222222"),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       userId = UserId("22222222-3333-4444-5555-666666666666"),
       content = "Il faut que ma proposition d'opération soit en CSV.",
       slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",

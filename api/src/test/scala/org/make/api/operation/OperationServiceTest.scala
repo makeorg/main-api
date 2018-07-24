@@ -61,10 +61,10 @@ class OperationServiceTest
     operationId = OperationId("foo"),
     slug = "first-operation",
     translations = Seq(
-      OperationTranslation(title = "première operation", language = "fr"),
-      OperationTranslation(title = "first operation", language = "en")
+      OperationTranslation(title = "première operation", language = Language("fr")),
+      OperationTranslation(title = "first operation", language = Language("en"))
     ),
-    defaultLanguage = "fr",
+    defaultLanguage = Language("fr"),
     events = List(
       OperationAction(
         date = now,
@@ -77,14 +77,14 @@ class OperationServiceTest
     updatedAt = Some(DateHelper.now()),
     countriesConfiguration = Seq(
       OperationCountryConfiguration(
-        countryCode = "BR",
+        countryCode = Country("BR"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-BR"),
         startDate = None,
         endDate = None
       ),
       OperationCountryConfiguration(
-        countryCode = "GB",
+        countryCode = Country("GB"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-GB"),
         startDate = None,
@@ -101,8 +101,8 @@ class OperationServiceTest
     weight = 1,
     themeId = Some(ThemeId("fooTheme")),
     operationId = None,
-    country = "GB",
-    language = "en"
+    country = Country("GB"),
+    language = Language("en")
   )
 
   feature("find operations") {
@@ -112,7 +112,7 @@ class OperationServiceTest
       Then("tags are fetched from persistent service")
 
       Mockito
-        .when(persistentOperationService.find(any[Option[String]], any[Option[String]], any[Option[LocalDate]]))
+        .when(persistentOperationService.find(any[Option[String]], any[Option[Country]], any[Option[LocalDate]]))
         .thenReturn(Future.successful(Seq(fooOperation)))
 
       Mockito
@@ -124,7 +124,7 @@ class OperationServiceTest
       whenReady(futureoperations, Timeout(3.seconds)) { operations =>
         println(operations)
         val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
-        fooOperation.countriesConfiguration.filter(cc => cc.countryCode == "GB").head.tagIds.size shouldBe 1
+        fooOperation.countriesConfiguration.filter(cc => cc.countryCode == Country("GB")).head.tagIds.size shouldBe 1
       }
     }
 

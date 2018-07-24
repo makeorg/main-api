@@ -27,7 +27,7 @@ import org.make.api.proposal.ValidateProposalRequest
 import org.make.core.idea.Idea
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
@@ -91,13 +91,13 @@ trait InsertFixtureData extends Migration with StrictLogging {
 
   def requestContext: RequestContext
 
-  case class UserMinimalData(email: String, country: String, language: String)
+  case class UserMinimalData(email: String, country: Country, language: Language)
 
   override def migrate(api: MakeApi): Future[Unit] = {
 
     def retrieveOrInsertIdea(name: String,
-                             language: String,
-                             country: String,
+                             language: Language,
+                             country: Country,
                              operationId: Option[OperationId],
                              themeId: Option[ThemeId]): Future[Idea] = {
       api.ideaService.fetchOneByName(name).flatMap {
@@ -211,12 +211,12 @@ object InsertFixtureData {
                              operation: Option[OperationId],
                              tags: Seq[TagId],
                              labels: Seq[LabelId],
-                             country: String,
-                             language: String)
+                             country: Country,
+                             language: Language)
 
   case class ProposalToAccept(content: String,
-                              country: String,
-                              language: String,
+                              country: Country,
+                              language: Language,
                               tags: Seq[TagId],
                               labels: Seq[LabelId],
                               theme: Option[ThemeId],

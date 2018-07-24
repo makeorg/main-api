@@ -22,17 +22,18 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
 object ClimatParisOperation extends CreateOperation {
   override val operationSlug: String = "climatparis"
 
-  override val defaultLanguage: String = "fr"
+  override val defaultLanguage: Language = Language("fr")
 
   override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
     CountryConfiguration(
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       tags = Seq(
         TagId("pollution"),
         TagId("entreprises-emploi"),

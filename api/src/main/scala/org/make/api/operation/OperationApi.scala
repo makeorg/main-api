@@ -20,20 +20,21 @@
 package org.make.api.operation
 
 import java.time.LocalDate
-import javax.ws.rs.Path
 
+import javax.ws.rs.Path
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
+import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.operation._
+import org.make.core.reference.Country
 
 @Api(value = "Operation")
 @Path(value = "/operations")
-trait OperationApi extends MakeAuthenticationDirectives with StrictLogging {
+trait OperationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: OperationServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -55,11 +56,10 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging {
   def getOperations: Route = {
     get {
       path("operations") {
-        parameters(('slug.?, 'country.?, 'openAt.?)) { (slug, country, openAt) =>
+        parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
           makeOperation("GetOperations") { requestContext =>
-            provideAsync(operationService.find(slug = slug, country = country, openAt = openAt.map(LocalDate.parse(_)))) {
-              result =>
-                complete(result.map(operation => OperationResponse(operation, requestContext.country)))
+            provideAsync(operationService.find(slug = slug, country = country, openAt = openAt)) { result =>
+              complete(result.map(operation => OperationResponse(operation, requestContext.country)))
             }
           }
         }

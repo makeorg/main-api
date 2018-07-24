@@ -29,7 +29,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scalikejdbc._
 
@@ -64,8 +64,8 @@ case class PersistentTagFilter(label: Option[String],
                                operationId: Option[OperationId],
                                tagTypeId: Option[TagTypeId],
                                themeId: Option[ThemeId],
-                               country: Option[String],
-                               language: Option[String])
+                               country: Option[Country],
+                               language: Option[Language])
 object PersistentTagFilter {
   def empty: PersistentTagFilter = PersistentTagFilter(None, None, None, None, None, None)
 }
@@ -216,8 +216,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.operationId -> tag.operationId.map(_.value),
               column.themeId -> tag.themeId.map(_.value),
               column.weight -> tag.weight,
-              column.country -> tag.country,
-              column.language -> tag.language,
+              column.country -> tag.country.value,
+              column.language -> tag.language.value,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -239,8 +239,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.operationId -> tag.operationId.map(_.value),
               column.themeId -> tag.themeId.map(_.value),
               column.weight -> tag.weight,
-              column.country -> tag.country,
-              column.language -> tag.language,
+              column.country -> tag.country.value,
+              column.language -> tag.language.value,
               column.updatedAt -> nowDate
             )
             .where(
@@ -302,8 +302,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                   persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
                   persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
                   persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
-                  persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country)),
-                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language))
+                  persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country.value)),
+                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value))
                 )
               )
 
@@ -344,8 +344,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                 persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
                 persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
                 persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
-                persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country)),
-                persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language))
+                persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country.value)),
+                persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
@@ -376,8 +376,8 @@ object DefaultPersistentTagServiceComponent {
         operationId = operationId.map(OperationId(_)),
         themeId = themeId.map(ThemeId(_)),
         weight = weight,
-        country = country,
-        language = language
+        country = Country(country),
+        language = Language(language)
       )
   }
 

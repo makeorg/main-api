@@ -26,6 +26,7 @@ import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -38,7 +39,7 @@ final case class Operation(status: OperationStatus,
                            operationId: OperationId,
                            slug: String,
                            translations: Seq[OperationTranslation] = Seq.empty,
-                           defaultLanguage: String,
+                           defaultLanguage: Language,
                            events: List[OperationAction],
                            override val createdAt: Option[ZonedDateTime],
                            override val updatedAt: Option[ZonedDateTime],
@@ -72,7 +73,7 @@ object OperationId {
 }
 
 @ApiModel
-final case class OperationCountryConfiguration(countryCode: String,
+final case class OperationCountryConfiguration(countryCode: Country,
                                                @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
                                                landingSequenceId: SequenceId,
                                                startDate: Option[LocalDate],
@@ -86,7 +87,7 @@ object OperationCountryConfiguration extends CirceFormatters {
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
 }
 
-final case class OperationTranslation(title: String, language: String) extends MakeSerializable
+final case class OperationTranslation(title: String, language: Language) extends MakeSerializable
 
 object OperationTranslation {
   implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
@@ -156,7 +157,7 @@ object OperationStatus {
 case class SimpleOperation(operationId: OperationId,
                            status: OperationStatus,
                            slug: String,
-                           defaultLanguage: String,
+                           defaultLanguage: Language,
                            createdAt: Option[ZonedDateTime],
                            updatedAt: Option[ZonedDateTime])
 

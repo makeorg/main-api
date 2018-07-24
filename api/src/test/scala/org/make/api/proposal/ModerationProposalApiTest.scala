@@ -82,8 +82,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None,
@@ -105,8 +105,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -127,8 +127,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -149,8 +149,8 @@ class ModerationProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -243,8 +243,8 @@ class ModerationProposalApiTest
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
     events = Nil,
-    language = Some("fr"),
-    country = Some("FR")
+    language = Some(Language("fr")),
+    country = Some(Country("FR"))
   )
 
   val proposalSim124: Proposal = Proposal(
@@ -262,8 +262,8 @@ class ModerationProposalApiTest
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
     events = Nil,
-    language = Some("fr"),
-    country = Some("FR")
+    language = Some(Language("fr")),
+    country = Some(Country("FR"))
   )
 
   when(
@@ -288,8 +288,8 @@ class ModerationProposalApiTest
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
             None,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             isHardBounce = false,
             lastMailingError = None
           ),
@@ -306,8 +306,8 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          language = Some("fr"),
-          country = Some("FR")
+          language = Some(Language("fr")),
+          country = Some(Country("FR"))
         )
       )
     )
@@ -335,8 +335,8 @@ class ModerationProposalApiTest
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
             None,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             isHardBounce = false,
             lastMailingError = None
           ),
@@ -353,8 +353,8 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          language = Some("fr"),
-          country = Some("FR")
+          language = Some(Language("fr")),
+          country = Some(Country("FR"))
         )
       )
     )
@@ -383,8 +383,8 @@ class ModerationProposalApiTest
     labels = Seq.empty,
     author = Author(None, None, None, None, None),
     organisations = Seq.empty,
-    country = "TN",
-    language = "ar",
+    country = Country("TN"),
+    language = Language("ar"),
     themeId = None,
     tags = Seq.empty,
     myProposal = false,
@@ -414,8 +414,8 @@ class ModerationProposalApiTest
         lastConnection = DateHelper.now(),
         roles = Seq.empty,
         None,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         isHardBounce = false,
         lastMailingError = None
       ),
@@ -436,8 +436,8 @@ class ModerationProposalApiTest
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
   }
 
@@ -766,8 +766,8 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(Some(OperationId("vff"))),
           matches(None),
-          matches("FR"),
-          matches("fr"),
+          matches(Country("FR")),
+          matches(Language("fr")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -799,8 +799,8 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(Some(OperationId("mieux-vivre-ensemble"))),
           matches(None),
-          matches("FR"),
-          matches("fr"),
+          matches(Country("FR")),
+          matches(Language("fr")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -831,8 +831,8 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(Some(OperationId("mieux-vivre-ensemble"))),
           matches(None),
-          matches("FR"),
-          matches("fr"),
+          matches(Country("FR")),
+          matches(Language("fr")),
           matches(tyrion.userId),
           any[RequestContext]
         )

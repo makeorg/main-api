@@ -33,7 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -123,8 +123,8 @@ class ModerationIdeaApiTest
   when(
     ideaService.insert(
       ArgumentMatchers.eq(fooIdeaText),
-      ArgumentMatchers.any[Option[String]],
-      ArgumentMatchers.any[Option[String]],
+      ArgumentMatchers.any[Option[Language]],
+      ArgumentMatchers.any[Option[Country]],
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
       ArgumentMatchers.any[Option[String]]

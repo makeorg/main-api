@@ -30,16 +30,16 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.{tag, HttpCodes, Validation}
+import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
-trait ModerationTagApi extends MakeAuthenticationDirectives {
+trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtractors {
   this: TagServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   @Path(value = "/{tagId}")
@@ -205,23 +205,23 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
               '_sort.?,
               '_order.?,
               'label.?,
-              'tagTypeId.?,
-              'operationId.?,
-              'themeId.?,
-              'country.?,
-              'language.?
+              'tagTypeId.as[TagTypeId].?,
+              'operationId.as[OperationId].?,
+              'themeId.as[ThemeId].?,
+              'country.as[Country].?,
+              'language.as[Language].?
             )
           ) {
-            (start,
-             end,
-             sort,
-             order,
-             maybeLabel,
-             maybeTagTypeId,
-             maybeOperationId,
-             maybeThemeId,
-             maybeCountry,
-             maybeLanguage) =>
+            (start: Option[Int],
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             maybeLabel: Option[String],
+             maybeTagTypeId: Option[TagTypeId],
+             maybeOperationId: Option[OperationId],
+             maybeThemeId: Option[ThemeId],
+             maybeCountry: Option[Country],
+             maybeLanguage: Option[Language]) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
 
@@ -233,12 +233,12 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                   }
                   maybeCountry.foreach { country =>
                     Validation.validate(
-                      Validation.validMatch("country", country, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
+                      Validation.validMatch("country", country.value, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
                     )
                   }
                   maybeLanguage.foreach { language =>
                     Validation.validate(
-                      Validation.validMatch("language", language, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
+                      Validation.validMatch("language", language.value, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
                     )
                   }
 
@@ -246,9 +246,9 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                     tagService.count(
                       TagFilter(
                         label = maybeLabel,
-                        tagTypeId = maybeTagTypeId.map(TagTypeId(_)),
-                        operationId = maybeOperationId.map(OperationId(_)),
-                        themeId = maybeThemeId.map(ThemeId(_)),
+                        tagTypeId = maybeTagTypeId,
+                        operationId = maybeOperationId,
+                        themeId = maybeThemeId,
                         country = maybeCountry,
                         language = maybeLanguage
                       )
@@ -262,9 +262,9 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                         order,
                         TagFilter(
                           label = maybeLabel,
-                          tagTypeId = maybeTagTypeId.map(TagTypeId(_)),
-                          operationId = maybeOperationId.map(OperationId(_)),
-                          themeId = maybeThemeId.map(ThemeId(_)),
+                          tagTypeId = maybeTagTypeId,
+                          operationId = maybeOperationId,
+                          themeId = maybeThemeId,
                           country = maybeCountry,
                           language = maybeLanguage
                         )
@@ -385,8 +385,8 @@ case class CreateTagRequest(label: String,
                             tagTypeId: TagTypeId,
                             operationId: Option[OperationId],
                             themeId: Option[ThemeId],
-                            country: String,
-                            language: String,
+                            country: Country,
+                            language: Language,
                             display: Option[TagDisplay],
                             weight: Option[Float])
 
@@ -398,8 +398,8 @@ case class UpdateTagRequest(label: String,
                             tagTypeId: TagTypeId,
                             operationId: Option[OperationId],
                             themeId: Option[ThemeId],
-                            country: String,
-                            language: String,
+                            country: Country,
+                            language: Language,
                             display: TagDisplay,
                             weight: Float)
 

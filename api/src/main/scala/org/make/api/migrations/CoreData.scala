@@ -21,7 +21,7 @@ package org.make.api.migrations
 
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.RequestContext
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 
 object CoreData extends InsertFixtureData {
@@ -41,8 +41,8 @@ object CoreData extends InsertFixtureData {
             operation = None,
             tags = tags.split('|').map(TagId.apply).toSeq,
             labels = labels.split('|').map(LabelId.apply).toSeq,
-            country = country,
-            language = language
+            country = Country(country),
+            language = Language(language)
           )
         )
       case Array(email, content, theme, tags, country, language) =>
@@ -54,8 +54,8 @@ object CoreData extends InsertFixtureData {
             operation = None,
             tags = tags.split('|').map(TagId.apply).toSeq,
             labels = Seq.empty,
-            country = country,
-            language = language
+            country = Country(country),
+            language = Language(language)
           )
         )
       case _ => None

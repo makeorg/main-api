@@ -31,6 +31,7 @@ import org.make.api.technical.crm.PublishedCrmContactEvent._
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
 import org.make.core.profile.Profile
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, MakeSerializable}
 import org.mockito.invocation.InvocationOnMock
@@ -56,7 +57,7 @@ class CrmContactEventConsumerActorIt
   override val userService: UserService = mock[UserService]
   override val crmService: CrmService = mock[CrmService]
 
-  implicit def toAnswerWithArguments[T](f: (InvocationOnMock) => T): Answer[T] =
+  implicit def toAnswerWithArguments[T](f: InvocationOnMock => T): Answer[T] =
     (invocation: InvocationOnMock) => f(invocation)
   implicit def toAnswer[T](f: () => T): Answer[T] = (_: InvocationOnMock) => f()
 
@@ -105,8 +106,8 @@ class CrmContactEventConsumerActorIt
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq.empty,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         profile = Some(johnDoeUserProfile)
       )
 
@@ -135,7 +136,7 @@ class CrmContactEventConsumerActorIt
       producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedNewContactEvent))
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList called")
+      probe.expectMsg(500.millis, "crmService.addUserToUnsubscribeList called")
 
       Given("a crm new contact event to consume with an opt-in user")
       val newUserOptIn: User =
@@ -162,7 +163,7 @@ class CrmContactEventConsumerActorIt
       producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedNewOptinContactEvent))
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.addUserToOptInList called")
+      probe.expectMsg(500.millis, "crmService.addUserToOptInList called")
 
       Given("a crm hard bounce contact event to consume")
       val hardBounceUser: User = johnDoeUser.copy(userId = UserId("user3"))
@@ -194,8 +195,8 @@ class CrmContactEventConsumerActorIt
       producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedHardBounceContactEvent))
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.removeUserFromOptInList called")
-      probe.expectMsg(500 millis, "crmService.addUserToHardBounceList called")
+      probe.expectMsg(500.millis, "crmService.removeUserFromOptInList called")
+      probe.expectMsg(500.millis, "crmService.addUserToHardBounceList called")
 
       Given("a crm unsubscribe event to consume")
       val unsubscribeUser: User = johnDoeUser.copy(userId = UserId("user4"))
@@ -228,8 +229,8 @@ class CrmContactEventConsumerActorIt
       producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedUnsubscribeContactEvent))
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.removeUserFromOptInList unsubscribe called")
-      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList unsubscribe called")
+      probe.expectMsg(500.millis, "crmService.removeUserFromOptInList unsubscribe called")
+      probe.expectMsg(500.millis, "crmService.addUserToUnsubscribeList unsubscribe called")
 
       Given("a crm subscribe event to consume")
       val subscribeUser: User = johnDoeUser.copy(userId = UserId("user5"))
@@ -262,8 +263,8 @@ class CrmContactEventConsumerActorIt
       producer.send(new ProducerRecord[String, CrmContactEventWrapper]("crm-contact", wrappedSubscribeContactEvent))
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.removeUserFromUnsubscribeList subscribe called")
-      probe.expectMsg(500 millis, "crmService.addUserToUnsubscribeList unsubscribe called")
+      probe.expectMsg(500.millis, "crmService.removeUserFromUnsubscribeList subscribe called")
+      probe.expectMsg(500.millis, "crmService.addUserToUnsubscribeList unsubscribe called")
 
       Given("a crm subscribe event to consume with a user marked as hard bounce")
       val subscribeHardBounceUser: User = johnDoeUser.copy(userId = UserId("user6"), isHardBounce = true)
@@ -298,8 +299,8 @@ class CrmContactEventConsumerActorIt
       )
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.removeUserFromUnsubscribeList subscribe hard bounce called")
-      probe.expectNoMessage(500 millis)
+      probe.expectMsg(500.millis, "crmService.removeUserFromUnsubscribeList subscribe hard bounce called")
+      probe.expectNoMessage(500.millis)
 
       Given("a crm contact update properties event to consume with a user")
       val contactUpdatePropertiesUser: User = johnDoeUser.copy(userId = UserId("user7"))
@@ -329,7 +330,7 @@ class CrmContactEventConsumerActorIt
       )
 
       Then("message is consumed and crmService is called to update data")
-      probe.expectMsg(500 millis, "crmService.updateUserProperties called")
+      probe.expectMsg(500.millis, "crmService.updateUserProperties called")
 
     }
   }

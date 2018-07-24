@@ -22,7 +22,7 @@ package org.make.core
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
@@ -34,9 +34,9 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 sessionId: SessionId,
                                 visitorId: Option[VisitorId] = None,
                                 externalId: String,
-                                country: Option[String],
-                                detectedCountry: Option[String] = None,
-                                language: Option[String],
+                                country: Option[Country],
+                                detectedCountry: Option[Country] = None,
+                                language: Option[Language],
                                 operationId: Option[OperationId] = None,
                                 source: Option[String],
                                 location: Option[String],

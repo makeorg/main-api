@@ -27,7 +27,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.UserId
 import org.mockito.Mockito
 
@@ -46,8 +46,8 @@ class ProposalSearchEngineTest
 
   def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = IndexedProposal(
     id = ProposalId("99999999-9999-9999-9999-999999999999"),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     userId = UserId("99999999-9999-9999-9999-999999999999"),
     content = "Il faut faire une proposition",
     slug = "il-faut-faire-une-proposition",

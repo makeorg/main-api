@@ -26,6 +26,7 @@ import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.UserId
@@ -68,8 +69,8 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = None,
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))

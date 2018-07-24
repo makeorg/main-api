@@ -31,15 +31,15 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.{CirceFormatters, RequestContext, SlugHelper}
+import org.make.core.{reference, CirceFormatters, RequestContext, SlugHelper}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
   this: IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
@@ -151,9 +151,9 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         source = maybeSource,
         location = maybeLocation,
         question = maybeQuestion,
-        language = maybeLanguage,
-        country = maybeCountry,
-        detectedCountry = maybeDetectedCountry,
+        language = maybeLanguage.map(reference.Language(_)),
+        country = maybeCountry.map(Country(_)),
+        detectedCountry = maybeDetectedCountry.map(Country(_)),
         hostname = maybeHostName,
         ipAddress = maybeIpAddress.toOption.map(_.getHostAddress),
         getParameters = maybeGetParameters.map(

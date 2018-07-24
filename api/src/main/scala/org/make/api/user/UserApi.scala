@@ -25,7 +25,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{HttpCookie, `Set-Cookie`}
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
@@ -38,15 +38,21 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
+import org.make.api.technical.{
+  EventBusServiceComponent,
+  IdGeneratorComponent,
+  MakeAuthenticationDirectives,
+  ReadJournalComponent
+}
 import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedOptInNewsletterEvent}
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField, maxLength}
+import org.make.core.Validation.{mandatoryField, maxLength, validate, validateEmail, validateField}
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
@@ -155,8 +161,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                   .login(
                     request.provider,
                     request.token,
-                    request.country.orElse(requestContext.country).getOrElse("FR"),
-                    request.language.orElse(requestContext.language).getOrElse("fr"),
+                    request.country.orElse(requestContext.country).getOrElse(Country("FR")),
+                    request.language.orElse(requestContext.language).getOrElse(Language("fr")),
                     Some(ip),
                     requestContext
                   )
@@ -243,8 +249,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                     dateOfBirth = request.dateOfBirth,
                     profession = request.profession,
                     postalCode = request.postalCode,
-                    country = request.country.orElse(requestContext.country).getOrElse("FR"),
-                    language = request.language.orElse(requestContext.language).getOrElse("fr")
+                    country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
+                    language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
                   ),
                   requestContext
                 )
@@ -574,17 +580,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       )
     )
   )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.user.UpdateUserRequest"
-      )
-    )
+    value =
+      Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateUserRequest"))
   )
   @Path(value = "/")
   def patchUser: Route =
@@ -595,7 +594,6 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
             decodeRequest {
               entity(as[UpdateUserRequest]) { request: UpdateUserRequest =>
                 provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
-
                   val optInNewsletterHasChanged: Boolean = (request.optInNewsletter, user.profile) match {
                     case (Some(value), Some(profileValue)) => value != profileValue.optInNewsletter
                     case (Some(_), None)                   => true
@@ -603,16 +601,19 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                   }
 
                   val profile: Option[Profile] = user.profile
-                  val updatedProfile: Option[Profile] = profile.map(_.copy(
-                    dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
-                    profession = request.profession.orElse(user.profile.flatMap(_.profession)),
-                    postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
-                    phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
-                    optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
-                    gender = Gender.matchGender(request.gender.getOrElse(""))
-                      .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
-                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
-                  ))
+                  val updatedProfile: Option[Profile] = profile.map(
+                    _.copy(
+                      dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
+                      profession = request.profession.orElse(user.profile.flatMap(_.profession)),
+                      postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
+                      phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
+                      optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
+                      gender = Gender
+                        .matchGender(request.gender.getOrElse(""))
+                        .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
+                      genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                    )
+                  )
 
                   onSuccess(
                     userService.update(
@@ -671,8 +672,8 @@ case class RegisterUserRequest(email: String,
                                lastName: Option[String],
                                profession: Option[String],
                                postalCode: Option[String],
-                               country: Option[String],
-                               language: Option[String]) {
+                               country: Option[Country],
+                               language: Option[Language]) {
 
   validate(
     mandatoryField("firstName", firstName),
@@ -699,8 +700,8 @@ case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
                              optInNewsletter: Option[Boolean],
                              gender: Option[String],
                              genderName: Option[String],
-                             country: Option[String],
-                             language: Option[String]) {
+                             country: Option[Country],
+                             language: Option[Language]) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
@@ -709,23 +710,15 @@ case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
   }
 
   if (postalCode.nonEmpty) {
-    validateField(
-      "postalCode",
-      postalCode.forall(_.length <= 10),
-      "postal code cannot be longer than 10 characters"
-    )
+    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
   }
 
   if (language.nonEmpty) {
-    validate(
-      maxLength("language", maxLanguageLength, language.get)
-    )
+    validate(maxLength("language", maxLanguageLength, language.get.value))
   }
 
   if (country.nonEmpty) {
-    validate(
-      maxLength("country", maxCountryLength, country.get)
-    )
+    validate(maxLength("country", maxCountryLength, country.get.value))
   }
 
   if (gender.nonEmpty) {
@@ -744,7 +737,7 @@ object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
 }
 
-case class SocialLoginRequest(provider: String, token: String, country: Option[String], language: Option[String]) {
+case class SocialLoginRequest(provider: String, token: String, country: Option[Country], language: Option[Language]) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
 }
 
@@ -797,8 +790,8 @@ case class UserResponse(userId: UserId,
                         lastConnection: ZonedDateTime,
                         roles: Seq[Role],
                         profile: Option[Profile],
-                        country: String,
-                        language: String,
+                        country: Country,
+                        language: Language,
                         isHardBounce: Boolean,
                         lastMailingError: Option[MailingErrorLogResponse])
 
