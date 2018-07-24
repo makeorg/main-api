@@ -19,14 +19,13 @@
 
 package org.make.api.tag
 
-import akka.actor.ActorSystem
 import org.make.api.MakeUnitTest
-import org.make.api.proposal.ProposalCoordinatorService
-import org.make.api.sequence.SequenceCoordinatorService
-import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent}
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
+import org.make.api.proposal.ProposalSearchEngine
+import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent, TagTypeService}
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
+import org.make.core.proposal.SearchQuery
+import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.reference.ThemeId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -45,11 +44,9 @@ class TagServiceTest
 
   override val persistentTagService: PersistentTagService = mock[PersistentTagService]
   override val persistentTagTypeService: PersistentTagTypeService = mock[PersistentTagTypeService]
+  override val tagTypeService: TagTypeService = mock[TagTypeService]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val eventBusService: EventBusService = mock[EventBusService]
-  override val actorSystem: ActorSystem = ActorSystem()
-  override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
-  override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val readJournal: MakeReadJournal = mock[MakeReadJournal]
 
   def newTag(label: String,
              tagId: TagId = idGenerator.nextTagId(),
@@ -315,7 +312,7 @@ class TagServiceTest
 
     scenario("update a tag success") {
       When("i update a tag 'old tag success' to 'new tag success'")
-      Then("a get a None value")
+      Then("a get the updated tag")
 
       Mockito
         .when(persistentTagService.get(TagId("old-tag-success")))
@@ -323,6 +320,17 @@ class TagServiceTest
       Mockito
         .when(persistentTagService.update(ArgumentMatchers.any[Tag]))
         .thenReturn(Future.successful(Some(newTag("new tag success", tagId = TagId("old-tag-success")))))
+
+      Mockito
+        .when(tagTypeService.getTagType(ArgumentMatchers.any[TagTypeId]))
+        .thenReturn(Future.successful(Some(TagType(TagTypeId("tagTypeId"), "", TagTypeDisplay.Displayed))))
+
+      Mockito
+        .when(
+          elasticsearchProposalAPI
+            .searchProposals(ArgumentMatchers.any[SearchQuery])
+        )
+        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
 
       val futureTag: Future[Option[Tag]] = tagService.updateTag(
         tagId = TagId("old-tag-success"),

@@ -58,8 +58,10 @@ trait TagApi extends MakeAuthenticationDirectives {
     get {
       path("tags") {
         makeOperation("Search") { _ =>
-          onSuccess(tagService.findAll()) { tags =>
-            complete(tags)
+          parameter('displayed.as[Boolean].?) { displayed =>
+            onSuccess(tagService.findAll(displayed = displayed.contains(true))) { tags =>
+              complete(tags)
+            }
           }
         }
       }

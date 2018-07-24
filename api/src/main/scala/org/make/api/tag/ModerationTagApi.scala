@@ -307,7 +307,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
   @Path(value = "/{tagId}")
   def moderationUpdateTag: Route = put {
     path("moderation" / "tags" / moderationTagId) { tagId =>
-      makeOperation("ModerationUpdateTag") { _ =>
+      makeOperation("ModerationUpdateTag") { requestContext =>
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireModerationRole(auth.user) {
             decodeRequest {
@@ -360,7 +360,8 @@ trait ModerationTagApi extends MakeAuthenticationDirectives {
                       operationId = request.operationId,
                       themeId = request.themeId,
                       country = request.country,
-                      language = request.language
+                      language = request.language,
+                      requestContext = requestContext
                     )
                   ) { tag =>
                     complete(tag)

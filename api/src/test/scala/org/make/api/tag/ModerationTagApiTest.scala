@@ -25,6 +25,7 @@ import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToke
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
@@ -149,7 +150,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
       ArgumentMatchers.any[String],
-      ArgumentMatchers.any[String]
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[RequestContext]
     )
   ).thenReturn(
     Future.successful(
@@ -167,7 +169,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
       ArgumentMatchers.any[String],
-      ArgumentMatchers.any[String]
+      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[RequestContext]
     )
   ).thenReturn(Future.successful(None))
 
