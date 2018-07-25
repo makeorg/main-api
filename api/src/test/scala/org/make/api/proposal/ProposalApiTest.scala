@@ -252,7 +252,8 @@ class ProposalApiTest
             country = Country("FR"),
             language = Language("fr"),
             isHardBounce = false,
-            lastMailingError = None
+            lastMailingError = None,
+            hasPassword = false
           ),
           labels = Seq(),
           theme = None,
@@ -325,7 +326,8 @@ class ProposalApiTest
         country = Country("FR"),
         language = Language("fr"),
         isHardBounce = false,
-        lastMailingError = None
+        lastMailingError = None,
+        hasPassword = false
       ),
       labels = Seq(),
       theme = None,
