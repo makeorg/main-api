@@ -31,7 +31,6 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ProposalIndexationStream
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.core.proposal._
 import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -58,15 +57,11 @@ class ProposalConsumerActor(sequenceService: SequenceService,
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case _: ProposalViewed => Future.successful {}
-      case event: ProposalUpdated =>
-        onSimilarProposalsUpdated(event.id, event.similarProposals)
-        onCreateOrUpdate(event)
-      case event: ReindexProposal  => onCreateOrUpdate(event)
-      case event: ProposalProposed => onCreateOrUpdate(event)
-      case event: ProposalAccepted =>
-        onSimilarProposalsUpdated(event.id, event.similarProposals)
-        onCreateOrUpdate(event)
+      case event: ProposalViewed      => doNothing(event)
+      case event: ReindexProposal     => onCreateOrUpdate(event)
+      case event: ProposalUpdated     => onCreateOrUpdate(event)
+      case event: ProposalProposed    => onCreateOrUpdate(event)
+      case event: ProposalAccepted    => onCreateOrUpdate(event)
       case event: ProposalRefused     => onCreateOrUpdate(event)
       case event: ProposalPostponed   => onCreateOrUpdate(event)
       case event: ProposalVoted       => onCreateOrUpdate(event)
@@ -80,11 +75,9 @@ class ProposalConsumerActor(sequenceService: SequenceService,
       case event: ProposalRemovedFromOperation =>
         removeFromOperation(event)
         onCreateOrUpdate(event)
-      case _: ProposalLocked         => Future.successful {}
-      case event: ProposalAnonymized => onCreateOrUpdate(event)
-      case event: SimilarProposalsAdded =>
-        onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
-        Future.successful {}
+      case event: ProposalLocked        => doNothing(event)
+      case event: ProposalAnonymized    => onCreateOrUpdate(event)
+      case event: SimilarProposalsAdded => doNothing(event)
     }
 
   }
@@ -127,13 +120,6 @@ class ProposalConsumerActor(sequenceService: SequenceService,
           }
         }
       case None => Future.successful[Unit] {}
-    }
-  }
-
-  def onSimilarProposalsUpdated(proposalId: ProposalId, newSimilarProposals: Seq[ProposalId]): Unit = {
-    val allIds = Seq(proposalId) ++ newSimilarProposals
-    newSimilarProposals.foreach { id =>
-      proposalCoordinatorService.updateDuplicates(UpdateDuplicatedProposalsCommand(id, allIds.filter(_ != id)))
     }
   }
 

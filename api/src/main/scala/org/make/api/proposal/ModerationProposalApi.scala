@@ -53,6 +53,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
+import org.make.api.question.QuestionServiceComponent
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -63,6 +64,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with MakeSettingsComponent
     with UserServiceComponent
     with IdeaServiceComponent
+    with QuestionServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -189,60 +191,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                       }
                     }
                   }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "moderation-search-proposals",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.ExhaustiveSearchRequest"
-      )
-    )
-  )
-  @Path(value = "/search")
-  @Deprecated
-  def searchAllProposalsDeprecated: Route = {
-    post {
-      path("moderation" / "proposals" / "search") {
-        makeOperation("SearchAll") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
-              decodeRequest {
-                entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
-                  provideAsync(
-                    proposalService.search(
-                      userId = Some(userAuth.user.userId),
-                      query = request.toSearchQuery(requestContext),
-                      requestContext = requestContext
-                    )
-                  ) { proposals =>
-                    complete(proposals)
-                  }
-                }
               }
             }
           }
@@ -453,17 +401,30 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(
-                    proposalService.update(
-                      proposalId = proposalId,
-                      moderator = userAuth.user.userId,
-                      requestContext = requestContext,
-                      updatedAt = DateHelper.now(),
-                      request = request
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
+                  provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                    provideAsyncOrNotFound(
+                      questionService
+                      // TODO less .get
+                        .findQuestion(request.theme, request.operation, proposal.country.get, proposal.language.get)
+                    ) { question =>
+                      provideAsyncOrNotFound(
+                        proposalService.update(
+                          proposalId = proposalId,
+                          moderator = userAuth.user.userId,
+                          requestContext = requestContext,
+                          updatedAt = DateHelper.now(),
+                          question = question,
+                          newContent = request.newContent,
+                          labels = request.labels,
+                          tags = request.tags,
+                          idea = request.idea
+                        )
+                      ) { proposalResponse: ProposalResponse =>
+                        complete(proposalResponse)
+                      }
+                    }
                   }
+
                 }
               }
             }
@@ -507,15 +468,27 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsyncOrNotFound(
-                  proposalService.validateProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext,
-                    request = request
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
+                provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                  provideAsyncOrNotFound(
+                    questionService // TODO: less .get
+                      .findQuestion(request.theme, request.operation, proposal.country.get, proposal.language.get)
+                  ) { question =>
+                    provideAsyncOrNotFound(
+                      proposalService.validateProposal(
+                        proposalId = proposalId,
+                        moderator = auth.user.userId,
+                        requestContext = requestContext,
+                        question = question,
+                        newContent = request.newContent,
+                        sendNotificationEmail = request.sendNotificationEmail,
+                        idea = request.idea,
+                        labels = request.labels,
+                        tags = request.tags
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
+                  }
                 }
               }
             }
@@ -646,69 +619,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 .lockProposal(proposalId = proposalId, moderatorId = auth.user.userId, requestContext = requestContext)
             ) { _ =>
               complete(StatusCodes.NoContent)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "remove-from-similars",
-    httpMethod = "DELETE",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
-  @Path(value = "/similars/{proposalId}")
-  @Deprecated
-  def removeProposalFromClusters: Route = delete {
-    path("moderation" / "proposals" / "similars" / moderationProposalId) { proposalId =>
-      makeOperation("RemoveFromSimilars") { context =>
-        makeOAuth2 { auth =>
-          requireModerationRole(auth.user) {
-            onSuccess(proposalService.removeProposalFromCluster(proposalId)) { _ =>
-              complete(StatusCodes.OK)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "remove-clusters",
-    httpMethod = "DELETE",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
-  @Path(value = "/similars")
-  @Deprecated
-  def removeClusters: Route = delete {
-    path("moderation" / "proposals" / "similars") {
-      makeOperation("RemoveClusters") { context =>
-        makeOAuth2 { auth =>
-          requireModerationRole(auth.user) {
-            onSuccess(proposalService.clearSimilarProposals()) { _ =>
-              complete(StatusCodes.OK)
             }
           }
         }
@@ -912,15 +822,12 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   }
 
   val moderationProposalRoutes: Route =
-    searchAllProposalsDeprecated ~
-      searchAllProposals ~
+    searchAllProposals ~
       updateProposal ~
       acceptProposal ~
       refuseProposal ~
       postponeProposal ~
       exportProposals ~
-      removeProposalFromClusters ~
-      removeClusters ~
       lock ~
       patchProposal ~
       getDuplicates ~

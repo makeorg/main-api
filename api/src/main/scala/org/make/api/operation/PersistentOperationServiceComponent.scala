@@ -586,9 +586,7 @@ object DefaultPersistentOperationServiceComponent {
 
     override val tableName: String = "operation_action"
 
-    lazy val operationActionAlias
-      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentOperationAction], PersistentOperationAction] =
-      syntax("oa")
+    lazy val operationActionAlias: SyntaxProvider[PersistentOperationAction] = syntax("oa")
 
     def opt(
       operationAction: SyntaxProvider[PersistentOperationAction]
@@ -616,8 +614,7 @@ object DefaultPersistentOperationServiceComponent {
 
     override val tableName: String = "operation"
 
-    lazy val operationAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentOperation], PersistentOperation] =
-      syntax("op")
+    lazy val operationAlias: SyntaxProvider[PersistentOperation] = syntax("op")
 
     def apply(
       operationResultName: ResultName[PersistentOperation] = operationAlias.resultName

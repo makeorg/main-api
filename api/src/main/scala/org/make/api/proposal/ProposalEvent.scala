@@ -25,6 +25,7 @@ import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -153,7 +154,8 @@ object PublishedProposalEvent {
                                     operation: Option[OperationId] = None,
                                     theme: Option[ThemeId] = None,
                                     language: Option[Language] = None,
-                                    country: Option[Country] = None)
+                                    country: Option[Country] = None,
+                                    question: Option[QuestionId] = None)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -162,7 +164,7 @@ object PublishedProposalEvent {
   object ProposalProposed {
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
-      DefaultJsonProtocol.jsonFormat11(ProposalProposed.apply)
+      DefaultJsonProtocol.jsonFormat12(ProposalProposed.apply)
 
   }
 
@@ -204,7 +206,8 @@ object PublishedProposalEvent {
                                    tags: Seq[TagId] = Seq.empty,
                                    similarProposals: Seq[ProposalId] = Seq.empty,
                                    idea: Option[IdeaId] = None,
-                                   operation: Option[OperationId] = None)
+                                   operation: Option[OperationId] = None,
+                                   question: Option[QuestionId] = None)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -214,7 +217,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
-      DefaultJsonProtocol.jsonFormat13(ProposalUpdated.apply)
+      DefaultJsonProtocol.jsonFormat14(ProposalUpdated.apply)
 
   }
 
@@ -241,7 +244,8 @@ object PublishedProposalEvent {
                                     tags: Seq[TagId],
                                     similarProposals: Seq[ProposalId],
                                     idea: Option[IdeaId] = None,
-                                    operation: Option[OperationId] = None)
+                                    operation: Option[OperationId] = None,
+                                    question: Option[QuestionId] = None)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -251,7 +255,7 @@ object PublishedProposalEvent {
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
-      DefaultJsonProtocol.jsonFormat12(ProposalAccepted.apply)
+      DefaultJsonProtocol.jsonFormat13(ProposalAccepted.apply)
 
   }
 

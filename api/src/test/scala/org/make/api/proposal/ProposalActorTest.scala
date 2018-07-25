@@ -30,6 +30,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal._
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
@@ -37,7 +38,7 @@ import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.GivenWhenThen
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 
@@ -60,6 +61,33 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val sessionHistoryActor: ActorRef =
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
+
+  val questionOnNothingFr = Question(
+    QuestionId("my-question"),
+    country = Country("FR"),
+    language = Language("fr"),
+    question = "some unsolved question",
+    None,
+    None
+  )
+
+  val questionOnTheme = Question(
+    QuestionId("my-question"),
+    country = Country("FR"),
+    language = Language("fr"),
+    question = "some unsolved question",
+    None,
+    Some(ThemeId("some-theme"))
+  )
+
+  val questionOnNothingIT = Question(
+    QuestionId("my-italian-question"),
+    country = Country("IT"),
+    language = Language("it"),
+    question = "some unsolved question",
+    None,
+    None
+  )
 
   val operation1: Operation = Operation(
     OperationStatus.Active,
@@ -115,11 +143,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     lastMailingError = None
   )
 
-  private def proposal(proposalId: ProposalId,
-                       content: String,
-                       slug: String,
-                       country: Option[Country],
-                       language: Option[Language]) = Proposal(
+  private def proposal(proposalId: ProposalId, content: String, slug: String, question: Question) = Proposal(
     proposalId = proposalId,
     author = mainUserId,
     content = content,
@@ -165,8 +189,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         arguments = Map("content" -> content)
       )
     ),
-    country = country,
-    language = language
+    country = Some(question.country),
+    language = Some(question.language),
+    questionId = Some(question.questionId)
   )
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
@@ -180,14 +205,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(None)
 
       And("a newly proposed Proposal")
+
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         RequestContext.empty,
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsg(proposalId)
@@ -202,8 +227,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
             proposalId = proposalId,
             content = "This is a proposal",
             slug = "this-is-a-proposal",
-            country = Some(Country("FR")),
-            language = Some(Language("fr"))
+            question = questionOnNothingFr
           )
         )
       )
@@ -221,8 +245,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
             proposalId = proposalId,
             content = "This is a proposal",
             slug = "this-is-a-proposal",
-            country = Some(Country("FR")),
-            language = Some(Language("fr"))
+            question = questionOnNothingFr
           )
         )
       )
@@ -240,8 +263,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an italian proposal",
-        country = Some(Country("IT")),
-        language = Some(Language("it"))
+        question = questionOnNothingIT
       )
 
       expectMsg(proposalItalyId)
@@ -256,8 +278,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
             slug = "this-is-an-italian-proposal",
-            country = Some(Country("IT")),
-            language = Some(Language("it"))
+            question = questionOnNothingIT
           )
         )
       )
@@ -275,8 +296,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
             slug = "this-is-an-italian-proposal",
-            country = Some(Country("IT")),
-            language = Some(Language("it"))
+            question = questionOnNothingIT
           )
         )
       )
@@ -309,8 +329,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsg(proposalId)
@@ -323,8 +342,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
             proposalId = proposalId,
             content = "This is a proposal",
             slug = "this-is-a-proposal",
-            country = Some(Country("FR")),
-            language = Some(Language("fr"))
+            question = questionOnNothingFr
           )
         )
       )
@@ -341,12 +359,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = Some(ThemeId("my theme")),
         labels = Seq(),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq(),
-        idea = None,
-        operation = None
+        question = questionOnTheme,
+        idea = None
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -363,8 +379,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnTheme
       )
 
       expectMsgPF[Unit]() {
@@ -379,12 +394,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("This content must be changed"),
-        theme = Some(ThemeId("my theme")),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq(),
-        idea = None,
-        operation = None
+        question = questionOnTheme,
+        idea = None
       )
 
       Then("I should receive the accepted proposal with modified content")
@@ -400,7 +413,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(Some(ThemeId("my theme")))
+      response.theme should be(questionOnTheme.themeId)
 
     }
 
@@ -413,8 +426,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -429,12 +441,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = Some(ThemeId("my theme")),
+        question = questionOnNothingFr,
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq(),
-        idea = None,
-        operation = None
+        idea = None
       )
 
       Then("I should receive the accepted proposal")
@@ -450,8 +460,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(Some(ThemeId("my theme")))
-
+      response.theme should be(None)
     }
 
     scenario("accept an existing proposal without a theme") {
@@ -464,8 +473,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -480,12 +488,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = None,
+        question = questionOnNothingFr,
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
-        idea = None,
-        operation = None
+        idea = None
       )
 
       Then("I should receive the accepted proposal")
@@ -513,8 +519,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -528,12 +533,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = Some(ThemeId("my theme")),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq(),
         idea = None,
-        operation = None
+        question = questionOnNothingFr
       )
 
       expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
@@ -545,12 +548,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = Some("something different"),
-        theme = Some(ThemeId("my theme 2")),
         labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
-        similarProposals = Seq(),
         idea = None,
-        operation = None
+        question = questionOnNothingFr
       )
 
       Then("I should receive an error")
@@ -558,55 +559,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       error.errors.head.field should be("status")
       error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already validated"))
 
-    }
-
-    scenario("validate a proposal and set similar proposals") {
-      Given("a validated proposal")
-      val proposalId = ProposalId("to-be-moderated-with-similar-1")
-      val similarProposals = Seq(ProposalId("similar-1"), ProposalId("similar-2"))
-      val originalContent = "This is a proposal that will be validated with similar duplicates"
-      coordinator ! ProposeCommand(
-        proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = DateHelper.now(),
-        content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
-      )
-
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
-
-      When("I validate the proposal")
-      coordinator ! AcceptProposalCommand(
-        proposalId = proposalId,
-        moderator = UserId("some user"),
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = true,
-        newContent = None,
-        theme = Some(ThemeId("my theme")),
-        labels = Seq(LabelId("action")),
-        tags = Seq(TagId("some tag id")),
-        similarProposals = similarProposals,
-        idea = None,
-        operation = None
-      )
-      val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
-
-      Then("I should have similar proposals present")
-      validatedProposal.proposalId should be(proposalId)
-      validatedProposal.similarProposals should be(similarProposals)
-
-      When("I search for the proposal")
-      coordinator ! GetProposal(proposalId, RequestContext.empty)
-      val searchedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to search"))
-
-      Then("I should have similar proposals present")
-      searchedProposal.proposalId should be(proposalId)
-      searchedProposal.similarProposals should be(similarProposals)
     }
 
     scenario("validate a proposal and set the idea") {
@@ -620,8 +572,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -636,18 +587,17 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = Some(ThemeId("my theme")),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
         idea = Some(idea),
-        operation = None
+        question = questionOnTheme
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
 
       Then("I should have an idea present")
       validatedProposal.proposalId should be(proposalId)
       validatedProposal.idea should be(Some(idea))
+      validatedProposal.questionId should be(Some(questionOnTheme.questionId))
 
       When("I search for the proposal")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
@@ -684,8 +634,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -725,8 +674,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -766,8 +714,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -824,8 +771,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -862,8 +808,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -905,8 +850,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -950,12 +894,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = None,
-        theme = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        similarProposals = Seq(),
         idea = None,
-        operation = None
+        question = questionOnNothingFr
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -970,8 +912,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -986,12 +927,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty,
         sendNotificationEmail = true,
         newContent = None,
-        theme = Some(ThemeId("my theme")),
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
         idea = None,
-        operation = None
+        question = questionOnTheme
       )
 
       expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
@@ -1003,12 +942,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = Some("This content must be changed"),
-        theme = Some(ThemeId("my theme")),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        similarProposals = Seq.empty,
         idea = Some(IdeaId("idea-id")),
-        operation = None
+        question = questionOnTheme
       )
 
       Then("I should receive the updated proposal")
@@ -1023,7 +960,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(Some(ThemeId("my theme")))
+      response.theme should be(questionOnTheme.themeId)
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
@@ -1035,8 +972,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1051,12 +987,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         updatedAt = mainUpdatedAt.get,
         moderator = UserId("some user"),
         newContent = None,
-        theme = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        similarProposals = Seq.empty,
         idea = None,
-        operation = None
+        question = questionOnNothingFr
       )
 
       Then("I should receive a ValidationFailedError")
@@ -1076,8 +1010,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1109,8 +1042,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1123,8 +1055,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       When("I lock the proposal")
       And("I lock the proposal again after 10 sec")
-      val timeout = Eventually.timeout(Span(11, Seconds))
-      Eventually.eventually(timeout) {
+      val interval = PatienceConfiguration.Interval(Span(1, Seconds))
+      val timeout = PatienceConfiguration.Timeout(Span(12, Seconds))
+      Eventually.eventually(timeout, interval) {
         coordinator ! LockProposalCommand(
           proposalId = proposalId,
           moderatorId = moderatorMod,
@@ -1134,8 +1067,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
         Then("I should receive the moderatorId twice")
         expectMsg(Right(Some(moderatorMod)))
-
-        Thread.sleep(10000)
       }
     }
 
@@ -1152,8 +1083,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1195,8 +1125,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1249,8 +1178,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1293,8 +1221,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsgPF[Unit]() {
@@ -1369,8 +1296,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsg(proposalId)
@@ -1438,8 +1364,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsg(proposalId)
@@ -1489,8 +1414,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = questionOnNothingFr
       )
 
       expectMsg(proposalId)
@@ -1535,8 +1459,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        country = Some(Country("FR")),
-        language = Some(Language("fr"))
+        question = Question(
+          questionId = QuestionId("some-question"),
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "my question",
+          operationId = None,
+          themeId = None
+        )
       )
 
       expectMsg(proposalId)

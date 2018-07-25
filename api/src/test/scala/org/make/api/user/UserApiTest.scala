@@ -364,7 +364,15 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val dateOfBirthError = errors.find(_.field == "dateOfBirth")
         dateOfBirthError should be(
-          Some(ValidationError("dateOfBirth", Some("foo-12-02 is not a valid date, it should match yyyy-MM-dd")))
+          Some(
+            ValidationError(
+              "dateOfBirth",
+              Some(
+                "Could not decode [\"foo-12-02\"] at [.dateOfBirth] as " +
+                  "[foo-12-02 is not a valid date, it should match yyyy-MM-dd]."
+              )
+            )
+          )
         )
       }
     }

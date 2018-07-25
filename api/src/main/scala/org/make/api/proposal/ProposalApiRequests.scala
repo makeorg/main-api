@@ -28,6 +28,7 @@ import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
@@ -39,8 +40,8 @@ import scala.util.Random
 
 final case class ProposeProposalRequest(content: String,
                                         operationId: Option[OperationId],
-                                        language: Option[Language],
-                                        country: Option[Country]) {
+                                        language: Language,
+                                        country: Country) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = FrontConfiguration.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
@@ -239,6 +240,7 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       creationContext: Option[PatchRequestContext] = None,
                                       operation: Option[OperationId] = None,
                                       language: Option[Language] = None,
+                                      questionId: Option[QuestionId] = None,
                                       country: Option[Country] = None)
 
 object PatchProposalRequest {

@@ -26,11 +26,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.OperationServiceComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
@@ -43,19 +42,17 @@ import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.util.Try
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
 trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: ProposalServiceComponent
-    with ThemeServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
     with UserServiceComponent
-    with OperationServiceComponent =>
+    with QuestionServiceComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -69,41 +66,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
         makeOperation("GetProposal") { requestContext =>
           provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
             complete(proposal)
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(value = "search-proposals", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
-  )
-  @ApiImplicitParams(
-    value =
-      Array(new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.proposal.SearchRequest"))
-  )
-  @Path(value = "/search")
-  @Deprecated
-  def searchDeprecated: Route = {
-    post {
-      path("proposals" / "search") {
-        makeOperation("Search") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            decodeRequest {
-              entity(as[SearchRequest]) { request: SearchRequest =>
-                provideAsync(
-                  proposalService
-                    .searchForUser(
-                      userId = userAuth.map(_.user.userId),
-                      query = request.toSearchQuery(requestContext),
-                      requestContext = requestContext
-                    )
-                ) { proposals =>
-                  complete(proposals)
-                }
-              }
-            }
           }
         }
       }
@@ -300,15 +262,15 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
             decodeRequest {
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                 provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                  provideAsync(request.operationId match {
-                    case Some(operationId) => operationService.findOne(operationId)
-                    case None              => Future.successful(None)
-                  }) { maybeOperation =>
-                    request.operationId.foreach { _ =>
-                      Validation.validate(
-                        Validation.requirePresent("operationId", maybeOperation, Some("Invalid operationId"))
-                      )
-                    }
+                  provideAsync(
+                    questionService
+                      .findQuestion(requestContext.currentTheme, request.operationId, request.country, request.language)
+                  ) { maybeQuestion =>
+                    Validation.validate(
+                      Validation
+                        .requirePresent("question", maybeQuestion, Some("This proposal refers to no known question"))
+                    )
+
                     onSuccess(
                       proposalService
                         .propose(
@@ -316,10 +278,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                           requestContext = requestContext,
                           createdAt = DateHelper.now(),
                           content = request.content,
-                          operation = maybeOperation.map(_.operationId),
-                          theme = requestContext.currentTheme,
-                          country = request.country,
-                          language = request.language
+                          question = maybeQuestion.get
                         )
                     ) { proposalId =>
                       complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
@@ -478,7 +437,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
   val proposalRoutes: Route =
     postProposal ~
       getProposal ~
-      searchDeprecated ~
       search ~
       vote ~
       unvote ~

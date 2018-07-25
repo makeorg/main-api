@@ -24,9 +24,9 @@ import java.time.ZonedDateTime
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
-import org.make.core.operation.OperationId
-import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey, _}
+import org.make.core.question.Question
+import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 
@@ -40,10 +40,7 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 user: User,
                                 createdAt: ZonedDateTime,
                                 content: String,
-                                operation: Option[OperationId] = None,
-                                theme: Option[ThemeId] = None,
-                                language: Option[Language],
-                                country: Option[Country])
+                                question: Question)
     extends ProposalCommand
 
 final case class UpdateProposalCommand(moderator: UserId,
@@ -51,12 +48,10 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        requestContext: RequestContext,
                                        updatedAt: ZonedDateTime,
                                        newContent: Option[String],
-                                       theme: Option[ThemeId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
                                        idea: Option[IdeaId],
-                                       operation: Option[OperationId])
+                                       question: Question)
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
@@ -70,17 +65,10 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        requestContext: RequestContext,
                                        sendNotificationEmail: Boolean,
                                        newContent: Option[String],
-                                       theme: Option[ThemeId],
+                                       question: Question,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId],
-                                       operation: Option[OperationId])
-    extends ProposalCommand
-
-final case class UpdateDuplicatedProposalsCommand(proposalId: ProposalId,
-                                                  duplicates: Seq[ProposalId],
-                                                  requestContext: RequestContext = RequestContext.empty)
+                                       idea: Option[IdeaId])
     extends ProposalCommand
 
 final case class RefuseProposalCommand(moderator: UserId,
@@ -129,19 +117,6 @@ final case class LockProposalCommand(proposalId: ProposalId,
                                      moderatorId: UserId,
                                      moderatorName: Option[String],
                                      requestContext: RequestContext)
-    extends ProposalCommand
-
-final case class ClearSimilarProposalsCommand(proposalId: ProposalId, requestContext: RequestContext)
-    extends ProposalCommand
-
-final case class RemoveSimilarProposalCommand(proposalId: ProposalId,
-                                              similarToRemove: ProposalId,
-                                              requestContext: RequestContext)
-    extends ProposalCommand
-
-final case class ReplaceProposalCommand(proposalId: ProposalId,
-                                        proposal: Proposal,
-                                        requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand
 
 final case class PatchProposalCommand(proposalId: ProposalId,

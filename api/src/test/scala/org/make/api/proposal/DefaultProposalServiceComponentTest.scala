@@ -22,6 +22,7 @@ package org.make.api.proposal
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -60,6 +61,7 @@ class DefaultProposalServiceComponentTest
     with ReadJournalComponent
     with ActorSystemComponent
     with UserServiceComponent
+    with QuestionServiceComponent
     with IdeaServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -77,6 +79,7 @@ class DefaultProposalServiceComponentTest
   override val actorSystem: ActorSystem = ActorSystem()
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
