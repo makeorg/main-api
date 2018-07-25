@@ -21,13 +21,19 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import com.github.t3hnar.bcrypt._
 import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent.{UserCreatedEvent, UserUpdatedEvent}
+import org.make.api.user.UserUpdateEvent.{
+  UserCreatedEvent,
+  UserUpdatedEvent,
+  UserUpdatedOptInNewsletterEvent,
+  UserUpdatedPasswordEvent
+}
 import org.make.api.user.social.models.UserInfo
-import org.make.api.userhistory.UserEvent.UserValidatedAccountEvent
+import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
 import org.make.core.reference.{Country, Language}
@@ -35,7 +41,7 @@ import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{times, verify}
 import org.mockito._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -102,14 +108,40 @@ class UserServiceTest
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
   Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
-  class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
-    override def matches(argument: AnyRef): Boolean =
-      argument match {
-        case i: UserCreatedEvent if maybeUserId == i.userId                 => true
-        case i: UserValidatedAccountEvent if maybeUserId.contains(i.userId) => true
-        case _                                                              => false
-      }
-  }
+  val johnDoeProfile: Profile = Profile(
+    dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+    avatarUrl = Some("facebook.com/picture"),
+    profession = None,
+    phoneNumber = None,
+    twitterId = None,
+    facebookId = Some("444444"),
+    googleId = None,
+    gender = None,
+    genderName = None,
+    postalCode = None,
+    karmaLevel = None,
+    locale = None
+  )
+
+  val johnDoeUser: User = User(
+    userId = UserId("AAA-BBB-CCC-DDD"),
+    email = "johndoe@example.com",
+    firstName = Some("john"),
+    lastName = Some("doe"),
+    lastIp = Some("127.0.0.1"),
+    hashedPassword = Some("passpass".bcrypt),
+    enabled = true,
+    emailVerified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = Some("Token"),
+    verificationTokenExpiresAt = Some(DateHelper.now()),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleCitizen),
+    country = Country("FR"),
+    language = Language("fr"),
+    profile = Some(johnDoeProfile)
+  )
 
   feature("register user") {
     scenario("successful register user") {
@@ -248,10 +280,11 @@ class UserServiceTest
         user.profile.get.facebookId should be(info.facebookId)
 
         verify(eventBusService, times(2))
-          .publish(
-            ArgumentMatchers
-              .argThat(new MatchRegisterEvents(Some(returnedUser.userId)))
-          )
+          .publish(ArgumentMatchers.argThat[AnyRef] {
+            case event: UserRegisteredEvent => event.userId == returnedUser.userId
+            case event: UserCreatedEvent    => event.userId.contains(returnedUser.userId)
+            case _                          => false
+          })
 
       }
     }
@@ -324,12 +357,13 @@ class UserServiceTest
         user.profile.get.facebookId should be(infoWithGender.facebookId)
         user.profile.get.gender should be(Some(Female))
         user.profile.get.genderName should be(Some("female"))
-        verify(eventBusService, times(2))
-          .publish(
-            ArgumentMatchers
-              .argThat(new MatchRegisterEvents(Some(returnedUserWithGender.userId)))
-          )
 
+        verify(eventBusService, times(2))
+          .publish(ArgumentMatchers.argThat[AnyRef] {
+            case event: UserRegisteredEvent => event.userId == returnedUserWithGender.userId
+            case event: UserCreatedEvent    => event.userId.contains(returnedUserWithGender.userId)
+            case _                          => false
+          })
       }
     }
 
@@ -526,10 +560,7 @@ class UserServiceTest
       userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty)
 
       verify(eventBusService, Mockito.never())
-        .publish(
-          ArgumentMatchers
-            .argThat(new MatchRegisterEvents(Some(user.userId)))
-        )
+        .publish(ArgumentMatchers.any[AnyRef])
 
     }
   }
@@ -554,13 +585,14 @@ class UserServiceTest
   feature("update opt in newsletter") {
     scenario("update opt in newsletter using userId") {
       Given("a user")
+      val userIdOptinNewsletter: UserId = UserId("update-opt-in-user")
       When("I update opt in newsletter using UserId")
       Then("opt in value is updated")
       Mockito
         .when(persistentUserService.updateOptInNewsletter(any[UserId], ArgumentMatchers.eq(true)))
         .thenReturn(Future.successful(true))
 
-      val futureBoolean = userService.updateOptInNewsletter(UserId("update-opt-in-user"), optInNewsletter = true)
+      val futureBoolean = userService.updateOptInNewsletter(userIdOptinNewsletter, optInNewsletter = true)
 
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
         result shouldBe true
@@ -570,6 +602,8 @@ class UserServiceTest
       Given("a user")
       When("I update opt in newsletter using user email")
       Then("opt in value is updated")
+
+      Mockito.reset(eventBusService)
       Mockito
         .when(
           persistentUserService
@@ -578,6 +612,12 @@ class UserServiceTest
         .thenReturn(Future.successful(true))
 
       val futureBoolean = userService.updateOptInNewsletter("user@example.com", optInNewsletter = true)
+
+      Mockito
+        .verify(eventBusService, Mockito.times(1))
+        .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent] { event =>
+          event.email.contains("user@example.com")
+        })
 
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
         result shouldBe true
@@ -679,6 +719,41 @@ class UserServiceTest
           .publish(captor.capture())
 
         captor.getValue().userId should be(Some(result.userId))
+      }
+    }
+  }
+
+  feature("change password without token") {
+    scenario("update existing password") {
+      val johnChangePassword: User =
+        johnDoeUser.copy(userId = UserId("userchangepasswordid"), hashedPassword = Some("mypassword".bcrypt))
+      val newPassword: String = "mypassword2"
+
+      Mockito.reset(eventBusService)
+      Mockito
+        .when(
+          persistentUserService.updatePassword(
+            ArgumentMatchers.eq(johnChangePassword.userId),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.argThat[String] { pass =>
+              newPassword.isBcrypted(pass)
+            }
+          )
+        )
+        .thenReturn(Future.successful(true))
+
+      Given("a user with a password defined")
+      When("I Update password ")
+      val futureBoolean: Future[Boolean] = userService.updatePassword(johnChangePassword.userId, None, newPassword)
+
+      Then("The update success")
+      whenReady(futureBoolean, Timeout(3.seconds)) { result =>
+        Mockito
+          .verify(eventBusService, Mockito.times(1))
+          .publish(ArgumentMatchers.argThat[UserUpdatedPasswordEvent] { event =>
+            event.userId.contains(johnChangePassword.userId)
+          })
+        result shouldBe true
       }
     }
   }

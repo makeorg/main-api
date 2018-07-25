@@ -240,6 +240,7 @@ trait PersistentUserService {
   def get(uuid: UserId): Future[Option[User]]
   def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
+  def findByUserIdAndPassword(userId: UserId, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findAllOrganisations(): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -254,7 +255,7 @@ trait PersistentUserService {
   def requestResetPassword(userId: UserId,
                            resetToken: String,
                            resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
-  def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean]
+  def updatePassword(userId: UserId, resetToken: Option[String], hashedPassword: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
   def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
   def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean]
@@ -314,6 +315,21 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
+        }.map(PersistentUser.apply()).single.apply
+      }).map(_.filter { persistentUser =>
+        persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword)
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    override def findByUserIdAndPassword(userId: UserId, password: String): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.uuid, userId.value))
         }.map(PersistentUser.apply()).single.apply
       }).map(_.filter { persistentUser =>
         persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword)
@@ -602,17 +618,25 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
     }
 
-    override def updatePassword(userId: UserId, resetToken: String, hashedPassword: String): Future[Boolean] = {
+    override def updatePassword(userId: UserId, resetToken: Option[String], hashedPassword: String): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
-          update(PersistentUser)
+          val query = update(PersistentUser)
             .set(column.hashedPassword -> hashedPassword, column.resetToken -> None, column.resetTokenExpiresAt -> None)
-            .where(
-              sqls
-                .eq(column.uuid, userId.value)
-                .and(sqls.eq(column.resetToken, resetToken))
-            )
+          resetToken match {
+            case Some(token) =>
+              query.where(
+                sqls
+                  .eq(column.uuid, userId.value)
+                  .and(sqls.eq(column.resetToken, token))
+              )
+            case _ =>
+              query.where(
+                sqls
+                  .eq(column.uuid, userId.value)
+              )
+          }
         }.executeUpdate().apply() match {
           case 1 => true
           case _ => false

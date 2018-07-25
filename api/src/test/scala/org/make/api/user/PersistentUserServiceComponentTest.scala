@@ -83,5 +83,6 @@ class PersistentUserServiceComponentTest
       And("User's Profile karmaLevel must be None")
       maybeProfile.get.karmaLevel should be(None)
     }
+
   }
 }
