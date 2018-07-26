@@ -76,6 +76,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
             select
               .from(PersistentTagType.as(tagTypeAlias))
               .orderBy(tagTypeAlias.weightType)
+              .desc
           }.map(PersistentTagType.apply()).list.apply
       })
 
@@ -92,6 +93,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               .from(PersistentTagType.as(tagTypeAlias))
               .where(sqls.in(tagTypeAlias.id, uniqueTagTypesIds))
               .orderBy(tagTypeAlias.weightType)
+              .desc
           }.map(PersistentTagType.apply()).list.apply
       })
 
