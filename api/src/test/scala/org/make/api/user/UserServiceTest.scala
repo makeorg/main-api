@@ -25,14 +25,14 @@ import org.make.api.MakeUnitTest
 import org.make.api.technical.auth._
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent.UserCreatedEvent
+import org.make.api.user.UserUpdateEvent.{UserCreatedEvent, UserUpdatedEvent}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.userhistory.UserEvent.UserValidatedAccountEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
-import org.make.core.profile.Profile
+import org.make.core.profile.{Gender, Profile}
 import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{MailingErrorLog, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify}
@@ -57,6 +57,42 @@ class UserServiceTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val eventBusService: EventBusService = mock[EventBusService]
 
+  val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val fooProfile = Profile(
+    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
+    avatarUrl = Some("https://www.example.com"),
+    profession = Some("profession"),
+    phoneNumber = Some("010101"),
+    twitterId = Some("@twitterid"),
+    facebookId = Some("facebookid"),
+    googleId = Some("googleId"),
+    gender = Some(Gender.Male),
+    genderName = Some("other"),
+    postalCode = Some("93"),
+    karmaLevel = Some(2),
+    locale = Some("fr_FR")
+  )
+  val fooUser = User(
+    userId = UserId("1"),
+    email = "foo@example.com",
+    firstName = Some("Foo"),
+    lastName = Some("John"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    emailVerified = true,
+    lastConnection = zonedDateTimeInThePast,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
+    profile = Some(fooProfile),
+    createdAt = Some(zonedDateTimeInThePast)
+  )
+
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
   Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
@@ -65,6 +101,7 @@ class UserServiceTest
       argument match {
         case i: UserCreatedEvent if maybeUserId == i.userId                 => true
         case i: UserValidatedAccountEvent if maybeUserId.contains(i.userId) => true
+        case i: UserUpdatedEvent if maybeUserId == i.userId                 => true
         case _                                                              => false
       }
   }
@@ -613,6 +650,28 @@ class UserServiceTest
 
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
         result shouldBe true
+      }
+    }
+  }
+
+  feature("update user") {
+    scenario("update a user") {
+      Given("a user")
+      When("I update fields")
+      Then("fields are updated into user and UserUpdatedEvent is published")
+      Mockito
+        .when(persistentUserService.updateUser(ArgumentMatchers.eq(fooUser)))
+        .thenReturn(Future.successful(fooUser))
+
+      val futureUser = userService.update(fooUser, RequestContext.empty)
+
+      whenReady(futureUser, Timeout(3.seconds)) { result =>
+        result shouldBe a[User]
+        verify(eventBusService, times(1))
+          .publish(
+            ArgumentMatchers
+              .argThat(new MatchRegisterEvents(Some(fooUser.userId)))
+          )
       }
     }
   }

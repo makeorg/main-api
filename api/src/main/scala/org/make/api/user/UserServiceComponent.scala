@@ -50,6 +50,7 @@ trait UserService extends ShortenedNames {
   def getUserByEmail(email: String): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
+  def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
                                    requestContext: RequestContext): Future[User]
@@ -77,6 +78,14 @@ case class UserRegisterData(email: String,
                             postalCode: Option[String] = None,
                             country: String,
                             language: String)
+
+case class UserUpdateData(firstName: Option[String],
+                          lastName: Option[String] = None,
+                          dateOfBirth: Option[LocalDate] = None,
+                          profession: Option[String] = None,
+                          postalCode: Option[String] = None,
+                          country: String,
+                          language: String)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -440,6 +449,16 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]] = {
       persistentUserService.findOptOutUsers(page: Int, limit: Int)
+    }
+
+    override def update(user: User, requestContext: RequestContext): Future[User] = {
+      val futureUser: Future[User] = persistentUserService.updateUser(user)
+      futureUser.onComplete {
+        case Success(value) => eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
+        case _             =>
+      }
+
+      futureUser
     }
   }
 }

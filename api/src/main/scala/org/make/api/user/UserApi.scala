@@ -25,7 +25,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
+import akka.http.scaladsl.model.headers.{HttpCookie, `Set-Cookie`}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
@@ -38,19 +38,14 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{
-  EventBusServiceComponent,
-  IdGeneratorComponent,
-  MakeAuthenticationDirectives,
-  ReadJournalComponent
-}
-import org.make.api.user.UserUpdateEvent.UserUpdateValidatedEvent
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
+import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedOptInNewsletterEvent}
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
 import org.make.core.auth.UserRights
-import org.make.core.profile.Profile
+import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -565,6 +560,97 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
+  @ApiOperation(
+    value = "user-update",
+    httpMethod = "PATCH",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.user.UpdateUserRequest"
+      )
+    )
+  )
+  @Path(value = "/")
+  def patchUser: Route =
+    patch {
+      path("user") {
+        makeOperation("PatchUser") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            decodeRequest {
+              entity(as[UpdateUserRequest]) { request: UpdateUserRequest =>
+                provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
+                  if (request.postalCode.nonEmpty) {
+                    validateField(
+                      "postalCode",
+                      request.postalCode.forall(_.length <= 10),
+                      "postal code cannot be longer than 10 characters"
+                    )
+                  }
+
+                  val optInNewsletterHasChanged: Boolean = (request.optInNewsletter, user.profile) match {
+                    case (Some(value), Some(profileValue)) => value != profileValue.optInNewsletter
+                    case (Some(_), None)                   => true
+                    case _                                 => false
+                  }
+
+                  val profile: Option[Profile] = user.profile
+                  val updatedProfile = profile.map(_.copy(
+                    dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
+                    profession = request.profession.orElse(user.profile.flatMap(_.profession)),
+                    postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
+                    phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
+                    optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
+                    gender = Gender.matchGender(request.gender.getOrElse(""))
+                      .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
+                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                  ))
+                  onSuccess(
+                    userService.update(
+                      user.copy(
+                        firstName = request.firstName.orElse(user.firstName),
+                        lastName = request.lastName.orElse(user.lastName),
+                        country = request.country.getOrElse(user.country),
+                        language = request.language.getOrElse(user.language),
+                        profile = updatedProfile
+                      ),
+                      requestContext
+                    )
+                  ) { user: User =>
+                    if (optInNewsletterHasChanged) {
+                      eventBusService.publish(
+                        UserUpdatedOptInNewsletterEvent(
+                          userId = Some(user.userId),
+                          eventDate = DateHelper.now(),
+                          optInNewsletter = user.profile.exists(_.optInNewsletter)
+                        )
+                      )
+                    }
+                    complete(StatusCodes.NoContent -> UserResponse(user))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -577,7 +663,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     subscribeToNewsLetter ~
     validateAccountRoute ~
     getVotedProposalsByUser ~
-    getProposalsByUser
+    getProposalsByUser ~
+    patchUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -607,6 +694,22 @@ case class RegisterUserRequest(email: String,
 
 object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
+}
+
+case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
+                             firstName: Option[String],
+                             lastName: Option[String],
+                             profession: Option[String],
+                             postalCode: Option[String],
+                             phoneNumber: Option[String],
+                             optInNewsletter: Option[Boolean],
+                             gender: Option[String],
+                             genderName: Option[String],
+                             country: Option[String],
+                             language: Option[String])
+
+object UpdateUserRequest extends CirceFormatters {
+  implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
 }
 
 case class SocialLoginRequest(provider: String, token: String, country: Option[String], language: Option[String]) {

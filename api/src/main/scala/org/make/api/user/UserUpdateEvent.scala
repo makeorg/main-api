@@ -36,6 +36,7 @@ object UserUpdateEvent {
 
   type AnyUserUpdateEvent =
     UserCreatedEvent :+:
+      UserUpdatedEvent :+:
       UserUpdatedHardBounceEvent :+:
       UserUpdatedOptInNewsletterEvent :+:
       UserUpdatedPasswordEvent :+:
@@ -55,6 +56,7 @@ object UserUpdateEvent {
       event match {
         case e: UserUpdatedTagEvent             => Coproduct[AnyUserUpdateEvent](e)
         case e: UserCreatedEvent                => Coproduct[AnyUserUpdateEvent](e)
+        case e: UserUpdatedEvent                => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdatedHardBounceEvent      => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdatedPasswordEvent        => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdatedOptInNewsletterEvent => Coproduct[AnyUserUpdateEvent](e)
@@ -67,6 +69,7 @@ object UserUpdateEvent {
    */
   object HandledMessages extends Poly1 {
     implicit val atUserRegisteredEvent: Case.Aux[UserCreatedEvent, UserCreatedEvent] = at(identity)
+    implicit val atUserUpdatedEvent: Case.Aux[UserUpdatedEvent, UserUpdatedEvent] = at(identity)
     implicit val atUserUpdatedHardBounceEvent: Case.Aux[UserUpdatedHardBounceEvent, UserUpdatedHardBounceEvent] = at(
       identity
     )
@@ -116,6 +119,13 @@ object UserUpdateEvent {
                                             override val userId: Option[UserId] = None,
                                             override val email: Option[String] = None)
       extends UserUpdateEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  final case class UserUpdatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+                                    override val userId: Option[UserId] = None,
+                                    override val email: Option[String] = None)
+  extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 }
