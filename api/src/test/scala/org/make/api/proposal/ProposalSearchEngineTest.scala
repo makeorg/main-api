@@ -98,7 +98,8 @@ class ProposalSearchEngineTest
     tags = Seq.empty,
     status = ProposalStatus.Accepted,
     ideaId = Some(IdeaId("idea-id")),
-    operationId = None
+    operationId = None,
+    questionId = None
   )
 
   val normalProposal: IndexedProposal = proposal(42, 1, 3)

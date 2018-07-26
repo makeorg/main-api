@@ -146,6 +146,10 @@
           "type": "keyword",
           "index": true
         },
+        "questionId": {
+          "type": "keyword",
+          "index": true
+        },
         "content": {
           "type": "text",
           "index": true,

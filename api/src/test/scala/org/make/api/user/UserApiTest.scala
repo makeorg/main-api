@@ -854,7 +854,8 @@ class UserApiTest
       tags = Seq.empty,
       status = ProposalStatus.Accepted,
       ideaId = None,
-      operationId = None
+      operationId = None,
+      questionId = None
     )
     val proposalResult: ProposalResult =
       ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
@@ -955,7 +956,8 @@ class UserApiTest
       tags = Seq.empty,
       status = ProposalStatus.Accepted,
       ideaId = None,
-      operationId = None
+      operationId = None,
+      questionId = None
     )
     val proposalResult: ProposalResult =
       ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)

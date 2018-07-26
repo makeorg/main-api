@@ -36,12 +36,11 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
-import org.make.core.operation.OperationId
+import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.question.Question
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
@@ -140,10 +139,7 @@ trait ProposalService {
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 
-  def searchAndLockProposalToModerate(operationId: Option[OperationId],
-                                      themeId: Option[ThemeId],
-                                      country: Country,
-                                      language: Language,
+  def searchAndLockProposalToModerate(questionId: QuestionId,
                                       moderator: UserId,
                                       requestContext: RequestContext): Future[Option[ProposalResponse]]
 
@@ -686,10 +682,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .map(_.flatten)
     }
 
-    override def searchAndLockProposalToModerate(operationId: Option[OperationId],
-                                                 themeId: Option[ThemeId],
-                                                 country: Country,
-                                                 language: Language,
+    override def searchAndLockProposalToModerate(questionId: QuestionId,
                                                  moderator: UserId,
                                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
 
@@ -700,10 +693,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           query = SearchQuery(
             filters = Some(
               SearchFilters(
-                operation = operationId.map(OperationSearchFilter.apply),
-                theme = themeId.map(theme => Seq(theme)).map(ThemeSearchFilter.apply),
-                country = Some(CountrySearchFilter(country)),
-                language = Some(LanguageSearchFilter(language)),
+                question = Some(QuestionSearchFilter(questionId)),
                 status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
               )
             ),

@@ -818,6 +818,37 @@ class ModerationProposalApiTest
         |}
       """.stripMargin
 
+    when(questionService.findQuestion(None, Some(OperationId("vff")), Country("FR"), Language("fr"))).thenReturn(
+      Future.successful(
+        Some(
+          Question(
+            questionId = QuestionId("question-vff"),
+            country = Country("FR"),
+            language = Language("fr"),
+            question = "",
+            operationId = Some(OperationId("vff")),
+            themeId = None
+          )
+        )
+      )
+    )
+
+    when(questionService.findQuestion(None, Some(OperationId("mieux-vivre-ensemble")), Country("FR"), Language("fr")))
+      .thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              questionId = QuestionId("question-mieux-vivre-ensemble"),
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "",
+              operationId = Some(OperationId("mieux-vivre-ensemble")),
+              themeId = None
+            )
+          )
+        )
+      )
+
     scenario("unauthenticated call") {
       Given("an unauthenticated user")
       When("the user requests the next proposal to moderate")
@@ -850,10 +881,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("vff"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-vff")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -883,10 +911,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("mieux-vivre-ensemble"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -915,10 +940,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("mieux-vivre-ensemble"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
           any[RequestContext]
         )

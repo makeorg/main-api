@@ -54,6 +54,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import org.make.api.question.QuestionServiceComponent
+import org.make.core.question.QuestionId
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -224,6 +225,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
@@ -252,6 +254,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                   'tagsIds.as[immutable.Seq[TagId]].?,
                   'labelsIds.as[immutable.Seq[LabelId]].?,
                   'operationId.as[OperationId].?,
+                  'questionId.as[QuestionId].?,
                   'ideaId.as[IdeaId].?,
                   'trending.?,
                   'content.?,
@@ -272,6 +275,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                  tagsIds: Option[Seq[TagId]],
                  labelsIds: Option[Seq[LabelId]],
                  operationId: Option[OperationId],
+                 questionId: Option[QuestionId],
                  ideaId: Option[IdeaId],
                  trending: Option[String],
                  content: Option[String],
@@ -337,6 +341,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     tagsIds = tagsIds,
                     labelsIds = labelsIds,
                     operationId = operationId,
+                    questionId = questionId,
                     ideaId = ideaId,
                     trending = trending,
                     content = content,
@@ -802,16 +807,13 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             decodeRequest {
               entity(as[NextProposalToModerateRequest]) { request =>
                 provideAsyncOrNotFound(
-                  proposalService.searchAndLockProposalToModerate(
-                    request.operationId,
-                    request.themeId,
-                    request.country,
-                    request.language,
-                    user.user.userId,
-                    context
-                  )
-                ) { proposal =>
-                  complete(proposal)
+                  questionService.findQuestion(request.themeId, request.operationId, request.country, request.language)
+                ) { question =>
+                  provideAsyncOrNotFound(
+                    proposalService.searchAndLockProposalToModerate(question.questionId, user.user.userId, context)
+                  ) { proposal =>
+                    complete(proposal)
+                  }
                 }
               }
             }

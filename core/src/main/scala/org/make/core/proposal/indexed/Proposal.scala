@@ -27,6 +27,7 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -58,6 +59,7 @@ object ProposalElasticsearchFieldNames {
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
   val authorAge: String = "author.age"
+  val questionId: String = "questionId"
   val themeId: String = "themeId"
   val country: String = "country"
   val language: String = "language"
@@ -88,6 +90,7 @@ case class IndexedProposal(id: ProposalId,
                            country: Country,
                            language: Language,
                            themeId: Option[ThemeId],
+                           questionId: Option[QuestionId],
                            tags: Seq[IndexedTag],
                            ideaId: Option[IdeaId],
                            operationId: Option[OperationId])

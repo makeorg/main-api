@@ -36,6 +36,7 @@ import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
@@ -80,6 +81,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
     value = Array(
       new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
@@ -110,6 +112,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
               (
                 'proposalIds.as[immutable.Seq[ProposalId]].?,
                 'themesIds.as[immutable.Seq[ThemeId]].?,
+                'questionId.as[QuestionId].?,
                 'tagsIds.as[immutable.Seq[TagId]].?,
                 'labelsIds.as[immutable.Seq[LabelId]].?,
                 'operationId.as[OperationId].?,
@@ -132,6 +135,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
             ) {
               (proposalIds: Option[Seq[ProposalId]],
                themesIds: Option[Seq[ThemeId]],
+               questionId: Option[QuestionId],
                tagsIds: Option[Seq[TagId]],
                labelsIds: Option[Seq[LabelId]],
                operationId: Option[OperationId],
@@ -195,6 +199,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                 val searchRequest: SearchRequest = SearchRequest(
                   proposalIds = proposalIds,
                   themesIds = themesIds,
+                  questionId = questionId,
                   tagsIds = tagsIds,
                   labelsIds = labelsIds,
                   operationId = operationId,

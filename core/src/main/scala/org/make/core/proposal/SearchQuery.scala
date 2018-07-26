@@ -28,6 +28,7 @@ import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -70,6 +71,7 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          tags: Option[TagsSearchFilter] = None,
                          labels: Option[LabelsSearchFilter] = None,
                          operation: Option[OperationSearchFilter] = None,
+                         question: Option[QuestionSearchFilter] = None,
                          trending: Option[TrendingSearchFilter] = None,
                          content: Option[ContentSearchFilter] = None,
                          status: Option[StatusSearchFilter] = None,
@@ -88,6 +90,7 @@ object SearchFilters extends ElasticDsl {
             tags: Option[TagsSearchFilter] = None,
             labels: Option[LabelsSearchFilter] = None,
             operation: Option[OperationSearchFilter] = None,
+            question: Option[QuestionSearchFilter] = None,
             trending: Option[TrendingSearchFilter] = None,
             content: Option[ContentSearchFilter] = None,
             status: Option[StatusSearchFilter] = None,
@@ -104,6 +107,7 @@ object SearchFilters extends ElasticDsl {
       tags,
       labels,
       operation,
+      question,
       trending,
       content,
       status,
@@ -114,7 +118,7 @@ object SearchFilters extends ElasticDsl {
       country,
       user
     ) match {
-      case (None, None, None, None, None, None, None, None, None, None, None, None, None, None) => None
+      case (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
         Some(
           SearchFilters(
@@ -123,6 +127,7 @@ object SearchFilters extends ElasticDsl {
             tags,
             labels,
             operation,
+            question,
             trending,
             content,
             status,
@@ -183,6 +188,16 @@ object SearchFilters extends ElasticDsl {
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId.value))
         case Some(ProposalSearchFilter(proposalIds)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.id, proposalIds.map(_.value)))
+        case _ => None
+      }
+    }
+  }
+
+  def buildQuestionSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.question match {
+        case Some(QuestionSearchFilter(questionId)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionId, questionId.value))
         case _ => None
       }
     }
@@ -393,6 +408,8 @@ case class UserSearchFilter(userId: UserId)
 case class ThemeSearchFilter(themeIds: Seq[ThemeId]) {
   validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
 }
+
+case class QuestionSearchFilter(questionId: QuestionId)
 
 case class TagsSearchFilter(tagIds: Seq[TagId]) {
   validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
