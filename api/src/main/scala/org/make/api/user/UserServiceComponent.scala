@@ -79,14 +79,6 @@ case class UserRegisterData(email: String,
                             country: String,
                             language: String)
 
-case class UserUpdateData(firstName: Option[String],
-                          lastName: Option[String] = None,
-                          dateOfBirth: Option[LocalDate] = None,
-                          profession: Option[String] = None,
-                          postalCode: Option[String] = None,
-                          country: String,
-                          language: String)
-
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
     with UserTokenGeneratorComponent

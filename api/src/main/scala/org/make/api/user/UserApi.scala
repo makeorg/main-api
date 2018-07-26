@@ -43,7 +43,7 @@ import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedO
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField}
+import org.make.core.Validation.{mandatoryField, validate, validateEmail, validateField, maxLength}
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
@@ -595,13 +595,6 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
             decodeRequest {
               entity(as[UpdateUserRequest]) { request: UpdateUserRequest =>
                 provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
-                  if (request.postalCode.nonEmpty) {
-                    validateField(
-                      "postalCode",
-                      request.postalCode.forall(_.length <= 10),
-                      "postal code cannot be longer than 10 characters"
-                    )
-                  }
 
                   val optInNewsletterHasChanged: Boolean = (request.optInNewsletter, user.profile) match {
                     case (Some(value), Some(profileValue)) => value != profileValue.optInNewsletter
@@ -610,7 +603,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                   }
 
                   val profile: Option[Profile] = user.profile
-                  val updatedProfile = profile.map(_.copy(
+                  val updatedProfile: Option[Profile] = profile.map(_.copy(
                     dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
                     profession = request.profession.orElse(user.profile.flatMap(_.profession)),
                     postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
@@ -620,6 +613,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                       .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
                     genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
                   ))
+
                   onSuccess(
                     userService.update(
                       user.copy(
@@ -706,7 +700,45 @@ case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
                              gender: Option[String],
                              genderName: Option[String],
                              country: Option[String],
-                             language: Option[String])
+                             language: Option[String]) {
+  private val maxLanguageLength = 3
+  private val maxCountryLength = 3
+
+  if (firstName.nonEmpty) {
+    validate(mandatoryField("firstName", firstName))
+  }
+
+  if (postalCode.nonEmpty) {
+    validateField(
+      "postalCode",
+      postalCode.forall(_.length <= 10),
+      "postal code cannot be longer than 10 characters"
+    )
+  }
+
+  if (language.nonEmpty) {
+    validate(
+      maxLength("language", maxLanguageLength, language.get)
+    )
+  }
+
+  if (country.nonEmpty) {
+    validate(
+      maxLength("country", maxCountryLength, country.get)
+    )
+  }
+
+  if (gender.nonEmpty) {
+    validate(
+      validateField(
+        "gender",
+        Gender.matchGender(gender.get).isDefined,
+        s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
+      )
+    )
+  }
+
+}
 
 object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]

@@ -101,7 +101,6 @@ class UserServiceTest
       argument match {
         case i: UserCreatedEvent if maybeUserId == i.userId                 => true
         case i: UserValidatedAccountEvent if maybeUserId.contains(i.userId) => true
-        case i: UserUpdatedEvent if maybeUserId == i.userId                 => true
         case _                                                              => false
       }
   }
@@ -668,10 +667,7 @@ class UserServiceTest
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         result shouldBe a[User]
         verify(eventBusService, times(1))
-          .publish(
-            ArgumentMatchers
-              .argThat(new MatchRegisterEvents(Some(fooUser.userId)))
-          )
+          .publish(UserUpdatedEvent(userId = Some(result.userId)))
       }
     }
   }

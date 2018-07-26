@@ -979,4 +979,100 @@ class UserApiTest
       }
     }
   }
-}
+  feature("update a user") {
+    scenario("authentificated with unauthorized user") {
+
+      when(userService.getUser(ArgumentMatchers.eq(UserId("BAD")))).thenReturn(
+        Future.successful(
+          Some(fakeUser)
+        )
+      )
+
+      Mockito
+        .when(
+          userService
+            .update(any[User], any[RequestContext])
+        )
+        .thenReturn(Future.successful(fakeUser))
+
+      val request =
+        """
+          |{
+          | "firstName": "unauthorized",
+          | "lastName": "user",
+          | "dateOfBirth": "1997-12-02",
+          | "country": "FR",
+          | "language": "fr"
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+
+      Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("successful update user") {
+      val token: String = "TOKEN"
+      val accessToken: AccessToken =
+        AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
+      val fakeAuthInfo: AuthInfo[UserRights] =
+        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen)), None, None, None)
+
+      when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(
+        Future.successful(
+          Some(fakeUser)
+        )
+      )
+
+      Mockito
+        .when(
+          userService
+            .update(any[User], any[RequestContext])
+        )
+        .thenReturn(Future.successful(fakeUser))
+      val request =
+        """
+          |{
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "dateOfBirth": "1997-12-02",
+          | "country": "IT",
+          | "language": "it"
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+
+      Mockito
+        .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+        .thenReturn(Future.successful(Some(accessToken)))
+      Mockito
+        .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+        .thenReturn(Future.successful(Some(fakeAuthInfo)))
+
+      Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`Remote-Address`(RemoteAddress(addr)))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+        verify(userService).update(
+          matches(
+            fakeUser.copy(
+              firstName = Some("olive"),
+              lastName = Some("tom"),
+              country = "IT",
+              language = "it",
+              profile = fakeUser.profile.map(_.copy(
+                dateOfBirth = Some(LocalDate.parse("1997-12-02"))
+              ))
+            )
+          ),
+          any[RequestContext]
+        )
+      }
+    }
+  }
+
+  }
