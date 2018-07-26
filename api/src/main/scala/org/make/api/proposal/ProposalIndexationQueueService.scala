@@ -45,15 +45,16 @@ trait DefaultProposalIndexerServiceComponent
         )
 
     override def offer(proposalId: ProposalId): Future[Unit] = {
-      proposalIndexationQueue.offer(proposalId).map {
-        case QueueOfferResult.Enqueued ⇒ ()
+      proposalIndexationQueue.offer(proposalId).flatMap {
+        case QueueOfferResult.Enqueued ⇒ Future.successful({})
         case QueueOfferResult.Dropped ⇒
-          logger.error(s"Can't index proposal with id ${proposalId.value}: item dropped from indexation queue")
-        case QueueOfferResult.Failure(ex) ⇒
-          logger.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
+          Future.failed(QueueOfferException(s"Item with id ${proposalId.value} dropped from indexation queue"))
         case QueueOfferResult.QueueClosed ⇒
-          logger.error("Proposal indexation queue closed. You might want to restart it.")
+          Future.failed(QueueOfferException("Proposal indexation queue closed. You might want to restart it."))
+        case QueueOfferResult.Failure(ex) ⇒ Future.failed(ex)
       }
     }
   }
 }
+
+case class QueueOfferException(message: String) extends Exception(message)

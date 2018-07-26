@@ -89,7 +89,10 @@ class ProposalConsumerActor(sequenceService: SequenceService,
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
-    proposalIndexerService.offer(event.id)
+    proposalIndexerService.offer(event.id).recover {
+      case ex =>
+        logger.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
+    }
   }
 
   def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
