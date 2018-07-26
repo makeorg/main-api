@@ -32,7 +32,7 @@ class IdeaSearchEngineTest
     with ElasticsearchConfigurationComponent {
   override def elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
 
-  private val ideaAlias: IndexAndType = elasticsearchConfiguration.aliasName / IdeaSearchEngine.ideaIndexName
+  private val ideaAlias: IndexAndType = "idea-index" / "idea-type"
   private val client = HttpClient(ElasticsearchClientUri("elasticsearch://fake:3232"))
 
   feature("ordering in idea elastic search query") {
@@ -40,9 +40,9 @@ class IdeaSearchEngineTest
       Given("an IdeaSearchQuery with None order and None sort")
       val ideaSearchQuery: IdeaSearchQuery = IdeaSearchQuery(sort = None, order = None)
       When("I get raw elastic query")
-      val request = search(ideaAlias).sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
+      val request = searchWithType(ideaAlias).sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
       Then("sort is not present")
-      client.show(request) shouldBe "{}"
+      client.show(request)(SearchShow) shouldBe """{"version":true}"""
     }
   }
 

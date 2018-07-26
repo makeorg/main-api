@@ -289,7 +289,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .map(_.toMap)
 
       properties.map { properties =>
-
         manageContactListMailJetRequest(
           manageContactList = ManageManyContacts(
             contacts = users.map { user =>
@@ -346,7 +345,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def updateUserProperties(user: User): Future[Unit] = {
 
       getPropertiesFromUser(user).flatMap { properties =>
-        val contactData = properties.map{
+        val contactData = properties.map {
           case (name, value) => ContactProperty(name = name, value = value)
         }.toSeq
 
@@ -553,10 +552,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   def logQueueOfferResult(queueOfferResult: QueueOfferResult, operationName: String): Unit = {
     queueOfferResult match {
       case QueueOfferResult.Enqueued    => logger.debug(s"$operationName: element has been consumed")
-      case QueueOfferResult.Dropped     => logger.warn(s"$operationName: element has been ignored because of backpressure")
-      case QueueOfferResult.QueueClosed => logger.warn(s"$operationName: the queue upstream has terminated")
+      case QueueOfferResult.Dropped     => logger.error(s"$operationName: element has been ignored because of backpressure")
+      case QueueOfferResult.QueueClosed => logger.error(s"$operationName: the queue upstream has terminated")
       case QueueOfferResult.Failure(e) =>
-        logger.warn(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
+        logger.error(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
     }
   }
 

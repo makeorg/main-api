@@ -22,8 +22,7 @@ package org.make.core.sequence
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId

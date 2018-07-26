@@ -53,7 +53,7 @@ services:
     networks:
       - makeapi
   elasticsearch:
-    image: makeorg/make-elasticsearch:5.6.6
+    image: makeorg/make-elasticsearch:6.3.0
     hostname: elasticsearch
     ports:
       - 9200:9200

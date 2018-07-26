@@ -22,7 +22,7 @@ package org.make.core
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import spray.json.{JsString, JsValue, JsonFormat}
 
 trait SprayJsonFormatters {
@@ -62,12 +62,16 @@ trait SprayJsonFormatters {
 
   implicit val sortOrderFormatted: JsonFormat[SortOrder] = new JsonFormat[SortOrder] {
     override def read(json: JsValue): SortOrder = json match {
-      case JsString(s) => SortOrder.valueOf(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+      case JsString(asc) if asc.toLowerCase == "asc"    => SortOrder.Asc
+      case JsString(desc) if desc.toLowerCase == "desc" => SortOrder.Desc
+      case other                                        => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
     override def write(obj: SortOrder): JsValue = {
-      JsString(obj.name())
+      obj match {
+        case SortOrder.Asc  => JsString("asc")
+        case SortOrder.Desc => JsString("desc")
+      }
     }
   }
 

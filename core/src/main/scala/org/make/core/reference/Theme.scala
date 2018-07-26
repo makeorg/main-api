@@ -42,7 +42,7 @@ object ThemeTranslation {
 final case class Theme(themeId: ThemeId,
                        translations: Seq[ThemeTranslation],
                        actionsCount: Int,
-                       proposalsCount: Int,
+                       proposalsCount: Long,
                        votesCount: Int,
                        country: String,
                        color: String,

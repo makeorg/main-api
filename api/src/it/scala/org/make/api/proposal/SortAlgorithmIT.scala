@@ -37,8 +37,8 @@ class SortAlgorithmIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(defaultElasticsearchIndex)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchIndex)
+  Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
+  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -49,11 +49,12 @@ class SortAlgorithmIT
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val proposalMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
+    val proposalMapping =
+      Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex",
+          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )
@@ -74,7 +75,7 @@ class SortAlgorithmIT
       )
 
     val insertFutures = AkkaSource[IndexedProposal](proposals).map { proposal =>
-      val indexAndDocTypeEndpoint = s"$defaultElasticsearchIndex/$defaultElasticsearchDocType"
+      val indexAndDocTypeEndpoint = s"$defaultElasticsearchProposalIndex/$defaultElasticsearchProposalDocType"
       (
         HttpRequest(
           uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
@@ -92,7 +93,10 @@ class SortAlgorithmIT
     logger.debug("Proposals indexed successfully.")
 
     val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex/_refresh", method = HttpMethods.POST)
+      HttpRequest(
+        uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex/_refresh",
+        method = HttpMethods.POST
+      )
     )
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
@@ -223,7 +227,7 @@ class SortAlgorithmIT
       val query = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(None)))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.total should be > 4
+        result.total should be > 4L
         result.results.head should be(proposals.find(_.id.value == "actor-4").get)
         result.results(1) should be(proposals.find(_.id.value == "actor-3").get)
         result.results(2) should be(proposals.find(_.id.value == "actor-2").get)
@@ -236,13 +240,13 @@ class SortAlgorithmIT
       val secondQuery = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(Some(84))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(firstQuery), Timeout(3.seconds)) { firstResult =>
-        firstResult.total should be > 4
+        firstResult.total should be > 4L
         firstResult.results.head should be(proposals.find(_.id.value == "actor-4").get)
         firstResult.results(1) should be(proposals.find(_.id.value == "actor-3").get)
         firstResult.results(2) should be(proposals.find(_.id.value == "actor-2").get)
         firstResult.results(3) should be(proposals.find(_.id.value == "actor-1").get)
         whenReady(elasticsearchProposalAPI.searchProposals(secondQuery), Timeout(3.seconds)) { secondResult =>
-          secondResult.total should be > 4
+          secondResult.total should be > 4L
           secondResult.results.head should be(proposals.find(_.id.value == "actor-4").get)
           secondResult.results(1) should be(proposals.find(_.id.value == "actor-3").get)
           secondResult.results(2) should be(proposals.find(_.id.value == "actor-2").get)

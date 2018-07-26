@@ -19,44 +19,40 @@
 
 package org.make.api.proposal
 
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
-import cats.data.OptionT
-import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.OperationService
-import org.make.api.proposal.ProposalIndexerActor.IndexProposal
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.semantic.SemanticService
-import org.make.api.sequence.SequenceService
-import org.make.api.tag.TagService
+import org.make.api.semantic.{SemanticComponent, SemanticService}
+import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.user.UserService
+import org.make.api.technical.elasticsearch.ProposalIndexationStream
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorService,
-                            userService: UserService,
-                            tagService: TagService,
-                            sequenceService: SequenceService,
+class ProposalConsumerActor(sequenceService: SequenceService,
                             operationService: OperationService,
-                            semanticService: SemanticService)
+                            proposalIndexerService: ProposalIndexerService,
+                            override val proposalCoordinatorService: ProposalCoordinatorService,
+                            override val userService: UserService,
+                            override val tagService: TagService,
+                            override val semanticService: SemanticService,
+                            override val elasticsearchProposalAPI: ProposalSearchEngine)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
-    with ActorLogging {
+    with ActorLogging
+    with ProposalIndexationStream {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
-  val indexerActor: ActorRef = context.actorOf(ProposalIndexerActor.props, ProposalIndexerActor.name)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -93,7 +89,7 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
   }
 
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
-    retrieveAndShapeProposal(event.id).flatMap(indexOrUpdate)
+    proposalIndexerService.offer(event.id)
   }
 
   def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
@@ -137,84 +133,25 @@ class ProposalConsumerActor(proposalCoordinatorService: ProposalCoordinatorServi
     }
   }
 
-  def indexOrUpdate(proposal: IndexedProposal): Future[Unit] = {
-    indexerActor ! IndexProposal(proposal)
-    semanticService.indexProposal(proposal)
-  }
-
-  private def retrieveAndShapeProposal(id: ProposalId): Future[IndexedProposal] = {
-
-    val maybeResult = for {
-      proposal <- OptionT(proposalCoordinatorService.getProposal(id))
-      user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
-    } yield {
-      IndexedProposal(
-        id = proposal.proposalId,
-        userId = proposal.author,
-        content = proposal.content,
-        slug = proposal.slug,
-        status = proposal.status,
-        createdAt = proposal.createdAt.get,
-        updatedAt = proposal.updatedAt,
-        votes = proposal.votes.map(IndexedVote.apply),
-        scores = IndexedScores(
-          engagement = ProposalScorerHelper.engagement(proposal),
-          adhesion = ProposalScorerHelper.adhesion(proposal),
-          realistic = ProposalScorerHelper.realistic(proposal),
-          topScore = ProposalScorerHelper.topScore(proposal),
-          controversy = ProposalScorerHelper.controversy(proposal),
-          rejection = ProposalScorerHelper.rejection(proposal)
-        ),
-        context = Some(
-          Context(
-            operation = proposal.creationContext.operationId,
-            source = proposal.creationContext.source,
-            location = proposal.creationContext.location,
-            question = proposal.creationContext.question
-          )
-        ),
-        trending = None,
-        labels = proposal.labels.map(_.value),
-        author = Author(
-          firstName = user.firstName,
-          organisationName = user.organisationName,
-          postalCode = user.profile.flatMap(_.postalCode),
-          age = user.profile
-            .flatMap(_.dateOfBirth)
-            .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
-          avatarUrl = user.profile.flatMap(_.avatarUrl)
-        ),
-        organisations = proposal.organisations.distinct.map(IndexedOrganisationInfo.apply),
-        country = proposal.country.getOrElse("FR"),
-        language = proposal.language.getOrElse("fr"),
-        themeId = proposal.theme,
-        tags = tags,
-        ideaId = proposal.idea,
-        operationId = proposal.operation
-      )
-    }
-    maybeResult.getOrElseF(Future.failed(new IllegalArgumentException(s"Proposal ${id.value} doesn't exist")))
-  }
-
   override val groupId = "proposal-consumer"
 }
 
 object ProposalConsumerActor {
+  type ProposalConsumerActorDependencies =
+    UserServiceComponent with TagServiceComponent with SequenceServiceComponent with OperationServiceComponent with SemanticComponent with ProposalSearchEngineComponent with ProposalIndexerServiceComponent
+
   def props(proposalCoordinatorService: ProposalCoordinatorService,
-            userService: UserService,
-            tagService: TagService,
-            sequenceService: SequenceService,
-            operationService: OperationService,
-            semanticService: SemanticService): Props =
+            dependencies: ProposalConsumerActorDependencies): Props =
     Props(
       new ProposalConsumerActor(
+        dependencies.sequenceService,
+        dependencies.operationService,
+        dependencies.proposalIndexerService,
         proposalCoordinatorService,
-        userService,
-        tagService,
-        sequenceService,
-        operationService,
-        semanticService
+        dependencies.userService,
+        dependencies.tagService,
+        dependencies.semanticService,
+        dependencies.elasticsearchProposalAPI
       )
     )
   val name: String = "proposal-consumer"

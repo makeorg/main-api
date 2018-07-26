@@ -20,21 +20,18 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
-import org.make.api.operation.OperationService
-import org.make.api.semantic.SemanticService
-import org.make.api.sequence.SequenceService
-import org.make.api.tag.TagService
+import org.make.api.operation.OperationServiceComponent
+import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
+import org.make.api.semantic.SemanticComponent
+import org.make.api.sequence.SequenceServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
-import org.make.api.user.UserService
+import org.make.api.user.UserServiceComponent
+import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
-class ProposalSupervisor(userService: UserService,
-                         userHistoryCoordinator: ActorRef,
+class ProposalSupervisor(userHistoryCoordinator: ActorRef,
                          sessionHistoryCoordinator: ActorRef,
-                         tagService: TagService,
-                         sequenceService: SequenceService,
-                         operationService: OperationService,
-                         semanticService: SemanticService)
+                         dependencies: ProposalSupervisorDependencies)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -67,7 +64,7 @@ class ProposalSupervisor(userService: UserService,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor
-          .props(userService, this.proposalCoordinatorService, operationService)
+          .props(dependencies.userService, proposalCoordinatorService, dependencies.operationService)
           .withDispatcher(kafkaDispatcher),
         ProposalEmailConsumerActor.name
       )
@@ -76,14 +73,7 @@ class ProposalSupervisor(userService: UserService,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalConsumerActor
-          .props(
-            proposalCoordinatorService,
-            userService,
-            tagService,
-            sequenceService,
-            operationService,
-            semanticService
-          )
+          .props(proposalCoordinatorService, dependencies)
           .withDispatcher(kafkaDispatcher),
         ProposalConsumerActor.name
       )
@@ -99,23 +89,17 @@ class ProposalSupervisor(userService: UserService,
 
 object ProposalSupervisor {
 
+  type ProposalSupervisorDependencies = UserServiceComponent
+    with TagServiceComponent
+    with SequenceServiceComponent
+    with OperationServiceComponent
+    with SemanticComponent
+    with ProposalSearchEngineComponent
+    with ProposalIndexerServiceComponent
+
   val name: String = "proposal"
-  def props(userService: UserService,
-            userHistoryCoordinator: ActorRef,
+  def props(userHistoryCoordinator: ActorRef,
             sessionHistoryCoordinator: ActorRef,
-            tagService: TagService,
-            sequenceService: SequenceService,
-            operationService: OperationService,
-            semanticService: SemanticService): Props =
-    Props(
-      new ProposalSupervisor(
-        userService,
-        userHistoryCoordinator,
-        sessionHistoryCoordinator,
-        tagService,
-        sequenceService,
-        operationService,
-        semanticService
-      )
-    )
+            dependencies: ProposalSupervisorDependencies): Props =
+    Props(new ProposalSupervisor(userHistoryCoordinator, sessionHistoryCoordinator, dependencies))
 }

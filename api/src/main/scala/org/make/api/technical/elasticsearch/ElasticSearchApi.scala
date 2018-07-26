@@ -68,7 +68,13 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
           decodeRequest {
             entity(as[ReindexRequest]) { request: ReindexRequest =>
               makeOperation("ReindexingData") { _ =>
-                provideAsync(indexationService.reindexData(request.force)) { result =>
+                provideAsync(
+                  indexationService.reindexData(
+                    Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                    Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                    Seq(request.forceAll, request.forceSequences).flatten.contains(true)
+                  )
+                ) { result =>
                   complete(StatusCodes.NoContent)
                 }
               }
@@ -83,7 +89,12 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
 }
 
 @ApiModel
-final case class ReindexRequest(@(ApiModelProperty @field)(example = "true") force: Boolean)
+final case class ReindexRequest(
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceIdeas: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceProposals: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceSequences: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceAll: Option[Boolean]
+)
 
 object ReindexRequest {
   implicit val decoder: Decoder[ReindexRequest] = deriveDecoder[ReindexRequest]

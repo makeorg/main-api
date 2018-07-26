@@ -47,6 +47,7 @@ trait SemanticComponent {
 
 trait SemanticService {
   def indexProposal(indexedProposal: IndexedProposal): Future[Unit]
+  def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit]
   def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]]
 }
 
@@ -75,6 +76,21 @@ trait DefaultSemanticComponent extends SemanticComponent {
               method = HttpMethods.POST,
               uri = Uri(s"${semanticConfiguration.url}/similar/index-proposal"),
               entity = entity
+            )
+          )
+          .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
+      }
+    }
+
+    override def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit] = {
+      Marshal(indexedProposals.map(SemanticProposal.apply)).to[RequestEntity].flatMap { entities =>
+        logger.debug(s"Indexing in semantic API: {}", indexedProposals)
+        Http(actorSystem)
+          .singleRequest(
+            request = HttpRequest(
+              method = HttpMethods.POST,
+              uri = Uri(s"${semanticConfiguration.url}/similar/index-proposals"),
+              entity = entities
             )
           )
           .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))

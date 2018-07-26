@@ -22,7 +22,6 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -62,8 +61,8 @@ class ProposalSearchEngineIT
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(defaultElasticsearchIndex)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchIndex)
+  Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
+  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -74,11 +73,12 @@ class ProposalSearchEngineIT
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val proposalMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
+    val proposalMapping =
+      Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex",
+          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )
@@ -99,7 +99,7 @@ class ProposalSearchEngineIT
       )
 
     val insertFutures = AkkaSource[IndexedProposal](proposals).map { proposal =>
-      val indexAndDocTypeEndpoint = s"$defaultElasticsearchIndex/$defaultElasticsearchDocType"
+      val indexAndDocTypeEndpoint = s"$defaultElasticsearchProposalIndex/$defaultElasticsearchProposalDocType"
       (
         HttpRequest(
           uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
@@ -117,7 +117,10 @@ class ProposalSearchEngineIT
     logger.debug("Proposals indexed successfully.")
 
     val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$defaultElasticsearchIndex/_refresh", method = HttpMethods.POST)
+      HttpRequest(
+        uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex/_refresh",
+        method = HttpMethods.POST
+      )
     )
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
@@ -1050,7 +1053,7 @@ class ProposalSearchEngineIT
 
     scenario("should return a list of proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
-        result.total should be > 0
+        result.total should be > 0L
       }
     }
   }
@@ -1144,9 +1147,16 @@ class ProposalSearchEngineIT
   }
 
   feature("saving new proposal") {
-    scenario("should return done") {
-      whenReady(elasticsearchProposalAPI.indexProposal(newProposal), Timeout(3.seconds)) { result =>
-        result should be(Done)
+    scenario("should return distinct new") {
+      val proposal1 = newProposal
+      val proposal2 = newProposal
+      whenReady(
+        elasticsearchProposalAPI.indexProposals(Seq(proposal1, proposal1, proposal1, proposal2)),
+        Timeout(3.seconds)
+      ) { result =>
+        result.size should be(2)
+        result.exists(_.id == proposal1.id) should be(true)
+        result.exists(_.id == proposal2.id) should be(true)
       }
     }
   }

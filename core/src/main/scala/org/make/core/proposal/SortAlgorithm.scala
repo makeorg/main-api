@@ -1,10 +1,29 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, randomScore, scriptScore}
 import com.sksamuel.elastic4s.script.ScriptDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
-import org.elasticsearch.common.lucene.search.function.CombineFunction
+import com.sksamuel.elastic4s.searches.queries.funcscorer.CombineFunction
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 
 sealed trait SortAlgorithm {
@@ -24,7 +43,7 @@ final case class RandomAlgorithm(override val maybeSeed: Option[Int] = None)
       for {
         seed  <- maybeSeed
         query <- request.query
-      } yield request.query(functionScoreQuery().query(query).scorers(randomScore(seed)))
+      } yield request.query(functionScoreQuery().query(query).functions(randomScore(seed)))
     ).getOrElse(request)
 
   }
@@ -44,16 +63,16 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
           .query(
             functionScoreQuery()
               .query(query)
-              .scorers(scriptScore(ScriptDefinition(script = actorVoteScript)), randomScore(seed))
+              .functions(scriptScore(ScriptDefinition(script = actorVoteScript)), randomScore(seed))
               .scoreMode("sum")
-              .boostMode(CombineFunction.SUM)
+              .boostMode(CombineFunction.Sum)
           )
       }.getOrElse(
         request
           .query(
             functionScoreQuery()
               .query(query)
-              .scorers(scriptScore(ScriptDefinition(script = actorVoteScript)))
+              .functions(scriptScore(ScriptDefinition(script = actorVoteScript)))
           )
       )
     }.getOrElse(request)

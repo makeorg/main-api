@@ -17,28 +17,14 @@
  *
  */
 
-package org.make.core
+package org.make.api.technical.elasticsearch
 
-import java.time.{ZoneOffset, ZonedDateTime}
+import com.sksamuel.elastic4s.http.ElasticError
 
-trait DateHelper {
-  def now(): ZonedDateTime
-}
-object DateHelper extends DateHelper {
-  private val utc = ZoneOffset.UTC
+case class ElasticException(message: String) extends RuntimeException(message) {
+  def this(elasticError: ElasticError) =
+    this(s"${elasticError.reason} ${elasticError.causedBy.map(_.toString)}")
 
-  def now(): ZonedDateTime = {
-    ZonedDateTime.now(utc)
-  }
-
-  implicit object OrderedJavaTime extends Ordering[ZonedDateTime] {
-
-    override def compare(x: ZonedDateTime, y: ZonedDateTime): Int = x.compareTo(y)
-  }
-
-  implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
-    def toUTC: ZonedDateTime = {
-      self.withZoneSameInstant(ZoneOffset.UTC)
-    }
-  }
+  def this(elasticError: ElasticError, relatedRequest: String) =
+    this(s"${elasticError.reason} ${elasticError.causedBy.map(_.toString)}\nCaused by request: $relatedRequest ")
 }

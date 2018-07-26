@@ -20,7 +20,7 @@
 package org.make.api.proposal
 
 import akka.actor.ActorSystem
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}

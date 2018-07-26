@@ -40,7 +40,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
-import org.make.api.theme.{ThemeService, ThemeServiceComponent}
+import org.make.api.theme.{PersistentThemeService, PersistentThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.mockito.ArgumentMatchers
@@ -62,7 +62,7 @@ class IndexationComponentTest
     with UserServiceComponent
     with TagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
-    with ThemeServiceComponent
+    with PersistentThemeServiceComponent
     with ProposalSearchEngineComponent
     with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
@@ -82,49 +82,74 @@ class IndexationComponentTest
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val readJournal: MakeReadJournal = mock[MakeReadJournal]
   override val semanticService: SemanticService = mock[SemanticService]
-  override val themeService: ThemeService = mock[ThemeService]
+  override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val tagService: TagService = mock[TagService]
 
-  val indexName = "make-index"
-  when(elasticsearchConfiguration.createIndexName)
-    .thenReturn(indexName)
-  when(elasticsearchConfiguration.connectionString)
-    .thenReturn("fake:3232")
+//  val indexName = "make-index"
+  when(elasticsearchConfiguration.ideaAliasName).thenReturn("idea")
+  when(elasticsearchConfiguration.proposalAliasName).thenReturn("proposal")
+  when(elasticsearchConfiguration.sequenceAliasName).thenReturn("sequence")
+
+  private val ideaHash = "idea#hash"
+  private val proposalHash = "proposal#hash"
+  private val sequenceHash = "sequence#hash"
+
+  when(elasticsearchConfiguration.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
+  when(elasticsearchConfiguration.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
+  when(elasticsearchConfiguration.getHashFromIndex(sequenceHash)).thenReturn(sequenceHash)
+
+  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
+  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)
+  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("sequence"))).thenReturn(sequenceHash)
+
+  when(elasticsearchConfiguration.connectionString).thenReturn("fake:3232")
 
   feature("Check if ES schema is up to date") {
     scenario("schema is up to date") {
-      Given("a defined hash of index")
-      when(elasticsearchConfiguration.getHashFromIndex(ArgumentMatchers.eq(indexName)))
-        .thenReturn("sameHash")
+      Given("a defined hash of indices")
+      when(elasticsearchConfiguration.getCurrentIndicesName)
+        .thenReturn(Future.successful(Seq(ideaHash, proposalHash, sequenceHash)))
+      When("I ask which indices are to update")
 
-      when(elasticsearchConfiguration.getCurrentIndexName)
-        .thenReturn(Future.successful(indexName))
-      When("i check ES schema is updated")
+      val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
+        indexationService.indicesToReindex(forceIdeas = false, forceProposals = false, forceSequences = false)
 
-      val futureSchemaIsUpToDate = indexationService.schemaIsUpToDate()
-
-      Then("the resullt should be true")
-      whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { maybeSchemaIsUpToDate =>
-        maybeSchemaIsUpToDate shouldBe true
+      Then("no indices should be returned")
+      whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>
+        indicesToUpdate.isEmpty shouldBe true
       }
     }
 
-    scenario("schema is not up to date") {
-      Given("a defined hash of index")
-      when(elasticsearchConfiguration.getHashFromIndex(ArgumentMatchers.eq(indexName)))
-        .thenReturn("hash123")
-      when(elasticsearchConfiguration.getHashFromIndex(ArgumentMatchers.eq("make-new-index")))
-        .thenReturn("hash000")
+    scenario("schema is up to date but force proposal indexation") {
+      Given("a defined hash of indices")
+      when(elasticsearchConfiguration.getCurrentIndicesName)
+        .thenReturn(Future.successful(Seq(ideaHash, proposalHash, sequenceHash)))
+      When("I ask which indices are to update and force the proposal indexation")
 
-      when(elasticsearchConfiguration.getCurrentIndexName)
-        .thenReturn(Future.successful("make-new-index"))
-      When("i check ES schema is updated")
+      val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
+        indexationService.indicesToReindex(forceIdeas = false, forceProposals = true, forceSequences = false)
 
-      val futureSchemaIsNotUpToDate = indexationService.schemaIsUpToDate()
+      Then("the proposal")
+      whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>
+        indicesToUpdate.size shouldBe 1
+        indicesToUpdate.contains(IndexProposals) shouldBe true
+      }
+    }
 
-      Then("the resullt should be false")
-      whenReady(futureSchemaIsNotUpToDate, Timeout(3.seconds)) { maybeSchemaIsNotUpToDate =>
-        maybeSchemaIsNotUpToDate shouldBe false
+    scenario("schema is not up to date on the proposal index") {
+      Given("a defined hash of indices and an old hash for the proposal index")
+      when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn("old-hash")
+      when(elasticsearchConfiguration.getCurrentIndicesName)
+        .thenReturn(Future.successful(Seq(ideaHash, proposalHash, sequenceHash)))
+      When("I ask which indices are to update")
+
+      val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
+        indexationService.indicesToReindex(forceIdeas = false, forceProposals = false, forceSequences = false)
+
+      Then("the resullt should be true")
+      whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>
+        indicesToUpdate.size shouldBe 1
+        indicesToUpdate.contains(IndexProposals) shouldBe true
       }
     }
   }

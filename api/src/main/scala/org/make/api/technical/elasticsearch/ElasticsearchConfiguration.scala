@@ -44,73 +44,87 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   val connectionString: String = configuration.getString("connection-string")
   val indexName: String = configuration.getString("index-name")
-  val aliasName: String = configuration.getString("alias-name")
+  val ideaAliasName: String = configuration.getString("idea-alias-name")
+  val proposalAliasName: String = configuration.getString("proposal-alias-name")
+  val sequenceAliasName: String = configuration.getString("sequence-alias-name")
+  val entityBufferSize: Int = configuration.getInt("buffer-size")
+  val entityBulkSize: Int = configuration.getInt("bulk-size")
 
   // create index
-  val elasticsearchMapping: String = Source.fromResource("elasticsearch-mapping.json").getLines().mkString("")
+  val elasticsearchIdeaMapping: String =
+    Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
+  val elasticsearchProposalMapping: String =
+    Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
+  val elasticsearchSequenceMapping: String =
+    Source.fromResource("elasticsearch-mappings/sequence.json")(Codec.UTF8).getLines().mkString("")
 
   val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
 
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
-  def createIndexName: String = {
-    val localMapping: String = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
-    val hash: String =
-      MessageDigest
-        .getInstance("SHA-1")
-        .digest(localMapping.getBytes)
-        .map("%02X".format(_))
-        .mkString
-        .take(12)
-        .toLowerCase()
+  def mappingForAlias: String => String = {
+    case `ideaAliasName`     => elasticsearchIdeaMapping
+    case `proposalAliasName` => elasticsearchProposalMapping
+    case `sequenceAliasName` => elasticsearchSequenceMapping
+  }
 
-    indexName + "-" + dateFormatter.format(DateHelper.now()) + "-" + hash
+  def hashForAlias(aliasName: String): String = {
+    val localMapping: String = mappingForAlias(aliasName)
+    MessageDigest
+      .getInstance("SHA-1")
+      .digest(localMapping.getBytes)
+      .map("%02X".format(_))
+      .mkString
+      .take(12)
+      .toLowerCase()
+  }
+
+  def createIndexName(aliasName: String): String = {
+    Seq(indexName, aliasName, dateFormatter.format(DateHelper.now()), hashForAlias(aliasName)).mkString("-")
   }
 
   def getHashFromIndex(index: String): String =
     index.split("-").lastOption.getOrElse("")
 
-  def getCurrentIndexName: Future[String] = {
+  def getCurrentIndicesName: Future[Seq[String]] = {
     client
-      .execute(getAlias(Seq(aliasName)))
-      .map(_.keys.headOption.getOrElse(""))
+      .executeAsFuture(getAliases(Seq.empty, Seq(ideaAliasName, proposalAliasName, sequenceAliasName)))
+      .map(_.mappings.map { case (index, _) => index.name }.toSeq)
       .recover {
         case e: Exception =>
           logger.error("fail to retrieve ES alias", e)
-          ""
+          Seq.empty
       }
   }
 
-  private def createInitialIndexAndAlias(): Unit = {
-    val newIndexName = createIndexName
-    client.execute {
-      createIndex(newIndexName).source(elasticsearchMapping)
-    }.onComplete {
-      case Success(_) =>
-        logger.info(s"Elasticsearch index $indexName created")
-        client.execute {
-          aliases(addAlias(aliasName).on(newIndexName))
-        }.onComplete {
-          case Success(_) =>
-            logger.info(s"Elasticsearch alias $aliasName created")
-          case Failure(e) =>
-            logger.error(s"Error when creating Elasticsearch alias $aliasName", e)
-        }
-      case Failure(e) =>
-        logger.error(s"Error when creating Elasticsearch index $indexName", e)
-    }
+  private def createInitialIndexAndAlias(aliasName: String): Unit = {
+    val newIndexName = createIndexName(aliasName)
+    client
+      .executeAsFuture(createIndex(newIndexName).source(mappingForAlias(aliasName)))
+      .onComplete {
+        case Success(_) =>
+          logger.info(s"Elasticsearch index $newIndexName created")
+          client
+            .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
+            .onComplete {
+              case Success(_) => logger.info(s"Elasticsearch alias $aliasName created")
+              case Failure(e) => logger.error(s"Error when creating Elasticsearch alias $aliasName", e)
+            }
+        case Failure(e) =>
+          logger.error(s"Error when creating Elasticsearch index $newIndexName", e)
+      }
   }
 
-  client.execute {
-    aliasExists(aliasName)
-  }.onComplete {
-    case Success(AliasExistsResponse(true)) =>
-      logger.info(s"Elasticsearch alias $aliasName exist")
-    case Success(AliasExistsResponse(false)) =>
-      logger.info(s"Elasticsearch alias $aliasName not found")
-      createInitialIndexAndAlias()
-    case Failure(e) =>
-      logger.error(s"Error when checking if elasticsearch alias $aliasName exists", e)
+  Seq(ideaAliasName, proposalAliasName, sequenceAliasName).foreach { aliasName =>
+    client.executeAsFuture(aliasExists(aliasName)).onComplete {
+      case Success(AliasExistsResponse(true)) =>
+        logger.info(s"Elasticsearch alias $aliasName exist")
+      case Success(AliasExistsResponse(false)) =>
+        logger.info(s"Elasticsearch alias $aliasName not found")
+        createInitialIndexAndAlias(aliasName)
+      case Failure(e) =>
+        logger.error(s"Error when checking if elasticsearch alias $aliasName exists", e)
+    }
   }
 
 }
@@ -121,11 +135,13 @@ object ElasticsearchConfiguration extends ExtensionId[ElasticsearchConfiguration
 
   override def lookup(): ExtensionId[ElasticsearchConfiguration] =
     ElasticsearchConfiguration
+
   override def get(system: ActorSystem): ElasticsearchConfiguration =
     super.get(system)
 }
 
-trait ElasticsearchConfigurationExtension extends ElasticsearchConfigurationComponent { this: Actor =>
+trait ElasticsearchConfigurationExtension extends ElasticsearchConfigurationComponent {
+  this: Actor =>
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     ElasticsearchConfiguration(context.system)
 }

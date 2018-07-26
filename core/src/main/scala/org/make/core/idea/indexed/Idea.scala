@@ -76,7 +76,7 @@ object IndexedIdea extends CirceFormatters {
   }
 }
 
-final case class IdeaSearchResult(total: Int, results: Seq[IndexedIdea])
+final case class IdeaSearchResult(total: Long, results: Seq[IndexedIdea])
 
 object IdeaSearchResult {
   implicit val encoder: ObjectEncoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]

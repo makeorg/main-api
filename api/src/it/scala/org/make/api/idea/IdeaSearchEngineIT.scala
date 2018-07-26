@@ -64,7 +64,7 @@ class IdeaSearchEngineIT
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.aliasName).thenReturn(eSIndexName)
+  Mockito.when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override protected def beforeAll(): Unit = {
@@ -117,7 +117,8 @@ class IdeaSearchEngineIT
   private def initializeElasticsearch(): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val ideaMapping = Source.fromResource("elasticsearch-mapping.json")(Codec.UTF8).getLines().mkString("")
+    val ideaMapping =
+      Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] = Http().singleRequest(
       HttpRequest(
         uri = s"$elasticsearchEndpoint/$eSIndexName",

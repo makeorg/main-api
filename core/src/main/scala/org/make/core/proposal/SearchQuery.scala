@@ -22,8 +22,7 @@ package org.make.core.proposal
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
-import org.elasticsearch.search.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
@@ -303,7 +302,7 @@ object SearchFilters extends ElasticDsl {
   }
 
   def buildContentSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    def languageOmission(boostedLanguage: String): Float =
+    def languageOmission(boostedLanguage: String): Double =
       if (searchQuery.language.contains(boostedLanguage)) 1 else 0
 
     val query: Option[QueryDefinition] = for {
@@ -312,14 +311,14 @@ object SearchFilters extends ElasticDsl {
     } yield {
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.content -> 3F,
-          ProposalElasticsearchFieldNames.contentFr -> 2F * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5F * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentEn -> 2F * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5F * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentIt -> 2F * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5F * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentGeneral -> 1F
+          ProposalElasticsearchFieldNames.content -> 3D,
+          ProposalElasticsearchFieldNames.contentFr -> 2D * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5D * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentEn -> 2D * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentIt -> 2D * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5D * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentGeneral -> 1D
         ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
         case Some(fuzzy) =>
