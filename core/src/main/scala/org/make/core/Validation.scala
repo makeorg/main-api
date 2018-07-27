@@ -76,6 +76,7 @@ object Validation extends StrictLogging {
     })
 
   }
+
   def minLength(field: String,
                 minLength: Int,
                 fieldValue: String,

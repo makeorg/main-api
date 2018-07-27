@@ -49,6 +49,7 @@ class UserCrmConsumerActor(userService: UserService)
     message.event.fold(HandledMessages) match {
 
       case event: UserCreatedEvent                => handleUserCreatedEvent(event)
+      case event: UserUpdatedEvent                => handleUserUpdatedEvent(event)
       case event: UserUpdatedHardBounceEvent      => handleUserUpdatedHardBounceEvent(event)
       case event: UserUpdatedOptInNewsletterEvent => handleUserUpdatedOptInNewsletterEvent(event)
       case event: UserUpdateValidatedEvent        => handleUserUpdateValidatedEvent(event)
@@ -89,6 +90,14 @@ class UserCrmConsumerActor(userService: UserService)
     getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         eventBusService.publish(CrmContactNew(id = user.userId, eventDate = DateHelper.now()))
+      }
+    }
+  }
+
+  def handleUserUpdatedEvent(event: UserUpdatedEvent): Future[Unit] = {
+    getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
+      maybeUser.foreach { user =>
+        eventBusService.publish(CrmContactUpdateProperties(id = user.userId, eventDate = DateHelper.now()))
       }
     }
   }

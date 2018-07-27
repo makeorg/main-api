@@ -248,6 +248,7 @@ trait PersistentUserService {
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
+  def updateUser(user: User): Future[User]
   def modify(organisation: User): Future[Either[UpdateFailed, User]]
   def requestResetPassword(userId: UserId,
                            resetToken: String,
@@ -546,6 +547,39 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           logger.error(s"Update of organisation '${organisation.userId.value}' failed - not found")
           Future.successful(Left(UpdateFailed()))
       }
+    }
+
+    override def updateUser(user: User): Future[User] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.firstName -> user.firstName,
+              column.lastName -> user.lastName,
+              column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
+              column.profession -> user.profile.flatMap(_.profession),
+              column.postalCode -> user.profile.flatMap(_.postalCode),
+              column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
+              column.optInNewsletter -> user.profile.forall(_.optInNewsletter),
+              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.genderName -> user.profile.flatMap(_.genderName),
+              column.country -> user.country,
+              column.language -> user.language,
+              column.updatedAt -> nowDate
+            )
+            .where(
+              sqls
+                .eq(column.uuid, user.userId.value)
+            )
+        }.executeUpdate().apply() match {
+          case 1 => user.copy(updatedAt = Some(nowDate))
+          case _ =>
+            logger.error(s"Update of user '${user.userId.value}' failed - not found")
+            user
+        }
+      })
     }
 
     override def requestResetPassword(userId: UserId,

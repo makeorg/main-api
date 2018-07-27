@@ -292,6 +292,26 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     organisationName = Some("Military Intelligence, Section 5 - MI5")
   )
 
+  val updateUser = User(
+    userId = UserId("update-user-1"),
+    email = "foo@example.com",
+    firstName = Some("John"),
+    lastName = Some("Doe"),
+    lastIp = Some("0.0.0.0"),
+    hashedPassword = Some("ZAEAZE232323SFSSDF"),
+    enabled = true,
+    emailVerified = true,
+    lastConnection = before,
+    verificationToken = Some("VERIFTOKEN"),
+    verificationTokenExpiresAt = Some(before),
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    country = "FR",
+    language = "fr",
+    profile = Some(profile)
+  )
+
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
 
   feature("The app can persist and retrieve users") {
@@ -731,6 +751,38 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           val updatedUser = maybeUpdatedUser.get
           updatedUser.email should be("2" + socialUser.email)
           updatedUser.firstName should be(Some("new firstName"))
+        }
+      }
+    }
+  }
+
+  feature("update a user") {
+    scenario("Update the user properties") {
+      whenReady(persistentUserService.persist(updateUser), Timeout(3.seconds)) { user =>
+        user.userId.value should be("update-user-1")
+        whenReady(
+          persistentUserService.updateUser(updateUser.copy(
+            firstName = Some("FooFoo"),
+            lastName = Some("BarBar")
+          )),
+          Timeout(3.seconds)
+        ) { userUpdated =>
+          userUpdated shouldBe a[User]
+          userUpdated.firstName shouldBe Some("FooFoo")
+          userUpdated.lastName shouldBe Some("BarBar")
+        }
+      }
+    }
+
+
+    scenario("Dont update not allowed field") {
+      whenReady(
+        persistentUserService.updateUser(updateUser.copy(hashedPassword = Some("ABABABABABAB"))),
+        Timeout(3.seconds)
+      ) { _ =>
+        whenReady(persistentUserService.get(updateUser.userId), Timeout(3.seconds)) { userUpdated =>
+          userUpdated.get shouldBe a[User]
+          userUpdated.get.hashedPassword shouldBe Some("ZAEAZE232323SFSSDF")
         }
       }
     }
