@@ -25,7 +25,7 @@ import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
@@ -150,8 +150,8 @@ object PublishedProposalEvent {
                                     content: String,
                                     operation: Option[OperationId] = None,
                                     theme: Option[ThemeId] = None,
-                                    language: Option[String] = None,
-                                    country: Option[String] = None)
+                                    language: Option[Language] = None,
+                                    country: Option[Country] = None)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2

@@ -32,7 +32,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -82,8 +82,8 @@ class OrganisationApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None,
@@ -107,8 +107,8 @@ class OrganisationApiTest
     results = Seq(
       ProposalResult(
         id = ProposalId("proposal-1"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blabla",
         slug = "blabla",
@@ -129,8 +129,8 @@ class OrganisationApiTest
       ),
       ProposalResult(
         id = ProposalId("proposal-2"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",

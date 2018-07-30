@@ -24,6 +24,7 @@ import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent, TagTypeService}
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.proposal.SearchQuery
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.reference.ThemeId
@@ -59,8 +60,8 @@ class TagServiceTest
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = operationId,
     themeId = themeId,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   feature("get tag") {
@@ -113,8 +114,8 @@ class TagServiceTest
                 tagTypeId = TagType.LEGACY.tagTypeId,
                 operationId = None,
                 themeId = None,
-                country = "FR",
-                language = "fr"
+                country = Country("FR"),
+                language = Language("fr")
               ),
               "tagId"
             )
@@ -142,8 +143,8 @@ class TagServiceTest
         tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
         operationId = None,
         themeId = None,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         display = TagDisplay.Inherit,
         weight = 0f
       )
@@ -161,8 +162,8 @@ class TagServiceTest
                 tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
                 operationId = None,
                 themeId = None,
-                country = "FR",
-                language = "fr"
+                country = Country("FR"),
+                language = Language("fr")
               ),
               "tagId"
             )
@@ -301,8 +302,8 @@ class TagServiceTest
         weight = 0f,
         operationId = None,
         themeId = None,
-        country = "FR",
-        language = "fr"
+        country = Country("FR"),
+        language = Language("fr")
       )
 
       whenReady(futureTag) { tag =>
@@ -340,8 +341,8 @@ class TagServiceTest
         weight = 0f,
         operationId = None,
         themeId = None,
-        country = "FR",
-        language = "fr"
+        country = Country("FR"),
+        language = Language("fr")
       )
 
       whenReady(futureTag, Timeout(3.seconds)) { tag =>

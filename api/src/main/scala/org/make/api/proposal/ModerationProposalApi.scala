@@ -19,14 +19,13 @@
 
 package org.make.api.proposal
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
@@ -44,18 +43,20 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.{DateHelper, HttpCodes, Validation}
+import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
+import scalaoauth2.provider.AuthInfo
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-import scalaoauth2.provider.AuthInfo
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
-trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogging {
+trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: ProposalServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -131,59 +132,63 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 (
                   'format, // TODO Use Accept header to get the format
                   'filename,
-                  'theme.as(CsvSeq[String]).?,
-                  'tags.as(CsvSeq[String]).?,
+                  'theme.as[immutable.Seq[ThemeId]].?,
+                  'tags.as[immutable.Seq[TagId]].?,
                   'content.?,
-                  'operation.?,
+                  'operation.as[OperationId].?,
                   'source.?,
                   'question.?,
-                  'language.?
+                  'language.as[Language].?
                 )
-              ) { (_, fileName, themeId, tags, content, operation, source, question, language) =>
-                provideAsync(themeService.findAll()) { themes =>
-                  provideAsync(operationService.find()) { operations =>
-                    provideAsync(
-                      proposalService.search(
-                        userId = Some(auth.user.userId),
-                        query = ExhaustiveSearchRequest(
-                          themesIds = themeId.map(_.map(ThemeId(_))),
-                          tagsIds = tags.map(_.map(TagId(_))),
-                          content = content,
-                          context = Some(
-                            ContextFilterRequest(
-                              operation = operation.map(OperationId(_)),
-                              source = source,
-                              question = question
-                            )
-                          ),
-                          language = language,
-                          status = Some(Seq(Accepted)),
-                          limit = Some(5000) //TODO get limit value for export into config files
-                        ).toSearchQuery(requestContext),
-                        requestContext = requestContext
-                      )
-                    ) { proposals =>
-                      {
-                        complete {
-                          HttpResponse(
-                            entity = HttpEntity(
-                              ContentTypes.`text/csv(UTF-8)`,
-                              ByteString(
-                                (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
-                                  .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
+              ) {
+                (_: String,
+                 fileName: String,
+                 themeId: Option[Seq[ThemeId]],
+                 tags: Option[Seq[TagId]],
+                 content: Option[String],
+                 operation: Option[OperationId],
+                 source: Option[String],
+                 question: Option[String],
+                 language: Option[Language]) =>
+                  provideAsync(themeService.findAll()) { themes =>
+                    provideAsync(operationService.find()) { operations =>
+                      provideAsync(
+                        proposalService.search(
+                          userId = Some(auth.user.userId),
+                          query = ExhaustiveSearchRequest(
+                            themesIds = themeId,
+                            tagsIds = tags,
+                            content = content,
+                            context =
+                              Some(ContextFilterRequest(operation = operation, source = source, question = question)),
+                            language = language,
+                            status = Some(Seq(Accepted)),
+                            limit = Some(5000) //TODO get limit value for export into config files
+                          ).toSearchQuery(requestContext),
+                          requestContext = requestContext
+                        )
+                      ) { proposals =>
+                        {
+                          complete {
+                            HttpResponse(
+                              entity = HttpEntity(
+                                ContentTypes.`text/csv(UTF-8)`,
+                                ByteString(
+                                  (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
+                                    .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
+                                )
+                              )
+                            ).withHeaders(
+                              `Content-Disposition`(
+                                ContentDispositionTypes.attachment,
+                                Map("filename" -> s"$fileName.csv")
                               )
                             )
-                          ).withHeaders(
-                            `Content-Disposition`(
-                              ContentDispositionTypes.attachment,
-                              Map("filename" -> s"$fileName.csv")
-                            )
-                          )
+                          }
                         }
                       }
                     }
                   }
-                }
               }
             }
           }
@@ -294,117 +299,103 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             requireModerationRole(userAuth.user) {
               parameters(
                 (
-                  'proposalIds.as(CsvSeq[String]).?,
-                  'themesIds.as(CsvSeq[String]).?,
-                  'tagsIds.as(CsvSeq[String]).?,
-                  'labelsIds.as(CsvSeq[String]).?,
-                  'operationId.?,
-                  'ideaId.?,
+                  'proposalIds.as[immutable.Seq[ProposalId]].?,
+                  'themesIds.as[immutable.Seq[ThemeId]].?,
+                  'tagsIds.as[immutable.Seq[TagId]].?,
+                  'labelsIds.as[immutable.Seq[LabelId]].?,
+                  'operationId.as[OperationId].?,
+                  'ideaId.as[IdeaId].?,
                   'trending.?,
                   'content.?,
                   'source.?,
                   'location.?,
                   'question.?,
-                  'status.as(CsvSeq[String]).?,
-                  'language.?,
-                  'country.?,
+                  'status.as[immutable.Seq[ProposalStatus]].?,
+                  'language.as[Language].?,
+                  'country.as[Country].?,
                   'limit.as[Int].?,
                   'skip.as[Int].?,
                   'sort.?,
                   'order.?
                 )
               ) {
-                (proposalIds,
-                 themesIds,
-                 tagsIds,
-                 labelsIds,
-                 operationId,
-                 ideaId,
-                 trending,
-                 content,
-                 source,
-                 location,
-                 question,
-                 status,
-                 language,
-                 country,
-                 limit,
-                 skip,
-                 sort,
-                 order) =>
-                  Validation.validate(
-                    Seq(
-                      status.map { statuses =>
-                        Validation.validChoices(
-                          fieldName = "status",
-                          message = Some("Invalid status"),
-                          statuses,
-                          ProposalStatus.statusMap.keys.toSeq
-                        )
-                      },
-                      country.map { countryValue =>
-                        Validation.validChoices(
-                          fieldName = "country",
-                          message = Some(
-                            s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
-                          ),
-                          Seq(countryValue.toUpperCase),
-                          BusinessConfig.supportedCountries.map(_.countryCode)
-                        )
-                      },
-                      sort.map { sortValue =>
-                        val choices =
-                          Seq(
-                            "content",
-                            "slug",
-                            "status",
-                            "createdAt",
-                            "updatedAt",
-                            "trending",
-                            "labels",
-                            "country",
-                            "language"
-                          )
-                        Validation.validChoices(
-                          fieldName = "sort",
-                          message = Some(
-                            s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                          ),
-                          Seq(sortValue),
-                          choices
-                        )
-                      },
-                      order.map { orderValue =>
-                        Validation.validChoices(
-                          fieldName = "order",
-                          message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
-                          Seq(orderValue),
-                          Order.orders.keys.toSeq
-                        )
-                      }
-                    ).flatten: _*
-                  )
+                (proposalIds: Option[Seq[ProposalId]],
+                 themesIds: Option[Seq[ThemeId]],
+                 tagsIds: Option[Seq[TagId]],
+                 labelsIds: Option[Seq[LabelId]],
+                 operationId: Option[OperationId],
+                 ideaId: Option[IdeaId],
+                 trending: Option[String],
+                 content: Option[String],
+                 source: Option[String],
+                 location: Option[String],
+                 question: Option[String],
+                 status: Option[Seq[ProposalStatus]],
+                 language: Option[Language],
+                 country: Option[Country],
+                 limit: Option[Int],
+                 skip: Option[Int],
+                 sort: Option[String],
+                 order: Option[String]) =>
+                  Validation.validate(Seq(country.map { countryValue =>
+                    Validation.validChoices(
+                      fieldName = "country",
+                      message = Some(
+                        s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
+                      ),
+                      Seq(countryValue),
+                      BusinessConfig.supportedCountries.map(_.countryCode)
+                    )
+                  }, sort.map { sortValue =>
+                    val choices =
+                      Seq(
+                        "content",
+                        "slug",
+                        "status",
+                        "createdAt",
+                        "updatedAt",
+                        "trending",
+                        "labels",
+                        "country",
+                        "language"
+                      )
+                    Validation.validChoices(
+                      fieldName = "sort",
+                      message = Some(
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                      ),
+                      Seq(sortValue),
+                      choices
+                    )
+                  }, order.map { orderValue =>
+                    Validation.validChoices(
+                      fieldName = "order",
+                      message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                      Seq(orderValue),
+                      Order.orders.keys.toSeq
+                    )
+                  }).flatten: _*)
 
                   val contextFilterRequest: Option[ContextFilterRequest] =
                     operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-                      ContextFilterRequest(operationId.map(OperationId.apply), source, location, question)
+                      ContextFilterRequest(operationId, source, location, question)
                     }
                   val sortRequest: Option[SortRequest] = sort.orElse(order).map { _ =>
                     SortRequest(sort, order.flatMap(Order.matchOrder))
                   }
                   val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
-                    proposalIds = proposalIds.map(_.map(ProposalId.apply)),
-                    themesIds = themesIds.map(_.map(ThemeId.apply)),
-                    tagsIds = tagsIds.map(_.map(TagId.apply)),
-                    labelsIds = labelsIds.map(_.map(LabelId.apply)),
-                    operationId = operationId.map(OperationId.apply),
-                    ideaId = ideaId.map(IdeaId.apply),
+                    proposalIds = proposalIds,
+                    themesIds = themesIds,
+                    tagsIds = tagsIds,
+                    labelsIds = labelsIds,
+                    operationId = operationId,
+                    ideaId = ideaId,
                     trending = trending,
                     content = content,
                     context = contextFilterRequest,
-                    status = status.map(_.flatMap(ProposalStatus.statusMap.get)),
-                    language = language.map(_.toLowerCase),
-                    country = country.map(_.toUpperCase),
+                    status = status,
+                    language = language,
+                    country = country,
                     sort = sortRequest,
                     limit = limit,
                     skip = skip

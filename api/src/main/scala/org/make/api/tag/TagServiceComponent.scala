@@ -25,6 +25,8 @@ import org.make.api.tagtype.{PersistentTagTypeServiceComponent, TagTypeServiceCo
 import org.make.api.technical._
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.operation.OperationId
+import org.make.core.proposal.indexed.IndexedTag
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.ThemeId
@@ -41,8 +43,8 @@ case class TagFilter(label: Option[String] = None,
                      tagTypeId: Option[TagTypeId] = None,
                      operationId: Option[OperationId] = None,
                      themeId: Option[ThemeId] = None,
-                     country: Option[String] = None,
-                     language: Option[String] = None)
+                     country: Option[Country] = None,
+                     language: Option[Language] = None)
 object TagFilter {
   val empty: TagFilter = TagFilter()
 }
@@ -54,8 +56,8 @@ trait TagService extends ShortenedNames {
                 tagTypeId: TagTypeId,
                 operationId: Option[OperationId],
                 themeId: Option[ThemeId],
-                country: String,
-                language: String,
+                country: Country,
+                language: Language,
                 display: TagDisplay = TagDisplay.Inherit,
                 weight: Float = 0f): Future[Tag]
   def findAll(displayed: Boolean = false): Future[Seq[Tag]]
@@ -71,8 +73,8 @@ trait TagService extends ShortenedNames {
                 weight: Float,
                 operationId: Option[OperationId],
                 themeId: Option[ThemeId],
-                country: String,
-                language: String,
+                country: Country,
+                language: Language,
                 requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
   def search(start: Int,
@@ -130,8 +132,8 @@ trait DefaultTagServiceComponent
         tagTypeId = TagType.LEGACY.tagTypeId,
         operationId = None,
         themeId = None,
-        country = "FR",
-        language = "fr"
+        country = Country("FR"),
+        language = Language("fr")
       )
       persistentTagService.persist(tag)
     }
@@ -140,8 +142,8 @@ trait DefaultTagServiceComponent
                            tagTypeId: TagTypeId,
                            operationId: Option[OperationId],
                            themeId: Option[ThemeId],
-                           country: String,
-                           language: String,
+                           country: Country,
+                           language: Language,
                            display: TagDisplay,
                            weight: Float): Future[Tag] = {
       val tag: Tag = Tag(
@@ -198,8 +200,8 @@ trait DefaultTagServiceComponent
                            weight: Float,
                            operationId: Option[OperationId],
                            themeId: Option[ThemeId],
-                           country: String,
-                           language: String,
+                           country: Country,
+                           language: Language,
                            requestContext: RequestContext): Future[Option[Tag]] = {
       persistentTagService.get(tagId).flatMap {
         case Some(tag) =>

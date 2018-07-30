@@ -23,6 +23,7 @@ import org.make.api.DatabaseTest
 import org.make.core.DateHelper
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -37,8 +38,8 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
   val completeIdea: Idea = Idea(
     ideaId = IdeaId("bar-idea"),
     name = "barIdea",
-    language = Some("fr"),
-    country = Some("FR"),
+    language = Some(Language("fr")),
+    country = Some(Country("FR")),
     operationId = Some(OperationId("operation")),
     themeId = None,
     question = Some("question"),

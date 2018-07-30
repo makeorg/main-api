@@ -25,6 +25,7 @@ import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.profile.{Gender, Profile}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -67,8 +68,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = Some(profile)
   )
 
@@ -87,8 +88,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -107,8 +108,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -127,8 +128,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -147,8 +148,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -168,8 +169,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     organisationName = Some("Direction Générale de la Sécurité Extérieure")
   )
@@ -190,8 +191,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     organisationName = Some("Canadian Security Intelligence Service")
   )
@@ -212,8 +213,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "RU",
-    language = "ru",
+    country = Country("RU"),
+    language = Language("ru"),
     profile = None,
     organisationName = Some("Federal Security Service")
   )
@@ -242,8 +243,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "US",
-    language = "en",
+    country = Country("US"),
+    language = Language("en"),
     profile = None,
     organisationName = Some("Central Intelligence Agency - CIA")
   )
@@ -264,8 +265,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "US",
-    language = "en",
+    country = Country("US"),
+    language = Language("en"),
     profile = None,
     organisationName = Some("Federal Bureau of Investigation - FBI")
   )
@@ -286,8 +287,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = "UK",
-    language = "en",
+    country = Country("UK"),
+    language = Language("en"),
     profile = None,
     organisationName = Some("Military Intelligence, Section 5 - MI5")
   )
@@ -307,8 +308,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = Some(profile)
   )
 
@@ -761,10 +762,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(persistentUserService.persist(updateUser), Timeout(3.seconds)) { user =>
         user.userId.value should be("update-user-1")
         whenReady(
-          persistentUserService.updateUser(updateUser.copy(
-            firstName = Some("FooFoo"),
-            lastName = Some("BarBar")
-          )),
+          persistentUserService.updateUser(updateUser.copy(firstName = Some("FooFoo"), lastName = Some("BarBar"))),
           Timeout(3.seconds)
         ) { userUpdated =>
           userUpdated shouldBe a[User]
@@ -773,7 +771,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         }
       }
     }
-
 
     scenario("Dont update not allowed field") {
       whenReady(

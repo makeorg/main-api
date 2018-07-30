@@ -21,6 +21,7 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
@@ -33,8 +34,8 @@ sealed trait UserEvent extends UserRelatedEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def requestContext: RequestContext
-  def country: String
-  def language: String
+  def country: Country
+  def language: Language
   def version(): Int
 }
 
@@ -87,11 +88,14 @@ object UserEvent {
     )
   }
 
+  private val defaultCountry = Country("FR")
+  private val defaultLanguage = Language("fr")
+
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
-                                      override val country: String = "FR",
-                                      override val language: String = "fr",
+                                      override val country: Country = defaultCountry,
+                                      override val language: Language = defaultLanguage,
                                       override val requestContext: RequestContext)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
@@ -100,8 +104,8 @@ object UserEvent {
   object ResetPasswordEvent {
     def apply(connectedUserId: Option[UserId],
               user: User,
-              country: String,
-              language: String,
+              country: Country,
+              language: Language,
               requestContext: RequestContext): ResetPasswordEvent = {
       ResetPasswordEvent(
         userId = user.userId,
@@ -116,8 +120,8 @@ object UserEvent {
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
                                               override val eventDate: ZonedDateTime = DateHelper.now(),
                                               override val userId: UserId,
-                                              override val country: String = "FR",
-                                              override val language: String = "fr",
+                                              override val country: Country = defaultCountry,
+                                              override val language: Language = defaultLanguage,
                                               override val requestContext: RequestContext)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
@@ -126,8 +130,8 @@ object UserEvent {
   object ResendValidationEmailEvent {
     def apply(connectedUserId: UserId,
               userId: UserId,
-              country: String,
-              language: String,
+              country: Country,
+              language: Language,
               requestContext: RequestContext): ResendValidationEmailEvent = {
       ResendValidationEmailEvent(
         userId = userId,
@@ -149,8 +153,8 @@ object UserEvent {
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
                                  postalCode: Option[String],
-                                 override val country: String = "FR",
-                                 override val language: String = "fr",
+                                 override val country: Country = defaultCountry,
+                                 override val language: Language = defaultLanguage,
                                  isSocialLogin: Boolean = false)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
@@ -159,8 +163,8 @@ object UserEvent {
   final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = DateHelper.now(),
                                       override val userId: UserId,
-                                      override val country: String = "FR",
-                                      override val language: String = "fr",
+                                      override val country: Country = defaultCountry,
+                                      override val language: Language = defaultLanguage,
                                       override val requestContext: RequestContext)
       extends UserEvent {
 
@@ -170,8 +174,8 @@ object UserEvent {
   final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
                                              override val eventDate: ZonedDateTime = DateHelper.now(),
                                              override val userId: UserId = UserId(value = ""),
-                                             override val country: String = "FR",
-                                             override val language: String = "fr",
+                                             override val country: Country = defaultCountry,
+                                             override val language: Language = defaultLanguage,
                                              override val requestContext: RequestContext = RequestContext.empty,
                                              isSocialLogin: Boolean = false)
       extends UserEvent {
@@ -181,8 +185,8 @@ object UserEvent {
   final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
                                        override val eventDate: ZonedDateTime = DateHelper.now(),
                                        override val userId: UserId = UserId(value = ""),
-                                       override val country: String = "FR",
-                                       override val language: String = "fr",
+                                       override val country: Country = defaultCountry,
+                                       override val language: Language = defaultLanguage,
                                        override val requestContext: RequestContext = RequestContext.empty,
                                        oldTag: String,
                                        newTag: String)
@@ -195,8 +199,8 @@ object UserEvent {
                                          override val userId: UserId,
                                          override val requestContext: RequestContext,
                                          email: String,
-                                         override val country: String = "FR",
-                                         override val language: String = "fr")
+                                         override val country: Country = defaultCountry,
+                                         override val language: Language = defaultLanguage)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }

@@ -28,7 +28,7 @@ import org.make.api.MakeApiTestBase
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -95,8 +95,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = Some(OperationId("operation-id")),
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
@@ -112,8 +112,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[TagTypeId],
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[String],
-      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language],
       ArgumentMatchers.any[TagDisplay],
       ArgumentMatchers.any[Float]
     )
@@ -149,8 +149,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Float],
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[String],
-      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language],
       ArgumentMatchers.any[RequestContext]
     )
   ).thenReturn(
@@ -168,8 +168,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Float],
       ArgumentMatchers.any[Option[OperationId]],
       ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[String],
-      ArgumentMatchers.any[String],
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language],
       ArgumentMatchers.any[RequestContext]
     )
   ).thenReturn(Future.successful(None))

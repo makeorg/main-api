@@ -20,7 +20,6 @@
 package org.make.api.idea
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import io.circe.Decoder
@@ -29,20 +28,19 @@ import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.RequestContext
+import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
-import org.make.core.{HttpCodes, Validation}
+import org.make.core.reference.{Country, Language, ThemeId}
 
 import scala.util.Try
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Moderation Idea")
 @Path(value = "/moderation/ideas")
-trait ModerationIdeaApi extends MakeAuthenticationDirectives {
+trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtractors {
   this: IdeaServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   @ApiOperation(
@@ -80,10 +78,10 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
         parameters(
           (
             'name.?,
-            'language.?,
-            'country.?,
-            'operationId.?,
-            'themeId.?,
+            'language.as[Language].?,
+            'country.as[Country].?,
+            'operationId.as[OperationId].?,
+            'themeId.as[ThemeId].?,
             'question.?,
             'limit.as[Int].?,
             'skip.as[Int].?,
@@ -296,8 +294,8 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives {
 }
 
 final case class CreateIdeaRequest(name: String,
-                                   language: Option[String],
-                                   country: Option[String],
+                                   language: Option[Language],
+                                   country: Option[Country],
                                    operation: Option[OperationId],
                                    theme: Option[ThemeId],
                                    question: Option[String])
@@ -313,10 +311,10 @@ object UpdateIdeaRequest {
 }
 
 final case class IdeaFiltersRequest(name: Option[String],
-                                    language: Option[String],
-                                    country: Option[String],
-                                    operationId: Option[String],
-                                    themeId: Option[String],
+                                    language: Option[Language],
+                                    country: Option[Country],
+                                    operationId: Option[OperationId],
+                                    themeId: Option[ThemeId],
                                     question: Option[String],
                                     limit: Option[Int],
                                     skip: Option[Int],
@@ -331,8 +329,8 @@ final case class IdeaFiltersRequest(name: Option[String],
         }),
         language = language.map(language          => LanguageSearchFilter(language)),
         country = country.map(country             => CountrySearchFilter(country)),
-        operationId = operationId.map(operationId => OperationIdSearchFilter(OperationId(operationId))),
-        themeId = themeId.map(themeId             => ThemeIdSearchFilter(ThemeId(themeId))),
+        operationId = operationId.map(operationId => OperationIdSearchFilter(operationId)),
+        themeId = themeId.map(themeId             => ThemeIdSearchFilter(themeId)),
         question = question.map(question          => QuestionSearchFilter(question))
       )
 

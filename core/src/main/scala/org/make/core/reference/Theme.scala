@@ -32,7 +32,7 @@ object GradientColor {
   implicit val decoder: Decoder[GradientColor] = deriveDecoder[GradientColor]
 }
 
-final case class ThemeTranslation(slug: String, title: String, language: String) extends MakeSerializable
+final case class ThemeTranslation(slug: String, title: String, language: Language) extends MakeSerializable
 
 object ThemeTranslation {
   implicit val encoder: ObjectEncoder[ThemeTranslation] = deriveEncoder[ThemeTranslation]
@@ -44,7 +44,7 @@ final case class Theme(themeId: ThemeId,
                        actionsCount: Int,
                        proposalsCount: Long,
                        votesCount: Int,
-                       country: String,
+                       country: Country,
                        color: String,
                        gradient: Option[GradientColor] = None,
                        tags: Seq[Tag] = Seq.empty)

@@ -21,20 +21,19 @@ package org.make.core.idea
 
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto._
-import org.make.core.CirceFormatters
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
-import org.make.core.{MakeSerializable, StringValue, Timestamped}
+import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.{CirceFormatters, MakeSerializable, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 final case class Idea(ideaId: IdeaId,
                       name: String,
-                      language: Option[String] = None,
-                      country: Option[String] = None,
+                      language: Option[Language] = None,
+                      country: Option[Country] = None,
                       question: Option[String] = None,
                       operationId: Option[OperationId] = None,
                       themeId: Option[ThemeId] = None,

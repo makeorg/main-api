@@ -22,6 +22,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.RequestContext
 import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
 import scala.concurrent.Future
@@ -54,8 +55,8 @@ object LpaeData extends InsertFixtureData {
             operation = Some(operationId),
             tags = Seq(TagId("lpae-prevention")),
             labels = Seq.empty,
-            country = country,
-            language = language
+            country = Country(country),
+            language = Language(language)
           )
         )
       case _ => None

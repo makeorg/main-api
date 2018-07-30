@@ -31,6 +31,7 @@ import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
@@ -100,8 +101,8 @@ object PersistentUserServiceComponent {
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
         roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
-        country = country,
-        language = language,
+        country = Country(country),
+        language = Language(language),
         profile = toProfile,
         isHardBounce = isHardBounce,
         lastMailingError = lastMailingErrorMessage.flatMap { message =>
@@ -506,8 +507,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.postalCode -> user.profile.flatMap(_.postalCode),
-              column.country -> user.country,
-              column.language -> user.language,
+              column.country -> user.country.value,
+              column.language -> user.language.value,
               column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
               column.locale -> user.profile.flatMap(_.locale),
               column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
@@ -565,8 +566,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.optInNewsletter -> user.profile.forall(_.optInNewsletter),
               column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
               column.genderName -> user.profile.flatMap(_.genderName),
-              column.country -> user.country,
-              column.language -> user.language,
+              column.country -> user.country.value,
+              column.language -> user.language.value,
               column.updatedAt -> nowDate
             )
             .where(
@@ -743,8 +744,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.googleId -> user.profile.flatMap(_.googleId),
               column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
               column.genderName -> user.profile.flatMap(_.genderName),
-              column.country -> user.country,
-              column.language -> user.language
+              column.country -> user.country.value,
+              column.language -> user.language.value
             )
             .where(sqls.eq(column.uuid, user.userId.value))
         }.executeUpdate().apply() match {

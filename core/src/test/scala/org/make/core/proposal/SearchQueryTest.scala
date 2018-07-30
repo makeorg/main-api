@@ -26,7 +26,7 @@ import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.mockito.MockitoSugar
@@ -47,8 +47,8 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val contentFilter = ContentSearchFilter(text = textValue, fuzzy = None)
   val statusFilter = StatusSearchFilter(status = Seq(ProposalStatus.Pending))
   val slugFilter = SlugSearchFilter(slug = "my-awesome-slug")
-  val languageFilter = LanguageSearchFilter(language = "en")
-  val countryFilter = CountrySearchFilter(country = "GB")
+  val languageFilter = LanguageSearchFilter(language = Language("en"))
+  val countryFilter = CountrySearchFilter(country = Country("GB"))
   val userFilter = UserSearchFilter(userId = UserId("A34343-ERER"))
 
   val filters =
@@ -71,7 +71,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val limit = 10
   val skip = 0
 
-  val searchQuery = SearchQuery(Some(filters), sort, Some(limit), Some(skip), Some("en"))
+  val searchQuery = SearchQuery(Some(filters), sort, Some(limit), Some(skip), Some(Language("en")))
 
   feature("transform searchFilter into QueryDefinition") {
     scenario("get Sort from Search filter") {

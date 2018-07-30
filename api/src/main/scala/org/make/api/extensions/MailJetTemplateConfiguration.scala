@@ -21,6 +21,7 @@ package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
+import org.make.core.reference.{Country, Language}
 
 class MailJetTemplateConfiguration(config: Config) extends Extension with ConfigurationSupport {
   val from: String = config.getString("from")
@@ -32,29 +33,29 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
     config.getString("front-url")
   }
 
-  def registration(operation: String, country: String, language: String): TemplateConfiguration =
+  def registration(operation: String, country: Country, language: Language): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("registration"), operation, country, language)
-  def welcome(operation: String, country: String, language: String): TemplateConfiguration =
+  def welcome(operation: String, country: Country, language: Language): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("welcome"), operation, country, language)
-  def resendAccountValidationLink(operation: String, country: String, language: String): TemplateConfiguration =
+  def resendAccountValidationLink(operation: String, country: Country, language: Language): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("resend-validation-link"), operation, country, language)
-  def forgottenPassword(operation: String, country: String, language: String): TemplateConfiguration =
+  def forgottenPassword(operation: String, country: Country, language: Language): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("forgotten-password"), operation, country, language)
   def proposalRefused(operation: String,
-                      country: String,
-                      language: String,
+                      country: Country,
+                      language: Language,
                       isOrganisation: Boolean = false): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("proposal-refused"), operation, country, language, isOrganisation)
   def proposalAccepted(operation: String,
-                       country: String,
-                       language: String,
+                       country: Country,
+                       language: Language,
                        isOrganisation: Boolean = false): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("proposal-accepted"), operation, country, language, isOrganisation)
 
   private def parseTemplateConfiguration(config: Config,
                                          operation: String,
-                                         country: String,
-                                         language: String,
+                                         country: Country,
+                                         language: Language,
                                          isOrganisation: Boolean = false): TemplateConfiguration = {
 
     var templateConfiguration: Config = config
@@ -63,20 +64,22 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
       templateConfiguration = config.getConfig(operation).withFallback(templateConfiguration)
     }
 
-    if (config.hasPath(s"$country")) {
-      templateConfiguration = config.getConfig(s"$country").withFallback(templateConfiguration)
+    if (config.hasPath(country.value)) {
+      templateConfiguration = config.getConfig(country.value).withFallback(templateConfiguration)
     }
 
-    if (config.hasPath(s"$country.$language")) {
-      templateConfiguration = config.getConfig(s"$country.$language").withFallback(templateConfiguration)
+    if (config.hasPath(s"${country.value}.${language.value}")) {
+      templateConfiguration =
+        config.getConfig(s"${country.value}.${language.value}").withFallback(templateConfiguration)
     }
 
-    if (config.hasPath(s"$operation.$country")) {
-      templateConfiguration = config.getConfig(s"$operation.$country").withFallback(templateConfiguration)
+    if (config.hasPath(s"$operation.${country.value}")) {
+      templateConfiguration = config.getConfig(s"$operation.${country.value}").withFallback(templateConfiguration)
     }
 
-    if (config.hasPath(s"$operation.$country.$language")) {
-      templateConfiguration = config.getConfig(s"$operation.$country.$language").withFallback(templateConfiguration)
+    if (config.hasPath(s"$operation.${country.value}.${language.value}")) {
+      templateConfiguration =
+        config.getConfig(s"$operation.${country.value}.${language.value}").withFallback(templateConfiguration)
     }
 
     if (isOrganisation) {
@@ -84,12 +87,13 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
         templateConfiguration = config.getConfig("organisation").withFallback(templateConfiguration)
       }
 
-      if (config.hasPath(s"organisation.$country")) {
-        templateConfiguration = config.getConfig(s"organisation.$country").withFallback(templateConfiguration)
+      if (config.hasPath(s"organisation.${country.value}")) {
+        templateConfiguration = config.getConfig(s"organisation.${country.value}").withFallback(templateConfiguration)
       }
 
-      if (config.hasPath(s"organisation.$country.$language")) {
-        templateConfiguration = config.getConfig(s"organisation.$country.$language").withFallback(templateConfiguration)
+      if (config.hasPath(s"organisation.${country.value}.${language.value}")) {
+        templateConfiguration =
+          config.getConfig(s"organisation.${country.value}.${language.value}").withFallback(templateConfiguration)
       }
     }
 

@@ -34,6 +34,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -49,7 +50,7 @@ trait PersistentOperationServiceComponent {
 
 trait PersistentOperationService {
   def find(slug: Option[String] = None,
-           country: Option[String] = None,
+           country: Option[Country] = None,
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
@@ -87,7 +88,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
 
     override def find(slug: Option[String] = None,
-                      country: Option[String] = None,
+                      country: Option[Country] = None,
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
@@ -98,7 +99,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               .where(
                 sqls.toAndConditionOpt(
                   slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
-                  country.map(country => sqls.eq(operationCountryConfigurationAlias.country, country)),
+                  country.map(country => sqls.eq(operationCountryConfigurationAlias.country, country.value)),
                   openAt.map(openAt   => sqls.le(operationCountryConfigurationAlias.startDate, openAt)),
                   openAt.map(
                     openAt =>
@@ -157,7 +158,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.uuid -> operation.operationId.value,
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
-              column.defaultLanguage -> operation.defaultLanguage,
+              column.defaultLanguage -> operation.defaultLanguage.value,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -252,7 +253,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .set(
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
-              column.defaultLanguage -> operation.defaultLanguage,
+              column.defaultLanguage -> operation.defaultLanguage.value,
               column.updatedAt -> nowDate
             )
             .where(
@@ -322,7 +323,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .into(PersistentOperationCountryConfiguration)
             .namedValues(
               operationCountryConfigurationColumn.operationUuid -> operation.operationId.value,
-              operationCountryConfigurationColumn.country -> countryConfiguration.countryCode,
+              operationCountryConfigurationColumn.country -> countryConfiguration.countryCode.value,
               operationCountryConfigurationColumn.tagIds -> countryConfiguration.tagIds
                 .map(_.value)
                 .mkString(PersistentOperationCountryConfiguration.TAG_SEPARATOR.toString),
@@ -345,7 +346,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .namedValues(
               operationTranslationColumn.operationUuid -> operation.operationId.value,
               operationTranslationColumn.title -> translation.title,
-              operationTranslationColumn.language -> translation.language
+              operationTranslationColumn.language -> translation.language.value
             )
         }.execute().apply()
       })
@@ -451,7 +452,7 @@ object DefaultPersistentOperationServiceComponent {
         updatedAt = Some(updatedAt),
         status = OperationStatus.statusMap(status),
         slug = slug,
-        defaultLanguage = defaultLanguage,
+        defaultLanguage = Language(defaultLanguage),
         events = operationActions
           .map(
             action =>
@@ -466,7 +467,7 @@ object DefaultPersistentOperationServiceComponent {
         countriesConfiguration = operationCountryConfigurations.map(
           countryConfiguration =>
             OperationCountryConfiguration(
-              countryCode = countryConfiguration.country,
+              countryCode = Country(countryConfiguration.country),
               tagIds = countryConfiguration.tagIds
                 .getOrElse("")
                 .split(PersistentOperationCountryConfiguration.TAG_SEPARATOR)
@@ -477,8 +478,9 @@ object DefaultPersistentOperationServiceComponent {
               endDate = countryConfiguration.endDate
           )
         ),
-        translations =
-          operationTranslations.map(trans => OperationTranslation(title = trans.title, language = trans.language))
+        translations = operationTranslations.map(
+          trans => OperationTranslation(title = trans.title, language = Language(trans.language))
+        )
       )
 
     def toSimpleOperation: SimpleOperation =
@@ -486,7 +488,7 @@ object DefaultPersistentOperationServiceComponent {
         operationId = OperationId(uuid),
         status = OperationStatus.statusMap(status),
         slug = slug,
-        defaultLanguage = defaultLanguage,
+        defaultLanguage = Language(defaultLanguage),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt)
       )

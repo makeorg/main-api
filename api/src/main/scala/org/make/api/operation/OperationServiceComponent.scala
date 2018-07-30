@@ -26,6 +26,7 @@ import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,7 +38,7 @@ trait OperationServiceComponent {
 
 trait OperationService extends ShortenedNames {
   def find(slug: Option[String] = None,
-           country: Option[String] = None,
+           country: Option[Country] = None,
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
@@ -45,13 +46,13 @@ trait OperationService extends ShortenedNames {
   def create(userId: UserId,
              slug: String,
              translations: Seq[OperationTranslation] = Seq.empty,
-             defaultLanguage: String,
+             defaultLanguage: Language,
              countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId]
   def update(operationId: OperationId,
              userId: UserId,
              slug: Option[String] = None,
              translations: Option[Seq[OperationTranslation]] = None,
-             defaultLanguage: Option[String] = None,
+             defaultLanguage: Option[Language] = None,
              countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
              status: Option[OperationStatus] = None): Future[Option[OperationId]]
   def activate(operationId: OperationId, userId: UserId): Unit
@@ -64,7 +65,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
   val operationService: OperationService = new OperationService {
 
     override def find(slug: Option[String] = None,
-                      country: Option[String] = None,
+                      country: Option[Country] = None,
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
       persistentOperationService.find(slug = slug, country = country, openAt = openAt).flatMap { operations =>
         Future.traverse(operations) { operation =>
@@ -98,7 +99,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     override def create(userId: UserId,
                         slug: String,
                         translations: Seq[OperationTranslation] = Seq.empty,
-                        defaultLanguage: String,
+                        defaultLanguage: Language,
                         countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId] = {
       val now = DateHelper.now()
       val operation: Operation = Operation(
@@ -131,7 +132,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         userId: UserId,
                         slug: Option[String] = None,
                         translations: Option[Seq[OperationTranslation]] = None,
-                        defaultLanguage: Option[String] = None,
+                        defaultLanguage: Option[Language] = None,
                         countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
                         status: Option[OperationStatus] = None): Future[Option[OperationId]] = {
 
@@ -199,19 +200,22 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     }
 
     private def operationToString(operation: Operation): String = {
-      Map(
-        "operationId" -> operation.operationId.value,
-        "status" -> operation.status.shortName,
-        "translations" -> operation.translations
-          .map(translation => s"${translation.language}:${translation.title}")
-          .mkString(","),
-        "defaultLanguage" -> operation.defaultLanguage,
-        "countriesConfiguration" -> operation.countriesConfiguration
-          .map(countryConfiguration => s"""${countryConfiguration.countryCode}:
+      scala.collection
+        .Map[String, String](
+          "operationId" -> operation.operationId.value,
+          "status" -> operation.status.shortName,
+          "translations" -> operation.translations
+            .map(translation => s"${translation.language}:${translation.title}")
+            .mkString(","),
+          "defaultLanguage" -> operation.defaultLanguage.value,
+          "countriesConfiguration" -> operation.countriesConfiguration
+            .map(countryConfiguration => s"""${countryConfiguration.countryCode}:
                   |${countryConfiguration.landingSequenceId}:
                   |${countryConfiguration.tagIds.map(_.value).mkString("[", ",", "]")}""".stripMargin)
-          .mkString(",")
-      ).asJson.toString
+            .mkString(",")
+        )
+        .asJson
+        .toString
     }
   }
 }

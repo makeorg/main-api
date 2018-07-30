@@ -29,6 +29,7 @@ import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.profile.Profile
 import org.make.core.proposal.{ProposalSearchFilter, SearchFilters, SearchQuery}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -54,8 +55,8 @@ case class OrganisationRegisterData(name: String,
                                     email: String,
                                     password: Option[String],
                                     avatar: Option[String],
-                                    country: String,
-                                    language: String)
+                                    country: Country,
+                                    language: Language)
 
 case class OrganisationUpdateData(name: Option[String], email: Option[String], avatar: Option[String])
 
@@ -77,8 +78,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,
                                      lowerCasedEmail: String,
-                                     country: String,
-                                     language: String): Future[User] = {
+                                     country: Country,
+                                     language: Language): Future[User] = {
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,

@@ -30,6 +30,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -225,8 +226,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
   private def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        val language = event.requestContext.language.getOrElse("fr")
-        val country = event.requestContext.country.getOrElse("FR")
+        val language = event.requestContext.language.getOrElse(Language("fr"))
+        val country = event.requestContext.country.getOrElse(Country("FR"))
 
         val futureOperationSlug: Future[String] = event.requestContext.operationId match {
           case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))

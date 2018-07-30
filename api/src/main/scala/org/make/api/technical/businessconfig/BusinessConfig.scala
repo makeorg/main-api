@@ -21,7 +21,7 @@ package org.make.api.technical.businessconfig
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import org.make.core.reference.Theme
+import org.make.core.reference.{Country, Language, Theme}
 
 sealed trait BusinessConfig {
   val proposalMaxLength: Int
@@ -29,9 +29,9 @@ sealed trait BusinessConfig {
   val supportedCountries: Seq[CountryConfiguration]
 }
 
-case class CountryConfiguration(countryCode: String,
-                                defaultLanguage: String,
-                                supportedLanguages: Seq[String],
+case class CountryConfiguration(countryCode: Country,
+                                defaultLanguage: Language,
+                                supportedLanguages: Seq[Language],
                                 coreIsAvailable: Boolean)
 object CountryConfiguration {
   implicit val encoder: ObjectEncoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
@@ -55,29 +55,29 @@ object BusinessConfig {
   val themes: Seq[Theme] = Seq.empty
   val supportedCountries = Seq(
     CountryConfiguration(
-      countryCode = "FR",
-      defaultLanguage = "fr",
-      supportedLanguages = Seq("fr"),
+      countryCode = Country("FR"),
+      defaultLanguage = Language("fr"),
+      supportedLanguages = Seq(Language("fr")),
       coreIsAvailable = true
     ),
     CountryConfiguration(
-      countryCode = "IT",
-      defaultLanguage = "it",
-      supportedLanguages = Seq("it"),
+      countryCode = Country("IT"),
+      defaultLanguage = Language("it"),
+      supportedLanguages = Seq(Language("it")),
       coreIsAvailable = false
     ),
     CountryConfiguration(
-      countryCode = "GB",
-      defaultLanguage = "en",
-      supportedLanguages = Seq("en"),
+      countryCode = Country("GB"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en")),
       coreIsAvailable = false
     )
   )
 
-  def validateCountry(country: String): String =
-    supportedCountries.map(_.countryCode).find(_ == country).getOrElse("FR")
+  def validateCountry(country: Country): Country =
+    supportedCountries.map(_.countryCode).find(_ == country).getOrElse(Country("FR"))
 
-  def validateLanguage(country: String, language: String): String =
+  def validateLanguage(country: Country, language: Language): Language =
     supportedCountries
       .find(_.countryCode == country)
       .map { countryConfiguration =>
@@ -85,9 +85,9 @@ object BusinessConfig {
           .find(_ == language)
           .getOrElse(countryConfiguration.defaultLanguage)
       }
-      .getOrElse("fr")
+      .getOrElse(Language("fr"))
 
-  def coreIsAvailableForCountry(country: String): Boolean = {
+  def coreIsAvailableForCountry(country: Country): Boolean = {
     supportedCountries.find(_.countryCode == country).exists(_.coreIsAvailable)
   }
 

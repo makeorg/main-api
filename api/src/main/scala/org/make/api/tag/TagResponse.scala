@@ -23,7 +23,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 
 import scala.annotation.meta.field
@@ -36,8 +36,8 @@ case class TagResponse(@(ApiModelProperty @field)(dataType = "string", example =
                        weight: Float,
                        @(ApiModelProperty @field)(dataType = "string") operationId: Option[OperationId],
                        @(ApiModelProperty @field)(dataType = "string") themeId: Option[ThemeId],
-                       country: String,
-                       language: String)
+                       country: Country,
+                       language: Language)
 
 object TagResponse {
   implicit val encoder: ObjectEncoder[TagResponse] = deriveEncoder[TagResponse]

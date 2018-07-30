@@ -31,6 +31,7 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
 import org.scalatest.PrivateMethodTester
@@ -88,7 +89,7 @@ class SequenceServiceComponentTest
       createdAt = Some(createdAt),
       updatedAt = None,
       votes = votes.map {
-        case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)
+        case (k, amount) => Vote(key = k, count = amount, qualifications = Seq.empty)
       }.toSeq,
       labels = Seq.empty,
       theme = None,
@@ -98,8 +99,8 @@ class SequenceServiceComponentTest
       idea = ideaId,
       events = Nil,
       creationContext = RequestContext.empty,
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
   }
 

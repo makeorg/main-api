@@ -30,6 +30,7 @@ import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserService
+import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -87,8 +88,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country: String = proposal.country.getOrElse(user.country)
-          val language: String = proposal.language.getOrElse(user.language)
+          val country: Country = proposal.country.getOrElse(user.country)
+          val language: Language = proposal.language.getOrElse(user.language)
           val templateConfiguration =
             mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {
@@ -149,8 +150,8 @@ class ProposalEmailConsumer(userService: UserService,
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
         } yield {
-          val country: String = proposal.country.getOrElse(user.country)
-          val language: String = proposal.language.getOrElse(user.language)
+          val country: Country = proposal.country.getOrElse(user.country)
+          val language: Language = proposal.language.getOrElse(user.language)
           val templateConfiguration =
             mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {

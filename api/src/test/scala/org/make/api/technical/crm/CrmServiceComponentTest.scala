@@ -34,7 +34,7 @@ import org.make.core.RequestContext
 import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.mockito.Mockito.when
 import org.mockito.ArgumentMatchers.any
@@ -42,16 +42,18 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 
-
 class CrmServiceComponentTest
-  extends MakeUnitTest
-  with DefaultCrmServiceComponent
-  with MailJetConfigurationComponent
-  with ActorSystemComponent
-  with UserHistoryCoordinatorServiceComponent
-  with ReadJournalComponent {
+    extends MakeUnitTest
+    with DefaultCrmServiceComponent
+    with MailJetConfigurationComponent
+    with ActorSystemComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ReadJournalComponent {
 
-  trait MakeReadJournalForMocks extends ReadJournal with CurrentPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery
+  trait MakeReadJournalForMocks
+      extends ReadJournal
+      with CurrentPersistenceIdsQuery
+      with CurrentEventsByPersistenceIdQuery
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
@@ -90,8 +92,8 @@ class CrmServiceComponentTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = Some(fooProfile),
     createdAt = Some(zonedDateTimeInThePast)
   )
@@ -105,8 +107,8 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("core"),
         operationId = Some(OperationId("culture")),
-        country = Some("FR"),
-        language = Some("fr")
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
       ),
       action = UserAction(
         date = zonedDateTimeInThePast,
@@ -119,7 +121,8 @@ class CrmServiceComponentTest
           profession = Some("doer"),
           postalCode = Some("75011")
         )
-      ))
+      )
+    )
   )
 
   val userProposalEventEnvolope = EventEnvelope(
@@ -131,8 +134,8 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("core"),
         operationId = Some(OperationId("vff")),
-        country = Some("IT"),
-        language = Some("it")
+        country = Some(Country("IT")),
+        language = Some(Language("it"))
       ),
       action = UserAction(
         date = zonedDateTimeInThePast,
@@ -151,8 +154,8 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("vff"),
         currentTheme = Some(ThemeId("foo-theme-id")),
-        country = Some("GB"),
-        language = Some("uk")
+        country = Some(Country("GB")),
+        language = Some(Language("uk"))
       ),
       action = UserAction(
         date = zonedDateTimeInThePast,
@@ -171,8 +174,8 @@ class CrmServiceComponentTest
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
         operationId = Some(OperationId("culture")),
-        country = Some("FR"),
-        language = Some("fr")
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
       ),
       action = UserAction(
         date = zonedDateTimeInThePast,
@@ -182,9 +185,12 @@ class CrmServiceComponentTest
     )
   )
 
-
   when(readJournal.currentEventsByPersistenceId(any[String], any[Long], any[Long]))
-    .thenReturn(scaladsl.Source(List(registerCitizenEventEnvelope, userProposalEventEnvolope, userVoteEventEnvelope, userVoteEventEnvelope2)))
+    .thenReturn(
+      scaladsl.Source(
+        List(registerCitizenEventEnvelope, userProposalEventEnvolope, userVoteEventEnvelope, userVoteEventEnvelope2)
+      )
+    )
 
   feature("add user to OptInList") {
     scenario("get properties from user and his events") {

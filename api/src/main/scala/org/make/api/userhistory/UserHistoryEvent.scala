@@ -35,7 +35,7 @@ import org.make.api.sequence.PublishedSequenceEvent.{
 }
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.{SequenceId, SearchQuery => SequenceSearchQuery}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
@@ -145,8 +145,8 @@ final case class UserRegistered(email: String,
                                 lastName: Option[String],
                                 profession: Option[String],
                                 postalCode: Option[String],
-                                country: String = "FR",
-                                language: String = "fr")
+                                country: Country = Country("FR"),
+                                language: Language = Language("fr"))
 
 object UserRegistered {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =

@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.proposal
 
 import akka.actor.ActorSystem
@@ -13,6 +32,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.core.idea.CountrySearchFilter
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -122,8 +142,8 @@ class SortAlgorithmIT
     tags = Seq.empty,
     trending = None,
     labels = Seq.empty,
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     status = ProposalStatus.Accepted,
     ideaId = None,
     operationId = None
@@ -169,7 +189,7 @@ class SortAlgorithmIT
     ),
     newEmptyProposal("controversy-2").copy(
       trending = Some("controversy"),
-      country = "42",
+      country = Country("42"),
       votes = Seq(
         IndexedVote(key = VoteKey.Agree, count = 41, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Disagree, count = 53, qualifications = Seq.empty),
@@ -186,7 +206,7 @@ class SortAlgorithmIT
     ),
     newEmptyProposal("popular-2").copy(
       trending = Some("popular"),
-      country = "42",
+      country = Country("42"),
       votes = Seq(
         IndexedVote(key = VoteKey.Agree, count = 84, qualifications = Seq.empty),
         IndexedVote(key = VoteKey.Disagree, count = 6, qualifications = Seq.empty),
@@ -270,7 +290,7 @@ class SortAlgorithmIT
     scenario("controversy algorithm with other filters") {
       val query = SearchQuery(
         sortAlgorithm = Some(ControversyAlgorithm(Some(42))),
-        filters = Some(SearchFilters(country = Some(CountrySearchFilter("42"))))
+        filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(1)
@@ -290,7 +310,7 @@ class SortAlgorithmIT
     scenario("popular algorithm with other filters") {
       val query = SearchQuery(
         sortAlgorithm = Some(PopularAlgorithm(Some(42))),
-        filters = Some(SearchFilters(country = Some(CountrySearchFilter("42"))))
+        filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(1)

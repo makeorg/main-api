@@ -48,8 +48,8 @@ class PersistentThemeServiceIT
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   val stark: Tag = newTag("Stark")
@@ -60,12 +60,13 @@ class PersistentThemeServiceIT
   val winterIsComingTags: Seq[Tag] = Seq(stark, targaryen, lannister)
   val winterIsComing: Theme = Theme(
     themeId = ThemeId("winterIsComingId"),
-    translations =
-      Seq(ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = "dk")),
+    translations = Seq(
+      ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = Language("dk"))
+    ),
     actionsCount = 7,
     proposalsCount = 42,
     votesCount = 0,
-    country = "WE",
+    country = Country("WE"),
     color = "#00FFFF",
     gradient = Some(GradientColor("#0FF", "#0F0")),
     tags = winterIsComingTags
@@ -74,11 +75,12 @@ class PersistentThemeServiceIT
   val winterIsHereTags: Seq[Tag] = Seq(whiteWalker)
   val winterIsHere: Theme = Theme(
     themeId = ThemeId("winterIsHere"),
-    translations = Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = "dk")),
+    translations =
+      Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = Language("dk"))),
     actionsCount = 0,
     proposalsCount = 1000,
     votesCount = 0,
-    country = "WE",
+    country = Country("WE"),
     color = "#FFFFdd",
     gradient = Some(GradientColor("#FFC", "#FFF")),
     tags = winterIsHereTags
@@ -86,11 +88,11 @@ class PersistentThemeServiceIT
 
   val nonExistantTheme = Theme(
     themeId = ThemeId("void"),
-    translations = Seq(ThemeTranslation(slug = SlugHelper("nowhere"), title = "Nowhere", language = "xx")),
+    translations = Seq(ThemeTranslation(slug = SlugHelper("nowhere"), title = "Nowhere", language = Language("xx"))),
     actionsCount = 0,
     proposalsCount = 0,
     votesCount = 0,
-    country = "XX",
+    country = Country("XX"),
     color = "#000000",
     gradient = Some(GradientColor("#000", "#000")),
     tags = Seq.empty
@@ -99,18 +101,19 @@ class PersistentThemeServiceIT
   val frozen: Theme = Theme(
     themeId = ThemeId("frozen"),
     translations = Seq(
-      ThemeTranslation(slug = SlugHelper("let-it-gooo"), title = "Let it gooo", language = "en"),
-      ThemeTranslation(slug = SlugHelper("libereeeee"), title = "Libéréééée", language = "fr")
+      ThemeTranslation(slug = SlugHelper("let-it-gooo"), title = "Let it gooo", language = Language("en")),
+      ThemeTranslation(slug = SlugHelper("libereeeee"), title = "Libéréééée", language = Language("fr"))
     ),
     actionsCount = 7,
     proposalsCount = 42,
     votesCount = 0,
-    country = "WE",
+    country = Country("WE"),
     color = "#00FFFF",
     gradient = Some(GradientColor("#0FF", "#0F0")),
     tags = Seq.empty
   )
-  val mandarinTranslation = ThemeTranslation(slug = SlugHelper("sui-ta-baaa"), title = "Sui ta baaa", language = "cmn")
+  val mandarinTranslation =
+    ThemeTranslation(slug = SlugHelper("sui-ta-baaa"), title = "Sui ta baaa", language = Language("cmn"))
 
   feature("A theme can be persisted") {
     scenario("Persist a theme and get the persisted theme in the list of theme with related tags") {

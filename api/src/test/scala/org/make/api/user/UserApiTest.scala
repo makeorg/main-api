@@ -47,6 +47,7 @@ import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -112,8 +113,8 @@ class UserApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq.empty,
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -153,8 +154,8 @@ class UserApiTest
               password = Some("mypassss"),
               lastIp = Some("192.0.0.1"),
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
-              country = "FR",
-              language = "fr"
+              country = Country("FR"),
+              language = Language("fr")
             )
           ),
           any[RequestContext]
@@ -199,8 +200,8 @@ class UserApiTest
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
               postalCode = Some("75011"),
               profession = Some("football player"),
-              country = "FR",
-              language = "fr"
+              country = Country("FR"),
+              language = Language("fr")
             )
           ),
           any[RequestContext]
@@ -350,7 +351,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[String], any[String], any[Option[String]], any[RequestContext])
+            .login(any[String], any[String], any[Country], any[Language], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
@@ -383,8 +384,8 @@ class UserApiTest
         verify(socialService).login(
           matches("google"),
           matches("ABCDEFGHIJK"),
-          matches("FR"),
-          matches("fr"),
+          matches(Country("FR")),
+          matches(Language("fr")),
           matches(Some("192.0.0.1")),
           any[RequestContext]
         )
@@ -395,7 +396,7 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[String], any[String], any[Option[String]], any[RequestContext])
+            .login(any[String], any[String], any[Country], any[Language], any[Option[String]], any[RequestContext])
         )
         .thenReturn(
           Future.successful(
@@ -445,8 +446,8 @@ class UserApiTest
       resetToken = None,
       resetTokenExpiresAt = None,
       roles = Seq.empty,
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       profile = None
     )
     Mockito
@@ -482,8 +483,8 @@ class UserApiTest
       resetToken = Some("baz-bar"),
       resetTokenExpiresAt = Some(DateHelper.now().minusDays(1)),
       roles = Seq(Role.RoleCitizen),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       profile = None
     )
 
@@ -504,8 +505,8 @@ class UserApiTest
       resetToken = Some("valid-reset-token"),
       resetTokenExpiresAt = Some(DateHelper.now().plusDays(1)),
       roles = Seq(Role.RoleCitizen),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       profile = None
     )
 
@@ -733,8 +734,8 @@ class UserApiTest
               resetToken = None,
               resetTokenExpiresAt = None,
               roles = Seq(Role.RoleCitizen),
-              country = "FR",
-              language = "fr",
+              country = Country("FR"),
+              language = Language("fr"),
               profile = None,
               createdAt = None,
               updatedAt = None
@@ -783,8 +784,8 @@ class UserApiTest
 
     val indexedProposal = IndexedProposal(
       id = ProposalId("22222222-2222-2222-2222-222222222222"),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       userId = paul.userId,
       content = "Il faut que ma proposition d'opération soit en CSV.",
       slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",
@@ -901,8 +902,8 @@ class UserApiTest
 
     val indexedProposal = IndexedProposal(
       id = ProposalId("333333-3333-3333-3333-33333333"),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       userId = sylvain.userId,
       content = "Il faut une proposition de Sylvain",
       slug = "il-faut-une-proposition-de-sylvain",
@@ -982,11 +983,7 @@ class UserApiTest
   feature("update a user") {
     scenario("authentificated with unauthorized user") {
 
-      when(userService.getUser(ArgumentMatchers.eq(UserId("BAD")))).thenReturn(
-        Future.successful(
-          Some(fakeUser)
-        )
-      )
+      when(userService.getUser(ArgumentMatchers.eq(UserId("BAD")))).thenReturn(Future.successful(Some(fakeUser)))
 
       Mockito
         .when(
@@ -1021,11 +1018,7 @@ class UserApiTest
       val fakeAuthInfo: AuthInfo[UserRights] =
         AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen)), None, None, None)
 
-      when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(
-        Future.successful(
-          Some(fakeUser)
-        )
-      )
+      when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
 
       Mockito
         .when(
@@ -1062,11 +1055,9 @@ class UserApiTest
             fakeUser.copy(
               firstName = Some("olive"),
               lastName = Some("tom"),
-              country = "IT",
-              language = "it",
-              profile = fakeUser.profile.map(_.copy(
-                dateOfBirth = Some(LocalDate.parse("1997-12-02"))
-              ))
+              country = Country("IT"),
+              language = Language("it"),
+              profile = fakeUser.profile.map(_.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02"))))
             )
           ),
           any[RequestContext]
@@ -1075,4 +1066,4 @@ class UserApiTest
     }
   }
 
-  }
+}

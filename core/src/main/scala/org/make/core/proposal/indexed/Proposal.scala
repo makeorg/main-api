@@ -27,7 +27,7 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -85,8 +85,8 @@ case class IndexedProposal(id: ProposalId,
                            labels: Seq[String],
                            author: Author,
                            organisations: Seq[IndexedOrganisationInfo],
-                           country: String,
-                           language: String,
+                           country: Country,
+                           language: Language,
                            themeId: Option[ThemeId],
                            tags: Seq[IndexedTag],
                            ideaId: Option[IdeaId],

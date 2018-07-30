@@ -36,6 +36,7 @@ import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches}
@@ -95,8 +96,8 @@ class DefaultProposalServiceComponentTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleCitizen, Role.RoleModerator),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -123,8 +124,8 @@ class DefaultProposalServiceComponentTest
       resetToken = None,
       resetTokenExpiresAt = None,
       roles = Seq(Role.RoleCitizen),
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       profile = None,
       createdAt = None,
       updatedAt = None
@@ -148,8 +149,8 @@ class DefaultProposalServiceComponentTest
       author =
         Author(firstName = Some(id.value), organisationName = None, postalCode = None, age = None, avatarUrl = None),
       organisations = Seq.empty,
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       themeId = None,
       tags = Seq.empty,
       ideaId = None,
@@ -164,8 +165,8 @@ class DefaultProposalServiceComponentTest
         SearchFilters(
           operation = Some(OperationSearchFilter(OperationId(operation))),
           theme = None,
-          country = Some(CountrySearchFilter("FR")),
-          language = Some(LanguageSearchFilter("fr")),
+          country = Some(CountrySearchFilter(Country("FR"))),
+          language = Some(LanguageSearchFilter(Language("fr"))),
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
         )
       ),
@@ -183,8 +184,8 @@ class DefaultProposalServiceComponentTest
         proposalService.searchAndLockProposalToModerate(
           Some(OperationId("vff")),
           None,
-          "FR",
-          "fr",
+          Country("FR"),
+          Language("fr"),
           moderatorId,
           RequestContext.empty
         ),
@@ -277,8 +278,8 @@ class DefaultProposalServiceComponentTest
         proposalService.searchAndLockProposalToModerate(
           Some(OperationId("no-proposal-to-lock")),
           None,
-          "FR",
-          "fr",
+          Country("FR"),
+          Language("fr"),
           moderatorId,
           RequestContext.empty
         ),
@@ -344,8 +345,8 @@ class DefaultProposalServiceComponentTest
                 refusalReason = None,
                 tags = Seq.empty,
                 votes = Seq.empty,
-                language = Some("fr"),
-                country = Some("FR"),
+                language = Some(Language("fr")),
+                country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
                 similarProposals = Seq.empty,
                 idea = None,
@@ -366,8 +367,8 @@ class DefaultProposalServiceComponentTest
         proposalService.searchAndLockProposalToModerate(
           Some(OperationId("lock-second")),
           None,
-          "FR",
-          "fr",
+          Country("FR"),
+          Language("fr"),
           moderatorId,
           RequestContext.empty
         ),
@@ -414,8 +415,8 @@ class DefaultProposalServiceComponentTest
                 refusalReason = None,
                 tags = Seq.empty,
                 votes = Seq.empty,
-                language = Some("fr"),
-                country = Some("FR"),
+                language = Some(Language("fr")),
+                country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
                 similarProposals = Seq.empty,
                 idea = None,
@@ -436,8 +437,8 @@ class DefaultProposalServiceComponentTest
         proposalService.searchAndLockProposalToModerate(
           Some(OperationId("lock-first")),
           None,
-          "FR",
-          "fr",
+          Country("FR"),
+          Language("fr"),
           moderatorId,
           RequestContext.empty
         ),

@@ -31,6 +31,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -75,8 +76,8 @@ class ModerationOperationApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -96,8 +97,8 @@ class ModerationOperationApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -117,8 +118,8 @@ class ModerationOperationApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -129,10 +130,10 @@ class ModerationOperationApiTest
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
     translations = Seq(
-      OperationTranslation(title = "première operation", language = "fr"),
-      OperationTranslation(title = "first operation", language = "en")
+      OperationTranslation(title = "première operation", language = Language("fr")),
+      OperationTranslation(title = "first operation", language = Language("en"))
     ),
-    defaultLanguage = "fr",
+    defaultLanguage = Language("fr"),
     events = List(
       OperationAction(
         date = now,
@@ -145,7 +146,7 @@ class ModerationOperationApiTest
     updatedAt = Some(DateHelper.now()),
     countriesConfiguration = Seq(
       OperationCountryConfiguration(
-        countryCode = "BR",
+        countryCode = Country("BR"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id"),
         startDate = Some(LocalDate.parse("2018-02-02")),
@@ -159,10 +160,10 @@ class ModerationOperationApiTest
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
     translations = Seq(
-      OperationTranslation(title = "secondo operazione", language = "it"),
-      OperationTranslation(title = "second operation", language = "en")
+      OperationTranslation(title = "secondo operazione", language = Language("it")),
+      OperationTranslation(title = "second operation", language = Language("en"))
     ),
-    defaultLanguage = "it",
+    defaultLanguage = Language("it"),
     events = List(
       OperationAction(
         date = now,
@@ -175,7 +176,7 @@ class ModerationOperationApiTest
     updatedAt = Some(DateHelper.now()),
     countriesConfiguration = Seq(
       OperationCountryConfiguration(
-        countryCode = "IT",
+        countryCode = Country("IT"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("second-sequence-id"),
         startDate = Some(LocalDate.parse("2018-02-02")),
@@ -263,7 +264,7 @@ class ModerationOperationApiTest
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
   when(operationService.find(slug = Some("second-operation"), country = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = Some("IT"), openAt = None))
+  when(operationService.find(slug = None, country = Some(Country("IT")), openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
   when(operationService.find(slug = None, country = None, openAt = Some(LocalDate.parse("2018-02-02"))))
     .thenReturn(Future.successful(Seq(secondOperation)))
@@ -280,8 +281,8 @@ class ModerationOperationApiTest
           tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
           operationId = None,
           themeId = None,
-          country = "FR",
-          language = "fr"
+          country = Country("FR"),
+          language = Language("fr")
         )
       )
     )
@@ -315,11 +316,11 @@ class ModerationOperationApiTest
     operationService.create(
       userId = tyrion.userId,
       slug = "my-create-operation",
-      translations = Seq(OperationTranslation(title = "first create operation", language = "fr")),
-      defaultLanguage = "fr",
+      translations = Seq(OperationTranslation(title = "first create operation", language = Language("fr"))),
+      defaultLanguage = Language("fr"),
       countriesConfiguration = Seq(
         OperationCountryConfiguration(
-          countryCode = "FR",
+          countryCode = Country("FR"),
           tagIds = Seq(TagId("hello")),
           landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
           startDate = None,
@@ -336,12 +337,12 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("my-update-operation"),
-      translations = Some(Seq(OperationTranslation(title = "first update operation", language = "fr"))),
-      defaultLanguage = Some("fr"),
+      translations = Some(Seq(OperationTranslation(title = "first update operation", language = Language("fr")))),
+      defaultLanguage = Some(Language("fr")),
       countriesConfiguration = Some(
         Seq(
           OperationCountryConfiguration(
-            countryCode = "FR",
+            countryCode = Country("FR"),
             tagIds = Seq(TagId("hello")),
             landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
             startDate = Some(LocalDate.parse("2018-02-02")),
@@ -357,12 +358,12 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("existing-operation-slug-second"),
-      translations = Some(Seq(OperationTranslation(title = "first update operation", language = "fr"))),
-      defaultLanguage = Some("fr"),
+      translations = Some(Seq(OperationTranslation(title = "first update operation", language = Language("fr")))),
+      defaultLanguage = Some(Language("fr")),
       countriesConfiguration = Some(
         Seq(
           OperationCountryConfiguration(
-            countryCode = "FR",
+            countryCode = Country("FR"),
             tagIds = Seq(TagId("hello")),
             landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
             startDate = Some(LocalDate.parse("2018-02-02")),
@@ -419,11 +420,15 @@ class ModerationOperationApiTest
         val firstOperationResult: ModerationOperationResponse =
           moderationOperationListResponse.results.filter(_.operationId.value == "firstOperation").head
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.translations.filter(_.language == "fr").head.title should be("première operation")
-        firstOperationResult.translations.filter(_.language == "en").head.title should be("first operation")
-        firstOperationResult.defaultLanguage should be("fr")
+        firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
+          "première operation"
+        )
+        firstOperationResult.translations.filter(_.language == Language("en")).head.title should be("first operation")
+        firstOperationResult.defaultLanguage should be(Language("fr"))
         firstOperationResult.sequenceLandingId.value should be("first-sequence-id")
-        firstOperationResult.countriesConfiguration.filter(_.countryCode == "BR").head.tagIds should be(Seq.empty)
+        firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
+          Seq.empty
+        )
         firstOperationResult.events.length should be(1)
         firstOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
@@ -445,11 +450,15 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == "it").head.title should be("secondo operazione")
-        secondOperationResult.translations.filter(_.language == "en").head.title should be("second operation")
-        secondOperationResult.defaultLanguage should be("it")
+        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
+          "secondo operazione"
+        )
+        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
+        secondOperationResult.defaultLanguage should be(Language("it"))
         secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == "IT").head.tagIds should be(Seq.empty)
+        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
+          Seq.empty
+        )
         secondOperationResult.events.length should be(1)
         secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
@@ -471,11 +480,15 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == "it").head.title should be("secondo operazione")
-        secondOperationResult.translations.filter(_.language == "en").head.title should be("second operation")
-        secondOperationResult.defaultLanguage should be("it")
+        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
+          "secondo operazione"
+        )
+        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
+        secondOperationResult.defaultLanguage should be(Language("it"))
         secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == "IT").head.tagIds should be(Seq.empty)
+        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
+          Seq.empty
+        )
         secondOperationResult.events.length should be(1)
         secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
@@ -497,11 +510,15 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == "it").head.title should be("secondo operazione")
-        secondOperationResult.translations.filter(_.language == "en").head.title should be("second operation")
-        secondOperationResult.defaultLanguage should be("it")
+        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
+          "secondo operazione"
+        )
+        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
+        secondOperationResult.defaultLanguage should be(Language("it"))
         secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == "IT").head.tagIds should be(Seq.empty)
+        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
+          Seq.empty
+        )
         secondOperationResult.events.length should be(1)
         secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
@@ -554,11 +571,15 @@ class ModerationOperationApiTest
           entityAs[ModerationOperationResponse]
         firstOperationResult shouldBe a[ModerationOperationResponse]
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.translations.filter(_.language == "fr").head.title should be("première operation")
-        firstOperationResult.translations.filter(_.language == "en").head.title should be("first operation")
-        firstOperationResult.defaultLanguage should be("fr")
+        firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
+          "première operation"
+        )
+        firstOperationResult.translations.filter(_.language == Language("en")).head.title should be("first operation")
+        firstOperationResult.defaultLanguage should be(Language("fr"))
         firstOperationResult.sequenceLandingId.value should be("first-sequence-id")
-        firstOperationResult.countriesConfiguration.filter(_.countryCode == "BR").head.tagIds should be(Seq.empty)
+        firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
+          Seq.empty
+        )
         firstOperationResult.events.length should be(1)
         firstOperationResult.events.head.user.get shouldBe a[UserResponse]
       }

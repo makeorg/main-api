@@ -24,6 +24,7 @@ import java.util.concurrent.Executors
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
 import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{TagDisplay, TagTypeId}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -46,8 +47,8 @@ trait ImportTagsData extends Migration with StrictLogging {
             tagTypeId = TagTypeId(tagType),
             tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
             weight = weight.toFloat,
-            country = country,
-            language = language
+            country = Country(country),
+            language = Language(language)
           )
         )
       case _ => None
@@ -87,6 +88,6 @@ object ImportTagsData {
                           tagTypeId: TagTypeId,
                           tagDisplay: TagDisplay,
                           weight: Float,
-                          country: String,
-                          language: String)
+                          country: Country,
+                          language: Language)
 }

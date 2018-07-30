@@ -33,6 +33,7 @@ import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.Profile
+import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -76,8 +77,8 @@ case class UserRegisterData(email: String,
                             dateOfBirth: Option[LocalDate] = None,
                             profession: Option[String] = None,
                             postalCode: Option[String] = None,
-                            country: String,
-                            language: String)
+                            country: Country,
+                            language: Language)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -104,8 +105,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     private def registerUser(userRegisterData: UserRegisterData,
                              lowerCasedEmail: String,
-                             country: String,
-                             language: String,
+                             country: Country,
+                             language: Language,
                              profile: Option[Profile],
                              hashedVerificationToken: String): Future[User] = {
       val user = User(
@@ -213,8 +214,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                                      userInfo: UserInfo,
                                      clientIp: Option[String]): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(userInfo.country)
-      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
+      val country = BusinessConfig.validateCountry(Country(userInfo.country))
+      val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
       val profile: Option[Profile] =
         Profile.parseProfile(
@@ -256,8 +257,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
-      val country = BusinessConfig.validateCountry(userInfo.country)
-      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
+      val country = BusinessConfig.validateCountry(Country(userInfo.country))
+      val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
 
       val updatedProfile: Option[Profile] = user.profile.map {
         _.copy(

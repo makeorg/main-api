@@ -31,7 +31,7 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{Theme, ThemeId}
+import org.make.core.reference.{Country, Language, Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
 import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -73,7 +73,7 @@ class SequenceApiTest
           actionsCount = 0,
           proposalsCount = 0,
           votesCount = 0,
-          country = "FR",
+          country = Country("FR"),
           color = "#123123",
           gradient = None,
           tags = Seq.empty
@@ -90,7 +90,7 @@ class SequenceApiTest
           actionsCount = 0,
           proposalsCount = 0,
           votesCount = 0,
-          country = "FR",
+          country = Country("FR"),
           color = "#123123",
           gradient = None,
           tags = Seq.empty
@@ -109,8 +109,8 @@ class SequenceApiTest
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = None,
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   val validAccessToken = "my-valid-access-token"

@@ -27,7 +27,8 @@ import io.circe.generic.semiauto._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.question.QuestionId
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, StringValue, Timestamped}
@@ -45,8 +46,9 @@ final case class Proposal(proposalId: ProposalId,
                           tags: Seq[TagId] = Seq.empty,
                           votes: Seq[Vote],
                           organisations: Seq[OrganisationInfo] = Seq.empty,
-                          language: Option[String] = None,
-                          country: Option[String] = None,
+                          language: Option[Language] = None,
+                          country: Option[Country] = None,
+                          questionId: Option[QuestionId] = None,
                           creationContext: RequestContext,
                           similarProposals: Seq[ProposalId] = Seq.empty,
                           idea: Option[IdeaId] = None,
@@ -58,7 +60,7 @@ final case class Proposal(proposalId: ProposalId,
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat20(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat21(Proposal.apply)
 
 }
 

@@ -29,6 +29,7 @@ import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile}
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
@@ -62,6 +63,8 @@ class OperationServiceIT
     locale = Some("FR_FR")
   )
   val userId: UserId = UserId(UUID.randomUUID().toString)
+  private val languageFr: Language = Language("fr")
+
   val johnDoe = User(
     userId = userId,
     email = "doeOpeService@example.com",
@@ -77,8 +80,8 @@ class OperationServiceIT
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = languageFr,
     profile = Some(profile),
     lastMailingError = None
   )
@@ -93,8 +96,13 @@ class OperationServiceIT
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = languageFr
+  )
+
+  private val translations: scala.collection.Seq[OperationTranslation] = Seq(
+    OperationTranslation(title = "bonjour operation", language = languageFr),
+    OperationTranslation(title = "hello operation", language = Language("en"))
   )
 
   val simpleOperation = Operation(
@@ -103,13 +111,10 @@ class OperationServiceIT
     updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
-    translations = Seq(
-      OperationTranslation(title = "bonjour operation", language = "fr"),
-      OperationTranslation(title = "hello operation", language = "en")
-    ),
-    defaultLanguage = "fr",
+    translations = translations,
+    countriesConfiguration = Seq.empty,
     events = List.empty,
-    countriesConfiguration = Seq.empty
+    defaultLanguage = languageFr
   )
 
   feature("An operation can be created") {
@@ -143,11 +148,11 @@ class OperationServiceIT
           slug = Some("hello-updated-operation"),
           translations = Some(
             Seq(
-              OperationTranslation(title = "ola operation", language = "pt"),
-              OperationTranslation(title = "hello operation", language = "en")
+              OperationTranslation(title = "ola operation", language = Language("pt")),
+              OperationTranslation(title = "hello operation", language = Language("en"))
             )
           ),
-          defaultLanguage = Some("pt"),
+          defaultLanguage = Some(Language("pt")),
           userId = userId
         )
         operation <- operationService.findOne(operationId)

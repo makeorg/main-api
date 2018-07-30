@@ -73,20 +73,21 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = None,
     themeId = None,
-    country = "FR",
-    language = "fr"
+    country = Country("FR"),
+    language = Language("fr")
   )
   val winterIsComingTags: Seq[Tag] = Seq(newTag("Stark"), newTag("Targaryen"), newTag("Lannister"))
   val winterIsHereTags: Seq[Tag] = Seq(newTag("White walker"))
   val themesList = Seq(
     Theme(
       themeId = ThemeId("winterIsComingId"),
-      translations =
-        Seq(ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = "dk")),
+      translations = Seq(
+        ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = Language("dk"))
+      ),
       actionsCount = 7,
       proposalsCount = 42,
       votesCount = 0,
-      country = "WE",
+      country = Country("WE"),
       color = "#00FFFF",
       gradient = Some(GradientColor("#0FF", "#0F0")),
       tags = winterIsComingTags
@@ -94,11 +95,11 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
     Theme(
       themeId = ThemeId("winterIsHere"),
       translations =
-        Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = "dk")),
+        Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = Language("dk"))),
       actionsCount = 0,
       proposalsCount = 1000,
       votesCount = 0,
-      country = "WE",
+      country = Country("WE"),
       color = "#FFFFdd",
       gradient = Some(GradientColor("#FFC", "#FFF")),
       tags = winterIsHereTags

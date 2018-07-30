@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import org.make.core.profile.Profile
+import org.make.core.reference.{Country, Language}
 import org.make.core.{MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -89,8 +90,8 @@ case class User(userId: UserId,
                 resetToken: Option[String],
                 resetTokenExpiresAt: Option[ZonedDateTime],
                 roles: Seq[Role],
-                country: String,
-                language: String,
+                country: Country,
+                language: Language,
                 profile: Option[Profile],
                 override val createdAt: Option[ZonedDateTime] = None,
                 override val updatedAt: Option[ZonedDateTime] = None,

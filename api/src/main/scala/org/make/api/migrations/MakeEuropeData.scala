@@ -25,6 +25,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.FixtureDataLine
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{Role, User}
 import org.make.core.{DateHelper, RequestContext}
@@ -53,7 +54,7 @@ object MakeEuropeData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = MakeEuropeOperation.defaultLanguage,
+        country = MakeEuropeOperation.countryConfigurations.head.country,
         language = MakeEuropeOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())
@@ -105,8 +106,8 @@ object MakeEuropeData extends InsertFixtureData {
             operation = Some(operationId),
             tags = tags.split('|').toSeq.map(TagId.apply),
             labels = Seq.empty,
-            country = "GB",
-            language = "en"
+            country = Country("GB"),
+            language = Language("en")
           )
         )
       case _ => None

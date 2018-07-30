@@ -25,6 +25,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{social, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,8 +40,8 @@ trait SocialService {
 
   def login(provider: String,
             token: String,
-            country: String,
-            language: String,
+            country: Country,
+            language: Language,
             clientIp: Option[String],
             requestContext: RequestContext): Future[UserIdAndToken]
 }
@@ -64,8 +65,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       */
     def login(provider: String,
               token: String,
-              country: String,
-              language: String,
+              country: Country,
+              language: Language,
               clientIp: Option[String],
               requestContext: RequestContext): Future[UserIdAndToken] = {
 
@@ -78,8 +79,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               email = googleUserInfo.email,
               firstName = googleUserInfo.givenName,
               lastName = googleUserInfo.familyName,
-              country = country,
-              language = language,
+              country = country.value,
+              language = language.value,
               googleId = googleUserInfo.iat,
               picture = Option(googleUserInfo.picture),
               domain = googleUserInfo.hd
@@ -92,8 +93,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               email = facebookUserInfo.email,
               firstName = facebookUserInfo.firstName,
               lastName = facebookUserInfo.lastName,
-              country = country,
-              language = language,
+              country = country.value,
+              language = language.value,
               gender = facebookUserInfo.gender,
               facebookId = Some(facebookUserInfo.id),
               picture = Option(facebookUserInfo.picture)

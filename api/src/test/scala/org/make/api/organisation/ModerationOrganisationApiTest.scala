@@ -30,6 +30,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user._
 import org.make.core.auth.UserRights
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -68,8 +69,8 @@ class ModerationOrganisationApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 

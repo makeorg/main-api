@@ -32,6 +32,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.core
 import org.make.core.idea.indexed._
 import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
+import org.make.core.reference.{Country, Language}
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -80,8 +81,8 @@ class IdeaSearchEngineIT
       operationId = None,
       themeId = None,
       question = Some("question01"),
-      country = Some("FR"),
-      language = Some("fr"),
+      country = Some(Country("FR")),
+      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now())
@@ -92,8 +93,8 @@ class IdeaSearchEngineIT
       operationId = None,
       themeId = None,
       question = Some("question02"),
-      country = Some("FR"),
-      language = Some("fr"),
+      country = Some(Country("FR")),
+      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now())
@@ -104,8 +105,8 @@ class IdeaSearchEngineIT
       operationId = None,
       themeId = None,
       question = Some("question03"),
-      country = Some("FR"),
-      language = Some("fr"),
+      country = Some(Country("FR")),
+      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now())

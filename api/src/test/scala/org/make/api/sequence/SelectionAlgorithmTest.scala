@@ -27,6 +27,7 @@ import org.make.api.MakeUnitTest
 import org.make.api.proposal._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 import org.make.core.{proposal, DateHelper, RequestContext}
@@ -75,7 +76,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       createdAt = Some(createdAt),
       updatedAt = None,
       votes = votes.map {
-        case (key, amount) => Vote(key = key, count = amount, qualifications = Seq.empty)
+        case (k, amount) => Vote(key = k, count = amount, qualifications = Seq.empty)
       }.toSeq,
       labels = Seq.empty,
       theme = None,
@@ -84,8 +85,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       idea = idea,
       events = Nil,
       creationContext = RequestContext.empty,
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
   }
 
@@ -102,8 +103,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       createdAt = Some(createdAt),
       updatedAt = None,
       votes = votes.map {
-        case (key, (amount, qualifs)) =>
-          Vote(key = key, count = amount, qualifications = qualifs.map {
+        case (k, (amount, qualifs)) =>
+          Vote(key = k, count = amount, qualifications = qualifs.map {
             case (qualifKey, count) => Qualification(key = qualifKey, count = count)
           }.toSeq)
       }.toSeq,
@@ -114,8 +115,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       idea = idea,
       events = Nil,
       creationContext = RequestContext.empty,
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
   }
 

@@ -22,16 +22,17 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.core.reference.{Country, Language}
 
 object CultureOperation extends CreateOperation {
   override val operationSlug: String = "culture"
 
-  override val defaultLanguage: String = "fr"
+  override val defaultLanguage: Language = Language("fr")
 
   override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
     CountryConfiguration(
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       title = "Comment rendre la culture accessible à tous?",
       startDate = LocalDate.parse("2018-06-18"),
       endDate = Some(LocalDate.parse("2018-08-26")),

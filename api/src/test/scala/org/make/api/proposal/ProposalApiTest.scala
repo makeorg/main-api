@@ -79,8 +79,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleCitizen),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None,
@@ -102,8 +102,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleAdmin),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -124,8 +124,8 @@ class ProposalApiTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None,
     createdAt = None,
     updatedAt = None
@@ -187,8 +187,8 @@ class ProposalApiTest
         matches(validProposalText),
         any[Option[OperationId]],
         any[Option[ThemeId]],
-        any[Option[String]],
-        any[Option[String]]
+        any[Option[Language]],
+        any[Option[Country]]
       )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
@@ -249,8 +249,8 @@ class ProposalApiTest
             lastConnection = DateHelper.now(),
             roles = Seq.empty,
             None,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             isHardBounce = false,
             lastMailingError = None
           ),
@@ -271,8 +271,8 @@ class ProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          language = Some("fr"),
-          country = Some("FR")
+          language = Some(Language("fr")),
+          country = Some(Country("FR"))
         )
       )
     )
@@ -292,8 +292,8 @@ class ProposalApiTest
     labels = Seq.empty,
     author = Author(None, None, None, None, None),
     organisations = Seq.empty,
-    country = "TN",
-    language = "ar",
+    country = Country("TN"),
+    language = Language("ar"),
     themeId = None,
     tags = Seq.empty,
     myProposal = false,
@@ -322,8 +322,8 @@ class ProposalApiTest
         lastConnection = DateHelper.now(),
         roles = Seq.empty,
         None,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         isHardBounce = false,
         lastMailingError = None
       ),
@@ -344,8 +344,8 @@ class ProposalApiTest
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      language = Some("fr"),
-      country = Some("FR")
+      language = Some(Language("fr")),
+      country = Some(Country("FR"))
     )
   }
 
@@ -373,7 +373,7 @@ class ProposalApiTest
           operationId = OperationId("1234-1234"),
           slug = "my-operation",
           translations = Seq.empty,
-          defaultLanguage = "FR",
+          defaultLanguage = Language("FR"),
           events = List.empty,
           createdAt = None,
           updatedAt = None,

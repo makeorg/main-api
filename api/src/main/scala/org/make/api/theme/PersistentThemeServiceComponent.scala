@@ -47,7 +47,8 @@ trait PersistentThemeService {
 trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceComponent {
   this: MakeDBExecutionContextComponent with DefaultPersistentTagServiceComponent =>
 
-  override lazy val persistentThemeService = new PersistentThemeService with ShortenedNames with StrictLogging {
+  override lazy val persistentThemeService: PersistentThemeService = new PersistentThemeService with ShortenedNames
+  with StrictLogging {
 
     private val themeAlias = PersistentTheme.themeAlias
     private val themeTranslationAlias = PersistentThemeTranslation.themeTranslationAlias
@@ -91,7 +92,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
               column.uuid -> theme.themeId.value,
               column.actionsCount -> theme.actionsCount,
               column.proposalsCount -> theme.proposalsCount,
-              column.country -> theme.country,
+              column.country -> theme.country.value,
               column.color -> theme.color,
               column.gradientFrom -> theme.gradient.map(_.from),
               column.gradientTo -> theme.gradient.map(_.to),
@@ -114,7 +115,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
               themeTranslationcolumn.themeUuid -> theme.themeId.value,
               themeTranslationcolumn.slug -> translation.slug,
               themeTranslationcolumn.title -> translation.title,
-              themeTranslationcolumn.language -> translation.language
+              themeTranslationcolumn.language -> translation.language.value
             )
         }.execute().apply()
       }).map(_ => theme)
@@ -127,7 +128,10 @@ object DefaultPersistentThemeServiceComponent {
 
   val TAG_SEPARATOR = '|'
 
-  case class PersistentThemeTranslation(themeUuid: String, slug: String, title: String, language: String)
+  case class PersistentThemeTranslation(themeUuid: String, slug: String, title: String, language: String) {
+    def toThemeTranslation: ThemeTranslation =
+      ThemeTranslation(slug = slug, title = title, language = Language(language))
+  }
 
   case class PersistentTheme(uuid: String,
                              themeTranslations: Seq[PersistentThemeTranslation],
@@ -147,13 +151,11 @@ object DefaultPersistentThemeServiceComponent {
       val tags: Seq[Tag] = tagsIdsFromSlug.flatMap(tagId => allTags.find(_.tagId == tagId))
       Theme(
         themeId = ThemeId(uuid),
-        translations = themeTranslations.map(
-          trans => ThemeTranslation(slug = trans.slug, title = trans.title, language = trans.language)
-        ),
+        translations = themeTranslations.map(_.toThemeTranslation),
         actionsCount = actionsCount,
         proposalsCount = proposalsCount,
         votesCount = 0,
-        country = country,
+        country = Country(country),
         color = color,
         gradient = for {
           from <- gradientFrom

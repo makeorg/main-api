@@ -34,9 +34,10 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
+import org.make.core.reference.Country
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
-import org.make.core.{tag, HttpCodes, Validation}
+import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -55,7 +56,7 @@ import scala.concurrent.Future
   )
 )
 @Path(value = "/moderation/operations")
-trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLogging {
+trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: OperationServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -260,13 +261,11 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
   def moderationGetOperations: Route = {
     get {
       path("moderation" / "operations") {
-        parameters(('slug.?, 'country.?, 'openAt.?)) { (slug, country, openAt) =>
+        parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
           makeOperation("ModerationGetOperations") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsync(
-                  operationService.find(slug = slug, country = country, openAt = openAt.map(LocalDate.parse(_)))
-                ) { operations =>
+                provideAsync(operationService.find(slug = slug, country = country, openAt = openAt)) { operations =>
                   provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
                     users =>
                       val operationResponses: Seq[ModerationOperationResponse] =

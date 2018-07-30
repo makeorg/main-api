@@ -26,7 +26,7 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId, QualificationKey, VoteKey, _}
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 
@@ -42,8 +42,8 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 content: String,
                                 operation: Option[OperationId] = None,
                                 theme: Option[ThemeId] = None,
-                                language: Option[String],
-                                country: Option[String])
+                                language: Option[Language],
+                                country: Option[Country])
     extends ProposalCommand
 
 final case class UpdateProposalCommand(moderator: UserId,

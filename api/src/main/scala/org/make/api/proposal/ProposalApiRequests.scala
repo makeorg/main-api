@@ -28,7 +28,7 @@ import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -39,8 +39,8 @@ import scala.util.Random
 
 final case class ProposeProposalRequest(content: String,
                                         operationId: Option[OperationId],
-                                        language: Option[String],
-                                        country: Option[String]) {
+                                        language: Option[Language],
+                                        country: Option[Country]) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = FrontConfiguration.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
@@ -115,8 +115,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                slug: Option[String] = None,
                                seed: Option[Int] = None,
                                context: Option[ContextFilterRequest] = None,
-                               language: Option[String] = None,
-                               country: Option[String] = None,
+                               language: Option[Language] = None,
+                               country: Option[Country] = None,
                                @Deprecated sort: Option[SortRequest] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
@@ -178,8 +178,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
                                          status: Option[Seq[ProposalStatus]] = None,
-                                         language: Option[String] = None,
-                                         country: Option[String] = None,
+                                         language: Option[Language] = None,
+                                         country: Option[Country] = None,
                                          sort: Option[SortRequest] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {
@@ -238,8 +238,8 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       tags: Option[Seq[TagId]] = None,
                                       creationContext: Option[PatchRequestContext] = None,
                                       operation: Option[OperationId] = None,
-                                      language: Option[String] = None,
-                                      country: Option[String] = None)
+                                      language: Option[Language] = None,
+                                      country: Option[Country] = None)
 
 object PatchProposalRequest {
   implicit val decoder: Decoder[PatchProposalRequest] = deriveDecoder[PatchProposalRequest]
@@ -250,8 +250,8 @@ final case class PatchRequestContext(currentTheme: Option[ThemeId] = None,
                                      sessionId: Option[SessionId] = None,
                                      visitorId: Option[VisitorId] = None,
                                      externalId: Option[String] = None,
-                                     country: Option[String] = None,
-                                     language: Option[String] = None,
+                                     country: Option[Country] = None,
+                                     language: Option[Language] = None,
                                      operation: Option[OperationId] = None,
                                      source: Option[String] = None,
                                      location: Option[String] = None,
@@ -276,8 +276,8 @@ object PatchProposalsIdeaRequest {
 
 final case class NextProposalToModerateRequest(operationId: Option[OperationId],
                                                themeId: Option[ThemeId],
-                                               country: String,
-                                               language: String) {
+                                               country: Country,
+                                               language: Language) {
   validate(
     requirePresent("operationId", operationId.orElse(themeId), Some("Next proposal needs a theme or an operation")),
     mandatoryField("country", country, Some("country is mandatory")),

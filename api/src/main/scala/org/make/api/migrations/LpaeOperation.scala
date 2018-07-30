@@ -22,17 +22,18 @@ package org.make.api.migrations
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
 object LpaeOperation extends CreateOperation {
   override val operationSlug: String = "lpae"
 
-  override val defaultLanguage: String = "fr"
+  override val defaultLanguage: Language = Language("fr")
 
   override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
     CountryConfiguration(
-      country = "FR",
-      language = "fr",
+      country = Country("FR"),
+      language = Language("fr"),
       tags = Seq(
         TagId("lpae-prevention"),
         TagId("lpae-repression"),

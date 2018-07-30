@@ -30,6 +30,7 @@ import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Profile
 import org.make.core.proposal.{ProposalId, SearchQuery}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -83,8 +84,8 @@ class OrganisationServiceTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None))
   )
 
@@ -105,8 +106,8 @@ class OrganisationServiceTest
     resetToken = None,
     resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = "FR",
-    language = "fr",
+    country = Country("FR"),
+    language = Language("fr"),
     profile = None
   )
 
@@ -140,8 +141,8 @@ class OrganisationServiceTest
           email = "any@mail.com",
           password = Some("passopasso"),
           avatar = None,
-          country = "FR",
-          language = "fr"
+          country = Country("FR"),
+          language = Language("fr")
         ),
         RequestContext.empty
       )
@@ -169,8 +170,8 @@ class OrganisationServiceTest
           email = "any@mail.com",
           password = Some("passopasso"),
           avatar = None,
-          country = "FR",
-          language = "fr"
+          country = Country("FR"),
+          language = Language("fr")
         ),
         RequestContext.empty
       )

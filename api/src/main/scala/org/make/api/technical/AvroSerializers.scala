@@ -26,6 +26,7 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.make.api.technical.crm.MailJetError
 import org.make.core.proposal.{QualificationKey, VoteKey}
+import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceStatus
 
 trait AvroSerializers {
@@ -54,6 +55,22 @@ trait AvroSerializers {
   implicit object ZonedDateTimeFromValue extends FromValue[ZonedDateTime] {
     override def apply(value: Any, field: Field): ZonedDateTime =
       ZonedDateTime.parse(value.toString)
+  }
+
+  implicit object CountryToSchema extends ToSchema[Country] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object CountryToValue extends ToValue[Country] {
+    override def apply(value: Country): String = value.value
+  }
+
+  implicit object LanguageToSchema extends ToSchema[Language] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object LanguageToValue extends ToValue[Language] {
+    override def apply(value: Language): String = value.value
   }
 
   implicit object VoteKeyToSchema extends ToSchema[VoteKey] {
