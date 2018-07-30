@@ -35,7 +35,6 @@ import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Success
 
 trait OrganisationServiceComponent {
   def organisationService: OrganisationService
@@ -135,22 +134,19 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language)
       } yield user
 
-      result.onComplete {
-        case Success(user) =>
-          eventBusService.publish(
-            OrganisationRegisteredEvent(
-              connectedUserId = Some(user.userId),
-              userId = user.userId,
-              requestContext = requestContext,
-              email = user.email,
-              country = user.country,
-              language = user.language
-            )
+      result.map { user =>
+        eventBusService.publish(
+          OrganisationRegisteredEvent(
+            connectedUserId = Some(user.userId),
+            userId = user.userId,
+            requestContext = requestContext,
+            email = user.email,
+            country = user.country,
+            language = user.language
           )
-        case _ =>
+        )
+        user
       }
-
-      result
     }
 
     override def update(organisationId: UserId,

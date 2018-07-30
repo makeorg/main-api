@@ -40,7 +40,6 @@ import org.make.core.{DateHelper, RequestContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.Success
 
 trait UserServiceComponent {
   def userService: UserService
@@ -130,12 +129,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       )
 
       val futureUser: Future[User] = persistentUserService.persist(user)
-      futureUser.onComplete {
-        case Success(u) => eventBusService.publish(UserCreatedEvent(userId = Some(u.userId)))
-        case _          =>
+      futureUser.map { user =>
+        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
+        user
       }
-
-      futureUser
     }
 
     private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
@@ -173,29 +170,25 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         user                    <- registerUser(userRegisterData, lowerCasedEmail, country, language, profile, hashedVerificationToken)
       } yield user
 
-      result.onComplete {
-        case Success(user) =>
-          eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
-          eventBusService.publish(
-            UserRegisteredEvent(
-              connectedUserId = Some(user.userId),
-              userId = user.userId,
-              requestContext = requestContext,
-              email = user.email,
-              firstName = user.firstName,
-              lastName = user.lastName,
-              profession = user.profile.flatMap(_.profession),
-              dateOfBirth = user.profile.flatMap(_.dateOfBirth),
-              postalCode = user.profile.flatMap(_.postalCode),
-              country = user.country,
-              language = user.language,
-              isSocialLogin = false
-            )
+      result.map { user =>
+        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
+        eventBusService.publish(
+          UserRegisteredEvent(
+            connectedUserId = Some(user.userId),
+            userId = user.userId,
+            requestContext = requestContext,
+            email = user.email,
+            firstName = user.firstName,
+            lastName = user.lastName,
+            profession = user.profile.flatMap(_.profession),
+            dateOfBirth = user.profile.flatMap(_.dateOfBirth),
+            postalCode = user.profile.flatMap(_.postalCode),
+            country = user.country,
+            language = user.language
           )
-        case _ =>
+        )
+        user
       }
-
-      result
     }
 
     override def createOrUpdateUserFromSocial(userInfo: UserInfo,
@@ -358,12 +351,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean] = {
       val futureResult: Future[Boolean] = persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
-      futureResult.onComplete {
-        case Success(true) => UserUpdatedPasswordEvent(userId = Some(userId))
-        case _             =>
+      futureResult.map { result =>
+        if (result) {
+          eventBusService.publish(UserUpdatedPasswordEvent(userId = Some(userId)))
+        }
+        result
       }
-
-      futureResult
     }
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
@@ -372,8 +365,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {
       val futureResult: Future[Boolean] = persistentUserService.updateOptInNewsletter(userId, optInNewsletter)
-      futureResult.onComplete {
-        case Success(true) =>
+      futureResult.map { result =>
+        if (result) {
           eventBusService.publish(
             UserUpdatedOptInNewsletterEvent(
               userId = Some(userId),
@@ -381,26 +374,26 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               optInNewsletter = optInNewsletter
             )
           )
-        case _ =>
+        }
+        result
       }
-      futureResult
     }
 
     override def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean] = {
       val futureResult: Future[Boolean] = persistentUserService.updateIsHardBounce(userId, isHardBounce)
 
-      futureResult.onComplete {
-        case Success(true) if isHardBounce =>
+      futureResult.map { result =>
+        if (result && isHardBounce) {
           eventBusService.publish(UserUpdatedHardBounceEvent(userId = Some(userId)))
-        case _ =>
+        }
+        result
       }
-      futureResult
     }
 
     override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
       val futureResult = persistentUserService.updateOptInNewsletter(email, optInNewsletter)
-      futureResult.onComplete {
-        case Success(true) =>
+      futureResult.map { result =>
+        if (result) {
           eventBusService.publish(
             UserUpdatedOptInNewsletterEvent(
               email = Some(email),
@@ -408,20 +401,20 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               optInNewsletter = optInNewsletter
             )
           )
-        case _ =>
+        }
+        result
       }
-      futureResult
     }
 
     override def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean] = {
       val futureResult: Future[Boolean] = persistentUserService.updateIsHardBounce(email, isHardBounce)
 
-      futureResult.onComplete {
-        case Success(true) =>
+      futureResult.map { result =>
+        if (result) {
           eventBusService.publish(UserUpdatedHardBounceEvent(email = Some(email), eventDate = DateHelper.now()))
-        case _ =>
+        }
+        result
       }
-      futureResult
     }
 
     override def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
@@ -446,12 +439,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def update(user: User, requestContext: RequestContext): Future[User] = {
       val futureUser: Future[User] = persistentUserService.updateUser(user)
-      futureUser.onComplete {
-        case Success(value) => eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
-        case _             =>
+      futureUser.map { value =>
+        eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
+        value
       }
-
-      futureUser
     }
   }
 }
