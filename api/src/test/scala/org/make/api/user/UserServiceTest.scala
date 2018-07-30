@@ -57,6 +57,11 @@ class UserServiceTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val eventBusService: EventBusService = mock[EventBusService]
 
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    Mockito.clearInvocations(eventBusService)
+  }
+
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val fooProfile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),
@@ -658,6 +663,7 @@ class UserServiceTest
       Given("a user")
       When("I update fields")
       Then("fields are updated into user and UserUpdatedEvent is published")
+
       Mockito
         .when(persistentUserService.updateUser(ArgumentMatchers.eq(fooUser)))
         .thenReturn(Future.successful(fooUser))
@@ -666,8 +672,12 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         result shouldBe a[User]
+        val captor: ArgumentCaptor[UserUpdatedEvent] = ArgumentCaptor
+          .forClass(classOf[UserUpdatedEvent])
         verify(eventBusService, times(1))
-          .publish(UserUpdatedEvent(userId = Some(result.userId)))
+          .publish(captor.capture())
+
+        captor.getValue().userId should be(Some(result.userId))
       }
     }
   }
