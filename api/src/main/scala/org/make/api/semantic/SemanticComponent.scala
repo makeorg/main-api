@@ -33,7 +33,7 @@ import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.ActorSystemComponent
+import org.make.api.{semantic, ActorSystemComponent}
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.EventBusServiceComponent
 import org.make.core.idea.{Idea, IdeaId}
@@ -52,6 +52,12 @@ trait SemanticService {
   def indexProposal(indexedProposal: IndexedProposal): Future[Unit]
   def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit]
   def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]]
+}
+
+case class IndexProposalsWrapper(proposals: Seq[SemanticProposal])
+object IndexProposalsWrapper {
+  implicit val encoder: Encoder[IndexProposalsWrapper] = deriveEncoder[IndexProposalsWrapper]
+  implicit val decoder: Decoder[IndexProposalsWrapper] = deriveDecoder[IndexProposalsWrapper]
 }
 
 trait DefaultSemanticComponent extends SemanticComponent {
@@ -86,17 +92,18 @@ trait DefaultSemanticComponent extends SemanticComponent {
     }
 
     override def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit] = {
-      Marshal(indexedProposals.map(SemanticProposal.apply)).to[RequestEntity].flatMap { entities =>
-        logger.debug(s"Indexing in semantic API: {}", indexedProposals)
-        Http(actorSystem)
-          .singleRequest(
-            request = HttpRequest(
-              method = HttpMethods.POST,
-              uri = Uri(s"${semanticConfiguration.url}/similar/index-proposals"),
-              entity = entities
+      Marshal(semantic.IndexProposalsWrapper(indexedProposals.map(SemanticProposal.apply))).to[RequestEntity].flatMap {
+        entities =>
+          logger.debug(s"Indexing in semantic API: {}", indexedProposals)
+          Http(actorSystem)
+            .singleRequest(
+              request = HttpRequest(
+                method = HttpMethods.POST,
+                uri = Uri(s"${semanticConfiguration.url}/similar/index-proposals"),
+                entity = entities
+              )
             )
-          )
-          .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
+            .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
       }
     }
 
