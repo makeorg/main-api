@@ -291,7 +291,8 @@ class ModerationProposalApiTest
             country = Country("FR"),
             language = Language("fr"),
             isHardBounce = false,
-            lastMailingError = None
+            lastMailingError = None,
+            hasPassword = false
           ),
           labels = proposalSim123.labels,
           theme = None,
@@ -338,7 +339,8 @@ class ModerationProposalApiTest
             country = Country("FR"),
             language = Language("fr"),
             isHardBounce = false,
-            lastMailingError = None
+            lastMailingError = None,
+            hasPassword = false
           ),
           labels = proposalSim124.labels,
           theme = None,
@@ -417,7 +419,8 @@ class ModerationProposalApiTest
         country = Country("FR"),
         language = Language("fr"),
         isHardBounce = false,
-        lastMailingError = None
+        lastMailingError = None,
+        hasPassword = false
       ),
       labels = Seq(),
       theme = None,
