@@ -57,7 +57,10 @@ class CrmServiceComponentTest
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
-  override val readJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
+  override val proposalJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
+  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
+  override val userJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
+  override val sessionJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
@@ -185,7 +188,7 @@ class CrmServiceComponentTest
     )
   )
 
-  when(readJournal.currentEventsByPersistenceId(any[String], any[Long], any[Long]))
+  when(userJournal.currentEventsByPersistenceId(any[String], any[Long], any[Long]))
     .thenReturn(
       scaladsl.Source(
         List(registerCitizenEventEnvelope, userProposalEventEnvolope, userVoteEventEnvelope, userVoteEventEnvelope2)

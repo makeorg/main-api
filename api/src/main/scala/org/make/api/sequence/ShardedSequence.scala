@@ -41,6 +41,11 @@ object ShardedSequence {
     case cmd: SequenceCommand        => Math.abs(cmd.sequenceId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) => Math.abs(id.hashCode                   % 100).toString
   }
+
+  val readJournal: String = "make-api.event-sourcing.sequences.read-journal"
+  val snapshotStore: String = "make-api.event-sourcing.sequences.snapshot-store"
+  val queryJournal: String = "make-api.event-sourcing.sequences.query-journal"
+
 }
 
 class ShardedSequence(dateHelper: DateHelper) extends SequenceActor(dateHelper) {
@@ -48,6 +53,9 @@ class ShardedSequence(dateHelper: DateHelper) extends SequenceActor(dateHelper) 
   import ShardedSequence._
 
   context.setReceiveTimeout(20.minutes)
+
+  override def journalPluginId: String = ShardedSequence.readJournal
+  override def snapshotPluginId: String = ShardedSequence.snapshotStore
 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSequence)

@@ -22,7 +22,6 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import akka.Done
-import akka.stream.ActorMaterializer
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -31,7 +30,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
@@ -152,7 +151,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with ProposalSearchEngineComponent
     with SemanticComponent
     with EventBusServiceComponent
-    with ReadJournalComponent
     with ActorSystemComponent
     with UserServiceComponent
     with IdeaServiceComponent =>
@@ -184,29 +182,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-      readJournal
-        .currentPersistenceIds()
-        .map { id =>
-          proposalCoordinatorService.removeProposalFromCluster(ProposalId(id), proposalId)
-          Done
-        }
-        .runForeach { _ =>
-          {}
-        }
+      Future.successful(Done)
     }
 
     override def clearSimilarProposals(): Future[Done] = {
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-      readJournal
-        .currentPersistenceIds()
-        .map { id =>
-          proposalCoordinatorService.clearSimilarProposals(ProposalId(id))
-          Done
-        }
-        .runForeach { _ =>
-          {}
-        }
+      Future.successful(Done)
     }
 
     override def getProposalById(proposalId: ProposalId,

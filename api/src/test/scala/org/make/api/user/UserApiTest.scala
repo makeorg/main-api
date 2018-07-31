@@ -92,7 +92,10 @@ class UserApiTest
   when(idGenerator.nextId()).thenReturn("some-id")
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
-  override val readJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     userRoutes

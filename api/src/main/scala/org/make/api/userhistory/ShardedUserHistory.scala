@@ -31,6 +31,9 @@ class ShardedUserHistory extends UserHistoryActor with ActorLogging {
 
   context.setReceiveTimeout(20.minutes)
 
+  override def journalPluginId: String = ShardedUserHistory.readJournal
+  override def snapshotPluginId: String = ShardedUserHistory.snapshotStore
+
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopUserHistory)
     case StopUserHistory               => context.stop(self)
@@ -42,6 +45,10 @@ class ShardedUserHistory extends UserHistoryActor with ActorLogging {
 object ShardedUserHistory {
   val props: Props = Props[ShardedUserHistory]
   val shardName: String = "user-history"
+
+  val readJournal: String = "make-api.event-sourcing.users.read-journal"
+  val snapshotStore: String = "make-api.event-sourcing.users.snapshot-store"
+  val queryJournal: String = "make-api.event-sourcing.users.query-journal"
 
   case object StopUserHistory
 

@@ -58,6 +58,25 @@ object TestHelper {
        |  }
        |}
        |make-api {
+       |  event-sourcing {
+       |    proposals {
+       |      read-journal = $${inmemory-journal}
+       |      snapshot-store = $${inmemory-snapshot-store}
+       |    }
+       |    sequences {
+       |      read-journal = $${inmemory-journal}
+       |      snapshot-store = $${inmemory-snapshot-store}
+       |    }
+       |    sessions {
+       |      read-journal = $${inmemory-journal}
+       |      snapshot-store = $${inmemory-snapshot-store}
+       |    }
+       |    users {
+       |      read-journal = $${inmemory-journal}
+       |      snapshot-store = $${inmemory-snapshot-store}
+       |    }
+       |  }
+       |  
        |  kafka {
        |    connection-string = "nowhere:-1"
        |    schema-registry = "http://nowhere:-1"
@@ -67,7 +86,10 @@ object TestHelper {
   }
 
   def fullConfiguration: Config =
-    ConfigFactory.parseString(configuration).withFallback(ConfigFactory.load("default-application.conf"))
+    ConfigFactory
+      .parseString(configuration)
+      .withFallback(ConfigFactory.load("default-application.conf"))
+      .resolve()
 
   def defaultActorSystem(conf: Config = fullConfiguration): ActorSystem = {
     ActorSystem("test-system", conf)

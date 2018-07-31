@@ -362,7 +362,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def getPropertiesFromUser(user: User): Future[Map[String, String]] = {
 
       val events: Source[EventEnvelope, NotUsed] =
-        readJournal.currentEventsByPersistenceId(user.userId.value, 0, Long.MaxValue)
+        userJournal.currentEventsByPersistenceId(user.userId.value, 0, Long.MaxValue)
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
       val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm")
