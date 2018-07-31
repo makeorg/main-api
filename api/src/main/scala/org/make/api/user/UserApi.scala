@@ -48,7 +48,7 @@ import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedO
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.Validation.{mandatoryField, maxLength, validate, validateEmail, validateField}
+import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
@@ -525,7 +525,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOAuth2 { userAuth =>
           requireAdminRole(userAuth.user) {
             implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-            readJournal
+            userJournal
               .currentPersistenceIds()
               .runForeach(id => userHistoryCoordinatorService.reloadHistory(UserId(id)))
 

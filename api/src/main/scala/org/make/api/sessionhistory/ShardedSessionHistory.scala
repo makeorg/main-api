@@ -33,6 +33,9 @@ class ShardedSessionHistory(userHistoryCoordinator: ActorRef)
 
   context.setReceiveTimeout(20.minutes)
 
+  override def journalPluginId: String = ShardedSessionHistory.readJournal
+  override def snapshotPluginId: String = ShardedSessionHistory.snapshotStore
+
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSessionHistory)
     case StopSessionHistory            => context.stop(self)
@@ -42,6 +45,10 @@ class ShardedSessionHistory(userHistoryCoordinator: ActorRef)
 }
 
 object ShardedSessionHistory {
+  val readJournal: String = "make-api.event-sourcing.sessions.read-journal"
+  val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot-store"
+  val queryJournal: String = "make-api.event-sourcing.sessions.query-journal"
+
   def props(userHistoryCoordinator: ActorRef): Props = Props(new ShardedSessionHistory(userHistoryCoordinator))
   val shardName: String = "session-history"
 

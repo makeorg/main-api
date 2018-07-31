@@ -42,6 +42,10 @@ object ShardedProposal {
     case cmd: ProposalCommand        => Math.abs(cmd.proposalId.value.hashCode % 100).toString
     case ShardRegion.StartEntity(id) => Math.abs(id.hashCode                   % 100).toString
   }
+
+  val readJournal: String = "make-api.event-sourcing.proposals.read-journal"
+  val snapshotStore: String = "make-api.event-sourcing.proposals.snapshot-store"
+  val queryJournal: String = "make-api.event-sourcing.proposals.query-journal"
 }
 
 class ShardedProposal(sessionHistoryActor: ActorRef) extends ProposalActor(sessionHistoryActor = sessionHistoryActor) {
@@ -49,6 +53,9 @@ class ShardedProposal(sessionHistoryActor: ActorRef) extends ProposalActor(sessi
   import ShardedProposal._
 
   context.setReceiveTimeout(30.minutes)
+
+  override def journalPluginId: String = ShardedProposal.readJournal
+  override def snapshotPluginId: String = ShardedProposal.snapshotStore
 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout =>
