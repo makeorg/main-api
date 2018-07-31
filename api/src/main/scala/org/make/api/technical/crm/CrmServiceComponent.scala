@@ -505,6 +505,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                   accumulator.themes
                 }
               )
+
+            case _ => accumulator
           }
       }
 
