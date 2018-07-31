@@ -31,10 +31,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.persistence.query.EventEnvelope
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Printer
 import io.circe.syntax._
+import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.ReadJournalComponent
@@ -90,6 +91,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   lazy val queue: SourceQueueWithComplete[(HttpRequest, HttpRequest)] = Source
     .queue[(HttpRequest, HttpRequest)](bufferSize = bufferSize, OverflowStrategy.backpressure)
     .via(httpFlow)
+    .withAttributes(ActorAttributes.dispatcher(api.mailJetDispatcher))
     .toMat(Sink.foreach({
       case ((Success(r), request)) =>
         if (r.status.isSuccess()) {
