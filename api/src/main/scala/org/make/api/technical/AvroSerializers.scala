@@ -65,12 +65,20 @@ trait AvroSerializers {
     override def apply(value: Country): String = value.value
   }
 
+  implicit object CountryFromValue extends FromValue[Country] {
+    override def apply(value: Any, field: Field): Country = Country(value.toString)
+  }
+
   implicit object LanguageToSchema extends ToSchema[Language] {
     override val schema: Schema = Schema.create(Schema.Type.STRING)
   }
 
   implicit object LanguageToValue extends ToValue[Language] {
     override def apply(value: Language): String = value.value
+  }
+
+  implicit object LanguageFromValue extends FromValue[Language] {
+    override def apply(value: Any, field: Field): Language = Language(value.toString)
   }
 
   implicit object VoteKeyToSchema extends ToSchema[VoteKey] {
