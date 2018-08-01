@@ -33,6 +33,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
+
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
@@ -55,9 +56,9 @@ import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
-import org.make.core.{CirceFormatters, DateHelper, HttpCodes}
-import scalaoauth2.provider.AuthInfo
+import org.make.core.{CirceFormatters, DateHelper, HttpCodes, ValidationError}
 
+import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
@@ -688,7 +689,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                       complete(StatusCodes.OK)
                     }
                   case None =>
-                    complete(StatusCodes.BadRequest)
+                    complete(StatusCodes.BadRequest -> Seq(ValidationError("password", Some("Wrong password"))))
                 }
               }
             }
