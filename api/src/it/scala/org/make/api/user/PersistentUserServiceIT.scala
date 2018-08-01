@@ -785,6 +785,32 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
+  feature("find user by email and password") {
+
+    scenario("user with a hashed password") {
+      val jennaDooWithHashedPassword =
+        jennaDoo.copy(
+          userId = UserId("jenna-hashed-password"),
+          email = "jennaDoowithhasedpassword@example.com",
+          hashedPassword = jennaDoo.hashedPassword.map(_.bcrypt)
+        )
+      val futureUserWithPassword: Future[Option[User]] = for {
+        user <- persistentUserService.persist(jennaDooWithHashedPassword)
+        userResponse <- persistentUserService.findByUserIdAndPassword(
+          user.userId,
+          jennaDoo.hashedPassword.getOrElse("")
+        )
+      } yield userResponse
+
+      whenReady(futureUserWithPassword, Timeout(3.seconds)) { user =>
+        user shouldNot be(None)
+        user.flatMap(_.firstName) should be(jennaDooWithHashedPassword.firstName)
+        user.map(_.email) should be(Some(jennaDooWithHashedPassword.email))
+        user.flatMap(_.hashedPassword) should be(jennaDooWithHashedPassword.hashedPassword)
+      }
+    }
+  }
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     futureJohnMailing2 =

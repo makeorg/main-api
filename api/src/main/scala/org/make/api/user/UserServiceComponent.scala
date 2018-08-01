@@ -48,6 +48,7 @@ trait UserServiceComponent {
 trait UserService extends ShortenedNames {
   def getUser(id: UserId): Future[Option[User]]
   def getUserByEmail(email: String): Future[Option[User]]
+  def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
@@ -55,7 +56,7 @@ trait UserService extends ShortenedNames {
                                    clientIp: Option[String],
                                    requestContext: RequestContext): Future[User]
   def requestPasswordReset(userId: UserId): Future[Boolean]
-  def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean]
+  def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
   def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
   def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
@@ -96,6 +97,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getUserByEmail(email: String): Future[Option[User]] = {
       persistentUserService.findByEmail(email)
+    }
+
+    override def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]] = {
+      password.map { pass =>
+        persistentUserService.findByUserIdAndPassword(userId, pass)
+      }.getOrElse(getUser(userId))
     }
 
     override def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {
@@ -349,7 +356,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield result
     }
 
-    override def updatePassword(userId: UserId, resetToken: String, password: String): Future[Boolean] = {
+    override def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean] = {
       val futureResult: Future[Boolean] = persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
       futureResult.map { result =>
         if (result) {

@@ -676,7 +676,7 @@ class UserApiTest
       Mockito
         .when(
           userService
-            .updatePassword(notExpiredResetTokenUserId, validResetToken, "mynewpassword")
+            .updatePassword(notExpiredResetTokenUserId, Some(validResetToken), "mynewpassword")
         )
         .thenReturn(Future.successful(true))
 
@@ -983,6 +983,7 @@ class UserApiTest
       }
     }
   }
+
   feature("update a user") {
     scenario("authentificated with unauthorized user") {
 
@@ -1069,4 +1070,90 @@ class UserApiTest
     }
   }
 
+  feature("modify user password") {
+
+    val fakeRequest =
+      """
+        |{
+        | "actualPassword": "",
+        | "newPassword": "12345678"
+        |}
+      """.stripMargin
+
+    val sylvain: User =
+      fakeUser.copy(userId = UserId("sylvain-user-id"), email = "sylvain@example.com", firstName = Some("Sylvain"))
+    val vincent: User =
+      fakeUser.copy(userId = UserId("vincent-user-id"), email = "vincent@example.com", firstName = Some("Vincent"))
+
+    val token: String = "TOKEN_GET_USERS_PROPOSALS"
+    val accessToken: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo: AuthInfo[UserRights] =
+      AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+      .thenReturn(Future.successful(Some(sylvain)))
+
+    val token2: String = "TOKEN_GET_USERS_PROPOSALS_2"
+    val accessToken2: AccessToken =
+      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
+    val fakeAuthInfo2: AuthInfo[UserRights] =
+      AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
+    when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
+      .thenReturn(Future.successful(Some(vincent)))
+
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+      .thenReturn(Future.successful(Some(accessToken)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo)))
+    Mockito
+      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token2)))
+      .thenReturn(Future.successful(Some(accessToken2)))
+    Mockito
+      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
+      .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    scenario("unauthenticated user") {
+      Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, fakeRequest)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated but userId parameter is different than connected user id") {
+      Post("/user/vincent-user-id/change-password", HttpEntity(ContentTypes.`application/json`, fakeRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("social login user change password") {
+
+      val request =
+        """
+          |{
+          | "newPassword": "mynewpassword"
+          |}
+        """.stripMargin
+
+      Mockito
+        .when(
+          userService
+            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.same(None))
+        )
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Mockito
+        .when(
+          userService
+            .updatePassword(ArgumentMatchers.any[UserId], ArgumentMatchers.same(None), ArgumentMatchers.any[String])
+        )
+        .thenReturn(Future.successful(true))
+
+      Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
 }

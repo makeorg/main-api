@@ -389,7 +389,11 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                   } else {
                     onSuccess(
                       userService
-                        .updatePassword(userId = userId, resetToken = request.resetToken, password = request.password)
+                        .updatePassword(
+                          userId = userId,
+                          resetToken = Some(request.resetToken),
+                          password = request.password
+                        )
                     ) { _ =>
                       complete(StatusCodes.NoContent)
                     }
@@ -646,6 +650,54 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
       }
     }
 
+  @ApiOperation(
+    value = "change-password",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.ChangePasswordRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  @Path(value = "{userId}/change-password")
+  def changePassword: Route = post {
+    path("user" / userId / "change-password") { userId: UserId =>
+      makeOperation("ChangePassword") { _ =>
+        decodeRequest {
+          entity(as[ChangePasswordRequest]) { request: ChangePasswordRequest =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              val connectedUserId: UserId = userAuth.user.userId
+              if (connectedUserId != userId) {
+                complete(StatusCodes.Forbidden)
+              } else {
+                provideAsync(userService.getUserByUserIdAndPassword(userId, request.actualPassword)) {
+                  case Some(_) =>
+                    provideAsync(userService.updatePassword(userId, None, request.newPassword)) { _ =>
+                      complete(StatusCodes.OK)
+                    }
+                  case None =>
+                    complete(StatusCodes.BadRequest)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -659,7 +711,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     validateAccountRoute ~
     getVotedProposalsByUser ~
     getProposalsByUser ~
-    patchUser
+    patchUser ~
+    changePassword
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -760,6 +813,17 @@ final case class ResetPassword(resetToken: String, password: String) {
 
 object ResetPassword {
   implicit val decoder: Decoder[ResetPassword] = deriveDecoder[ResetPassword]
+}
+
+final case class ChangePasswordRequest(actualPassword: Option[String], newPassword: String) {
+  validate(
+    mandatoryField("newPassword", newPassword),
+    validateField("newPassword", Option(newPassword).exists(_.length >= 8), "Password must be at least 8 characters")
+  )
+}
+
+object ChangePasswordRequest {
+  implicit val decoder: Decoder[ChangePasswordRequest] = deriveDecoder[ChangePasswordRequest]
 }
 
 final case class SubscribeToNewsLetter(email: String) {
