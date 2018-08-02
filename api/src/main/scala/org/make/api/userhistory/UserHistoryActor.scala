@@ -54,8 +54,9 @@ class UserHistoryActor
         sender() ! SessionEventsInjected
       }
     case RequestVoteValues(_, values) => retrieveVoteValues(values)
-    case RequestUserVotedProposals(_) => retrieveUserVotedProposals()
-    case Snapshot                     => saveSnapshot()
+    case RequestUserVotedProposals(_, filterVotes, filterQualifications) =>
+      retrieveUserVotedProposals(filterVotes, filterQualifications)
+    case Snapshot => saveSnapshot()
     case command: TransactionalUserHistoryEvent[_] =>
       persistEvent(command) { _ =>
         sender() ! LogAcknowledged
@@ -165,8 +166,20 @@ class UserHistoryActor
       .getOrElse(Map.empty)
   }
 
-  private def retrieveUserVotedProposals(): Unit = {
-    sender() ! state.map(_.votesAndQualifications).getOrElse(Map.empty).keys.toSeq
+  private def retrieveUserVotedProposals(filterVotes: Option[Seq[VoteKey]],
+                                         filterQualifications: Option[Seq[QualificationKey]]): Unit = {
+    sender() ! state
+      .map(_.votesAndQualifications.filter {
+        case (_, votesAndQualifications) =>
+          (filterVotes.isEmpty || filterVotes.forall(_.contains(votesAndQualifications.voteKey))) &&
+            (filterQualifications.isEmpty || filterQualifications.exists { qualifications =>
+              votesAndQualifications.qualificationKeys.toSet
+                .subsetOf(qualifications.toSet) && votesAndQualifications.qualificationKeys.nonEmpty
+            })
+      })
+      .getOrElse(Map.empty)
+      .keys
+      .toSeq
   }
 
 }
@@ -187,7 +200,10 @@ object UserHistoryActor {
   }
 
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId]) extends UserRelatedEvent
-  final case class RequestUserVotedProposals(userId: UserId) extends UserRelatedEvent
+  final case class RequestUserVotedProposals(userId: UserId,
+                                             filterVotes: Option[Seq[VoteKey]] = None,
+                                             filterQualifications: Option[Seq[QualificationKey]] = None)
+      extends UserRelatedEvent
   final case class InjectSessionEvents(userId: UserId, events: Seq[UserHistoryEvent[_]]) extends UserRelatedEvent
 
   case class ReloadState(userId: UserId) extends UserRelatedEvent

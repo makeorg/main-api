@@ -466,7 +466,12 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Seq.empty))
 
       whenReady(
-        proposalService.searchProposalsVotedByUser(userId = paul.userId, requestContext = RequestContext.empty),
+        proposalService.searchProposalsVotedByUser(
+          userId = paul.userId,
+          filterVotes = None,
+          filterQualifications = None,
+          requestContext = RequestContext.empty
+        ),
         Timeout(3.seconds)
       ) { proposalResultResponse =>
         proposalResultResponse.total should be(0)
@@ -506,7 +511,12 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal1, gilProposal2))))
 
       whenReady(
-        proposalService.searchProposalsVotedByUser(userId = gil.userId, requestContext = RequestContext.empty),
+        proposalService.searchProposalsVotedByUser(
+          userId = gil.userId,
+          filterVotes = None,
+          filterQualifications = None,
+          requestContext = RequestContext.empty
+        ),
         Timeout(3.seconds)
       ) { proposalsResultResponse =>
         proposalsResultResponse.total should be(2)

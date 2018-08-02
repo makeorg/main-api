@@ -24,7 +24,7 @@ import java.time.LocalDate
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
 
@@ -85,6 +85,24 @@ trait ParameterExtractors {
       ProposalStatus.statusMap.getOrElse(
         string,
         throw ValidationFailedError(Seq(ValidationError("status", Some(s"$string is not a valid proposal status"))))
+      )
+    }
+
+  implicit val voteKeyFromStringUnmarshaller: Unmarshaller[String, VoteKey] =
+    Unmarshaller.strict[String, VoteKey] { string ⇒
+      VoteKey.voteKeys.getOrElse(
+        string,
+        throw ValidationFailedError(Seq(ValidationError("vote", Some(s"$string is not a valid vote key"))))
+      )
+    }
+
+  implicit val qualificationKeyFromStringUnmarshaller: Unmarshaller[String, QualificationKey] =
+    Unmarshaller.strict[String, QualificationKey] { string ⇒
+      QualificationKey.qualificationKeys.getOrElse(
+        string,
+        throw ValidationFailedError(
+          Seq(ValidationError("qualification", Some(s"$string is not a valid qualification key")))
+        )
       )
     }
 

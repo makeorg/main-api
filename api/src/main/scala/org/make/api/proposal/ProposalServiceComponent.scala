@@ -67,7 +67,10 @@ trait ProposalService {
                     query: SearchQuery,
                     requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 
-  def searchProposalsVotedByUser(userId: UserId, requestContext: RequestContext): Future[ProposalsResultResponse]
+  def searchProposalsVotedByUser(userId: UserId,
+                                 filterVotes: Option[Seq[VoteKey]],
+                                 filterQualifications: Option[Seq[QualificationKey]],
+                                 requestContext: RequestContext): Future[ProposalsResultResponse]
 
   def propose(user: User,
               requestContext: RequestContext,
@@ -158,9 +161,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
   override lazy val proposalService: ProposalService = new ProposalService {
 
     override def searchProposalsVotedByUser(userId: UserId,
+                                            filterVotes: Option[Seq[VoteKey]],
+                                            filterQualifications: Option[Seq[QualificationKey]],
                                             requestContext: RequestContext): Future[ProposalsResultResponse] = {
       val votedProposals: Future[Seq[ProposalId]] =
-        userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(userId = userId))
+        userHistoryCoordinatorService.retrieveVotedProposals(
+          RequestUserVotedProposals(userId = userId, filterVotes, filterQualifications)
+        )
+
       votedProposals.flatMap { proposalIds =>
         if (proposalIds.isEmpty) {
           Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, seed = None))

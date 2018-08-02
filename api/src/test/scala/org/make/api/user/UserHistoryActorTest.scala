@@ -33,12 +33,13 @@ import org.make.api.userhistory.UserHistoryActor.{
   RequestVoteValues,
   UserHistory
 }
-import org.make.api.userhistory._
+import org.make.api.userhistory.{LogUserVoteEvent, _}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.scalatest.GivenWhenThen
+import scala.concurrent.duration.DurationInt
 
 class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
 
@@ -464,5 +465,154 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       coordinator ! RequestUserVotedProposals(UserId("user-history-with-vote"))
       expectMsg(Seq(ProposalId("voted")))
     }
+  }
+
+  feature("retrieve filtered user voted proposals") {
+    Given("""5 proposals:
+            |  Proposal1: likeit|agree
+            |  Proposal2: likeit|disagree
+            |  Proposal3: noway|agree
+            |  Proposal4: noway|disagree
+            |  Proposal5: agree
+          """.stripMargin)
+    val proposal1 = ProposalId("agree-likeIt")
+    val proposal2 = ProposalId("disagree-likeIt")
+    val proposal3 = ProposalId("agree-noWay")
+    val proposal4 = ProposalId("disagree-noWay")
+    val proposal5 = ProposalId("agree")
+    val history = UserHistory(
+      List(
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal1, VoteKey.Agree))
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal1, QualificationKey.LikeIt)
+          )
+        ),
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal2, VoteKey.Disagree))
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal2, QualificationKey.LikeIt)
+          )
+        ),
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal3, VoteKey.Agree))
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal3, QualificationKey.NoWay)
+          )
+        ),
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal4, VoteKey.Disagree))
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal4, QualificationKey.NoWay)
+          )
+        ),
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal5, VoteKey.Agree))
+        )
+      )
+    )
+
+    scenario("no filters returns all proposals") {
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
+
+      expectMsg(Success(""))
+
+      coordinator ! RequestUserVotedProposals(UserId("1"), filterVotes = None, filterQualifications = None)
+      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      foundProposals.toSet == Set(proposal1, proposal2, proposal3, proposal4, proposal5) shouldBe true
+    }
+
+    scenario("filter on one vote") {
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
+
+      expectMsg(Success(""))
+
+      coordinator ! RequestUserVotedProposals(
+        UserId("1"),
+        filterVotes = Some(Seq(VoteKey.Agree)),
+        filterQualifications = None
+      )
+      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      foundProposals.toSet == Set(proposal1, proposal3, proposal5) shouldBe true
+    }
+
+    scenario("filter on one of the qualifications") {
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
+
+      expectMsg(Success(""))
+
+      coordinator ! RequestUserVotedProposals(
+        UserId("1"),
+        filterVotes = None,
+        filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
+      )
+      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      foundProposals.toSet.diff(Set(proposal1, proposal2, proposal3, proposal4)) shouldBe Set.empty
+    }
+
+    scenario("combine vote AND qualification filters") {
+      val encodedValue = serializer.toBinary(Snapshot(history))
+      storageExtension.snapshotStorage !
+        InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
+
+      expectMsg(Success(""))
+
+      coordinator ! RequestUserVotedProposals(
+        UserId("1"),
+        filterVotes = Some(Seq(VoteKey.Agree, VoteKey.Neutral)),
+        filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
+      )
+      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      foundProposals.toSet.diff(Set(proposal1, proposal3)) shouldBe Set.empty
+
+      coordinator ! RequestUserVotedProposals(
+        UserId("1"),
+        filterVotes = Some(Seq(VoteKey.Agree, VoteKey.Disagree)),
+        filterQualifications = Some(Seq(QualificationKey.NoWay))
+      )
+      val foundOtherProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      foundOtherProposals.toSet.diff(Set(proposal3, proposal4)) shouldBe Set.empty
+    }
+
   }
 }
