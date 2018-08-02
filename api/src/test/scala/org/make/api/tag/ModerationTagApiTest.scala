@@ -136,6 +136,7 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Option[Int]],
       ArgumentMatchers.eq(Some("label")),
       ArgumentMatchers.eq(Some("ASC")),
+      ArgumentMatchers.any[Boolean],
       ArgumentMatchers.any[TagFilter]
     )
   ).thenReturn(Future.successful(Seq(tag1, tag2)))

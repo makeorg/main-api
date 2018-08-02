@@ -26,7 +26,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.operation.OperationId
-import org.make.core.reference.ThemeId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, Validation, tag}
 
@@ -106,8 +106,8 @@ trait TagApi extends MakeAuthenticationDirectives {
                   tagFilter = TagFilter(
                     operationId = maybeOperationId.map(OperationId(_)),
                     themeId = maybeThemeId.map(ThemeId(_)),
-                    country = maybeCountry,
-                    language = maybeLanguage
+                    country = maybeCountry.map(Country(_)),
+                    language = maybeLanguage.map(Language(_))
                   )
                 )
               ) { tags =>

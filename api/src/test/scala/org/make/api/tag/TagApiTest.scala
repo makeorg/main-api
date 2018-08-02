@@ -119,10 +119,11 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
         ArgumentMatchers.eq(Some(2)),
         ArgumentMatchers.any[Option[String]],
         ArgumentMatchers.any[Option[String]],
+        ArgumentMatchers.eq(true),
         ArgumentMatchers.eq(TagFilter(
           operationId = Some(OperationId("foo")),
-          country = Some("FR"),
-          language = Some("fr")
+          country = Some(Country("FR")),
+          language = Some(Language("fr"))
         ))
       )).thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
