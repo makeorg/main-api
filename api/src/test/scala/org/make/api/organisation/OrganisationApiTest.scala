@@ -210,6 +210,8 @@ class OrganisationApiTest
         organisationService.getVotedProposals(
           ArgumentMatchers.any[UserId],
           ArgumentMatchers.any[Option[UserId]],
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
           ArgumentMatchers.any[RequestContext]
         )
       )

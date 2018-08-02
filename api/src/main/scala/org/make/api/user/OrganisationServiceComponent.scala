@@ -28,7 +28,7 @@ import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
 import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.profile.Profile
-import org.make.core.proposal.{ProposalSearchFilter, SearchFilters, SearchQuery}
+import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
@@ -47,6 +47,8 @@ trait OrganisationService extends ShortenedNames {
   def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
   def getVotedProposals(organisationId: UserId,
                         maybeUserId: Option[UserId],
+                        filterVotes: Option[Seq[VoteKey]],
+                        filterQualifications: Option[Seq[QualificationKey]],
                         requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 }
 
@@ -192,17 +194,27 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
     override def getVotedProposals(organisationId: UserId,
                                    maybeUserId: Option[UserId],
+                                   filterVotes: Option[Seq[VoteKey]],
+                                   filterQualifications: Option[Seq[QualificationKey]],
                                    requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
-      userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(organisationId)).flatMap {
-        case proposalIds if proposalIds.isEmpty =>
-          Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, None))
-        case proposalIds =>
-          proposalService.searchForUser(
-            userId = maybeUserId,
-            query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
-            requestContext = requestContext
+      userHistoryCoordinatorService
+        .retrieveVotedProposals(
+          RequestUserVotedProposals(
+            organisationId,
+            filterVotes = filterVotes,
+            filterQualifications = filterQualifications
           )
-      }
+        )
+        .flatMap {
+          case proposalIds if proposalIds.isEmpty =>
+            Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, None))
+          case proposalIds =>
+            proposalService.searchForUser(
+              userId = maybeUserId,
+              query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
+              requestContext = requestContext
+            )
+        }
     }
   }
 }
