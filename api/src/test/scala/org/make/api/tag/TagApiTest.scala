@@ -26,6 +26,7 @@ import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
@@ -77,8 +78,6 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
     .thenReturn(Future.successful(None))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagId))))
     .thenReturn(Future.successful(Some(newTag(helloWorldTagText, Some(helloWorldTagId)))))
-  when(tagService.findAll())
-    .thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
   val routes: Route = sealRoute(tagRoutes)
 
@@ -115,7 +114,19 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent {
       When("I get list tag")
       Then("I get a list of all tags")
 
-      Get("/tags") ~> routes ~> check {
+      when(tagService.find(
+        ArgumentMatchers.eq(0),
+        ArgumentMatchers.eq(Some(2)),
+        ArgumentMatchers.any[Option[String]],
+        ArgumentMatchers.any[Option[String]],
+        ArgumentMatchers.eq(TagFilter(
+          operationId = Some(OperationId("foo")),
+          country = Some("FR"),
+          language = Some("fr")
+        ))
+      )).thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
+
+      Get("/tags?start=0&end=2&operationId=foo&country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tags: Seq[Tag] = entityAs[Seq[Tag]]
         tags.size should be(2)

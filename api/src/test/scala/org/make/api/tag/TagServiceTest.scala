@@ -266,16 +266,16 @@ class TagServiceTest
       }
     }
 
-    scenario("search tags by label") {
+    scenario("find tags by label") {
       Given("a list of registered tags 'label tag1', 'label tag2'")
-      When("i search tags by label")
+      When("i find tags by label")
 
       Mockito.reset(persistentTagService)
       Mockito
         .when(persistentTagService.findByLabelLike(ArgumentMatchers.eq("label")))
         .thenReturn(Future.successful(Seq(newTag("label tag1"), newTag("label tag2"))))
 
-      val futureTags: Future[Seq[Tag]] = tagService.searchByLabel("label", like = true)
+      val futureTags: Future[Seq[Tag]] = tagService.findByLabel("label", like = true)
 
       whenReady(futureTags, Timeout(3.seconds)) { tags =>
         Then("i get tags 'label tag1' and 'label tag2'")

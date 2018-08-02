@@ -52,11 +52,11 @@ trait PersistentTagService {
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
-  def search(start: Int,
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
   def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
@@ -280,7 +280,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       result
     }
 
-    override def search(start: Int,
+    override def find(start: Int,
                         end: Option[Int],
                         sort: Option[String],
                         order: Option[String],

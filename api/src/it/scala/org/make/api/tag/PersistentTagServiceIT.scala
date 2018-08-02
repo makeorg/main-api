@@ -413,7 +413,7 @@ class PersistentTagServiceIT
       When("I search tags by label 'calliope'")
       val futureTagListResult: Future[Seq[Tag]] = for {
         _ <- persistedTags
-        results <- persistentTagService.search(
+        results <- persistentTagService.find(
           0,
           Some(10),
           None,
@@ -429,7 +429,7 @@ class PersistentTagServiceIT
       }
 
       When("I search tags by operation Id 'opefirst'")
-      val futureTagListResultOperation: Future[Seq[Tag]] = persistentTagService.search(
+      val futureTagListResultOperation: Future[Seq[Tag]] = persistentTagService.find(
         0,
         Some(10),
         None,
@@ -444,7 +444,7 @@ class PersistentTagServiceIT
       }
 
       When("I search tags by operation Id 'opesecond'")
-      val futureTagListResultOperationSecond: Future[Seq[Tag]] = persistentTagService.search(
+      val futureTagListResultOperationSecond: Future[Seq[Tag]] = persistentTagService.find(
         0,
         Some(10),
         None,
@@ -459,7 +459,7 @@ class PersistentTagServiceIT
       }
 
       When(s"I search tags by tag type '${tagTypeFirst.label}'")
-      val futureTagListResultTagTypeFirst: Future[Seq[Tag]] = persistentTagService.search(
+      val futureTagListResultTagTypeFirst: Future[Seq[Tag]] = persistentTagService.find(
         0,
         Some(10),
         None,
@@ -475,7 +475,7 @@ class PersistentTagServiceIT
 
       When(s"I search tags by theme '${themeIdFirst.value}'")
       val futureTagListResultThemeFirst: Future[Seq[Tag]] =
-        persistentTagService.search(
+        persistentTagService.find(
           0,
           Some(10),
           None,
@@ -528,7 +528,7 @@ class PersistentTagServiceIT
            |country = 'BR' and 
            |language = 'br' """.stripMargin)
       val futureTagListResultHera: Future[Seq[Tag]] =
-        persistentTagService.search(
+        persistentTagService.find(
           0,
           Some(10),
           None,
