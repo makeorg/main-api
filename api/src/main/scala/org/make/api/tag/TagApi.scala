@@ -102,6 +102,7 @@ trait TagApi extends MakeAuthenticationDirectives {
                 tagService.find(
                   start = start.getOrElse(0),
                   end = end,
+                  onlyDisplayed = true,
                   tagFilter = TagFilter(
                     operationId = maybeOperationId.map(OperationId(_)),
                     themeId = maybeThemeId.map(ThemeId(_)),

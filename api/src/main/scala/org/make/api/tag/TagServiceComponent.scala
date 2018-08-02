@@ -81,6 +81,7 @@ trait TagService extends ShortenedNames {
            end: Option[Int] = None,
            sort: Option[String] = None,
            order: Option[String] = None,
+           onlyDisplayed: Boolean = false,
            tagFilter: TagFilter = TagFilter.empty): Future[Seq[Tag]]
   def count(tagFilter: TagFilter = TagFilter.empty): Future[Int]
 }
@@ -237,6 +238,7 @@ trait DefaultTagServiceComponent
                       end: Option[Int] = None,
                       sort: Option[String] = None,
                       order: Option[String] = None,
+                      onlyDisplayed: Boolean = false,
                       tagFilter: TagFilter): Future[Seq[Tag]] = {
 
       persistentTagService.find(
@@ -244,6 +246,7 @@ trait DefaultTagServiceComponent
         end,
         sort,
         order,
+        onlyDisplayed,
         PersistentTagFilter(
           tagFilter.label,
           tagFilter.operationId,
