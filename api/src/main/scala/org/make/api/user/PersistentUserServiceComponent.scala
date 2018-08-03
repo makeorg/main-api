@@ -267,6 +267,7 @@ trait PersistentUserService {
   def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def anonymizeUser(user: User): Future[User]
 //TODO: Remove these two functions: findAllUsersWithFbIdNotNull & updateAvatarUrl
 //Warning: DO NOT USE THESE TWO FUNCTIONS: findAllUsersWithFbIdNotNull & updateAvatarUrl
   @Deprecated def findAllUsersWithFbIdNotNull(): Future[Seq[User]]
@@ -802,6 +803,61 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
         }.executeUpdate().apply() match {
           case 1 => true
           case _ => false
+        }
+      })
+    }
+
+    override def anonymizeUser(user: User): Future[User] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now(),
+              column.email -> user.email,
+              column.firstName -> user.firstName,
+              column.lastName -> user.lastName,
+              column.lastIp -> user.lastIp,
+              column.hashedPassword -> user.hashedPassword,
+              column.enabled -> user.enabled,
+              column.emailVerified -> user.emailVerified,
+              column.isOrganisation -> user.isOrganisation,
+              column.lastConnection -> user.lastConnection,
+              column.verificationToken -> user.verificationToken,
+              column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
+              column.resetToken -> user.resetToken,
+              column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
+              column.roles -> user.roles.map(_.shortName).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
+              column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
+              column.profession -> user.profile.flatMap(_.profession),
+              column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
+              column.twitterId -> user.profile.flatMap(_.twitterId),
+              column.facebookId -> user.profile.flatMap(_.facebookId),
+              column.googleId -> user.profile.flatMap(_.googleId),
+              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.genderName -> user.profile.flatMap(_.genderName),
+              column.postalCode -> user.profile.flatMap(_.postalCode),
+              column.country -> user.country.value,
+              column.language -> user.language.value,
+              column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
+              column.locale -> user.profile.flatMap(_.locale),
+              column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
+              column.optInNewsletter -> user.profile.forall(_.optInNewsletter),
+              column.isHardBounce -> user.isHardBounce,
+              column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
+              column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
+              column.organisationName -> user.organisationName
+            )
+            .where(
+              sqls
+                .eq(column.uuid, user.userId.value)
+            )
+        }.executeUpdate().apply() match {
+          case 1 => user
+          case _ =>
+            logger.error(s"Update of user '${user.userId.value}' failed - not found")
+            user
         }
       })
     }

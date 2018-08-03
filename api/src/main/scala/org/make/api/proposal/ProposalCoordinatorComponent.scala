@@ -73,6 +73,7 @@ trait ProposalCoordinatorService {
   def lock(command: LockProposalCommand): Future[Option[UserId]]
   def updateDuplicates(command: UpdateDuplicatedProposalsCommand): Unit
   def patch(command: PatchProposalCommand): Future[Option[Proposal]]
+  def anonymize(command: AnonymizeProposalCommand): Unit
 }
 
 trait ProposalCoordinatorServiceComponent {
@@ -236,6 +237,10 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def patch(command: PatchProposalCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command).mapTo[Option[Proposal]]
+    }
+
+    override def anonymize(command: AnonymizeProposalCommand): Unit = {
+      proposalCoordinator ! command
     }
   }
 }

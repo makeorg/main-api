@@ -23,7 +23,9 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.MakeUnitTest
+import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
 import org.make.api.technical.auth._
+import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.UserUpdateEvent.{
@@ -56,12 +58,16 @@ class UserServiceTest
     with UserTokenGeneratorComponent
     with UserHistoryCoordinatorServiceComponent
     with PersistentUserServiceComponent
+    with ProposalServiceComponent
+    with CrmServiceComponent
     with EventBusServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
+  override val proposalService: ProposalService = mock[ProposalService]
+  override val crmService: CrmService = mock[CrmService]
   override val eventBusService: EventBusService = mock[EventBusService]
 
   override protected def afterEach(): Unit = {

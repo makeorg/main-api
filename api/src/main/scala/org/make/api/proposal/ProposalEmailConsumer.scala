@@ -68,6 +68,7 @@ class ProposalEmailConsumer(userService: UserService,
       case event: ProposalPatched              => doNothing(event)
       case event: ProposalAddedToOperation     => doNothing(event)
       case event: ProposalRemovedFromOperation => doNothing(event)
+      case event: ProposalAnonymized           => doNothing(event)
     }
 
   }

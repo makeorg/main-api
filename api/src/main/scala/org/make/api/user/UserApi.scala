@@ -713,6 +713,34 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     }
   }
 
+  def deleteUser: Route = post {
+    path("user" / userId / "delete") { userId: UserId =>
+      makeOperation("deleteUser") { _ =>
+        decodeRequest {
+          entity(as[DeleteUserRequest]) { request: DeleteUserRequest =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              val connectedUserId: UserId = userAuth.user.userId
+              if (connectedUserId != userId) {
+                complete(StatusCodes.Forbidden)
+              } else {
+                provideAsync(userService.getUserByUserIdAndPassword(userId, request.password)) {
+                  case Some(user) =>
+                    provideAsync(userService.anonymize(user)) { _ =>
+                      provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
+                        complete(StatusCodes.OK)
+                      }
+                    }
+                  case None =>
+                    complete(StatusCodes.BadRequest -> Seq(ValidationError("password", Some("Wrong password"))))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -727,7 +755,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     getVotedProposalsByUser ~
     getProposalsByUser ~
     patchUser ~
-    changePassword
+    changePassword ~
+    deleteUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
@@ -839,6 +868,12 @@ final case class ChangePasswordRequest(actualPassword: Option[String], newPasswo
 
 object ChangePasswordRequest {
   implicit val decoder: Decoder[ChangePasswordRequest] = deriveDecoder[ChangePasswordRequest]
+}
+
+final case class DeleteUserRequest(password: Option[String])
+
+object DeleteUserRequest {
+  implicit val decoder: Decoder[DeleteUserRequest] = deriveDecoder[DeleteUserRequest]
 }
 
 final case class SubscribeToNewsLetter(email: String) {

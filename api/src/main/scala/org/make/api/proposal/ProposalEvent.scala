@@ -77,7 +77,7 @@ object PublishedProposalEvent {
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
       ProposalUpdated :+: ReindexProposal :+: ProposalVoted :+: ProposalUnvoted :+: ProposalQualified :+: ProposalUnqualified :+:
       SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+: ProposalAddedToOperation :+:
-      ProposalRemovedFromOperation :+: CNil
+      ProposalRemovedFromOperation :+: ProposalAnonymized :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -104,6 +104,7 @@ object PublishedProposalEvent {
       case e: ProposalPatched              => Coproduct[AnyProposalEvent](e)
       case e: ProposalAddedToOperation     => Coproduct[AnyProposalEvent](e)
       case e: ProposalRemovedFromOperation => Coproduct[AnyProposalEvent](e)
+      case e: ProposalAnonymized           => Coproduct[AnyProposalEvent](e)
     }
   }
 
@@ -125,6 +126,7 @@ object PublishedProposalEvent {
     implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
     implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
       at(identity)
+    implicit val atProposalAnonymized: Case.Aux[ProposalAnonymized, ProposalAnonymized] = at(identity)
   }
 
   final case class ProposalPatched(id: ProposalId,
@@ -432,6 +434,18 @@ object PublishedProposalEvent {
 
     implicit val formatter: RootJsonFormat[ProposalRemovedFromOperation] =
       DefaultJsonProtocol.jsonFormat5(ProposalRemovedFromOperation.apply)
+  }
+
+  final case class ProposalAnonymized(id: ProposalId,
+                                      eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                      requestContext: RequestContext = RequestContext.empty)
+      extends PublishedProposalEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  object ProposalAnonymized {
+    implicit val formatter: RootJsonFormat[ProposalAnonymized] =
+      DefaultJsonProtocol.jsonFormat3(ProposalAnonymized.apply)
   }
 
 }

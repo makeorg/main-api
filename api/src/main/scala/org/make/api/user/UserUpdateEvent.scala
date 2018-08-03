@@ -42,6 +42,7 @@ object UserUpdateEvent {
       UserUpdatedPasswordEvent :+:
       UserUpdatedTagEvent :+:
       UserUpdateValidatedEvent :+:
+      UserAnonymizedEvent :+:
       CNil
 
   final case class UserUpdateEventWrapper(version: Int,
@@ -61,6 +62,7 @@ object UserUpdateEvent {
         case e: UserUpdatedPasswordEvent        => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdatedOptInNewsletterEvent => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdateValidatedEvent        => Coproduct[AnyUserUpdateEvent](e)
+        case e: UserAnonymizedEvent             => Coproduct[AnyUserUpdateEvent](e)
       }
   }
 
@@ -78,6 +80,7 @@ object UserUpdateEvent {
     implicit val atUserUpdatedPasswordEvent: Case.Aux[UserUpdatedPasswordEvent, UserUpdatedPasswordEvent] = at(identity)
     implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
     implicit val atUserUpdateValidatedEvent: Case.Aux[UserUpdateValidatedEvent, UserUpdateValidatedEvent] = at(identity)
+    implicit val atUserDeletedEvent: Case.Aux[UserAnonymizedEvent, UserAnonymizedEvent] = at(identity)
   }
 
   case class UserCreatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
@@ -125,7 +128,14 @@ object UserUpdateEvent {
   final case class UserUpdatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
                                     override val userId: Option[UserId] = None,
                                     override val email: Option[String] = None)
-  extends UserUpdateEvent {
+      extends UserUpdateEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  final case class UserAnonymizedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+                                       override val userId: Option[UserId] = None,
+                                       override val email: Option[String] = None)
+      extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 }

@@ -149,3 +149,6 @@ final case class PatchProposalCommand(proposalId: ProposalId,
                                       changes: PatchProposalRequest,
                                       requestContext: RequestContext)
     extends ProposalCommand
+
+final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
+    extends ProposalCommand
