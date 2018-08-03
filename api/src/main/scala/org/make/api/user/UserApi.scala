@@ -605,9 +605,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                     case _                                 => false
                   }
 
-                  val profile: Option[Profile] = user.profile
-                  val updatedProfile: Option[Profile] = profile.map(
-                    _.copy(
+                  val profile: Profile = user.profile.getOrElse(Profile.empty)
+
+                  val updatedProfile: Profile= profile.copy(
                       dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
                       profession = request.profession.orElse(user.profile.flatMap(_.profession)),
                       postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
@@ -618,7 +618,6 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                         .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
                       genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
                     )
-                  )
 
                   onSuccess(
                     userService.update(
@@ -627,7 +626,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                         lastName = request.lastName.orElse(user.lastName),
                         country = request.country.getOrElse(user.country),
                         language = request.language.getOrElse(user.language),
-                        profile = updatedProfile
+                        profile = Some(updatedProfile)
                       ),
                       requestContext
                     )

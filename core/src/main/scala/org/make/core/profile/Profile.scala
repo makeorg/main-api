@@ -86,6 +86,21 @@ object Profile extends CirceFormatters {
     case _                                                                                     => false
   }
 
+  def empty: Profile = Profile(
+    dateOfBirth = None,
+    avatarUrl = None,
+    profession = None,
+    phoneNumber = None,
+    twitterId = None,
+    facebookId = None,
+    googleId = None,
+    gender = None,
+    genderName = None,
+    postalCode = None,
+    karmaLevel = None,
+    locale = None
+  )
+
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
                    avatarUrl: Option[String] = None,
                    profession: Option[String] = None,
