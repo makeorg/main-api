@@ -45,6 +45,7 @@ import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
+import org.make.core.profile.Profile
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
@@ -1061,7 +1062,7 @@ class UserApiTest
               lastName = Some("tom"),
               country = Country("IT"),
               language = Language("it"),
-              profile = fakeUser.profile.map(_.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02"))))
+              profile = Some(Profile.empty.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false))
             )
           ),
           any[RequestContext]
