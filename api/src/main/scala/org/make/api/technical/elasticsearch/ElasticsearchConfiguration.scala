@@ -22,13 +22,14 @@ package org.make.api.technical.elasticsearch
 import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 
-import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Extension
 import com.sksamuel.elastic4s.ElasticsearchClientUri
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.ConfigurationSupport
 import org.make.core.DateHelper
 
@@ -42,23 +43,23 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
     with ConfigurationSupport
     with StrictLogging {
 
-  val connectionString: String = configuration.getString("connection-string")
-  val indexName: String = configuration.getString("index-name")
-  val ideaAliasName: String = configuration.getString("idea-alias-name")
-  val proposalAliasName: String = configuration.getString("proposal-alias-name")
-  val sequenceAliasName: String = configuration.getString("sequence-alias-name")
-  val entityBufferSize: Int = configuration.getInt("buffer-size")
-  val entityBulkSize: Int = configuration.getInt("bulk-size")
+  lazy val connectionString: String = configuration.getString("connection-string")
+  lazy val indexName: String = configuration.getString("index-name")
+  lazy val ideaAliasName: String = configuration.getString("idea-alias-name")
+  lazy val proposalAliasName: String = configuration.getString("proposal-alias-name")
+  lazy val sequenceAliasName: String = configuration.getString("sequence-alias-name")
+  lazy val entityBufferSize: Int = configuration.getInt("buffer-size")
+  lazy val entityBulkSize: Int = configuration.getInt("bulk-size")
 
   // create index
-  val elasticsearchIdeaMapping: String =
+  lazy val elasticsearchIdeaMapping: String =
     Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
-  val elasticsearchProposalMapping: String =
+  lazy val elasticsearchProposalMapping: String =
     Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
-  val elasticsearchSequenceMapping: String =
+  lazy val elasticsearchSequenceMapping: String =
     Source.fromResource("elasticsearch-mappings/sequence.json")(Codec.UTF8).getLines().mkString("")
 
-  val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
+  lazy val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
 
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
@@ -129,23 +130,13 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
 }
 
-object ElasticsearchConfiguration extends ExtensionId[ElasticsearchConfiguration] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): ElasticsearchConfiguration =
-    new ElasticsearchConfiguration(system.settings.config.getConfig("make-api.elasticSearch"))
-
-  override def lookup(): ExtensionId[ElasticsearchConfiguration] =
-    ElasticsearchConfiguration
-
-  override def get(system: ActorSystem): ElasticsearchConfiguration =
-    super.get(system)
-}
-
-trait ElasticsearchConfigurationExtension extends ElasticsearchConfigurationComponent {
-  this: Actor =>
-  override val elasticsearchConfiguration: ElasticsearchConfiguration =
-    ElasticsearchConfiguration(context.system)
-}
-
 trait ElasticsearchConfigurationComponent {
   def elasticsearchConfiguration: ElasticsearchConfiguration
+}
+
+trait DefaultElasticsearchConfigurationComponent extends ElasticsearchConfigurationComponent {
+  this: ActorSystemComponent =>
+
+  override lazy val elasticsearchConfiguration: ElasticsearchConfiguration =
+    new ElasticsearchConfiguration(actorSystem.settings.config.getConfig("make-api.elasticSearch"))
 }

@@ -23,6 +23,7 @@ import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
+import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.userhistory.ShardedUserHistory.StopUserHistory
 
 import scala.concurrent.duration.DurationInt
@@ -57,8 +58,9 @@ object ShardedUserHistory {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
+    case StartShard(shardId)         => shardId
     case cmd: UserRelatedEvent       => Math.abs(cmd.userId.value.hashCode % 100).toString
-    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode               % 100).toString
+    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode % 100).toString
   }
 
 }

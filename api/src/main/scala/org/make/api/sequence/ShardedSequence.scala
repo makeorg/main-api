@@ -23,6 +23,7 @@ import akka.actor.{Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
+import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.core.DateHelper
 
 import scala.concurrent.duration.DurationInt
@@ -38,8 +39,9 @@ object ShardedSequence {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
+    case StartShard(shardId)         => shardId
     case cmd: SequenceCommand        => Math.abs(cmd.sequenceId.value.hashCode % 100).toString
-    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode                   % 100).toString
+    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode % 100).toString
   }
 
   val readJournal: String = "make-api.event-sourcing.sequences.read-journal"

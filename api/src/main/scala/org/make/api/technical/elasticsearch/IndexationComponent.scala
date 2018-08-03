@@ -22,9 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.Done
 import akka.stream._
 import akka.stream.scaladsl._
-import com.sksamuel.elastic4s.ElasticsearchClientUri
 import com.sksamuel.elastic4s.http.ElasticDsl.{aliases, _}
-import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.typesafe.scalalogging.StrictLogging
@@ -62,14 +60,14 @@ trait DefaultIndexationComponent
     with ProposalIndexationStream
     with SequenceIndexationStream
     with IdeaIndexationStream {
+
   this: ElasticsearchConfigurationComponent with StrictLogging with ActorSystemComponent with ReadJournalComponent =>
+
+  private lazy val client = elasticsearchConfiguration.client
 
   override lazy val indexationService: IndexationService = new IndexationService {
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
-    private val client = HttpClient(
-      ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
-    )
 
     override def reindexData(forceIdeas: Boolean = false,
                              forceProposals: Boolean = false,
@@ -146,7 +144,7 @@ trait DefaultIndexationComponent
         logger.error("indexes with alias is empty")
       }
 
-      elasticsearchConfiguration.client.executeAsFuture {
+      client.executeAsFuture {
         aliases(addAlias(aliasName).on(newIndexName), indexes.map { index =>
           removeAlias(aliasName).on(index)
         }: _*)
@@ -169,9 +167,7 @@ trait DefaultIndexationComponent
     }
 
     private def executeCreateIndex(aliasName: String, indexName: String): Future[CreateIndexResponse] = {
-      elasticsearchConfiguration.client.executeAsFuture(
-        createIndex(indexName).source(elasticsearchConfiguration.mappingForAlias(aliasName))
-      )
+      client.executeAsFuture(createIndex(indexName).source(elasticsearchConfiguration.mappingForAlias(aliasName)))
     }
 
     private def executeIndexProposal(proposalIndexName: String)(implicit mat: Materializer): Future[Done] = {

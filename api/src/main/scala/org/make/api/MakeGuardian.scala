@@ -20,6 +20,7 @@
 package org.make.api
 
 import akka.actor.{Actor, ActorLogging, Props}
+import org.make.api.MakeGuardian.{Ping, Pong}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.SemanticProducerActor
@@ -55,7 +56,10 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     )
 
     context.watch(
-      context.actorOf(SequenceSupervisor.props(userHistoryCoordinator, makeApi.themeService), SequenceSupervisor.name)
+      context.actorOf(
+        SequenceSupervisor.props(userHistoryCoordinator, makeApi.themeService, makeApi.elasticsearchConfiguration),
+        SequenceSupervisor.name
+      )
     )
     context.watch(
       context.actorOf(
@@ -115,7 +119,10 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
     context.watch {
       val (props, name) =
-        MakeBackoffSupervisor.propsAndName(IdeaConsumerActor.props(makeApi.ideaService), IdeaConsumerActor.name)
+        MakeBackoffSupervisor.propsAndName(
+          IdeaConsumerActor.props(makeApi.ideaService, makeApi.elasticsearchConfiguration),
+          IdeaConsumerActor.name
+        )
       context.actorOf(props, name)
     }
 
@@ -123,7 +130,8 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case x => log.info(s"received $x")
+    case Ping => sender() ! Pong
+    case x    => log.info(s"received $x")
   }
 }
 
@@ -131,4 +139,7 @@ object MakeGuardian {
   val name: String = "make-api"
   def props(makeApi: MakeApi): Props =
     Props(new MakeGuardian(makeApi))
+
+  case object Ping
+  case object Pong
 }

@@ -33,7 +33,7 @@ package object elasticsearch extends StrictLogging {
     def executeAsFuture[T, U](request: T)(implicit exec: HttpExecutable[T, U],
                                           executionContext: ExecutionContext = ExecutionContext.Implicits.global,
                                           show: Show[T]): Future[U] = {
-      logger.debug(self.show(request))
+      logger.debug(self.show(request).replace('\n', ' '))
       self.execute(request).flatMap {
         case Right(result) => Future.successful(result.result)
         case Left(errors)  => Future.failed(new ElasticException(errors.error, self.show(request)))

@@ -23,7 +23,7 @@ import akka.actor.{ActorRef, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
-import org.make.api.technical.MakePersistentActor.Snapshot
+import org.make.api.technical.MakePersistentActor.{Snapshot, StartShard}
 
 import scala.concurrent.duration.DurationInt
 
@@ -39,8 +39,9 @@ object ShardedProposal {
   }
 
   def extractShardId: ShardRegion.ExtractShardId = {
+    case StartShard(shardId)         => shardId
     case cmd: ProposalCommand        => Math.abs(cmd.proposalId.value.hashCode % 100).toString
-    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode                   % 100).toString
+    case ShardRegion.StartEntity(id) => Math.abs(id.hashCode % 100).toString
   }
 
   val readJournal: String = "make-api.event-sourcing.proposals.read-journal"
