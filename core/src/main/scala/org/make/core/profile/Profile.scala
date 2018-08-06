@@ -81,12 +81,7 @@ object Profile extends CirceFormatters {
   implicit val encoder: ObjectEncoder[Profile] = deriveEncoder[Profile]
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
 
-  def isEmpty(profile: Profile): Boolean = profile match {
-    case Profile(None, None, None, None, None, None, None, None, None, None, None, None, true) => true
-    case _                                                                                     => false
-  }
-
-  def empty: Profile = Profile(
+  def default: Profile = Profile(
     dateOfBirth = None,
     avatarUrl = None,
     profession = None,
@@ -130,10 +125,6 @@ object Profile extends CirceFormatters {
       locale = locale,
       optInNewsletter = optInNewsletter
     )
-    if (isEmpty(profile)) {
-      None
-    } else {
-      Some(profile)
-    }
+    Some(profile)
   }
 }
