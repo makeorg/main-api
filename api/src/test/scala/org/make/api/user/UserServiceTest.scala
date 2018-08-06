@@ -28,12 +28,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent.{
-  UserCreatedEvent,
-  UserUpdatedEvent,
-  UserUpdatedOptInNewsletterEvent,
-  UserUpdatedPasswordEvent
-}
+import org.make.api.user.UserUpdateEvent._
 import org.make.api.user.social.models.UserInfo
 import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
@@ -760,6 +755,28 @@ class UserServiceTest
             event.userId.contains(johnChangePassword.userId)
           })
         result shouldBe true
+      }
+    }
+  }
+
+  feature("anonymize user") {
+    scenario("anonymize user") {
+      Mockito
+        .when(persistentUserService.updateUser(ArgumentMatchers.any[User]))
+        .thenReturn(Future.successful(johnDoeUser))
+      Mockito.when(proposalService.anonymizeByUserId(ArgumentMatchers.any[UserId])).thenReturn(Future.successful({}))
+
+      Given("a user")
+      When("I anonymize this user")
+      val futureAnonymizeUser = userService.anonymize(johnDoeUser)
+
+      Then("an event is sent")
+      whenReady(futureAnonymizeUser, Timeout(3.seconds)) { _ =>
+        Mockito
+          .verify(eventBusService, Mockito.times(1))
+          .publish(ArgumentMatchers.argThat[UserAnonymizedEvent] { event =>
+            event.userId.contains(johnDoeUser.userId)
+          })
       }
     }
   }

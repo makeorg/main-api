@@ -719,8 +719,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
         decodeRequest {
           entity(as[DeleteUserRequest]) { request: DeleteUserRequest =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              val connectedUserId: UserId = userAuth.user.userId
-              if (connectedUserId != userId) {
+              if (userAuth.user.userId != userId) {
                 complete(StatusCodes.Forbidden)
               } else {
                 provideAsync(userService.getUserByUserIdAndPassword(userId, request.password)) {

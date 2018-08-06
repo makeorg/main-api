@@ -1525,4 +1525,32 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.language should be(Some(Language("en")))
     }
   }
+
+  feature("anonymize propsals") {
+    scenario("anonymize proposal") {
+      val proposalId = ProposalId("anonymized-context")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
+      )
+
+      expectMsg(proposalId)
+
+      coordinator ! AnonymizeProposalCommand(proposalId)
+
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+
+      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+
+      proposal.slug should be("delete-requested")
+      proposal.content should be("DELETE_REQUESTED")
+      proposal.status should be(Refused)
+      proposal.refusalReason should be(Some("other"))
+    }
+  }
 }

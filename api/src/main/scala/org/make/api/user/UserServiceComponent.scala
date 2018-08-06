@@ -477,10 +477,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         profile = Profile.parseProfile(optInNewsletter = false),
         isHardBounce = true,
         lastMailingError = None,
-        organisationName = None
+        organisationName = None,
+        createdAt = Some(DateHelper.now())
       )
       val futureDelete: Future[Unit] = for {
-        _ <- persistentUserService.anonymizeUser(anonymizedUser)
+        _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- proposalService.anonymizeByUserId(user.userId)
       } yield {}
       futureDelete.map { _ =>

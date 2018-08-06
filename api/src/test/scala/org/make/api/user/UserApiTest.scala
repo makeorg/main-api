@@ -124,6 +124,40 @@ class UserApiTest
 
   val expiresInSecond = 1000
 
+  val sylvain: User =
+    fakeUser.copy(userId = UserId("sylvain-user-id"), email = "sylvain@example.com", firstName = Some("Sylvain"))
+  val vincent: User =
+    fakeUser.copy(userId = UserId("vincent-user-id"), email = "vincent@example.com", firstName = Some("Vincent"))
+
+  val token: String = "TOKEN_GET_USERS_PROPOSALS"
+  val accessToken: AccessToken =
+    AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
+  val fakeAuthInfo: AuthInfo[UserRights] =
+    AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
+  when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+    .thenReturn(Future.successful(Some(sylvain)))
+
+  val token2: String = "TOKEN_GET_USERS_PROPOSALS_2"
+  val accessToken2: AccessToken =
+    AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
+  val fakeAuthInfo2: AuthInfo[UserRights] =
+    AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
+  when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
+    .thenReturn(Future.successful(Some(vincent)))
+
+  Mockito
+    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+    .thenReturn(Future.successful(Some(accessToken)))
+  Mockito
+    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+    .thenReturn(Future.successful(Some(fakeAuthInfo)))
+  Mockito
+    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token2)))
+    .thenReturn(Future.successful(Some(accessToken2)))
+  Mockito
+    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
+    .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
   feature("register user") {
     scenario("successful register user") {
       Mockito
@@ -887,27 +921,6 @@ class UserApiTest
 
   feature("get user proposals") {
 
-    val sylvain: User =
-      fakeUser.copy(userId = UserId("sylvain-user-id"), email = "sylvain@example.com", firstName = Some("Sylvain"))
-    val vincent: User =
-      fakeUser.copy(userId = UserId("vincent-user-id"), email = "vincent@example.com", firstName = Some("Vincent"))
-
-    val token: String = "TOKEN_GET_USERS_PROPOSALS"
-    val accessToken: AccessToken =
-      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
-    val fakeAuthInfo: AuthInfo[UserRights] =
-      AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
-    when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
-      .thenReturn(Future.successful(Some(sylvain)))
-
-    val token2: String = "TOKEN_GET_USERS_PROPOSALS_2"
-    val accessToken2: AccessToken =
-      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
-    val fakeAuthInfo2: AuthInfo[UserRights] =
-      AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
-    when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
-      .thenReturn(Future.successful(Some(vincent)))
-
     val indexedProposal = IndexedProposal(
       id = ProposalId("333333-3333-3333-3333-33333333"),
       country = Country("FR"),
@@ -1086,40 +1099,6 @@ class UserApiTest
         |}
       """.stripMargin
 
-    val sylvain: User =
-      fakeUser.copy(userId = UserId("sylvain-user-id"), email = "sylvain@example.com", firstName = Some("Sylvain"))
-    val vincent: User =
-      fakeUser.copy(userId = UserId("vincent-user-id"), email = "vincent@example.com", firstName = Some("Vincent"))
-
-    val token: String = "TOKEN_GET_USERS_PROPOSALS"
-    val accessToken: AccessToken =
-      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
-    val fakeAuthInfo: AuthInfo[UserRights] =
-      AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
-    when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
-      .thenReturn(Future.successful(Some(sylvain)))
-
-    val token2: String = "TOKEN_GET_USERS_PROPOSALS_2"
-    val accessToken2: AccessToken =
-      AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
-    val fakeAuthInfo2: AuthInfo[UserRights] =
-      AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
-    when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
-      .thenReturn(Future.successful(Some(vincent)))
-
-    Mockito
-      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
-      .thenReturn(Future.successful(Some(accessToken)))
-    Mockito
-      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
-      .thenReturn(Future.successful(Some(fakeAuthInfo)))
-    Mockito
-      .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token2)))
-      .thenReturn(Future.successful(Some(accessToken2)))
-    Mockito
-      .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
-      .thenReturn(Future.successful(Some(fakeAuthInfo2)))
-
     scenario("unauthenticated user") {
       Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, fakeRequest)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -1157,6 +1136,65 @@ class UserApiTest
         .thenReturn(Future.successful(true))
 
       Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("delete user") {
+
+    val fakeRequest =
+      """
+        | {
+        |   "password": "mypassword"
+        | }
+      """.stripMargin
+
+    scenario("unauthenticated user") {
+      Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authenticated but userId parameter is different than connected user id") {
+      Post("/user/vincent-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("wrong password") {
+      Mockito
+        .when(
+          userService
+            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.any[Option[String]])
+        )
+        .thenReturn(Future.successful(None))
+
+      Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("user request anonymization") {
+      Mockito
+        .when(
+          userService
+            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.any[Option[String]])
+        )
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Mockito
+        .when(userService.anonymize(ArgumentMatchers.any[User]))
+        .thenReturn(Future.successful({}))
+
+      Mockito
+        .when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(1))
+
+      Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }

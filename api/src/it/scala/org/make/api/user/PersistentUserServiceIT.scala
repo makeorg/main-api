@@ -24,6 +24,7 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
+import org.make.core.DateHelper
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -310,7 +311,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(profile)
+    profile = Some(profile),
+    createdAt = Some(DateHelper.now())
   )
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
