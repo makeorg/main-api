@@ -29,7 +29,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
+import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{OperationSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
@@ -39,13 +39,13 @@ import scala.collection.immutable
 
 @Api(value = "Widget")
 @Path(value = "/widget")
-trait WidgetApi extends MakeAuthenticationDirectives {
+trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
     with ProposalSearchEngineComponent =>
 
-  @Path(value = "/operations/{operationId}/sequence")
+  @Path(value = "/operations/{operationId}/start-sequence")
   @ApiOperation(value = "get-widget-sequence", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[WidgetSequence])))
   @ApiImplicitParams(value = Array(
@@ -54,10 +54,9 @@ trait WidgetApi extends MakeAuthenticationDirectives {
   ))
   def getWidgetSequence: Route = {
     get {
-      path("widget" / "operations" / widgetOperationId / "sequence") { widgetOperationId =>
+      path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
         makeOperation("GetWidgetSequence") { _ =>
-          parameters('tagsIds.as(CsvSeq[String]).?) { tagsIdsParams =>
-            val tagsIds: Option[immutable.Seq[TagId]] = tagsIdsParams.map(_.map(TagId.apply))
+          parameters('tagsIds.as[immutable.Seq[TagId]].?) { tagsIds =>
             provideAsync(
               elasticsearchProposalAPI.searchProposals(
                 SearchQuery(

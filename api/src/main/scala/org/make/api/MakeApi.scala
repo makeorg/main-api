@@ -257,7 +257,7 @@ trait MakeApi
       classOf[ModerationTagApi],
       classOf[ModerationOrganisationApi],
       classOf[OrganisationApi],
-      classOf[WidgetApi],
+      classOf[WidgetApi]
     )
 
   private lazy val optionsCors: Route = options {
