@@ -1062,7 +1062,8 @@ class UserApiTest
               lastName = Some("tom"),
               country = Country("IT"),
               language = Language("it"),
-              profile = Some(Profile.empty.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false))
+              profile =
+                Some(Profile.default.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false))
             )
           ),
           any[RequestContext]

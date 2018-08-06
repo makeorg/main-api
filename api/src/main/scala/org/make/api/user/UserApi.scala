@@ -605,19 +605,19 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
                     case _                                 => false
                   }
 
-                  val profile: Profile = user.profile.getOrElse(Profile.empty)
+                  val profile: Profile = user.profile.getOrElse(Profile.default)
 
-                  val updatedProfile: Profile= profile.copy(
-                      dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
-                      profession = request.profession.orElse(user.profile.flatMap(_.profession)),
-                      postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
-                      phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
-                      optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
-                      gender = Gender
-                        .matchGender(request.gender.getOrElse(""))
-                        .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
-                      genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
-                    )
+                  val updatedProfile: Profile = profile.copy(
+                    dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
+                    profession = request.profession.orElse(user.profile.flatMap(_.profession)),
+                    postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
+                    phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
+                    optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
+                    gender = Gender
+                      .matchGender(request.gender.getOrElse(""))
+                      .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
+                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                  )
 
                   onSuccess(
                     userService.update(
