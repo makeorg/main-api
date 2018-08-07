@@ -1079,8 +1079,67 @@ class UserApiTest
               lastName = Some("tom"),
               country = Country("IT"),
               language = Language("it"),
-              profile =
-                Some(Profile.default.copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false))
+              profile = Some(
+                Profile.default
+                  .copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false)
+              )
+            )
+          ),
+          any[RequestContext]
+        )
+      }
+    }
+
+    scenario("user remove age from the front") {
+      val token: String = "TOKEN"
+      val accessToken: AccessToken =
+        AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
+      val fakeAuthInfo: AuthInfo[UserRights] =
+        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen)), None, None, None)
+
+      when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
+
+      Mockito
+        .when(
+          userService
+            .update(any[User], any[RequestContext])
+        )
+        .thenReturn(Future.successful(fakeUser))
+      val request =
+        """
+          |{
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "dateOfBirth": "",
+          | "country": "IT",
+          | "language": "it"
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+
+      Mockito
+        .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
+        .thenReturn(Future.successful(Some(accessToken)))
+      Mockito
+        .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken)))
+        .thenReturn(Future.successful(Some(fakeAuthInfo)))
+
+      Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`Remote-Address`(RemoteAddress(addr)))
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+        verify(userService).update(
+          matches(
+            fakeUser.copy(
+              firstName = Some("olive"),
+              lastName = Some("tom"),
+              country = Country("IT"),
+              language = Language("it"),
+              profile = Some(
+                Profile.default
+                  .copy(dateOfBirth = None, optInNewsletter = false)
+              )
             )
           ),
           any[RequestContext]
