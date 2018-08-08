@@ -159,7 +159,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
 //      CultureData,
       CultureImportTagsData,
       HuffingPostOperations,
-      HuffingPostImportTagsData
+      HuffingPostImportTagsData,
+      HuffingPostProposals
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 

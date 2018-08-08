@@ -140,7 +140,7 @@ object HuffingPostOperations extends Migration {
                   )
                 )
             ).map { operationId =>
-              api.sequenceService.update(
+              retryableFuture(api.sequenceService.update(
                 sequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
                 moderatorId = moderatorId,
                 requestContext = emptyContext,
@@ -148,26 +148,7 @@ object HuffingPostOperations extends Migration {
                 status = Some(SequenceStatus.Published),
                 operationId = Some(operationId),
                 themeIds = Seq.empty
-              )
-
-              Future
-                .traverse(countryConfiguration.tags) { tag =>
-                  retryableFuture(api.tagService.getTag(tag).map { maybeFoundTag =>
-                    maybeFoundTag.map { foundTag =>
-                      api.tagService.updateTag(
-                        tagId = foundTag.tagId,
-                        label = foundTag.label,
-                        display = foundTag.display,
-                        tagTypeId = foundTag.tagTypeId,
-                        weight = foundTag.weight,
-                        operationId = Some(operationId),
-                        themeId = None,
-                        country = sequenceWithCountryLanguage.country,
-                        language = sequenceWithCountryLanguage.language
-                      )
-                    }
-                  })
-                }
+              ))
             }
           }
 

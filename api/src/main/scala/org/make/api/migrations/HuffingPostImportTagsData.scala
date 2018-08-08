@@ -67,7 +67,9 @@ object HuffingPostImportTagsData extends Migration {
                       )
                       .flatMap(_ => Future.successful {})
                   }
-                case _ => Future.successful {}
+                case _ => Future.successful {
+                  println(s"tag is emptty for operation $operationSlug")
+                }
               }
               Future.successful{}
             case None =>
