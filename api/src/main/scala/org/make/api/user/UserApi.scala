@@ -33,7 +33,6 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
-
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
@@ -52,20 +51,21 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
+import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
-import org.make.core.{CirceFormatters, DateHelper, HttpCodes, ValidationError}
-
+import org.make.core._
 import scalaoauth2.provider.AuthInfo
+
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
 @Api(value = "User")
 @Path(value = "/user")
-trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
+trait UserApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -199,7 +199,13 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @Path(value = "/{userId}/votes")
   @ApiOperation(value = "voted-proposals", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string")
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
   )
@@ -207,13 +213,22 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging {
     path("user" / userId / "votes") { userId: UserId =>
       makeOperation("UserVotedProposals") { requestContext =>
         makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          if (userAuth.user.userId != userId) {
-            complete(StatusCodes.Forbidden)
-          } else {
-            provideAsync(proposalService.searchProposalsVotedByUser(userId = userId, requestContext = requestContext)) {
-              proposalsSearchResult =>
-                complete(proposalsSearchResult)
-            }
+          parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
+            (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
+              if (userAuth.user.userId != userId) {
+                complete(StatusCodes.Forbidden)
+              } else {
+                provideAsync(
+                  proposalService.searchProposalsVotedByUser(
+                    userId = userId,
+                    filterVotes = votes,
+                    filterQualifications = qualifications,
+                    requestContext = requestContext
+                  )
+                ) { proposalsSearchResult =>
+                  complete(proposalsSearchResult)
+                }
+              }
           }
         }
       }

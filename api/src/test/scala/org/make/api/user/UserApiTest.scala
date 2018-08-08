@@ -835,6 +835,8 @@ class UserApiTest
         proposalService
           .searchProposalsVotedByUser(
             userId = ArgumentMatchers.eq(paul.userId),
+            filterVotes = ArgumentMatchers.eq(None),
+            filterQualifications = ArgumentMatchers.eq(None),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
@@ -844,6 +846,8 @@ class UserApiTest
         proposalService
           .searchProposalsVotedByUser(
             userId = ArgumentMatchers.eq(gaston.userId),
+            filterVotes = ArgumentMatchers.eq(None),
+            filterQualifications = ArgumentMatchers.eq(None),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
