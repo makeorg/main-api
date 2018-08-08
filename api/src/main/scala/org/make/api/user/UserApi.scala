@@ -644,6 +644,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                       user.copy(
                         firstName = request.firstName.orElse(user.firstName),
                         lastName = request.lastName.orElse(user.lastName),
+                        organisationName = request.organisationName.orElse(user.organisationName),
                         country = request.country.getOrElse(user.country),
                         language = request.language.getOrElse(user.language),
                         profile = Some(updatedProfile)
@@ -795,6 +796,7 @@ object RegisterUserRequest extends CirceFormatters {
 case class UpdateUserRequest(dateOfBirth: Option[String],
                              firstName: Option[String],
                              lastName: Option[String],
+                             organisationName: Option[String],
                              profession: Option[String],
                              postalCode: Option[String],
                              phoneNumber: Option[String],
@@ -807,7 +809,17 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
   private val maxCountryLength = 3
 
   if (firstName.nonEmpty) {
-    validate(mandatoryField("firstName", firstName))
+    validate(validateField("firstName", firstName.exists(_.nonEmpty), "firstName should not be an empty string"))
+  }
+
+  if (organisationName.nonEmpty) {
+    validate(
+      validateField(
+        "organisationName",
+        organisationName.exists(_.nonEmpty),
+        "organisationName should not be an empty string"
+      )
+    )
   }
 
   if (postalCode.nonEmpty) {
