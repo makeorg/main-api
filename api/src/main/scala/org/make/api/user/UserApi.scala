@@ -853,7 +853,6 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
       )
     )
   }
-
 }
 
 object UpdateUserRequest extends CirceFormatters {

@@ -19,25 +19,26 @@
 
 package org.make.api.technical.crm
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.userhistory._
-import org.make.core.RequestContext
+import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
-import org.mockito.Mockito.when
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -64,6 +65,7 @@ class CrmServiceComponentTest
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
+  val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
 
   val fooProfile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),
@@ -128,7 +130,7 @@ class CrmServiceComponentTest
     )
   )
 
-  val userProposalEventEnvolope = EventEnvelope(
+  val userProposalEventEnvelope = EventEnvelope(
     offset = Offset.noOffset,
     persistenceId = "bar-persistance-id",
     sequenceNr = Long.MaxValue,
@@ -188,10 +190,78 @@ class CrmServiceComponentTest
     )
   )
 
+  val userVoteEventEnvelope3 = EventEnvelope(
+    offset = Offset.noOffset,
+    persistenceId = "bar-persistance-id",
+    sequenceNr = Long.MaxValue,
+    event = LogUserVoteEvent(
+      userId = UserId("1"),
+      requestContext = RequestContext.empty.copy(
+        source = Some("culture"),
+        operationId = Some(OperationId("culture")),
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
+      ),
+      action = UserAction(
+        date = zonedDateTimeInThePastAt31daysBefore,
+        actionType = ProposalVoteAction.name,
+        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree)
+      )
+    )
+  )
+
+  val userVoteEventEnvelope4 = EventEnvelope(
+    offset = Offset.noOffset,
+    persistenceId = "bar-persistance-id",
+    sequenceNr = Long.MaxValue,
+    event = LogUserVoteEvent(
+      userId = UserId("1"),
+      requestContext = RequestContext.empty.copy(
+        source = Some("culture"),
+        operationId = Some(OperationId("culture")),
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
+      ),
+      action = UserAction(
+        date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
+        actionType = ProposalVoteAction.name,
+        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree)
+      )
+    )
+  )
+
+  val userVoteEventEnvelope5 = EventEnvelope(
+    offset = Offset.noOffset,
+    persistenceId = "bar-persistance-id",
+    sequenceNr = Long.MaxValue,
+    event = LogUserVoteEvent(
+      userId = UserId("1"),
+      requestContext = RequestContext.empty.copy(
+        source = Some("culture"),
+        operationId = Some(OperationId("culture")),
+        country = Some(Country("FR")),
+        language = Some(Language("fr"))
+      ),
+      action = UserAction(
+        date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
+        actionType = ProposalVoteAction.name,
+        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree)
+      )
+    )
+  )
+
   when(userJournal.currentEventsByPersistenceId(any[String], any[Long], any[Long]))
     .thenReturn(
       scaladsl.Source(
-        List(registerCitizenEventEnvelope, userProposalEventEnvolope, userVoteEventEnvelope, userVoteEventEnvelope2)
+        List(
+          registerCitizenEventEnvelope,
+          userProposalEventEnvelope,
+          userVoteEventEnvelope,
+          userVoteEventEnvelope2,
+          userVoteEventEnvelope3,
+          userVoteEventEnvelope4,
+          userVoteEventEnvelope5
+        )
       )
     )
 
@@ -204,30 +274,34 @@ class CrmServiceComponentTest
 
       val futureProperties = crmService.getPropertiesFromUser(fooUser)
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
-        maybeProperties.get("UserId") shouldBe Some("1")
-        maybeProperties.get("Firstname") shouldBe Some("Foo")
-        maybeProperties.get("Zipcode") shouldBe Some("93")
-        maybeProperties.get("Date_Of_Birth") shouldBe Some("2000-01-01")
-        maybeProperties.get("Email_Validation_Status") shouldBe Some("true")
-        maybeProperties.get("Email_Hardbounce_Status") shouldBe Some("false")
-        maybeProperties.get("Unsubscribe_Status") shouldBe Some("false")
-        maybeProperties.get("Account_Creation_Date") shouldBe Some("01/06/2017 - 12:30")
-        maybeProperties.get("Account_creation_source") shouldBe Some("core")
-        maybeProperties.get("Account_Creation_Operation") shouldBe Some("culture")
-        maybeProperties.get("Account_Creation_Country") shouldBe Some("FR")
-        maybeProperties.get("Countries_activity") shouldBe Some("FR,IT,GB")
-        maybeProperties.get("Last_country_activity") shouldBe Some("FR")
-        maybeProperties.get("Last_language_activity") shouldBe Some("fr")
-        maybeProperties.get("Total_Number_Proposals") shouldBe Some("1")
-        maybeProperties.get("Total_number_votes") shouldBe Some("2")
-        maybeProperties.get("First_Contribution_Date") shouldBe Some("01/06/2017 - 12:30")
-        maybeProperties.get("Last_Contribution_Date") shouldBe Some("01/06/2017 - 12:30")
-        maybeProperties.get("Operation_activity") shouldBe Some("culture,vff")
-        maybeProperties.get("Active_core") shouldBe Some("true")
-        maybeProperties.get("Days_of_Activity") shouldBe Some("1")
-        maybeProperties.get("Days_of_Activity_30d") shouldBe Some("0")
-        maybeProperties.get("Number_of_themes") shouldBe Some("1")
-        maybeProperties.get("User_type") shouldBe Some("B2C")
+        maybeProperties.userId shouldBe Some(UserId("1"))
+        maybeProperties.firstName shouldBe Some("Foo")
+        maybeProperties.postalCode shouldBe Some("93")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.emailValidationStatus shouldBe Some(true)
+        maybeProperties.emailHardBounceValue shouldBe Some(false)
+        maybeProperties.unsubscribeStatus shouldBe Some(false)
+        maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.accountCreationSource shouldBe Some("core")
+        maybeProperties.accountCreationOperation shouldBe Some("culture")
+        maybeProperties.accountCreationCountry shouldBe Some("FR")
+        maybeProperties.countriesActivity shouldBe Some("FR,IT,GB")
+        maybeProperties.lastCountryActivity shouldBe Some("FR")
+        maybeProperties.lastLanguageActivity shouldBe Some("fr")
+        maybeProperties.totalProposals shouldBe Some(1)
+        maybeProperties.totalVotes shouldBe Some(5)
+        maybeProperties.firstContributionDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.lastContributionDate shouldBe Some(
+          zonedDateTimeInThePastAt31daysBefore
+            .plusDays(2)
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC))
+        )
+        maybeProperties.operationActivity shouldBe Some("culture,vff")
+        maybeProperties.activeCore shouldBe Some(true)
+        maybeProperties.daysOfActivity shouldBe Some(3)
+        maybeProperties.daysOfActivity30 shouldBe Some(1)
+        maybeProperties.numberOfThemes shouldBe Some(1)
+        maybeProperties.userType shouldBe Some("B2C")
       }
     }
   }
