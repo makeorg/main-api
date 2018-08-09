@@ -623,10 +623,15 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                   val profile: Profile = user.profile.getOrElse(Profile.default)
 
                   val updatedProfile: Profile = profile.copy(
-                    dateOfBirth = request.dateOfBirth.orElse(user.profile.flatMap(_.dateOfBirth)),
-                    profession = request.profession.orElse(user.profile.flatMap(_.profession)),
-                    postalCode = request.postalCode.orElse(user.profile.flatMap(_.postalCode)),
-                    phoneNumber = request.phoneNumber.orElse(user.profile.flatMap(_.phoneNumber)),
+                    dateOfBirth = request.dateOfBirth match {
+                      case None     => user.profile.flatMap(_.dateOfBirth)
+                      case Some("") => None
+                      case date     => date.map(date => LocalDate.parse(date))
+                    },
+                    profession = UpdateUserRequest.updateValue(user.profile.flatMap(_.profession), request.profession),
+                    postalCode = UpdateUserRequest.updateValue(user.profile.flatMap(_.postalCode), request.postalCode),
+                    phoneNumber =
+                      UpdateUserRequest.updateValue(user.profile.flatMap(_.phoneNumber), request.phoneNumber),
                     optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
                     gender = Gender
                       .matchGender(request.gender.getOrElse(""))
@@ -787,7 +792,7 @@ object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
 }
 
-case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
+case class UpdateUserRequest(dateOfBirth: Option[String],
                              firstName: Option[String],
                              lastName: Option[String],
                              profession: Option[String],
@@ -831,6 +836,14 @@ case class UpdateUserRequest(dateOfBirth: Option[LocalDate],
 
 object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
+
+  def updateValue(oldValue: Option[String], newValue: Option[String]): Option[String] = {
+    newValue match {
+      case None     => oldValue
+      case Some("") => None
+      case value    => value
+    }
+  }
 }
 
 case class SocialLoginRequest(provider: String, token: String, country: Option[Country], language: Option[Language]) {
