@@ -80,7 +80,8 @@ class ProposalConsumerActor(sequenceService: SequenceService,
       case event: ProposalRemovedFromOperation =>
         removeFromOperation(event)
         onCreateOrUpdate(event)
-      case _: ProposalLocked => Future.successful {}
+      case _: ProposalLocked         => Future.successful {}
+      case event: ProposalAnonymized => onCreateOrUpdate(event)
       case event: SimilarProposalsAdded =>
         onSimilarProposalsUpdated(event.id, event.similarProposals.toSeq)
         Future.successful {}

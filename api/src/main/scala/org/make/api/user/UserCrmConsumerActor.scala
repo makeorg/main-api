@@ -55,6 +55,7 @@ class UserCrmConsumerActor(userService: UserService)
       case event: UserUpdateValidatedEvent        => handleUserUpdateValidatedEvent(event)
       case event: UserUpdatedPasswordEvent        => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
+      case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
     }
   }
 
@@ -98,6 +99,14 @@ class UserCrmConsumerActor(userService: UserService)
     getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
         eventBusService.publish(CrmContactUpdateProperties(id = user.userId, eventDate = DateHelper.now()))
+      }
+    }
+  }
+
+  def handleUserAnonymizedEvent(event: UserAnonymizedEvent): Future[Unit] = {
+    getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
+      maybeUser.foreach { user =>
+        eventBusService.publish(CrmContactRemoveFromLists(id = user.userId))
       }
     }
   }

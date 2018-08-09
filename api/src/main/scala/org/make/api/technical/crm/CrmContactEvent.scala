@@ -43,6 +43,7 @@ object PublishedCrmContactEvent {
       CrmContactHardBounce :+:
       CrmContactUnsubscribe :+:
       CrmContactSubscribe :+:
+      CrmContactRemoveFromLists :+:
       CrmContactListSync :+:
       CrmContactUpdateProperties :+:
       CNil
@@ -60,6 +61,7 @@ object PublishedCrmContactEvent {
       case e: CrmContactHardBounce       => Coproduct[AnyCrmContactEvent](e)
       case e: CrmContactUnsubscribe      => Coproduct[AnyCrmContactEvent](e)
       case e: CrmContactSubscribe        => Coproduct[AnyCrmContactEvent](e)
+      case e: CrmContactRemoveFromLists  => Coproduct[AnyCrmContactEvent](e)
       case e: CrmContactListSync         => Coproduct[AnyCrmContactEvent](e)
       case e: CrmContactUpdateProperties => Coproduct[AnyCrmContactEvent](e)
     }
@@ -70,6 +72,9 @@ object PublishedCrmContactEvent {
     implicit val atCrmContactHardBounce: Case.Aux[CrmContactHardBounce, CrmContactHardBounce] = at(identity)
     implicit val atCrmContactUnsubscribe: Case.Aux[CrmContactUnsubscribe, CrmContactUnsubscribe] = at(identity)
     implicit val atCrmContactSubscribe: Case.Aux[CrmContactSubscribe, CrmContactSubscribe] = at(identity)
+    implicit val atCrmContactRemoveFromLists: Case.Aux[CrmContactRemoveFromLists, CrmContactRemoveFromLists] = at(
+      identity
+    )
     implicit val atCrmContactListSync: Case.Aux[CrmContactListSync, CrmContactListSync] = at(identity)
     implicit val atCrmContactUpdateProperties: Case.Aux[CrmContactUpdateProperties, CrmContactUpdateProperties] = at(
       identity
@@ -119,6 +124,15 @@ object PublishedCrmContactEvent {
   object CrmContactSubscribe {
     implicit val formatter: RootJsonFormat[CrmContactSubscribe] =
       DefaultJsonProtocol.jsonFormat2(CrmContactSubscribe.apply)
+  }
+
+  final case class CrmContactRemoveFromLists(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+      extends PublishedCrmContactEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+  object CrmContactRemoveFromLists {
+    implicit val formatter: RootJsonFormat[CrmContactRemoveFromLists] =
+      DefaultJsonProtocol.jsonFormat2(CrmContactRemoveFromLists.apply)
   }
 
   final case class CrmContactListSync(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())

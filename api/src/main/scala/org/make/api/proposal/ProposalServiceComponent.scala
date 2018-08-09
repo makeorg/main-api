@@ -143,6 +143,8 @@ trait ProposalService {
                                       language: Language,
                                       moderator: UserId,
                                       requestContext: RequestContext): Future[Option[ProposalResponse]]
+
+  def anonymizeByUserId(userId: UserId): Future[Unit]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -723,6 +725,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           recursiveLock(results.results.map(_.id).toList)
         }
       }
+    }
+
+    override def anonymizeByUserId(userId: UserId): Future[Unit] = {
+      search(
+        None,
+        SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId))))),
+        RequestContext.empty
+      ).map(_.results.foreach { proposal =>
+        proposalCoordinatorService.anonymize(AnonymizeProposalCommand(proposal.id))
+      })
     }
 
   }

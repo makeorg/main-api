@@ -102,6 +102,9 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
     )
 
+  private val proposalAnonymizedSerializer: JsonPersister[ProposalAnonymized, V1] =
+    persister[ProposalAnonymized]("proposal-anonymized")
+
   private val proposalAddedToOperationSerializer: JsonPersister[ProposalAddedToOperation, V1] =
     persister[ProposalAddedToOperation]("proposal-added-to-operation")
 
@@ -126,6 +129,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       similarProposalRemovedSerializer,
       similarProposalsClearedSerializer,
       proposalPatchedSerializer,
+      proposalAnonymizedSerializer,
       proposalAddedToOperationSerializer,
       proposalRemovedFromOperationSerializer
     )

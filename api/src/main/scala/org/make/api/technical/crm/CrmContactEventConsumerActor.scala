@@ -58,6 +58,7 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       case event: CrmContactUnsubscribe      => handleUnsubscribeEvent(event)
       case event: CrmContactSubscribe        => handleSubscribeEvent(event)
       case event: CrmContactUpdateProperties => handleUpdatePropertiesEvent(event)
+      case event: CrmContactRemoveFromLists  => handleRemoveFromListsEvent(event)
       case _: CrmContactListSync             => handleContactListSyncEvent()
       case event                             => doNothing(event)
     }
@@ -124,6 +125,21 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
         for {
           _ <- removeFromUnsubscribe
           _ <- addToOptIn
+        } yield {}
+      }.getOrElse(Future.successful {}))
+  }
+
+  private def handleRemoveFromListsEvent(event: CrmContactRemoveFromLists): Future[Unit] = {
+    userService
+      .getUser(event.id)
+      .flatMap(_.map { user =>
+        val removeFromOptin: Future[Unit] = crmService.removeUserFromOptInList(user)
+        val removeFromUnsubscribe: Future[Unit] = crmService.removeUserFromUnsubscribeList(user)
+        val removeFromHardBounceList: Future[Unit] = crmService.removeUserFromHardBounceList(user)
+        for {
+          _ <- removeFromOptin
+          _ <- removeFromUnsubscribe
+          _ <- removeFromHardBounceList
         } yield {}
       }.getOrElse(Future.successful {}))
   }

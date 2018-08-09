@@ -23,8 +23,10 @@ import java.time.LocalDate
 
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.businessconfig.BusinessConfig
+import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.UserUpdateEvent._
@@ -34,6 +36,7 @@ import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
+import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 
@@ -67,6 +70,7 @@ trait UserService extends ShortenedNames {
   def getUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def getOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def anonymize(user: User): Future[Unit]
 }
 
 case class UserRegisterData(email: String,
@@ -84,6 +88,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
   this: IdGeneratorComponent
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
+    with ProposalServiceComponent
+    with CrmServiceComponent
     with EventBusServiceComponent =>
 
   val userService: UserService = new UserService {
@@ -449,6 +455,37 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       futureUser.map { value =>
         eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
         value
+      }
+    }
+
+    override def anonymize(user: User): Future[Unit] = {
+      val anonymizedUser: User = user.copy(
+        email = s"yopmail+${user.userId.value}@make.org",
+        firstName = Some("DELETE_REQUESTED"),
+        lastName = Some("DELETE_REQUESTED"),
+        lastIp = None,
+        hashedPassword = None,
+        enabled = false,
+        emailVerified = false,
+        isOrganisation = false,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq(RoleCitizen),
+        profile = Profile.parseProfile(optInNewsletter = false),
+        isHardBounce = true,
+        lastMailingError = None,
+        organisationName = None,
+        createdAt = Some(DateHelper.now())
+      )
+      val futureDelete: Future[Unit] = for {
+        _ <- persistentUserService.updateUser(anonymizedUser)
+        _ <- proposalService.anonymizeByUserId(user.userId)
+      } yield {}
+      futureDelete.map { _ =>
+        eventBusService.publish(UserAnonymizedEvent(userId = Some(user.userId)))
       }
     }
   }

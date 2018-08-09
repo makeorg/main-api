@@ -80,6 +80,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
     case command: ReplaceProposalCommand           => onReplaceProposalCommand(command)
     case command: PatchProposalCommand             => onPatchProposalCommand(command)
+    case command: AnonymizeProposalCommand         => onAnonymizeProposalCommand(command)
     case Snapshot                                  => saveSnapshot()
     case _: KillProposalShard                      => self ! PoisonPill
   }
@@ -785,6 +786,12 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     }.getOrElse(Right(None))
   }
 
+  def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): Unit = {
+    persistAndPublishEvent(PublishedProposalEvent.ProposalAnonymized(command.proposalId)) { _ =>
+      ()
+    }
+  }
+
   override def persistenceId: String = proposalId.value
 
   override val applyEvent: PartialFunction[ProposalEvent, Option[ProposalState]] = {
@@ -865,6 +872,19 @@ class ProposalActor(sessionHistoryActor: ActorRef)
 
     case e: ProposalPatched =>
       state.map(_.copy(proposal = e.proposal))
+    case _: ProposalAnonymized =>
+      state.map(
+        state =>
+          state.copy(
+            proposal = state.proposal
+              .copy(
+                content = "DELETE_REQUESTED",
+                slug = "delete-requested",
+                refusalReason = Some("other"),
+                status = Refused
+              )
+        )
+      )
     case _ => state
   }
 
