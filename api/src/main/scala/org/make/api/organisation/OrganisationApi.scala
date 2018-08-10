@@ -28,17 +28,18 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededRes
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{OrganisationServiceComponent, UserResponse}
-import org.make.core.HttpCodes
+import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
+import scala.collection.immutable
 import scala.util.Try
 
 @Api(value = "Organisations")
 @Path(value = "/organisations")
-trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
+trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: OrganisationServiceComponent
     with ProposalServiceComponent
     with IdGeneratorComponent
@@ -94,7 +95,11 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
 
   @ApiOperation(value = "get-organisation-votes", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
+    value = Array(
+      new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string")
+    )
   )
   @ApiResponses(
     value =
@@ -107,10 +112,19 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("GetOrganisationVotes") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              onSuccess(
-                organisationService.getVotedProposals(organisationId, userAuth.map(_.user.userId), requestContext)
-              ) { proposals =>
-                complete(proposals)
+              parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
+                (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
+                  onSuccess(
+                    organisationService.getVotedProposals(
+                      organisationId = organisationId,
+                      maybeUserId = userAuth.map(_.user.userId),
+                      filterVotes = votes,
+                      filterQualifications = qualifications,
+                      requestContext = requestContext
+                    )
+                  ) { proposals =>
+                    complete(proposals)
+                  }
               }
             }
           }

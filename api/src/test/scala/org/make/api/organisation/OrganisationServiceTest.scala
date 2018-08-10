@@ -280,7 +280,7 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, Seq.empty, None)))
 
       val futureProposalsVoted =
-        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, RequestContext.empty)
+        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
 
       whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
         proposalsList.total shouldBe 2
@@ -293,7 +293,7 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(Seq.empty))
 
       val futureProposalsVoted =
-        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, RequestContext.empty)
+        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
 
       whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
         proposalsList.total shouldBe 0
