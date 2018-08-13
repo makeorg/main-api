@@ -95,6 +95,14 @@ object HuffingPostOperations extends Migration {
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
       tags = Seq.empty
+    ),
+    "education-huffpost" -> CountryConfiguration(
+      country = Country("FR"),
+      language = Language("fr"),
+      title = "Éducation",
+      startDate = LocalDate.parse("2018-08-06"),
+      endDate = Some(LocalDate.parse("2020-08-06")),
+      tags = Seq.empty
     )
   )
 
@@ -104,7 +112,8 @@ object HuffingPostOperations extends Migration {
     "international-huffpost" -> "fixtures/huffingpost/tags_international.csv",
     "culture-huffpost" -> "fixtures/huffingpost/tags_culture.csv",
     "ecologie-huffpost" -> "fixtures/huffingpost/tags_ecologie.csv",
-    "societe-huffpost" -> "fixtures/huffingpost/tags_societe.csv"
+    "societe-huffpost" -> "fixtures/huffingpost/tags_societe.csv",
+    "education-huffpost" -> "fixtures/huffingpost/tags_education.csv"
   )
 
   val operationsProposalsSource: Map[String, String] = Map(
@@ -113,7 +122,8 @@ object HuffingPostOperations extends Migration {
     "international-huffpost" -> "fixtures/huffingpost/proposals_international.csv",
     "culture-huffpost" -> "fixtures/huffingpost/proposals_culture.csv",
     "ecologie-huffpost" -> "fixtures/huffingpost/proposals_ecologie.csv",
-    "societe-huffpost" -> "fixtures/huffingpost/proposals_societe.csv"
+    "societe-huffpost" -> "fixtures/huffingpost/proposals_societe.csv",
+    "education-huffpost" -> "fixtures/huffingpost/proposals_education.csv"
   )
 
   val defaultLanguage: Language = Language("fr")
@@ -122,8 +132,7 @@ object HuffingPostOperations extends Migration {
 
   override def migrate(api: MakeApi): Future[Unit] = {
 
-    Future {
-      operations.foreach {
+      sequentially(operations.toSeq) {
         case (operationSlug, countryConfiguration) =>
           // create Sequence and Operation
           retryableFuture(
@@ -146,161 +155,153 @@ object HuffingPostOperations extends Migration {
                 )
               }
           ).map { sequenceWithCountryLanguage =>
-            retryableFuture(
-              api.operationService
-                .create(
-                  userId = moderatorId,
-                  slug = operationSlug,
-                  defaultLanguage = defaultLanguage,
-                  translations = Seq(
-                    OperationTranslation(
-                      title = countryConfiguration.title,
-                      language = sequenceWithCountryLanguage.language
-                    )
-                  ),
-                  countriesConfiguration = Seq(
-                    OperationCountryConfiguration(
-                      countryCode = sequenceWithCountryLanguage.country,
-                      tagIds = countryConfiguration.tags,
-                      landingSequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
-                      startDate = Some(countryConfiguration.startDate),
-                      endDate = countryConfiguration.endDate
-                    )
-                  )
-                )
-            ).map { operationId =>
-
-              retryableFuture(api.sequenceService.update(
-                sequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
-                moderatorId = moderatorId,
-                requestContext = emptyContext,
-                title = None,
-                status = Some(SequenceStatus.Published),
-                operationId = Some(operationId),
-                themeIds = Seq.empty
-              ))
-
-              val tags: Seq[ImportTagsData.TagsDataLine] =
-                Source.fromResource(operationsTagsSource(operationSlug)).getLines().toSeq.drop(1).flatMap(ImportTagsData.extractDataLine)
-
-              // create Tags of the operation
-              api.tagService.findByOperationId(operationId).flatMap { foundTags =>
-                if (foundTags.isEmpty) {
-                  Future.traverse(tags) { tag =>
-                    api.tagService
-                      .createTag(
-                        label = tag.label,
-                        tagTypeId = tag.tagTypeId,
-                        operationId = Some(operationId),
-                        themeId = None,
-                        country = tag.country,
-                        language = tag.language,
-                        display = tag.tagDisplay,
-                        weight = tag.weight
-                      )
-                  }.map { createdTags =>
-                    createdTags
-                  }
-                } else {
-                  Future.successful(foundTags)
-                }
-              }.map { operationTags =>
-
-                val proposalsToInsert: Seq[ProposalsDataLine] =
-                  Source.fromResource(operationsProposalsSource(operationSlug)).getLines().toSeq.drop(1).flatMap(extractProposalDataLine)
-
-                // Traverse the proposals insert and validate theme
-                sequentially(proposalsToInsert) { proposalToInsert =>
-                  api.elasticsearchProposalAPI
-                    .countProposals(
-                      SearchQuery(
-                        filters = Some(
-                          SearchFilters(
-                            slug = Some(SlugSearchFilter(SlugHelper(proposalToInsert.content))),
-                            status = Some(StatusSearchFilter(Seq(Accepted, Pending))),
-                            operation = Some(OperationSearchFilter(operationId))
-                          )
+              api.operationService.findOneBySlug(operationSlug).flatMap {
+                case Some(operation) => Future.successful(operation.operationId)
+                case None =>
+                  api.operationService
+                    .create(
+                      userId = moderatorId,
+                      slug = operationSlug,
+                      defaultLanguage = defaultLanguage,
+                      translations = Seq(
+                        OperationTranslation(
+                          title = countryConfiguration.title,
+                          language = sequenceWithCountryLanguage.language
+                        )
+                      ),
+                      countriesConfiguration = Seq(
+                        OperationCountryConfiguration(
+                          countryCode = sequenceWithCountryLanguage.country,
+                          tagIds = countryConfiguration.tags,
+                          landingSequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
+                          startDate = Some(countryConfiguration.startDate),
+                          endDate = countryConfiguration.endDate
                         )
                       )
-                    ).flatMap { countResult =>
-                      if (countResult > 0) {
-                        Future.successful {}
-                      } else {
-                        val tagsOfProposal: Seq[Tag] = operationTags.filter(tag =>  proposalToInsert.tagsLabel.contains(tag.label))
-                        val annonymousEmail: String = "yopmail+annonymous@make.org"
-                        var emailOfUser: String = proposalToInsert.email
+                    )
+              }.map { operationId =>
+                retryableFuture(api.sequenceService.update(
+                  sequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
+                  moderatorId = moderatorId,
+                  requestContext = emptyContext,
+                  title = None,
+                  status = Some(SequenceStatus.Published),
+                  operationId = Some(operationId),
+                  themeIds = Seq.empty
+                ))
 
+                val tags: Seq[ImportTagsData.TagsDataLine] =
+                  Source.fromResource(operationsTagsSource(operationSlug)).getLines().toSeq.drop(1).flatMap(ImportTagsData.extractDataLine)
 
-                        // If annonymous is the user proposal pick a random yopmail user
-                        if (annonymousEmail.equals(proposalToInsert.email)) {
-                          emailOfUser = huffingPostUser(Random.nextInt(huffingPostUser.size)).email
-                        }
+                // create Tags of the operation
+                api.tagService.findByOperationId(operationId).flatMap { foundTags =>
+                  if (foundTags.nonEmpty) {
+                    Future.successful(foundTags)
+                  } else {
+                    Future.traverse(tags) { tag =>
+                      api.tagService
+                        .createTag(
+                          label = tag.label,
+                          tagTypeId = tag.tagTypeId,
+                          operationId = Some(operationId),
+                          themeId = None,
+                          country = tag.country,
+                          language = tag.language,
+                          display = tag.tagDisplay,
+                          weight = tag.weight
+                        )
+                    }.map { createdTags =>
+                      createdTags
+                    }
+                  }
+                }.map { operationTags =>
 
-                        for {
-                          user <- retryableFuture(
-                            api.persistentUserService.findByEmail(emailOfUser)
-                          ).map(_.getOrElse(huffingPostUser(Random.nextInt(huffingPostUser.size))))
-                          idea <- retryableFuture(
-                            retrieveOrInsertIdea(
-                              api = api,
-                              name = proposalToInsert.content,
-                              language = proposalToInsert.language,
-                              country = proposalToInsert.country,
-                              operationId = Some(operationId),
-                              themeId = None
+                  val proposalsToInsert: Seq[ProposalsDataLine] =
+                    Source.fromResource(operationsProposalsSource(operationSlug)).getLines().toSeq.drop(1).flatMap(extractProposalDataLine)
+
+                  // Traverse the proposals insert and validate theme
+                  sequentially(proposalsToInsert) { proposalToInsert =>
+                    api.elasticsearchProposalAPI
+                      .countProposals(
+                        SearchQuery(
+                          filters = Some(
+                            SearchFilters(
+                              slug = Some(SlugSearchFilter(SlugHelper(proposalToInsert.content))),
+                              status = Some(StatusSearchFilter(Seq(Accepted, Pending))),
+                              operation = Some(OperationSearchFilter(operationId))
                             )
                           )
-                          proposalId <-
-                            retryableFuture(
-                              api.proposalService
-                                .propose(
-                                  user,
+                        )
+                      ).flatMap { countResult =>
+                        if (countResult > 0) {
+                          Future.successful {}
+                        } else {
+                          val tagsOfProposal: Seq[Tag] = operationTags.filter(tag =>  proposalToInsert.tagsLabel.contains(tag.label))
+
+                          for {
+                            user <- retryableFuture(
+                              retrieveOrInsertUser(api = api, email = proposalToInsert.email)
+                            )
+                            idea <- retryableFuture(
+                              retrieveOrInsertIdea(
+                                api = api,
+                                name = proposalToInsert.content,
+                                language = proposalToInsert.language,
+                                country = proposalToInsert.country,
+                                operationId = Some(operationId),
+                                themeId = None
+                              )
+                            )
+                            proposalId <-
+                              retryableFuture(
+                                api.proposalService
+                                  .propose(
+                                    user,
+                                    RequestContext.empty.copy(
+                                      question = Some(operationSlug),
+                                      source = Some("huffingpost"),
+                                      operationId = Some(operationId)
+                                    ),
+                                    DateHelper.now(),
+                                    proposalToInsert.content,
+                                    Some(operationId),
+                                    None,
+                                    Some(proposalToInsert.language),
+                                    Some(proposalToInsert.country)
+                                  )
+                              )
+                            _ <-
+                              retryableFuture(
+                                api.proposalService.validateProposal(
+                                  proposalId,
+                                  moderatorId,
                                   RequestContext.empty.copy(
                                     question = Some(operationSlug),
                                     source = Some("huffingpost"),
                                     operationId = Some(operationId)
                                   ),
-                                  DateHelper.now(),
-                                  proposalToInsert.content,
-                                  Some(operationId),
-                                  None,
-                                  Some(proposalToInsert.language),
-                                  Some(proposalToInsert.country)
-                                )
-                            )
-                          _ <-
-                            retryableFuture(
-                              api.proposalService.validateProposal(
-                                proposalId,
-                                moderatorId,
-                                RequestContext.empty.copy(
-                                  question = Some(operationSlug),
-                                  source = Some("huffingpost"),
-                                  operationId = Some(operationId)
-                                ),
-                                ValidateProposalRequest(
-                                  newContent = None,
-                                  sendNotificationEmail = false,
-                                  theme = None,
-                                  labels = Seq.empty,
-                                  tags = tagsOfProposal.map(_.tagId),
-                                  similarProposals = Seq.empty,
-                                  operation = Some(operationId),
-                                  idea = Some(idea.ideaId)
+                                  ValidateProposalRequest(
+                                    newContent = None,
+                                    sendNotificationEmail = false,
+                                    theme = None,
+                                    labels = Seq.empty,
+                                    tags = tagsOfProposal.map(_.tagId),
+                                    similarProposals = Seq.empty,
+                                    operation = Some(operationId),
+                                    idea = Some(idea.ideaId)
+                                  )
                                 )
                               )
-                            )
-                        } yield {}
-                    }
+                          } yield {}
+                        }
+                      }
                   }
                 }
               }
-            }
           }
 
-        case _ => Future.failed(new RuntimeException(s"Error When importingHuffingPost operations"))
+        case _ => Future.failed(new RuntimeException("Error When importingHuffingPost operations"))
       }
-    }
   }
 
   def retrieveOrInsertIdea(api: MakeApi,
@@ -320,6 +321,22 @@ object HuffingPostOperations extends Migration {
           question = None,
           themeId = themeId
         )
+    }
+  }
+
+  def retrieveOrInsertUser(api: MakeApi,
+                           email: String): Future[User] = {
+    val annonymousEmail: String = "yopmail+annonymous@make.org"
+
+
+    // If annonymous is the user proposal pick a random yopmail user
+    if (annonymousEmail.equals(email)) {
+      Future.successful(huffingPostUser(Random.nextInt(huffingPostUser.size)))
+    } else {
+      api.persistentUserService.findByEmail(email).flatMap {
+        case Some(user) => Future.successful(user)
+        case None => Future.successful(huffingPostUser(Random.nextInt(huffingPostUser.size)))
+      }
     }
   }
 
