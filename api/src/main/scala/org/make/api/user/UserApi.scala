@@ -574,8 +574,18 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
             provideAsync(
               proposalService.searchForUser(
                 userId = Some(userId),
-                query = SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = userId))))),
-                requestContext = requestContext,
+                query = SearchQuery(
+                  filters = Some(
+                    SearchFilters(
+                      user = Some(UserSearchFilter(userId = userId)),
+                      status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                        case (_, status) => status != ProposalStatus.Archived
+                      }.values.toSeq)),
+                      context = Some(ContextSearchFilter(source = Some("core")))
+                    )
+                  )
+                ),
+                requestContext = requestContext
               )
             ) { proposalsSearchResult =>
               complete(proposalsSearchResult)
