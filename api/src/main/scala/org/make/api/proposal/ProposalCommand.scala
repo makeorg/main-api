@@ -50,7 +50,7 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        newContent: Option[String],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       idea: Option[IdeaId],
+                                       idea: IdeaId,
                                        question: Question)
     extends ProposalCommand
 
@@ -68,7 +68,7 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        question: Question,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       idea: Option[IdeaId])
+                                       idea: IdeaId)
     extends ProposalCommand
 
 final case class RefuseProposalCommand(moderator: UserId,

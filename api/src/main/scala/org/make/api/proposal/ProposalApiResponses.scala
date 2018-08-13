@@ -29,6 +29,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -53,6 +54,7 @@ final case class ProposalResponse(proposalId: ProposalId,
                                   similarProposals: Seq[ProposalId],
                                   idea: Option[IdeaId],
                                   ideaProposals: Seq[IndexedProposal],
+                                  questionId: Option[QuestionId],
                                   operationId: Option[OperationId],
                                   language: Option[Language],
                                   country: Option[Country])
@@ -97,6 +99,7 @@ final case class ProposalResult(id: ProposalId,
                                 tags: Seq[IndexedTag],
                                 myProposal: Boolean,
                                 idea: Option[IdeaId],
+                                questionId: Option[QuestionId],
                                 operationId: Option[OperationId])
 
 object ProposalResult extends CirceFormatters {
@@ -132,6 +135,7 @@ object ProposalResult extends CirceFormatters {
       tags = indexedProposal.tags,
       myProposal = myProposal,
       idea = indexedProposal.ideaId,
+      questionId = indexedProposal.questionId,
       operationId = indexedProposal.operationId
     )
 }

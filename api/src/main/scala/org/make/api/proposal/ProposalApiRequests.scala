@@ -55,13 +55,15 @@ object ProposeProposalRequest {
 }
 
 final case class UpdateProposalRequest(newContent: Option[String],
-                                       theme: Option[ThemeId],
+                                       idea: IdeaId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId],
+                                       // TODO: remove similarProposals once BO stops sending them
+                                       similarProposals: Option[Seq[ProposalId]],
+                                       questionId: Option[QuestionId],
+                                       theme: Option[ThemeId],
                                        operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
+  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
 }
 
 object UpdateProposalRequest {
@@ -70,13 +72,14 @@ object UpdateProposalRequest {
 
 final case class ValidateProposalRequest(newContent: Option[String],
                                          sendNotificationEmail: Boolean,
-                                         theme: Option[ThemeId],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
-                                         similarProposals: Seq[ProposalId],
-                                         idea: Option[IdeaId],
+                                         // TODO: remove similarProposals once BO stops sending them
+                                         similarProposals: Option[Seq[ProposalId]],
+                                         idea: IdeaId,
+                                         theme: Option[ThemeId],
                                          operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
+  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
 }
 
 object ValidateProposalRequest {
@@ -280,12 +283,17 @@ object PatchProposalsIdeaRequest {
   implicit val decoder: Decoder[PatchProposalsIdeaRequest] = deriveDecoder[PatchProposalsIdeaRequest]
 }
 
-final case class NextProposalToModerateRequest(operationId: Option[OperationId],
+final case class NextProposalToModerateRequest(questionId: Option[QuestionId],
+                                               operationId: Option[OperationId],
                                                themeId: Option[ThemeId],
                                                country: Country,
                                                language: Language) {
   validate(
-    requirePresent("operationId", operationId.orElse(themeId), Some("Next proposal needs a theme or an operation")),
+    requirePresent(
+      "operationId",
+      questionId.orElse(operationId).orElse(themeId),
+      Some("Next proposal needs a question, a theme or an operation")
+    ),
     mandatoryField("country", country, Some("country is mandatory")),
     mandatoryField("language", language, Some("language is mandatory")),
   )

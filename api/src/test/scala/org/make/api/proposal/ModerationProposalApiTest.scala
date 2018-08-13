@@ -198,8 +198,8 @@ class ModerationProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king")),
+    similarProposals = None,
+    idea = IdeaId("becoming-king"),
     operation = None
   ).asJson.toString
 
@@ -231,7 +231,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -245,7 +245,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -259,7 +259,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -361,7 +361,8 @@ class ModerationProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -409,7 +410,8 @@ class ModerationProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -444,7 +446,8 @@ class ModerationProposalApiTest
     tags = Seq.empty,
     myProposal = false,
     idea = None,
-    operationId = None
+    operationId = None,
+    questionId = None
   )
 
   when(
@@ -493,7 +496,8 @@ class ModerationProposalApiTest
       ideaProposals = Seq.empty,
       operationId = None,
       language = Some(Language("fr")),
-      country = Some(Country("FR"))
+      country = Some(Country("FR")),
+      questionId = None
     )
   }
 

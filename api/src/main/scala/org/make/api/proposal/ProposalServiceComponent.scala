@@ -87,7 +87,7 @@ trait ProposalService {
              question: Question,
              labels: Seq[LabelId],
              tags: Seq[TagId],
-             idea: Option[IdeaId]): Future[Option[ProposalResponse]]
+             idea: IdeaId): Future[Option[ProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
@@ -95,7 +95,7 @@ trait ProposalService {
                        question: Question,
                        newContent: Option[String],
                        sendNotificationEmail: Boolean,
-                       idea: Option[IdeaId],
+                       idea: IdeaId,
                        labels: Seq[LabelId],
                        tags: Seq[TagId]): Future[Option[ProposalResponse]]
 
@@ -234,7 +234,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               ideaProposals = ideaProposals,
               operationId = proposal.operation,
               language = proposal.language,
-              country = proposal.country
+              country = proposal.country,
+              questionId = proposal.questionId
             )
           )
         }
@@ -370,7 +371,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         question: Question,
                         labels: Seq[LabelId],
                         tags: Seq[TagId],
-                        idea: Option[IdeaId]): Future[Option[ProposalResponse]] = {
+                        idea: IdeaId): Future[Option[ProposalResponse]] = {
 
       val updatedProposal = {
         proposalCoordinatorService.update(
@@ -407,7 +408,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                   question: Question,
                                   newContent: Option[String],
                                   sendNotificationEmail: Boolean,
-                                  idea: Option[IdeaId],
+                                  idea: IdeaId,
                                   labels: Seq[LabelId],
                                   tags: Seq[TagId]): Future[Option[ProposalResponse]] = {
 

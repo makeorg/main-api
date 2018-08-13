@@ -54,7 +54,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import org.make.api.question.QuestionServiceComponent
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -171,7 +171,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                           requestContext = requestContext
                         )
                       ) { proposals =>
-                        {
+                        { // TODO: add question
                           complete {
                             HttpResponse(
                               entity = HttpEntity(
@@ -406,30 +406,25 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                  provideAsyncOrNotFound(
+                    retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
+                  ) { question =>
                     provideAsyncOrNotFound(
-                      questionService
-                      // TODO less .get
-                        .findQuestion(request.theme, request.operation, proposal.country.get, proposal.language.get)
-                    ) { question =>
-                      provideAsyncOrNotFound(
-                        proposalService.update(
-                          proposalId = proposalId,
-                          moderator = userAuth.user.userId,
-                          requestContext = requestContext,
-                          updatedAt = DateHelper.now(),
-                          question = question,
-                          newContent = request.newContent,
-                          labels = request.labels,
-                          tags = request.tags,
-                          idea = request.idea
-                        )
-                      ) { proposalResponse: ProposalResponse =>
-                        complete(proposalResponse)
-                      }
+                      proposalService.update(
+                        proposalId = proposalId,
+                        moderator = userAuth.user.userId,
+                        requestContext = requestContext,
+                        updatedAt = DateHelper.now(),
+                        question = question,
+                        newContent = request.newContent,
+                        labels = request.labels,
+                        tags = request.tags,
+                        idea = request.idea
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
                     }
                   }
-
                 }
               }
             }
@@ -437,6 +432,32 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
         }
       }
     }
+
+  private def retrieveQuestion(maybeQuestionId: Option[QuestionId],
+                               proposalId: ProposalId,
+                               maybeOperationId: Option[OperationId],
+                               maybeThemeId: Option[ThemeId]): Future[Option[Question]] = {
+
+    maybeQuestionId.map { questionId =>
+      questionService.getQuestion(questionId)
+    }.getOrElse {
+      proposalCoordinatorService.getProposal(proposalId).flatMap {
+        case Some(proposal) =>
+          val maybeFuture = for {
+            country  <- proposal.country
+            language <- proposal.language
+          } yield {
+            questionService.findQuestion(maybeThemeId, maybeOperationId, country, language)
+          }
+          maybeFuture.getOrElse {
+            Future.successful(None)
+          }
+        case None =>
+          Future.successful(None)
+      }
+    }
+
+  }
 
   @ApiOperation(
     value = "validate-proposal",
@@ -473,11 +494,8 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
-                  provideAsyncOrNotFound(
-                    questionService // TODO: less .get
-                      .findQuestion(request.theme, request.operation, proposal.country.get, proposal.language.get)
-                  ) { question =>
+                provideAsyncOrNotFound(retrieveQuestion(None, proposalId, request.operation, request.theme)) {
+                  question =>
                     provideAsyncOrNotFound(
                       proposalService.validateProposal(
                         proposalId = proposalId,
@@ -493,7 +511,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     ) { proposalResponse: ProposalResponse =>
                       complete(proposalResponse)
                     }
-                  }
                 }
               }
             }
@@ -806,9 +823,14 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(user.user) {
             decodeRequest {
               entity(as[NextProposalToModerateRequest]) { request =>
-                provideAsyncOrNotFound(
-                  questionService.findQuestion(request.themeId, request.operationId, request.country, request.language)
-                ) { question =>
+                provideAsyncOrNotFound {
+                  request.questionId
+                    .map(questionId => questionService.getQuestion(questionId))
+                    .getOrElse(
+                      questionService
+                        .findQuestion(request.themeId, request.operationId, request.country, request.language)
+                    )
+                } { question =>
                   provideAsyncOrNotFound(
                     proposalService.searchAndLockProposalToModerate(question.questionId, user.user.userId, context)
                   ) { proposal =>
@@ -834,7 +856,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       patchProposal ~
       getDuplicates ~
       changeProposalsIdea ~
-      getDuplicates ~
       getModerationProposal ~
       nextProposalToModerate
 

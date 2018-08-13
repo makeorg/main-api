@@ -182,7 +182,7 @@ trait InsertFixtureData extends Migration with StrictLogging {
                     question.get,
                     None,
                     false,
-                    Some(idea.ideaId),
+                    idea.ideaId,
                     proposalsToAccept.labels,
                     proposalsToAccept.tags
                   )

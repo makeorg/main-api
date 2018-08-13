@@ -166,8 +166,8 @@ class ProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king")),
+    similarProposals = None,
+    idea = IdeaId("becoming-king"),
     operation = None
   ).asJson.toString
 
@@ -210,7 +210,7 @@ class ProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -225,7 +225,7 @@ class ProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -240,7 +240,7 @@ class ProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[Option[IdeaId]],
+        any[IdeaId],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -312,7 +312,8 @@ class ProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -338,7 +339,8 @@ class ProposalApiTest
     tags = Seq.empty,
     myProposal = false,
     idea = None,
-    operationId = None
+    operationId = None,
+    questionId = None
   )
   when(
     proposalService
@@ -386,7 +388,8 @@ class ProposalApiTest
       ideaProposals = Seq.empty,
       operationId = None,
       language = Some(Language("fr")),
-      country = Some(Country("FR"))
+      country = Some(Country("FR")),
+      questionId = None
     )
   }
 

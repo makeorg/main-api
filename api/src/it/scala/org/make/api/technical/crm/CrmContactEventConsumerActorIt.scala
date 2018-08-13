@@ -21,7 +21,7 @@ package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, PoisonPill}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import com.typesafe.config.ConfigFactory
@@ -40,6 +40,7 @@ import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
+import scala.language.implicitConversions
 
 class CrmContactEventConsumerActorIt
     extends TestKit(CrmContactEventConsumerActorIt.actorSystem)
@@ -177,6 +178,12 @@ class CrmContactEventConsumerActorIt
           Future.successful {}
         })
       Mockito
+        .when(crmService.removeUserFromUnsubscribeList(ArgumentMatchers.eq(hardBounceUser)))
+        .thenAnswer(() => {
+          probe.ref ! "crmService.removeUserFromUnsubscribeList called"
+          Future.successful {}
+        })
+      Mockito
         .when(crmService.addUserToHardBounceList(ArgumentMatchers.eq(hardBounceUser)))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToHardBounceList called"
@@ -196,6 +203,7 @@ class CrmContactEventConsumerActorIt
 
       Then("message is consumed and crmService is called to update data")
       probe.expectMsg(500.millis, "crmService.removeUserFromOptInList called")
+      probe.expectMsg(500.millis, "crmService.removeUserFromUnsubscribeList called")
       probe.expectMsg(500.millis, "crmService.addUserToHardBounceList called")
 
       Given("a crm unsubscribe event to consume")
@@ -332,6 +340,10 @@ class CrmContactEventConsumerActorIt
       Then("message is consumed and crmService is called to update data")
       probe.expectMsg(500.millis, "crmService.updateUserProperties called")
 
+      consumer ! PoisonPill
+      producer.close()
+
+      Thread.sleep(2000)
     }
   }
 

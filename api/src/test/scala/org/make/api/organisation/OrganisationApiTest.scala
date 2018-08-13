@@ -125,7 +125,8 @@ class OrganisationApiTest
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("idea-id")),
         operationId = None,
-        myProposal = false
+        myProposal = false,
+        questionId = None
       ),
       ProposalResult(
         id = ProposalId("proposal-2"),
@@ -147,7 +148,8 @@ class OrganisationApiTest
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("other-idea-id")),
         operationId = None,
-        myProposal = false
+        myProposal = false,
+        questionId = None
       )
     ),
     None
