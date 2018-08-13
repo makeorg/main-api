@@ -22,9 +22,8 @@ package org.make.api.sequence
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType, RefreshPolicy}
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -60,9 +59,7 @@ trait DefaultSequenceSearchEngineComponent
 
   override lazy val elasticsearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
 
-    private val client = HttpClient(
-      ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
-    )
+    private lazy val client = elasticsearchConfiguration.client
 
     private val sequenceAlias: IndexAndType =
       elasticsearchConfiguration.sequenceAliasName / SequenceSearchEngine.sequenceIndexName

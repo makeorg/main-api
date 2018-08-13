@@ -28,7 +28,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
+import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.api.theme.ThemeService
 import org.make.core.RequestContext
 import org.make.core.reference.{Theme, ThemeId}
@@ -39,11 +39,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SequenceConsumerActor(sequenceCoordinator: ActorRef, themeService: ThemeService)
+class SequenceConsumerActor(sequenceCoordinator: ActorRef,
+                            themeService: ThemeService,
+                            override val elasticsearchConfiguration: ElasticsearchConfiguration)
     extends KafkaConsumerActor[SequenceEventWrapper]
     with KafkaConfigurationExtension
     with DefaultSequenceSearchEngineComponent
-    with ElasticsearchConfigurationExtension
+    with ElasticsearchConfigurationComponent
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(SequenceProducerActor.topicKey)
@@ -120,7 +122,9 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef, themeService: ThemeSe
 }
 
 object SequenceConsumerActor {
-  def props(sequenceCoordinator: ActorRef, themeService: ThemeService): Props =
-    Props(new SequenceConsumerActor(sequenceCoordinator, themeService))
+  def props(sequenceCoordinator: ActorRef,
+            themeService: ThemeService,
+            elasticsearchConfiguration: ElasticsearchConfiguration): Props =
+    Props(new SequenceConsumerActor(sequenceCoordinator, themeService, elasticsearchConfiguration))
   val name: String = "sequence-consumer"
 }

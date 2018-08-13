@@ -22,10 +22,9 @@ package org.make.api.idea
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType, RefreshPolicy}
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
@@ -56,8 +55,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
 
   override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new IdeaSearchEngine with StrictLogging {
 
-    private val esClient = ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
-    private val client = HttpClient(esClient)
+    private lazy val client = elasticsearchConfiguration.client
 
     private val ideaAlias: IndexAndType = elasticsearchConfiguration.ideaAliasName / IdeaSearchEngine.ideaIndexName
 

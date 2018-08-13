@@ -21,6 +21,7 @@ package org.make.api.extensions
 
 import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
+import org.make.api.ActorSystemComponent
 
 class MailJetConfiguration(config: Config) extends Extension {
   val url: String = config.getString("url")
@@ -51,5 +52,9 @@ trait MailJetConfigurationComponent {
 }
 
 trait MailJetConfigurationExtension extends MailJetConfigurationComponent { this: Actor =>
-  val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(context.system)
+  override val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(context.system)
+}
+
+trait DefaultMailJetConfigurationComponent extends MailJetConfigurationComponent { this: ActorSystemComponent =>
+  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
 }

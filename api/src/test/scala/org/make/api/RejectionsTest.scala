@@ -56,7 +56,7 @@ class RejectionsTest
       val invalidJson = "not a json"
       Post("/test", HttpEntity(ContentTypes.`application/json`, invalidJson)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
-        println(responseEntity.toString)
+        logger.debug(responseEntity.toString)
         entityAs[Seq[ValidationError]].size should be(1)
       }
     }

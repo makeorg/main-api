@@ -21,7 +21,8 @@ package org.make.api
 
 import java.nio.file.{Files, Paths}
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.actor.{ActorSystem, ExtendedActorSystem, PoisonPill}
+import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
@@ -33,10 +34,18 @@ import kamon.system.SystemMetrics
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
 import org.make.api.migrations._
-import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
+import org.make.api.proposal.ShardedProposal
+import org.make.api.sequence.ShardedSequence
+import org.make.api.sessionhistory.ShardedSessionHistory
+import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
+import org.make.api.userhistory.ShardedUserHistory
+import org.make.core.DateHelper
+import akka.pattern.ask
+import org.make.api.MakeGuardian.Ping
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
@@ -65,14 +74,38 @@ object MakeMain extends App with StrictLogging with MakeApi {
   override implicit val actorSystem: ExtendedActorSystem =
     ActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
 
+  // Wait until cluster is connected before initializing clustered actors
+  while (Cluster(actorSystem).state.leader.isEmpty) {
+    Thread.sleep(100)
+  }
+
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
-  actorSystem.registerExtension(ElasticsearchConfiguration)
-  actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
+  val guardian = actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
+
+  Await.result(guardian ? Ping, atMost = 5.seconds)
+
   actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
   val threadPoolMonitor = actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readThreadPool, "db-read-pool")
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeThreadPool, "db-write-pool")
+
+  // Start the shards
+  (0 until 100).foreach { i =>
+    proposalCoordinator ! StartShard(i.toString)
+    userHistoryCoordinator ! StartShard(i.toString)
+    sessionHistoryCoordinator ! StartShard(i.toString)
+    sequenceCoordinator ! StartShard(i.toString)
+  }
+
+  // Initialize journals
+  actorSystem.actorOf(ShardedProposal.props(sessionHistoryCoordinator), "fake-proposal") ! PoisonPill
+  actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
+  actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator), "fake-session") ! PoisonPill
+  actorSystem.actorOf(ShardedSequence.props(DateHelper), "fake-sequence") ! PoisonPill
+
+  // Ensure database stuff is initialized
+  Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
@@ -93,7 +126,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
     case _ =>
   }
 
-  Thread.sleep(5000)
   val migrations: Seq[Migration] =
     Seq(
       CoreData,

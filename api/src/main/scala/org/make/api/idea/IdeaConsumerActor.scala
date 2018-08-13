@@ -25,7 +25,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaEventWrapper, IdeaUpdatedEvent}
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.ElasticsearchConfigurationExtension
+import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
 import org.make.core.idea.IdeaId
 import org.make.core.idea.indexed.IndexedIdea
 import shapeless.Poly1
@@ -34,11 +34,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IdeaConsumerActor(ideaService: IdeaService)
+class IdeaConsumerActor(ideaService: IdeaService, override val elasticsearchConfiguration: ElasticsearchConfiguration)
     extends KafkaConsumerActor[IdeaEventWrapper]
     with KafkaConfigurationExtension
     with DefaultIdeaSearchEngineComponent
-    with ElasticsearchConfigurationExtension
+    with ElasticsearchConfigurationComponent
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(IdeaProducerActor.topicKey)
@@ -85,7 +85,7 @@ class IdeaConsumerActor(ideaService: IdeaService)
 }
 
 object IdeaConsumerActor {
-  def props(ideaService: IdeaService): Props =
-    Props(new IdeaConsumerActor(ideaService))
+  def props(ideaService: IdeaService, elasticsearchConfiguration: ElasticsearchConfiguration): Props =
+    Props(new IdeaConsumerActor(ideaService, elasticsearchConfiguration))
   val name: String = "idea-consumer"
 }

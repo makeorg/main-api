@@ -21,11 +21,10 @@ package org.make.api.proposal
 
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQueryDefinition
 import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, IdQuery}
-import com.sksamuel.elastic4s.{ElasticsearchClientUri, IndexAndType, RefreshPolicy}
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
@@ -64,11 +63,9 @@ object ProposalSearchEngine {
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent =>
 
-  override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
+  private lazy val client = elasticsearchConfiguration.client
 
-    private val client = HttpClient(
-      ElasticsearchClientUri(s"elasticsearch://${elasticsearchConfiguration.connectionString}")
-    )
+  override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
     private val proposalAlias: IndexAndType =
       elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName

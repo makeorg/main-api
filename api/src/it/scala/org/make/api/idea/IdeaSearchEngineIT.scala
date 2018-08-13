@@ -25,6 +25,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
+import com.sksamuel.elastic4s.ElasticsearchClientUri
+import com.sksamuel.elastic4s.http.HttpClient
 import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
@@ -67,6 +69,9 @@ class IdeaSearchEngineIT
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
+  Mockito
+    .when(elasticsearchConfiguration.client)
+    .thenReturn(HttpClient(ElasticsearchClientUri(s"elasticsearch://localhost:$elasticsearchExposedPort")))
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

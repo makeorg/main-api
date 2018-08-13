@@ -122,7 +122,7 @@ class OperationServiceTest
       val futureoperations: Future[Seq[Operation]] = operationService.find()
 
       whenReady(futureoperations, Timeout(3.seconds)) { operations =>
-        println(operations)
+        logger.debug(operations.map(_.toString).mkString(", "))
         val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
         fooOperation.countriesConfiguration.filter(cc => cc.countryCode == Country("GB")).head.tagIds.size shouldBe 1
       }

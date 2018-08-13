@@ -80,7 +80,7 @@ services:
       - elasticsearch
     networks:
       - makeapi
-    restart: on-failure:2
+    restart: on-failure:5
   kafka-manager:
     image: sheepkiller/kafka-manager
     environment:

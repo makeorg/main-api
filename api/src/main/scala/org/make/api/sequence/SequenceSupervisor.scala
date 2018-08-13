@@ -25,8 +25,11 @@ import org.make.api.technical.ShortenedNames
 import org.make.api.theme.ThemeService
 import org.make.core.DateHelper
 import org.make.api._
+import org.make.api.technical.elasticsearch.ElasticsearchConfiguration
 
-class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeService)
+class SequenceSupervisor(userHistoryCoordinator: ActorRef,
+                         themeService: ThemeService,
+                         elasticsearchConfiguration: ElasticsearchConfiguration)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -49,7 +52,11 @@ class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeSe
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         SequenceConsumerActor
-          .props(sequenceCoordinator = sequenceCoordinator, themeService = themeService)
+          .props(
+            sequenceCoordinator = sequenceCoordinator,
+            themeService = themeService,
+            elasticsearchConfiguration = elasticsearchConfiguration
+          )
           .withDispatcher(kafkaDispatcher),
         SequenceConsumerActor.name
       )
@@ -67,6 +74,8 @@ class SequenceSupervisor(userHistoryCoordinator: ActorRef, themeService: ThemeSe
 object SequenceSupervisor {
 
   val name: String = "sequence"
-  def props(userHistoryCoordinator: ActorRef, themeService: ThemeService): Props =
-    Props(new SequenceSupervisor(userHistoryCoordinator, themeService))
+  def props(userHistoryCoordinator: ActorRef,
+            themeService: ThemeService,
+            elasticsearchConfiguration: ElasticsearchConfiguration): Props =
+    Props(new SequenceSupervisor(userHistoryCoordinator, themeService, elasticsearchConfiguration))
 }

@@ -62,10 +62,9 @@ import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
 import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchConfigurationComponent,
   DefaultIndexationComponent,
-  ElasticSearchApi,
-  ElasticsearchConfiguration,
-  ElasticsearchConfigurationComponent
+  ElasticSearchApi
 }
 import org.make.api.technical.healthcheck.{
   DefaultHealthCheckServiceComponent,
@@ -138,7 +137,7 @@ trait MakeApi
     with DefaultHealthCheckServiceComponent
     with DefaultCrmServiceComponent
     with DefaultOrganisationServiceComponent
-    with ElasticsearchConfigurationComponent
+    with DefaultElasticsearchConfigurationComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
@@ -167,56 +166,52 @@ trait MakeApi
     with OrganisationApi
     with ModerationProposalApi
     with BuildInfoRoutes
-    with MailJetConfigurationComponent
+    with DefaultMailJetConfigurationComponent
     with StrictLogging
     with AvroSerializers
     with MakeAuthentication
     with ActorSystemComponent {
 
-  override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(actorSystem)
-
-  override lazy val elasticsearchConfiguration: ElasticsearchConfiguration = ElasticsearchConfiguration(actorSystem)
-
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val sequenceCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SequenceSupervisor.name / SequenceCoordinator.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val userHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / UserHistoryCoordinator.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SessionHistoryCoordinator.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val sequenceConfigurationActor: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SequenceConfigurationActor.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val healthCheckSupervisor: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / HealthCheckSupervisor.name)
-      .resolveOne()(Timeout(2.seconds)),
-    atMost = 2.seconds
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
