@@ -173,8 +173,7 @@ class UserHistoryActor
         case (_, votesAndQualifications) =>
           (filterVotes.isEmpty || filterVotes.forall(_.contains(votesAndQualifications.voteKey))) &&
             (filterQualifications.isEmpty || filterQualifications.exists { qualifications =>
-              votesAndQualifications.qualificationKeys.toSet
-                .subsetOf(qualifications.toSet) && votesAndQualifications.qualificationKeys.nonEmpty
+              votesAndQualifications.qualificationKeys.exists(value => qualifications.contains(value))
             })
       })
       .getOrElse(Map.empty)

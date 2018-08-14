@@ -468,18 +468,20 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
   }
 
   feature("retrieve filtered user voted proposals") {
-    Given("""5 proposals:
-            |  Proposal1: likeit|agree
-            |  Proposal2: likeit|disagree
+    Given("""6 proposals:
+            |  Proposal1: likeIt|agree
+            |  Proposal2: likeIt|disagree
             |  Proposal3: noway|agree
             |  Proposal4: noway|disagree
             |  Proposal5: agree
+            |  Proposal6: likeIt|doable|platitudeAgree|agree
           """.stripMargin)
     val proposal1 = ProposalId("agree-likeIt")
     val proposal2 = ProposalId("disagree-likeIt")
     val proposal3 = ProposalId("agree-noWay")
     val proposal4 = ProposalId("disagree-noWay")
     val proposal5 = ProposalId("agree")
+    val proposal6 = ProposalId("agree-likeIt-doable-platitudeAgree")
     val history = UserHistory(
       List(
         LogUserVoteEvent(
@@ -542,6 +544,38 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserId("1"),
           RequestContext.empty,
           UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal5, VoteKey.Agree))
+        ),
+        LogUserVoteEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(DateHelper.now(), LogUserVoteEvent.action, UserVote(proposal6, VoteKey.Agree))
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal6, QualificationKey.LikeIt)
+          )
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal6, QualificationKey.Doable)
+          )
+        ),
+        LogUserQualificationEvent(
+          UserId("1"),
+          RequestContext.empty,
+          UserAction(
+            DateHelper.now(),
+            LogUserQualificationEvent.action,
+            UserQualification(proposal6, QualificationKey.PlatitudeAgree)
+          )
         )
       )
     )
@@ -555,7 +589,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
 
       coordinator ! RequestUserVotedProposals(UserId("1"), filterVotes = None, filterQualifications = None)
       val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
-      foundProposals.toSet == Set(proposal1, proposal2, proposal3, proposal4, proposal5) shouldBe true
+      foundProposals.toSet == Set(proposal1, proposal2, proposal3, proposal4, proposal5, proposal6) shouldBe true
     }
 
     scenario("filter on one vote") {
@@ -571,7 +605,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterQualifications = None
       )
       val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
-      foundProposals.toSet == Set(proposal1, proposal3, proposal5) shouldBe true
+      foundProposals.toSet == Set(proposal1, proposal3, proposal5, proposal6) shouldBe true
     }
 
     scenario("filter on one of the qualifications") {
@@ -587,7 +621,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
       )
       val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
-      foundProposals.toSet.diff(Set(proposal1, proposal2, proposal3, proposal4)) shouldBe Set.empty
+      foundProposals.toSet.diff(Set(proposal1, proposal2, proposal3, proposal4, proposal6)) shouldBe Set.empty
     }
 
     scenario("combine vote AND qualification filters") {
@@ -603,7 +637,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
       )
       val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
-      foundProposals.toSet.diff(Set(proposal1, proposal3)) shouldBe Set.empty
+      foundProposals.toSet.diff(Set(proposal1, proposal3, proposal6)) shouldBe Set.empty
 
       coordinator ! RequestUserVotedProposals(
         UserId("1"),
@@ -611,7 +645,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterQualifications = Some(Seq(QualificationKey.NoWay))
       )
       val foundOtherProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
-      foundOtherProposals.toSet.diff(Set(proposal3, proposal4)) shouldBe Set.empty
+      foundOtherProposals.toSet.diff(Set(proposal3, proposal4, proposal6)) shouldBe Set.empty
     }
 
   }
