@@ -19,9 +19,19 @@
 
 package org.make.api.technical.crm
 
+import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.Sharded
+import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
+
+case class Field(name: String, value: Option[Json]) {
+  def toSeq: Seq[(String, Json)] =
+    value match {
+      case Some(originalValue) => Seq((name, originalValue))
+      case None                => Seq.empty
+    }
+}
 
 case class SendEmail(id: String = "unknown",
                      from: Option[Recipient] = None,
@@ -70,37 +80,32 @@ object SendEmail {
     )
   }
 
-  implicit val encoder: Encoder[SendEmail] = Encoder.forProduct12(
-    "From",
-    "Subject",
-    "TextPart",
-    "HTMLPart",
-    "TemplateLanguage",
-    "TemplateID",
-    "Variables",
-    "To",
-    "Headers",
-    "CustomID",
-    "CustomCampaign",
-    "MonitoringCategory"
-  ) { sendEmail =>
-    (
-      sendEmail.from,
-      sendEmail.subject,
-      sendEmail.textPart,
-      sendEmail.htmlPart,
-      sendEmail.useTemplateLanguage,
-      sendEmail.templateId,
-      sendEmail.variables,
-      sendEmail.recipients,
-      sendEmail.headers,
-      sendEmail.emailId,
-      sendEmail.customCampaign,
-      sendEmail.monitoringCategory
-    )
-  }
-}
+  implicit val encoder: Encoder[SendEmail] =
+    (sendEmail: SendEmail) => {
 
+      val fields: Seq[(String, Json)] =
+        Seq.empty ++
+          Field("From", sendEmail.from.map(_.asJson)).toSeq ++
+          Field("Subject", sendEmail.subject.map(_.asJson)).toSeq ++
+          Field("TextPart", sendEmail.textPart.map(_.asJson)).toSeq ++
+          Field("HTMLPart", sendEmail.htmlPart.map(_.asJson)).toSeq ++
+          Field("TemplateLanguage", sendEmail.useTemplateLanguage.map(_.asJson)).toSeq ++
+          Field("TemplateID", sendEmail.templateId.map(_.asJson)).toSeq ++
+          Field("TemplateID", sendEmail.templateId.map(_.asJson)).toSeq ++
+          Field("To", Some(sendEmail.recipients.asJson)).toSeq ++
+          Field("Headers", sendEmail.headers.map(_.asJson)).toSeq ++
+          Field("CustomID", sendEmail.emailId.map(_.asJson)).toSeq ++
+          Field("CustomCampaign", sendEmail.customCampaign.map(_.asJson)).toSeq ++
+          Field("MonitoringCategory", sendEmail.monitoringCategory.map(_.asJson)).toSeq ++
+          (sendEmail.variables match {
+            case Some(values: Map[String, String]) if values.nonEmpty =>
+              Field("Variables", Some(values.asJson)).toSeq
+            case _ => Seq.empty
+          })
+
+      Json.obj(fields: _*)
+    }
+}
 case class SendMessages(messages: Seq[SendEmail])
 
 object SendMessages {
@@ -135,15 +140,26 @@ object EmailDetail {
 case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None)
 
 object Recipient {
-  implicit val encoder: Encoder[Recipient] = Encoder.forProduct3("Email", "Name", "Variables") { recipient =>
-    (recipient.email, recipient.name, recipient.variables)
-  }
+  implicit val encoder: Encoder[Recipient] =
+    (recipient: Recipient) => {
+      val fields: Seq[(String, Json)] =
+        Seq.empty ++
+          Field("Email", Some(recipient.email.asJson)).toSeq ++
+          Field("Name", recipient.name.map(_.asJson)).toSeq ++
+          (recipient.variables match {
+            case Some(values) if values.nonEmpty => Field("Variables", Some(values.asJson)).toSeq
+            case _                               => Seq.empty
+          })
+
+      Json.obj(fields: _*)
+
+    }
 }
 
 case class ManageContact(email: String,
                          name: String,
                          action: ManageContactAction,
-                         properties: Option[Map[String, String]] = None)
+                         properties: Option[ContactProperties] = None)
 
 object ManageContact {
   implicit val encoder: Encoder[ManageContact] = Encoder.forProduct4("Email", "Name", "Action", "Properties") {
@@ -203,7 +219,7 @@ object ManageContactAction {
   }
 }
 
-case class Contact(email: String, name: String, properties: Option[Map[String, String]] = None)
+case class Contact(email: String, name: String, properties: Option[ContactProperties] = None)
 object Contact {
   implicit val encoder: Encoder[Contact] = Encoder.forProduct3("Email", "Name", "Properties") { contact: Contact =>
     (contact.email, contact.name, contact.properties)
@@ -225,17 +241,121 @@ object ManageManyContacts {
   }
 }
 
-case class ContactProperty(name: String, value: String)
+case class ContactProperty[T](name: String, value: Option[T])
+
 object ContactProperty {
-  implicit val encoder: Encoder[ContactProperty] = Encoder.forProduct2("Name", "Value") {
-    contactProperty: ContactProperty =>
-      (contactProperty.name, contactProperty.value)
+  trait ToJson[T] {
+    def toJson(obj: T): Json
+  }
+
+  implicit val StringToJson: ToJson[String] = Json.fromString(_)
+  implicit val IntToJson: ToJson[Int] = Json.fromInt(_)
+  implicit val BooleanToJson: ToJson[Boolean] = Json.fromBoolean(_)
+
+  implicit def encoder[T](implicit toJson: ToJson[T]): Encoder[ContactProperty[T]] =
+    (contactProperty: ContactProperty[T]) => {
+      val fields: Seq[(String, Json)] = Field("Name", Some(contactProperty.name.asJson)).toSeq ++
+        Field("Value", contactProperty.value.map(toJson.toJson)).toSeq
+
+      Json.obj(fields: _*)
+    }
+}
+
+case class ContactData(data: Seq[ContactProperty[_]])
+object ContactData {
+  implicit val encoder: Encoder[ContactData] = Encoder.forProduct1("Data") { contactData: ContactData =>
+    contactData.data.map {
+      case a @ ContactProperty(_, None)             => a.asInstanceOf[ContactProperty[String]].asJson
+      case a @ ContactProperty(_, Some(_: String))  => a.asInstanceOf[ContactProperty[String]].asJson
+      case a @ ContactProperty(_, Some(_: Int))     => a.asInstanceOf[ContactProperty[Int]].asJson
+      case a @ ContactProperty(_, Some(_: Boolean)) => a.asInstanceOf[ContactProperty[Boolean]].asJson
+      case other                                    => throw new IllegalStateException(s"Unable to convert ${other.toString}")
+    }
   }
 }
 
-case class ContactData(data: Seq[ContactProperty])
-object ContactData {
-  implicit val encoder: Encoder[ContactData] = Encoder.forProduct1("Data") { contactData: ContactData =>
-    (contactData.data)
+case class ContactProperties(userId: Option[UserId],
+                             firstName: Option[String],
+                             postalCode: Option[String],
+                             dateOfBirth: Option[String],
+                             emailValidationStatus: Option[Boolean],
+                             emailHardBounceValue: Option[Boolean],
+                             unsubscribeStatus: Option[Boolean],
+                             accountCreationDate: Option[String],
+                             accountCreationSource: Option[String],
+                             accountCreationOperation: Option[String],
+                             accountCreationCountry: Option[String],
+                             countriesActivity: Option[String],
+                             lastCountryActivity: Option[String],
+                             lastLanguageActivity: Option[String],
+                             totalProposals: Option[Int],
+                             totalVotes: Option[Int],
+                             firstContributionDate: Option[String],
+                             lastContributionDate: Option[String],
+                             operationActivity: Option[String],
+                             activeCore: Option[Boolean],
+                             daysOfActivity: Option[Int],
+                             daysOfActivity30: Option[Int],
+                             numberOfThemes: Option[Int],
+                             userType: Option[String]) {
+  def toContactPropertySeq: Seq[ContactProperty[_]] = {
+    Seq(
+      ContactProperty("UserId", userId.map(_.value)),
+      ContactProperty("Firstname", firstName),
+      ContactProperty("Zipcode", postalCode),
+      ContactProperty("Date_Of_Birth", dateOfBirth),
+      ContactProperty("Email_Validation_Status", emailValidationStatus),
+      ContactProperty("Email_Hardbounce_Status", emailHardBounceValue),
+      ContactProperty("Unsubscribe_Status", unsubscribeStatus),
+      ContactProperty("Account_Creation_Date", accountCreationDate),
+      ContactProperty("Account_creation_source", accountCreationSource),
+      ContactProperty("Account_Creation_Operation", accountCreationOperation),
+      ContactProperty("Account_Creation_Country", accountCreationCountry),
+      ContactProperty("Countries_activity", countriesActivity),
+      ContactProperty("Last_country_activity", lastCountryActivity),
+      ContactProperty("Last_language_activity", lastLanguageActivity),
+      ContactProperty("Total_Number_Proposals", totalProposals),
+      ContactProperty("Total_number_votes", totalVotes),
+      ContactProperty("First_Contribution_Date", firstContributionDate),
+      ContactProperty("Last_Contribution_Date", lastContributionDate),
+      ContactProperty("Operation_activity", operationActivity),
+      ContactProperty("Active_core", activeCore),
+      ContactProperty("Days_of_Activity", daysOfActivity),
+      ContactProperty("Days_of_Activity_30d", daysOfActivity30),
+      ContactProperty("Number_of_themes", numberOfThemes),
+      ContactProperty("User_type", userType)
+    )
   }
+}
+
+object ContactProperties {
+  implicit val encoder: Encoder[ContactProperties] =
+    (contactProperties: ContactProperties) => {
+      Json.obj(
+        ("UserId", contactProperties.userId.map(_.value).asJson),
+        ("Firstname", contactProperties.firstName.asJson),
+        ("Zipcode", contactProperties.postalCode.asJson),
+        ("Date_Of_Birth", contactProperties.dateOfBirth.asJson),
+        ("Email_Validation_Status", contactProperties.emailValidationStatus.asJson),
+        ("Email_Hardbounce_Status", contactProperties.emailHardBounceValue.asJson),
+        ("Unsubscribe_Status", contactProperties.unsubscribeStatus.asJson),
+        ("Account_Creation_Date", contactProperties.accountCreationDate.asJson),
+        ("Account_creation_source", contactProperties.accountCreationSource.asJson),
+        ("Account_Creation_Operation", contactProperties.accountCreationOperation.asJson),
+        ("Account_Creation_Country", contactProperties.accountCreationCountry.asJson),
+        ("Countries_activity", contactProperties.countriesActivity.asJson),
+        ("Last_country_activity", contactProperties.lastCountryActivity.asJson),
+        ("Last_language_activity", contactProperties.lastLanguageActivity.asJson),
+        ("Total_Number_Proposals", contactProperties.totalProposals.asJson),
+        ("Total_number_votes", contactProperties.totalVotes.asJson),
+        ("First_Contribution_Date", contactProperties.firstContributionDate.asJson),
+        ("Last_Contribution_Date", contactProperties.lastContributionDate.asJson),
+        ("Operation_activity", contactProperties.operationActivity.asJson),
+        ("Active_core", contactProperties.activeCore.asJson),
+        ("Days_of_Activity", contactProperties.daysOfActivity.asJson),
+        ("Days_of_Activity_30d", contactProperties.daysOfActivity30.asJson),
+        ("Number_of_themes", contactProperties.numberOfThemes.asJson),
+        ("User_type", contactProperties.userType.asJson)
+      )
+    }
 }
