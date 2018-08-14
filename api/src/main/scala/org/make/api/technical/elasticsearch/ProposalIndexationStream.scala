@@ -19,8 +19,8 @@
 
 package org.make.api.technical.elasticsearch
 
-import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, ZonedDateTime}
 
 import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL.Implicits._
@@ -136,6 +136,9 @@ trait ProposalIndexationStream
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
     } yield {
+      val isBeforeContextSourceFeature: Boolean =
+        proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
+
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,
@@ -156,7 +159,10 @@ trait ProposalIndexationStream
         context = Some(
           ProposalContext(
             operation = proposal.creationContext.operationId,
-            source = proposal.creationContext.source,
+            source = proposal.creationContext.source.filter(!_.isEmpty) match {
+              case None if isBeforeContextSourceFeature => Some("core")
+              case other                                => other
+            },
             location = proposal.creationContext.location,
             question = proposal.creationContext.question
           )

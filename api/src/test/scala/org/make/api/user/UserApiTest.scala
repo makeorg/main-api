@@ -971,7 +971,26 @@ class UserApiTest
           .searchForUser(
             userId = ArgumentMatchers.any[Option[UserId]],
             query = ArgumentMatchers
-              .eq(SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId = sylvain.userId)))))),
+              .eq(
+                SearchQuery(
+                  filters = Some(
+                    SearchFilters(
+                      user = Some(UserSearchFilter(userId = sylvain.userId)),
+                      status = Some(
+                        StatusSearchFilter(
+                          status = Seq(
+                            ProposalStatus.Pending,
+                            ProposalStatus.Postponed,
+                            ProposalStatus.Accepted,
+                            ProposalStatus.Refused
+                          )
+                        )
+                      ),
+                      context = Some(ContextSearchFilter(source = Some("core")))
+                    )
+                  )
+                )
+              ),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
