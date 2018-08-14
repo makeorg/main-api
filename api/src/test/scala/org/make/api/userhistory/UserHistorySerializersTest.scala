@@ -39,20 +39,22 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.reference.{LabelId, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
-import stamina.Persisters
 import stamina.testkit.StaminaTestKit
+import stamina.{Persisters, V1, V2}
 
 class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
 
   val persisters = Persisters(UserHistorySerializers.serializers.toList)
   val userId = UserId("my-user-id")
-  val requestContext: RequestContext = RequestContext.empty
+  val requestContext: RequestContext =
+    RequestContext.empty
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
+  val recentDate: ZonedDateTime = ZonedDateTime.parse("2018-09-02T16:09:30.441Z")
 
   "user history persister" should {
     val userAddProposalsSequenceEvent = LogUserAddProposalsSequenceEvent(
@@ -253,9 +255,45 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
 
     val registerCitizenEvent = LogRegisterCitizenEvent(
       userId = userId,
-      requestContext = requestContext,
+      requestContext =
+        requestContext.copy(source = Some("core"), language = Some(Language("fr")), country = Some(Country("FR"))),
       action = UserAction(
         date = eventDate,
+        actionType = LogRegisterCitizenEvent.action,
+        arguments = UserRegistered(
+          email = "me@make.org",
+          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
+          firstName = Some("me"),
+          lastName = Some("myself"),
+          profession = Some("doer"),
+          postalCode = Some("75011")
+        )
+      )
+    )
+
+    val registerCitizenEventIt = LogRegisterCitizenEvent(
+      userId = userId,
+      requestContext =
+        requestContext.copy(source = Some("core"), language = Some(Language("it")), country = Some(Country("IT"))),
+      action = UserAction(
+        date = eventDate,
+        actionType = LogRegisterCitizenEvent.action,
+        arguments = UserRegistered(
+          email = "me@make.org",
+          dateOfBirth = Some(LocalDate.parse("1970-01-01")),
+          firstName = Some("me"),
+          lastName = Some("myself"),
+          profession = Some("doer"),
+          postalCode = Some("75011")
+        )
+      )
+    )
+
+    val recentRegisterCitizenEvent = LogRegisterCitizenEvent(
+      userId = userId,
+      requestContext = requestContext,
+      action = UserAction(
+        date = recentDate,
         actionType = LogRegisterCitizenEvent.action,
         arguments = UserRegistered(
           email = "me@make.org",
@@ -334,6 +372,11 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       sample(lockProposalEvent),
       sample(userCreateSequenceEvent),
       sample(userVotesAndQualifications),
+      PersistableSample[V2](
+        "recent",
+        recentRegisterCitizenEvent,
+        Some("to validate source migration with recent event")
+      ),
       sample(
         UserHistory(
           List(
@@ -357,6 +400,32 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
             userCreateSequenceEvent
           )
         )
+      ),
+      PersistableSample[V1](
+        "it",
+        UserHistory(
+          List(
+            userAddProposalsSequenceEvent,
+            userUnvoteEvent,
+            userStartSequenceEvent,
+            searchProposalsEvent,
+            acceptProposalEvent,
+            userQualificationEvent,
+            postponeProposalEvent,
+            userRemoveProposalsSequenceEvent,
+            userSearchSequencesEvent,
+            userVoteEvent,
+            getProposalDuplicatesEvent,
+            refuseProposalEvent,
+            userUnqualificationEvent,
+            userProposalEvent,
+            userUpdateSequenceEvent,
+            registerCitizenEventIt,
+            lockProposalEvent,
+            userCreateSequenceEvent
+          )
+        ),
+        Some("italian user history")
       )
     )
   }

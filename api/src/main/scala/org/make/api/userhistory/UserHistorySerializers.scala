@@ -19,22 +19,57 @@
 
 package org.make.api.userhistory
 
+import java.time.ZonedDateTime
+
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
-import org.make.core.SprayJsonFormatters
-import stamina.json._
+import org.make.core.{RequestContext, SprayJsonFormatters}
 import spray.json.DefaultJsonProtocol._
+import spray.json.JsValue
 import spray.json.lenses.JsonLenses._
-import stamina.{json, V1, V2, V3}
+import stamina._
+import stamina.json._
 
 object UserHistorySerializers extends SprayJsonFormatters {
 
-  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V2] =
-    json.persister[LogRegisterCitizenEvent, V2](
+  val countryFixDate = ZonedDateTime.parse("2018-09-01T00:00:00Z")
+  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V3] =
+    json.persister[LogRegisterCitizenEvent, V3](
       "user-history-registered",
-      from[V1].to[V2](
-        _.update('action / 'arguments / 'country ! set[String]("FR"))
-          .update('action / 'arguments / 'language ! set[String]("fr"))
-      )
+      from[V1]
+        .to[V2](
+          _.update('action / 'arguments / 'country ! set[String]("FR"))
+            .update('action / 'arguments / 'language ! set[String]("fr"))
+        )
+        .to[V3] { json =>
+          val actionDate: ZonedDateTime = ZonedDateTime.parse(json.extract[String]('action / 'date))
+
+          if (actionDate.isBefore(countryFixDate)) {
+
+            json.extract[RequestContext]('context).language.map(_.value) match {
+
+              case Some("fr") =>
+                json
+                  .update('context / 'source ! set[String]("core"))
+                  .update('context / 'country ! set[String]("FR"))
+              case Some("it") =>
+                json
+                  .update('context / 'source ! set[String]("core"))
+                  .update('context / 'country ! set[String]("IT"))
+              case Some("en") =>
+                json
+                  .update('context / 'source ! set[String]("core"))
+                  .update('context / 'country ! set[String]("GB"))
+              case _ =>
+                json
+                  .update('context / 'source ! set[String]("core"))
+                  .update('context / 'country ! set[String]("FR"))
+                  .update('context / 'language ! set[String]("fr"))
+
+            }
+          } else {
+            json
+          }
+        }
     )
 
   private val logSearchProposalsEventSerializer: JsonPersister[LogUserSearchProposalsEvent, V1] =
@@ -67,8 +102,8 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
     json.persister[LogUserUnqualificationEvent]("user-history-unqualification-vote")
 
-  private val userHistorySerializer: JsonPersister[UserHistory, V3] =
-    json.persister[UserHistory, V3](
+  private val userHistorySerializer: JsonPersister[UserHistory, V4] =
+    json.persister[UserHistory, V4](
       "user-history",
       from[V1]
         .to[V2](
@@ -86,6 +121,33 @@ object UserHistorySerializers extends SprayJsonFormatters {
               set[Seq[String]](Seq.empty)
           )
         )
+        .to[V4] { json =>
+          json.update('events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) ! modify[JsValue] {
+            event =>
+              val isBeforeDateFix: Boolean =
+                ZonedDateTime.parse(event.extract[String]('action / 'date)).isBefore(countryFixDate)
+
+              if (isBeforeDateFix) {
+                event.extract[String]('context / 'language.?).getOrElse("fr") match {
+                  case "it" =>
+                    event
+                      .update('context / 'country ! set[String]("IT"))
+                      .update('context / 'source ! set[String]("core"))
+                  case "en" =>
+                    event
+                      .update('context / 'country ! set[String]("GB"))
+                      .update('context / 'source ! set[String]("core"))
+                  case _ =>
+                    event
+                      .update('context / 'language ! set[String]("fr"))
+                      .update('context / 'country ! set[String]("FR"))
+                      .update('context / 'source ! set[String]("core"))
+                }
+              } else {
+                event
+              }
+          })
+        }
     )
 
   private val logUserCreateSequenceEventSerializer: JsonPersister[LogUserCreateSequenceEvent, V1] =
