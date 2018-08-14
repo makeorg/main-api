@@ -268,8 +268,17 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
               entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                 provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
                   provideAsync(
-                    questionService
-                      .findQuestion(requestContext.currentTheme, request.operationId, request.country, request.language)
+                    request.questionId
+                      .map(questionService.getQuestion)
+                      .getOrElse(
+                        questionService
+                          .findQuestion(
+                            requestContext.currentTheme,
+                            request.operationId,
+                            request.country,
+                            request.language
+                          )
+                      )
                   ) { maybeQuestion =>
                     Validation.validate(
                       Validation

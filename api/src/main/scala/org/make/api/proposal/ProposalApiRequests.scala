@@ -40,6 +40,7 @@ import scala.util.Random
 
 final case class ProposeProposalRequest(content: String,
                                         operationId: Option[OperationId],
+                                        questionId: Option[QuestionId],
                                         language: Language,
                                         country: Country) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
