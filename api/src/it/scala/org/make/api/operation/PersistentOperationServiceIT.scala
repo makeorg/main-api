@@ -128,14 +128,16 @@ class PersistentOperationServiceIT
         tagIds = Seq(stark.tagId, targaryen.tagId),
         landingSequenceId = sequenceIdFR,
         startDate = None,
-        endDate = None
+        endDate = None,
+        questionId = None
       ),
       OperationCountryConfiguration(
         countryCode = Country("GB"),
         tagIds = Seq(bolton.tagId, greyjoy.tagId),
         landingSequenceId = sequenceIdGB,
         startDate = None,
-        endDate = None
+        endDate = None,
+        questionId = None
       )
     )
   )
@@ -319,7 +321,8 @@ class PersistentOperationServiceIT
                     tagIds = Seq.empty,
                     landingSequenceId = SequenceId("updatedSequenceId"),
                     startDate = None,
-                    endDate = None
+                    endDate = None,
+                    questionId = None
                   )
                 )
               )

@@ -151,6 +151,7 @@ class ModerationOperationApiTest
         landingSequenceId = SequenceId("first-sequence-id"),
         startDate = Some(LocalDate.parse("2018-02-02")),
         endDate = None,
+        questionId = None
       )
     )
   )
@@ -180,7 +181,8 @@ class ModerationOperationApiTest
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("second-sequence-id"),
         startDate = Some(LocalDate.parse("2018-02-02")),
-        endDate = Some(LocalDate.parse("2018-05-02"))
+        endDate = Some(LocalDate.parse("2018-05-02")),
+        questionId = None
       )
     )
   )
@@ -324,7 +326,8 @@ class ModerationOperationApiTest
           tagIds = Seq(TagId("hello")),
           landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
           startDate = None,
-          endDate = None
+          endDate = None,
+          questionId = None
         )
       )
     )
@@ -346,7 +349,8 @@ class ModerationOperationApiTest
             tagIds = Seq(TagId("hello")),
             landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
             startDate = Some(LocalDate.parse("2018-02-02")),
-            endDate = Some(LocalDate.parse("2018-05-02"))
+            endDate = Some(LocalDate.parse("2018-05-02")),
+            questionId = None
           )
         )
       )
@@ -367,7 +371,8 @@ class ModerationOperationApiTest
             tagIds = Seq(TagId("hello")),
             landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
             startDate = Some(LocalDate.parse("2018-02-02")),
-            endDate = Some(LocalDate.parse("2018-05-02"))
+            endDate = Some(LocalDate.parse("2018-05-02")),
+            questionId = None
           )
         )
       )

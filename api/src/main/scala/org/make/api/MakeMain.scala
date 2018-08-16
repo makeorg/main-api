@@ -138,22 +138,23 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   val migrations: Seq[Migration] =
     Seq(
-      CoreData,
       VffOperation,
+      ClimatParisOperation,
+      LpaeOperation,
+      MVEOperation,
+      MakeEuropeOperation,
+      ChanceAuxJeunesOperation,
+      CultureOperation,
+      CreateQuestions,
+      CoreData,
       VffData,
       VffITData,
       VffGBData,
-      ClimatParisOperation,
       ClimatParisData,
-      LpaeOperation,
       LpaeData,
-      MVEOperation,
       MVEData,
-      MakeEuropeOperation,
       MakeEuropeData,
-      ChanceAuxJeunesOperation,
       ChanceAuxJeunesData,
-      CultureOperation,
 //      Removed CultureData as proposals created by this migration are created several times for no apparent reasons
 //      CultureData,
       CultureImportTagsData

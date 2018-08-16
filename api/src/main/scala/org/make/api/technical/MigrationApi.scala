@@ -25,57 +25,30 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.migrations
+import org.make.api.operation.OperationServiceComponent
+import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user.PersistentUserServiceComponent
-import org.make.core.HttpCodes
-import org.make.core.auth.UserRights
+import org.make.api.theme.ThemeServiceComponent
 import org.make.core.tag.{Tag => _}
-import org.make.core.user.User
-import scalaoauth2.provider.AuthInfo
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 @Path("/migrations")
 @Api(value = "Migrations")
 trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
-  self: PersistentUserServiceComponent
+  self: OperationServiceComponent
+    with ThemeServiceComponent
+    with QuestionServiceComponent
+    with PersistentQuestionServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  @ApiOperation(value = "update-fb-user-avatar_url", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/update-fb-avatar-url")
-  def updateFbAvatarUrl: Route = {
-    post {
-      path("migrations" / "update-fb-avatar-url") {
-        makeOperation("MigrateTags") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
-              def updateAllAvatarUrl(fbUsers: Seq[User]): Future[Unit] = {
-                migrations
-                  .sequentially(fbUsers) { user =>
-                    val avatarUrl: String = user.profile
-                      .map(profile => s"https://graph.facebook.com/v3.0/${profile.facebookId.getOrElse("")}/picture")
-                      .getOrElse("")
-                    persistentUserService.updateAvatarUrl(user.userId, avatarUrl).map(_ => {})
-                  }
-              }
-              val result: Future[Unit] = for {
-                fbUsers    <- persistentUserService.findAllUsersWithFbIdNotNull()
-                allUpdated <- updateAllAvatarUrl(fbUsers)
-              } yield allUpdated
-              provideAsync(result) { _ =>
-                complete(StatusCodes.OK)
-              }
-            }
-          }
-        }
+  def dummy: Route = {
+    get {
+      path("migrations") {
+        complete(StatusCodes.OK)
       }
     }
   }
 
-  val migrationRoutes: Route = updateFbAvatarUrl
+  val migrationRoutes: Route = dummy
 }

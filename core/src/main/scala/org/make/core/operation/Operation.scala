@@ -26,6 +26,7 @@ import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
@@ -46,11 +47,6 @@ final case class Operation(status: OperationStatus,
                            countriesConfiguration: Seq[OperationCountryConfiguration])
     extends MakeSerializable
     with Timestamped
-
-object Operation {
-  implicit val operationFormatter: RootJsonFormat[Operation] =
-    DefaultJsonProtocol.jsonFormat9(Operation.apply)
-}
 
 final case class OperationId(value: String) extends StringValue
 
@@ -77,12 +73,10 @@ final case class OperationCountryConfiguration(countryCode: Country,
                                                @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
                                                landingSequenceId: SequenceId,
                                                startDate: Option[LocalDate],
+                                               questionId: Option[QuestionId],
                                                endDate: Option[LocalDate])
 
 object OperationCountryConfiguration extends CirceFormatters {
-  implicit val operationCountryConfigurationFormatter: RootJsonFormat[OperationCountryConfiguration] =
-    DefaultJsonProtocol.jsonFormat5(OperationCountryConfiguration.apply)
-
   implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
 }
