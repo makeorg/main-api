@@ -325,6 +325,8 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity30 shouldBe Some(1)
         maybeProperties.numberOfThemes shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
       }
     }
   }
