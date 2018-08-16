@@ -22,6 +22,7 @@ package org.make.api.technical.crm
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.Sharded
+import org.make.core.operation.Operation
 import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -358,4 +359,25 @@ object ContactProperties {
         ("User_type", contactProperties.userType.asJson)
       )
     }
+
+  def normalizeOperationActivity(operationActivity: Option[String], allOperations: Seq[Operation]): Option[String] = {
+
+    operationActivity match {
+      case Some(value) =>
+        val operationsDefinedByOperationIdOrSlug: Seq[String] = value.split(",").toSeq
+        val operationIds: Seq[String] = operationsDefinedByOperationIdOrSlug
+          .flatMap(
+            operationIdOrSlug =>
+              allOperations
+                .find(operation => operation.operationId.value == operationIdOrSlug)
+                .map(_.operationId.value)
+                .orElse(allOperations.find(_.slug == operationIdOrSlug).map(_.operationId.value))
+                .orElse(Some(operationIdOrSlug))
+          )
+          .distinct
+
+        Some(operationIds.mkString(","))
+      case _ => None
+    }
+  }
 }

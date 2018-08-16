@@ -27,11 +27,12 @@ import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, Curre
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
-import org.make.core.operation.OperationId
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -41,11 +42,13 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class CrmServiceComponentTest
     extends MakeUnitTest
     with DefaultCrmServiceComponent
+    with OperationServiceComponent
     with MailJetConfigurationComponent
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
@@ -63,9 +66,29 @@ class CrmServiceComponentTest
   override val userJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
+  override val operationService: OperationService = mock[OperationService]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
+
+  val defaultOperation: Operation = Operation(
+    status = OperationStatus.Active,
+    operationId = OperationId("default"),
+    slug = "default",
+    defaultLanguage = Language("fr"),
+    events = List.empty,
+    createdAt = None,
+    updatedAt = None,
+    countriesConfiguration = Seq.empty
+  )
+
+  val operations: Seq[Operation] = Seq(
+    defaultOperation.copy(operationId = OperationId("345-34-89"), slug = "culture"),
+    defaultOperation.copy(operationId = OperationId("999-99-99"), slug = "chance"),
+    defaultOperation.copy(operationId = OperationId("200-20-11"), slug = "vff")
+  )
+
+  when(operationService.find()).thenReturn(Future.successful(operations))
 
   val fooProfile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),
@@ -111,7 +134,7 @@ class CrmServiceComponentTest
       userId = UserId("1"),
       requestContext = RequestContext.empty.copy(
         source = Some("core"),
-        operationId = Some(OperationId("culture")),
+        operationId = Some(OperationId("999-99-99")),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -218,7 +241,7 @@ class CrmServiceComponentTest
       userId = UserId("1"),
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
-        operationId = Some(OperationId("culture")),
+        operationId = Some(OperationId("invalidoperation")),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -238,7 +261,7 @@ class CrmServiceComponentTest
       userId = UserId("1"),
       requestContext = RequestContext.empty.copy(
         source = Some("culture"),
-        operationId = Some(OperationId("culture")),
+        operationId = Some(OperationId("200-20-11")),
         country = Some(Country("FR")),
         language = Some(Language("fr"))
       ),
@@ -283,7 +306,7 @@ class CrmServiceComponentTest
         maybeProperties.unsubscribeStatus shouldBe Some(false)
         maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
         maybeProperties.accountCreationSource shouldBe Some("core")
-        maybeProperties.accountCreationOperation shouldBe Some("culture")
+        maybeProperties.accountCreationOperation shouldBe Some("999-99-99")
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR,IT,GB")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
@@ -296,7 +319,7 @@ class CrmServiceComponentTest
             .plusDays(2)
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC))
         )
-        maybeProperties.operationActivity shouldBe Some("culture,vff")
+        maybeProperties.operationActivity shouldBe Some("999-99-99,200-20-11,345-34-89,invalidoperation")
         maybeProperties.activeCore shouldBe Some(true)
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)

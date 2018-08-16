@@ -38,6 +38,7 @@ import io.circe.syntax._
 import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.userhistory._
 import org.make.core.DateHelper
@@ -71,6 +72,7 @@ trait CrmServiceComponent {
 trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging {
   self: MailJetConfigurationComponent
     with ActorSystemComponent
+    with OperationServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent =>
 
@@ -360,10 +362,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     override def getPropertiesFromUser(user: User): Future[ContactProperties] = {
 
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
       val events: Source[EventEnvelope, NotUsed] =
         userJournal.currentEventsByPersistenceId(user.userId.value, 0, Long.MaxValue)
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-
       val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
       val dateFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
@@ -495,34 +496,44 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
       }
 
-      userProperties.map { userProperty =>
-        ContactProperties(
-          userId = Some(userProperty.userId),
-          firstName = Some(userProperty.firstname),
-          postalCode = userProperty.zipCode,
-          dateOfBirth = userProperty.dateOfBirth.map(_.format(localDateFormatter)),
-          emailValidationStatus = Some(userProperty.emailValidationStatus),
-          emailHardBounceValue = Some(userProperty.emailHardBounceStatus),
-          unsubscribeStatus = Some(userProperty.unsubscribeStatus),
-          accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
-          accountCreationSource = userProperty.accountCreationSource,
-          accountCreationOperation = userProperty.accountCreationOperation,
-          accountCreationCountry = userProperty.accountCreationCountry,
-          countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
-          lastCountryActivity = userProperty.lastCountryActivity,
-          lastLanguageActivity = userProperty.lastLanguageActivity,
-          totalProposals = Some(userProperty.totalNumberProposals.getOrElse(0)),
-          totalVotes = Some(userProperty.totalNumbervotes.getOrElse(0)),
-          firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
-          lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
-          operationActivity = Some(userProperty.operationActivity.distinct.mkString(",")),
-          activeCore = userProperty.activeCore,
-          daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
-          daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
-          numberOfThemes = Some(userProperty.themes.distinct.length),
-          userType = if (userProperty.isOrganisation) { Some("B2B") } else { Some("B2C") }
+      for {
+        properties <- userProperties.map { userProperty =>
+          ContactProperties(
+            userId = Some(userProperty.userId),
+            firstName = Some(userProperty.firstname),
+            postalCode = userProperty.zipCode,
+            dateOfBirth = userProperty.dateOfBirth.map(_.format(localDateFormatter)),
+            emailValidationStatus = Some(userProperty.emailValidationStatus),
+            emailHardBounceValue = Some(userProperty.emailHardBounceStatus),
+            unsubscribeStatus = Some(userProperty.unsubscribeStatus),
+            accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
+            accountCreationSource = userProperty.accountCreationSource,
+            accountCreationOperation = userProperty.accountCreationOperation,
+            accountCreationCountry = userProperty.accountCreationCountry,
+            countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
+            lastCountryActivity = userProperty.lastCountryActivity,
+            lastLanguageActivity = userProperty.lastLanguageActivity,
+            totalProposals = Some(userProperty.totalNumberProposals.getOrElse(0)),
+            totalVotes = Some(userProperty.totalNumbervotes.getOrElse(0)),
+            firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
+            lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
+            operationActivity = Some(userProperty.operationActivity.distinct.mkString(",")),
+            activeCore = userProperty.activeCore,
+            daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
+            daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
+            numberOfThemes = Some(userProperty.themes.distinct.length),
+            userType = if (userProperty.isOrganisation) {
+              Some("B2B")
+            } else {
+              Some("B2C")
+            }
+          )
+        }
+        operations <- operationService.find()
+      } yield
+        properties.copy(
+          operationActivity = ContactProperties.normalizeOperationActivity(properties.operationActivity, operations)
         )
-      }
     }
   }
 
