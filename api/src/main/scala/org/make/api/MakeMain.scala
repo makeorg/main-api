@@ -19,6 +19,7 @@
 
 package org.make.api
 
+import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, PoisonPill}
@@ -44,6 +45,7 @@ import org.make.core.DateHelper
 import akka.pattern.ask
 import org.make.api.MakeGuardian.Ping
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
@@ -64,11 +66,19 @@ object MakeMain extends App with StrictLogging with MakeApi {
     val defaultConfiguration = ConfigFactory.load()
     val configurationPath = defaultConfiguration.getString("make-api.secrets-configuration-path")
     val extraConfigPath = Paths.get(configurationPath)
-    if (Files.exists(extraConfigPath) && !Files.isDirectory(extraConfigPath)) {
+    val configWithSecrets = if (Files.exists(extraConfigPath) && !Files.isDirectory(extraConfigPath)) {
       ConfigFactory.parseFile(extraConfigPath.toFile).resolve().withFallback(defaultConfiguration)
     } else {
       defaultConfiguration
     }
+
+    val bindAddress = configWithSecrets.getString("akka.remote.artery.canonical.hostname")
+    val resolvedAddress: String = InetAddress.getByName(bindAddress).getHostAddress
+
+    ConfigFactory
+      .parseMap(Map("akka.remote.artery.canonical.hostname" -> resolvedAddress).asJava)
+      .withFallback(configWithSecrets)
+      .resolve()
   }
 
   override implicit val actorSystem: ExtendedActorSystem =
