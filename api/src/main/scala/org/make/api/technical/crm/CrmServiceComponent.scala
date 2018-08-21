@@ -382,7 +382,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           emailHardBounceStatus = user.isHardBounce,
           unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
           accountCreationDate = user.createdAt,
-          isOrganisation = user.isOrganisation
+          isOrganisation = user.isOrganisation,
+          updatedAt = Some(DateHelper.now())
         )
       ) { (accumulator: UserProperties, envelope: EventEnvelope) =>
         {
@@ -526,7 +527,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               Some("B2B")
             } else {
               Some("B2C")
-            }
+            },
+            updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
           )
         }
         operations <- operationService.find()
@@ -572,4 +574,5 @@ final case class UserProperties(userId: UserId,
                                 daysOfActivity: Seq[String] = Seq.empty,
                                 daysOfActivity30d: Seq[String] = Seq.empty,
                                 themes: Seq[String] = Seq.empty,
-                                userType: Option[String] = None)
+                                userType: Option[String] = None,
+                                updatedAt: Option[ZonedDateTime])

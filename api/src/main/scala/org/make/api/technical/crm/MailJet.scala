@@ -298,7 +298,8 @@ case class ContactProperties(userId: Option[UserId],
                              daysOfActivity: Option[Int],
                              daysOfActivity30: Option[Int],
                              numberOfThemes: Option[Int],
-                             userType: Option[String]) {
+                             userType: Option[String],
+                             updatedAt: Option[String]) {
   def toContactPropertySeq: Seq[ContactProperty[_]] = {
     Seq(
       ContactProperty("UserId", userId.map(_.value)),
@@ -324,7 +325,8 @@ case class ContactProperties(userId: Option[UserId],
       ContactProperty("Days_of_Activity", daysOfActivity),
       ContactProperty("Days_of_Activity_30d", daysOfActivity30),
       ContactProperty("Number_of_themes", numberOfThemes),
-      ContactProperty("User_type", userType)
+      ContactProperty("User_type", userType),
+      ContactProperty("Updated_at", updatedAt)
     )
   }
 }
@@ -356,7 +358,8 @@ object ContactProperties {
         ("Days_of_Activity", contactProperties.daysOfActivity.asJson),
         ("Days_of_Activity_30d", contactProperties.daysOfActivity30.asJson),
         ("Number_of_themes", contactProperties.numberOfThemes.asJson),
-        ("User_type", contactProperties.userType.asJson)
+        ("User_type", contactProperties.userType.asJson),
+        ("Updated_at", contactProperties.updatedAt.asJson)
       )
     }
 
