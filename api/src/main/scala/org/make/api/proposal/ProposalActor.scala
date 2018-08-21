@@ -863,7 +863,10 @@ object ProposalActor {
     ).filter {
       case (_, value) => !value.isEmpty
     }
-    val moderator: UserId = event.moderator.get
+    val moderator: UserId = event.moderator match {
+      case Some(userId) => userId
+      case _            => throw new IllegalStateException("moderator required")
+    }
     val action =
       ProposalAction(
         date = event.eventDate,

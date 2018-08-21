@@ -70,7 +70,10 @@ object IndexedIdea extends CirceFormatters {
       country = idea.country,
       language = idea.language,
       status = idea.status,
-      createdAt = idea.createdAt.get,
+      createdAt = idea.createdAt match {
+        case Some(date) => date
+        case _          => throw new IllegalStateException("created at required")
+      },
       updatedAt = idea.updatedAt
     )
   }

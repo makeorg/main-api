@@ -131,8 +131,12 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
             mailJetTemplateConfiguration.registration(operation = operationSlug, country = country, language = language)
 
           if (registration.enabled) {
+            val verificationToken: String = user.verificationToken match {
+              case Some(token) => token
+              case _           => throw new IllegalStateException
+            }
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${verificationToken}" +
               s"?operation=${event.requestContext.operationId
                 .map(_.value)
                 .getOrElse(operationSlug)}&language=$language&country=$country"
@@ -184,8 +188,12 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               .forgottenPassword(operation = operationSlug, country = country, language = language)
 
           if (forgottenPassword.enabled) {
+            val resetToken: String = user.resetToken match {
+              case Some(token) => token
+              case _           => throw new IllegalStateException("reset token required")
+            }
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}/#/${user.country}/password-recovery/${user.userId.value}/${user.resetToken.get}" +
+              .getFrontUrl()}/#/${user.country}/password-recovery/${user.userId.value}/$resetToken" +
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
 
             context.system.eventStream.publish(
@@ -239,8 +247,12 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
             .resendAccountValidationLink(operation = operationSlug, country = country, language = language)
 
           if (resendAccountValidationLink.enabled) {
+            val verificationToken: String = user.verificationToken match {
+              case Some(token) => token
+              case _           => throw new IllegalStateException("validation token required")
+            }
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${user.verificationToken.get}" +
+              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/$verificationToken" +
               s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
             eventBusService.publish(
               SendEmail.create(

@@ -318,8 +318,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                         userId = userId,
                         country = user.country,
                         language = user.language,
-                        requestContext = requestContext,
-                        isSocialLogin = false
+                        requestContext = requestContext
                       )
                     )
                     eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
@@ -846,19 +845,13 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
     validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
   }
 
-  if (language.nonEmpty) {
-    validate(maxLength("language", maxLanguageLength, language.get.value))
-  }
-
-  if (country.nonEmpty) {
-    validate(maxLength("country", maxCountryLength, country.get.value))
-  }
-
-  if (gender.nonEmpty) {
+  language.foreach(lang       => validate(maxLength("language", maxLanguageLength, lang.value)))
+  country.foreach(userCountry => validate(maxLength("country", maxCountryLength, userCountry.value)))
+  gender.foreach { userGender =>
     validate(
       validateField(
         "gender",
-        Gender.matchGender(gender.get).isDefined,
+        Gender.matchGender(userGender).isDefined,
         s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
       )
     )

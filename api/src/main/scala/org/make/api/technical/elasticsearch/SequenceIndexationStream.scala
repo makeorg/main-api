@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.technical.elasticsearch
 
 import akka.stream.scaladsl.Flow
@@ -59,8 +78,14 @@ trait SequenceIndexationStream
         slug = sequence.slug,
         translation = sequence.sequenceTranslation,
         status = sequence.status,
-        createdAt = sequence.createdAt.get,
-        updatedAt = sequence.updatedAt.get,
+        createdAt = sequence.createdAt match {
+          case Some(date) => date
+          case _          => throw new IllegalStateException("created at required")
+        },
+        updatedAt = sequence.updatedAt match {
+          case Some(date) => date
+          case _          => throw new IllegalStateException("updated at required")
+        },
         context = Some(
           SequenceContext(
             operation = sequence.creationContext.operationId,

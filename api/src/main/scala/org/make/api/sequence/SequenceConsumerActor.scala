@@ -99,8 +99,14 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
         slug = sequence.slug,
         translation = sequence.sequenceTranslation,
         status = sequence.status,
-        createdAt = sequence.createdAt.get,
-        updatedAt = sequence.updatedAt.get,
+        createdAt = sequence.createdAt match {
+          case Some(date) => date
+          case _          => throw new IllegalStateException("created at required")
+        },
+        updatedAt = sequence.updatedAt match {
+          case Some(date) => date
+          case _          => throw new IllegalStateException("update at required")
+        },
         context = Some(
           Context(
             operation = sequence.creationContext.operationId,
