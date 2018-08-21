@@ -26,14 +26,16 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.proposal._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
+import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{OperationSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.tag.TagId
+import org.make.core.{HttpCodes, ParameterExtractors}
+import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
 
@@ -43,11 +45,11 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with ProposalSearchEngineComponent =>
+    with ProposalServiceComponent =>
 
   @Path(value = "/operations/{operationId}/start-sequence")
   @ApiOperation(value = "get-widget-sequence", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[WidgetSequence])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse])))
   @ApiImplicitParams(value = Array(
     new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string"),
     new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true)
@@ -55,19 +57,23 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
   def getWidgetSequence: Route = {
     get {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
-        makeOperation("GetWidgetSequence") { _ =>
-          parameters('tagsIds.as[immutable.Seq[TagId]].?) { tagsIds =>
-            provideAsync(
-              elasticsearchProposalAPI.searchProposals(
-                SearchQuery(
-                  filters = Some(SearchFilters(
-                    tags = tagsIds.map(TagsSearchFilter(_)),
-                    operation = Some(OperationSearchFilter(widgetOperationId))
-                  ))
+        makeOperation("GetWidgetSequence") { requestContext =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+            parameters('tagsIds.as[immutable.Seq[TagId]].?) { tagsIds =>
+              provideAsync(
+                proposalService.searchForUser(
+                  userId = userAuth.map(_.user.userId),
+                  query = SearchQuery(
+                    filters = Some(SearchFilters(
+                      tags = tagsIds.map(TagsSearchFilter(_)),
+                      operation = Some(OperationSearchFilter(widgetOperationId))
+                    ))
+                  ),
+                  requestContext = requestContext
                 )
-              )
-            ) { proposalsSearchResult: ProposalsSearchResult =>
-              complete(proposalsSearchResult)
+              ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
+                complete(proposalsResultSeededResponse)
+              }
             }
           }
         }
