@@ -1,0 +1,7 @@
+---
+exclude_paths:
+  - '**.sql'
+  - 'api/src/it/**'
+  - 'api/src/test/**'
+  - 'fixtures/src/test/**'
+  - 'core/src/test/**'
