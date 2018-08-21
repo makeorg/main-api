@@ -37,6 +37,7 @@ import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
+import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
@@ -707,10 +708,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             availableProposals match {
               case Nil => Future.successful(None)
               case head :: tail =>
-                proposalCoordinatorService
-                  .lock(LockProposalCommand(head, moderator, user.flatMap(_.fullName), requestContext))
-                  .flatMap(_ => getModerationProposalById(head))
-                  .recoverWith { case _ => recursiveLock(tail) }
+                getModerationProposalById(head).flatMap { proposal =>
+                  if (proposal.exists(_.status != Pending)) {
+                    recursiveLock(tail)
+                  } else {
+                    proposalCoordinatorService
+                      .lock(LockProposalCommand(head, moderator, user.flatMap(_.fullName), requestContext))
+                      .map(_ => proposal)
+                      .recoverWith { case _ => recursiveLock(tail) }
+                  }
+                }
             }
           }
           recursiveLock(results.results.map(_.id).toList)

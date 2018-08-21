@@ -166,7 +166,8 @@ object SearchFilters extends ElasticDsl {
       buildIdeaSearchFilter(searchQuery),
       buildLanguageSearchFilter(searchQuery),
       buildCountrySearchFilter(searchQuery),
-      buildUserSearchFilter(searchQuery)
+      buildUserSearchFilter(searchQuery),
+      buildQuestionSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSortDefinition] =
