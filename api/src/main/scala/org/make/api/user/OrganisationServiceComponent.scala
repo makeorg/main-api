@@ -56,10 +56,14 @@ case class OrganisationRegisterData(name: String,
                                     email: String,
                                     password: Option[String],
                                     avatar: Option[String],
+                                    description: Option[String],
                                     country: Country,
                                     language: Language)
 
-case class OrganisationUpdateData(name: Option[String], email: Option[String], avatar: Option[String])
+case class OrganisationUpdateData(name: Option[String],
+                                  email: Option[String],
+                                  avatar: Option[String],
+                                  description: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
   this: IdGeneratorComponent
@@ -106,6 +110,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             avatarUrl = organisationRegisterData.avatar,
             profession = None,
             phoneNumber = None,
+            description = organisationRegisterData.description,
             twitterId = None,
             facebookId = None,
             googleId = None,
@@ -152,21 +157,23 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     }
 
     override def update(organisationId: UserId,
-                        organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]] = {
+                        organisationUpdateData: OrganisationUpdateData): Future[Option[UserId]] = {
       for {
-        emailExists <- updateMailExists(organisationUpdateDate.email.map(_.toLowerCase))
-        _           <- verifyEmail(organisationUpdateDate.email.map(_.toLowerCase).getOrElse(""), emailExists)
+        emailExists <- updateMailExists(organisationUpdateData.email.map(_.toLowerCase))
+        _           <- verifyEmail(organisationUpdateData.email.map(_.toLowerCase).getOrElse(""), emailExists)
         update <- persistentUserService
           .get(organisationId)
           .flatMap(_.map { registeredOrganisation =>
             val updateOrganisation =
               registeredOrganisation.copy(
-                organisationName = organisationUpdateDate.name.orElse(registeredOrganisation.organisationName),
-                email = organisationUpdateDate.email.getOrElse(registeredOrganisation.email),
+                organisationName = organisationUpdateData.name.orElse(registeredOrganisation.organisationName),
+                email = organisationUpdateData.email.getOrElse(registeredOrganisation.email),
                 profile = registeredOrganisation.profile.map(
                   _.copy(
                     avatarUrl =
-                      organisationUpdateDate.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl))
+                      organisationUpdateData.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl)),
+                    description =
+                      organisationUpdateData.description.orElse(registeredOrganisation.profile.flatMap(_.description))
                   )
                 )
               )

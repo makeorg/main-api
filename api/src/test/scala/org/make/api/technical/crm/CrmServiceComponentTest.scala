@@ -95,6 +95,7 @@ class CrmServiceComponentTest
     avatarUrl = Some("https://www.example.com"),
     profession = Some("profession"),
     phoneNumber = Some("010101"),
+    description = Some("Resume of who I am"),
     twitterId = Some("@twitterid"),
     facebookId = Some("facebookid"),
     googleId = Some("googleId"),

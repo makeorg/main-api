@@ -86,7 +86,7 @@ class OrganisationServiceTest
     roles = Seq(RoleActor),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None))
+    profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None, None))
   )
 
   val returnedOrganisation2 = User(
@@ -141,6 +141,7 @@ class OrganisationServiceTest
           email = "any@mail.com",
           password = Some("passopasso"),
           avatar = None,
+          description = None,
           country = Country("FR"),
           language = Language("fr")
         ),
@@ -170,6 +171,7 @@ class OrganisationServiceTest
           email = "any@mail.com",
           password = Some("passopasso"),
           avatar = None,
+          description = None,
           country = Country("FR"),
           language = Language("fr")
         ),
@@ -193,7 +195,12 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = Some("Jeanne Done Corp."), email = None, avatar = Some("anotherAvatarUrl"))
+        OrganisationUpdateData(
+          name = Some("Jeanne Done Corp."),
+          email = None,
+          avatar = Some("anotherAvatarUrl"),
+          description = None
+        )
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
@@ -207,7 +214,7 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
@@ -221,7 +228,7 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = Some("any@mail.com"), avatar = None)
+        OrganisationUpdateData(name = None, email = Some("any@mail.com"), avatar = None, description = None)
       )
 
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
@@ -233,7 +240,7 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
@@ -246,7 +253,7 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>

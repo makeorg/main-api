@@ -84,6 +84,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                           email = request.email,
                           password = Some(request.password),
                           avatar = request.avatar,
+                          description = request.description,
                           country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
                           language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
                         ),
@@ -131,7 +132,12 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                       organisationService
                         .update(
                           organisationId,
-                          OrganisationUpdateData(name = request.name, email = maybeEmail, avatar = request.avatar)
+                          OrganisationUpdateData(
+                            name = request.name,
+                            email = maybeEmail,
+                            avatar = request.avatar,
+                            description = request.description
+                          )
                         )
                     ) { organisationId =>
                       complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
@@ -178,9 +184,10 @@ final case class ModerationCreateOrganisationRequest(name: String,
                                                      email: String,
                                                      password: String,
                                                      avatar: Option[String],
+                                                     description: Option[String],
                                                      country: Option[Country],
                                                      language: Option[Language]) {
-  OrganisationValidation.validateCreate(name = name, email = email)
+  OrganisationValidation.validateCreate(name = name, email = email, description)
 }
 
 object ModerationCreateOrganisationRequest {
@@ -190,8 +197,19 @@ object ModerationCreateOrganisationRequest {
 
 final case class ModerationUpdateOrganisationRequest(name: Option[String] = None,
                                                      email: Option[String] = None,
-                                                     avatar: Option[String] = None) {
-  name.foreach(name => OrganisationValidation.validateUpdate(name = name))
+                                                     avatar: Option[String] = None,
+                                                     description: Option[String] = None) {
+  OrganisationValidation.validateUpdate(name = name, description = description)
+
+  if (description.nonEmpty) {
+    validate(
+      validateField(
+        "description",
+        description.forall(_.length <= 450),
+        "description connot be longer than 450 characters"
+      )
+    )
+  }
 }
 
 object ModerationUpdateOrganisationRequest {
@@ -201,11 +219,21 @@ object ModerationUpdateOrganisationRequest {
 
 private object OrganisationValidation {
   private val maxNameLength = 256
+  private val maxDescriptionLength = 450
 
-  def validateCreate(name: String, email: String): Unit = {
-    validate(mandatoryField("email", email), mandatoryField("name", name), maxLength("name", maxNameLength, name))
+  def validateCreate(name: String, email: String, description: Option[String]): Unit = {
+    validate(
+      Some(mandatoryField("email", email)),
+      Some(mandatoryField("name", name)),
+      Some(maxLength("name", maxNameLength, name)),
+      description.map(value => maxLength("description", maxDescriptionLength, value))
+    )
   }
 
-  def validateUpdate(name: String): Unit =
-    validate(maxLength("name", maxNameLength, name))
+  def validateUpdate(name: Option[String], description: Option[String]): Unit = {
+    validate(
+      name.map(value        => maxLength("name", maxNameLength, value)),
+      description.map(value => maxLength("description", maxDescriptionLength, value))
+    )
+  }
 }
