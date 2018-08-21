@@ -267,10 +267,6 @@ trait PersistentUserService {
   def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
-//TODO: Remove these two functions: findAllUsersWithFbIdNotNull & updateAvatarUrl
-//Warning: DO NOT USE THESE TWO FUNCTIONS: findAllUsersWithFbIdNotNull & updateAvatarUrl
-  @Deprecated def findAllUsersWithFbIdNotNull(): Future[Seq[User]]
-  @Deprecated def updateAvatarUrl(userId: UserId, avatarUrl: String): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -792,33 +788,6 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.language -> user.language.value
             )
             .where(sqls.eq(column.uuid, user.userId.value))
-        }.executeUpdate().apply() match {
-          case 1 => true
-          case _ => false
-        }
-      })
-    }
-
-    override def findAllUsersWithFbIdNotNull(): Future[Seq[User]] = {
-      implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentUser.as(userAlias))
-            .where(sqls.isNotNull(userAlias.facebookId))
-        }.map(PersistentUser.apply()).list.apply
-      })
-
-      futurePersistentUsers.map(_.map(_.toUser))
-    }
-
-    override def updateAvatarUrl(userId: UserId, avatarUrl: String): Future[Boolean] = {
-      implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
-        withSQL {
-          update(PersistentUser)
-            .set(column.updatedAt -> DateHelper.now(), column.avatarUrl -> avatarUrl)
-            .where(sqls.eq(column.uuid, userId.value))
         }.executeUpdate().apply() match {
           case 1 => true
           case _ => false

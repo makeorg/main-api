@@ -22,21 +22,22 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken, RawHeader}
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
-import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -55,14 +56,31 @@ class ProposalApiTest
     with ProposalServiceComponent
     with UserServiceComponent
     with ThemeServiceComponent
-    with OperationServiceComponent {
+    with QuestionServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
 
   override val userService: UserService = mock[UserService]
   override val themeService: ThemeService = mock[ThemeService]
   override val ideaService: IdeaService = mock[IdeaService]
-  override val operationService: OperationService = mock[OperationService]
+  override val questionService: QuestionService = mock[QuestionService]
+
+  when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
+    .thenAnswer(
+      invocation =>
+        Future.successful(
+          Some(
+            Question(
+              QuestionId("my-question"),
+              country = invocation.getArgument[Country](2),
+              language = invocation.getArgument[Language](3),
+              question = "my question",
+              operationId = invocation.getArgument[Option[OperationId]](1),
+              themeId = invocation.getArgument[Option[ThemeId]](0)
+            )
+          )
+      )
+    )
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -148,8 +166,8 @@ class ProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king")),
+    similarProposals = None,
+    idea = IdeaId("becoming-king"),
     operation = None
   ).asJson.toString
 
@@ -180,31 +198,52 @@ class ProposalApiTest
 
   when(
     proposalService
-      .propose(
-        any[User],
-        any[RequestContext],
-        any[ZonedDateTime],
-        matches(validProposalText),
-        any[Option[OperationId]],
-        any[Option[ThemeId]],
-        any[Option[Language]],
-        any[Option[Country]]
-      )
+      .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Question])
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   when(
     proposalService
-      .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("123456")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
 
   when(
     proposalService
-      .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("987654")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
 
   when(
     proposalService
-      .validateProposal(matches(ProposalId("nop")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("nop")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
 
   when(
@@ -273,7 +312,8 @@ class ProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -299,7 +339,8 @@ class ProposalApiTest
     tags = Seq.empty,
     myProposal = false,
     idea = None,
-    operationId = None
+    operationId = None,
+    questionId = None
   )
   when(
     proposalService
@@ -347,7 +388,8 @@ class ProposalApiTest
       ideaProposals = Seq.empty,
       operationId = None,
       language = Some(Language("fr")),
-      country = Some(Country("FR"))
+      country = Some(Country("FR")),
+      questionId = None
     )
   }
 
@@ -367,24 +409,10 @@ class ProposalApiTest
 
   val routes: Route = sealRoute(proposalRoutes)
 
-  when(operationService.findOne(matches(OperationId("1234-1234")))).thenReturn(
-    Future.successful(
-      Some(
-        Operation(
-          status = OperationStatus.Pending,
-          operationId = OperationId("1234-1234"),
-          slug = "my-operation",
-          translations = Seq.empty,
-          defaultLanguage = Language("FR"),
-          events = List.empty,
-          createdAt = None,
-          updatedAt = None,
-          countriesConfiguration = Seq.empty
-        )
-      )
-    )
-  )
-  when(operationService.findOne(matches(OperationId("fake")))).thenReturn(Future.successful(None))
+  when(
+    questionService
+      .findQuestion(matches(None), matches(Some(OperationId("fake"))), matches(Country("FR")), matches(Language("fr")))
+  ).thenReturn(Future.successful(None))
 
   feature("proposing") {
     scenario("unauthenticated proposal") {
@@ -465,11 +493,11 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "1234-1234")) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "operationId")
-        contentError should be(Some(ValidationError("operationId", Some("Invalid operationId"))))
+        val contentError = errors.find(_.field == "question")
+        contentError should be(Some(ValidationError("question", Some("This proposal refers to no known question"))))
       }
     }
 
@@ -489,7 +517,7 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "language")
-        contentError should be(Some(ValidationError("language", Some("language is mandatory"))))
+        contentError should be(Some(ValidationError("language", Some("The field [.language] is missing."))))
       }
     }
 
@@ -509,7 +537,7 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "country")
-        contentError should be(Some(ValidationError("country", Some("country is mandatory"))))
+        contentError should be(Some(ValidationError("country", Some("The field [.country] is missing."))))
       }
     }
 
@@ -525,25 +553,10 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "1234-1234", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken)), RawHeader("x-make-operation", "fake")) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
     }
   }
 
-  feature("search proposal from front") {
-    scenario("search and get results + total") {
-      Post("/proposals/search")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-                  | "content": "faut",
-                  | "limit": 10,
-                  | "skip": 0
-                  |}""".stripMargin)) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val proposalResults: ProposalsResultResponse = entityAs[ProposalsResultResponse]
-        proposalResults.total should be(1)
-        proposalResults.results should be(Seq(proposalResult))
-      }
-    }
-  }
 }

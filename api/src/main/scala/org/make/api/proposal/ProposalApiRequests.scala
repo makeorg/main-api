@@ -28,6 +28,7 @@ import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
@@ -39,8 +40,9 @@ import scala.util.Random
 
 final case class ProposeProposalRequest(content: String,
                                         operationId: Option[OperationId],
-                                        language: Option[Language],
-                                        country: Option[Country]) {
+                                        questionId: Option[QuestionId],
+                                        language: Language,
+                                        country: Country) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = FrontConfiguration.defaultProposalMinLength
   validate(maxLength("content", maxProposalLength, content))
@@ -54,13 +56,15 @@ object ProposeProposalRequest {
 }
 
 final case class UpdateProposalRequest(newContent: Option[String],
-                                       theme: Option[ThemeId],
+                                       idea: IdeaId,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       similarProposals: Seq[ProposalId],
-                                       idea: Option[IdeaId],
+                                       // TODO: remove similarProposals once BO stops sending them
+                                       similarProposals: Option[Seq[ProposalId]],
+                                       questionId: Option[QuestionId],
+                                       theme: Option[ThemeId],
                                        operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
+  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
 }
 
 object UpdateProposalRequest {
@@ -69,13 +73,14 @@ object UpdateProposalRequest {
 
 final case class ValidateProposalRequest(newContent: Option[String],
                                          sendNotificationEmail: Boolean,
-                                         theme: Option[ThemeId],
                                          labels: Seq[LabelId],
                                          tags: Seq[TagId],
-                                         similarProposals: Seq[ProposalId],
-                                         idea: Option[IdeaId],
+                                         // TODO: remove similarProposals once BO stops sending them
+                                         similarProposals: Option[Seq[ProposalId]],
+                                         idea: IdeaId,
+                                         theme: Option[ThemeId],
                                          operation: Option[OperationId]) {
-  validate(Validation.requireNonEmpty("tags", tags), requirePresent("idea", idea))
+  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
 }
 
 object ValidateProposalRequest {
@@ -110,6 +115,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                tagsIds: Option[Seq[TagId]] = None,
                                labelsIds: Option[Seq[LabelId]] = None,
                                operationId: Option[OperationId] = None,
+                               questionId: Option[QuestionId] = None,
                                @Deprecated trending: Option[String] = None,
                                content: Option[String] = None,
                                slug: Option[String] = None,
@@ -132,6 +138,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(OperationSearchFilter.apply),
+        question = questionId.map(QuestionSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text => {
           ContentSearchFilter(text, Some(fuzziness))
@@ -173,6 +180,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          tagsIds: Option[Seq[TagId]] = None,
                                          labelsIds: Option[Seq[LabelId]] = None,
                                          operationId: Option[OperationId] = None,
+                                         questionId: Option[QuestionId] = None,
                                          ideaId: Option[IdeaId] = None,
                                          trending: Option[String] = None,
                                          content: Option[String] = None,
@@ -192,6 +200,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(OperationSearchFilter.apply),
+        question = questionId.map(QuestionSearchFilter.apply),
         idea = ideaId.map(IdeaSearchFilter.apply),
         trending = trending.map(value => TrendingSearchFilter(value)),
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
@@ -239,6 +248,7 @@ final case class PatchProposalRequest(slug: Option[String] = None,
                                       creationContext: Option[PatchRequestContext] = None,
                                       operation: Option[OperationId] = None,
                                       language: Option[Language] = None,
+                                      questionId: Option[QuestionId] = None,
                                       country: Option[Country] = None)
 
 object PatchProposalRequest {
@@ -274,12 +284,17 @@ object PatchProposalsIdeaRequest {
   implicit val decoder: Decoder[PatchProposalsIdeaRequest] = deriveDecoder[PatchProposalsIdeaRequest]
 }
 
-final case class NextProposalToModerateRequest(operationId: Option[OperationId],
+final case class NextProposalToModerateRequest(questionId: Option[QuestionId],
+                                               operationId: Option[OperationId],
                                                themeId: Option[ThemeId],
                                                country: Country,
                                                language: Language) {
   validate(
-    requirePresent("operationId", operationId.orElse(themeId), Some("Next proposal needs a theme or an operation")),
+    requirePresent(
+      "operationId",
+      questionId.orElse(operationId).orElse(themeId),
+      Some("Next proposal needs a question, a theme or an operation")
+    ),
     mandatoryField("country", country, Some("country is mandatory")),
     mandatoryField("language", language, Some("language is mandatory")),
   )

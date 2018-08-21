@@ -42,6 +42,7 @@ object TestHelper {
     s"""
        |akka {
        |  cluster.seed-nodes = ["akka://test-system@localhost:$port"]
+       |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
        |  persistence {
        |    journal.plugin = "inmemory-journal"

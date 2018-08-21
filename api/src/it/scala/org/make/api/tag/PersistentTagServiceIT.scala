@@ -371,7 +371,8 @@ class PersistentTagServiceIT
                 tagIds = Seq.empty,
                 landingSequenceId = SequenceId("fr"),
                 startDate = None,
-                endDate = None
+                endDate = None,
+                questionId = None
               )
             )
           )
@@ -386,7 +387,8 @@ class PersistentTagServiceIT
                 tagIds = Seq.empty,
                 landingSequenceId = SequenceId("fr"),
                 startDate = None,
-                endDate = None
+                endDate = None,
+                questionId = None
               )
             )
           )
@@ -610,7 +612,8 @@ class PersistentTagServiceIT
                 tagIds = Seq.empty,
                 landingSequenceId = SequenceId("fr"),
                 startDate = None,
-                endDate = None
+                endDate = None,
+                questionId = None
               )
             )
           )

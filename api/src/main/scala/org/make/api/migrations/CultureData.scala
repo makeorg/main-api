@@ -142,18 +142,15 @@ object CultureData extends InsertFixtureData {
               operationId <- retryableFuture(
                 api.operationService.findOneBySlug(CultureOperation.operationSlug).map(_.get.operationId)
               )
+              question <- api.questionService.findQuestion(
+                None,
+                Some(operationId),
+                proposalsToInsert.country,
+                proposalsToInsert.language
+              )
               proposalId <- retryableFuture(
                 api.proposalService
-                  .propose(
-                    user,
-                    requestContext,
-                    DateHelper.now(),
-                    proposalsToInsert.content,
-                    Some(operationId),
-                    None,
-                    Some(proposalsToInsert.language),
-                    Some(proposalsToInsert.country)
-                  )
+                  .propose(user, requestContext, DateHelper.now(), proposalsToInsert.content, question.get)
               )
             } yield {}
           }

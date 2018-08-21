@@ -88,14 +88,14 @@ abstract class KafkaConsumerActor[T]
     case Consume =>
       self ! Consume
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
-      val futures = records.asScala.map { record =>
-        handleMessage(record.value())
+      records.asScala.foreach { record =>
+        val future = handleMessage(record.value())
+        Await.ready(future, 1.minute)
+        future.onComplete {
+          case Success(_) =>
+          case Failure(e) => log.error(e, "Error while consuming messages")
+        }
       }
-      futures.foreach(Await.ready(_, 1.minute))
-      futures.foreach(_.onComplete {
-        case Success(_) =>
-        case Failure(e) => log.error(e, "Error while consuming messages")
-      })
       // toDo: manage failures
       consumer.commitSync()
 

@@ -151,7 +151,8 @@ class SortAlgorithmIT
     language = Language("fr"),
     status = ProposalStatus.Accepted,
     ideaId = None,
-    operationId = None
+    operationId = None,
+    questionId = None
   )
 
   private val proposals: Seq[IndexedProposal] = Seq(

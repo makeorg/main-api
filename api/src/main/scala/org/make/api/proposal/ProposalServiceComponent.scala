@@ -21,13 +21,13 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import akka.Done
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
@@ -36,11 +36,12 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
-import org.make.core.operation.OperationId
+import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.LabelId
+import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 
@@ -76,22 +77,27 @@ trait ProposalService {
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
               content: String,
-              operation: Option[OperationId],
-              theme: Option[ThemeId],
-              language: Option[Language],
-              country: Option[Country]): Future[ProposalId]
+              question: Question): Future[ProposalId]
 
-  // toDo: add theme
   def update(proposalId: ProposalId,
              moderator: UserId,
              requestContext: RequestContext,
              updatedAt: ZonedDateTime,
-             request: UpdateProposalRequest): Future[Option[ProposalResponse]]
+             newContent: Option[String],
+             question: Question,
+             labels: Seq[LabelId],
+             tags: Seq[TagId],
+             idea: IdeaId): Future[Option[ProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
-                       request: ValidateProposalRequest): Future[Option[ProposalResponse]]
+                       question: Question,
+                       newContent: Option[String],
+                       sendNotificationEmail: Boolean,
+                       idea: IdeaId,
+                       labels: Seq[LabelId],
+                       tags: Seq[TagId]): Future[Option[ProposalResponse]]
 
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
@@ -126,10 +132,6 @@ trait ProposalService {
 
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 
-  def removeProposalFromCluster(proposalId: ProposalId): Future[Done]
-
-  def clearSimilarProposals(): Future[Done]
-
   def patchProposal(proposalId: ProposalId,
                     userId: UserId,
                     requestContext: RequestContext,
@@ -137,10 +139,7 @@ trait ProposalService {
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 
-  def searchAndLockProposalToModerate(operationId: Option[OperationId],
-                                      themeId: Option[ThemeId],
-                                      country: Country,
-                                      language: Language,
+  def searchAndLockProposalToModerate(questionId: QuestionId,
                                       moderator: UserId,
                                       requestContext: RequestContext): Future[Option[ProposalResponse]]
 
@@ -158,7 +157,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with EventBusServiceComponent
     with ActorSystemComponent
     with UserServiceComponent
-    with IdeaServiceComponent =>
+    with IdeaServiceComponent
+    with QuestionServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
 
@@ -189,14 +189,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           results = proposalResultSeededResponse.results
         )
       }
-    }
-
-    override def removeProposalFromCluster(proposalId: ProposalId): Future[Done] = {
-      Future.successful(Done)
-    }
-
-    override def clearSimilarProposals(): Future[Done] = {
-      Future.successful(Done)
     }
 
     override def getProposalById(proposalId: ProposalId,
@@ -242,7 +234,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               ideaProposals = ideaProposals,
               operationId = proposal.operation,
               language = proposal.language,
-              country = proposal.country
+              country = proposal.country,
+              questionId = proposal.questionId
             )
           )
         }
@@ -356,10 +349,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          requestContext: RequestContext,
                          createdAt: ZonedDateTime,
                          content: String,
-                         operation: Option[OperationId],
-                         theme: Option[ThemeId],
-                         language: Option[Language],
-                         country: Option[Country]): Future[ProposalId] = {
+                         question: Question): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -368,10 +358,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           user = user,
           createdAt = createdAt,
           content = content,
-          operation = operation,
-          theme = theme,
-          language = language,
-          country = country
+          question = question
         )
       )
     }
@@ -380,23 +367,28 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         moderator: UserId,
                         requestContext: RequestContext,
                         updatedAt: ZonedDateTime,
-                        request: UpdateProposalRequest): Future[Option[ProposalResponse]] = {
+                        newContent: Option[String],
+                        question: Question,
+                        labels: Seq[LabelId],
+                        tags: Seq[TagId],
+                        idea: IdeaId): Future[Option[ProposalResponse]] = {
 
-      val updatedProposal = proposalCoordinatorService.update(
-        UpdateProposalCommand(
-          moderator = moderator,
-          proposalId = proposalId,
-          requestContext = requestContext,
-          updatedAt = updatedAt,
-          newContent = request.newContent,
-          theme = request.theme,
-          labels = request.labels,
-          tags = request.tags,
-          similarProposals = request.similarProposals,
-          idea = request.idea,
-          operation = request.operation
+      val updatedProposal = {
+        proposalCoordinatorService.update(
+          UpdateProposalCommand(
+            moderator = moderator,
+            proposalId = proposalId,
+            requestContext = requestContext,
+            updatedAt = updatedAt,
+            newContent = newContent,
+            question = question,
+            labels = labels,
+            tags = tags,
+            idea = idea
+          )
         )
-      )
+      }
+
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
           proposal <- OptionT(updatedProposal)
@@ -413,23 +405,28 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def validateProposal(proposalId: ProposalId,
                                   moderator: UserId,
                                   requestContext: RequestContext,
-                                  request: ValidateProposalRequest): Future[Option[ProposalResponse]] = {
+                                  question: Question,
+                                  newContent: Option[String],
+                                  sendNotificationEmail: Boolean,
+                                  idea: IdeaId,
+                                  labels: Seq[LabelId],
+                                  tags: Seq[TagId]): Future[Option[ProposalResponse]] = {
 
-      def acceptedProposal = proposalCoordinatorService.accept(
-        AcceptProposalCommand(
-          proposalId = proposalId,
-          moderator = moderator,
-          requestContext = requestContext,
-          sendNotificationEmail = request.sendNotificationEmail,
-          newContent = request.newContent,
-          theme = request.theme,
-          labels = request.labels,
-          tags = request.tags,
-          similarProposals = request.similarProposals,
-          idea = request.idea,
-          operation = request.operation
+      def acceptedProposal: Future[Option[Proposal]] = {
+        proposalCoordinatorService.accept(
+          AcceptProposalCommand(
+            proposalId = proposalId,
+            moderator = moderator,
+            requestContext = requestContext,
+            sendNotificationEmail = sendNotificationEmail,
+            newContent = newContent,
+            question = question,
+            labels = labels,
+            tags = tags,
+            idea = idea
+          )
         )
-      )
+      }
 
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
@@ -686,10 +683,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .map(_.flatten)
     }
 
-    override def searchAndLockProposalToModerate(operationId: Option[OperationId],
-                                                 themeId: Option[ThemeId],
-                                                 country: Country,
-                                                 language: Language,
+    override def searchAndLockProposalToModerate(questionId: QuestionId,
                                                  moderator: UserId,
                                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
 
@@ -700,10 +694,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           query = SearchQuery(
             filters = Some(
               SearchFilters(
-                operation = operationId.map(OperationSearchFilter.apply),
-                theme = themeId.map(theme => Seq(theme)).map(ThemeSearchFilter.apply),
-                country = Some(CountrySearchFilter(country)),
-                language = Some(LanguageSearchFilter(language)),
+                question = Some(QuestionSearchFilter(questionId)),
                 status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
               )
             ),

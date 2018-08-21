@@ -29,11 +29,13 @@ import org.make.api.operation.DefaultPersistentOperationServiceComponent.{
   PersistentOperationCountryConfiguration,
   PersistentOperationTranslation
 }
+import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
@@ -74,6 +76,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     private val operationActionAlias = PersistentOperationAction.operationActionAlias
     private val operationCountryConfigurationAlias =
       PersistentOperationCountryConfiguration.operationCountryConfigurationAlias
+    private val questionAlias = PersistentQuestion.questionAlias
+
     private val column = PersistentOperation.column
     private val operationTranslationColumn = PersistentOperationTranslation.column
     private val operationActionColumn = PersistentOperationAction.column
@@ -86,6 +90,10 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       .on(operationAlias.uuid, operationActionAlias.operationUuid)
       .leftJoin(PersistentOperationCountryConfiguration.as(operationCountryConfigurationAlias))
       .on(operationAlias.uuid, operationCountryConfigurationAlias.operationUuid)
+      .leftJoin(PersistentQuestion.as(questionAlias))
+      .on(
+        sqls"${operationAlias.uuid} = ${questionAlias.operationId} and ${questionAlias.country} = ${operationCountryConfigurationAlias.country}"
+      )
 
     override def find(slug: Option[String] = None,
                       country: Option[Country] = None,
@@ -424,6 +432,8 @@ object DefaultPersistentOperationServiceComponent {
                                                      country: String,
                                                      tagIds: Option[String],
                                                      landingSequenceId: String,
+                                                     // TODO: This is a hack to remove with the country configuration
+                                                     questionId: Option[String],
                                                      startDate: Option[LocalDate],
                                                      endDate: Option[LocalDate],
                                                      createdAt: ZonedDateTime,
@@ -475,7 +485,8 @@ object DefaultPersistentOperationServiceComponent {
                 .filter(value => value != TagId("")),
               landingSequenceId = SequenceId(countryConfiguration.landingSequenceId),
               startDate = countryConfiguration.startDate,
-              endDate = countryConfiguration.endDate
+              endDate = countryConfiguration.endDate,
+              questionId = countryConfiguration.questionId.map(QuestionId.apply)
           )
         ),
         translations = operationTranslations.map(
@@ -568,6 +579,7 @@ object DefaultPersistentOperationServiceComponent {
         country = resultSet.string(operationCountryConfigurationResultName.country),
         tagIds = resultSet.stringOpt(operationCountryConfigurationResultName.tagIds),
         landingSequenceId = resultSet.string(operationCountryConfigurationResultName.landingSequenceId),
+        questionId = resultSet.stringOpt(PersistentQuestion.questionAlias.resultName.questionId),
         startDate = resultSet.localDateOpt(operationCountryConfigurationResultName.startDate),
         endDate = resultSet.localDateOpt(operationCountryConfigurationResultName.endDate),
         createdAt = resultSet.zonedDateTime(operationCountryConfigurationResultName.createdAt),
@@ -586,9 +598,7 @@ object DefaultPersistentOperationServiceComponent {
 
     override val tableName: String = "operation_action"
 
-    lazy val operationActionAlias
-      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentOperationAction], PersistentOperationAction] =
-      syntax("oa")
+    lazy val operationActionAlias: SyntaxProvider[PersistentOperationAction] = syntax("oa")
 
     def opt(
       operationAction: SyntaxProvider[PersistentOperationAction]
@@ -616,8 +626,7 @@ object DefaultPersistentOperationServiceComponent {
 
     override val tableName: String = "operation"
 
-    lazy val operationAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentOperation], PersistentOperation] =
-      syntax("op")
+    lazy val operationAlias: SyntaxProvider[PersistentOperation] = syntax("op")
 
     def apply(
       operationResultName: ResultName[PersistentOperation] = operationAlias.resultName

@@ -25,6 +25,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
 
@@ -73,6 +74,11 @@ trait ParameterExtractors {
   implicit val operationIdFromStringUnmarshaller: Unmarshaller[String, OperationId] =
     Unmarshaller.strict[String, OperationId] { string ⇒
       OperationId(string)
+    }
+
+  implicit val questionIdFromStringUnmarshaller: Unmarshaller[String, QuestionId] =
+    Unmarshaller.strict[String, QuestionId] { string ⇒
+      QuestionId(string)
     }
 
   implicit val ideaIdFromStringUnmarshaller: Unmarshaller[String, IdeaId] =

@@ -63,62 +63,22 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   def proposalId: ProposalId = ProposalId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case GetProposal(_, _)                         => sender() ! state.map(_.proposal)
-    case command: ViewProposalCommand              => onViewProposalCommand(command)
-    case command: ProposeCommand                   => onProposeCommand(command)
-    case command: UpdateProposalCommand            => onUpdateProposalCommand(command)
-    case command: AcceptProposalCommand            => onAcceptProposalCommand(command)
-    case command: RefuseProposalCommand            => onRefuseProposalCommand(command)
-    case command: PostponeProposalCommand          => onPostponeProposalCommand(command)
-    case command: VoteProposalCommand              => onVoteProposalCommand(command)
-    case command: UnvoteProposalCommand            => onUnvoteProposalCommand(command)
-    case command: QualifyVoteCommand               => onQualificationProposalCommand(command)
-    case command: UnqualifyVoteCommand             => onUnqualificationProposalCommand(command)
-    case command: LockProposalCommand              => onLockProposalCommand(command)
-    case command: UpdateDuplicatedProposalsCommand => onUpdateDuplicatedProposalsCommand(command)
-    case command: RemoveSimilarProposalCommand     => onRemoveSimilarProposalCommand(command)
-    case command: ClearSimilarProposalsCommand     => onClearSimilarProposalsCommand(command)
-    case command: ReplaceProposalCommand           => onReplaceProposalCommand(command)
-    case command: PatchProposalCommand             => onPatchProposalCommand(command)
-    case command: AnonymizeProposalCommand         => onAnonymizeProposalCommand(command)
-    case Snapshot                                  => saveSnapshot()
-    case _: KillProposalShard                      => self ! PoisonPill
-  }
-
-  private def onRemoveSimilarProposalCommand(command: RemoveSimilarProposalCommand): Unit = {
-    if (state.exists(_.proposal.similarProposals.contains(command.similarToRemove))) {
-      persist(
-        SimilarProposalRemoved(
-          id = command.proposalId,
-          proposalToRemove = command.similarToRemove,
-          requestContext = command.requestContext
-        )
-      ) { event =>
-        newEventAdded(event)
-      }
-    } else if (command.similarToRemove == this.proposalId) {
-      persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext))(
-        event => newEventAdded(event)
-      )
-    }
-  }
-
-  private def onClearSimilarProposalsCommand(command: ClearSimilarProposalsCommand): Unit = {
-    if (state.exists(_.proposal.similarProposals.nonEmpty)) {
-      persist(SimilarProposalsCleared(id = command.proposalId, requestContext = command.requestContext)) { event =>
-        newEventAdded(event)
-      }
-    }
-  }
-
-  private def onReplaceProposalCommand(command: ReplaceProposalCommand): Unit = {
-    state.foreach { _ =>
-      persistAndPublishEvent(
-        ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = command.proposal)
-      ) { _ =>
-        {}
-      }
-    }
+    case _: GetProposal                    => sender() ! state.map(_.proposal)
+    case command: ViewProposalCommand      => onViewProposalCommand(command)
+    case command: ProposeCommand           => onProposeCommand(command)
+    case command: UpdateProposalCommand    => onUpdateProposalCommand(command)
+    case command: AcceptProposalCommand    => onAcceptProposalCommand(command)
+    case command: RefuseProposalCommand    => onRefuseProposalCommand(command)
+    case command: PostponeProposalCommand  => onPostponeProposalCommand(command)
+    case command: VoteProposalCommand      => onVoteProposalCommand(command)
+    case command: UnvoteProposalCommand    => onUnvoteProposalCommand(command)
+    case command: QualifyVoteCommand       => onQualificationProposalCommand(command)
+    case command: UnqualifyVoteCommand     => onUnqualificationProposalCommand(command)
+    case command: LockProposalCommand      => onLockProposalCommand(command)
+    case command: PatchProposalCommand     => onPatchProposalCommand(command)
+    case command: AnonymizeProposalCommand => onAnonymizeProposalCommand(command)
+    case Snapshot                          => saveSnapshot()
+    case _: KillProposalShard              => self ! PoisonPill
   }
 
   def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
@@ -160,7 +120,8 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           updatedAt = Some(DateHelper.now()),
           operation = changes.operation.orElse(proposal.operation),
           language = changes.language.orElse(proposal.language),
-          country = changes.country.orElse(proposal.country)
+          country = changes.country.orElse(proposal.country),
+          questionId = changes.questionId.orElse(proposal.questionId)
         )
 
       persistAndPublishEvent(
@@ -177,28 +138,6 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           )
         }
         sender() ! state.map(_.proposal)
-      }
-    }
-  }
-
-  private def onUpdateDuplicatedProposalsCommand(command: UpdateDuplicatedProposalsCommand): Unit = {
-    state.foreach { proposalState =>
-      val newDuplicates =
-        command.duplicates.filter(
-          id => id != proposalState.proposal.proposalId && !proposalState.proposal.similarProposals.contains(id)
-        )
-
-      if (newDuplicates.nonEmpty) {
-        persistAndPublishEvent(
-          SimilarProposalsAdded(
-            command.proposalId,
-            proposalState.proposal.similarProposals.toSet ++ command.duplicates.toSet,
-            command.requestContext,
-            DateHelper.now()
-          )
-        ) { _ =>
-          {}
-        }
       }
     }
   }
@@ -468,10 +407,11 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         userId = user.userId,
         eventDate = command.createdAt,
         content = command.content,
-        operation = command.operation,
-        theme = command.theme,
-        language = command.language,
-        country = command.country
+        operation = command.question.operationId,
+        theme = command.question.themeId,
+        language = Some(command.question.language),
+        country = Some(command.question.country),
+        question = Some(command.question.questionId)
       )
     ) { _ =>
       sender() ! proposalId
@@ -523,11 +463,11 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
-          if (command.operation != proposal.flatMap(_.operation)) {
+          if (!proposal.flatMap(_.questionId).contains(command.question.questionId)) {
             changeSequence(
               command.proposalId,
               currentOperation = proposal.flatMap(_.operation),
-              newOperation = command.operation,
+              newOperation = command.question.operationId,
               requestContext = command.requestContext,
               moderatorId = command.moderator
             )
@@ -632,12 +572,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                 edition = command.newContent.map { newContent =>
                   ProposalEdition(proposal.content, newContent)
                 },
-                theme = command.theme,
+                theme = command.question.themeId,
                 labels = command.labels,
                 tags = command.tags,
-                similarProposals = command.similarProposals,
-                idea = command.idea,
-                operation = command.operation.orElse(proposal.operation)
+                similarProposals = Seq.empty,
+                idea = Some(command.idea),
+                operation = command.question.operationId.orElse(proposal.operation),
+                question = Some(command.question.questionId)
               )
             )
           )
@@ -682,12 +623,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                   ProposalEdition(proposal.content, newContent)
                 },
                 sendValidationEmail = command.sendNotificationEmail,
-                theme = command.theme,
+                theme = command.question.themeId,
                 labels = command.labels,
                 tags = command.tags,
-                similarProposals = command.similarProposals,
-                idea = command.idea,
-                operation = command.operation.orElse(proposal.operation)
+                similarProposals = Seq.empty,
+                idea = Some(command.idea),
+                operation = command.question.operationId.orElse(proposal.operation),
+                question = Some(command.question.questionId)
               )
             )
           )
@@ -807,6 +749,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             content = e.content,
             status = ProposalStatus.Pending,
             theme = e.theme.orElse(e.requestContext.currentTheme),
+            questionId = e.question,
             creationContext = e.requestContext,
             labels = Seq.empty,
             votes = Seq(
@@ -911,6 +854,7 @@ object ProposalActor {
   def applyProposalUpdated(state: ProposalState, event: ProposalUpdated): ProposalState = {
 
     val arguments: Map[String, String] = Map(
+      "question" -> event.question.map(_.value).getOrElse(""),
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
@@ -935,7 +879,8 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation
+        operation = event.operation,
+        questionId = event.question
       )
 
     proposal = event.edition match {
@@ -951,6 +896,7 @@ object ProposalActor {
 
   def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {
     val arguments: Map[String, String] = Map(
+      "question" -> event.question.map(_.value).getOrElse(""),
       "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
@@ -975,7 +921,8 @@ object ProposalActor {
         updatedAt = Some(event.eventDate),
         similarProposals = event.similarProposals,
         idea = event.idea,
-        operation = event.operation
+        operation = event.operation,
+        questionId = event.question
       )
 
     proposal = event.edition match {

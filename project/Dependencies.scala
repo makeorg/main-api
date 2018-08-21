@@ -62,7 +62,7 @@ object Dependencies {
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.80")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.89")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka"          %% "akka-slf4j"              % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"                 % "javax.ws.rs-api"          % "2.0.1"

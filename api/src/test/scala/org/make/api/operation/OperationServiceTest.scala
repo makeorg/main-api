@@ -81,14 +81,16 @@ class OperationServiceTest
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-BR"),
         startDate = None,
-        endDate = None
+        endDate = None,
+        questionId = None
       ),
       OperationCountryConfiguration(
         countryCode = Country("GB"),
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("first-sequence-id-GB"),
         startDate = None,
-        endDate = None
+        endDate = None,
+        questionId = None
       )
     )
   )

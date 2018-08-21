@@ -22,6 +22,7 @@ package org.make.api.proposal
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -32,10 +33,10 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
@@ -60,6 +61,7 @@ class DefaultProposalServiceComponentTest
     with ReadJournalComponent
     with ActorSystemComponent
     with UserServiceComponent
+    with QuestionServiceComponent
     with IdeaServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -77,6 +79,7 @@ class DefaultProposalServiceComponentTest
   override val actorSystem: ActorSystem = ActorSystem()
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
@@ -157,19 +160,17 @@ class DefaultProposalServiceComponentTest
       themeId = None,
       tags = Seq.empty,
       ideaId = None,
-      operationId = None
+      operationId = None,
+      questionId = None
     )
   }
 
   feature("next proposal to moderate") {
 
-    def searchQuery(operation: String): SearchQuery = SearchQuery(
+    def searchQuery(question: String): SearchQuery = SearchQuery(
       filters = Some(
         SearchFilters(
-          operation = Some(OperationSearchFilter(OperationId(operation))),
-          theme = None,
-          country = Some(CountrySearchFilter(Country("FR"))),
-          language = Some(LanguageSearchFilter(Language("fr"))),
+          question = Some(QuestionSearchFilter(QuestionId(question))),
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
         )
       ),
@@ -184,14 +185,7 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(
-          Some(OperationId("vff")),
-          None,
-          Country("FR"),
-          Language("fr"),
-          moderatorId,
-          RequestContext.empty
-        ),
+        proposalService.searchAndLockProposalToModerate(QuestionId("vff"), moderatorId, RequestContext.empty),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal should be(None)
@@ -279,10 +273,7 @@ class DefaultProposalServiceComponentTest
 
       whenReady(
         proposalService.searchAndLockProposalToModerate(
-          Some(OperationId("no-proposal-to-lock")),
-          None,
-          Country("FR"),
-          Language("fr"),
+          questionId = QuestionId("no-proposal-to-lock"),
           moderatorId,
           RequestContext.empty
         ),
@@ -367,14 +358,7 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(
-          Some(OperationId("lock-second")),
-          None,
-          Country("FR"),
-          Language("fr"),
-          moderatorId,
-          RequestContext.empty
-        ),
+        proposalService.searchAndLockProposalToModerate(QuestionId("lock-second"), moderatorId, RequestContext.empty),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal.isDefined should be(true)
@@ -437,14 +421,7 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(
-          Some(OperationId("lock-first")),
-          None,
-          Country("FR"),
-          Language("fr"),
-          moderatorId,
-          RequestContext.empty
-        ),
+        proposalService.searchAndLockProposalToModerate(QuestionId("lock-first"), moderatorId, RequestContext.empty),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal.isDefined should be(true)

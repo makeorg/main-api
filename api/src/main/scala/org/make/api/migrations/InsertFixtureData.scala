@@ -23,7 +23,6 @@ import java.util.concurrent.Executors
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
 import org.make.api.migrations.InsertFixtureData.{FixtureDataLine, ProposalToAccept}
-import org.make.api.proposal.ValidateProposalRequest
 import org.make.core.idea.Idea
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
@@ -165,34 +164,27 @@ trait InsertFixtureData extends Migration with StrictLogging {
                     themeId = proposalsToAccept.theme
                   )
                 )
+                question <- api.questionService.findQuestion(
+                  proposalsToAccept.theme,
+                  proposalsToAccept.operation,
+                  proposalsToAccept.country,
+                  proposalsToAccept.language
+                )
                 proposalId <- retryableFuture(
                   api.proposalService
-                    .propose(
-                      user,
-                      requestContext,
-                      DateHelper.now(),
-                      proposalsToAccept.content,
-                      proposalsToAccept.operation,
-                      proposalsToAccept.theme,
-                      Some(proposalsToAccept.language),
-                      Some(proposalsToAccept.country)
-                    )
+                    .propose(user, requestContext, DateHelper.now(), proposalsToAccept.content, question.get)
                 )
                 _ <- retryableFuture(
                   api.proposalService.validateProposal(
                     proposalId,
                     moderatorId,
                     requestContext,
-                    ValidateProposalRequest(
-                      newContent = None,
-                      sendNotificationEmail = false,
-                      theme = proposalsToAccept.theme,
-                      labels = proposalsToAccept.labels,
-                      tags = proposalsToAccept.tags,
-                      similarProposals = Seq.empty,
-                      operation = proposalsToAccept.operation,
-                      idea = Some(idea.ideaId)
-                    )
+                    question.get,
+                    None,
+                    false,
+                    idea.ideaId,
+                    proposalsToAccept.labels,
+                    proposalsToAccept.tags
                   )
                 )
               } yield {}

@@ -44,6 +44,7 @@ import org.make.api.operation.{
 }
 import org.make.api.organisation.{ModerationOrganisationApi, OrganisationApi}
 import org.make.api.proposal._
+import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService}
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -114,6 +115,8 @@ trait MakeApi
     with DefaultSequenceServiceComponent
     with DefaultSequenceConfigurationComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
+    with DefaultQuestionService
+    with DefaultPersistentQuestionServiceComponent
     with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
@@ -328,9 +331,9 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     .handle {
       case MalformedRequestContentRejection(_, ValidationFailedError(messages)) =>
         complete(StatusCodes.BadRequest -> messages)
-      case MalformedRequestContentRejection(_, JsonParsingException(failure, _)) =>
+      case MalformedRequestContentRejection(message, JsonParsingException(failure, _)) =>
         val errors = failure.history.flatMap {
-          case DownField(f) => Seq(ValidationError(f, Option(failure.message)))
+          case DownField(f) => Seq(ValidationError(f, Option(message)))
           case _            => Nil
         }
         complete(StatusCodes.BadRequest -> errors)

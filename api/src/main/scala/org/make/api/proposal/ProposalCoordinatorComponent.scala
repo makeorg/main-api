@@ -25,25 +25,17 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.{ActorTimeoutException, TimeSettings}
 import org.make.core.proposal._
-import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 trait ProposalCoordinatorComponent {
   def proposalCoordinator: ActorRef
 }
 
 trait ProposalCoordinatorService {
-
-  def clearSimilarProposals(id: ProposalId): Unit
-
-  def updateProposalTag(proposalId: ProposalId, oldTag: TagId, newTag: TagId): Unit
-
-  def removeProposalFromCluster(proposalId: ProposalId, proposalToRemove: ProposalId): Unit
 
   /**
     * Retrieve a Proposal without logging it
@@ -71,7 +63,6 @@ trait ProposalCoordinatorService {
   def qualification(command: QualifyVoteCommand): Future[Option[Qualification]]
   def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]]
   def lock(command: LockProposalCommand): Future[Option[UserId]]
-  def updateDuplicates(command: UpdateDuplicatedProposalsCommand): Unit
   def patch(command: PatchProposalCommand): Future[Option[Proposal]]
   def anonymize(command: AnonymizeProposalCommand): Unit
 }
@@ -202,37 +193,6 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
           case Left(e)        => Future.failed(e)
         }
         .recoverWith(recover(command))
-    }
-
-    override def removeProposalFromCluster(proposalId: ProposalId, proposalToRemove: ProposalId): Unit = {
-      proposalCoordinator ! RemoveSimilarProposalCommand(
-        proposalId = proposalId,
-        similarToRemove = proposalToRemove,
-        requestContext = RequestContext.empty
-      )
-    }
-
-    override def clearSimilarProposals(proposalId: ProposalId): Unit = {
-      proposalCoordinator ! ClearSimilarProposalsCommand(proposalId = proposalId, requestContext = RequestContext.empty)
-    }
-
-    override def updateDuplicates(command: UpdateDuplicatedProposalsCommand): Unit = {
-      proposalCoordinator ! command
-    }
-
-    override def updateProposalTag(proposalId: ProposalId, oldTag: TagId, newTag: TagId): Unit = {
-      getProposal(proposalId).onComplete {
-        case Success(Some(proposal)) =>
-          val newTags = proposal.tags.map {
-            case `oldTag` => newTag
-            case other    => other
-          }
-          val modifiedProposal = proposal.copy(tags = newTags)
-          proposalCoordinator ! ReplaceProposalCommand(proposalId = proposalId, proposal = modifiedProposal)
-        case Failure(e) => logger.error("", e)
-        case _          =>
-      }
-
     }
 
     override def patch(command: PatchProposalCommand): Future[Option[Proposal]] = {

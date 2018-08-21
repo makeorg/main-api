@@ -21,10 +21,16 @@ package org.make.core.question
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
-import org.make.core.reference.{Country, Language}
+import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language, ThemeId}
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class Question(questionId: QuestionId, country: Country, language: Language, question: String)
+case class Question(questionId: QuestionId,
+                    country: Country,
+                    language: Language,
+                    question: String,
+                    operationId: Option[OperationId],
+                    themeId: Option[ThemeId])
 
 case class QuestionId(value: String) extends StringValue
 

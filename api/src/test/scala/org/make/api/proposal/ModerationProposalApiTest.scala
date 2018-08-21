@@ -28,6 +28,7 @@ import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.SimilarIdea
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
@@ -37,6 +38,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -50,13 +52,13 @@ import scala.concurrent.Future
 
 class ModerationProposalApiTest
     extends MakeApiTestBase
-    with ProposalApi
     with ModerationProposalApi
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
+    with QuestionServiceComponent
     with ProposalCoordinatorServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
@@ -65,7 +67,28 @@ class ModerationProposalApiTest
   override val themeService: ThemeService = mock[ThemeService]
   override val operationService: OperationService = mock[OperationService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
+
+  when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
+    .thenAnswer(
+      invocation =>
+        Future.successful(
+          Some(
+            Question(
+              QuestionId("my-question"),
+              country = invocation.getArgument[Country](2),
+              language = invocation.getArgument[Language](3),
+              question = "my question",
+              operationId = invocation.getArgument[Option[OperationId]](1),
+              themeId = invocation.getArgument[Option[ThemeId]](0)
+            )
+          )
+      )
+    )
+
+  when(proposalCoordinatorService.getProposal(any[ProposalId]))
+    .thenAnswer(invocation => Future.successful(Some(simpleProposal(invocation.getArgument[ProposalId](0)))))
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -175,8 +198,8 @@ class ModerationProposalApiTest
     theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = Seq(),
-    idea = Some(IdeaId("becoming-king")),
+    similarProposals = None,
+    idea = IdeaId("becoming-king"),
     operation = None
   ).asJson.toString
 
@@ -201,15 +224,45 @@ class ModerationProposalApiTest
 
   when(
     proposalService
-      .validateProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("123456")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
   when(
     proposalService
-      .validateProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("987654")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
   when(
     proposalService
-      .validateProposal(matches(ProposalId("nop")), any[UserId], any[RequestContext], any[ValidateProposalRequest])
+      .validateProposal(
+        matches(ProposalId("nop")),
+        any[UserId],
+        any[RequestContext],
+        any[Question],
+        any[Option[String]],
+        any[Boolean],
+        any[IdeaId],
+        any[Seq[LabelId]],
+        any[Seq[TagId]]
+      )
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
   when(
     proposalService
@@ -308,7 +361,8 @@ class ModerationProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -356,7 +410,8 @@ class ModerationProposalApiTest
           ideaProposals = Seq.empty,
           operationId = None,
           language = Some(Language("fr")),
-          country = Some(Country("FR"))
+          country = Some(Country("FR")),
+          questionId = None
         )
       )
     )
@@ -391,7 +446,8 @@ class ModerationProposalApiTest
     tags = Seq.empty,
     myProposal = false,
     idea = None,
-    operationId = None
+    operationId = None,
+    questionId = None
   )
 
   when(
@@ -439,6 +495,37 @@ class ModerationProposalApiTest
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
+      language = Some(Language("fr")),
+      country = Some(Country("FR")),
+      questionId = None
+    )
+  }
+
+  private def simpleProposal(id: ProposalId): Proposal = {
+    Proposal(
+      proposalId = id,
+      slug = "a-song-of-fire-and-ice",
+      content = "A song of fire and ice",
+      author = UserId("Georges RR Martin"),
+      labels = Seq(),
+      theme = None,
+      status = Accepted,
+      tags = Seq(),
+      votes = Seq(
+        Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+        Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+        Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+      ),
+      refusalReason = None,
+      organisations = Seq.empty,
+      creationContext = RequestContext.empty,
+      createdAt = Some(DateHelper.now()),
+      updatedAt = Some(DateHelper.now()),
+      events = Nil,
+      similarProposals = Seq.empty,
+      idea = None,
+      operation = None,
+      questionId = Some(QuestionId("some-question")),
       language = Some(Language("fr")),
       country = Some(Country("FR"))
     )
@@ -735,6 +822,37 @@ class ModerationProposalApiTest
         |}
       """.stripMargin
 
+    when(questionService.findQuestion(None, Some(OperationId("vff")), Country("FR"), Language("fr"))).thenReturn(
+      Future.successful(
+        Some(
+          Question(
+            questionId = QuestionId("question-vff"),
+            country = Country("FR"),
+            language = Language("fr"),
+            question = "",
+            operationId = Some(OperationId("vff")),
+            themeId = None
+          )
+        )
+      )
+    )
+
+    when(questionService.findQuestion(None, Some(OperationId("mieux-vivre-ensemble")), Country("FR"), Language("fr")))
+      .thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              questionId = QuestionId("question-mieux-vivre-ensemble"),
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "",
+              operationId = Some(OperationId("mieux-vivre-ensemble")),
+              themeId = None
+            )
+          )
+        )
+      )
+
     scenario("unauthenticated call") {
       Given("an unauthenticated user")
       When("the user requests the next proposal to moderate")
@@ -767,10 +885,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("vff"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-vff")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -800,10 +915,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("mieux-vivre-ensemble"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
           any[RequestContext]
         )
@@ -832,10 +944,7 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(Some(OperationId("mieux-vivre-ensemble"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr")),
+          matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
           any[RequestContext]
         )

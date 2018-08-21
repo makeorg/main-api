@@ -53,6 +53,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
+import org.make.api.question.QuestionServiceComponent
+import org.make.core.question.{Question, QuestionId}
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -63,6 +65,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
     with MakeSettingsComponent
     with UserServiceComponent
     with IdeaServiceComponent
+    with QuestionServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -168,7 +171,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                           requestContext = requestContext
                         )
                       ) { proposals =>
-                        {
+                        { // TODO: add question
                           complete {
                             HttpResponse(
                               entity = HttpEntity(
@@ -189,60 +192,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                       }
                     }
                   }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "moderation-search-proposals",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.ExhaustiveSearchRequest"
-      )
-    )
-  )
-  @Path(value = "/search")
-  @Deprecated
-  def searchAllProposalsDeprecated: Route = {
-    post {
-      path("moderation" / "proposals" / "search") {
-        makeOperation("SearchAll") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
-              decodeRequest {
-                entity(as[ExhaustiveSearchRequest]) { request: ExhaustiveSearchRequest =>
-                  provideAsync(
-                    proposalService.search(
-                      userId = Some(userAuth.user.userId),
-                      query = request.toSearchQuery(requestContext),
-                      requestContext = requestContext
-                    )
-                  ) { proposals =>
-                    complete(proposals)
-                  }
-                }
               }
             }
           }
@@ -276,6 +225,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
@@ -304,6 +254,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                   'tagsIds.as[immutable.Seq[TagId]].?,
                   'labelsIds.as[immutable.Seq[LabelId]].?,
                   'operationId.as[OperationId].?,
+                  'questionId.as[QuestionId].?,
                   'ideaId.as[IdeaId].?,
                   'trending.?,
                   'content.?,
@@ -324,6 +275,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                  tagsIds: Option[Seq[TagId]],
                  labelsIds: Option[Seq[LabelId]],
                  operationId: Option[OperationId],
+                 questionId: Option[QuestionId],
                  ideaId: Option[IdeaId],
                  trending: Option[String],
                  content: Option[String],
@@ -389,6 +341,7 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                     tagsIds = tagsIds,
                     labelsIds = labelsIds,
                     operationId = operationId,
+                    questionId = questionId,
                     ideaId = ideaId,
                     trending = trending,
                     content = content,
@@ -454,15 +407,23 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
                   provideAsyncOrNotFound(
-                    proposalService.update(
-                      proposalId = proposalId,
-                      moderator = userAuth.user.userId,
-                      requestContext = requestContext,
-                      updatedAt = DateHelper.now(),
-                      request = request
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
+                    retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
+                  ) { question =>
+                    provideAsyncOrNotFound(
+                      proposalService.update(
+                        proposalId = proposalId,
+                        moderator = userAuth.user.userId,
+                        requestContext = requestContext,
+                        updatedAt = DateHelper.now(),
+                        question = question,
+                        newContent = request.newContent,
+                        labels = request.labels,
+                        tags = request.tags,
+                        idea = request.idea
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
                   }
                 }
               }
@@ -471,6 +432,32 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
         }
       }
     }
+
+  private def retrieveQuestion(maybeQuestionId: Option[QuestionId],
+                               proposalId: ProposalId,
+                               maybeOperationId: Option[OperationId],
+                               maybeThemeId: Option[ThemeId]): Future[Option[Question]] = {
+
+    maybeQuestionId.map { questionId =>
+      questionService.getQuestion(questionId)
+    }.getOrElse {
+      proposalCoordinatorService.getProposal(proposalId).flatMap {
+        case Some(proposal) =>
+          val maybeFuture = for {
+            country  <- proposal.country
+            language <- proposal.language
+          } yield {
+            questionService.findQuestion(maybeThemeId, maybeOperationId, country, language)
+          }
+          maybeFuture.getOrElse {
+            Future.successful(None)
+          }
+        case None =>
+          Future.successful(None)
+      }
+    }
+
+  }
 
   @ApiOperation(
     value = "validate-proposal",
@@ -507,15 +494,23 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[ValidateProposalRequest]) { request =>
-                provideAsyncOrNotFound(
-                  proposalService.validateProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext,
-                    request = request
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
+                provideAsyncOrNotFound(retrieveQuestion(None, proposalId, request.operation, request.theme)) {
+                  question =>
+                    provideAsyncOrNotFound(
+                      proposalService.validateProposal(
+                        proposalId = proposalId,
+                        moderator = auth.user.userId,
+                        requestContext = requestContext,
+                        question = question,
+                        newContent = request.newContent,
+                        sendNotificationEmail = request.sendNotificationEmail,
+                        idea = request.idea,
+                        labels = request.labels,
+                        tags = request.tags
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
                 }
               }
             }
@@ -646,69 +641,6 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                 .lockProposal(proposalId = proposalId, moderatorId = auth.user.userId, requestContext = requestContext)
             ) { _ =>
               complete(StatusCodes.NoContent)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "remove-from-similars",
-    httpMethod = "DELETE",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
-  @Path(value = "/similars/{proposalId}")
-  @Deprecated
-  def removeProposalFromClusters: Route = delete {
-    path("moderation" / "proposals" / "similars" / moderationProposalId) { proposalId =>
-      makeOperation("RemoveFromSimilars") { context =>
-        makeOAuth2 { auth =>
-          requireModerationRole(auth.user) {
-            onSuccess(proposalService.removeProposalFromCluster(proposalId)) { _ =>
-              complete(StatusCodes.OK)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @ApiOperation(
-    value = "remove-clusters",
-    httpMethod = "DELETE",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
-  @Path(value = "/similars")
-  @Deprecated
-  def removeClusters: Route = delete {
-    path("moderation" / "proposals" / "similars") {
-      makeOperation("RemoveClusters") { context =>
-        makeOAuth2 { auth =>
-          requireModerationRole(auth.user) {
-            onSuccess(proposalService.clearSimilarProposals()) { _ =>
-              complete(StatusCodes.OK)
             }
           }
         }
@@ -891,17 +823,19 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
           requireModerationRole(user.user) {
             decodeRequest {
               entity(as[NextProposalToModerateRequest]) { request =>
-                provideAsyncOrNotFound(
-                  proposalService.searchAndLockProposalToModerate(
-                    request.operationId,
-                    request.themeId,
-                    request.country,
-                    request.language,
-                    user.user.userId,
-                    context
-                  )
-                ) { proposal =>
-                  complete(proposal)
+                provideAsyncOrNotFound {
+                  request.questionId
+                    .map(questionId => questionService.getQuestion(questionId))
+                    .getOrElse(
+                      questionService
+                        .findQuestion(request.themeId, request.operationId, request.country, request.language)
+                    )
+                } { question =>
+                  provideAsyncOrNotFound(
+                    proposalService.searchAndLockProposalToModerate(question.questionId, user.user.userId, context)
+                  ) { proposal =>
+                    complete(proposal)
+                  }
                 }
               }
             }
@@ -912,20 +846,16 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
   }
 
   val moderationProposalRoutes: Route =
-    searchAllProposalsDeprecated ~
-      searchAllProposals ~
+    searchAllProposals ~
       updateProposal ~
       acceptProposal ~
       refuseProposal ~
       postponeProposal ~
       exportProposals ~
-      removeProposalFromClusters ~
-      removeClusters ~
       lock ~
       patchProposal ~
       getDuplicates ~
       changeProposalsIdea ~
-      getDuplicates ~
       getModerationProposal ~
       nextProposalToModerate
 

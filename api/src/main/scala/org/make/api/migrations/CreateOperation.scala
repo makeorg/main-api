@@ -96,7 +96,8 @@ trait CreateOperation extends Migration {
                       tagIds = configuration.tags,
                       landingSequenceId = response.sequence.sequenceId,
                       startDate = Some(configuration.startDate),
-                      endDate = configuration.endDate
+                      endDate = configuration.endDate,
+                      questionId = None
                     )
                   }
                 )

@@ -184,7 +184,8 @@ trait ProposalIndexationStream
         themeId = proposal.theme,
         tags = tags,
         ideaId = proposal.idea,
-        operationId = proposal.operation
+        operationId = proposal.operation,
+        questionId = proposal.questionId
       )
     }
 
