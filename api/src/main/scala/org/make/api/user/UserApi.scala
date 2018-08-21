@@ -833,8 +833,10 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
   private val maxDescriptionLength = 450
 
   validate(
-    Some(requirePresent("firstName", firstName, Some("firstName should not be an empty string"))),
-    Some(requirePresent("organisationName", organisationName, Some("organisationName should not be an empty string"))),
+    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    organisationName.map(
+      value => requireNonEmpty("organisationName", value, Some("organisationName should not be an empty string"))
+    ),
     postalCode.map(
       value =>
         maxLength(
@@ -856,48 +858,6 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
     ),
     description.map(value => maxLength("description", maxDescriptionLength, value))
   )
-
-  if (firstName.nonEmpty) {
-    validate(validateField("firstName", firstName.exists(_.nonEmpty), "firstName should not be an empty string"))
-  }
-
-  if (organisationName.nonEmpty) {
-    validate(
-      validateField(
-        "organisationName",
-        organisationName.exists(_.nonEmpty),
-        "organisationName should not be an empty string"
-      )
-    )
-  }
-
-  if (postalCode.nonEmpty) {
-    validate(
-      validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
-    )
-  }
-
-  language.foreach(lang       => validate(maxLength("language", maxLanguageLength, lang.value)))
-  country.foreach(userCountry => validate(maxLength("country", maxCountryLength, userCountry.value)))
-  gender.foreach { userGender =>
-    validate(
-      validateField(
-        "gender",
-        Gender.matchGender(userGender).isDefined,
-        s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
-      )
-    )
-  }
-
-  if (description.nonEmpty) {
-    validate(
-      validateField(
-        "description",
-        description.forall(_.length <= 450),
-        "description connot be longer than 450 characters"
-      )
-    )
-  }
 }
 
 object UpdateUserRequest extends CirceFormatters {

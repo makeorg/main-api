@@ -200,16 +200,6 @@ final case class ModerationUpdateOrganisationRequest(name: Option[String] = None
                                                      avatar: Option[String] = None,
                                                      description: Option[String] = None) {
   OrganisationValidation.validateUpdate(name = name, description = description)
-
-  if (description.nonEmpty) {
-    validate(
-      validateField(
-        "description",
-        description.forall(_.length <= 450),
-        "description connot be longer than 450 characters"
-      )
-    )
-  }
 }
 
 object ModerationUpdateOrganisationRequest {
