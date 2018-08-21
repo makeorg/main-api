@@ -194,6 +194,29 @@ class DefaultProposalServiceComponentTest
     }
     scenario("no proposal can be locked") {
 
+      val defaultProposal =
+        Proposal(
+          proposalId = ProposalId("unlockable-1"),
+          slug = "unlockable-1",
+          content = "unlockable-1",
+          author = UserId("user-unlockable-1"),
+          labels = Seq.empty,
+          theme = None,
+          status = ProposalStatus.Pending,
+          refusalReason = None,
+          tags = Seq.empty,
+          votes = Seq.empty,
+          language = Some(Language("fr")),
+          country = Some(Country("FR")),
+          creationContext = RequestContext.empty,
+          similarProposals = Seq.empty,
+          idea = None,
+          operation = Some(OperationId("unlockable")),
+          createdAt = None,
+          updatedAt = None,
+          events = Nil
+        )
+
       Mockito
         .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("no-proposal-to-lock"))))
         .thenReturn(
@@ -273,59 +296,18 @@ class DefaultProposalServiceComponentTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-1")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              Proposal(
-                proposalId = ProposalId("unlockable-1"),
-                slug = "unlockable-1",
-                content = "unlockable-1",
-                author = UserId("user-unlockable-1"),
-                labels = Seq.empty,
-                theme = None,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
-                idea = None,
-                operation = Some(OperationId("unlockable")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
-              )
-            )
-          )
-        )
+        .thenReturn(Future.successful(Some(defaultProposal)))
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-2")))
         .thenReturn(
           Future.successful(
             Some(
-              Proposal(
+              defaultProposal.copy(
                 proposalId = ProposalId("unlockable-2"),
                 slug = "unlockable-2",
                 content = "unlockable-2",
-                author = UserId("user-unlockable-2"),
-                labels = Seq.empty,
-                theme = None,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
-                idea = None,
-                operation = Some(OperationId("unlockable")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
+                author = UserId("user-unlockable-2")
               )
             )
           )
@@ -336,26 +318,11 @@ class DefaultProposalServiceComponentTest
         .thenReturn(
           Future.successful(
             Some(
-              Proposal(
+              defaultProposal.copy(
                 proposalId = ProposalId("unlockable-3"),
                 slug = "unlockable-3",
                 content = "unlockable-3",
-                author = UserId("user-unlockable-3"),
-                labels = Seq.empty,
-                theme = None,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
-                idea = None,
-                operation = Some(OperationId("unlockable")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
+                author = UserId("user-unlockable-3")
               )
             )
           )
@@ -366,26 +333,11 @@ class DefaultProposalServiceComponentTest
         .thenReturn(
           Future.successful(
             Some(
-              Proposal(
+              defaultProposal.copy(
                 proposalId = ProposalId("unlockable-4"),
                 slug = "unlockable-4",
                 content = "unlockable-4",
-                author = UserId("user-unlockable-4"),
-                labels = Seq.empty,
-                theme = None,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
-                idea = None,
-                operation = Some(OperationId("unlockable")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
+                author = UserId("user-unlockable-4")
               )
             )
           )
