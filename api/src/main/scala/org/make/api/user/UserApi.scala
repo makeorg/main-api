@@ -173,20 +173,30 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                       .map(_ => social)
                   }
               ) { social =>
-                mapResponseHeaders(
-                  _ ++ Seq(
-                    `Set-Cookie`(
-                      HttpCookie(
-                        name = makeSettings.SessionCookie.name,
-                        value = social.token.access_token,
-                        secure = makeSettings.SessionCookie.isSecure,
-                        httpOnly = true,
-                        maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                        path = Some("/")
+                mapResponseHeaders { responseHeaders =>
+                  if (responseHeaders.exists(
+                        header =>
+                          header.name() == `Set-Cookie`.name && header
+                            .asInstanceOf[`Set-Cookie`]
+                            .cookie
+                            .name == makeSettings.SessionCookie.name
+                      )) {
+                    responseHeaders
+                  } else {
+                    responseHeaders ++ Seq(
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.SessionCookie.name,
+                          value = social.token.access_token,
+                          secure = makeSettings.SessionCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                          path = Some("/")
+                        )
                       )
                     )
-                  )
-                ) {
+                  }
+                } {
                   complete(StatusCodes.Created -> social.token)
                 }
               }
