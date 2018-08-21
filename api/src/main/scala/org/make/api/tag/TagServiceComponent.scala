@@ -173,7 +173,9 @@ trait DefaultTagServiceComponent
                 IndexedTag(
                   tagId = tag.tagId,
                   label = tag.label,
-                  display = tagType.nonEmpty && tagType.head.display.shortName == TagDisplay.Displayed.shortName
+                  display = tagType.nonEmpty && tagType.headOption
+                    .map(_.display.shortName)
+                    .exists(_ == TagDisplay.Displayed.shortName)
                 )
               } else {
                 IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)

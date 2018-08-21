@@ -57,7 +57,7 @@ object ChanceAuxJeunesData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = ChanceAuxJeunesOperation.countryConfigurations.head.country,
+        country = ChanceAuxJeunesOperation.countryConfigurations.headOption.map(_.country).getOrElse(Country("FR")),
         language = ChanceAuxJeunesOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())
