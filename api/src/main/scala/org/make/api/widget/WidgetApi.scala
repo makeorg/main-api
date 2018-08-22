@@ -52,22 +52,25 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse])))
   @ApiImplicitParams(value = Array(
     new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string"),
-    new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true)
+    new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
+    new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
   ))
   def getWidgetSequence: Route = {
     get {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
         makeOperation("GetWidgetSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters('tagsIds.as[immutable.Seq[TagId]].?) { tagsIds =>
+            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?)) {
+              (tagsIds: Option[Seq[TagId]], limit: Option[Int]) =>
               provideAsync(
                 proposalService.searchForUser(
                   userId = userAuth.map(_.user.userId),
                   query = SearchQuery(
                     filters = Some(SearchFilters(
-                      tags = tagsIds.map(TagsSearchFilter(_)),
+                      tags = tagsIds.map(TagsSearchFilter),
                       operation = Some(OperationSearchFilter(widgetOperationId))
-                    ))
+                    )),
+                    limit = limit
                   ),
                   requestContext = requestContext
                 )
