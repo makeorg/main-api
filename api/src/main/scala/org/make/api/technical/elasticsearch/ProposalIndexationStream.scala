@@ -145,7 +145,10 @@ trait ProposalIndexationStream
         content = proposal.content,
         slug = proposal.slug,
         status = proposal.status,
-        createdAt = proposal.createdAt.get,
+        createdAt = proposal.createdAt match {
+          case Some(date) => date
+          case _          => throw new IllegalStateException("created at is required")
+        },
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
         scores = IndexedScores(

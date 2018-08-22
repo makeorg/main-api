@@ -106,8 +106,11 @@ object SearchFilters extends ElasticDsl {
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
-    searchQuery.sorts
-      .map(sort => FieldSortDefinition(field = sort.field.get, order = sort.mode.getOrElse(SortOrder.ASC)))
+    searchQuery.sorts.flatMap { sort =>
+      sort.field.map { fieldValue =>
+        FieldSortDefinition(field = fieldValue, order = sort.mode.getOrElse(SortOrder.ASC))
+      }
+    }
 
   def getSkipSearch(searchQuery: SearchQuery): Int =
     searchQuery.skip

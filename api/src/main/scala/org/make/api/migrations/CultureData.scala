@@ -56,7 +56,7 @@ object CultureData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = CultureOperation.countryConfigurations.head.country,
+        country = CultureOperation.countryConfigurations.headOption.map(_.country).getOrElse(Country("FR")),
         language = CultureOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())
@@ -140,11 +140,11 @@ object CultureData extends InsertFixtureData {
             for {
               user <- retryableFuture(api.persistentUserService.findByEmail(proposalsToInsert.userEmail)).map(_.get)
               operationId <- retryableFuture(
-                api.operationService.findOneBySlug(CultureOperation.operationSlug).map(_.get.operationId)
+                api.operationService.findOneBySlug(CultureOperation.operationSlug).map(_.map(_.operationId))
               )
               question <- api.questionService.findQuestion(
                 None,
-                Some(operationId),
+                operationId,
                 proposalsToInsert.country,
                 proposalsToInsert.language
               )

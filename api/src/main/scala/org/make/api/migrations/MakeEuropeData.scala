@@ -54,7 +54,7 @@ object MakeEuropeData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = MakeEuropeOperation.countryConfigurations.head.country,
+        country = MakeEuropeOperation.countryConfigurations.headOption.map(_.country).getOrElse(Country("FR")),
         language = MakeEuropeOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())

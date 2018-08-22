@@ -57,7 +57,7 @@ object ChanceAuxJeunesData extends InsertFixtureData {
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = Seq(Role.RoleCitizen),
-        country = ChanceAuxJeunesOperation.countryConfigurations.head.country,
+        country = ChanceAuxJeunesOperation.countryConfigurations.headOption.map(_.country).getOrElse(Country("FR")),
         language = ChanceAuxJeunesOperation.defaultLanguage,
         profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.now.minusYears(age))),
         createdAt = Some(DateHelper.now())
@@ -139,13 +139,16 @@ object ChanceAuxJeunesData extends InsertFixtureData {
             Future.successful {}
           } else {
             for {
-              user <- retryableFuture(api.persistentUserService.findByEmail(proposalsToInsert.userEmail)).map(_.get)
+              user <- retryableFuture(api.persistentUserService.findByEmail(proposalsToInsert.userEmail)).map {
+                case Some(user) => user
+                case _          => throw new IllegalStateException
+              }
               operationId <- retryableFuture(
-                api.operationService.findOneBySlug(ChanceAuxJeunesOperation.operationSlug).map(_.get.operationId)
+                api.operationService.findOneBySlug(ChanceAuxJeunesOperation.operationSlug).map(_.map(_.operationId))
               )
               question <- api.questionService.findQuestion(
                 None,
-                Some(operationId),
+                operationId,
                 proposalsToInsert.country,
                 proposalsToInsert.language
               )
