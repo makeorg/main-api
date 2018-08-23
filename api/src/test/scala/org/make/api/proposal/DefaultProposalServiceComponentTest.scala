@@ -194,6 +194,29 @@ class DefaultProposalServiceComponentTest
     }
     scenario("no proposal can be locked") {
 
+      val defaultProposal =
+        Proposal(
+          proposalId = ProposalId("unlockable-1"),
+          slug = "unlockable-1",
+          content = "unlockable-1",
+          author = UserId("user-unlockable-1"),
+          labels = Seq.empty,
+          theme = None,
+          status = ProposalStatus.Pending,
+          refusalReason = None,
+          tags = Seq.empty,
+          votes = Seq.empty,
+          language = Some(Language("fr")),
+          country = Some(Country("FR")),
+          creationContext = RequestContext.empty,
+          similarProposals = Seq.empty,
+          idea = None,
+          operation = Some(OperationId("unlockable")),
+          createdAt = None,
+          updatedAt = None,
+          events = Nil
+        )
+
       Mockito
         .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("no-proposal-to-lock"))))
         .thenReturn(
@@ -271,6 +294,71 @@ class DefaultProposalServiceComponentTest
         )
         .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-1")))
+        .thenReturn(Future.successful(Some(defaultProposal)))
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-2")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              defaultProposal.copy(
+                proposalId = ProposalId("unlockable-2"),
+                slug = "unlockable-2",
+                content = "unlockable-2",
+                author = UserId("user-unlockable-2")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-3")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              defaultProposal.copy(
+                proposalId = ProposalId("unlockable-3"),
+                slug = "unlockable-3",
+                content = "unlockable-3",
+                author = UserId("user-unlockable-3")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-4")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              defaultProposal.copy(
+                proposalId = ProposalId("unlockable-4"),
+                slug = "unlockable-4",
+                content = "unlockable-4",
+                author = UserId("user-unlockable-4")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(userService.getUser(UserId("user-unlockable-1")))
+        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-1")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-unlockable-2")))
+        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-2")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-unlockable-3")))
+        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-3")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-unlockable-4")))
+        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-4")))))
+
       whenReady(
         proposalService.searchAndLockProposalToModerate(
           questionId = QuestionId("no-proposal-to-lock"),
@@ -324,6 +412,36 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(moderatorId)))
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(matches(ProposalId("unlockable"))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              Proposal(
+                proposalId = ProposalId("unlockable"),
+                slug = "unlockable",
+                content = "unlockable",
+                author = UserId("user-unlockable"),
+                labels = Seq.empty,
+                theme = None,
+                status = ProposalStatus.Pending,
+                refusalReason = None,
+                tags = Seq.empty,
+                votes = Seq.empty,
+                language = Some(Language("fr")),
+                country = Some(Country("FR")),
+                creationContext = RequestContext.empty,
+                similarProposals = Seq.empty,
+                idea = None,
+                operation = Some(OperationId("unlockable")),
+                createdAt = None,
+                updatedAt = None,
+                events = Nil
+              )
+            )
+          )
+        )
+
+      Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("lockable")))
         .thenReturn(
           Future.successful(
@@ -352,6 +470,10 @@ class DefaultProposalServiceComponentTest
             )
           )
         )
+
+      Mockito
+        .when(userService.getUser(UserId("user-unlockable")))
+        .thenReturn(Future.successful(Some(user(UserId("user-unlockable")))))
 
       Mockito
         .when(userService.getUser(UserId("user-lockable")))
