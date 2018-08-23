@@ -34,6 +34,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -46,10 +47,12 @@ class OrganisationApiTest
     extends MakeApiTestBase
     with OrganisationApi
     with ProposalServiceComponent
-    with OrganisationServiceComponent {
+    with OrganisationServiceComponent
+    with OrganisationSearchEngineComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
   override val organisationService: OrganisationService = mock[OrganisationService]
+  override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
 
   private val validAccessToken = "my-valid-access-token"
   val tokenCreationDate = new Date()
@@ -87,7 +90,8 @@ class OrganisationApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    lastMailingError = None
+    lastMailingError = None,
+    organisationName = Some("Make.org")
   )
 
   Mockito
@@ -171,6 +175,40 @@ class OrganisationApiTest
     scenario("get non existing organisation") {
       Get("/organisations/non-existant") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
+
+  feature("search organisations") {
+    Mockito
+      .when(organisationService.search(ArgumentMatchers.eq(Some("Make.org")), ArgumentMatchers.eq(None)))
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
+        )
+      )
+    Mockito
+      .when(organisationService.search(ArgumentMatchers.eq(None), ArgumentMatchers.eq(Some("make-org"))))
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
+        )
+      )
+    scenario("search by organisation name") {
+      Get("/organisations?organisationName=Make.org") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        organisationResults.total should be(1)
+        organisationResults.results.head.organisationId should be(UserId("make-org"))
+      }
+    }
+
+    scenario("search by slug") {
+      Get("/organisations?slug=make-org") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        organisationResults.total should be(1)
+        organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
     }
   }

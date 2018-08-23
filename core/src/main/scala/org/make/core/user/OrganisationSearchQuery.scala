@@ -23,6 +23,7 @@ import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 
@@ -137,7 +138,7 @@ object OrganisationSearchFilters extends ElasticDsl {
               matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
                 .boost(2F),
               matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
-                .fuzziness(fuzzy)
+                .fuzziness(fuzzy.toString)
                 .boost(1F)
             )
         case None => ElasticApi.matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
@@ -192,7 +193,7 @@ object OrganisationSearchFilters extends ElasticDsl {
 }
 
 case class OrganisationIdsSearchFilter(organisationIds: Seq[UserId])
-case class OrganisationNameSearchFilter(text: String, fuzzy: Option[String] = None)
+case class OrganisationNameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
 case class SlugSearchFilter(slug: String)
 case class DescriptionSearchFilter(description: String)
 case class CountrySearchFilter(country: Country)

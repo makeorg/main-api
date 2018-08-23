@@ -22,6 +22,7 @@ package org.make.api.idea
 import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
@@ -321,7 +322,7 @@ final case class IdeaFiltersRequest(name: Option[String],
                                     sort: Option[String],
                                     order: Option[String]) {
   def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
-    val fuzziness = "AUTO"
+    val fuzziness = Fuzziness.Auto
     val filters: Option[IdeaSearchFilters] =
       IdeaSearchFilters.parse(
         name = name.map(text => {
