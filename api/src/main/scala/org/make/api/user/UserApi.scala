@@ -49,13 +49,13 @@ import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
+import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
-import org.make.core._
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
@@ -651,6 +651,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                     postalCode = UpdateUserRequest.updateValue(user.profile.flatMap(_.postalCode), request.postalCode),
                     phoneNumber =
                       UpdateUserRequest.updateValue(user.profile.flatMap(_.phoneNumber), request.phoneNumber),
+                    description =
+                      UpdateUserRequest.updateValue(user.profile.flatMap(_.description), request.description),
                     optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
                     gender = Gender
                       .matchGender(request.gender.getOrElse(""))
@@ -819,6 +821,7 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
                              profession: Option[String],
                              postalCode: Option[String],
                              phoneNumber: Option[String],
+                             description: Option[String],
                              optInNewsletter: Option[Boolean],
                              gender: Option[String],
                              genderName: Option[String],
@@ -826,36 +829,35 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
                              language: Option[Language]) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
+  private val maxPostalCodeLength = 10
+  private val maxDescriptionLength = 450
 
-  if (firstName.nonEmpty) {
-    validate(validateField("firstName", firstName.exists(_.nonEmpty), "firstName should not be an empty string"))
-  }
-
-  if (organisationName.nonEmpty) {
-    validate(
-      validateField(
-        "organisationName",
-        organisationName.exists(_.nonEmpty),
-        "organisationName should not be an empty string"
+  validate(
+    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    organisationName.map(
+      value => requireNonEmpty("organisationName", value, Some("organisationName should not be an empty string"))
+    ),
+    postalCode.map(
+      value =>
+        maxLength(
+          "postalCode",
+          maxPostalCodeLength,
+          value,
+          Some(_ => "postal code cannot be longer than 10 characters")
       )
-    )
-  }
-
-  if (postalCode.nonEmpty) {
-    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters")
-  }
-
-  language.foreach(lang       => validate(maxLength("language", maxLanguageLength, lang.value)))
-  country.foreach(userCountry => validate(maxLength("country", maxCountryLength, userCountry.value)))
-  gender.foreach { userGender =>
-    validate(
-      validateField(
-        "gender",
-        Gender.matchGender(userGender).isDefined,
-        s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
+    ),
+    language.map(lang   => maxLength("language", maxLanguageLength, lang.value)),
+    country.map(country => maxLength("country", maxCountryLength, country.value)),
+    gender.map(
+      value =>
+        validateField(
+          "gender",
+          Gender.matchGender(value).isDefined,
+          s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
       )
-    )
-  }
+    ),
+    description.map(value => maxLength("description", maxDescriptionLength, value))
+  )
 }
 
 object UpdateUserRequest extends CirceFormatters {

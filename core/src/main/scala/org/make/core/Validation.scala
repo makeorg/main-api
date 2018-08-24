@@ -37,6 +37,8 @@ object Validation extends StrictLogging {
       "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a" +
       "\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])").r
 
+  def validate(maybeRequire: Option[Requirement]*)(implicit d: DummyImplicit): Unit = validate(maybeRequire.flatten: _*)
+
   def validate(require: Requirement*): Unit = {
     val messages: Seq[ValidationError] = require.flatMap { requirement =>
       Try(requirement.condition()) match {

@@ -83,6 +83,7 @@ class CrmContactEventConsumerActorIt
         avatarUrl = None,
         profession = None,
         phoneNumber = None,
+        description = None,
         twitterId = None,
         facebookId = None,
         googleId = None,
