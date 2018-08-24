@@ -141,7 +141,14 @@ class SortAlgorithmIT
     ),
     scores = IndexedScores.empty,
     context = None,
-    author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
+    author = Author(
+      firstName = None,
+      organisationName = None,
+      organisationSlug = None,
+      postalCode = None,
+      age = None,
+      avatarUrl = None
+    ),
     organisations = Seq.empty,
     themeId = None,
     tags = Seq.empty,
@@ -162,27 +169,29 @@ class SortAlgorithmIT
     newEmptyProposal("random-4"),
     newEmptyProposal("random-5"),
     newEmptyProposal("actor-1")
-      .copy(organisations = Seq(IndexedOrganisationInfo(UserId("1"), Some("1")))),
+      .copy(organisations = Seq(IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")))),
     newEmptyProposal("actor-2")
       .copy(
-        organisations =
-          Seq(IndexedOrganisationInfo(UserId("1"), Some("1")), IndexedOrganisationInfo(UserId("2"), Some("2")))
+        organisations = Seq(
+          IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
+          IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2"))
+        )
       ),
     newEmptyProposal("actor-3")
       .copy(
         organisations = Seq(
-          IndexedOrganisationInfo(UserId("1"), Some("1")),
-          IndexedOrganisationInfo(UserId("2"), Some("2")),
-          IndexedOrganisationInfo(UserId("3"), Some("3"))
+          IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
+          IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
+          IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3"))
         )
       ),
     newEmptyProposal("actor-4")
       .copy(
         organisations = Seq(
-          IndexedOrganisationInfo(UserId("1"), Some("1")),
-          IndexedOrganisationInfo(UserId("2"), Some("2")),
-          IndexedOrganisationInfo(UserId("3"), Some("3")),
-          IndexedOrganisationInfo(UserId("4"), Some("4"))
+          IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
+          IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
+          IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3")),
+          IndexedOrganisationInfo(UserId("4"), Some("4"), Some("4"))
         )
       ),
     newEmptyProposal("controversy-1").copy(

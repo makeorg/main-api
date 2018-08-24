@@ -30,7 +30,7 @@ import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ProposalIndexationStream
-import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserService, UserServiceComponent}
 import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,6 +42,7 @@ class ProposalConsumerActor(sequenceService: SequenceService,
                             proposalIndexerService: ProposalIndexerService,
                             override val proposalCoordinatorService: ProposalCoordinatorService,
                             override val userService: UserService,
+                            override val organisationService: OrganisationService,
                             override val tagService: TagService,
                             override val semanticService: SemanticService,
                             override val elasticsearchProposalAPI: ProposalSearchEngine)
@@ -129,6 +130,7 @@ class ProposalConsumerActor(sequenceService: SequenceService,
 object ProposalConsumerActor {
   type ProposalConsumerActorDependencies =
     UserServiceComponent
+      with OrganisationServiceComponent
       with TagServiceComponent
       with SequenceServiceComponent
       with OperationServiceComponent
@@ -145,6 +147,7 @@ object ProposalConsumerActor {
         dependencies.proposalIndexerService,
         proposalCoordinatorService,
         dependencies.userService,
+        dependencies.organisationService,
         dependencies.tagService,
         dependencies.semanticService,
         dependencies.elasticsearchProposalAPI

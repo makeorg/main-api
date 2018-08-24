@@ -89,6 +89,7 @@ class ProposalSearchEngineTest
     author = Author(
       firstName = Some("Boogie"),
       organisationName = None,
+      organisationSlug = None,
       postalCode = Some("11111"),
       age = Some(42),
       avatarUrl = None

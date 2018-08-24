@@ -122,7 +122,14 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
+        author = Author(
+          firstName = None,
+          organisationName = None,
+          organisationSlug = None,
+          postalCode = None,
+          age = None,
+          avatarUrl = None
+        ),
         organisations = Seq.empty,
         themeId = Some(ThemeId("foo-theme")),
         tags = Seq.empty,
@@ -145,7 +152,14 @@ class OrganisationApiTest
         context = Some(Context(source = None, operation = None, location = None, question = None)),
         trending = None,
         labels = Seq.empty,
-        author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
+        author = Author(
+          firstName = None,
+          organisationName = None,
+          organisationSlug = None,
+          postalCode = None,
+          age = None,
+          avatarUrl = None
+        ),
         organisations = Seq.empty,
         themeId = Some(ThemeId("bar-theme")),
         tags = Seq.empty,

@@ -112,6 +112,7 @@ object Context {
 
 final case class Author(firstName: Option[String],
                         organisationName: Option[String],
+                        organisationSlug: Option[String],
                         postalCode: Option[String],
                         age: Option[Int],
                         avatarUrl: Option[String])
@@ -121,17 +122,13 @@ object Author {
   implicit val decoder: Decoder[Author] = deriveDecoder[Author]
 }
 
-final case class IndexedOrganisationInfo(organisationId: UserId, organisationName: Option[String])
+final case class IndexedOrganisationInfo(organisationId: UserId,
+                                         organisationName: Option[String],
+                                         organisationSlug: Option[String])
 
 object IndexedOrganisationInfo {
   implicit val encoder: ObjectEncoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
   implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
-
-  def apply(organisationInfo: OrganisationInfo): IndexedOrganisationInfo =
-    IndexedOrganisationInfo(
-      organisationId = organisationInfo.organisationId,
-      organisationName = organisationInfo.organisationName
-    )
 }
 
 final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])

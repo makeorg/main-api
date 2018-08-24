@@ -22,6 +22,7 @@ package org.make.api.user
 import com.github.t3hnar.bcrypt._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.organisation.OrganisationSearchEngineComponent
+import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
@@ -174,6 +175,44 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }
     }
 
+    private def updateProposalsFromOrganisation(organisationId: UserId): Future[Unit] = {
+      for {
+        _ <- getVotedProposals(organisationId, None, None, None, RequestContext.empty)
+          .map(
+            result =>
+              result.results.foreach(
+                proposal =>
+                  eventBusService
+                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+            )
+          )
+        _ <- proposalService
+          .searchForUser(
+            userId = Some(organisationId),
+            query = SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(userId = organisationId)),
+                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                    case (_, status) => status != ProposalStatus.Archived
+                  }.values.toSeq)),
+                  context = Some(ContextSearchFilter(source = Some("core")))
+                )
+              )
+            ),
+            requestContext = RequestContext.empty
+          )
+          .map(
+            result =>
+              result.results.foreach(
+                proposal =>
+                  eventBusService
+                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+            )
+          )
+      } yield {}
+    }
+
     override def update(organisationId: UserId,
                         organisationUpdateData: OrganisationUpdateData): Future[Option[UserId]] = {
       for {
@@ -195,9 +234,11 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                   )
                 )
               )
-            persistentUserService.modify(updateOrganisation).map {
-              case Right(organisation) => Some(organisation.userId)
-              case Left(_)             => None
+            persistentUserService.modify(updateOrganisation).flatMap {
+              case Right(organisation) =>
+                updateProposalsFromOrganisation(organisationId)
+                  .flatMap(_ => Future.successful(Some(organisation.userId)))
+              case Left(_) => Future.successful(None)
             }
           }.getOrElse(Future.successful(None)))
       } yield update

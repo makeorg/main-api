@@ -24,10 +24,11 @@ import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.SprayJsonFormatters
 import org.make.core.proposal.OrganisationInfo
+import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
 import stamina.json._
-import stamina.{V1, V2, V3}
+import stamina.{V1, V2, V3, V4}
 
 object ProposalSerializers extends SprayJsonFormatters {
 
@@ -55,16 +56,32 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalPostponedSerializer: JsonPersister[ProposalPostponed, V1] =
     persister[ProposalPostponed]("proposal-postponed")
 
-  private val proposalVotedSerializer: JsonPersister[ProposalVoted, V2] =
-    persister[ProposalVoted, V2](
+  private val proposalVotedSerializer: JsonPersister[ProposalVoted, V3] =
+    persister[ProposalVoted, V3](
       "proposal-voted",
-      from[V1].to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
+      from[V1]
+        .to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
+        .to[V3] { json =>
+          val organisationId =
+            json.extract[Option[OrganisationInfo]]('organisationInfo.?).flatMap(_.map(_.organisationId.value))
+          organisationId.map { id =>
+            json.update('maybeOrganisationId ! set[String](id))
+          }.getOrElse(json)
+        }
     )
 
-  private val proposalUnvotedSerializer: JsonPersister[ProposalUnvoted, V2] =
-    persister[ProposalUnvoted, V2](
+  private val proposalUnvotedSerializer: JsonPersister[ProposalUnvoted, V3] =
+    persister[ProposalUnvoted, V3](
       "proposal-unvoted",
-      from[V1].to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
+      from[V1]
+        .to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
+        .to[V3] { json =>
+          val organisationInfo =
+            json.extract[Option[OrganisationInfo]]('organisationInfo.?).flatMap(_.map(_.organisationId.value))
+          organisationInfo.map { id =>
+            json.update('maybeOrganisationId ! set[String](id))
+          }.getOrElse(json)
+        }
     )
 
   private val proposalQualifiedSerializer: JsonPersister[ProposalQualified, V1] =
@@ -79,8 +96,8 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
     persister[ProposalLocked]("proposal-locked")
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V3] =
-    persister[ProposalState, V3](
+  private val proposalStateSerializer: JsonPersister[ProposalState, V4] =
+    persister[ProposalState, V4](
       "proposalState",
       from[V1]
         .to[V2](
@@ -88,6 +105,10 @@ object ProposalSerializers extends SprayJsonFormatters {
             .update('proposal / 'country ! set[Option[String]](Some("FR")))
         )
         .to[V3](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
+        .to[V4] { json =>
+          val organisationInfos = json.extract[Seq[OrganisationInfo]]('proposal / 'organisations)
+          json.update('proposal / 'organisationIds ! set[Seq[UserId]](organisationInfos.map(_.organisationId)))
+        }
     )
 
   private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
@@ -96,10 +117,15 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
     persister[SimilarProposalsCleared]("similar-proposals-cleared")
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V2] =
-    persister[ProposalPatched, V2](
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V3] =
+    persister[ProposalPatched, V3](
       "proposal-tags-updated",
-      from[V1].to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
+      from[V1]
+        .to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
+        .to[V3] { json =>
+          val organisationInfos = json.extract[Seq[OrganisationInfo]]('proposal / 'organisations)
+          json.update('proposal / 'organisationIds ! set[Seq[UserId]](organisationInfos.map(_.organisationId)))
+        }
     )
 
   private val proposalAnonymizedSerializer: JsonPersister[ProposalAnonymized, V1] =

@@ -24,6 +24,7 @@ import java.time.LocalDate
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.CrmServiceComponent
@@ -35,6 +36,7 @@ import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.Profile
+import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
@@ -450,8 +452,57 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findOptOutUsers(page: Int, limit: Int)
     }
 
+    private def updateProposalVotedByOrganisation(user: User): Future[Unit] = {
+      if (user.isOrganisation) {
+        proposalService
+          .searchProposalsVotedByUser(user.userId, None, None, RequestContext.empty)
+          .map(
+            result =>
+              result.results.foreach(
+                proposal =>
+                  eventBusService
+                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+            )
+          )
+      } else {
+        Future.successful({})
+      }
+    }
+
+    private def updateProposalsSubmitByUser(user: User, requestContext: RequestContext): Future[Unit] = {
+      proposalService
+        .searchForUser(
+          userId = Some(user.userId),
+          query = SearchQuery(
+            filters = Some(
+              SearchFilters(
+                user = Some(UserSearchFilter(userId = user.userId)),
+                status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                  case (_, status) => status != ProposalStatus.Archived
+                }.values.toSeq)),
+                context = Some(ContextSearchFilter(source = Some("core")))
+              )
+            )
+          ),
+          requestContext = requestContext
+        )
+        .map(
+          result =>
+            result.results.foreach(
+              proposal =>
+                eventBusService
+                  .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+          )
+        )
+    }
+
     override def update(user: User, requestContext: RequestContext): Future[User] = {
-      val futureUser: Future[User] = persistentUserService.updateUser(user)
+      val futureUser: Future[User] = for {
+        updatedUser <- persistentUserService.updateUser(user)
+        _           <- updateProposalVotedByOrganisation(updatedUser)
+        _           <- updateProposalsSubmitByUser(updatedUser, requestContext)
+      } yield updatedUser
+
       futureUser.map { value =>
         eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
         value

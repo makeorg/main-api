@@ -308,6 +308,10 @@
               "type": "text",
               "index": true
             },
+            "organisationSlug": {
+              "type": "keyword",
+              "index": true
+            },
             "postalCode": {
               "type": "keyword",
               "index": false
@@ -331,6 +335,10 @@
             },
             "organisationName": {
               "type": "text",
+              "index": true
+            },
+            "organisationSlug": {
+              "type": "keyword",
               "index": true
             }
           }
