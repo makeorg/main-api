@@ -27,7 +27,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.user.{OrganisationServiceComponent, UserResponse}
+import org.make.api.user.UserResponse
 import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._

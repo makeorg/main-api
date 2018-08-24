@@ -49,6 +49,7 @@ object UserEvent {
       UserUpdatedTagEvent :+:
       UserValidatedAccountEvent :+:
       OrganisationRegisteredEvent :+:
+      OrganisationUpdatedEvent :+:
       CNil
 
   final case class UserEventWrapper(version: Int,
@@ -68,6 +69,7 @@ object UserEvent {
         case e: UserRegisteredEvent         => Coproduct[AnyUserEvent](e)
         case e: UserValidatedAccountEvent   => Coproduct[AnyUserEvent](e)
         case e: OrganisationRegisteredEvent => Coproduct[AnyUserEvent](e)
+        case e: OrganisationUpdatedEvent    => Coproduct[AnyUserEvent](e)
       }
   }
 
@@ -86,6 +88,7 @@ object UserEvent {
     implicit val atOrganisationRegisteredEvent: Case.Aux[OrganisationRegisteredEvent, OrganisationRegisteredEvent] = at(
       identity
     )
+    implicit val atOrganisationUpdatedEvent: Case.Aux[OrganisationUpdatedEvent, OrganisationUpdatedEvent] = at(identity)
   }
 
   private val defaultCountry = Country("FR")
@@ -201,6 +204,16 @@ object UserEvent {
                                          email: String,
                                          override val country: Country = defaultCountry,
                                          override val language: Language = defaultLanguage)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class OrganisationUpdatedEvent(override val connectedUserId: Option[UserId] = None,
+                                      override val eventDate: ZonedDateTime = DateHelper.now(),
+                                      override val userId: UserId,
+                                      override val requestContext: RequestContext,
+                                      override val country: Country = defaultCountry,
+                                      override val language: Language = defaultLanguage)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }

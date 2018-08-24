@@ -17,17 +17,17 @@
  *
  */
 
-package org.make.api.user
+package org.make.api.organisation
 
 import com.github.t3hnar.bcrypt._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
-import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
+import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
+import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.profile.Profile
@@ -49,7 +49,9 @@ trait OrganisationService extends ShortenedNames {
   def getOrganisations: Future[Seq[User]]
   def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
-  def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
+  def update(organisationId: UserId,
+             organisationUpdateDate: OrganisationUpdateData,
+             requestContext: RequestContext): Future[Option[UserId]]
   def getVotedProposals(organisationId: UserId,
                         maybeUserId: Option[UserId],
                         filterVotes: Option[Seq[VoteKey]],
@@ -214,7 +216,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     }
 
     override def update(organisationId: UserId,
-                        organisationUpdateData: OrganisationUpdateData): Future[Option[UserId]] = {
+                        organisationUpdateData: OrganisationUpdateData,
+                        requestContext: RequestContext): Future[Option[UserId]] = {
       for {
         emailExists <- updateMailExists(organisationUpdateData.email.map(_.toLowerCase))
         _           <- verifyEmail(organisationUpdateData.email.map(_.toLowerCase).getOrElse(""), emailExists)
@@ -236,6 +239,15 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
               )
             persistentUserService.modify(updateOrganisation).flatMap {
               case Right(organisation) =>
+                eventBusService.publish(
+                  OrganisationUpdatedEvent(
+                    connectedUserId = Some(organisation.userId),
+                    userId = organisation.userId,
+                    requestContext = requestContext,
+                    country = organisation.country,
+                    language = organisation.language
+                  )
+                )
                 updateProposalsFromOrganisation(organisationId)
                   .flatMap(_ => Future.successful(Some(organisation.userId)))
               case Left(_) => Future.successful(None)

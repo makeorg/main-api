@@ -68,12 +68,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
         ProposalSupervisor.name
       )
     )
-    context.watch(
-      context.actorOf(
-        UserSupervisor.props(makeApi.userService, userHistoryCoordinator, makeApi.operationService),
-        UserSupervisor.name
-      )
-    )
+    context.watch(context.actorOf(UserSupervisor.props(userHistoryCoordinator, makeApi), UserSupervisor.name))
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))

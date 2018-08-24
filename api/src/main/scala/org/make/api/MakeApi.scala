@@ -42,7 +42,12 @@ import org.make.api.operation.{
   ModerationOperationApi,
   OperationApi
 }
-import org.make.api.organisation.{DefaultOrganisationSearchEngineComponent, ModerationOrganisationApi, OrganisationApi}
+import org.make.api.organisation.{
+  DefaultOrganisationSearchEngineComponent,
+  DefaultOrganisationServiceComponent,
+  ModerationOrganisationApi,
+  OrganisationApi
+}
 import org.make.api.proposal._
 import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService}
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
@@ -77,12 +82,7 @@ import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{
-  DefaultOrganisationServiceComponent,
-  DefaultPersistentUserServiceComponent,
-  DefaultUserServiceComponent,
-  UserApi
-}
+import org.make.api.user.{DefaultPersistentUserServiceComponent, DefaultUserServiceComponent, UserApi}
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
   UserHistoryCoordinator,

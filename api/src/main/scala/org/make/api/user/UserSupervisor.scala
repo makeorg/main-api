@@ -20,12 +20,15 @@
 package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.OperationService
+import org.make.api.operation.OperationServiceComponent
+import org.make.api.organisation._
+import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
+import org.make.api.user.UserSupervisor.UserSupervisorDependencies
+import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
-class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef, operationService: OperationService)
+class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies)
     extends Actor
     with ActorLogging
     with AvroSerializers
@@ -46,7 +49,7 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          UserEmailConsumerActor.props(userService, operationService),
+          UserEmailConsumerActor.props(dependencies.userService, dependencies.operationService),
           UserEmailConsumerActor.name
         )
       context.actorOf(props, name)
@@ -55,7 +58,7 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          UserCrmConsumerActor.props(userService).withDispatcher(kafkaDispatcher),
+          UserCrmConsumerActor.props(dependencies.userService).withDispatcher(kafkaDispatcher),
           UserCrmConsumerActor.name
         )
       context.actorOf(props, name)
@@ -70,6 +73,21 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
       context.actorOf(props, name)
     }
 
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
+          OrganisationConsumerActor
+            .props(
+              dependencies.organisationService,
+              dependencies.elasticsearchOrganisationAPI,
+              dependencies.elasticsearchConfiguration
+            )
+            .withDispatcher(kafkaDispatcher),
+          OrganisationConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
   }
 
   override def receive: Receive = {
@@ -79,7 +97,13 @@ class UserSupervisor(userService: UserService, userHistoryCoordinator: ActorRef,
 
 object UserSupervisor {
 
+  type UserSupervisorDependencies = UserServiceComponent
+    with OperationServiceComponent
+    with OrganisationServiceComponent
+    with OrganisationSearchEngineComponent
+    with ElasticsearchConfigurationComponent
+
   val name: String = "users"
-  def props(userService: UserService, userHistoryCoordinator: ActorRef, operationService: OperationService): Props =
-    Props(new UserSupervisor(userService, userHistoryCoordinator, operationService))
+  def props(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies): Props =
+    Props(new UserSupervisor(userHistoryCoordinator, dependencies))
 }

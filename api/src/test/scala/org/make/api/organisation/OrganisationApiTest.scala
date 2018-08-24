@@ -27,7 +27,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
-import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserResponse}
+import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._

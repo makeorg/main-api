@@ -46,7 +46,7 @@ import org.make.api.technical.{
 }
 import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedOptInNewsletterEvent}
 import org.make.api.user.social.SocialServiceComponent
-import org.make.api.userhistory.UserEvent.{ResendValidationEmailEvent, ResetPasswordEvent, UserValidatedAccountEvent}
+import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core._
@@ -679,6 +679,17 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                           userId = Some(user.userId),
                           eventDate = DateHelper.now(),
                           optInNewsletter = user.profile.exists(_.optInNewsletter)
+                        )
+                      )
+                    }
+                    if (user.isOrganisation) {
+                      eventBusService.publish(
+                        OrganisationUpdatedEvent(
+                          connectedUserId = Some(user.userId),
+                          userId = user.userId,
+                          requestContext = requestContext,
+                          country = user.country,
+                          language = user.language
                         )
                       )
                     }

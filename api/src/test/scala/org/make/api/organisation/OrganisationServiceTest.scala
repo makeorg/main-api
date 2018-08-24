@@ -26,7 +26,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
-import org.make.api.userhistory.UserEvent.OrganisationRegisteredEvent
+import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Profile
@@ -194,6 +194,7 @@ class OrganisationServiceTest
 
   feature("update organisation") {
     scenario("successfully update an organisation by changing the name and avatar") {
+      Mockito.reset(eventBusService)
       Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
       Mockito
@@ -210,12 +211,15 @@ class OrganisationServiceTest
           email = None,
           avatar = Some("anotherAvatarUrl"),
           description = None
-        )
+        ),
+        RequestContext.empty
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
         organisationId.isDefined shouldBe true
       }
+      verify(eventBusService, times(1))
+        .publish(ArgumentMatchers.any[OrganisationUpdatedEvent])
     }
 
     scenario("successfully update an organisation without changing anything") {
@@ -224,7 +228,8 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
+        RequestContext.empty
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
@@ -238,7 +243,8 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = Some("any@mail.com"), avatar = None, description = None)
+        OrganisationUpdateData(name = None, email = Some("any@mail.com"), avatar = None, description = None),
+        RequestContext.empty
       )
 
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
@@ -250,7 +256,8 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
+        RequestContext.empty
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
@@ -263,7 +270,8 @@ class OrganisationServiceTest
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None)
+        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
+        RequestContext.empty
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>

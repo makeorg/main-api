@@ -23,7 +23,7 @@ import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
-import org.make.api.organisation.OrganisationSearchEngine
+import org.make.api.organisation.{OrganisationSearchEngine, OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorService,
   ProposalCoordinatorServiceComponent,

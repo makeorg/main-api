@@ -28,7 +28,6 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user._
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
@@ -180,7 +179,7 @@ class ModerationOrganisationApiTest
       When("I want to update an organisation")
       Then("I should get a OK status")
       when(organisationService.getOrganisation(any[UserId])).thenReturn(Future.successful(Some(fakeOrganisation)))
-      when(organisationService.update(any[UserId], any[OrganisationUpdateData]))
+      when(organisationService.update(any[UserId], any[OrganisationUpdateData], any[RequestContext]))
         .thenReturn(Future.successful(Some(UserId("ABCD"))))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
