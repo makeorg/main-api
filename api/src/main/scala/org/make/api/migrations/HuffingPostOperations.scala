@@ -24,12 +24,12 @@ import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.{CountryConfiguration, SequenceWithCountryLanguage}
-import org.make.api.proposal.ValidateProposalRequest
 import org.make.core.idea.Idea
 import org.make.core.operation.{OperationCountryConfiguration, OperationId, OperationTranslation}
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
 import org.make.core.proposal._
+import org.make.core.question.Question
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceStatus
 import org.make.core.tag.Tag
@@ -177,12 +177,12 @@ object HuffingPostOperations extends Migration {
                         tagIds = countryConfiguration.tags,
                         landingSequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
                         startDate = Some(countryConfiguration.startDate),
-                        endDate = countryConfiguration.endDate
+                        endDate = countryConfiguration.endDate,
+                        questionId = None,
                       )
                     )
                   )
-            }
-            .map { operationId =>
+            }.map { operationId =>
               retryableFuture(
                 api.sequenceService.update(
                   sequenceId = sequenceWithCountryLanguage.sequence.sequenceId,
@@ -193,6 +193,26 @@ object HuffingPostOperations extends Migration {
                   operationId = Some(operationId),
                   themeIds = Seq.empty
                 )
+              )
+
+              retryableFuture(
+                api.questionService
+                .findQuestion(None, Some(operationId), countryConfiguration.country, countryConfiguration.language)
+                .flatMap {
+                  case Some(_) => Future.successful {}
+                  case None =>
+                    api.persistentQuestionService
+                      .persist(
+                        Question(
+                          api.idGenerator.nextQuestionId(),
+                          countryConfiguration.country,
+                          countryConfiguration.language,
+                          operationId.value,
+                          Some(operationId),
+                          None
+                        )
+                      )
+                }
               )
 
               val tags: Seq[ImportTagsData.TagsDataLine] =
@@ -271,23 +291,25 @@ object HuffingPostOperations extends Migration {
                                 themeId = None
                               )
                             )
+                            question <- api.questionService.findQuestion(
+                              None,
+                              Some(operationId),
+                              proposalToInsert.country,
+                              proposalToInsert.language
+                            )
                             proposalId <- retryableFuture(
                               api.proposalService
                                 .propose(
-                                  user,
-                                  RequestContext.empty.copy(
+                                  user = user,
+                                  requestContext = RequestContext.empty.copy(
                                     question = Some(operationSlug),
                                     source = Some("huffingpost"),
                                     operationId = Some(operationId)
                                   ),
-                                  DateHelper.now(),
-                                  proposalToInsert.content,
-                                  Some(operationId),
-                                  None,
-                                  Some(proposalToInsert.language),
-                                  Some(proposalToInsert.country)
-                                )
-                            )
+                                  createdAt = DateHelper.now(),
+                                  content = proposalToInsert.content,
+                                  question = question.get
+                            ))
                             _ <- retryableFuture(
                               api.proposalService.validateProposal(
                                 proposalId,
@@ -297,16 +319,12 @@ object HuffingPostOperations extends Migration {
                                   source = Some("huffingpost"),
                                   operationId = Some(operationId)
                                 ),
-                                ValidateProposalRequest(
-                                  newContent = None,
-                                  sendNotificationEmail = false,
-                                  theme = None,
-                                  labels = Seq.empty,
-                                  tags = tagsOfProposal.map(_.tagId),
-                                  similarProposals = Seq.empty,
-                                  operation = Some(operationId),
-                                  idea = Some(idea.ideaId)
-                                )
+                                question.get,
+                                newContent = None,
+                                sendNotificationEmail = false,
+                                idea = idea.ideaId,
+                                tags = tagsOfProposal.map(_.tagId),
+                                labels = Seq.empty
                               )
                             )
                           } yield {}

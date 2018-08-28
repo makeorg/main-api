@@ -58,7 +58,8 @@ class PersistentTagServiceIT
         tagIds = Seq.empty,
         landingSequenceId = SequenceId("fake-sequence-id"),
         startDate = None,
-        endDate = None
+        endDate = None,
+        questionId = None
       )
     )
   )
@@ -394,56 +395,6 @@ class PersistentTagServiceIT
         language = Language("ar")
       )
 
-    val persistedTags: Future[Seq[Tag]] = for {
-      _ <- persistentThemeService.persist(baseTheme.copy(themeId = themeIdFirst))
-      _ <- persistentThemeService.persist(baseTheme.copy(themeId = themeIdSecond))
-      _ <- persistentOperationService.persist(
-        fakeOperation.copy(
-          operationId = operationIdFirst,
-          slug = "ope-first",
-          countriesConfiguration = Seq(
-            OperationCountryConfiguration(
-              countryCode = Country("FR"),
-              tagIds = Seq.empty,
-              landingSequenceId = SequenceId("fr"),
-              startDate = None,
-              endDate = None,
-              questionId = None
-            )
-          )
-        )
-      )
-      _ <- persistentOperationService.persist(
-        fakeOperation.copy(
-          operationId = operationIdSecond,
-          slug = "ope-second",
-          countriesConfiguration = Seq(
-            OperationCountryConfiguration(
-              countryCode = Country("FR"),
-              tagIds = Seq.empty,
-              landingSequenceId = SequenceId("fr"),
-              startDate = None,
-              endDate = None,
-              questionId = None
-            )
-          )
-        )
-      )
-      _        <- persistentTagTypeService.persist(tagTypeFirst)
-      _        <- persistentTagTypeService.persist(tagTypeSecond)
-      hestia   <- persistentTagService.persist(hestia)
-      athena   <- persistentTagService.persist(athena)
-      ariane   <- persistentTagService.persist(ariane)
-      hera     <- persistentTagService.persist(hera)
-      clio     <- persistentTagService.persist(clio)
-      thalia   <- persistentTagService.persist(thalia)
-      calliope <- persistentTagService.persist(calliope)
-    } yield Seq(hestia, athena, ariane, hera, clio, thalia, calliope)
-
-    val tagList: Seq[String] = Seq(hestia, athena, ariane, hera, clio, thalia, calliope).map { tag =>
-      s"label = ${tag.label}, tagId = ${tag.tagId.value}, operationId = ${tag.operationId.map(_.value).getOrElse("None")}"
-    }
-
     val baseTheme: Theme = Theme(
       themeId = themeIdFirst,
       translations = Seq.empty,
@@ -455,7 +406,6 @@ class PersistentTagServiceIT
       gradient = None,
       tags = Seq.empty
     )
-
 
     scenario("Search tags by label") {
 
@@ -498,7 +448,8 @@ class PersistentTagServiceIT
                     tagIds = Seq.empty,
                     landingSequenceId = SequenceId("fr"),
                     startDate = None,
-                    endDate = None
+                    endDate = None,
+                    questionId = None
                   )
                 )
               )
@@ -513,7 +464,8 @@ class PersistentTagServiceIT
                     tagIds = Seq.empty,
                     landingSequenceId = SequenceId("fr"),
                     startDate = None,
-                    endDate = None
+                    endDate = None,
+                    questionId = None
                   )
                 )
               )
@@ -703,7 +655,8 @@ class PersistentTagServiceIT
                   tagIds = Seq.empty,
                   landingSequenceId = SequenceId("fr"),
                   startDate = None,
-                  endDate = None
+                  endDate = None,
+                  questionId = None
                 )
               )
             )

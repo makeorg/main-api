@@ -142,6 +142,7 @@ class WidgetApiTest
                 ),
                 organisations = Seq.empty,
                 themeId = None,
+                questionId = None,
                 tags = Seq.empty,
                 ideaId = None,
                 operationId = None,
