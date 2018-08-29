@@ -61,7 +61,7 @@ services:
     networks:
       - makeapi
     environment:
-      ES_JAVA_OPTS: '-Xms128M -Xmx128M'
+      ES_JAVA_OPTS: '-Xms256M -Xmx512M'
       xpack.security.enabled: "false"
       http.host: elasticsearch
       transport.host: localhost

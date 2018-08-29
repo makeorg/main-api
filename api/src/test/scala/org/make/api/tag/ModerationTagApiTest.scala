@@ -118,9 +118,9 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
       ArgumentMatchers.any[Float]
     )
   ).thenReturn(Future.successful(validTag))
-  when(tagService.searchByLabel(ArgumentMatchers.eq(validTagText), ArgumentMatchers.any[Boolean]))
+  when(tagService.findByLabel(ArgumentMatchers.eq(validTagText), ArgumentMatchers.any[Boolean]))
     .thenReturn(Future.successful(Seq(validTag)))
-  when(tagService.searchByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), ArgumentMatchers.any[Boolean]))
+  when(tagService.findByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), ArgumentMatchers.any[Boolean]))
     .thenReturn(Future.successful(Seq.empty))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
@@ -131,11 +131,12 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(tag1, tag2)))
   when(
-    tagService.search(
+    tagService.find(
       ArgumentMatchers.any[Int],
       ArgumentMatchers.any[Option[Int]],
       ArgumentMatchers.eq(Some("label")),
       ArgumentMatchers.eq(Some("ASC")),
+      ArgumentMatchers.any[Boolean],
       ArgumentMatchers.any[TagFilter]
     )
   ).thenReturn(Future.successful(Seq(tag1, tag2)))

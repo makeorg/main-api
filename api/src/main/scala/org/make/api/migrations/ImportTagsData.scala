@@ -38,29 +38,12 @@ trait ImportTagsData extends Migration with StrictLogging {
 
   implicit val executor: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
-  def extractDataLine(line: String): Option[ImportTagsData.TagsDataLine] = {
-    line.drop(1).dropRight(1).split("""";"""") match {
-      case Array(weight, label, tagType, tagDisplay, country, language) =>
-        Some(
-          ImportTagsData.TagsDataLine(
-            label = label,
-            tagTypeId = TagTypeId(tagType),
-            tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
-            weight = weight.toFloat,
-            country = Country(country),
-            language = Language(language)
-          )
-        )
-      case _ => None
-    }
-  }
-
   def dataResource: String
 
   override def migrate(api: MakeApi): Future[Unit] = {
 
     val tags: Seq[ImportTagsData.TagsDataLine] =
-      Source.fromResource(dataResource).getLines().toSeq.drop(1).flatMap(extractDataLine)
+      Source.fromResource(dataResource).getLines().toSeq.drop(1).flatMap(ImportTagsData.extractDataLine)
 
     api.tagService.findByOperationId(operationId).flatMap {
       case operationTags if operationTags.isEmpty =>
@@ -90,4 +73,21 @@ object ImportTagsData {
                           weight: Float,
                           country: Country,
                           language: Language)
+
+  def extractDataLine(line: String): Option[ImportTagsData.TagsDataLine] = {
+    line.drop(1).dropRight(1).split("""";"""") match {
+      case Array(label, weight, tagType, tagDisplay, country, language, _) =>
+        Some(
+          TagsDataLine(
+            label = label,
+            tagTypeId = TagTypeId(tagType),
+            tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
+            weight = weight.toFloat,
+            country = Country(country),
+            language = Language(language)
+          )
+        )
+      case _ => None
+    }
+  }
 }

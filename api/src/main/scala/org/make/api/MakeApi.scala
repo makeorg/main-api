@@ -88,6 +88,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
+import org.make.api.widget.WidgetApi
 import org.make.core.{ValidationError, ValidationFailedError}
 import scalaoauth2.provider._
 
@@ -169,6 +170,7 @@ trait MakeApi
     with ModerationOrganisationApi
     with OrganisationApi
     with ModerationProposalApi
+    with WidgetApi
     with BuildInfoRoutes
     with DefaultMailJetConfigurationComponent
     with StrictLogging
@@ -254,7 +256,8 @@ trait MakeApi
       classOf[ModerationProposalApi],
       classOf[ModerationTagApi],
       classOf[ModerationOrganisationApi],
-      classOf[OrganisationApi]
+      classOf[OrganisationApi],
+      classOf[WidgetApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -295,7 +298,8 @@ trait MakeApi
       migrationRoutes ~
       healthCheckRoutes ~
       moderationOrganisationRoutes ~
-      organisationRoutes
+      organisationRoutes ~
+      widgetRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

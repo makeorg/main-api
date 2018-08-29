@@ -52,11 +52,12 @@ trait PersistentTagService {
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
-  def search(start: Int,
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           onlyDisplayed: Boolean,
+           persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
   def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
@@ -280,10 +281,11 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       result
     }
 
-    override def search(start: Int,
+    override def find(start: Int,
                         end: Option[Int],
                         sort: Option[String],
                         order: Option[String],
+                        onlyDisplayed: Boolean,
                         persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
 
@@ -293,6 +295,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
             select
               .from(PersistentTag.as(tagAlias))
+              .leftJoin(PersistentTagType.as(tagTypeAlias))
+              .on(tagAlias.tagTypeId, tagTypeAlias.id)
               .where(
                 sqls.toAndConditionOpt(
                   persistentTagFilter.label
@@ -303,7 +307,19 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                   persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
                   persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
                   persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country.value)),
-                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value))
+                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value)),
+                  if (onlyDisplayed) {
+                    Some(sqls
+                      .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                      .or(
+                        sqls
+                          .eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                          .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                      )
+                    )
+                  } else {
+                    None
+                  }
                 )
               )
 

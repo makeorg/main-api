@@ -102,7 +102,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
           requireModerationRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                provideAsync(tagService.searchByLabel(request.label, like = false)) { tagList =>
+                provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
                   val duplicateLabel = tagList.find { tag =>
                     (tag.operationId.isDefined && tag.operationId == request.operationId) ||
                     (tag.themeId.isDefined && tag.themeId == request.themeId)
@@ -255,12 +255,12 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
                     )
                   ) { count =>
                     onSuccess(
-                      tagService.search(
-                        start.getOrElse(0),
-                        end,
-                        sort,
-                        order,
-                        TagFilter(
+                      tagService.find(
+                        start = start.getOrElse(0),
+                        end = end,
+                        sort = sort,
+                        order = order,
+                        tagFilter = TagFilter(
                           label = maybeLabel,
                           tagTypeId = maybeTagTypeId,
                           operationId = maybeOperationId,
@@ -312,7 +312,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
           requireModerationRole(auth.user) {
             decodeRequest {
               entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
-                provideAsync(tagService.searchByLabel(request.label, like = false)) { tagList =>
+                provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
                   val duplicateLabel = tagList.find { tag =>
                     (tag.tagId != tagId) &&
                     (tag.operationId.isDefined && tag.operationId == request.operationId) ||

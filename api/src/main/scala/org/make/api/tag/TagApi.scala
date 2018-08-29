@@ -25,8 +25,10 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.operation.OperationId
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.{tag, HttpCodes}
+import org.make.core.{HttpCodes, Validation, tag}
 
 import scala.util.Try
 
@@ -52,16 +54,65 @@ trait TagApi extends MakeAuthenticationDirectives {
   }
 
   @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
+    )
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[tag.Tag]])))
   @Path(value = "/")
   def listTags: Route = {
     get {
       path("tags") {
         makeOperation("Search") { _ =>
-          parameter('displayed.as[Boolean].?) { displayed =>
-            onSuccess(tagService.findAll(displayed = displayed.contains(true))) { tags =>
-              complete(tags)
-            }
+          parameters(
+            (
+              'start.as[Int].?,
+              'end.as[Int].?,
+              'operationId.?,
+              'themeId.?,
+              'country.?,
+              'language.?
+            )
+          ) {
+            (start,
+             end,
+             maybeOperationId,
+             maybeThemeId,
+             maybeCountry,
+             maybeLanguage
+            ) =>
+              maybeCountry.foreach { country =>
+                Validation.validate(
+                  Validation.validMatch("country", country, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
+                )
+              }
+              maybeLanguage.foreach { language =>
+                Validation.validate(
+                  Validation.validMatch("language", language, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
+                )
+              }
+
+              onSuccess(
+                tagService.find(
+                  start = start.getOrElse(0),
+                  end = end,
+                  onlyDisplayed = true,
+                  tagFilter = TagFilter(
+                    operationId = maybeOperationId.map(OperationId(_)),
+                    themeId = maybeThemeId.map(ThemeId(_)),
+                    country = maybeCountry.map(Country(_)),
+                    language = maybeLanguage.map(Language(_))
+                  )
+                )
+              ) { tags =>
+                complete(tags)
+              }
           }
         }
       }

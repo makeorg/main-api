@@ -23,7 +23,7 @@ import java.time.LocalDate
 import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.{CountryConfiguration, SequenceWithCountryLanguage}
 import org.make.api.sequence.SequenceResponse
 import org.make.core.operation.{OperationCountryConfiguration, OperationTranslation}
 import org.make.core.reference.{Country, Language}
@@ -47,8 +47,6 @@ trait CreateOperation extends Migration {
   def defaultLanguage: Language
 
   def countryConfigurations: Seq[CountryConfiguration]
-
-  case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 
   private def findConfiguration(country: Country, language: Language): CountryConfiguration = {
     countryConfigurations
@@ -148,4 +146,7 @@ object CreateOperation {
                                         title: String,
                                         startDate: LocalDate,
                                         endDate: Option[LocalDate])
+  final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
+
+
 }
