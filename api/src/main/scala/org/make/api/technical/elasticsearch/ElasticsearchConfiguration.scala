@@ -45,14 +45,11 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   lazy val connectionString: String = configuration.getString("connection-string")
   lazy val indexName: String = configuration.getString("index-name")
-  lazy val entityBufferSize: Int = configuration.getInt("buffer-size")
-  lazy val entityBulkSize: Int = configuration.getInt("bulk-size")
-
   lazy val ideaAliasName: String = configuration.getString("idea-alias-name")
   lazy val proposalAliasName: String = configuration.getString("proposal-alias-name")
   lazy val sequenceAliasName: String = configuration.getString("sequence-alias-name")
-  lazy val organisationAliasName: String = configuration.getString("organisation-alias-name")
-  private lazy val allAliases = Seq(ideaAliasName, proposalAliasName, sequenceAliasName, organisationAliasName)
+  lazy val entityBufferSize: Int = configuration.getInt("buffer-size")
+  lazy val entityBulkSize: Int = configuration.getInt("bulk-size")
 
   // create index
   lazy val elasticsearchIdeaMapping: String =
@@ -61,18 +58,15 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
     Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
   lazy val elasticsearchSequenceMapping: String =
     Source.fromResource("elasticsearch-mappings/sequence.json")(Codec.UTF8).getLines().mkString("")
-  lazy val elasticsearchOrganisationMapping: String =
-    Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
 
   lazy val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
 
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
   def mappingForAlias: String => String = {
-    case `ideaAliasName`         => elasticsearchIdeaMapping
-    case `proposalAliasName`     => elasticsearchProposalMapping
-    case `sequenceAliasName`     => elasticsearchSequenceMapping
-    case `organisationAliasName` => elasticsearchOrganisationMapping
+    case `ideaAliasName`     => elasticsearchIdeaMapping
+    case `proposalAliasName` => elasticsearchProposalMapping
+    case `sequenceAliasName` => elasticsearchSequenceMapping
   }
 
   def hashForAlias(aliasName: String): String = {
@@ -95,7 +89,7 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   def getCurrentIndicesName: Future[Seq[String]] = {
     client
-      .executeAsFuture(getAliases(Seq.empty, allAliases))
+      .executeAsFuture(getAliases(Seq.empty, Seq(ideaAliasName, proposalAliasName, sequenceAliasName)))
       .map(_.mappings.map { case (index, _) => index.name }.toSeq)
       .recover {
         case e: Exception =>
@@ -122,7 +116,7 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
       }
   }
 
-  allAliases.foreach { aliasName =>
+  Seq(ideaAliasName, proposalAliasName, sequenceAliasName).foreach { aliasName =>
     client.executeAsFuture(aliasExists(aliasName)).onComplete {
       case Success(AliasExistsResponse(true)) =>
         logger.info(s"Elasticsearch alias $aliasName exist")

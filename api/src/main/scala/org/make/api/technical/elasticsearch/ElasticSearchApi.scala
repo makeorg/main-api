@@ -71,7 +71,6 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
                 provideAsync(
                   indexationService.reindexData(
                     Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                    Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
                     Seq(request.forceAll, request.forceProposals).flatten.contains(true),
                     Seq(request.forceAll, request.forceSequences).flatten.contains(true)
                   )
@@ -92,7 +91,6 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
 @ApiModel
 final case class ReindexRequest(
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceIdeas: Option[Boolean],
-  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceOrganisations: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceProposals: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceSequences: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceAll: Option[Boolean]

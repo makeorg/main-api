@@ -42,7 +42,7 @@ import org.make.api.operation.{
   ModerationOperationApi,
   OperationApi
 }
-import org.make.api.organisation.{DefaultOrganisationSearchEngineComponent, ModerationOrganisationApi, OrganisationApi}
+import org.make.api.organisation.{ModerationOrganisationApi, OrganisationApi}
 import org.make.api.proposal._
 import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService}
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
@@ -130,7 +130,6 @@ trait MakeApi
     with DefaultOauthTokenGeneratorComponent
     with DefaultProposalSearchEngineComponent
     with DefaultIdeaSearchEngineComponent
-    with DefaultOrganisationSearchEngineComponent
     with DefaultUserHistoryCoordinatorServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultProposalCoordinatorServiceComponent
