@@ -77,8 +77,8 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       .getUser(event.id)
       .map(_.map { user =>
         user.profile match {
-          case Some(profile) if !profile.optInNewsletter => crmService.addUserToUnsubscribeList(user)
-          case _                                         => crmService.addUserToOptInList(user)
+          case Some(profile) if !profile.optInNewsletter => crmService.addUsersToUnsubscribeList(Seq(user))
+          case _                                         => crmService.addUsersToOptInList(Seq(user))
         }
       })
   }
@@ -117,7 +117,7 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       .flatMap(_.map { user =>
         val removeFromUnsubscribe: Future[Unit] = crmService.removeUserFromUnsubscribeList(user)
         val addToOptIn = if (!user.isHardBounce) {
-          crmService.addUserToOptInList(user)
+          crmService.addUsersToOptInList(Seq(user))
         } else {
           Future.successful {}
         }

@@ -340,7 +340,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           isSocialLogin = true
         )
       )
-
       eventBusService.publish(
         UserValidatedAccountEvent(
           userId = user.userId,
@@ -350,7 +349,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           isSocialLogin = true
         )
       )
-      eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
     }
 
     override def requestPasswordReset(userId: UserId): Future[Boolean] = {
