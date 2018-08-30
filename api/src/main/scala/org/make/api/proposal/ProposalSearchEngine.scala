@@ -120,6 +120,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val request = searchWithType(proposalAlias)
         .bool(BoolQueryDefinition(must = searchFilters))
+        .limit(0)
 
       client.executeAsFuture(request).map { response =>
         response.totalHits
