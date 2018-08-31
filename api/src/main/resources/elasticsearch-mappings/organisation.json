@@ -1,0 +1,77 @@
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "trigrams_filter": {
+          "type":     "ngram",
+          "min_gram": 3,
+          "max_gram": 3
+        }
+      },
+      "analyzer": {
+        "trigrams": {
+          "type":      "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter":   [
+            "lowercase",
+            "trigrams_filter"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "organisation": {
+      "dynamic": "strict",
+      "properties": {
+        "organisationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "organisationName": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            },
+            "general": {
+              "type": "text"
+            }
+          }
+        },
+        "slug": {
+          "type": "keyword",
+          "index": true
+        },
+        "avatarUrl": {
+          "type": "keyword",
+          "index": false
+        },
+        "description": {
+          "type": "keyword",
+          "index": true
+        },
+        "canBeFollowed": {
+          "type": "boolean",
+          "index": true
+        },
+        "proposalsCount": {
+          "type": "integer",
+          "index": true
+        },
+        "votesCount": {
+          "type": "integer",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": true
+        },
+        "country": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    }
+  }
+}
