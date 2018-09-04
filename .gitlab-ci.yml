@@ -201,7 +201,6 @@ non-regression-tests:
         -H "Accept: application/json" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -H "X-Rundeck-Auth-Token: ${RUNDECK_PREPROD_TOKEN}" \
-        --data-urlencode "argString=-username ${ADMIN_PREPROD_USERNAME} -password ${ADMIN_PREPROD_PASSWORD}" \
         ${RUNDECK_PREPROD_URL}/api/16/job/${RUNDECK_PREPROD_NON_REGRESSION_JOB_ID}/run \
         | jq -r '.id')
 
