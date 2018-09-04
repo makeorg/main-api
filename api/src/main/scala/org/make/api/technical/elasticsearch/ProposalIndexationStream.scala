@@ -52,6 +52,7 @@ import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 trait ProposalIndexationStream
     extends IndexationStream
@@ -96,7 +97,7 @@ trait ProposalIndexationStream
     def flowIndexProposals(proposalIndexName: String): Flow[ProposalId, Done, NotUsed] =
       maybeIndexedProposal
         .via(filterIsDefined[IndexedProposal])
-        .via(grouped[IndexedProposal])
+        .groupedWithin(100, 500.milliseconds)
         .via(runIndexProposals(proposalIndexName))
 
     val indexOrUpdateFlow: Flow[ProposalId, Seq[IndexedProposal], NotUsed] =

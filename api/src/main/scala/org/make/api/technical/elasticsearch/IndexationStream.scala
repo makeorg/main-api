@@ -21,7 +21,7 @@ package org.make.api.technical.elasticsearch
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import scala.concurrent.duration.DurationDouble
+import scala.concurrent.duration.DurationInt
 
 trait IndexationStream {
   //TODO: Load these values from conf
@@ -30,6 +30,6 @@ trait IndexationStream {
 
   def filterIsDefined[T]: Flow[Option[T], T, NotUsed] = Flow[Option[T]].filter(_.isDefined).map(_.get)
   def filterIsEmpty[T](item: T): Flow[Option[T], T, NotUsed] = Flow[Option[T]].filter(_.isEmpty).map(_ => item)
-  def grouped[T]: Flow[T, Seq[T], NotUsed] = Flow[T].groupedWithin(100, 500.milliseconds)
+  def grouped[T]: Flow[T, Seq[T], NotUsed] = Flow[T].groupedWithin(10, 20.milliseconds)
 
 }
