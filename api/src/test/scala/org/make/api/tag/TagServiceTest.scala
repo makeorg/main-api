@@ -24,10 +24,10 @@ import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent, TagTypeService}
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.proposal.SearchQuery
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.reference.ThemeId
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -51,6 +51,7 @@ class TagServiceTest
 
   def newTag(label: String,
              tagId: TagId = idGenerator.nextTagId(),
+             questionId: QuestionId,
              operationId: Option[OperationId] = None,
              themeId: Option[ThemeId] = None): Tag = Tag(
     tagId = tagId,
@@ -61,7 +62,8 @@ class TagServiceTest
     operationId = operationId,
     themeId = themeId,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = Some(questionId)
   )
 
   feature("get tag") {
@@ -85,45 +87,6 @@ class TagServiceTest
   }
 
   feature("create tag") {
-    scenario("creating a legacy tag success") {
-      When("i create a tag with label 'new tag'")
-      Then("my tag is persisted")
-
-      Mockito
-        .when(persistentTagService.get(ArgumentMatchers.any[TagId]))
-        .thenReturn(Future.successful(None))
-
-      val tag = newTag("new tag", tagId = TagId("new-tag"))
-
-      Mockito
-        .when(persistentTagService.persist(ArgumentMatchers.any[Tag]))
-        .thenReturn(Future.successful(tag))
-
-      val futureNewTag: Future[Tag] = tagService.createLegacyTag("new tag")
-
-      whenReady(futureNewTag, Timeout(3.seconds)) { _ =>
-        Mockito
-          .verify(persistentTagService)
-          .persist(
-            ArgumentMatchers.refEq[Tag](
-              Tag(
-                tagId = TagId(""),
-                label = "new tag",
-                display = TagDisplay.Inherit,
-                weight = 0f,
-                tagTypeId = TagType.LEGACY.tagTypeId,
-                operationId = None,
-                themeId = None,
-                country = Country("FR"),
-                language = Language("fr")
-              ),
-              "tagId"
-            )
-          )
-      }
-
-    }
-
     scenario("creating a tag success") {
       When("i create a tag with label 'new tag'")
       Then("my tag is persisted")
@@ -132,7 +95,7 @@ class TagServiceTest
         .when(persistentTagService.get(ArgumentMatchers.any[TagId]))
         .thenReturn(Future.successful(None))
 
-      val tag = newTag("new tag", tagId = TagId("new-tag"))
+      val tag = newTag("new tag", tagId = TagId("new-tag"), questionId = QuestionId("new-tag"))
 
       Mockito
         .when(persistentTagService.persist(ArgumentMatchers.any[Tag]))
@@ -141,12 +104,15 @@ class TagServiceTest
       val futureNewTag: Future[Tag] = tagService.createTag(
         label = "new tag",
         tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
-        operationId = None,
-        themeId = None,
-        country = Country("FR"),
-        language = Language("fr"),
-        display = TagDisplay.Inherit,
-        weight = 0f
+        question = Question(
+          questionId = QuestionId("new-question"),
+          operationId = None,
+          themeId = None,
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "new question"
+        ),
+        display = TagDisplay.Inherit
       )
 
       whenReady(futureNewTag, Timeout(3.seconds)) { _ =>
@@ -163,7 +129,8 @@ class TagServiceTest
                 operationId = None,
                 themeId = None,
                 country = Country("FR"),
-                language = Language("fr")
+                language = Language("fr"),
+                questionId = Some(QuestionId("new-question"))
               ),
               "tagId"
             )
@@ -198,7 +165,14 @@ class TagServiceTest
       Mockito.reset(persistentTagService)
       Mockito
         .when(persistentTagService.findAllFromIds(ArgumentMatchers.any[Seq[TagId]]))
-        .thenReturn(Future.successful(Seq(newTag("find tag1"), newTag("find tag2"))))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              newTag("find tag1", questionId = QuestionId("tag-1")),
+              newTag("find tag2", questionId = QuestionId("tag-1"))
+            )
+          )
+        )
 
       val futureTags: Future[Seq[Tag]] = tagService.findByTagIds(Seq(TagId("find-tag1"), TagId("find-tag2")))
 
@@ -213,24 +187,30 @@ class TagServiceTest
       Given("a list of registered tags 'op tag1', 'op tag2'")
       When("i find tags by operation")
 
-      val opId = OperationId("op-id")
+      val questionId = QuestionId("question-id")
+      val opId = OperationId("operation-id")
 
       Mockito.reset(persistentTagService)
       Mockito
-        .when(persistentTagService.findByOperationId(ArgumentMatchers.eq(opId)))
+        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(questionId)))
         .thenReturn(
           Future
-            .successful(Seq(newTag("op tag1", operationId = Some(opId)), newTag("op tag2", operationId = Some(opId))))
+            .successful(
+              Seq(
+                newTag("op tag1", operationId = Some(opId), questionId = questionId),
+                newTag("op tag2", operationId = Some(opId), questionId = questionId)
+              )
+            )
         )
 
-      val futureTags: Future[Seq[Tag]] = tagService.findByOperationId(opId)
+      val futureTags: Future[Seq[Tag]] = tagService.findByQuestionId(questionId)
 
       whenReady(futureTags, Timeout(3.seconds)) { tags =>
         Then("i get tags 'op tag1' and 'op tag2'")
         tags.size shouldBe 2
         tags.map(_.label).contains("op tag1") shouldBe true
         tags.map(_.label).contains("op tag2") shouldBe true
-        tags.forall(_.operationId.contains(opId)) shouldBe true
+        tags.forall(_.questionId.contains(questionId)) shouldBe true
       }
     }
 
@@ -239,9 +219,10 @@ class TagServiceTest
       When("i find tags by theme")
 
       val themeId = ThemeId("theme-id")
+      val questionId = QuestionId("question-of-theme")
 
-      val tag1 = newTag("theme tag1", themeId = Some(themeId))
-      val tag2 = newTag("theme tag2", themeId = Some(themeId))
+      val tag1 = newTag("theme tag1", themeId = Some(themeId), questionId = questionId)
+      val tag2 = newTag("theme tag2", themeId = Some(themeId), questionId = questionId)
 
       Mockito.reset(persistentTagService)
 
@@ -252,10 +233,10 @@ class TagServiceTest
             .successful(Seq(tag1, tag2))
         )
       Mockito
-        .when(persistentTagService.findByThemeId(ArgumentMatchers.eq(themeId)))
+        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(questionId)))
         .thenReturn(Future.successful(Seq(tag1, tag2)))
 
-      val futureTags: Future[Seq[Tag]] = tagService.findByThemeId(themeId)
+      val futureTags: Future[Seq[Tag]] = tagService.findByQuestionId(questionId)
 
       whenReady(futureTags, Timeout(3.seconds)) { tags =>
         Then("i get tags 'theme tag1' and 'theme tag2'")
@@ -273,7 +254,14 @@ class TagServiceTest
       Mockito.reset(persistentTagService)
       Mockito
         .when(persistentTagService.findByLabelLike(ArgumentMatchers.eq("label")))
-        .thenReturn(Future.successful(Seq(newTag("label tag1"), newTag("label tag2"))))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              newTag("label tag1", questionId = QuestionId("tag-1")),
+              newTag("label tag2", questionId = QuestionId("tag-2"))
+            )
+          )
+        )
 
       val futureTags: Future[Seq[Tag]] = tagService.findByLabel("label", like = true)
 
@@ -300,10 +288,14 @@ class TagServiceTest
         display = TagDisplay.Inherit,
         tagTypeId = TagTypeId("fake-tagTypeId"),
         weight = 0f,
-        operationId = None,
-        themeId = None,
-        country = Country("FR"),
-        language = Language("fr")
+        question = Question(
+          questionId = QuestionId("fake-question"),
+          operationId = None,
+          themeId = None,
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "Fake Question"
+        )
       )
 
       whenReady(futureTag) { tag =>
@@ -317,10 +309,18 @@ class TagServiceTest
 
       Mockito
         .when(persistentTagService.get(TagId("old-tag-success")))
-        .thenReturn(Future.successful(Some(newTag("old tag success", tagId = TagId("old-tag-success")))))
+        .thenReturn(
+          Future.successful(
+            Some(newTag("old tag success", tagId = TagId("old-tag-success"), questionId = QuestionId("old-tag")))
+          )
+        )
       Mockito
         .when(persistentTagService.update(ArgumentMatchers.any[Tag]))
-        .thenReturn(Future.successful(Some(newTag("new tag success", tagId = TagId("old-tag-success")))))
+        .thenReturn(
+          Future.successful(
+            Some(newTag("new tag success", tagId = TagId("old-tag-success"), questionId = QuestionId("new-tag")))
+          )
+        )
 
       Mockito
         .when(tagTypeService.getTagType(ArgumentMatchers.any[TagTypeId]))
@@ -339,10 +339,14 @@ class TagServiceTest
         display = TagDisplay.Inherit,
         tagTypeId = TagTypeId("fake-tagTypeId"),
         weight = 0f,
-        operationId = None,
-        themeId = None,
-        country = Country("FR"),
-        language = Language("fr")
+        question = Question(
+          questionId = QuestionId("fake-question"),
+          operationId = None,
+          themeId = None,
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "Fake Question"
+        )
       )
 
       whenReady(futureTag, Timeout(3.seconds)) { tag =>

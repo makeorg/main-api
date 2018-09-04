@@ -23,6 +23,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 
@@ -36,6 +37,7 @@ case class TagResponse(@(ApiModelProperty @field)(dataType = "string", example =
                        weight: Float,
                        @(ApiModelProperty @field)(dataType = "string") operationId: Option[OperationId],
                        @(ApiModelProperty @field)(dataType = "string") themeId: Option[ThemeId],
+                       @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
                        country: Country,
                        language: Language)
 
@@ -51,6 +53,7 @@ object TagResponse {
       tagTypeId = tag.tagTypeId,
       weight = tag.weight,
       operationId = tag.operationId,
+      questionId = tag.questionId,
       themeId = tag.themeId,
       country = tag.country,
       language = tag.language

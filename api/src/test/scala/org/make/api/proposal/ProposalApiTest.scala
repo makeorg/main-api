@@ -82,6 +82,30 @@ class ProposalApiTest
       )
     )
 
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      any[Option[QuestionId]],
+      any[Option[ThemeId]],
+      any[Option[OperationId]],
+      any[Country],
+      any[Language]
+    )
+  ).thenAnswer(
+    invocation =>
+      Future.successful(
+        Some(
+          Question(
+            QuestionId("my-question"),
+            country = invocation.getArgument[Country](3),
+            language = invocation.getArgument[Language](4),
+            question = "my question",
+            operationId = invocation.getArgument[Option[OperationId]](2),
+            themeId = invocation.getArgument[Option[ThemeId]](1)
+          )
+        )
+    )
+  )
+
   private val john = User(
     userId = UserId("my-user-id"),
     email = "john.snow@night-watch.com",
@@ -414,6 +438,17 @@ class ProposalApiTest
       .findQuestion(matches(None), matches(Some(OperationId("fake"))), matches(Country("FR")), matches(Language("fr")))
   ).thenReturn(Future.successful(None))
 
+  when(
+    questionService
+      .findQuestionByQuestionIdOrThemeOrOperation(
+        matches(None),
+        matches(None),
+        matches(Some(OperationId("fake"))),
+        matches(Country("FR")),
+        matches(Language("fr"))
+      )
+  ).thenReturn(Future.successful(None))
+
   feature("proposing") {
     scenario("unauthenticated proposal") {
       Given("an un authenticated user")
@@ -546,6 +581,7 @@ class ProposalApiTest
       And("a valid operationId")
       When("the user want to propose in an operation context")
       Then("the proposal should be saved")
+
       Post("/proposals")
         .withEntity(
           HttpEntity(

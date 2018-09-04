@@ -25,23 +25,33 @@ import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToke
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => matches}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
-class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with TagServiceComponent {
+class ModerationTagApiTest
+    extends MakeApiTestBase
+    with ModerationTagApi
+    with MockitoSugar
+    with TagServiceComponent
+    with QuestionServiceComponent {
 
   override val tagService: TagService = mock[TagService]
+
+  override val questionService: QuestionService = mock[QuestionService]
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
@@ -82,6 +92,29 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         .successful(Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin)), None, Some("admin"), None)))
     )
 
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      any[Option[QuestionId]],
+      any[Option[ThemeId]],
+      any[Option[OperationId]],
+      any[Country],
+      any[Language]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          QuestionId("1234-1234-1234-1234"),
+          Country("FR"),
+          Language("fr"),
+          "?",
+          Some(OperationId("1234-1234-1234-1234")),
+          None
+        )
+      )
+    )
+  )
+
   val validTagText: String = "tag"
   val helloWorldTagText: String = "hello world"
   val helloWorldTagSlug: String = "hello-world"
@@ -96,7 +129,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     operationId = Some(OperationId("operation-id")),
     themeId = None,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = None
   )
 
   val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
@@ -107,20 +141,11 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
   val tag2: Tag = newTag("tag2", TagId("tag2"))
 
   when(
-    tagService.createTag(
-      ArgumentMatchers.eq(validTagText),
-      ArgumentMatchers.any[TagTypeId],
-      ArgumentMatchers.any[Option[OperationId]],
-      ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language],
-      ArgumentMatchers.any[TagDisplay],
-      ArgumentMatchers.any[Float]
-    )
+    tagService.createTag(ArgumentMatchers.eq(validTagText), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
   ).thenReturn(Future.successful(validTag))
-  when(tagService.findByLabel(ArgumentMatchers.eq(validTagText), ArgumentMatchers.any[Boolean]))
+  when(tagService.findByLabel(ArgumentMatchers.eq(validTagText), any[Boolean]))
     .thenReturn(Future.successful(Seq(validTag)))
-  when(tagService.findByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), ArgumentMatchers.any[Boolean]))
+  when(tagService.findByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), any[Boolean]))
     .thenReturn(Future.successful(Seq.empty))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
@@ -132,12 +157,12 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     .thenReturn(Future.successful(Seq(tag1, tag2)))
   when(
     tagService.find(
-      ArgumentMatchers.any[Int],
-      ArgumentMatchers.any[Option[Int]],
+      any[Int],
+      any[Option[Int]],
       ArgumentMatchers.eq(Some("label")),
       ArgumentMatchers.eq(Some("ASC")),
-      ArgumentMatchers.any[Boolean],
-      ArgumentMatchers.any[TagFilter]
+      any[Boolean],
+      any[TagFilter]
     )
   ).thenReturn(Future.successful(Seq(tag1, tag2)))
 
@@ -145,14 +170,11 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     tagService.updateTag(
       ArgumentMatchers.eq(TagId(helloWorldTagId)),
       ArgumentMatchers.eq(s"$validTagText UPDATED"),
-      ArgumentMatchers.any[TagDisplay],
-      ArgumentMatchers.any[TagTypeId],
-      ArgumentMatchers.any[Float],
-      ArgumentMatchers.any[Option[OperationId]],
-      ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language],
-      ArgumentMatchers.any[RequestContext]
+      any[TagDisplay],
+      any[TagTypeId],
+      any[Float],
+      any[Question],
+      any[RequestContext]
     )
   ).thenReturn(
     Future.successful(
@@ -164,18 +186,15 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
     tagService.updateTag(
       ArgumentMatchers.eq(TagId(fakeTagText)),
       ArgumentMatchers.eq(s"$validTagText UPDATED"),
-      ArgumentMatchers.any[TagDisplay],
-      ArgumentMatchers.any[TagTypeId],
-      ArgumentMatchers.any[Float],
-      ArgumentMatchers.any[Option[OperationId]],
-      ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language],
-      ArgumentMatchers.any[RequestContext]
+      any[TagDisplay],
+      any[TagTypeId],
+      any[Float],
+      any[Question],
+      any[RequestContext]
     )
   ).thenReturn(Future.successful(None))
 
-  when(tagService.count(ArgumentMatchers.any[TagFilter])).thenReturn(Future.successful(2))
+  when(tagService.count(any[TagFilter])).thenReturn(Future.successful(2))
 
   val routes: Route = sealRoute(moderationTagRoutes)
 
@@ -423,8 +442,8 @@ class ModerationTagApiTest extends MakeApiTestBase with ModerationTagApi with Ta
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val tag: Tag = entityAs[Tag]
-        tag.tagId.value should be(helloWorldTagId)
+        val tag: TagResponse = entityAs[TagResponse]
+        tag.id.value should be(helloWorldTagId)
         tag.tagTypeId should be(TagTypeId("1234-1234-1234-1234"))
       }
     }

@@ -34,6 +34,11 @@ trait QuestionService {
                    maybeOperationId: Option[OperationId],
                    country: Country,
                    language: Language): Future[Option[Question]]
+  def findQuestionByQuestionIdOrThemeOrOperation(maybeQuestionId: Option[QuestionId],
+                                                 maybeThemeId: Option[ThemeId],
+                                                 maybeOperationId: Option[OperationId],
+                                                 country: Country,
+                                                 language: Language): Future[Option[Question]]
 }
 
 trait QuestionServiceComponent {
@@ -43,7 +48,7 @@ trait QuestionServiceComponent {
 trait DefaultQuestionService extends QuestionServiceComponent {
   this: PersistentQuestionServiceComponent =>
 
-  override def questionService: QuestionService = new QuestionService {
+  override lazy val questionService: QuestionService = new QuestionService {
 
     override def getQuestion(questionId: QuestionId): Future[Option[Question]] = {
       persistentQuestionService.getById(questionId)
@@ -83,6 +88,21 @@ trait DefaultQuestionService extends QuestionServiceComponent {
             .map(_.headOption)
       }
 
+    }
+    override def findQuestionByQuestionIdOrThemeOrOperation(maybeQuestionId: Option[QuestionId],
+                                                            maybeThemeId: Option[ThemeId],
+                                                            maybeOperationId: Option[OperationId],
+                                                            country: Country,
+                                                            language: Language): Future[Option[Question]] = {
+
+      // If all ids are None, return None
+      maybeQuestionId
+        .orElse(maybeOperationId)
+        .orElse(maybeThemeId)
+        .map { _ =>
+          maybeQuestionId.map(getQuestion).getOrElse(findQuestion(maybeThemeId, maybeOperationId, country, language))
+        }
+        .getOrElse(Future.successful(None))
     }
   }
 }

@@ -139,29 +139,32 @@ object MakeMain extends App with StrictLogging with MakeApi {
     case _ =>
   }
 
+  Thread.sleep(5000)
+
   val migrations: Seq[Migration] =
     Seq(
-      VffOperation,
-      ClimatParisOperation,
-      LpaeOperation,
-      MVEOperation,
-      MakeEuropeOperation,
-      ChanceAuxJeunesOperation,
-      CultureOperation,
       CreateQuestions,
       CoreData,
+      VffOperation,
       VffData,
       VffITData,
       VffGBData,
+      ClimatParisOperation,
       ClimatParisData,
+      LpaeOperation,
       LpaeData,
+      MVEOperation,
       MVEData,
+      MakeEuropeOperation,
       MakeEuropeData,
+      ChanceAuxJeunesOperation,
       ChanceAuxJeunesData,
-//      Removed CultureData as proposals created by this migration are created several times for no apparent reasons
-//      CultureData,
+      CultureOperation,
       CultureImportTagsData,
-      HuffingPostOperations
+      CultureData,
+      HuffingPostOperations,
+      HuffingPostTags,
+      HuffingPostProposals,
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 

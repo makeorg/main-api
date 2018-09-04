@@ -35,10 +35,10 @@ object CultureOperation extends CreateOperation {
       language = Language("fr"),
       title = "Comment rendre la culture accessible à tous?",
       startDate = LocalDate.parse("2018-06-18"),
-      endDate = Some(LocalDate.parse("2018-08-26")),
+      endDate = Some(LocalDate.parse("2018-09-30")),
       tags = Seq.empty
     )
   )
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

@@ -40,7 +40,6 @@ trait OperationService extends ShortenedNames {
   def find(slug: Option[String] = None,
            country: Option[Country] = None,
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
   def create(userId: UserId,
@@ -67,25 +66,22 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     override def find(slug: Option[String] = None,
                       country: Option[Country] = None,
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
+
       persistentOperationService.find(slug = slug, country = country, openAt = openAt).flatMap { operations =>
         Future.traverse(operations) { operation =>
-          val maybeTags = persistentTagService.findByOperationId(operation.operationId)
-
-          for {
-            tags <- maybeTags
-          } yield {
-            val countriesConfiguration = operation.countriesConfiguration.map { countryConfig =>
-              countryConfig.copy(tagIds = tags.filter(_.country == countryConfig.countryCode).map(_.tagId))
+          Future
+            .traverse(operation.countriesConfiguration) { configuration =>
+              configuration.questionId.map { questionId =>
+                persistentTagService.findByQuestion(questionId).map { tags =>
+                  configuration.copy(tagIds = tags.map(_.tagId))
+                }
+              }.getOrElse(Future.successful(configuration))
             }
-
-            operation.copy(countriesConfiguration = countriesConfiguration)
-          }
+            .map { configurations =>
+              operation.copy(countriesConfiguration = configurations)
+            }
         }
       }
-    }
-
-    override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
-      persistentOperationService.findSimpleOperation(slug = slug)
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {
@@ -109,7 +105,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         translations = translations,
         defaultLanguage = defaultLanguage,
         countriesConfiguration = countriesConfiguration,
-        events = List.empty,
+        events = Nil,
         createdAt = Some(now),
         updatedAt = Some(now)
       )

@@ -23,6 +23,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
@@ -96,6 +97,7 @@ final case class Tag(tagId: TagId,
                      tagTypeId: TagTypeId,
                      weight: Float,
                      operationId: Option[OperationId],
+                     questionId: Option[QuestionId],
                      themeId: Option[ThemeId],
                      country: Country,
                      language: Language)
