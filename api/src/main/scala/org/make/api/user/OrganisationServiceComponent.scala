@@ -20,6 +20,8 @@
 package org.make.api.user
 
 import com.github.t3hnar.bcrypt._
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
+import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
@@ -31,7 +33,8 @@ import org.make.core.profile.Profile
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.user.indexed.OrganisationSearchResult
+import org.make.core.{user, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -43,6 +46,7 @@ trait OrganisationServiceComponent {
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def getOrganisations: Future[Seq[User]]
+  def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisationId: UserId, organisationUpdateDate: OrganisationUpdateData): Future[Option[UserId]]
   def getVotedProposals(organisationId: UserId,
@@ -70,7 +74,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     with PersistentUserServiceComponent
     with EventBusServiceComponent
     with UserHistoryCoordinatorServiceComponent
-    with ProposalServiceComponent =>
+    with ProposalServiceComponent
+    with OrganisationSearchEngineComponent =>
 
   val organisationService: OrganisationService = new OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
@@ -79,6 +84,19 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
     override def getOrganisations: Future[Seq[User]] = {
       persistentUserService.findAllOrganisations()
+    }
+
+    override def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult] = {
+      elasticsearchOrganisationAPI.searchOrganisations(
+        OrganisationSearchQuery(
+          filters = OrganisationSearchFilters
+            .parse(
+              organisationName =
+                organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName, Some(Fuzziness.Auto))),
+              slug = slug.map(user.SlugSearchFilter.apply)
+            )
+        )
+      )
     }
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,

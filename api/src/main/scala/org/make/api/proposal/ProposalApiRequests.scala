@@ -19,6 +19,7 @@
 
 package org.make.api.proposal
 
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -130,7 +131,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                sortAlgorithm: Option[String] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
-    val fuzziness = "AUTO"
+    val fuzziness = Fuzziness.Auto
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -192,7 +193,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
-    val fuzziness = "AUTO"
+    val fuzziness = Fuzziness.Auto
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),

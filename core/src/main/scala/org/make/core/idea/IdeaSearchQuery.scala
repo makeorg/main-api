@@ -23,6 +23,7 @@ import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -226,7 +227,7 @@ object IdeaSearchFilters extends ElasticDsl {
 
 }
 
-case class NameSearchFilter(text: String, fuzzy: Option[String] = None)
+case class NameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
 case class OperationIdSearchFilter(operationId: OperationId)
 case class ThemeIdSearchFilter(themeId: ThemeId)
 case class QuestionSearchFilter(question: String)

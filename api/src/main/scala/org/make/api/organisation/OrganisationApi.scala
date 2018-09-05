@@ -32,6 +32,7 @@ import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.user.UserId
+import org.make.core.user.indexed.OrganisationSearchResult
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
@@ -58,6 +59,30 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
         makeOperation("GetOrganisation") { _ =>
           provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
             complete(UserResponse(user))
+          }
+        }
+      }
+    }
+
+  @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "organisationName", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationSearchResult]))
+  )
+  def getOrganisations: Route =
+    get {
+      path("organisations") {
+        makeOperation("GetOrganisations") { _ =>
+          parameters(('organisationName.as[String].?, 'slug.as[String].?)) {
+            (organisationName: Option[String], slug: Option[String]) =>
+              provideAsync(organisationService.search(organisationName, slug)) { results =>
+                complete(results)
+              }
           }
         }
       }
@@ -132,7 +157,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
       }
     }
 
-  val organisationRoutes: Route = getOrganisation ~ getOrganisationProposals ~ getOrganisationVotes
+  val organisationRoutes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
 
   val organisationId: PathMatcher1[UserId] = Segment.flatMap(id => Try(UserId(id)).toOption)
 

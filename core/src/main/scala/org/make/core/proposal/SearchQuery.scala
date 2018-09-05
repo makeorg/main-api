@@ -23,6 +23,7 @@ import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
@@ -429,7 +430,7 @@ case class TrendingSearchFilter(trending: String) {
   validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))
 }
 
-case class ContentSearchFilter(text: String, fuzzy: Option[String] = None)
+case class ContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
 
 case class StatusSearchFilter(status: Seq[ProposalStatus])
 

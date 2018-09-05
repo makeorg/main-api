@@ -19,6 +19,7 @@
 
 package org.make.api.organisation
 
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -32,7 +33,8 @@ import org.make.core.profile.Profile
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
-import org.make.core.user.{User, UserId}
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
+import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify}
@@ -51,13 +53,15 @@ class OrganisationServiceTest
     with PersistentUserServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ProposalServiceComponent
-    with EventBusServiceComponent {
+    with EventBusServiceComponent
+    with OrganisationSearchEngineComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
+  override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
 
   class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
     override def matches(argument: AnyRef): Boolean =
@@ -272,6 +276,61 @@ class OrganisationServiceTest
         organisationList shouldBe a[Seq[_]]
         organisationList.size shouldBe 2
         organisationList.head.email shouldBe "any@mail.com"
+      }
+    }
+  }
+
+  feature("search organisations") {
+    Mockito
+      .when(elasticsearchOrganisationAPI.searchOrganisations(ArgumentMatchers.eq(OrganisationSearchQuery())))
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(
+            total = 2L,
+            results = Seq(
+              IndexedOrganisation.createFromOrganisation(returnedOrganisation),
+              IndexedOrganisation.createFromOrganisation(returnedOrganisation2)
+            )
+          )
+        )
+      )
+    Mockito
+      .when(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          ArgumentMatchers.eq(
+            OrganisationSearchQuery(
+              filters = Some(
+                OrganisationSearchFilters(
+                  organisationName = Some(OrganisationNameSearchFilter("John Doe Corp.", Some(Fuzziness.Auto)))
+                )
+              )
+            )
+          )
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(
+            total = 1L,
+            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
+          )
+        )
+      )
+
+    scenario("search all") {
+      val futureAllOrganisation = organisationService.search(None, None)
+
+      whenReady(futureAllOrganisation, Timeout(2.seconds)) { organisationsList =>
+        organisationsList.total shouldBe 2
+      }
+    }
+
+    scenario("search by organisationName") {
+      val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None)
+
+      whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
+        organisationsList.total shouldBe 1
+        organisationsList.results.head.organisationName shouldBe Some("John Doe Corp.")
       }
     }
   }
