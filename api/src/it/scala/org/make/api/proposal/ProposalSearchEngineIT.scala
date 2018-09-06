@@ -166,7 +166,14 @@ class ProposalSearchEngineIT
     ),
     scores = IndexedScores.empty,
     context = Some(Context(operation = None, location = None, question = None, source = None)),
-    author = Author(firstName = None, organisationName = None, postalCode = None, age = None, avatarUrl = None),
+    author = Author(
+      firstName = None,
+      organisationName = None,
+      organisationSlug = None,
+      postalCode = None,
+      age = None,
+      avatarUrl = None
+    ),
     organisations = Seq.empty,
     themeId = None,
     tags = Seq.empty,
@@ -226,6 +233,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Craig"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
         avatarUrl = None
@@ -283,6 +291,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Valerie"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None
@@ -342,6 +351,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Valerie"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None
@@ -399,6 +409,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Jennifer"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None
@@ -456,6 +467,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Laura"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None
@@ -515,6 +527,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Laura"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None
@@ -572,6 +585,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Laura"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None
@@ -629,6 +643,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Laura"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None
@@ -691,6 +706,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Ronald"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None
@@ -750,6 +766,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Jennifer"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("81966"),
         age = Some(21),
         avatarUrl = None
@@ -809,6 +826,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Ronald"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None
@@ -868,6 +886,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Jennifer"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("81966"),
         age = Some(21),
         avatarUrl = None
@@ -925,6 +944,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Craig"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None
@@ -982,6 +1002,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Valerie"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
         avatarUrl = None
@@ -1040,6 +1061,7 @@ class ProposalSearchEngineIT
       author = Author(
         firstName = Some("Craig"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None

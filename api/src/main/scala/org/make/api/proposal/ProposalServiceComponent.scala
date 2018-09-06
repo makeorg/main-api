@@ -546,8 +546,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   maybeUserId = maybeUserId,
                   requestContext = requestContext,
                   voteKey = voteKey,
-                  organisationInfo =
-                    user.filter(_.isOrganisation).map(user => OrganisationInfo(user.userId, user.organisationName)),
+                  maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
                   vote = votes.get(proposalId)
                 )
             )
@@ -571,8 +570,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                   maybeUserId = maybeUserId,
                   requestContext = requestContext,
                   voteKey = voteKey,
-                  organisationInfo =
-                    user.filter(_.isOrganisation).map(user => OrganisationInfo(user.userId, user.organisationName)),
+                  maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
                   vote = votes.get(proposalId)
                 )
             )

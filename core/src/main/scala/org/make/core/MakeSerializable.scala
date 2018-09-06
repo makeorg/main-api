@@ -24,4 +24,5 @@ trait MakeSerializable extends Serializable
 object MakeSerializable {
   val V1: Int = 1
   val V2: Int = 2
+  val V3: Int = 3
 }

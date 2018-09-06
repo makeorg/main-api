@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.MakeUnitTest
-import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
+import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -35,6 +35,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.profile.Gender.Female
 import org.make.core.reference.{Country, Language}
 import org.make.core.profile.{Gender, Profile}
+import org.make.core.proposal.SearchQuery
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -716,6 +717,9 @@ class UserServiceTest
       Mockito
         .when(persistentUserService.updateUser(ArgumentMatchers.eq(fooUser)))
         .thenReturn(Future.successful(fooUser))
+      Mockito
+        .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
 
       val futureUser = userService.update(fooUser, RequestContext.empty)
 
@@ -726,7 +730,7 @@ class UserServiceTest
         verify(eventBusService, times(1))
           .publish(captor.capture())
 
-        captor.getValue().userId should be(Some(result.userId))
+        captor.getValue.userId should be(Some(result.userId))
       }
     }
   }

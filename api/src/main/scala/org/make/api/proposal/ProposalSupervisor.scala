@@ -26,7 +26,7 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
-import org.make.api.user.UserServiceComponent
+import org.make.api.user.{OrganisationServiceComponent, UserServiceComponent}
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
 class ProposalSupervisor(userHistoryCoordinator: ActorRef,
@@ -90,6 +90,7 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
 object ProposalSupervisor {
 
   type ProposalSupervisorDependencies = UserServiceComponent
+    with OrganisationServiceComponent
     with TagServiceComponent
     with SequenceServiceComponent
     with OperationServiceComponent

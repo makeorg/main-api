@@ -845,6 +845,7 @@ class UserApiTest
       author = Author(
         firstName = Some("Paul"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("11111"),
         age = Some(26),
         avatarUrl = None
@@ -947,6 +948,7 @@ class UserApiTest
       author = Author(
         firstName = sylvain.firstName,
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("11111"),
         age = Some(22),
         avatarUrl = None

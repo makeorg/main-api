@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey, _}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.question.Question
 import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
@@ -85,7 +85,7 @@ final case class VoteProposalCommand(proposalId: ProposalId,
                                      maybeUserId: Option[UserId],
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
-                                     organisationInfo: Option[OrganisationInfo],
+                                     maybeOrganisationId: Option[UserId],
                                      vote: Option[VoteAndQualifications])
     extends ProposalCommand
 
@@ -93,7 +93,7 @@ final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        maybeUserId: Option[UserId],
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
-                                       organisationInfo: Option[OrganisationInfo],
+                                       maybeOrganisationId: Option[UserId],
                                        vote: Option[VoteAndQualifications])
     extends ProposalCommand
 

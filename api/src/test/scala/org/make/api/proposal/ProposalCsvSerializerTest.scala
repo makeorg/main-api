@@ -104,6 +104,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       author = Author(
         firstName = Some("Jenna"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("000000"),
         age = Some(25),
         avatarUrl = None
@@ -161,6 +162,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       author = Author(
         firstName = Some("John"),
         organisationName = None,
+        organisationSlug = None,
         postalCode = Some("11111"),
         age = Some(26),
         avatarUrl = None

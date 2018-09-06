@@ -49,15 +49,15 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 class WidgetApiTest
-  extends MakeApiTestBase
-  with WidgetApi
-  with MakeDataHandlerComponent
-  with IdGeneratorComponent
-  with MakeSettingsComponent
-  with ProposalServiceComponent
-  with ActorSystemComponent
-  with UserServiceComponent
-  with IdeaServiceComponent {
+    extends MakeApiTestBase
+    with WidgetApi
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with ProposalServiceComponent
+    with ActorSystemComponent
+    with UserServiceComponent
+    with IdeaServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
   override val userService: UserService = mock[UserService]
@@ -80,23 +80,21 @@ class WidgetApiTest
   feature("get widget sequence of an operation") {
     scenario("Get proposal of an operation successfully") {
       Mockito
-        .when(proposalService.searchForUser(
-          ArgumentMatchers.any[Option[UserId]],
-          ArgumentMatchers.eq(SearchQuery(
-            filters = Some(SearchFilters(
-              operation = Some(OperationSearchFilter(OperationId("foo-operation-id")))
-            ))
-          )),
-          ArgumentMatchers.any[RequestContext]
-        ))
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(
-          total = 0,
-          results = Seq.empty,
-          seed = None
-        )))
+        .when(
+          proposalService.searchForUser(
+            ArgumentMatchers.any[Option[UserId]],
+            ArgumentMatchers.eq(
+              SearchQuery(
+                filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("foo-operation-id")))))
+              )
+            ),
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
 
       Get("/widget/operations/foo-operation-id/start-sequence")
-          .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val result = entityAs[ProposalsSearchResult]
         result.total should be(0)
@@ -106,55 +104,66 @@ class WidgetApiTest
 
     scenario("Get proposal of an operation filtred by tag successfully") {
       Mockito
-        .when(proposalService.searchForUser(
-          ArgumentMatchers.eq(Some(UserId("my-user-id"))),
-          ArgumentMatchers.eq(SearchQuery(
-            filters = Some(SearchFilters(
-              operation = Some(OperationSearchFilter(OperationId("foo-operation-id"))),
-              tags = Some(TagsSearchFilter(Seq(TagId("foo-tag-id"), TagId("bar-tag-id"))))
-            ))
-          )),
-          ArgumentMatchers.any[RequestContext]
-        ))
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(
-          total = 1,
-          results = Seq(
-            ProposalResult(
-              indexedProposal = IndexedProposal(
-                id = ProposalId("foo-proposal-id"),
-                userId = UserId("foo-user-id"),
-                content = "il faut proposer sur le widget",
-                slug = "il-faut-proposer-sur-le-widget",
-                status = ProposalStatus.Accepted,
-                createdAt = ZonedDateTime.now,
-                updatedAt = Some(ZonedDateTime.now),
-                votes = Seq.empty,
-                scores = IndexedScores.empty,
-                context = None,
-                trending = None,
-                labels = Seq.empty,
-                author = Author(
-                  firstName = Some("Foo Foo"),
-                  organisationName = None,
-                  postalCode = None,
-                  age = None,
-                  avatarUrl = None
-                ),
-                organisations = Seq.empty,
-                themeId = None,
-                questionId = None,
-                tags = Seq.empty,
-                ideaId = None,
-                operationId = None,
-                country = Country("FR"),
-                language = Language("fr")
+        .when(
+          proposalService.searchForUser(
+            ArgumentMatchers.eq(Some(UserId("my-user-id"))),
+            ArgumentMatchers.eq(
+              SearchQuery(
+                filters = Some(
+                  SearchFilters(
+                    operation = Some(OperationSearchFilter(OperationId("foo-operation-id"))),
+                    tags = Some(TagsSearchFilter(Seq(TagId("foo-tag-id"), TagId("bar-tag-id"))))
+                  )
+                )
+              )
+            ),
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            ProposalsResultSeededResponse(
+              total = 1,
+              results = Seq(
+                ProposalResult(
+                  indexedProposal = IndexedProposal(
+                    id = ProposalId("foo-proposal-id"),
+                    userId = UserId("foo-user-id"),
+                    content = "il faut proposer sur le widget",
+                    slug = "il-faut-proposer-sur-le-widget",
+                    status = ProposalStatus.Accepted,
+                    createdAt = ZonedDateTime.now,
+                    updatedAt = Some(ZonedDateTime.now),
+                    votes = Seq.empty,
+                    scores = IndexedScores.empty,
+                    context = None,
+                    trending = None,
+                    labels = Seq.empty,
+                    author = Author(
+                      firstName = Some("Foo Foo"),
+                      organisationName = None,
+                      organisationSlug = None,
+                      postalCode = None,
+                      age = None,
+                      avatarUrl = None
+                    ),
+                    organisations = Seq.empty,
+                    themeId = None,
+                    questionId = None,
+                    tags = Seq.empty,
+                    ideaId = None,
+                    operationId = None,
+                    country = Country("FR"),
+                    language = Language("fr")
+                  ),
+                  myProposal = false,
+                  voteAndQualifications = None
+                )
               ),
-              myProposal = false,
-              voteAndQualifications = None
+              seed = None
             )
-          ),
-          seed = None
-        )))
+          )
+        )
 
       Get("/widget/operations/foo-operation-id/start-sequence?tagsIds=foo-tag-id,bar-tag-id")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {

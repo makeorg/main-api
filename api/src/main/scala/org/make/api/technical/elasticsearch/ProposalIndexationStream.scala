@@ -38,7 +38,8 @@ import org.make.api.proposal.{
 }
 import org.make.api.semantic.SemanticComponent
 import org.make.api.tag.TagServiceComponent
-import org.make.api.user.UserServiceComponent
+import org.make.api.user.{OrganisationServiceComponent, UserServiceComponent}
+import org.make.core.SlugHelper
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.{
   Author,
@@ -49,6 +50,7 @@ import org.make.core.proposal.indexed.{
   Context => ProposalContext
 }
 import org.make.core.reference.{Country, Language}
+import org.make.core.user.User
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,6 +60,7 @@ trait ProposalIndexationStream
     extends IndexationStream
     with ProposalCoordinatorServiceComponent
     with UserServiceComponent
+    with OrganisationServiceComponent
     with TagServiceComponent
     with ProposalSearchEngineComponent
     with SemanticComponent
@@ -136,6 +139,13 @@ trait ProposalIndexationStream
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
       tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
+      organisationInfos <- OptionT(
+        Future
+          .traverse(proposal.organisationIds) { organisationId =>
+            organisationService.getOrganisation(organisationId)
+          }
+          .map[Option[Seq[User]]](organisations => Some(organisations.flatten))
+      )
     } yield {
       val isBeforeContextSourceFeature: Boolean =
         proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
@@ -176,13 +186,22 @@ trait ProposalIndexationStream
         author = Author(
           firstName = user.firstName,
           organisationName = user.organisationName,
+          organisationSlug = user.organisationName.map(name => SlugHelper(name)),
           postalCode = user.profile.flatMap(_.postalCode),
           age = user.profile
             .flatMap(_.dateOfBirth)
             .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
           avatarUrl = user.profile.flatMap(_.avatarUrl)
         ),
-        organisations = proposal.organisations.map(IndexedOrganisationInfo.apply),
+        organisations = organisationInfos
+          .map(
+            organisation =>
+              IndexedOrganisationInfo(
+                organisation.userId,
+                organisation.organisationName,
+                organisation.organisationName.map(name => SlugHelper(name))
+            )
+          ),
         country = proposal.country.getOrElse(Country("FR")),
         language = proposal.language.getOrElse(Language("fr")),
         themeId = proposal.theme,

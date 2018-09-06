@@ -150,7 +150,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             id = proposalId,
             maybeUserId = command.maybeUserId,
             eventDate = DateHelper.now(),
-            organisationInfo = command.organisationInfo,
+            maybeOrganisationId = command.maybeOrganisationId,
             requestContext = command.requestContext,
             voteKey = command.voteKey
           )
@@ -171,14 +171,14 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           eventDate = DateHelper.now(),
           requestContext = command.requestContext,
           voteKey = vote.voteKey,
-          organisationInfo = command.organisationInfo,
+          maybeOrganisationId = command.maybeOrganisationId,
           selectedQualifications = vote.qualificationKeys
         )
         val voteEvent = ProposalVoted(
           id = proposalId,
           maybeUserId = command.maybeUserId,
           eventDate = DateHelper.now(),
-          organisationInfo = command.organisationInfo,
+          maybeOrganisationId = command.maybeOrganisationId,
           requestContext = command.requestContext,
           voteKey = command.voteKey
         )
@@ -253,7 +253,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             eventDate = DateHelper.now(),
             requestContext = command.requestContext,
             voteKey = vote.voteKey,
-            organisationInfo = command.organisationInfo,
+            maybeOrganisationId = command.maybeOrganisationId,
             selectedQualifications = vote.qualificationKeys
           )
         ) { event =>
@@ -975,15 +975,12 @@ object ProposalActor {
             vote.copy(count = vote.count + 1)
           case vote => vote
         },
-        organisations = event.organisationInfo match {
-          case Some(organisationInfo)
-              if !state.proposal.organisations
-                .exists(_.organisationId.value == organisationInfo.organisationId.value) =>
-            state.proposal.organisations :+ OrganisationInfo(
-              organisationInfo.organisationId,
-              organisationInfo.organisationName
-            )
-          case _ => state.proposal.organisations
+        organisationIds = event.maybeOrganisationId match {
+          case Some(organisationId)
+              if !state.proposal.organisationIds
+                .exists(_.value == organisationId.value) =>
+            state.proposal.organisationIds :+ organisationId
+          case _ => state.proposal.organisationIds
         }
       )
     )
@@ -1001,10 +998,10 @@ object ProposalActor {
             )
           case vote => vote
         },
-        organisations = event.organisationInfo match {
-          case Some(organisationInfo) =>
-            state.proposal.organisations.filterNot(_.organisationId.value == organisationInfo.organisationId.value)
-          case _ => state.proposal.organisations
+        organisationIds = event.maybeOrganisationId match {
+          case Some(organisationId) =>
+            state.proposal.organisationIds.filterNot(_.value == organisationId.value)
+          case _ => state.proposal.organisationIds
         }
       )
     )

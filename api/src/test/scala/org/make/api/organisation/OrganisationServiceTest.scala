@@ -196,6 +196,12 @@ class OrganisationServiceTest
     scenario("successfully update an organisation by changing the name and avatar") {
       Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
+      Mockito
+        .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+        .thenReturn(Future.successful(Seq.empty))
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),

@@ -32,8 +32,8 @@ import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.WordSpec
-import stamina.{Persisters, V2}
 import stamina.testkit.StaminaTestKit
+import stamina.{Persisters, V3}
 
 class ProposalSerializersTest extends WordSpec with StaminaTestKit {
 
@@ -110,6 +110,7 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       id = proposalId,
       eventDate = eventDate,
       organisationInfo = None,
+      maybeOrganisationId = None,
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Disagree
@@ -118,7 +119,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
     val proposalVotedOrganisations = ProposalVoted(
       id = proposalId,
       eventDate = eventDate,
-      organisationInfo = Some(OrganisationInfo(UserId("my-user-id"), Some("make.org"))),
+      organisationInfo = None,
+      maybeOrganisationId = Some(UserId("my-user-id")),
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Disagree
@@ -128,6 +130,7 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       id = proposalId,
       eventDate = eventDate,
       organisationInfo = None,
+      maybeOrganisationId = None,
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
@@ -137,7 +140,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
     val proposalUnvotedOrganisations = ProposalUnvoted(
       id = proposalId,
       eventDate = eventDate,
-      organisationInfo = Some(OrganisationInfo(UserId("my-user-id"), Some("make.org"))),
+      organisationInfo = None,
+      maybeOrganisationId = Some(UserId("my-user-id")),
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
@@ -256,9 +260,9 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       sample(proposalRefused),
       sample(proposalPostponed),
       sample(proposalVoted),
-      PersistableSample[V2]("organisations", proposalVotedOrganisations, Some("organisations")),
+      PersistableSample[V3]("organisations", proposalVotedOrganisations, Some("organisations")),
       sample(proposalUnvoted),
-      PersistableSample[V2]("organisations", proposalUnvotedOrganisations, Some("organisations")),
+      PersistableSample[V3]("organisations", proposalUnvotedOrganisations, Some("organisations")),
       sample(proposalQualified),
       sample(proposalUnqualified),
       sample(proposalLocked),

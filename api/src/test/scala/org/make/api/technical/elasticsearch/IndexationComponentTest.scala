@@ -42,7 +42,7 @@ import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.theme.{PersistentThemeService, PersistentThemeServiceComponent}
-import org.make.api.user.{PersistentUserService, UserService, UserServiceComponent}
+import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.mockito.ArgumentMatchers
@@ -62,6 +62,7 @@ class IndexationComponentTest
     with SequenceCoordinatorServiceComponent
     with ReadJournalComponent
     with UserServiceComponent
+    with OrganisationServiceComponent
     with TagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
     with PersistentThemeServiceComponent
@@ -79,6 +80,7 @@ class IndexationComponentTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
   override val userService: UserService = mock[UserService]
+  override val organisationService: OrganisationService = mock[OrganisationService]
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
