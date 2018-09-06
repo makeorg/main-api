@@ -120,7 +120,7 @@ class CrmContactEventConsumerActorIt
         .when(userService.getUser(ArgumentMatchers.eq(UserId("user1"))))
         .thenReturn(Future.successful(Some(newUserOptOut)))
       Mockito
-        .when(crmService.addUserToUnsubscribeList(ArgumentMatchers.eq(newUserOptOut)))
+        .when(crmService.addUsersToUnsubscribeList(ArgumentMatchers.eq(Seq(newUserOptOut))))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToUnsubscribeList called"
           Future.successful {}
@@ -147,7 +147,7 @@ class CrmContactEventConsumerActorIt
         .when(userService.getUser(ArgumentMatchers.eq(UserId("user2"))))
         .thenReturn(Future.successful(Some(newUserOptIn)))
       Mockito
-        .when(crmService.addUserToOptInList(ArgumentMatchers.eq(newUserOptIn)))
+        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq(newUserOptIn))))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToOptInList called"
           Future.successful {}
@@ -253,7 +253,7 @@ class CrmContactEventConsumerActorIt
           Future.successful {}
         })
       Mockito
-        .when(crmService.addUserToOptInList(ArgumentMatchers.eq(subscribeUser)))
+        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq(subscribeUser))))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToUnsubscribeList unsubscribe called"
           Future.successful {}
