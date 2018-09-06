@@ -50,6 +50,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: ResendValidationEmailEvent  => doNothing(event)
       case event: UserValidatedAccountEvent   => doNothing(event)
       case event: OrganisationRegisteredEvent => doNothing(event)
+      case event: OrganisationUpdatedEvent    => doNothing(event)
     }
   }
 

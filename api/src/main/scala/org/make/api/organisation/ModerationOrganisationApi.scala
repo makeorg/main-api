@@ -118,7 +118,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
   def moderationPutOrganisation: Route = {
     put {
       path("moderation" / "organisations" / organisationId) { organisationId =>
-        makeOperation("ModerationUpdateOrganisation") { _ =>
+        makeOperation("ModerationUpdateOrganisation") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireAdminRole(auth.user) {
               decodeRequest {
@@ -137,7 +137,8 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                             email = maybeEmail,
                             avatar = request.avatar,
                             description = request.description
-                          )
+                          ),
+                          requestContext
                         )
                     ) { organisationId =>
                       complete(StatusCodes.OK -> Map("organisationId" -> organisationId))

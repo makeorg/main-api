@@ -24,13 +24,14 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ProposalIndexationStream
-import org.make.api.user.{OrganisationService, OrganisationServiceComponent, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global

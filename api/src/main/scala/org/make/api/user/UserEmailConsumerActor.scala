@@ -58,6 +58,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
       case event: UserUpdatedTagEvent         => doNothing(event)
       case event: ResendValidationEmailEvent  => handleResendValidationEmailEvent(event)
       case event: OrganisationRegisteredEvent => doNothing(event)
+      case event: OrganisationUpdatedEvent    => doNothing(event)
     }
   }
 

@@ -30,6 +30,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalScorerHelper,
@@ -38,7 +39,7 @@ import org.make.api.proposal.{
 }
 import org.make.api.semantic.SemanticComponent
 import org.make.api.tag.TagServiceComponent
-import org.make.api.user.{OrganisationServiceComponent, UserServiceComponent}
+import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.{
