@@ -27,7 +27,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
-import org.make.api.user.PersistentUserServiceComponent.PersistentUser
+import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
@@ -82,7 +82,8 @@ object PersistentUserServiceComponent {
                             isHardBounce: Boolean,
                             lastMailingErrorDate: Option[ZonedDateTime],
                             lastMailingErrorMessage: Option[String],
-                            organisationName: Option[String]) {
+                            organisationName: Option[String],
+                            publicProfile: Boolean) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -111,7 +112,8 @@ object PersistentUserServiceComponent {
             MailingErrorLog(error = message, date = date)
           }
         },
-        organisationName = organisationName
+        organisationName = organisationName,
+        publicProfile = publicProfile
       )
     }
 
@@ -184,7 +186,8 @@ object PersistentUserServiceComponent {
       "is_hard_bounce",
       "last_mailing_error_date",
       "last_mailing_error_message",
-      "organisation_name"
+      "organisation_name",
+      "public_profile"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -233,7 +236,31 @@ object PersistentUserServiceComponent {
         isHardBounce = resultSet.boolean(userResultName.isHardBounce),
         lastMailingErrorDate = resultSet.zonedDateTimeOpt(userResultName.lastMailingErrorDate),
         lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage),
-        organisationName = resultSet.stringOpt(userResultName.organisationName)
+        organisationName = resultSet.stringOpt(userResultName.organisationName),
+        publicProfile = resultSet.boolean(userResultName.publicProfile)
+      )
+    }
+  }
+
+  case class FollowedUsers(userId: String, followedUserId: String, date: ZonedDateTime)
+
+  object FollowedUsers extends SQLSyntaxSupport[FollowedUsers] with ShortenedNames with StrictLogging {
+
+    override val columnNames: Seq[String] = Seq("user_id", "followed_user_id", "date")
+
+    override val tableName: String = "followed_user"
+
+    lazy val followedUsersAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[FollowedUsers], FollowedUsers] = syntax(
+      "followed_user"
+    )
+
+    def apply(
+      followedUsersResultName: ResultName[FollowedUsers] = followedUsersAlias.resultName
+    )(resultSet: WrappedResultSet): FollowedUsers = {
+      FollowedUsers.apply(
+        userId = resultSet.string(followedUsersResultName.userId),
+        followedUserId = resultSet.string(followedUsersResultName.followedUserId),
+        date = resultSet.zonedDateTime(followedUsersResultName.date)
       )
     }
   }
@@ -271,6 +298,8 @@ trait PersistentUserService {
   def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def getFollowedUsers(userId: UserId): Future[Seq[String]]
+  def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -280,7 +309,23 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
   with StrictLogging {
 
     private val userAlias = PersistentUser.userAlias
+    private val followedUsersAlias = FollowedUsers.followedUsersAlias
     private val column = PersistentUser.column
+
+    override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futureUserFollowed = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(FollowedUsers.as(followedUsersAlias))
+            .leftJoin(PersistentUser.as(userAlias))
+            .on(userAlias.uuid, followedUsersAlias.followedUserId)
+            .where(sqls.eq(followedUsersAlias.userId, userId.value).and(sqls.eq(userAlias.publicProfile, true)))
+        }.map(FollowedUsers.apply()).list.apply()
+      })
+
+      futureUserFollowed.map(_.map(_.followedUserId))
+    }
 
     override def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
@@ -533,7 +578,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.isHardBounce -> user.isHardBounce,
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
-              column.organisationName -> user.organisationName
+              column.organisationName -> user.organisationName,
+              column.publicProfile -> user.publicProfile
             )
         }.execute().apply()
       }).map(_ => user)
@@ -607,7 +653,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.isHardBounce -> user.isHardBounce,
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
-              column.organisationName -> user.organisationName
+              column.organisationName -> user.organisationName,
+              column.publicProfile -> user.publicProfile
             )
             .where(
               sqls
@@ -800,6 +847,23 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
           case _ => false
         }
       })
+    }
+
+    override def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit] = {
+      implicit val cxt: EC = readExecutionContext
+      val futureUserFollowed = Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(FollowedUsers.as(followedUsersAlias))
+            .where(
+              sqls
+                .eq(followedUsersAlias.userId, userId.value)
+                .or(sqls.eq(followedUsersAlias.followedUserId, userId.value))
+            )
+        }.executeUpdate().apply()
+      })
+
+      futureUserFollowed.map(_ => {})
     }
   }
 }

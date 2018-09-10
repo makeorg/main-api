@@ -316,7 +316,8 @@ class ProposalApiTest
             language = Language("fr"),
             isHardBounce = false,
             lastMailingError = None,
-            hasPassword = false
+            hasPassword = false,
+            followedUsers = Seq.empty
           ),
           labels = Seq(),
           theme = None,
@@ -392,7 +393,8 @@ class ProposalApiTest
         language = Language("fr"),
         isHardBounce = false,
         lastMailingError = None,
-        hasPassword = false
+        hasPassword = false,
+        followedUsers = Seq.empty
       ),
       labels = Seq(),
       theme = None,

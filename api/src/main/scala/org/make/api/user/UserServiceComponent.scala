@@ -73,6 +73,7 @@ trait UserService extends ShortenedNames {
   def getOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
   def anonymize(user: User): Future[Unit]
+  def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
 }
 
 case class UserRegisterData(email: String,
@@ -527,15 +528,21 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         isHardBounce = true,
         lastMailingError = None,
         organisationName = None,
-        createdAt = Some(DateHelper.now())
+        createdAt = Some(DateHelper.now()),
+        publicProfile = false
       )
       val futureDelete: Future[Unit] = for {
         _ <- persistentUserService.updateUser(anonymizedUser)
+        _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
         _ <- proposalService.anonymizeByUserId(user.userId)
       } yield {}
       futureDelete.map { _ =>
         eventBusService.publish(UserAnonymizedEvent(userId = Some(user.userId)))
       }
+    }
+
+    override def getFollowedUsers(userId: UserId): Future[Seq[UserId]] = {
+      persistentUserService.getFollowedUsers(userId).map(_.map(UserId(_)))
     }
   }
 }

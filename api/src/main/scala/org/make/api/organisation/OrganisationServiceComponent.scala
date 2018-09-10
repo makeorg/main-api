@@ -142,7 +142,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             locale = None,
             optInNewsletter = false
           )
-        )
+        ),
+        publicProfile = true
       )
       persistentUserService.persist(user)
     }
