@@ -31,6 +31,7 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserUpdateEvent.UserFollowEvent
 import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
@@ -61,6 +62,7 @@ trait OrganisationService extends ShortenedNames {
                         filterVotes: Option[Seq[VoteKey]],
                         filterQualifications: Option[Seq[QualificationKey]],
                         requestContext: RequestContext): Future[ProposalsResultWithUserVoteSeededResponse]
+  def followOrganisation(organisationId: UserId, userId: UserId): Future[UserId]
 }
 
 case class OrganisationRegisterData(name: String,
@@ -318,6 +320,13 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                 seed = results.seed
               )
             }
+      }
+    }
+
+    override def followOrganisation(organisationId: UserId, userId: UserId): Future[UserId] = {
+      persistentUserService.followedOrganisation(organisationId, userId).map(_ => organisationId).map { value =>
+        eventBusService.publish(UserFollowEvent(userId = Some(userId), followedUserId = organisationId))
+        value
       }
     }
   }
