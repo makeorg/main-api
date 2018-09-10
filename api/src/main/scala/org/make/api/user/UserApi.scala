@@ -673,7 +673,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                       requestContext
                     )
                   ) { user: User =>
-                    if (optInNewsletterHasChanged) {
+                    if (optInNewsletterHasChanged && !user.isOrganisation) {
                       eventBusService.publish(
                         UserUpdatedOptInNewsletterEvent(
                           userId = Some(user.userId),
