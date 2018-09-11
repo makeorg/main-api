@@ -19,7 +19,6 @@
 
 package org.make.api.organisation
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -158,31 +157,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
       }
     }
 
-  @ApiOperation(value = "unfollow-organisation", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
-  )
-  @Path(value = "/{organisationId}/unfollow")
-  def unfollowOrganisation: Route =
-    post {
-      path("organisations" / organisationId / "unfollow") { organisationId =>
-        makeOperation("FollowOrganisation") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              onSuccess(
-                organisationService.unfollowOrganisation(organisationId = organisationId, userId = userAuth.user.userId)
-              ) { _ =>
-                complete(StatusCodes.OK)
-              }
-            }
-          }
-        }
-      }
-    }
-
-  val organisationRoutes
-    : Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes ~ unfollowOrganisation
+  val organisationRoutes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
 
   val organisationId: PathMatcher1[UserId] = Segment.flatMap(id => Try(UserId(id)).toOption)
 

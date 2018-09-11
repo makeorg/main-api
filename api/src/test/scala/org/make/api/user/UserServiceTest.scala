@@ -811,4 +811,20 @@ class UserServiceTest
     }
   }
 
+  feature("unfollow user") {
+    scenario("unfollow user") {
+      Mockito.reset(eventBusService)
+      Mockito
+        .when(persistentUserService.unfollowUser(any[UserId], any[UserId]))
+        .thenReturn(Future.successful({}))
+
+      val futureFollowOrganisation =
+        userService.unfollowUser(UserId("make-org"), UserId("me"))
+
+      whenReady(futureFollowOrganisation, Timeout(2.seconds)) { _ =>
+        verify(eventBusService, times(1)).publish(any[UserUnfollowEvent])
+      }
+    }
+  }
+
 }

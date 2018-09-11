@@ -1352,4 +1352,51 @@ class UserApiTest
       }
     }
   }
+
+  feature("unfollow a user") {
+    scenario("unconnected user") {
+      Post("/user/sylvain-user-id/unfollow") ~> routes ~> check {
+        status shouldBe StatusCodes.Unauthorized
+      }
+    }
+
+    scenario("try to unfollow unexistant user") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(None))
+      Post("/user/non-existant/unfollow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("try to unfollow a user already unfollowed") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Some(fakeUser)))
+      Mockito
+        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Seq.empty))
+      Post("/user/ABCD/unfollow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    scenario("successfully unfollow a user") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
+      Mockito
+        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Seq(UserId("ABCD"))))
+      Mockito
+        .when(userService.unfollowUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(fakeUser.userId))
+      Post("/user/ABCD/unfollow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+  }
 }

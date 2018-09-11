@@ -301,7 +301,7 @@ trait PersistentUserService {
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
-  def unfollowedOrganisation(organisationId: UserId, userId: UserId): Future[Unit]
+  def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -884,7 +884,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
     }
 
-    override def unfollowedOrganisation(organisationId: UserId, userId: UserId): Future[Unit] = {
+    override def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
       implicit val ctx: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
@@ -893,7 +893,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .where(
               sqls
                 .eq(followedUsersAlias.userId, userId.value)
-                .and(sqls.eq(followedUsersAlias.followedUserId, organisationId.value))
+                .and(sqls.eq(followedUsersAlias.followedUserId, followedUserId.value))
             )
         }.executeUpdate().apply()
       })

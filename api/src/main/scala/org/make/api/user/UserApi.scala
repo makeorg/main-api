@@ -781,7 +781,20 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     }
   }
 
-  @ApiOperation(value = "follow-user", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "follow-user",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   @Path(value = "/{userId}/follow")
@@ -810,6 +823,44 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
       }
     }
 
+  @ApiOperation(
+    value = "unfollow-user",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @Path(value = "/{userId}/unfollow")
+  def unfollowUser: Route =
+    post {
+      path("user" / userId / "unfollow") { userId =>
+        makeOperation("FollowUser") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            provideAsyncOrNotFound(userService.getUser(userId)) { _ =>
+              provideAsync(userService.getFollowedUsers(userAuth.user.userId)) { followedUsers =>
+                if (!followedUsers.contains(userId)) {
+                  complete(StatusCodes.BadRequest -> Seq(ValidationError("userId", Some("User already unfollowed"))))
+                } else {
+                  onSuccess(userService.unfollowUser(followedUserId = userId, userId = userAuth.user.userId)) { _ =>
+                    complete(StatusCodes.OK)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -826,7 +877,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     patchUser ~
     changePassword ~
     deleteUser ~
-    followUser
+    followUser ~
+    unfollowUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
