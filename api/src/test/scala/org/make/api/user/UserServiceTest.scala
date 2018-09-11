@@ -795,4 +795,20 @@ class UserServiceTest
     }
   }
 
+  feature("follow user") {
+    scenario("follow user") {
+      Mockito.reset(eventBusService)
+      Mockito
+        .when(persistentUserService.followUser(any[UserId], any[UserId]))
+        .thenReturn(Future.successful({}))
+
+      val futureFollowOrganisation =
+        userService.followUser(UserId("user-id"), UserId("me"))
+
+      whenReady(futureFollowOrganisation, Timeout(2.seconds)) { _ =>
+        verify(eventBusService, times(1)).publish(any[UserFollowEvent])
+      }
+    }
+  }
+
 }

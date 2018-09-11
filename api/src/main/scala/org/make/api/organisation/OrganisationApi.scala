@@ -19,7 +19,6 @@
 
 package org.make.api.organisation
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -29,11 +28,11 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededRes
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserResponse
-import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.make.core.user.indexed.OrganisationSearchResult
+import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
@@ -158,31 +157,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
       }
     }
 
-  @ApiOperation(value = "follow-organisation", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
-  )
-  @Path(value = "/{organisationId}/follow")
-  def followOrganisation: Route =
-    post {
-      path("organisations" / organisationId / "follow") { organisationId =>
-        makeOperation("FollowOrganisation") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              onSuccess(
-                organisationService.followOrganisation(organisationId = organisationId, userId = userAuth.user.userId)
-              ) { _ =>
-                complete(StatusCodes.OK)
-              }
-            }
-          }
-        }
-      }
-    }
-
-  val organisationRoutes
-    : Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes ~ followOrganisation
+  val organisationRoutes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
 
   val organisationId: PathMatcher1[UserId] = Segment.flatMap(id => Try(UserId(id)).toOption)
 

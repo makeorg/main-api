@@ -782,6 +782,35 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     }
   }
 
+  @ApiOperation(value = "follow-user", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @Path(value = "/{userId}/follow")
+  def followUser: Route =
+    post {
+      path("user" / userId / "follow") { userId =>
+        makeOperation("FollowUser") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+              if (!user.publicProfile) {
+                complete(StatusCodes.Forbidden)
+              } else {
+                provideAsync(userService.getFollowedUsers(userAuth.user.userId)) { followedUsers =>
+                  if (followedUsers.contains(userId)) {
+                    complete(StatusCodes.BadRequest)
+                  } else {
+                    onSuccess(userService.followUser(followedUserId = userId, userId = userAuth.user.userId)) { _ =>
+                      complete(StatusCodes.OK)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   val userRoutes: Route = getMe ~
     getUser ~
     register ~
@@ -797,7 +826,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     getProposalsByUser ~
     patchUser ~
     changePassword ~
-    deleteUser
+    deleteUser ~
+    followUser
 
   val userId: PathMatcher1[UserId] =
     Segment.flatMap(id => Try(UserId(id)).toOption)
