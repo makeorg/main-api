@@ -90,6 +90,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
   }
 
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
+
+  Await.result(elasticsearchConfiguration.initialize(), 10.seconds)
+
   val guardian = actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
 
   Await.result(guardian ? Ping, atMost = 5.seconds)

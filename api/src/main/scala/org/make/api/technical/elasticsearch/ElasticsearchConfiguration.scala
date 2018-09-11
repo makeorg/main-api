@@ -36,7 +36,6 @@ import org.make.core.DateHelper
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
-import scala.util.{Failure, Success}
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
     extends Extension
@@ -104,34 +103,33 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
       }
   }
 
-  private def createInitialIndexAndAlias(aliasName: String): Unit = {
+  private def createInitialIndexAndAlias(aliasName: String): Future[Unit] = {
     val newIndexName = createIndexName(aliasName)
     client
       .executeAsFuture(createIndex(newIndexName).source(mappingForAlias(aliasName)))
-      .onComplete {
-        case Success(_) =>
-          logger.info(s"Elasticsearch index $newIndexName created")
-          client
-            .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
-            .onComplete {
-              case Success(_) => logger.info(s"Elasticsearch alias $aliasName created")
-              case Failure(e) => logger.error(s"Error when creating Elasticsearch alias $aliasName", e)
-            }
-        case Failure(e) =>
-          logger.error(s"Error when creating Elasticsearch index $newIndexName", e)
+      .flatMap { _ =>
+        logger.info(s"Elasticsearch index $newIndexName created")
+        client
+          .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
+          .map { _ =>
+            logger.info(s"Elasticsearch alias $aliasName created")
+          }
       }
   }
 
-  allAliases.foreach { aliasName =>
-    client.executeAsFuture(aliasExists(aliasName)).onComplete {
-      case Success(AliasExistsResponse(true)) =>
-        logger.info(s"Elasticsearch alias $aliasName exist")
-      case Success(AliasExistsResponse(false)) =>
-        logger.info(s"Elasticsearch alias $aliasName not found")
-        createInitialIndexAndAlias(aliasName)
-      case Failure(e) =>
-        logger.error(s"Error when checking if elasticsearch alias $aliasName exists", e)
-    }
+  def initialize(): Future[Unit] = {
+    Future
+      .traverse(allAliases) { aliasName =>
+        client.executeAsFuture(aliasExists(aliasName)).flatMap {
+          case AliasExistsResponse(true) =>
+            logger.info(s"Elasticsearch alias $aliasName exist")
+            Future.successful {}
+          case AliasExistsResponse(false) =>
+            logger.info(s"Elasticsearch alias $aliasName not found")
+            createInitialIndexAndAlias(aliasName)
+        }
+      }
+      .map(_ => ())
   }
 
 }
