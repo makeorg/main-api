@@ -76,8 +76,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent =>
 
+  private val poolSize: Int = 10
   implicit val executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10, new ThreadFactory {
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize, new ThreadFactory {
       val counter = new AtomicInteger()
       override def newThread(runnable: Runnable): Thread =
         new Thread(runnable, "crm-batch-" + counter.getAndIncrement())
@@ -85,9 +86,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
   lazy val printer: Printer = Printer.noSpaces.copy(dropNullValues = false)
   lazy val url = new URL(mailJetConfiguration.url)
+  val httpPort: Int = 443
   lazy val httpFlow: Flow[(HttpRequest, HttpRequest), (Try[HttpResponse], HttpRequest), NotUsed] = {
     Flow[(HttpRequest, HttpRequest)]
-      .via(Http(actorSystem).cachedHostConnectionPoolHttps(host = url.getHost, port = 443))
+      .via(Http(actorSystem).cachedHostConnectionPoolHttps(host = url.getHost, port = httpPort))
   }
   private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
@@ -262,22 +264,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .map(_.toMap)
 
       properties.map { properties =>
-        manageContactListMailJetRequest(
-          manageContactList = ManageManyContacts(
-            contacts = users.map { user =>
-              Contact(
-                email = user.email,
-                name = user.fullName.getOrElse(user.email),
-                properties = properties.get(user.userId)
-              )
-            },
-            contactList = Seq(
-              ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
-              ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
-              ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
+        val contacts: ManageManyContacts = ManageManyContacts(
+          contacts = users.map { user =>
+            Contact(
+              email = user.email,
+              name = user.fullName.getOrElse(user.email),
+              properties = properties.get(user.userId)
             )
+          },
+          contactList = Seq(
+            ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
+            ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
+            ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
           )
-        ).map { queueOfferResult =>
+        )
+        manageContactListMailJetRequest(manageContactList = contacts).map { queueOfferResult =>
           logQueueOfferResult(queueOfferResult, "Add to optin list")
         }
 
@@ -360,192 +361,228 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       Future.successful {}
     }
 
+    private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
+    private val dateFormatter: DateTimeFormatter =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
+    private val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
+
+    private def isLast30daysDate(date: ZonedDateTime): Boolean = {
+      val days: Int = 30
+      date.isAfter(DateHelper.now().minusDays(days))
+    }
+
     override def getPropertiesFromUser(user: User): Future[ContactProperties] = {
 
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+
       val events: Source[EventEnvelope, NotUsed] =
-        userJournal.currentEventsByPersistenceId(user.userId.value, 0, Long.MaxValue)
-      val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
-      val dateFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
-      val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
-
-      def isLast30daysDate(date: ZonedDateTime): Boolean = date.isAfter(DateHelper.now().minusDays(30))
-
-      val userProperties: Future[UserProperties] = events.runFold(
-        UserProperties(
-          userId = user.userId,
-          firstname = user.firstName.getOrElse(""),
-          zipCode = user.profile.flatMap(_.postalCode),
-          dateOfBirth = user.profile.flatMap(_.dateOfBirth),
-          emailValidationStatus = user.emailVerified,
-          emailHardBounceStatus = user.isHardBounce,
-          unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
-          accountCreationDate = user.createdAt,
-          isOrganisation = user.isOrganisation,
-          updatedAt = Some(DateHelper.now())
+        userJournal.currentEventsByPersistenceId(
+          persistenceId = user.userId.value,
+          fromSequenceNr = 0,
+          toSequenceNr = Long.MaxValue
         )
-      ) { (accumulator: UserProperties, envelope: EventEnvelope) =>
-        {
-          envelope.event match {
-            case event: LogRegisterCitizenEvent =>
-              accumulator.copy(
-                accountCreationSource = event.requestContext.source,
-                accountCreationOperation = event.requestContext.operationId.map(_.value),
-                accountCreationCountry = event.requestContext.country.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value)
-              )
-            case event: LogUserProposalEvent =>
-              accumulator.copy(
-                totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
-                lastCountryActivity = event.requestContext.country.map(_.value),
-                lastLanguageActivity = event.requestContext.language.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
-                firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
-                lastContributionDate = Some(event.action.date),
-                activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-                daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-                daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-                  accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-                } else {
-                  accumulator.daysOfActivity30d
-                },
-                themes = event.requestContext.currentTheme
-                  .map(theme => accumulator.themes ++ Seq(theme.value))
-                  .getOrElse(accumulator.themes)
-              )
-            case event: LogUserVoteEvent =>
-              accumulator.copy(
-                totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
-                lastCountryActivity = event.requestContext.country.map(_.value),
-                lastLanguageActivity = event.requestContext.language.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
-                firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
-                lastContributionDate = Some(event.action.date),
-                activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-                daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-                daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-                  accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-                } else {
-                  accumulator.daysOfActivity30d
-                },
-                themes = event.requestContext.currentTheme
-                  .map(theme => accumulator.themes ++ Seq(theme.value))
-                  .getOrElse(accumulator.themes)
-              )
-            case event: LogUserUnvoteEvent =>
-              accumulator.copy(
-                totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
-                lastContributionDate = Some(event.action.date),
-                lastCountryActivity = event.requestContext.country.map(_.value),
-                lastLanguageActivity = event.requestContext.language.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
-                activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-                daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-                daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-                  accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-                } else {
-                  accumulator.daysOfActivity30d
-                },
-                themes = event.requestContext.currentTheme
-                  .map(theme => accumulator.themes ++ Seq(theme.value))
-                  .getOrElse(accumulator.themes)
-              )
-            case event: LogUserQualificationEvent =>
-              accumulator.copy(
-                lastContributionDate = Some(event.action.date),
-                lastCountryActivity = event.requestContext.country.map(_.value),
-                lastLanguageActivity = event.requestContext.language.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
-                activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-                daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-                daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-                  accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-                } else {
-                  accumulator.daysOfActivity30d
-                },
-                themes = event.requestContext.currentTheme
-                  .map(theme => accumulator.themes ++ Seq(theme.value))
-                  .getOrElse(accumulator.themes)
-              )
-            case event: LogUserUnqualificationEvent =>
-              accumulator.copy(
-                lastContributionDate = Some(event.action.date),
-                lastCountryActivity = event.requestContext.country.map(_.value),
-                lastLanguageActivity = event.requestContext.language.map(_.value),
-                countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-                operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
-                activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-                daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-                daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-                  accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-                } else {
-                  accumulator.daysOfActivity
-                },
-                themes = event.requestContext.currentTheme
-                  .map(theme => accumulator.themes ++ Seq(theme.value))
-                  .getOrElse(accumulator.themes)
-              )
 
-            case _ => accumulator
-          }
+      val userProperties: Future[ContactProperties] = events
+        .runFold(userPropertiesFromUser(user)) { (accumulator: UserProperties, envelope: EventEnvelope) =>
+          accumulateEvent(accumulator, envelope)
         }
-      }
+        .map(contactPropertiesFromUserProperties)
 
       for {
-        properties <- userProperties.map { userProperty =>
-          ContactProperties(
-            userId = Some(userProperty.userId),
-            firstName = Some(userProperty.firstname),
-            postalCode = userProperty.zipCode,
-            dateOfBirth = userProperty.dateOfBirth.map(_.format(localDateFormatter)),
-            emailValidationStatus = Some(userProperty.emailValidationStatus),
-            emailHardBounceValue = Some(userProperty.emailHardBounceStatus),
-            unsubscribeStatus = Some(userProperty.unsubscribeStatus),
-            accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
-            accountCreationSource = userProperty.accountCreationSource,
-            accountCreationOperation = userProperty.accountCreationOperation,
-            accountCreationCountry = userProperty.accountCreationCountry,
-            countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
-            lastCountryActivity = userProperty.lastCountryActivity,
-            lastLanguageActivity = userProperty.lastLanguageActivity,
-            totalProposals = Some(userProperty.totalNumberProposals.getOrElse(0)),
-            totalVotes = Some(userProperty.totalNumbervotes.getOrElse(0)),
-            firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
-            lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
-            operationActivity = Some(userProperty.operationActivity.distinct.mkString(",")),
-            activeCore = userProperty.activeCore,
-            daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
-            daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
-            numberOfThemes = Some(userProperty.themes.distinct.length),
-            userType = if (userProperty.isOrganisation) {
-              Some("B2B")
-            } else {
-              Some("B2C")
-            },
-            updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
-          )
-        }
+        properties <- userProperties
         operations <- operationService.find()
-      } yield
+      } yield {
         properties.copy(
           operationActivity = ContactProperties.normalizeOperationActivity(properties.operationActivity, operations)
         )
+      }
     }
-  }
 
-  def logQueueOfferResult(queueOfferResult: QueueOfferResult, operationName: String): Unit = {
-    queueOfferResult match {
-      case QueueOfferResult.Enqueued    => logger.debug(s"$operationName: element has been consumed")
-      case QueueOfferResult.Dropped     => logger.error(s"$operationName: element has been ignored because of backpressure")
-      case QueueOfferResult.QueueClosed => logger.error(s"$operationName: the queue upstream has terminated")
-      case QueueOfferResult.Failure(e) =>
-        logger.error(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
+    private def userPropertiesFromUser(user: User): UserProperties = {
+      UserProperties(
+        userId = user.userId,
+        firstname = user.firstName.getOrElse(""),
+        zipCode = user.profile.flatMap(_.postalCode),
+        dateOfBirth = user.profile.flatMap(_.dateOfBirth),
+        emailValidationStatus = user.emailVerified,
+        emailHardBounceStatus = user.isHardBounce,
+        unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
+        accountCreationDate = user.createdAt,
+        isOrganisation = user.isOrganisation,
+        updatedAt = Some(DateHelper.now())
+      )
+    }
+    private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
+      ContactProperties(
+        userId = Some(userProperty.userId),
+        firstName = Some(userProperty.firstname),
+        postalCode = userProperty.zipCode,
+        dateOfBirth = userProperty.dateOfBirth.map(_.format(localDateFormatter)),
+        emailValidationStatus = Some(userProperty.emailValidationStatus),
+        emailHardBounceValue = Some(userProperty.emailHardBounceStatus),
+        unsubscribeStatus = Some(userProperty.unsubscribeStatus),
+        accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
+        accountCreationSource = userProperty.accountCreationSource,
+        accountCreationOperation = userProperty.accountCreationOperation,
+        accountCreationCountry = userProperty.accountCreationCountry,
+        countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
+        lastCountryActivity = userProperty.lastCountryActivity,
+        lastLanguageActivity = userProperty.lastLanguageActivity,
+        totalProposals = Some(userProperty.totalNumberProposals.getOrElse(0)),
+        totalVotes = Some(userProperty.totalNumbervotes.getOrElse(0)),
+        firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
+        lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
+        operationActivity = Some(userProperty.operationActivity.distinct.mkString(",")),
+        activeCore = userProperty.activeCore,
+        daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
+        daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
+        numberOfThemes = Some(userProperty.themes.distinct.length),
+        userType = if (userProperty.isOrganisation) {
+          Some("B2B")
+        } else {
+          Some("B2C")
+        },
+        updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
+      )
+    }
+    private def accumulateEvent(accumulator: UserProperties, envelope: EventEnvelope): UserProperties = {
+      envelope.event match {
+        case event: LogRegisterCitizenEvent     => accumulateLogRegisterCitizenEvent(accumulator, event)
+        case event: LogUserProposalEvent        => accumulateLogUserProposalEvent(accumulator, event)
+        case event: LogUserVoteEvent            => accumulateLogUserVoteEvent(accumulator, event)
+        case event: LogUserUnvoteEvent          => accumulateLogUserUnvoteEvent(accumulator, event)
+        case event: LogUserQualificationEvent   => accumulateLogUserQualificationEvent(accumulator, event)
+        case event: LogUserUnqualificationEvent => accumulateLogUserUnqualificationEvent(accumulator, event)
+
+        case _ => accumulator
+      }
+    }
+
+    private def accumulateLogUserUnqualificationEvent(accumulator: UserProperties,
+                                                      event: LogUserUnqualificationEvent): UserProperties = {
+      accumulator.copy(
+        lastContributionDate = Some(event.action.date),
+        lastCountryActivity = event.requestContext.country.map(_.value),
+        lastLanguageActivity = event.requestContext.language.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+        } else {
+          accumulator.daysOfActivity
+        },
+        themes = event.requestContext.currentTheme
+          .map(theme => accumulator.themes ++ Seq(theme.value))
+          .getOrElse(accumulator.themes)
+      )
+    }
+    private def accumulateLogUserQualificationEvent(accumulator: UserProperties,
+                                                    event: LogUserQualificationEvent): UserProperties = {
+      accumulator.copy(
+        lastContributionDate = Some(event.action.date),
+        lastCountryActivity = event.requestContext.country.map(_.value),
+        lastLanguageActivity = event.requestContext.language.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+        } else {
+          accumulator.daysOfActivity30d
+        },
+        themes = event.requestContext.currentTheme
+          .map(theme => accumulator.themes ++ Seq(theme.value))
+          .getOrElse(accumulator.themes)
+      )
+    }
+    private def accumulateLogUserUnvoteEvent(accumulator: UserProperties, event: LogUserUnvoteEvent): UserProperties = {
+      accumulator.copy(
+        totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
+        lastContributionDate = Some(event.action.date),
+        lastCountryActivity = event.requestContext.country.map(_.value),
+        lastLanguageActivity = event.requestContext.language.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+        } else {
+          accumulator.daysOfActivity30d
+        },
+        themes = event.requestContext.currentTheme
+          .map(theme => accumulator.themes ++ Seq(theme.value))
+          .getOrElse(accumulator.themes)
+      )
+    }
+    private def accumulateLogUserVoteEvent(accumulator: UserProperties, event: LogUserVoteEvent): UserProperties = {
+      accumulator.copy(
+        totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
+        lastCountryActivity = event.requestContext.country.map(_.value),
+        lastLanguageActivity = event.requestContext.language.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
+        lastContributionDate = Some(event.action.date),
+        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+        } else {
+          accumulator.daysOfActivity30d
+        },
+        themes = event.requestContext.currentTheme
+          .map(theme => accumulator.themes ++ Seq(theme.value))
+          .getOrElse(accumulator.themes)
+      )
+    }
+
+    private def accumulateLogUserProposalEvent(accumulator: UserProperties,
+                                               event: LogUserProposalEvent): UserProperties = {
+      accumulator.copy(
+        totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
+        lastCountryActivity = event.requestContext.country.map(_.value),
+        lastLanguageActivity = event.requestContext.language.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
+        lastContributionDate = Some(event.action.date),
+        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+        } else {
+          accumulator.daysOfActivity30d
+        },
+        themes = event.requestContext.currentTheme
+          .map(theme => accumulator.themes ++ Seq(theme.value))
+          .getOrElse(accumulator.themes)
+      )
+    }
+
+    private def accumulateLogRegisterCitizenEvent(accumulator: UserProperties,
+                                                  event: LogRegisterCitizenEvent): UserProperties = {
+      accumulator.copy(
+        accountCreationSource = event.requestContext.source,
+        accountCreationOperation = event.requestContext.operationId.map(_.value),
+        accountCreationCountry = event.requestContext.country.map(_.value),
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value)
+      )
+    }
+
+    def logQueueOfferResult(queueOfferResult: QueueOfferResult, operationName: String): Unit = {
+      queueOfferResult match {
+        case QueueOfferResult.Enqueued => logger.debug(s"$operationName: element has been consumed")
+        case QueueOfferResult.Dropped =>
+          logger.error(s"$operationName: element has been ignored because of backpressure")
+        case QueueOfferResult.QueueClosed => logger.error(s"$operationName: the queue upstream has terminated")
+        case QueueOfferResult.Failure(e) =>
+          logger.error(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
+      }
     }
   }
 }

@@ -21,7 +21,7 @@ package org.make.api.technical.crm
 
 import java.util.concurrent.Executors
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.{ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
@@ -33,6 +33,7 @@ import org.make.api.user.UserService
 import org.make.core.user.User
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class CrmContactEventConsumerActor(userService: UserService, crmService: CrmService)
     extends KafkaConsumerActor[CrmContactEventWrapper]
@@ -152,15 +153,26 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
     val getOptInUsers: Int => Future[Seq[User]] = (page: Int) =>
       userService.getOptInUsers(limit = batchSize, page = page)
 
-    asyncPageToPageSource(getOptOutUsers)
+    val startTime: Long = System.currentTimeMillis()
+
+    val optOut: Future[Done] = asyncPageToPageSource(getOptOutUsers)
       .mapAsync(1)(crmService.addUsersToUnsubscribeList)
       .runForeach(_ => {})
-    asyncPageToPageSource(getHardBounceUsers)
+    val hardBounce: Future[Done] = asyncPageToPageSource(getHardBounceUsers)
       .mapAsync(1)(crmService.addUsersToHardBounceList)
       .runForeach(_ => {})
-    asyncPageToPageSource(getOptInUsers)
+    val optIn: Future[Done] = asyncPageToPageSource(getOptInUsers)
       .mapAsync(1)(crmService.addUsersToOptInList)
       .runForeach(_ => {})
+
+    (for {
+      _ <- optOut
+      _ <- hardBounce
+      _ <- optIn
+    } yield {}).onComplete {
+      case Failure(exception) => log.error(s"Mailjet synchro failed:", exception)
+      case Success(_)         => log.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
+    }
 
     Future.successful {}
   }

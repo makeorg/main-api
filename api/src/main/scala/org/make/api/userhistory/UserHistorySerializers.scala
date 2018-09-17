@@ -31,16 +31,17 @@ import stamina.json._
 
 object UserHistorySerializers extends SprayJsonFormatters {
 
-  val countryFixDate = ZonedDateTime.parse("2018-09-01T00:00:00Z")
-  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V3] =
-    json.persister[LogRegisterCitizenEvent, V3](
+  val countryFixDate: ZonedDateTime = ZonedDateTime.parse("2018-09-01T00:00:00Z")
+  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V4] =
+    json.persister[LogRegisterCitizenEvent, V4](
       "user-history-registered",
       from[V1]
         .to[V2](
           _.update('action / 'arguments / 'country ! set[String]("FR"))
             .update('action / 'arguments / 'language ! set[String]("fr"))
         )
-        .to[V3] { json =>
+        .to[V3](identity)
+        .to[V4] { json =>
           val actionDate: ZonedDateTime = ZonedDateTime.parse(json.extract[String]('action / 'date))
 
           if (actionDate.isBefore(countryFixDate)) {
