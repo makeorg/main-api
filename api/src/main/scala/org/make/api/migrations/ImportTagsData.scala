@@ -23,71 +23,24 @@ import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
-import org.make.core.operation.OperationId
-import org.make.core.reference.{Country, Language}
-import org.make.core.tag.{TagDisplay, TagTypeId}
+import org.make.core.question.Question
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.io.Source
 
-trait ImportTagsData extends Migration with StrictLogging {
+trait ImportTagsData extends Migration with StrictLogging with TagHelper {
 
-  var operationId: OperationId = _
+  var question: Question = _
 
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
 
-  implicit val executor: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
+  implicit override val executor: ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
   def dataResource: String
 
   override def migrate(api: MakeApi): Future[Unit] = {
-
-    val tags: Seq[ImportTagsData.TagsDataLine] =
-      Source.fromResource(dataResource).getLines().toSeq.drop(1).flatMap(ImportTagsData.extractDataLine)
-
-    api.tagService.findByOperationId(operationId).flatMap {
-      case operationTags if operationTags.isEmpty =>
-        sequentially(tags) { tag =>
-          api.tagService
-            .createTag(
-              label = tag.label,
-              tagTypeId = tag.tagTypeId,
-              operationId = Some(operationId),
-              themeId = None,
-              country = tag.country,
-              language = tag.language,
-              display = tag.tagDisplay,
-              weight = tag.weight
-            )
-            .flatMap(_ => Future.successful {})
-        }
-      case _ => Future.successful {}
-    }
+    importTags(api, dataResource, question)
   }
 }
 
-object ImportTagsData {
-  case class TagsDataLine(label: String,
-                          tagTypeId: TagTypeId,
-                          tagDisplay: TagDisplay,
-                          weight: Float,
-                          country: Country,
-                          language: Language)
-
-  def extractDataLine(line: String): Option[ImportTagsData.TagsDataLine] = {
-    line.drop(1).dropRight(1).split("""";"""") match {
-      case Array(label, weight, tagType, tagDisplay, country, language, _) =>
-        Some(
-          TagsDataLine(
-            label = label,
-            tagTypeId = TagTypeId(tagType),
-            tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
-            weight = weight.toFloat,
-            country = Country(country),
-            language = Language(language)
-          )
-        )
-      case _ => None
-    }
-  }
-}
+object ImportTagsData {}

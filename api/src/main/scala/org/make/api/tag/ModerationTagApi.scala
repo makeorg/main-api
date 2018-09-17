@@ -26,21 +26,28 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.concurrent.Future
 import scala.util.Try
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
 trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: TagServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: TagServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with QuestionServiceComponent =>
 
   @Path(value = "/{tagId}")
   @ApiOperation(
@@ -114,44 +121,26 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
                       message = Some("Tag label already exist in this context. Duplicates are not allowed")
                     )
                   )
-                  Validation.validate(
-                    Validation.requirePresent(
-                      fieldName = "operationId / themeId",
-                      fieldValue = request.operationId.orElse(request.themeId),
-                      message = Some("operation or theme should not be empty")
+                  provideAsyncOrNotFound {
+                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                      request.questionId,
+                      request.themeId,
+                      request.operationId,
+                      request.country,
+                      request.language
                     )
-                  )
-                  if (request.operationId.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "themeId",
-                        fieldValue = request.themeId,
-                        message = Some("Tag can not have both operation and theme")
+                  } { question =>
+                    onSuccess(
+                      tagService.createTag(
+                        label = request.label,
+                        tagTypeId = request.tagTypeId,
+                        question = question,
+                        display = request.display.getOrElse(TagDisplay.Inherit),
+                        weight = request.weight.getOrElse(0f)
                       )
-                    )
-                  }
-                  if (request.themeId.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "operationId",
-                        fieldValue = request.operationId,
-                        message = Some("Tag can not have both operation and theme")
-                      )
-                    )
-                  }
-                  onSuccess(
-                    tagService.createTag(
-                      label = request.label,
-                      tagTypeId = request.tagTypeId,
-                      operationId = request.operationId,
-                      themeId = request.themeId,
-                      country = request.country,
-                      language = request.language,
-                      display = request.display.getOrElse(TagDisplay.Inherit),
-                      weight = request.weight.getOrElse(0f)
-                    )
-                  ) { tag =>
-                    complete(StatusCodes.Created -> TagResponse(tag))
+                    ) { tag =>
+                      complete(StatusCodes.Created -> TagResponse(tag))
+                    }
                   }
                 }
               }
@@ -185,6 +174,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
       new ApiImplicitParam(name = "label", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagTypeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
@@ -209,7 +199,8 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
               'operationId.as[OperationId].?,
               'themeId.as[ThemeId].?,
               'country.as[Country].?,
-              'language.as[Language].?
+              'language.as[Language].?,
+              'questionId.as[QuestionId].?
             )
           ) {
             (start: Option[Int],
@@ -221,7 +212,8 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
              maybeOperationId: Option[OperationId],
              maybeThemeId: Option[ThemeId],
              maybeCountry: Option[Country],
-             maybeLanguage: Option[Language]) =>
+             maybeLanguage: Option[Language],
+             maybeQuestionId: Option[QuestionId]) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
 
@@ -242,37 +234,44 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
                     )
                   }
 
-                  provideAsync(
-                    tagService.count(
-                      TagFilter(
-                        label = maybeLabel,
-                        tagTypeId = maybeTagTypeId,
-                        operationId = maybeOperationId,
-                        themeId = maybeThemeId,
-                        country = maybeCountry,
-                        language = maybeLanguage
-                      )
+                  provideAsync((for {
+                    country  <- maybeCountry
+                    language <- maybeLanguage
+                  } yield {
+                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                      maybeQuestionId,
+                      maybeThemeId,
+                      maybeOperationId,
+                      country,
+                      language
                     )
-                  ) { count =>
-                    onSuccess(
-                      tagService.find(
-                        start = start.getOrElse(0),
-                        end = end,
-                        sort = sort,
-                        order = order,
-                        tagFilter = TagFilter(
+                  }).getOrElse(Future.successful(None))) { maybeQuestion =>
+                    provideAsync(
+                      tagService.count(
+                        TagFilter(
                           label = maybeLabel,
                           tagTypeId = maybeTagTypeId,
-                          operationId = maybeOperationId,
-                          themeId = maybeThemeId,
-                          country = maybeCountry,
-                          language = maybeLanguage
+                          questionId = maybeQuestion.map(_.questionId)
                         )
                       )
-                    ) { filteredTags =>
-                      complete(
-                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), filteredTags.map(TagResponse.apply))
-                      )
+                    ) { count =>
+                      onSuccess(
+                        tagService.find(
+                          start = start.getOrElse(0),
+                          end = end,
+                          sort = sort,
+                          order = order,
+                          tagFilter = TagFilter(
+                            label = maybeLabel,
+                            tagTypeId = maybeTagTypeId,
+                            questionId = maybeQuestion.map(_.questionId)
+                          )
+                        )
+                      ) { filteredTags =>
+                        complete(
+                          (StatusCodes.OK, List(TotalCountHeader(count.toString)), filteredTags.map(TagResponse.apply))
+                        )
+                      }
                     }
                   }
                 }
@@ -325,46 +324,28 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
                       message = Some("Tag label already exist in this context. Duplicates are not allowed")
                     )
                   )
-                  Validation.validate(
-                    Validation.requirePresent(
-                      fieldName = "operation/theme",
-                      fieldValue = request.operationId.orElse(request.themeId),
-                      message = Some("operation or theme should not be empty")
-                    )
-                  )
-                  if (request.operationId.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "theme",
-                        fieldValue = request.themeId,
-                        message = Some("Tag can not have both operation and theme")
-                      )
-                    )
-                  }
-                  if (request.themeId.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "operation",
-                        fieldValue = request.operationId,
-                        message = Some("Tag can not have both operation and theme")
-                      )
-                    )
-                  }
                   provideAsyncOrNotFound(
-                    tagService.updateTag(
-                      tagId = tagId,
-                      label = request.label,
-                      display = request.display,
-                      tagTypeId = request.tagTypeId,
-                      weight = request.weight,
-                      operationId = request.operationId,
-                      themeId = request.themeId,
-                      country = request.country,
-                      language = request.language,
-                      requestContext = requestContext
+                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                      request.questionId,
+                      request.themeId,
+                      request.operationId,
+                      request.country,
+                      request.language
                     )
-                  ) { tag =>
-                    complete(tag)
+                  ) { question =>
+                    provideAsyncOrNotFound(
+                      tagService.updateTag(
+                        tagId = tagId,
+                        label = request.label,
+                        display = request.display,
+                        tagTypeId = request.tagTypeId,
+                        weight = request.weight,
+                        question = question,
+                        requestContext = requestContext
+                      )
+                    ) { tag =>
+                      complete(TagResponse(tag))
+                    }
                   }
                 }
               }
@@ -385,10 +366,44 @@ case class CreateTagRequest(label: String,
                             tagTypeId: TagTypeId,
                             operationId: Option[OperationId],
                             themeId: Option[ThemeId],
+                            questionId: Option[QuestionId],
                             country: Country,
                             language: Language,
                             display: Option[TagDisplay],
-                            weight: Option[Float])
+                            weight: Option[Float]) {
+  Validation.validate(
+    Validation.requirePresent(
+      fieldName = "questionId / operationId / themeId",
+      fieldValue = questionId.orElse(operationId).orElse(themeId),
+      message = Some("question or operation or theme should not be empty")
+    )
+  )
+
+  if (questionId.nonEmpty) {
+    Validation.validate(
+      Validation.requireNotPresent(
+        fieldName = "themeId",
+        fieldValue = themeId,
+        message = Some("Tag can not have both question and theme")
+      ),
+      Validation.requireNotPresent(
+        fieldName = "operationId",
+        fieldValue = operationId,
+        message = Some("Tag can not have both question and operation")
+      )
+    )
+  }
+
+  if (operationId.nonEmpty) {
+    Validation.validate(
+      Validation.requireNotPresent(
+        fieldName = "themeId",
+        fieldValue = themeId,
+        message = Some("Tag can not have both operation and theme")
+      )
+    )
+  }
+}
 
 object CreateTagRequest {
   implicit val decoder: Decoder[CreateTagRequest] = deriveDecoder[CreateTagRequest]
@@ -397,11 +412,45 @@ object CreateTagRequest {
 case class UpdateTagRequest(label: String,
                             tagTypeId: TagTypeId,
                             operationId: Option[OperationId],
+                            questionId: Option[QuestionId],
                             themeId: Option[ThemeId],
                             country: Country,
                             language: Language,
                             display: TagDisplay,
-                            weight: Float)
+                            weight: Float) {
+  Validation.validate(
+    Validation.requirePresent(
+      fieldName = "operation/theme",
+      fieldValue = operationId.orElse(themeId).orElse(questionId),
+      message = Some("operation or theme should not be empty")
+    )
+  )
+
+  if (questionId.nonEmpty) {
+    Validation.validate(
+      Validation.requireNotPresent(
+        fieldName = "theme",
+        fieldValue = themeId,
+        message = Some("Tag can not have both question and theme")
+      ),
+      Validation.requireNotPresent(
+        fieldName = "operation",
+        fieldValue = operationId,
+        message = Some("Tag can not have both question and operation")
+      )
+    )
+  }
+
+  if (operationId.nonEmpty) {
+    Validation.validate(
+      Validation.requireNotPresent(
+        fieldName = "theme",
+        fieldValue = themeId,
+        message = Some("Tag can not have both operation and theme")
+      )
+    )
+  }
+}
 
 object UpdateTagRequest {
   implicit val decoder: Decoder[UpdateTagRequest] = deriveDecoder[UpdateTagRequest]

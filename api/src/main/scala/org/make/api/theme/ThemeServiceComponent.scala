@@ -20,6 +20,7 @@
 package org.make.api.theme
 
 import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.core.proposal.{SearchFilters, SearchQuery, ThemeSearchFilter}
@@ -39,9 +40,12 @@ trait ThemeService extends ShortenedNames {
 }
 
 trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedNames {
-  this: PersistentThemeServiceComponent with ProposalSearchEngineComponent with TagServiceComponent =>
+  this: PersistentThemeServiceComponent
+    with ProposalSearchEngineComponent
+    with TagServiceComponent
+    with QuestionServiceComponent =>
 
-  val themeService = new ThemeService {
+  val themeService: ThemeService = new ThemeService {
 
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>
@@ -51,17 +55,30 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
-          val maybeVotesCount = elasticsearchProposalAPI
+          val votesCount = elasticsearchProposalAPI
             .countVotedProposals(
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
-          val maybeTags: Future[Seq[Tag]] = tagService.findByThemeId(theme.themeId)
+          val tags: Future[Seq[Tag]] =
+            questionService
+              .findQuestion(
+                Some(theme.themeId),
+                None,
+                theme.country,
+                theme.translations.headOption.map(_.language).getOrElse(Language("fr"))
+              )
+              .flatMap(
+                maybeQuestion =>
+                  maybeQuestion
+                    .map(question => tagService.findByQuestionId(question.questionId))
+                    .getOrElse(Future.successful(Seq.empty))
+              )
 
           for {
             proposalsCount <- maybeProposalsCount
-            votesCount     <- maybeVotesCount
-            tags           <- maybeTags
+            votesCount     <- votesCount
+            tags           <- tags
           } yield theme.copy(proposalsCount = proposalsCount, votesCount = votesCount, tags = tags)
         }
       }

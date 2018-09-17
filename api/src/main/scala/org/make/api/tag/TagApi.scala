@@ -23,19 +23,26 @@ import akka.http.scaladsl.server._
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.{HttpCodes, Validation, tag}
+import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 
+import scala.concurrent.Future
 import scala.util.Try
 
 @Api(value = "Tags")
 @Path(value = "/tags")
-trait TagApi extends MakeAuthenticationDirectives {
-  this: TagServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+trait TagApi extends MakeAuthenticationDirectives with ParameterExtractors {
+  this: TagServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with QuestionServiceComponent =>
 
   @Path(value = "/{tagId}")
   @ApiOperation(value = "get-tag", httpMethod = "GET", code = HttpCodes.OK)
@@ -74,45 +81,48 @@ trait TagApi extends MakeAuthenticationDirectives {
             (
               'start.as[Int].?,
               'end.as[Int].?,
-              'operationId.?,
-              'themeId.?,
-              'country.?,
-              'language.?
+              'operationId.as[OperationId].?,
+              'questionId.as[QuestionId].?,
+              'themeId.as[ThemeId].?,
+              'country.as[Country].?,
+              'language.as[Language].?
             )
-          ) {
-            (start,
-             end,
-             maybeOperationId,
-             maybeThemeId,
-             maybeCountry,
-             maybeLanguage
-            ) =>
-              maybeCountry.foreach { country =>
-                Validation.validate(
-                  Validation.validMatch("country", country, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
+          ) { (start, end, maybeOperationId, maybeQuestionId, maybeThemeId, maybeCountry, maybeLanguage) =>
+            maybeCountry.foreach { country =>
+              Validation.validate(
+                Validation.validMatch("country", country.value, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
+              )
+            }
+            maybeLanguage.foreach { language =>
+              Validation.validate(
+                Validation.validMatch("language", language.value, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
+              )
+            }
+            provideAsync {
+              (for {
+                country  <- maybeCountry
+                language <- maybeLanguage
+              } yield {
+                questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                  maybeQuestionId,
+                  maybeThemeId,
+                  maybeOperationId,
+                  country,
+                  language
                 )
-              }
-              maybeLanguage.foreach { language =>
-                Validation.validate(
-                  Validation.validMatch("language", language, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
-                )
-              }
-
+              }).getOrElse(Future.successful(None))
+            } { maybeQuestion =>
               onSuccess(
                 tagService.find(
                   start = start.getOrElse(0),
                   end = end,
                   onlyDisplayed = true,
-                  tagFilter = TagFilter(
-                    operationId = maybeOperationId.map(OperationId(_)),
-                    themeId = maybeThemeId.map(ThemeId(_)),
-                    country = maybeCountry.map(Country(_)),
-                    language = maybeLanguage.map(Language(_))
-                  )
+                  tagFilter = TagFilter(questionId = maybeQuestion.map(_.questionId))
                 )
               ) { tags =>
                 complete(tags)
               }
+            }
           }
         }
       }

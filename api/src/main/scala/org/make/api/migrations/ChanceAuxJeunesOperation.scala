@@ -103,6 +103,6 @@ object ChanceAuxJeunesOperation extends CreateOperation {
     )
   )
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 
 }

@@ -22,9 +22,11 @@ package org.make.api.theme
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.proposal.SearchQuery
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.mockito.ArgumentMatchers.any
@@ -40,11 +42,14 @@ class ThemeServiceTest
     with TagServiceComponent
     with MakeDBExecutionContextComponent
     with PersistentThemeServiceComponent
-    with ProposalSearchEngineComponent {
+    with ProposalSearchEngineComponent
+    with QuestionServiceComponent {
 
   override val tagService: TagService = mock[TagService]
   override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val questionService: QuestionService = mock[QuestionService]
+
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
 
@@ -79,7 +84,8 @@ class ThemeServiceTest
     themeId = Some(ThemeId("fooTheme")),
     operationId = None,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = None
   )
 
   feature("get all themes") {
@@ -101,8 +107,27 @@ class ThemeServiceTest
         .thenReturn(Future.successful(10))
 
       Mockito
-        .when(tagService.findByThemeId(any[ThemeId]))
+        .when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq.empty))
+
+      Mockito
+        .when(
+          questionService.findQuestion(any[Option[ThemeId]], ArgumentMatchers.eq(None), any[Country], any[Language])
+        )
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("some-question"),
+                operationId = None,
+                themeId = None,
+                question = "",
+                country = Country("FR"),
+                language = Language("fr")
+              )
+            )
+          )
+        )
 
       val futureThemes = themeService.findAll()
 
@@ -126,11 +151,59 @@ class ThemeServiceTest
         .thenReturn(Future.successful(Seq(fooTheme, barTheme)))
 
       Mockito
-        .when(tagService.findByThemeId(ArgumentMatchers.eq(ThemeId("foo"))))
+        .when(
+          questionService.findQuestion(
+            ArgumentMatchers.eq(Some(ThemeId("foo"))),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Country("WE")),
+            ArgumentMatchers.eq(Language("lg"))
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("foo"),
+                themeId = Some(ThemeId("foo")),
+                operationId = None,
+                country = Country("WE"),
+                language = Language("lg"),
+                question = "foo"
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(
+          questionService.findQuestion(
+            ArgumentMatchers.eq(Some(ThemeId("bar"))),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Country("WE")),
+            ArgumentMatchers.eq(Language("lg"))
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("bar"),
+                themeId = Some(ThemeId("bar")),
+                operationId = None,
+                country = Country("WE"),
+                language = Language("lg"),
+                question = "bar"
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(tagService.findByQuestionId(ArgumentMatchers.eq(QuestionId("foo"))))
         .thenReturn(Future.successful(Seq(fooTag)))
 
       Mockito
-        .when(tagService.findByThemeId(ArgumentMatchers.eq(ThemeId("bar"))))
+        .when(tagService.findByQuestionId(ArgumentMatchers.eq(QuestionId("bar"))))
         .thenReturn(Future.successful(Seq.empty))
 
       val futureThemes = themeService.findAll()

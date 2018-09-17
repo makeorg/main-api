@@ -74,7 +74,8 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
     operationId = None,
     themeId = None,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = None
   )
   val winterIsComingTags: Seq[Tag] = Seq(newTag("Stark"), newTag("Targaryen"), newTag("Lannister"))
   val winterIsHereTags: Seq[Tag] = Seq(newTag("White walker"))

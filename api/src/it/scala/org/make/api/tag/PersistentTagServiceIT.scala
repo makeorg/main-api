@@ -21,10 +21,12 @@ package org.make.api.tag
 
 import org.make.api.DatabaseTest
 import org.make.api.operation.DefaultPersistentOperationServiceComponent
+import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.theme.DefaultPersistentThemeServiceComponent
 import org.make.core.operation._
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, Theme, ThemeId}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag._
@@ -39,6 +41,7 @@ class PersistentTagServiceIT
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTagTypeServiceComponent
     with DefaultPersistentOperationServiceComponent
+    with DefaultPersistentQuestionServiceComponent
     with DefaultIdGeneratorComponent {
 
   override protected val cockroachExposedPort: Int = 40003
@@ -64,7 +67,38 @@ class PersistentTagServiceIT
     )
   )
 
-  def newTag(label: String, operationId: Option[OperationId] = None, themeId: Option[ThemeId] = None): Tag = Tag(
+  def questionForOperation(operationId: OperationId,
+                           country: Country = Country("FR"),
+                           language: Language = Language("fr")): Question = {
+    Question(
+      questionId = QuestionId(operationId.value),
+      themeId = None,
+      operationId = Some(operationId),
+      country = country,
+      language = language,
+      question = operationId.value
+    )
+  }
+
+  def questionForTheme(themeId: ThemeId,
+                       country: Country = Country("FR"),
+                       language: Language = Language("fr")): Question = {
+    Question(
+      questionId = QuestionId(themeId.value),
+      themeId = Some(themeId),
+      operationId = None,
+      country = country,
+      language = language,
+      question = themeId.value
+    )
+  }
+
+  val fakeQuestion: Question = questionForOperation(fakeOperation.operationId)
+
+  def newTag(label: String,
+             questionId: QuestionId,
+             operationId: Option[OperationId] = None,
+             themeId: Option[ThemeId] = None): Tag = Tag(
     tagId = idGenerator.nextTagId(),
     label = label,
     display = TagDisplay.Inherit,
@@ -73,28 +107,30 @@ class PersistentTagServiceIT
     operationId = operationId,
     themeId = themeId,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = Some(questionId)
   )
 
-  val stark: Tag = newTag("Stark")
+  val stark: Tag = newTag("Stark", QuestionId("stark"))
 
-  val targaryen: Tag = newTag("Targaryen")
-  val lannister: Tag = newTag("Lannister")
-  val bolton: Tag = newTag("Bolton")
-  val greyjoy: Tag = newTag("Greyjoy")
+  val targaryen: Tag = newTag("Targaryen", QuestionId("Targaryen"))
+  val lannister: Tag = newTag("Lannister", QuestionId("Lannister"))
+  val bolton: Tag = newTag("Bolton", QuestionId("Bolton"))
+  val greyjoy: Tag = newTag("Greyjoy", QuestionId("Greyjoy"))
 
-  val tully: Tag = newTag("Tully")
-  val baratheon: Tag = newTag("Baratheon")
-  val martell: Tag = newTag("Martell")
-  val tyrell: Tag = newTag("Tyrell")
+  val tully: Tag = newTag("Tully", QuestionId("Tully"))
+  val baratheon: Tag = newTag("Baratheon", QuestionId("Baratheon"))
+  val martell: Tag = newTag("Martell", QuestionId("Martell"))
+  val tyrell: Tag = newTag("Tyrell", QuestionId("Tyrell"))
 
   private val developementDurableTheme = ThemeId("036f24fa-dc32-4808-bca9-7ccec1665585")
-  val bron: Tag = newTag("Bron")
-  val weirdTag: Tag = newTag("weird%Tag")
-  val snow: Tag = newTag("Snow", operationId = Some(fakeOperation.operationId))
-  val lancaster: Tag = newTag("Lancaster", themeId = Some(developementDurableTheme))
-  val byron: Tag = newTag("Byron")
-
+  private val developementDurableQuestion = QuestionId("question-for-developement-durable-theme")
+  val bron: Tag = newTag("Bron", QuestionId("Bron"))
+  val weirdTag: Tag = newTag("weird%Tag", QuestionId("weird-Tag"))
+  val snow: Tag = newTag("Snow", operationId = Some(fakeOperation.operationId), questionId = fakeQuestion.questionId)
+  val lancaster: Tag =
+    newTag("Lancaster", themeId = Some(developementDurableTheme), questionId = developementDurableQuestion)
+  val byron: Tag = newTag("Byron", QuestionId("Byron"))
 
   feature("One tag can be persisted and retrieved") {
     scenario("Get tag by tagId") {
@@ -225,8 +261,9 @@ class PersistentTagServiceIT
       When("""I search the tag by its operation""")
       val futureTag: Future[Seq[Tag]] = for {
         _                <- persistentOperationService.persist(fakeOperation)
+        _                <- persistentQuestionService.persist(fakeQuestion)
         _                <- persistentTagService.persist(snow)
-        tagFakeOperation <- persistentTagService.findByOperationId(fakeOperation.operationId)
+        tagFakeOperation <- persistentTagService.findByQuestion(fakeQuestion.questionId)
       } yield tagFakeOperation
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
@@ -243,7 +280,7 @@ class PersistentTagServiceIT
       When("""I search the tag by its theme""")
       val futureTag: Future[Seq[Tag]] = for {
         _            <- persistentTagService.persist(lancaster)
-        tagLancaster <- persistentTagService.findByThemeId(lancaster.themeId.get)
+        tagLancaster <- persistentTagService.findByQuestion(lancaster.questionId.get)
       } yield tagLancaster
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
@@ -276,7 +313,7 @@ class PersistentTagServiceIT
     scenario("update a non existing tag") {
       Given("a non existing tag")
       When("""I update this tag label to "not here"""")
-      val futureTag: Future[Option[Tag]] = persistentTagService.update(newTag("not here"))
+      val futureTag: Future[Option[Tag]] = persistentTagService.update(newTag("not here", QuestionId("not-here")))
 
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be empty")
@@ -294,18 +331,19 @@ class PersistentTagServiceIT
       TagType(tagTypeId = TagTypeId("third"), label = "Third", display = TagTypeDisplay.Hidden)
     val tagTypeFourth: TagType =
       TagType(tagTypeId = TagTypeId("fourth"), label = "Fourth", display = TagTypeDisplay.Hidden)
-    val tagTypeFifth: TagType =
-      TagType(tagTypeId = TagTypeId("fifth"), label = "Fifth", display = TagTypeDisplay.Displayed)
-    val tagTypeSixth: TagType =
-      TagType(tagTypeId = TagTypeId("sixth"), label = "Sixth", display = TagTypeDisplay.Displayed)
     val tagTypeSeventh: TagType =
       TagType(tagTypeId = TagTypeId("seventh"), label = "Seventh", display = TagTypeDisplay.Hidden)
     val tagTypeHeighth: TagType =
       TagType(tagTypeId = TagTypeId("heighth"), label = "Heighth", display = TagTypeDisplay.Displayed)
     val operationIdFirst: OperationId = OperationId("opefirst")
+    val questionFirst = questionForOperation(operationIdFirst)
     val operationIdSecond: OperationId = OperationId("opesecond")
+    val questionSecond = questionForOperation(operationIdSecond)
     val operationIdThird: OperationId = OperationId("opethird")
+    val questionThird = questionForOperation(operationIdThird)
+
     val themeIdFirst: ThemeId = ThemeId("themefirst")
+    val questionThemeFirst = questionForTheme(themeIdFirst)
 
     val hestia: Tag =
       targaryen.copy(
@@ -313,6 +351,7 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "hestialabel",
         operationId = Some(operationIdFirst),
+        questionId = Some(questionFirst.questionId),
         country = Country("FR"),
         language = Language("fr")
       )
@@ -322,6 +361,7 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "athenalabel",
         operationId = Some(operationIdFirst),
+        questionId = Some(questionFirst.questionId),
         country = Country("FR"),
         language = Language("br")
       )
@@ -331,6 +371,7 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "arianelabel",
         operationId = Some(operationIdSecond),
+        questionId = Some(questionSecond.questionId),
         country = Country("FR"),
         language = Language("fr")
       )
@@ -339,6 +380,7 @@ class PersistentTagServiceIT
       tagTypeId = tagTypeSeventh.tagTypeId,
       label = "heralabel",
       operationId = Some(operationIdThird),
+      questionId = Some(questionThird.questionId),
       country = Country("BR"),
       language = Language("br")
     )
@@ -356,44 +398,12 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFourth.tagTypeId,
         label = "thalialabel",
         themeId = Some(themeIdFirst),
+        questionId = Some(questionThemeFirst.questionId),
         country = Country("BR"),
         language = Language("br")
       )
     val calliope: Tag =
-      targaryen.copy(
-        tagId = TagId("calliope"),
-        tagTypeId = tagTypeHeighth.tagTypeId,
-        label = "calliopelabel"
-      )
-    val katerina: Tag =
-      targaryen.copy(
-        tagId = TagId("katerina"),
-        tagTypeId = tagTypeFifth.tagTypeId,
-        label = "katerinalabel",
-        country = Country("BR")
-      )
-    val julia: Tag =
-      targaryen.copy(
-        tagId = TagId("julia"),
-        tagTypeId = tagTypeFifth.tagTypeId,
-        label = "julialabel",
-        country = Country("BR")
-      )
-
-    val samantha: Tag =
-      targaryen.copy(
-        tagId = TagId("samantha"),
-        tagTypeId = tagTypeSixth.tagTypeId,
-        label = "samanthaalabel",
-        language = Language("ar")
-      )
-    val johanna: Tag =
-      targaryen.copy(
-        tagId = TagId("johanna"),
-        tagTypeId = tagTypeSixth.tagTypeId,
-        label = "johannalabel",
-        language = Language("ar")
-      )
+      targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeHeighth.tagTypeId, label = "calliopelabel")
 
     val baseTheme: Theme = Theme(
       themeId = themeIdFirst,
@@ -414,17 +424,17 @@ class PersistentTagServiceIT
       When("I search tags by label 'calliope'")
 
       val futureTagListResultByLabel: Future[Seq[Tag]] = for {
-        _   <- persistentTagTypeService.persist(tagTypeHeighth)
-        _   <- persistentTagService.persist(calliope)
-         result <- persistentTagService.find(
-            0,
-            Some(10),
-            None,
-            None,
-            false,
-            PersistentTagFilter.empty.copy(label = Some("calliopelabel"))
-          )
-        } yield result
+        _ <- persistentTagTypeService.persist(tagTypeHeighth)
+        _ <- persistentTagService.persist(calliope)
+        result <- persistentTagService.find(
+          start = 0,
+          end = Some(10),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = PersistentTagFilter.empty.copy(label = Some("calliopelabel"))
+        )
+      } yield result
 
       whenReady(futureTagListResultByLabel, Timeout(3.seconds)) { tags =>
         Then("I get a list with one result")
@@ -438,68 +448,68 @@ class PersistentTagServiceIT
       Given(s"a list of persisted tags: \n ${Seq(hestia, athena).mkString("\n")}")
 
       val futureTagListResultOperations: Future[(Seq[Tag], Seq[Tag])] = for {
-        _    <- persistentOperationService.persist(
-              fakeOperation.copy(
-                operationId = operationIdFirst,
-                slug = "ope-first",
-                countriesConfiguration = Seq(
-                  OperationCountryConfiguration(
-                    countryCode = Country("FR"),
-                    tagIds = Seq.empty,
-                    landingSequenceId = SequenceId("fr"),
-                    startDate = None,
-                    endDate = None,
-                    questionId = None
-                  )
-                )
+        _ <- persistentOperationService.persist(
+          fakeOperation.copy(
+            operationId = operationIdFirst,
+            slug = "ope-first",
+            countriesConfiguration = Seq(
+              OperationCountryConfiguration(
+                countryCode = Country("FR"),
+                tagIds = Seq.empty,
+                landingSequenceId = SequenceId("fr"),
+                startDate = None,
+                endDate = None,
+                questionId = None
               )
-        )
-        _   <- persistentOperationService.persist(
-              fakeOperation.copy(
-                operationId = operationIdSecond,
-                slug = "ope-second",
-                countriesConfiguration = Seq(
-                  OperationCountryConfiguration(
-                    countryCode = Country("FR"),
-                    tagIds = Seq.empty,
-                    landingSequenceId = SequenceId("fr"),
-                    startDate = None,
-                    endDate = None,
-                    questionId = None
-                  )
-                )
-              )
-        )
-        _   <- persistentTagTypeService.persist(tagTypeFirst)
-        _   <- persistentTagTypeService.persist(tagTypeSecond)
-        _   <- persistentTagService.persist(hestia)
-        _   <- persistentTagService.persist(athena)
-        _   <- persistentTagService.persist(ariane)
-        resultFirst <- persistentTagService.find(
-              0,
-              Some(10),
-              None,
-              None,
-              false,
-              PersistentTagFilter.empty.copy(operationId = Some(operationIdFirst))
             )
-        resultSecond <- persistentTagService.find(
-              0,
-              Some(10),
-              None,
-              None,
-              false,
-              PersistentTagFilter.empty.copy(operationId = Some(operationIdSecond))
           )
-        } yield (resultFirst, resultSecond)
+        )
+        _ <- persistentOperationService.persist(
+          fakeOperation.copy(
+            operationId = operationIdSecond,
+            slug = "ope-second",
+            countriesConfiguration = Seq(
+              OperationCountryConfiguration(
+                countryCode = Country("FR"),
+                tagIds = Seq.empty,
+                landingSequenceId = SequenceId("fr"),
+                startDate = None,
+                endDate = None,
+                questionId = None
+              )
+            )
+          )
+        )
+        _ <- persistentTagTypeService.persist(tagTypeFirst)
+        _ <- persistentTagTypeService.persist(tagTypeSecond)
+        _ <- persistentTagService.persist(hestia)
+        _ <- persistentTagService.persist(athena)
+        _ <- persistentTagService.persist(ariane)
+        resultFirst <- persistentTagService.find(
+          start = 0,
+          end = Some(10),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionFirst.questionId))
+        )
+        resultSecond <- persistentTagService.find(
+          start = 0,
+          end = Some(10),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionSecond.questionId))
+        )
+      } yield (resultFirst, resultSecond)
 
       When("I search tags by operation Id 'opefirst'")
 
       whenReady(futureTagListResultOperations, Timeout(3.seconds)) {
         case (resultFirst, _) =>
           Then("I get a list with two results")
-            resultFirst.length should be(2)
-            resultFirst.count(_.operationId.contains(operationIdFirst)) should be(resultFirst.length)
+          resultFirst.length should be(2)
+          resultFirst.count(_.operationId.contains(operationIdFirst)) should be(resultFirst.length)
       }
 
       When("I search tags by operation Id 'opesecond'")
@@ -521,12 +531,12 @@ class PersistentTagServiceIT
         _ <- persistentTagTypeService.persist(tagTypeThird)
         _ <- persistentTagService.persist(clio)
         result <- persistentTagService.find(
-          0,
-          Some(10),
-          None,
-          None,
-          false,
-          PersistentTagFilter.empty.copy(tagTypeId = Some(tagTypeThird.tagTypeId))
+          start = 0,
+          end = Some(10),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = PersistentTagFilter.empty.copy(tagTypeId = Some(tagTypeThird.tagTypeId))
         )
       } yield result
 
@@ -547,15 +557,14 @@ class PersistentTagServiceIT
         _ <- persistentTagTypeService.persist(tagTypeFourth)
         _ <- persistentTagService.persist(thalia)
         result <- persistentTagService.find(
-          0,
-          Some(10),
-          None,
-          None,
-          false,
-          PersistentTagFilter.empty.copy(themeId = Some(themeIdFirst))
+          start = 0,
+          end = Some(10),
+          sort = None,
+          order = None,
+          onlyDisplayed = false,
+          persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionThemeFirst.questionId))
         )
       } yield result
-
 
       whenReady(futureTagListResultThemeFirst, Timeout(3.seconds)) { tags =>
         Then("I get a list with two results")
@@ -564,56 +573,9 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by country") {
-      Given(s"a list of persisted tags: \n ${Seq(katerina, julia).mkString("\n")}")
-
-      When("I search tags by country 'BR'")
-      val futureTagListResultBr: Future[Seq[Tag]] = for {
-        _ <- persistentTagTypeService.persist(tagTypeFifth)
-        _ <- persistentTagService.persist(katerina)
-        _ <- persistentTagService.persist(julia)
-        result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
-          sort = None,
-          order = None,
-          onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(country = Some(Country("BR")))
-        )
-      } yield result
-
-      whenReady(futureTagListResultBr, Timeout(3.seconds)) { tags =>
-        Then("I get a list with 2 results")
-        tags.length should be(4)
-        tags.count(_.country == Country("BR")) should be(tags.length)
-      }
-    }
-
-    scenario("Search tags by language") {
-      Given(s"a list of persisted tags: \n ${Seq(johanna, samantha).mkString("\n")}")
-      When("I search tags by language 'br'")
-      val futureTagListResultLanguageBr: Future[Seq[Tag]] = for {
-        _      <- persistentTagTypeService.persist(tagTypeSixth)
-        _      <- persistentTagService.persist(johanna)
-        _      <- persistentTagService.persist(samantha)
-        result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
-          sort = None,
-          order = None,
-          onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(language = Some(Language("ar")))
-        )
-      } yield result
-
-      whenReady(futureTagListResultLanguageBr, Timeout(3.seconds)) { tags =>
-        Then("I get a list with three results")
-        tags.length should be(2)
-        tags.count(_.language == Language("ar")) should be(tags.length)
-      }
-    }
-
     scenario("Search tags by onlyDisplayed") {
+      // TODO: since this test relies on data inserted by other tests,
+      // there is no guarantee on the expected number of tags
       Given("a list of persisted tags")
 
       When("I search tags by onlyDisplayed")
@@ -629,52 +591,46 @@ class PersistentTagServiceIT
       } yield result
 
       whenReady(futureTagListResultOnlyDisplayed, Timeout(3.seconds)) { tags =>
-        Then("I get a list with three results")
-        tags.length should be(398)
+        Then("I get a list with all the results")
+        tags.length should be(394)
       }
     }
 
     scenario("Search tags by multi filters") {
       Given(s"a persisted tag: ${hera.label}")
-      When(
-        s"""I search tags by
+      When(s"""I search tags by
            |tagTypeId = '${hera.tagTypeId.value}',
-           |label = '${hera.label}', 
+           |label = '${hera.label}',
            |operation = ${operationIdThird.value},
            |country = 'BR' and 
            |language = 'br' """.stripMargin)
       val futureTagListResultHera: Future[Seq[Tag]] = for {
-        _   <- persistentTagTypeService.persist(tagTypeSeventh)
-        _   <- persistentOperationService.persist(
-            fakeOperation.copy(
-              operationId = operationIdThird,
-              slug = "ope-third",
-              countriesConfiguration = Seq(
-                OperationCountryConfiguration(
-                  countryCode = Country("FR"),
-                  tagIds = Seq.empty,
-                  landingSequenceId = SequenceId("fr"),
-                  startDate = None,
-                  endDate = None,
-                  questionId = None
-                )
+        _ <- persistentTagTypeService.persist(tagTypeSeventh)
+        _ <- persistentOperationService.persist(
+          fakeOperation.copy(
+            operationId = operationIdThird,
+            slug = "ope-third",
+            countriesConfiguration = Seq(
+              OperationCountryConfiguration(
+                countryCode = Country("FR"),
+                tagIds = Seq.empty,
+                landingSequenceId = SequenceId("fr"),
+                startDate = None,
+                endDate = None,
+                questionId = None
               )
             )
           )
-        _      <- persistentTagService.persist(hera)
+        )
+        _ <- persistentTagService.persist(hera)
         result <- persistentTagService.find(
           start = 0,
           end = Some(10),
           sort = None,
           order = None,
           onlyDisplayed = false,
-          persistentTagFilter = PersistentTagFilter.empty.copy(
-            tagTypeId = Some(hera.tagTypeId),
-            label = Some(hera.label),
-            operationId = hera.operationId,
-            country = Some(hera.country),
-            language = Some(hera.language)
-          )
+          persistentTagFilter = PersistentTagFilter.empty
+            .copy(tagTypeId = Some(hera.tagTypeId), label = Some(hera.label), questionId = hera.questionId)
         )
       } yield result
 
@@ -694,12 +650,16 @@ class PersistentTagServiceIT
     val fooOperationId: OperationId = OperationId("fooOperation")
     val fooThemeId: ThemeId = ThemeId("fooTheme")
 
+    val operationQuestion = questionForOperation(fooOperationId)
+    val themeQuestion = questionForTheme(fooThemeId)
+
     val foo: Tag =
       targaryen.copy(
         tagId = TagId("foo"),
         tagTypeId = fooTagType.tagTypeId,
         label = "foolabel",
         operationId = Some(fooOperationId),
+        questionId = Some(operationQuestion.questionId),
         country = Country("FR"),
         language = Language("fr")
       )
@@ -709,6 +669,7 @@ class PersistentTagServiceIT
         tagTypeId = fooTagType.tagTypeId,
         label = "barlabel",
         operationId = Some(fooOperationId),
+        questionId = Some(operationQuestion.questionId),
         country = Country("FR"),
         language = Language("br")
       )
@@ -718,6 +679,7 @@ class PersistentTagServiceIT
         tagTypeId = fooTagType.tagTypeId,
         label = "bazlabel",
         themeId = Some(fooThemeId),
+        questionId = Some(themeQuestion.questionId),
         country = Country("FR"),
         language = Language("fr")
       )
@@ -735,24 +697,25 @@ class PersistentTagServiceIT
     )
     scenario("Search tags by label") {
 
-      val persistedTags: Future[Seq[Tag]] = for {
-        _ <- persistentThemeService.persist(baseTheme.copy(themeId = fooThemeId))
-        _ <- persistentOperationService.persist(
-          fakeOperation.copy(
-            operationId = fooOperationId,
-            slug = "foo-operation",
-            countriesConfiguration = Seq(
-              OperationCountryConfiguration(
-                countryCode = Country("FR"),
-                tagIds = Seq.empty,
-                landingSequenceId = SequenceId("fr"),
-                startDate = None,
-                endDate = None,
-                questionId = None
-              )
-            )
+      val fooOperation = fakeOperation.copy(
+        operationId = fooOperationId,
+        slug = "foo-operation",
+        countriesConfiguration = Seq(
+          OperationCountryConfiguration(
+            countryCode = Country("FR"),
+            tagIds = Seq.empty,
+            landingSequenceId = SequenceId("fr"),
+            startDate = None,
+            endDate = None,
+            questionId = None
           )
         )
+      )
+      val persistedTags: Future[Seq[Tag]] = for {
+        _   <- persistentThemeService.persist(baseTheme.copy(themeId = fooThemeId))
+        _   <- persistentOperationService.persist(fooOperation)
+        _   <- persistentQuestionService.persist(operationQuestion)
+        _   <- persistentQuestionService.persist(themeQuestion)
         _   <- persistentTagTypeService.persist(fooTagType)
         _   <- persistentTagTypeService.persist(barTagType)
         foo <- persistentTagService.persist(foo)
@@ -768,11 +731,13 @@ class PersistentTagServiceIT
 
       When("I count tags filtred")
       val futureCountTags: Future[(Int, Int, Int)] = for {
-        _                <- persistedTags
-        countWithLabel   <- persistentTagService.count(PersistentTagFilter.empty.copy(label = Some("barlabel")))
-        countWithThemeId <- persistentTagService.count(PersistentTagFilter.empty.copy(themeId = Some(fooThemeId)))
+        _              <- persistedTags
+        countWithLabel <- persistentTagService.count(PersistentTagFilter.empty.copy(label = Some("barlabel")))
+        countWithThemeId <- persistentTagService.count(
+          PersistentTagFilter.empty.copy(questionId = Some(themeQuestion.questionId))
+        )
         countWithOperationId <- persistentTagService.count(
-          PersistentTagFilter.empty.copy(operationId = Some(fooOperationId))
+          PersistentTagFilter.empty.copy(questionId = Some(operationQuestion.questionId))
         )
       } yield (countWithLabel, countWithThemeId, countWithOperationId)
 

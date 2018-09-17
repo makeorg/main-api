@@ -18,39 +18,43 @@
  */
 
 package org.make.api.migrations
-
 import org.make.api.MakeApi
 import org.make.api.migrations.TagHelper.TagsDataLine
+import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{TagDisplay, TagTypeId}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 
-object CultureImportTagsData extends ImportTagsData {
+trait TagHelper {
 
-  override def initialize(api: MakeApi): Future[Unit] = {
-    api.operationService
-      .findOneBySlug(CultureOperation.operationSlug)
-      .flatMap {
-        case None =>
-          throw new IllegalStateException(s"Unable to find an operation with slug ${CultureOperation.operationSlug}")
-        case Some(operation) =>
-          api.questionService.findQuestion(None, Some(operation.operationId), Country("FR"), Language("fr"))
-      }
-      .map {
-        case None =>
-          throw new IllegalStateException(
-            s"Unable to find the question for the operation with slug ${CultureOperation.operationSlug}"
-          )
-        case Some(q) =>
-          this.question = q
-          Future.successful {}
-      }
+  implicit def executor: ExecutionContext
+
+  def importTags(api: MakeApi, dataFile: String, question: Question): Future[Unit] = {
+    val tags: Seq[TagHelper.TagsDataLine] =
+      Source.fromResource(dataFile).getLines().toSeq.drop(1).flatMap(extractDataLine)
+
+    api.tagService.findByQuestionId(question.questionId).flatMap {
+      case operationTags if operationTags.isEmpty =>
+        sequentially(tags) { tag =>
+          api.tagService
+            .createTag(
+              label = tag.label,
+              tagTypeId = tag.tagTypeId,
+              question = question,
+              display = tag.tagDisplay,
+              weight = tag.weight
+            )
+            .flatMap(_ => Future.successful {})
+        }
+      case _ => Future.successful {}
+    }
   }
 
-  override def extractDataLine(line: String): Option[TagsDataLine] = {
+  def extractDataLine(line: String): Option[TagsDataLine] = {
     line.drop(1).dropRight(1).split("""";"""") match {
-      case Array(weight, label, tagType, tagDisplay, country, language) =>
+      case Array(label, weight, tagType, tagDisplay, country, language, _) =>
         Some(
           TagsDataLine(
             label = label,
@@ -64,7 +68,14 @@ object CultureImportTagsData extends ImportTagsData {
       case _ => None
     }
   }
+}
 
-  override val dataResource: String = "fixtures/tags_culture.csv"
-  override val runInProduction: Boolean = false
+object TagHelper {
+  case class TagsDataLine(label: String,
+                          tagTypeId: TagTypeId,
+                          tagDisplay: TagDisplay,
+                          weight: Float,
+                          country: Country,
+                          language: Language)
+
 }

@@ -28,6 +28,7 @@ import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -90,7 +91,7 @@ class OperationServiceTest
         landingSequenceId = SequenceId("first-sequence-id-GB"),
         startDate = None,
         endDate = None,
-        questionId = None
+        questionId = Some(QuestionId("foo-question"))
       )
     )
   )
@@ -104,7 +105,8 @@ class OperationServiceTest
     themeId = Some(ThemeId("fooTheme")),
     operationId = None,
     country = Country("GB"),
-    language = Language("en")
+    language = Language("en"),
+    questionId = None
   )
 
   feature("find operations") {
@@ -118,12 +120,12 @@ class OperationServiceTest
         .thenReturn(Future.successful(Seq(fooOperation)))
 
       Mockito
-        .when(persistentTagService.findByOperationId(ArgumentMatchers.eq(OperationId("foo"))))
+        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(QuestionId("foo-question"))))
         .thenReturn(Future.successful(Seq(fooTag)))
 
-      val futureoperations: Future[Seq[Operation]] = operationService.find()
+      val futureOperations: Future[Seq[Operation]] = operationService.find()
 
-      whenReady(futureoperations, Timeout(3.seconds)) { operations =>
+      whenReady(futureOperations, Timeout(3.seconds)) { operations =>
         logger.debug(operations.map(_.toString).mkString(", "))
         val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
         fooOperation.countriesConfiguration.filter(cc => cc.countryCode == Country("GB")).head.tagIds.size shouldBe 1

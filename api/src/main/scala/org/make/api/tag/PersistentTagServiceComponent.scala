@@ -29,6 +29,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scalikejdbc._
@@ -47,8 +48,7 @@ trait PersistentTagService {
   def findAllDisplayed(): Future[Seq[Tag]]
   def findByLabel(label: String): Future[Seq[Tag]]
   def findByLabelLike(partialLabel: String): Future[Seq[Tag]]
-  def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
-  def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
+  def findByQuestion(questionId: QuestionId): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
@@ -61,14 +61,9 @@ trait PersistentTagService {
   def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
-case class PersistentTagFilter(label: Option[String],
-                               operationId: Option[OperationId],
-                               tagTypeId: Option[TagTypeId],
-                               themeId: Option[ThemeId],
-                               country: Option[Country],
-                               language: Option[Language])
+case class PersistentTagFilter(label: Option[String], questionId: Option[QuestionId], tagTypeId: Option[TagTypeId])
 object PersistentTagFilter {
-  def empty: PersistentTagFilter = PersistentTagFilter(None, None, None, None, None, None)
+  def empty: PersistentTagFilter = PersistentTagFilter(None, None, None)
 }
 
 trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent {
@@ -81,6 +76,19 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     private val tagTypeAlias = PersistentTagType.tagTypeAlias
 
     private val column = PersistentTag.column
+
+    override def findByQuestion(questionId: QuestionId): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.eq(tagAlias.questionId, questionId.value))
+        }.map(PersistentTag.apply()).list().apply
+      })
+
+      futurePersistentTag.map(_.map(_.toTag))
+    }
 
     override def get(tagId: TagId): Future[Option[Tag]] = {
       implicit val context: EC = readExecutionContext
@@ -174,34 +182,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       futurePersistentTags.map(_.map(_.toTag))
     }
 
-    def findByOperationId(operationId: OperationId): Future[Seq[Tag]] = {
-      implicit val context: EC = readExecutionContext
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentTag.as(tagAlias))
-            .where(sqls.eq(tagAlias.operationId, operationId.value))
-            .orderBy(tagAlias.weight, tagAlias.label)
-        }.map(PersistentTag.apply()).list.apply
-      })
-
-      futurePersistentTags.map(_.map(_.toTag))
-    }
-
-    def findByThemeId(themeId: ThemeId): Future[Seq[Tag]] = {
-      implicit val context: EC = readExecutionContext
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentTag.as(tagAlias))
-            .where(sqls.eq(tagAlias.themeId, themeId.value))
-            .orderBy(tagAlias.weight, tagAlias.label)
-        }.map(PersistentTag.apply()).list.apply
-      })
-
-      futurePersistentTags.map(_.map(_.toTag))
-    }
-
     override def persist(tag: Tag): Future[Tag] = {
       implicit val context: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
@@ -216,6 +196,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
               column.themeId -> tag.themeId.map(_.value),
+              column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
               column.country -> tag.country.value,
               column.language -> tag.language.value,
@@ -239,15 +220,13 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
               column.themeId -> tag.themeId.map(_.value),
+              column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
               column.country -> tag.country.value,
               column.language -> tag.language.value,
               column.updatedAt -> nowDate
             )
-            .where(
-              sqls
-                .eq(column.id, tag.tagId.value)
-            )
+            .where(sqls.eq(column.id, tag.tagId.value))
         }.executeUpdate().apply()
       }).map {
         case 1 => Some(tag)
@@ -282,11 +261,11 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     }
 
     override def find(start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        onlyDisplayed: Boolean,
-                        persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
+                      end: Option[Int],
+                      sort: Option[String],
+                      order: Option[String],
+                      onlyDisplayed: Boolean,
+                      persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB('READ).retryableTx { implicit session =>
@@ -303,19 +282,17 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                     .map(
                       label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                     ),
-                  persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                  persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
-                  persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
-                  persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country.value)),
-                  persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value)),
+                  persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                  persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value)),
                   if (onlyDisplayed) {
-                    Some(sqls
-                      .eq(tagAlias.display, TagDisplay.Displayed.shortName)
-                      .or(
-                        sqls
-                          .eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                          .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
-                      )
+                    Some(
+                      sqls
+                        .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                        .or(
+                          sqls
+                            .eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                            .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                        )
                     )
                   } else {
                     None
@@ -357,11 +334,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                   .map(
                     label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
                   ),
-                persistentTagFilter.tagTypeId.map(tagTypeId     => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                persistentTagFilter.operationId.map(operationId => sqls.eq(tagAlias.operationId, operationId.value)),
-                persistentTagFilter.themeId.map(themeId         => sqls.eq(tagAlias.themeId, themeId.value)),
-                persistentTagFilter.country.map(country         => sqls.eq(tagAlias.country, country.value)),
-                persistentTagFilter.language.map(language       => sqls.eq(tagAlias.language, language.value))
+                persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
@@ -378,6 +352,7 @@ object DefaultPersistentTagServiceComponent {
                            tagTypeId: String,
                            operationId: Option[String],
                            themeId: Option[String],
+                           questionId: Option[String],
                            weight: Float,
                            country: String,
                            language: String,
@@ -391,6 +366,7 @@ object DefaultPersistentTagServiceComponent {
         tagTypeId = TagTypeId(tagTypeId),
         operationId = operationId.map(OperationId(_)),
         themeId = themeId.map(ThemeId(_)),
+        questionId = questionId.map(QuestionId(_)),
         weight = weight,
         country = Country(country),
         language = Language(language)
@@ -410,12 +386,13 @@ object DefaultPersistentTagServiceComponent {
       "country",
       "language",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "question_id"
     )
 
     override val tableName: String = "tag"
 
-    lazy val tagAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentTag], PersistentTag] = syntax("ta")
+    lazy val tagAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentTag], PersistentTag] = syntax("tag")
 
     def apply(
       tagResultName: ResultName[PersistentTag] = tagAlias.resultName
@@ -426,6 +403,7 @@ object DefaultPersistentTagServiceComponent {
         display = TagDisplay.matchTagDisplayOrDefault(resultSet.string(tagResultName.display)),
         tagTypeId = resultSet.string(tagResultName.tagTypeId),
         operationId = resultSet.stringOpt(tagResultName.operationId),
+        questionId = resultSet.stringOpt(tagResultName.questionId),
         themeId = resultSet.stringOpt(tagResultName.themeId),
         weight = resultSet.float(tagResultName.weight),
         country = resultSet.string(tagResultName.country),

@@ -23,14 +23,11 @@ import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.tagtype.{PersistentTagTypeServiceComponent, TagTypeServiceComponent}
 import org.make.api.technical._
-import org.make.core.{DateHelper, RequestContext}
-import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.IndexedTag
-import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
-import org.make.core.reference.ThemeId
+import org.make.core.proposal.indexed.IndexedTag
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag._
+import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -41,40 +38,30 @@ trait TagServiceComponent {
 
 case class TagFilter(label: Option[String] = None,
                      tagTypeId: Option[TagTypeId] = None,
-                     operationId: Option[OperationId] = None,
-                     themeId: Option[ThemeId] = None,
-                     country: Option[Country] = None,
-                     language: Option[Language] = None)
+                     questionId: Option[QuestionId] = None)
+
 object TagFilter {
   val empty: TagFilter = TagFilter()
 }
 
 trait TagService extends ShortenedNames {
   def getTag(slug: TagId): Future[Option[Tag]]
-  def createLegacyTag(label: String): Future[Tag]
   def createTag(label: String,
                 tagTypeId: TagTypeId,
-                operationId: Option[OperationId],
-                themeId: Option[ThemeId],
-                country: Country,
-                language: Language,
+                question: Question,
                 display: TagDisplay = TagDisplay.Inherit,
                 weight: Float = 0f): Future[Tag]
-  def findAll(displayed: Boolean = false): Future[Seq[Tag]]
+  def findAll(): Future[Seq[Tag]]
   def findAllDisplayed(): Future[Seq[Tag]]
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
-  def findByOperationId(operationId: OperationId): Future[Seq[Tag]]
-  def findByThemeId(themeId: ThemeId): Future[Seq[Tag]]
+  def findByQuestionId(questionId: QuestionId): Future[Seq[Tag]]
   def findByLabel(partialLabel: String, like: Boolean): Future[Seq[Tag]]
   def updateTag(tagId: TagId,
                 label: String,
                 display: TagDisplay,
                 tagTypeId: TagTypeId,
                 weight: Float,
-                operationId: Option[OperationId],
-                themeId: Option[ThemeId],
-                country: Country,
-                language: Language,
+                question: Question,
                 requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
   def find(start: Int = 0,
@@ -100,12 +87,8 @@ trait DefaultTagServiceComponent
       persistentTagService.get(tagId)
     }
 
-    override def findAll(displayed: Boolean): Future[Seq[Tag]] = {
-      if (displayed) {
-        findAllDisplayed()
-      } else {
-        persistentTagService.findAll()
-      }
+    override def findAll(): Future[Seq[Tag]] = {
+      persistentTagService.findAll()
     }
 
     override def findAllDisplayed(): Future[Seq[Tag]] = {
@@ -116,35 +99,13 @@ trait DefaultTagServiceComponent
       persistentTagService.findAllFromIds(tagIds)
     }
 
-    override def findByOperationId(operationId: OperationId): Future[Seq[Tag]] = {
-      persistentTagService.findByOperationId(operationId)
-    }
-
-    override def findByThemeId(themeId: ThemeId): Future[Seq[Tag]] = {
-      persistentTagService.findByThemeId(themeId)
-    }
-
-    override def createLegacyTag(label: String): Future[Tag] = {
-      val tag: Tag = Tag(
-        tagId = idGenerator.nextTagId(),
-        label = label,
-        display = TagDisplay.Inherit,
-        weight = 0f,
-        tagTypeId = TagType.LEGACY.tagTypeId,
-        operationId = None,
-        themeId = None,
-        country = Country("FR"),
-        language = Language("fr")
-      )
-      persistentTagService.persist(tag)
+    override def findByQuestionId(questionId: QuestionId): Future[Seq[Tag]] = {
+      persistentTagService.findByQuestion(questionId)
     }
 
     override def createTag(label: String,
                            tagTypeId: TagTypeId,
-                           operationId: Option[OperationId],
-                           themeId: Option[ThemeId],
-                           country: Country,
-                           language: Language,
+                           question: Question,
                            display: TagDisplay,
                            weight: Float): Future[Tag] = {
       val tag: Tag = Tag(
@@ -153,10 +114,11 @@ trait DefaultTagServiceComponent
         display = display,
         weight = weight,
         tagTypeId = tagTypeId,
-        operationId = operationId,
-        themeId = themeId,
-        country = country,
-        language = language
+        operationId = question.operationId,
+        questionId = Some(question.questionId),
+        themeId = question.themeId,
+        country = question.country,
+        language = question.language
       )
       persistentTagService.persist(tag)
     }
@@ -176,7 +138,7 @@ trait DefaultTagServiceComponent
                   label = tag.label,
                   display = tagType.nonEmpty && tagType.headOption
                     .map(_.display.shortName)
-                    .exists(_ == TagDisplay.Displayed.shortName)
+                    .contains(TagDisplay.Displayed.shortName)
                 )
               } else {
                 IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
@@ -201,10 +163,7 @@ trait DefaultTagServiceComponent
                            display: TagDisplay,
                            tagTypeId: TagTypeId,
                            weight: Float,
-                           operationId: Option[OperationId],
-                           themeId: Option[ThemeId],
-                           country: Country,
-                           language: Language,
+                           question: Question,
                            requestContext: RequestContext): Future[Option[Tag]] = {
       persistentTagService.get(tagId).flatMap {
         case Some(tag) =>
@@ -213,15 +172,18 @@ trait DefaultTagServiceComponent
             updateTag <- persistentTagService.update(
               tag.copy(
                 label = label,
-                display =
-                  if (tagType.exists(_.display.shortName == TagTypeDisplay.Hidden.shortName)) TagDisplay.Hidden
-                  else display,
+                display = if (tagType.exists(_.display.shortName == TagTypeDisplay.Hidden.shortName)) {
+                  TagDisplay.Hidden
+                } else {
+                  display
+                },
                 tagTypeId = tagTypeId,
                 weight = weight,
-                operationId = operationId,
-                themeId = themeId,
-                country = country,
-                language = language
+                operationId = question.operationId,
+                questionId = Some(question.questionId),
+                themeId = question.themeId,
+                country = question.country,
+                language = question.language
               )
             )
             _ <- elasticsearchProposalAPI
@@ -247,29 +209,13 @@ trait DefaultTagServiceComponent
         sort,
         order,
         onlyDisplayed,
-        PersistentTagFilter(
-          tagFilter.label,
-          tagFilter.operationId,
-          tagFilter.tagTypeId,
-          tagFilter.themeId,
-          tagFilter.country,
-          tagFilter.language
-        )
+        PersistentTagFilter(tagFilter.label, tagFilter.questionId, tagFilter.tagTypeId)
       )
 
     }
 
     override def count(tagFilter: TagFilter = TagFilter.empty): Future[Int] = {
-      persistentTagService.count(
-        PersistentTagFilter(
-          tagFilter.label,
-          tagFilter.operationId,
-          tagFilter.tagTypeId,
-          tagFilter.themeId,
-          tagFilter.country,
-          tagFilter.language
-        )
-      )
+      persistentTagService.count(PersistentTagFilter(tagFilter.label, tagFilter.questionId, tagFilter.tagTypeId))
     }
   }
 }

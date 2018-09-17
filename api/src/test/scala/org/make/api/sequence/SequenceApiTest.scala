@@ -110,7 +110,8 @@ class SequenceApiTest
     operationId = None,
     themeId = None,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = None
   )
 
   val validAccessToken = "my-valid-access-token"

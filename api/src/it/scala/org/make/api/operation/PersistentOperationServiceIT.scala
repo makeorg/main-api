@@ -92,7 +92,8 @@ class PersistentOperationServiceIT
     operationId = None,
     themeId = None,
     country = Country("FR"),
-    language = Language("fr")
+    language = Language("fr"),
+    questionId = None
   )
 
   val stark: Tag = newTag("Stark")

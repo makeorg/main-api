@@ -824,12 +824,13 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
             decodeRequest {
               entity(as[NextProposalToModerateRequest]) { request =>
                 provideAsyncOrNotFound {
-                  request.questionId
-                    .map(questionId => questionService.getQuestion(questionId))
-                    .getOrElse(
-                      questionService
-                        .findQuestion(request.themeId, request.operationId, request.country, request.language)
-                    )
+                  questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                    request.questionId,
+                    request.themeId,
+                    request.operationId,
+                    request.country,
+                    request.language
+                  )
                 } { question =>
                   provideAsyncOrNotFound(
                     proposalService.searchAndLockProposalToModerate(question.questionId, user.user.userId, context)
