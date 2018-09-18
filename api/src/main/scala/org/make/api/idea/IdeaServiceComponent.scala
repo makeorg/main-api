@@ -19,16 +19,13 @@
 
 package org.make.api.idea
 
-import java.util.UUID
-
 import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaUpdatedEvent}
 import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
-import org.make.api.technical.{EventBusServiceComponent, ShortenedNames}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
-import org.make.core.operation.OperationId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.question.Question
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -42,17 +39,15 @@ trait IdeaService extends ShortenedNames {
   def fetchAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]]
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(name: String): Future[Option[Idea]]
-  def insert(name: String,
-             language: Option[Language],
-             country: Option[Country],
-             operationId: Option[OperationId],
-             themeId: Option[ThemeId],
-             question: Option[String]): Future[Idea]
+  def insert(name: String, question: Question): Future[Idea]
   def update(ideaId: IdeaId, name: String): Future[Int]
 }
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
-  this: PersistentIdeaServiceComponent with EventBusServiceComponent with IdeaSearchEngineComponent =>
+  this: PersistentIdeaServiceComponent
+    with EventBusServiceComponent
+    with IdeaSearchEngineComponent
+    with IdGeneratorComponent =>
 
   override val ideaService: IdeaService = new IdeaService {
 
@@ -72,21 +67,17 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
       persistentIdeaService.findOneByName(name)
     }
 
-    override def insert(name: String,
-                        language: Option[Language],
-                        country: Option[Country],
-                        operationId: Option[OperationId],
-                        themeId: Option[ThemeId],
-                        question: Option[String]): Future[Idea] = {
+    override def insert(name: String, question: Question): Future[Idea] = {
       val idea: Idea =
         Idea(
-          ideaId = IdeaId(UUID.randomUUID().toString),
+          ideaId = idGenerator.nextIdeaId(),
           name = name,
-          language = language,
-          country = country,
-          question = question,
-          operationId = operationId,
-          themeId = themeId,
+          language = Some(question.language),
+          country = Some(question.country),
+          question = Some(question.question),
+          questionId = Some(question.questionId),
+          operationId = question.operationId,
+          themeId = question.themeId,
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now())
         )

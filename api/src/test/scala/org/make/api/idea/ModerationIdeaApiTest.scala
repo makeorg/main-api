@@ -26,6 +26,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.DateHelper
@@ -33,6 +34,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -48,10 +50,12 @@ class ModerationIdeaApiTest
     with ModerationIdeaApi
     with IdGeneratorComponent
     with MakeDataHandlerComponent
+    with QuestionServiceComponent
     with IdeaServiceComponent
     with MakeSettingsComponent {
 
   override val ideaService: IdeaService = mock[IdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
@@ -117,19 +121,67 @@ class ModerationIdeaApiTest
       updatedAt = Some(DateHelper.now())
     )
 
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language]
+    )
+  ).thenReturn(Future.successful(None))
+
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(Some(OperationId("vff"))),
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          questionId = QuestionId("vff-fr-question"),
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "??",
+          operationId = Some(OperationId("vff")),
+          themeId = None
+        )
+      )
+    )
+  )
+
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          questionId = QuestionId("vff-fr-question"),
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "??",
+          operationId = None,
+          themeId = Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))
+        )
+      )
+    )
+  )
+
   when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
     .thenReturn(Future.successful(IdeaSearchResult.empty))
 
-  when(
-    ideaService.insert(
-      ArgumentMatchers.eq(fooIdeaText),
-      ArgumentMatchers.any[Option[Language]],
-      ArgumentMatchers.any[Option[Country]],
-      ArgumentMatchers.any[Option[OperationId]],
-      ArgumentMatchers.any[Option[ThemeId]],
-      ArgumentMatchers.any[Option[String]]
-    )
-  ).thenReturn(Future.successful(fooIdea))
+  when(ideaService.insert(ArgumentMatchers.eq(fooIdeaText), ArgumentMatchers.any[Question]))
+    .thenReturn(Future.successful(fooIdea))
 
   when(ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))

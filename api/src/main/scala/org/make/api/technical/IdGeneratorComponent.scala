@@ -21,6 +21,7 @@ package org.make.api.technical
 
 import java.util.UUID
 
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
@@ -34,6 +35,7 @@ trait IdGeneratorComponent {
 }
 
 trait IdGenerator {
+  def nextIdeaId(): IdeaId = IdeaId(nextId())
   def nextUserId(): UserId = UserId(nextId())
   def nextProposalId(): ProposalId = ProposalId(nextId())
   def nextSequenceId(): SequenceId = SequenceId(nextId())

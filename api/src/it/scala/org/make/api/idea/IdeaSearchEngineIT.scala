@@ -34,6 +34,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.core
 import org.make.core.idea.indexed._
 import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -85,6 +86,7 @@ class IdeaSearchEngineIT
       name = "c-idea01",
       operationId = None,
       themeId = None,
+      questionId = Some(QuestionId("question01")),
       question = Some("question01"),
       country = Some(Country("FR")),
       language = Some(Language("fr")),
@@ -96,6 +98,7 @@ class IdeaSearchEngineIT
       ideaId = IdeaId("02"),
       name = "a-idea02",
       operationId = None,
+      questionId = Some(QuestionId("question02")),
       themeId = None,
       question = Some("question02"),
       country = Some(Country("FR")),
@@ -109,6 +112,7 @@ class IdeaSearchEngineIT
       name = "b-idea03",
       operationId = None,
       themeId = None,
+      questionId = Some(QuestionId("question03")),
       question = Some("question03"),
       country = Some(Country("FR")),
       language = Some(Language("fr")),

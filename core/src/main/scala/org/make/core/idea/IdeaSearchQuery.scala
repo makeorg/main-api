@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 
 /**
@@ -46,32 +47,21 @@ case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
   * The class holding the filters
   *
   * @param name        Name to search into idea
-  * @param operationId The OperationId to filter
-  * @param question    Question to filter
-  * @param country     Country to filter
-  * @param language    Language to filter
+  * @param questionId  The questionId to filter
   */
 case class IdeaSearchFilters(name: Option[NameSearchFilter] = None,
-                             operationId: Option[OperationIdSearchFilter] = None,
-                             themeId: Option[ThemeIdSearchFilter] = None,
-                             question: Option[QuestionSearchFilter] = None,
-                             country: Option[CountrySearchFilter] = None,
-                             language: Option[LanguageSearchFilter] = None,
+                             questionId: Option[QuestionIdSearchFilter] = None,
                              status: Option[StatusSearchFilter] = None)
 
 object IdeaSearchFilters extends ElasticDsl {
 
   def parse(name: Option[NameSearchFilter] = None,
-            operationId: Option[OperationIdSearchFilter] = None,
-            themeId: Option[ThemeIdSearchFilter] = None,
-            question: Option[QuestionSearchFilter] = None,
-            country: Option[CountrySearchFilter] = None,
-            language: Option[LanguageSearchFilter] = None): Option[IdeaSearchFilters] = {
+            questionId: Option[QuestionIdSearchFilter] = None): Option[IdeaSearchFilters] = {
 
-    (name, operationId, themeId, question, country, language) match {
-      case (None, None, None, None, None, None) => None
+    (name, questionId) match {
+      case (None, None) => None
       case _ =>
-        Some(IdeaSearchFilters(name, operationId, themeId, question, country, language))
+        Some(IdeaSearchFilters(name, questionId))
     }
   }
 
@@ -85,11 +75,7 @@ object IdeaSearchFilters extends ElasticDsl {
   def getIdeaSearchFilters(ideaSearchQuery: IdeaSearchQuery): Seq[QueryDefinition] =
     Seq(
       buildNameSearchFilter(ideaSearchQuery),
-      buildOperationIdSearchFilter(ideaSearchQuery),
-      buildThemeIdSearchFilter(ideaSearchQuery),
-      buildQuestionSearchFilter(ideaSearchQuery),
-      buildCountrySearchFilter(ideaSearchQuery),
-      buildLanguageSearchFilter(ideaSearchQuery),
+      buildQuestionIdSearchFilter(ideaSearchQuery),
       buildStatusSearchFilter(ideaSearchQuery)
     ).flatten
 
@@ -157,51 +143,11 @@ object IdeaSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildOperationIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
+  def buildQuestionIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
     ideaSearchQuery.filters.flatMap {
-      _.operationId match {
-        case Some(OperationIdSearchFilter(operationId)) =>
-          Some(ElasticApi.termQuery(IdeaElasticsearchFieldNames.operationId, operationId.value))
-        case _ => None
-      }
-    }
-  }
-
-  def buildThemeIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    ideaSearchQuery.filters.flatMap {
-      _.themeId match {
-        case Some(ThemeIdSearchFilter(themeId)) =>
-          Some(ElasticApi.termQuery(IdeaElasticsearchFieldNames.themeId, themeId.value))
-        case _ => None
-      }
-    }
-  }
-
-  def buildQuestionSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    ideaSearchQuery.filters.flatMap {
-      _.question match {
-        case Some(QuestionSearchFilter(question)) =>
-          Some(ElasticApi.termQuery(IdeaElasticsearchFieldNames.question, question))
-        case _ => None
-      }
-    }
-  }
-
-  def buildCountrySearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    ideaSearchQuery.filters.flatMap {
-      _.country match {
-        case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.country, country.value))
-        case _ => None
-      }
-    }
-  }
-
-  def buildLanguageSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    ideaSearchQuery.filters.flatMap {
-      _.language match {
-        case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termsQuery(IdeaElasticsearchFieldNames.language, language.value))
+      _.questionId match {
+        case Some(QuestionIdSearchFilter(questionId)) =>
+          Some(ElasticApi.termQuery(IdeaElasticsearchFieldNames.questionId, questionId.value))
         case _ => None
       }
     }
@@ -228,6 +174,7 @@ object IdeaSearchFilters extends ElasticDsl {
 }
 
 case class NameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+case class QuestionIdSearchFilter(questionId: QuestionId)
 case class OperationIdSearchFilter(operationId: OperationId)
 case class ThemeIdSearchFilter(themeId: ThemeId)
 case class QuestionSearchFilter(question: String)

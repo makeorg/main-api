@@ -130,14 +130,7 @@ trait ProposalHelper {
     api.ideaService.fetchOneByName(name).flatMap {
       case Some(idea) => Future.successful(idea)
       case None =>
-        api.ideaService.insert(
-          name = name,
-          language = Some(question.language),
-          country = Some(question.country),
-          operationId = question.operationId,
-          themeId = question.themeId,
-          question = Some(question.question)
-        )
+        api.ideaService.insert(name, question)
     }
   }
 

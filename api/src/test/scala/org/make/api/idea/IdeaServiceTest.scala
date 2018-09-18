@@ -20,7 +20,7 @@
 package org.make.api.idea
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.{EventBusService, EventBusServiceComponent}
+import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
@@ -35,6 +35,7 @@ import scala.concurrent.duration.DurationInt
 class IdeaServiceTest
     extends MakeUnitTest
     with DefaultIdeaServiceComponent
+    with DefaultIdGeneratorComponent
     with PersistentIdeaServiceComponent
     with IdeaSearchEngineComponent
     with EventBusServiceComponent {
