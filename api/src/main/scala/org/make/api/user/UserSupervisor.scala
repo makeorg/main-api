@@ -22,7 +22,11 @@ package org.make.api.user
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.OperationServiceComponent
-import org.make.api.organisation._
+import org.make.api.organisation.{
+  OrganisationConsumerActor,
+  OrganisationSearchEngineComponent,
+  OrganisationServiceComponent
+}
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 import org.make.api.user.UserSupervisor.UserSupervisorDependencies
