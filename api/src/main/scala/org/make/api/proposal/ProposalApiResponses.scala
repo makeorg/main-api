@@ -154,6 +154,22 @@ object ProposalsResultSeededResponse {
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
+final case class ProposalResultWithUserVote(proposal: ProposalResult, vote: VoteKey)
+object ProposalResultWithUserVote {
+  implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
+  implicit val decoder: Decoder[ProposalResultWithUserVote] = deriveDecoder[ProposalResultWithUserVote]
+}
+final case class ProposalsResultWithUserVoteSeededResponse(total: Long,
+                                                           results: Seq[ProposalResultWithUserVote],
+                                                           seed: Option[Int])
+
+object ProposalsResultWithUserVoteSeededResponse {
+  implicit val encoder: ObjectEncoder[ProposalsResultWithUserVoteSeededResponse] =
+    deriveEncoder[ProposalsResultWithUserVoteSeededResponse]
+  implicit val decoder: Decoder[ProposalsResultWithUserVoteSeededResponse] =
+    deriveDecoder[ProposalsResultWithUserVoteSeededResponse]
+}
+
 final case class VoteResponse(voteKey: VoteKey,
                               count: Int,
                               qualifications: Seq[QualificationResponse],

@@ -26,7 +26,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
@@ -269,7 +269,7 @@ class OrganisationApiTest
           ArgumentMatchers.any[RequestContext]
         )
       )
-      .thenReturn(Future.successful(ProposalsResultSeededResponse(2, Seq.empty, None)))
+      .thenReturn(Future.successful(ProposalsResultWithUserVoteSeededResponse(2, Seq.empty, None)))
     scenario("get proposals voted from existing organisation unauthenticated") {
       Get("/organisations/make-org/votes") ~> routes ~> check {
         status should be(StatusCodes.OK)

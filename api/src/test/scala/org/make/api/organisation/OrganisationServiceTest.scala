@@ -27,9 +27,11 @@ import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
 import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
-import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.profile.Profile
+import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
@@ -203,6 +205,9 @@ class OrganisationServiceTest
       Mockito
         .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+        .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
       val futureOrganisation = organisationService.update(
         UserId("AAA-BBB-CCC"),
@@ -354,6 +359,16 @@ class OrganisationServiceTest
       Mockito
         .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+        .thenReturn(
+          Future.successful(
+            Map(
+              ProposalId("proposal1") -> VoteAndQualifications(Agree, Seq.empty),
+              ProposalId("proposal2") -> VoteAndQualifications(Disagree, Seq.empty)
+            )
+          )
+        )
 
       Mockito
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
@@ -371,6 +386,9 @@ class OrganisationServiceTest
       Mockito
         .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+        .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
       val futureProposalsVoted =
         organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
