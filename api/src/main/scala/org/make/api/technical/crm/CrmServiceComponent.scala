@@ -42,6 +42,7 @@ import org.make.api.operation.OperationServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.userhistory._
 import org.make.core.DateHelper
+import org.make.core.operation.Operation
 import org.make.core.user.{User, UserId}
 
 import scala.collection.immutable
@@ -382,19 +383,16 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           toSequenceNr = Long.MaxValue
         )
 
-      val userProperties: Future[ContactProperties] = events
+      val userProperties: Future[UserProperties] = events
         .runFold(userPropertiesFromUser(user)) { (accumulator: UserProperties, envelope: EventEnvelope) =>
           accumulateEvent(accumulator, envelope)
         }
-        .map(contactPropertiesFromUserProperties)
 
       for {
         properties <- userProperties
         operations <- operationService.find()
       } yield {
-        properties.copy(
-          operationActivity = ContactProperties.normalizeOperationActivity(properties.operationActivity, operations)
-        )
+        contactPropertiesFromUserProperties(properties.normalize(operations))
       }
     }
 
@@ -462,8 +460,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                                                       event: LogUserUnqualificationEvent): UserProperties = {
       accumulator.copy(
         lastContributionDate = Some(event.action.date),
-        lastCountryActivity = event.requestContext.country.map(_.value),
-        lastLanguageActivity = event.requestContext.language.map(_.value),
+        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -482,8 +480,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                                                     event: LogUserQualificationEvent): UserProperties = {
       accumulator.copy(
         lastContributionDate = Some(event.action.date),
-        lastCountryActivity = event.requestContext.country.map(_.value),
-        lastLanguageActivity = event.requestContext.language.map(_.value),
+        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -502,8 +500,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       accumulator.copy(
         totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
         lastContributionDate = Some(event.action.date),
-        lastCountryActivity = event.requestContext.country.map(_.value),
-        lastLanguageActivity = event.requestContext.language.map(_.value),
+        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -521,8 +519,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     private def accumulateLogUserVoteEvent(accumulator: UserProperties, event: LogUserVoteEvent): UserProperties = {
       accumulator.copy(
         totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
-        lastCountryActivity = event.requestContext.country.map(_.value),
-        lastLanguageActivity = event.requestContext.language.map(_.value),
+        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
         firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
@@ -544,8 +542,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                                                event: LogUserProposalEvent): UserProperties = {
       accumulator.copy(
         totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
-        lastCountryActivity = event.requestContext.country.map(_.value),
-        lastLanguageActivity = event.requestContext.language.map(_.value),
+        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
         firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
@@ -612,4 +610,45 @@ final case class UserProperties(userId: UserId,
                                 daysOfActivity30d: Seq[String] = Seq.empty,
                                 themes: Seq[String] = Seq.empty,
                                 userType: Option[String] = None,
-                                updatedAt: Option[ZonedDateTime])
+                                updatedAt: Option[ZonedDateTime]) {
+
+  def normalize(operations: Seq[Operation]): UserProperties = {
+    normalizeUserPropertiesWhenNoRegisterEvent().normalizeOperationActivity(operations)
+  }
+
+  /*
+   * Replace operation slug present in some events by operationId
+   */
+  private def normalizeOperationActivity(operations: Seq[Operation]): UserProperties = {
+    val operationIds: Seq[String] = operationActivity
+      .map(
+        operationIdOrSlug =>
+          operations
+            .find(operation => operation.operationId.value == operationIdOrSlug)
+            .map(_.operationId.value)
+            .orElse(operations.find(_.slug == operationIdOrSlug).map(_.operationId.value))
+            .getOrElse(operationIdOrSlug)
+      )
+      .distinct
+
+    this.copy(operationActivity = operationIds)
+  }
+
+  /*
+   * Fix properties for user with no register event (previous bug that has been resolved)
+   */
+  private def normalizeUserPropertiesWhenNoRegisterEvent(): UserProperties = {
+    val sourceFixDate: ZonedDateTime = ZonedDateTime.parse("2018-09-01T00:00:00Z")
+    (accountCreationSource, accountCreationDate) match {
+      case (None, Some(date)) if date.isBefore(sourceFixDate) =>
+        this.copy(
+          accountCreationSource = Some("core"),
+          accountCreationCountry = accountCreationCountry.orElse(Some("FR")),
+          countriesActivity = if (countriesActivity.isEmpty) Seq("FR") else countriesActivity,
+          lastCountryActivity = lastCountryActivity.orElse(Some("FR")),
+          lastLanguageActivity = lastLanguageActivity.orElse(Some("fr"))
+        )
+      case _ => this
+    }
+  }
+}
