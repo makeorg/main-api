@@ -52,7 +52,7 @@
           "type": "keyword",
           "index": true
         },
-        "canBeFollowed": {
+        "publicProfile": {
           "type": "boolean",
           "index": true
         },

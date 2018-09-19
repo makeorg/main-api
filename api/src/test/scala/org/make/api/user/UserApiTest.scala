@@ -790,6 +790,8 @@ class UserApiTest
         )
       )
 
+      Mockito.when(userService.getFollowedUsers(ArgumentMatchers.any[UserId])).thenReturn(Future.successful(Seq.empty))
+
       Mockito
         .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
         .thenReturn(Future.successful(Some(accessToken)))

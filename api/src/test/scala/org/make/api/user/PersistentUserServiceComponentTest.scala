@@ -19,9 +19,11 @@
 
 package org.make.api.user
 
+import java.time.ZonedDateTime
+
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.user.PersistentUserServiceComponent.PersistentUser
+import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.user.Role
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalikejdbc.WrappedResultSet
@@ -37,7 +39,8 @@ class PersistentUserServiceComponentTest
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   val rs: WrappedResultSet = mock[WrappedResultSet]
-  Mockito.when(rs.string(ArgumentMatchers.eq("r_on_u"))).thenReturn("ROLE_ADMIN,ROLE_MODERATOR")
+  val roles: String = PersistentUser.userAlias.resultName.roles.value
+  Mockito.when(rs.string(ArgumentMatchers.eq(roles))).thenReturn("ROLE_ADMIN,ROLE_MODERATOR")
   Mockito.when(rs.stringOpt(ArgumentMatchers.any[String])).thenReturn(None)
   Mockito.when(rs.zonedDateTimeOpt(ArgumentMatchers.any[String])).thenReturn(None)
 
@@ -54,7 +57,7 @@ class PersistentUserServiceComponentTest
 
     scenario("User should not fail to return roles when invalid roles") {
       Given("a WrappedResultSet with a faulty role")
-      Mockito.when(rs.string(ArgumentMatchers.eq("r_on_u"))).thenReturn("faulty_role")
+      Mockito.when(rs.string(ArgumentMatchers.eq(roles))).thenReturn("faulty_role")
 
       When("transformed to user")
       val user = PersistentUser.apply()(rs).toUser
@@ -70,8 +73,12 @@ class PersistentUserServiceComponentTest
           |    - avatar_url: http://example.com/
           |    - karma_level: None
           |    """.stripMargin)
-      Mockito.when(rs.stringOpt(ArgumentMatchers.eq("au_on_u"))).thenReturn(Some(exampleUrl))
-      Mockito.when(rs.intOpt(ArgumentMatchers.eq("kl_on_u"))).thenReturn(None)
+
+      val avatarUrl = PersistentUser.userAlias.resultName.avatarUrl.value
+      val karmaLevel = PersistentUser.userAlias.resultName.karmaLevel.value
+
+      Mockito.when(rs.stringOpt(ArgumentMatchers.eq(avatarUrl))).thenReturn(Some(exampleUrl))
+      Mockito.when(rs.intOpt(ArgumentMatchers.eq(karmaLevel))).thenReturn(None)
 
       When("transformed to user")
       val maybeProfile = PersistentUser.apply()(rs).toUser.profile
@@ -84,5 +91,28 @@ class PersistentUserServiceComponentTest
       maybeProfile.get.karmaLevel should be(None)
     }
 
+  }
+
+  feature("user followed") {
+    scenario("user followed") {
+
+      val now = ZonedDateTime.now()
+
+      val userId = FollowedUsers.followedUsersAlias.resultName.userId.value
+      val followedUserId = FollowedUsers.followedUsersAlias.resultName.followedUserId.value
+      val date = FollowedUsers.followedUsersAlias.resultName.date.value
+
+      Mockito.when(rs.string(ArgumentMatchers.eq(userId))).thenReturn("user-id")
+      Mockito.when(rs.string(ArgumentMatchers.eq(followedUserId))).thenReturn("followed-user-id")
+      Mockito
+        .when(rs.zonedDateTime(ArgumentMatchers.eq(date)))
+        .thenReturn(now)
+
+      val userFollowed = FollowedUsers.apply()(rs)
+
+      userFollowed.userId shouldBe "user-id"
+      userFollowed.followedUserId shouldBe "followed-user-id"
+      userFollowed.date shouldBe now
+    }
   }
 }

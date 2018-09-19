@@ -23,7 +23,6 @@ import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
@@ -102,9 +101,10 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
         makeOperation("GetUser") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-              onSuccess(userService.getUser(userId)) {
-                case Some(user) => complete(UserResponse(user))
-                case None       => complete(NotFound)
+              provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                provideAsync(userService.getFollowedUsers(userId)) { followedUsers =>
+                  complete(UserResponse(user, followedUsers))
+                }
               }
             }
           }
@@ -135,7 +135,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
         makeOperation("GetMe") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
-              complete(UserResponse(user))
+              provideAsync(userService.getFollowedUsers(user.userId)) { followedUsers =>
+                complete(UserResponse(user, followedUsers))
+              }
             }
           }
         }
@@ -693,7 +695,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                         )
                       )
                     }
-                    complete(StatusCodes.NoContent -> UserResponse(user))
+                    provideAsync(userService.getFollowedUsers(user.userId)) { followedUsers =>
+                      complete(StatusCodes.NoContent -> UserResponse(user, followedUsers))
+                    }
                   }
                 }
               }
@@ -957,13 +961,16 @@ case class UserResponse(userId: UserId,
                         language: Language,
                         isHardBounce: Boolean,
                         lastMailingError: Option[MailingErrorLogResponse],
-                        hasPassword: Boolean)
+                        hasPassword: Boolean,
+                        followedUsers: Seq[UserId] = Seq.empty)
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
   implicit val decoder: Decoder[UserResponse] = deriveDecoder[UserResponse]
 
-  def apply(user: User): UserResponse = UserResponse(
+  def apply(user: User): UserResponse = UserResponse(user, Seq.empty)
+
+  def apply(user: User, followedUsers: Seq[UserId]): UserResponse = UserResponse(
     userId = user.userId,
     email = user.email,
     firstName = user.firstName,
@@ -979,6 +986,7 @@ object UserResponse extends CirceFormatters {
     language = user.language,
     isHardBounce = user.isHardBounce,
     lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
-    hasPassword = user.hashedPassword.isDefined
+    hasPassword = user.hashedPassword.isDefined,
+    followedUsers = followedUsers
   )
 }

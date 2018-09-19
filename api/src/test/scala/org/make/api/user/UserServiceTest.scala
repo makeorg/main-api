@@ -776,6 +776,9 @@ class UserServiceTest
         .when(persistentUserService.updateUser(ArgumentMatchers.any[User]))
         .thenReturn(Future.successful(johnDoeUser))
       Mockito.when(proposalService.anonymizeByUserId(ArgumentMatchers.any[UserId])).thenReturn(Future.successful({}))
+      Mockito
+        .when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful({}))
 
       Given("a user")
       When("I anonymize this user")

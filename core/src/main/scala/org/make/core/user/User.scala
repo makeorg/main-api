@@ -97,7 +97,8 @@ case class User(userId: UserId,
                 override val updatedAt: Option[ZonedDateTime] = None,
                 isHardBounce: Boolean = false,
                 lastMailingError: Option[MailingErrorLog] = None,
-                organisationName: Option[String] = None)
+                organisationName: Option[String] = None,
+                publicProfile: Boolean = false)
     extends MakeSerializable
     with Timestamped {
 
