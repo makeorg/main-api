@@ -38,7 +38,7 @@ import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -70,6 +70,7 @@ class CrmServiceComponentTest
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
+  val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
 
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
@@ -274,7 +275,7 @@ class CrmServiceComponentTest
     )
   )
 
-  when(userJournal.currentEventsByPersistenceId(any[String], any[Long], any[Long]))
+  when(userJournal.currentEventsByPersistenceId(matches(fooUser.userId.value), any[Long], any[Long]))
     .thenReturn(
       scaladsl.Source(
         List(
@@ -288,6 +289,88 @@ class CrmServiceComponentTest
         )
       )
     )
+
+  val userWithoutRegisteredEvent: User = fooUser.copy(userId = UserId("user-without-registered-event"))
+  val userWithoutRegisteredEventAfterDateFix: User =
+    fooUser.copy(userId = UserId("user-without-registered-event"), createdAt = Some(zonedDateTimeNow))
+
+  when(userJournal.currentEventsByPersistenceId(matches(userWithoutRegisteredEvent.userId.value), any[Long], any[Long]))
+    .thenReturn(scaladsl.Source(List.empty))
+
+  feature("data normalization") {
+    scenario("users properties are normalized when user has no register event") {
+      Given("a registered user without register event")
+      When("I get user properties")
+      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEvent)
+      Then("data are normalized")
+      whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
+        maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
+        maybeProperties.firstName shouldBe Some("Foo")
+        maybeProperties.postalCode shouldBe Some("93")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.emailValidationStatus shouldBe Some(true)
+        maybeProperties.emailHardBounceValue shouldBe Some(false)
+        maybeProperties.unsubscribeStatus shouldBe Some(false)
+        maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.accountCreationSource shouldBe Some("core")
+        maybeProperties.accountCreationOperation shouldBe None
+        maybeProperties.accountCreationCountry shouldBe Some("FR")
+        maybeProperties.countriesActivity shouldBe Some("FR")
+        maybeProperties.lastCountryActivity shouldBe Some("FR")
+        maybeProperties.lastLanguageActivity shouldBe Some("fr")
+        maybeProperties.totalProposals shouldBe Some(0)
+        maybeProperties.totalVotes shouldBe Some(0)
+        maybeProperties.firstContributionDate shouldBe None
+        maybeProperties.lastContributionDate shouldBe None
+        maybeProperties.operationActivity shouldBe Some("")
+        maybeProperties.activeCore shouldBe None
+        maybeProperties.daysOfActivity shouldBe Some(0)
+        maybeProperties.daysOfActivity30 shouldBe Some(0)
+        maybeProperties.numberOfThemes shouldBe Some(0)
+        maybeProperties.userType shouldBe Some("B2C")
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
+      }
+    }
+
+    scenario("users properties are not normalized after date fix") {
+      Given("a registered user without register event and with a recent creation date")
+      When("I get user properties")
+
+      val dateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
+      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEventAfterDateFix)
+      Then("data are not normalized")
+      whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
+        maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
+        maybeProperties.firstName shouldBe Some("Foo")
+        maybeProperties.postalCode shouldBe Some("93")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.emailValidationStatus shouldBe Some(true)
+        maybeProperties.emailHardBounceValue shouldBe Some(false)
+        maybeProperties.unsubscribeStatus shouldBe Some(false)
+        maybeProperties.accountCreationDate shouldBe Some(zonedDateTimeNow.format(dateFormatter))
+        maybeProperties.accountCreationSource shouldBe None
+        maybeProperties.accountCreationOperation shouldBe None
+        maybeProperties.accountCreationCountry shouldBe None
+        maybeProperties.countriesActivity shouldBe Some("")
+        maybeProperties.lastCountryActivity shouldBe None
+        maybeProperties.lastLanguageActivity shouldBe None
+        maybeProperties.totalProposals shouldBe Some(0)
+        maybeProperties.totalVotes shouldBe Some(0)
+        maybeProperties.firstContributionDate shouldBe None
+        maybeProperties.lastContributionDate shouldBe None
+        maybeProperties.operationActivity shouldBe Some("")
+        maybeProperties.activeCore shouldBe None
+        maybeProperties.daysOfActivity shouldBe Some(0)
+        maybeProperties.daysOfActivity30 shouldBe Some(0)
+        maybeProperties.numberOfThemes shouldBe Some(0)
+        maybeProperties.userType shouldBe Some("B2C")
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
+      }
+    }
+  }
 
   feature("add user to OptInList") {
     scenario("get properties from user and his events") {
