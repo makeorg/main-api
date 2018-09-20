@@ -27,6 +27,7 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
@@ -34,6 +35,7 @@ import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.operation.OperationId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 
 import scala.util.Try
@@ -42,7 +44,11 @@ import scalaoauth2.provider.AuthInfo
 @Api(value = "Moderation Idea")
 @Path(value = "/moderation/ideas")
 trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: IdeaServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: IdeaServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with QuestionServiceComponent =>
 
   @ApiOperation(
     value = "list-ideas",
@@ -65,7 +71,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
@@ -81,33 +87,39 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
             'name.?,
             'language.as[Language].?,
             'country.as[Country].?,
+            'questionId.as[QuestionId].?,
             'operationId.as[OperationId].?,
             'themeId.as[ThemeId].?,
-            'question.?,
             'limit.as[Int].?,
             'skip.as[Int].?,
             'sort.?,
             'order.?
           )
-        ) { (name, language, country, operationId, themeId, question, limit, skip, sort, order) =>
+        ) { (name, language, country, questionId, operationId, themeId, limit, skip, sort, order) =>
           makeOperation("GetAllIdeas") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
-                val filters: IdeaFiltersRequest =
-                  IdeaFiltersRequest(
-                    name = name,
-                    language = language,
-                    country = country,
-                    operationId = operationId,
-                    themeId = themeId,
-                    question = question,
-                    limit = limit,
-                    skip = skip,
-                    sort = sort,
-                    order = order
+                provideAsync(
+                  questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                    questionId,
+                    themeId,
+                    operationId,
+                    country.getOrElse(Country("FR")),
+                    language.getOrElse(Language("fr"))
                   )
-                provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
-                  complete(ideas)
+                ) { question: Option[Question] =>
+                  val filters: IdeaFiltersRequest =
+                    IdeaFiltersRequest(
+                      name = name,
+                      questionId = question.map(_.questionId),
+                      limit = limit,
+                      skip = skip,
+                      sort = sort,
+                      order = order
+                    )
+                  provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
+                    complete(ideas)
+                  }
                 }
               }
             }
@@ -218,18 +230,19 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
                       )
                     )
                   }
-                  onSuccess(
-                    ideaService
-                      .insert(
-                        name = request.name,
-                        language = request.language.orElse(requestContext.language),
-                        country = request.country.orElse(requestContext.country),
-                        operationId = request.operation,
-                        themeId = request.theme,
-                        question = request.question.orElse(requestContext.question)
-                      )
-                  ) { idea =>
-                    complete(StatusCodes.Created -> idea)
+
+                  provideAsyncOrNotFound(
+                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                      request.questionId,
+                      request.theme,
+                      request.operation,
+                      request.country.getOrElse(Country("FR")),
+                      request.language.getOrElse(Language("fr"))
+                    )
+                  ) { question: Question =>
+                    onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
+                      complete(StatusCodes.Created -> idea)
+                    }
                   }
                 }
               }
@@ -295,6 +308,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
 }
 
 final case class CreateIdeaRequest(name: String,
+                                   questionId: Option[QuestionId],
                                    language: Option[Language],
                                    country: Option[Country],
                                    operation: Option[OperationId],
@@ -312,11 +326,7 @@ object UpdateIdeaRequest {
 }
 
 final case class IdeaFiltersRequest(name: Option[String],
-                                    language: Option[Language],
-                                    country: Option[Country],
-                                    operationId: Option[OperationId],
-                                    themeId: Option[ThemeId],
-                                    question: Option[String],
+                                    questionId: Option[QuestionId],
                                     limit: Option[Int],
                                     skip: Option[Int],
                                     sort: Option[String],
@@ -324,16 +334,9 @@ final case class IdeaFiltersRequest(name: Option[String],
   def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
     val fuzziness = Fuzziness.Auto
     val filters: Option[IdeaSearchFilters] =
-      IdeaSearchFilters.parse(
-        name = name.map(text => {
-          NameSearchFilter(text, Some(fuzziness))
-        }),
-        language = language.map(language          => LanguageSearchFilter(language)),
-        country = country.map(country             => CountrySearchFilter(country)),
-        operationId = operationId.map(operationId => OperationIdSearchFilter(operationId)),
-        themeId = themeId.map(themeId             => ThemeIdSearchFilter(themeId)),
-        question = question.map(question          => QuestionSearchFilter(question))
-      )
+      IdeaSearchFilters.parse(name = name.map(text => {
+        NameSearchFilter(text, Some(fuzziness))
+      }), questionId = questionId.map(question => QuestionIdSearchFilter(question)))
 
     IdeaSearchQuery(
       filters = filters,
@@ -348,5 +351,5 @@ final case class IdeaFiltersRequest(name: Option[String],
 }
 
 object IdeaFiltersRequest {
-  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None, None, None, None, None)
+  val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None)
 }

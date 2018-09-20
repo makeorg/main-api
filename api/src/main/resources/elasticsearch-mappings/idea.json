@@ -106,6 +106,10 @@
           "type": "keyword",
           "index": true
         },
+        "questionId": {
+          "type": "keyword",
+          "index": true
+        },
         "themeId": {
           "type": "keyword",
           "index": true

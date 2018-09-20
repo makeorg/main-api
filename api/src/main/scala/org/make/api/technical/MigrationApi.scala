@@ -30,6 +30,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.{IdeaFiltersRequest, IdeaServiceComponent, PersistentIdeaServiceComponent}
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{PatchProposalCommand, PatchProposalRequest, ProposalCoordinatorServiceComponent}
 import org.make.api.question.PersistentQuestionServiceComponent
@@ -37,10 +38,11 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.{tag, HttpCodes}
 import org.make.core.auth.UserRights
+import org.make.core.idea.Idea
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, ThemeId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.{Tag => _}
 import scalaoauth2.provider.AuthInfo
 
@@ -58,9 +60,70 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
     with MakeDataHandlerComponent
     with ActorSystemComponent
     with TagServiceComponent
+    with PersistentIdeaServiceComponent
+    with IdeaServiceComponent
     with ProposalCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
+
+  @Path(value = "/question/attach-ideas")
+  @ApiOperation(
+    value = "attach-idea-to-question",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  def attachIdeasToQuestion: Route = {
+    post {
+      path("migrations" / "question" / "attach-ideas") {
+        makeOperation("AttachIdeasToQuestion") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              provideAsync(persistentQuestionService.find(None, None, None, None)) { questions =>
+                provideAsync(persistentIdeaService.findAll(IdeaFiltersRequest(None, None, None, None, None, None))) {
+                  ideas =>
+                    val modifyIdeas = Future.traverse(ideas) { idea =>
+                      val maybeQuestion = questions
+                        .find(
+                          question =>
+                            question.operationId == idea.operationId &&
+                              question.themeId == idea.themeId &&
+                              question.country == idea.country.getOrElse(Country("FR")) &&
+                              question.language == idea.language.getOrElse(Language("fr"))
+                        )
+                      maybeQuestion.map { question =>
+                        val newIdea = idea.copy(questionId = Some(question.questionId))
+                        persistentIdeaService
+                          .updateIdea(newIdea)
+                          .map(_ => Some(newIdea))
+                      }.getOrElse {
+                        logger.warn(s"No suitable question for idea $idea")
+                        Future.successful(None)
+                      }
+                    }(
+                      executor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(5)),
+                      cbf = implicitly[CanBuildFrom[Seq[Idea], Option[Idea], Seq[Option[Idea]]]]
+                    )
+                    onComplete(modifyIdeas) { _ =>
+                      complete(StatusCodes.OK)
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   @Path(value = "/question/attach-tags")
   @ApiOperation(
@@ -81,7 +144,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
   def attachTagsToQuestion: Route = {
     post {
       path("migrations" / "question" / "attach-tags") {
-        makeOperation("AttachProposalsToQuestion") { requestContext =>
+        makeOperation("AttachTagsToQuestion") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               provideAsync(persistentQuestionService.find(None, None, None, None)) { questions =>
@@ -234,5 +297,5 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
     }
   }
 
-  val migrationRoutes: Route = attachProposalsToQuestion ~ attachTagsToQuestion
+  val migrationRoutes: Route = attachProposalsToQuestion ~ attachTagsToQuestion ~ attachIdeasToQuestion
 }
