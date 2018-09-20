@@ -66,5 +66,5 @@ object AinesImportTagsData extends ImportTagsData {
   }
 
   override val dataResource: String = "fixtures/tags_aines.csv"
-  override val runInProduction: Boolean = false
+  override val runInProduction: Boolean = true
 }
