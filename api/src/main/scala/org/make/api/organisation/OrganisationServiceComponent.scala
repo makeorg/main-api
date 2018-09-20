@@ -22,13 +22,17 @@ package org.make.api.organisation
 import com.github.t3hnar.bcrypt._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
-import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.{
+  ProposalResultWithUserVote,
+  ProposalServiceComponent,
+  ProposalsResultWithUserVoteSeededResponse
+}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
-import org.make.api.userhistory.UserHistoryActor.RequestUserVotedProposals
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.profile.Profile
 import org.make.core.proposal._
@@ -56,7 +60,7 @@ trait OrganisationService extends ShortenedNames {
                         maybeUserId: Option[UserId],
                         filterVotes: Option[Seq[VoteKey]],
                         filterQualifications: Option[Seq[QualificationKey]],
-                        requestContext: RequestContext): Future[ProposalsResultSeededResponse]
+                        requestContext: RequestContext): Future[ProposalsResultWithUserVoteSeededResponse]
 }
 
 case class OrganisationRegisterData(name: String,
@@ -184,9 +188,9 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
           .map(
             result =>
               result.results.foreach(
-                proposal =>
+                proposalWithVote =>
                   eventBusService
-                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+                    .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), RequestContext.empty))
             )
           )
         _ <- proposalService
@@ -271,29 +275,50 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }.getOrElse(Future.successful(false))
     }
 
-    override def getVotedProposals(organisationId: UserId,
-                                   maybeUserId: Option[UserId],
-                                   filterVotes: Option[Seq[VoteKey]],
-                                   filterQualifications: Option[Seq[QualificationKey]],
-                                   requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
-      userHistoryCoordinatorService
-        .retrieveVotedProposals(
+    override def getVotedProposals(
+      organisationId: UserId,
+      maybeUserId: Option[UserId],
+      filterVotes: Option[Seq[VoteKey]],
+      filterQualifications: Option[Seq[QualificationKey]],
+      requestContext: RequestContext
+    ): Future[ProposalsResultWithUserVoteSeededResponse] = {
+      val futureProposalWithVotes: Future[Map[ProposalId, VoteKey]] = for {
+        proposalIds <- userHistoryCoordinatorService.retrieveVotedProposals(
           RequestUserVotedProposals(
             organisationId,
             filterVotes = filterVotes,
             filterQualifications = filterQualifications
           )
         )
-        .flatMap {
-          case proposalIds if proposalIds.isEmpty =>
-            Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, None))
-          case proposalIds =>
-            proposalService.searchForUser(
+        withVotes <- userHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestVoteValues(organisationId, proposalIds))
+          .map(_.map {
+            case (proposalId, voteAndQualif) => proposalId -> voteAndQualif.voteKey
+          })
+      } yield withVotes
+
+      futureProposalWithVotes.flatMap {
+        case proposalIdsWithVotes if proposalIdsWithVotes.isEmpty =>
+          Future.successful(ProposalsResultWithUserVoteSeededResponse(total = 0, Seq.empty, None))
+        case proposalIdsWithVotes =>
+          val proposalIds: Seq[ProposalId] = proposalIdsWithVotes.map {
+            case (proposalId, _) => proposalId
+          }.toSeq
+          proposalService
+            .searchForUser(
               userId = maybeUserId,
               query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
               requestContext = requestContext
             )
-        }
+            .map { results =>
+              ProposalsResultWithUserVoteSeededResponse(
+                total = results.total,
+                results = results.results
+                  .map(proposal => ProposalResultWithUserVote(proposal, proposalIdsWithVotes(proposal.id))),
+                seed = results.seed
+              )
+            }
+      }
     }
   }
 }
