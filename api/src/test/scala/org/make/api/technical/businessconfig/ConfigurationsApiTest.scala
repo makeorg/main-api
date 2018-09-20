@@ -28,6 +28,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.SlugHelper
 import org.make.core.auth.UserRights
+import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagTypeId}
 import org.make.core.user.Role.{RoleCitizen, RoleModerator}
@@ -82,6 +83,7 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
   val themesList = Seq(
     Theme(
       themeId = ThemeId("winterIsComingId"),
+      questionId = Some(QuestionId("who-died-yesterday?")),
       translations = Seq(
         ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = Language("dk"))
       ),
@@ -95,6 +97,7 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
     ),
     Theme(
       themeId = ThemeId("winterIsHere"),
+      questionId = Some(QuestionId("how-to-stop-the-undead?")),
       translations =
         Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = Language("dk"))),
       actionsCount = 0,

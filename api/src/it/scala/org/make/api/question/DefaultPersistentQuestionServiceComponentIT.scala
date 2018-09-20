@@ -110,7 +110,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       }
 
       whenReady(
-        persistentQuestionService.find(country = Some(Country("AA")), language = None, operation = None, theme = None),
+        persistentQuestionService.find(SearchQuestionRequest(country = Some(Country("AA")))),
         Timeout(2.seconds)
       ) { results =>
         results.size should be(2)
@@ -119,7 +119,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       }
 
       whenReady(
-        persistentQuestionService.find(country = None, language = Some(Language("aa")), operation = None, theme = None),
+        persistentQuestionService.find(SearchQuestionRequest(language = Some(Language("aa")))),
         Timeout(2.seconds)
       ) { results =>
         results.size should be(2)
@@ -128,7 +128,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       }
 
       whenReady(
-        persistentQuestionService.find(country = None, language = Some(Language("cc")), operation = None, theme = None),
+        persistentQuestionService.find(SearchQuestionRequest(language = Some(Language("cc")))),
         Timeout(2.seconds)
       ) { results =>
         results.size should be(0)

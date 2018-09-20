@@ -39,11 +39,8 @@ trait PersistentQuestionServiceComponent {
 }
 
 trait PersistentQuestionService {
-  def find(country: Option[Country],
-           language: Option[Language],
-           operation: Option[OperationId],
-           theme: Option[ThemeId]): Future[Seq[Question]]
-
+  def count(request: SearchQuestionRequest): Future[Int]
+  def find(request: SearchQuestionRequest): Future[Seq[Question]]
   def getById(questionId: QuestionId): Future[Option[Question]]
   def persist(question: Question): Future[Question]
 
@@ -57,10 +54,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
     private val column = PersistentQuestion.column
     private val questionAlias = PersistentQuestion.questionAlias
 
-    override def find(country: Option[Country],
-                      language: Option[Language],
-                      operation: Option[OperationId],
-                      theme: Option[ThemeId]): Future[Seq[Question]] = {
+    override def find(request: SearchQuestionRequest): Future[Seq[Question]] = {
 
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
@@ -69,15 +63,33 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
-                country.map(c    => sqls.eq(questionAlias.country, c.value)),
-                language.map(l   => sqls.eq(questionAlias.language, l.value)),
-                operation.map(op => sqls.eq(questionAlias.operationId, op.value)),
-                theme.map(th     => sqls.eq(questionAlias.themeId, th.value))
+                request.country.map(country              => sqls.eq(questionAlias.country, country.value)),
+                request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
+                request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
+                request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
               )
             )
         }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
 
+    }
+
+    override def count(request: SearchQuestionRequest): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select(sqls.count)
+            .from(PersistentQuestion.as(questionAlias))
+            .where(
+              sqls.toAndConditionOpt(
+                request.country.map(country              => sqls.eq(questionAlias.country, country.value)),
+                request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
+                request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
+                request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
+              )
+            )
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
     }
 
     override def getById(questionId: QuestionId): Future[Option[Question]] = {

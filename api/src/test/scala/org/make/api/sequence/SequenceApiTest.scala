@@ -31,6 +31,7 @@ import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
 import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
@@ -69,6 +70,7 @@ class SequenceApiTest
       Seq(
         Theme(
           themeId = ThemeId("123"),
+          questionId = Some(QuestionId("123")),
           translations = Seq.empty,
           actionsCount = 0,
           proposalsCount = 0,
@@ -86,6 +88,7 @@ class SequenceApiTest
       Seq(
         Theme(
           themeId = ThemeId("123"),
+          questionId = Some(QuestionId("123")),
           translations = Seq.empty,
           actionsCount = 0,
           proposalsCount = 0,

@@ -151,6 +151,7 @@ object DefaultPersistentThemeServiceComponent {
       val tags: Seq[Tag] = tagsIdsFromSlug.flatMap(tagId => allTags.find(_.tagId == tagId))
       Theme(
         themeId = ThemeId(uuid),
+        questionId = None,
         translations = themeTranslations.map(_.toThemeTranslation),
         actionsCount = actionsCount,
         proposalsCount = proposalsCount,

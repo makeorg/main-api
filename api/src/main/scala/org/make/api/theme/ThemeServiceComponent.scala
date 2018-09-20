@@ -60,14 +60,16 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
               SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
             )
 
+          val retrieveQuestion = questionService
+            .findQuestion(
+              Some(theme.themeId),
+              None,
+              theme.country,
+              theme.translations.headOption.map(_.language).getOrElse(Language("fr"))
+            )
+
           val tags: Future[Seq[Tag]] =
-            questionService
-              .findQuestion(
-                Some(theme.themeId),
-                None,
-                theme.country,
-                theme.translations.headOption.map(_.language).getOrElse(Language("fr"))
-              )
+            retrieveQuestion
               .flatMap(
                 maybeQuestion =>
                   maybeQuestion
@@ -77,9 +79,16 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
 
           for {
             proposalsCount <- maybeProposalsCount
+            maybeQuestion  <- retrieveQuestion
             votesCount     <- votesCount
             tags           <- tags
-          } yield theme.copy(proposalsCount = proposalsCount, votesCount = votesCount, tags = tags)
+          } yield
+            theme.copy(
+              proposalsCount = proposalsCount,
+              votesCount = votesCount,
+              tags = tags,
+              questionId = maybeQuestion.map(_.questionId)
+            )
         }
       }
     }

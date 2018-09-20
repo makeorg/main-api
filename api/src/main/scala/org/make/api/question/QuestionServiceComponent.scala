@@ -34,12 +34,23 @@ trait QuestionService {
                    maybeOperationId: Option[OperationId],
                    country: Country,
                    language: Language): Future[Option[Question]]
+  def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
+  def countQuestion(request: SearchQuestionRequest): Future[Int]
   def findQuestionByQuestionIdOrThemeOrOperation(maybeQuestionId: Option[QuestionId],
                                                  maybeThemeId: Option[ThemeId],
                                                  maybeOperationId: Option[OperationId],
                                                  country: Country,
                                                  language: Language): Future[Option[Question]]
 }
+
+case class SearchQuestionRequest(maybeThemeId: Option[ThemeId] = None,
+                                 maybeOperationId: Option[OperationId] = None,
+                                 country: Option[Country] = None,
+                                 language: Option[Language] = None,
+                                 skip: Option[Int] = None,
+                                 limit: Option[Int] = None,
+                                 sort: Option[String] = None,
+                                 order: Option[String] = None)
 
 trait QuestionServiceComponent {
   def questionService: QuestionService
@@ -80,10 +91,12 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         case _ =>
           persistentQuestionService
             .find(
-              country = Some(country),
-              language = Some(language),
-              operation = maybeOperationId,
-              theme = maybeThemeId
+              SearchQuestionRequest(
+                country = Some(country),
+                language = Some(language),
+                maybeOperationId = maybeOperationId,
+                maybeThemeId = maybeThemeId
+              )
             )
             .map(_.headOption)
       }
@@ -103,6 +116,14 @@ trait DefaultQuestionService extends QuestionServiceComponent {
           maybeQuestionId.map(getQuestion).getOrElse(findQuestion(maybeThemeId, maybeOperationId, country, language))
         }
         .getOrElse(Future.successful(None))
+    }
+
+    override def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]] = {
+      persistentQuestionService.find(request)
+    }
+
+    override def countQuestion(request: SearchQuestionRequest): Future[Int] = {
+      persistentQuestionService.count(request)
     }
   }
 }
