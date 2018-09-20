@@ -408,6 +408,7 @@ class PersistentTagServiceIT
     val baseTheme: Theme = Theme(
       themeId = themeIdFirst,
       translations = Seq.empty,
+      questionId = Some(QuestionId(themeIdFirst.value)),
       actionsCount = 0,
       proposalsCount = 0,
       votesCount = 0,
@@ -686,6 +687,7 @@ class PersistentTagServiceIT
 
     val baseTheme: Theme = Theme(
       themeId = fooThemeId,
+      questionId = Some(QuestionId(fooThemeId.value)),
       translations = Seq.empty,
       actionsCount = 0,
       proposalsCount = 0,

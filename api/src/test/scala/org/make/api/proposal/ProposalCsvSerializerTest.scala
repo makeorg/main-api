@@ -27,6 +27,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus, OperationTranslation}
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
+import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.user.UserId
 
@@ -37,6 +38,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
   val theme: Theme =
     Theme(
       ThemeId("foo-theme"),
+      questionId = Some(QuestionId("foo")),
       Seq(ThemeTranslation("foo-theme", "Foo Theme", Language("fr"))),
       42,
       42,

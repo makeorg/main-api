@@ -33,7 +33,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaFiltersRequest, IdeaServiceComponent, PersistentIdeaServiceComponent}
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{PatchProposalCommand, PatchProposalRequest, ProposalCoordinatorServiceComponent}
-import org.make.api.question.PersistentQuestionServiceComponent
+import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.{tag, HttpCodes}
@@ -88,7 +88,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("AttachIdeasToQuestion") { _ =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
-              provideAsync(persistentQuestionService.find(None, None, None, None)) { questions =>
+              provideAsync(persistentQuestionService.find(SearchQuestionRequest())) { questions =>
                 provideAsync(persistentIdeaService.findAll(IdeaFiltersRequest(None, None, None, None, None, None))) {
                   ideas =>
                     val modifyIdeas = Future.traverse(ideas) { idea =>
@@ -147,7 +147,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("AttachTagsToQuestion") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
-              provideAsync(persistentQuestionService.find(None, None, None, None)) { questions =>
+              provideAsync(persistentQuestionService.find(SearchQuestionRequest())) { questions =>
                 provideAsync(tagService.findAll()) { tags =>
                   val modifyTags = Future.traverse(tags) { tag =>
                     val maybeQuestion = questions
@@ -210,7 +210,7 @@ trait MigrationApi extends MakeAuthenticationDirectives with StrictLogging {
         makeOperation("AttachProposalsToQuestion") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
-              provideAsync(persistentQuestionService.find(None, None, None, None)) { questions =>
+              provideAsync(persistentQuestionService.find(SearchQuestionRequest())) { questions =>
                 implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
                 def findQuestion(maybeThemeId: Option[ThemeId],

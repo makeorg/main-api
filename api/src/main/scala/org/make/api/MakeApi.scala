@@ -49,7 +49,7 @@ import org.make.api.organisation.{
   OrganisationApi
 }
 import org.make.api.proposal._
-import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService}
+import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService, ModerationQuestionApi}
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -143,6 +143,7 @@ trait MakeApi
     with DefaultCrmServiceComponent
     with DefaultOrganisationServiceComponent
     with DefaultElasticsearchConfigurationComponent
+    with ModerationQuestionApi
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
@@ -257,6 +258,7 @@ trait MakeApi
       classOf[ModerationTagApi],
       classOf[ModerationOrganisationApi],
       classOf[OrganisationApi],
+      classOf[ModerationQuestionApi],
       classOf[WidgetApi]
     )
 
@@ -299,7 +301,8 @@ trait MakeApi
       healthCheckRoutes ~
       moderationOrganisationRoutes ~
       organisationRoutes ~
-      widgetRoutes
+      widgetRoutes ~
+      moderationQuestionRoutes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

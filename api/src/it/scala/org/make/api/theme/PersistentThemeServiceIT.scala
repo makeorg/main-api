@@ -25,6 +25,7 @@ import org.make.api.DatabaseTest
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.SlugHelper
+import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -61,6 +62,7 @@ class PersistentThemeServiceIT
   val winterIsComingTags: Seq[Tag] = Seq(stark, targaryen, lannister)
   val winterIsComing: Theme = Theme(
     themeId = ThemeId("winterIsComingId"),
+    questionId = Some(QuestionId("who-will-die-first?")),
     translations = Seq(
       ThemeTranslation(slug = SlugHelper("winter-is-coming"), title = "Winter is coming", language = Language("dk"))
     ),
@@ -76,6 +78,7 @@ class PersistentThemeServiceIT
   val winterIsHereTags: Seq[Tag] = Seq(whiteWalker)
   val winterIsHere: Theme = Theme(
     themeId = ThemeId("winterIsHere"),
+    questionId = Some(QuestionId("will-anyone-survive?")),
     translations =
       Seq(ThemeTranslation(slug = SlugHelper("winter-is-here"), title = "Winter is here", language = Language("dk"))),
     actionsCount = 0,
@@ -89,6 +92,7 @@ class PersistentThemeServiceIT
 
   val nonExistantTheme = Theme(
     themeId = ThemeId("void"),
+    questionId = Some(QuestionId("404")),
     translations = Seq(ThemeTranslation(slug = SlugHelper("nowhere"), title = "Nowhere", language = Language("xx"))),
     actionsCount = 0,
     proposalsCount = 0,
@@ -101,6 +105,7 @@ class PersistentThemeServiceIT
 
   val frozen: Theme = Theme(
     themeId = ThemeId("frozen"),
+    questionId = Some(QuestionId("let-it-go")),
     translations = Seq(
       ThemeTranslation(slug = SlugHelper("let-it-gooo"), title = "Let it gooo", language = Language("en")),
       ThemeTranslation(slug = SlugHelper("libereeeee"), title = "Libéréééée", language = Language("fr"))

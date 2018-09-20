@@ -21,6 +21,7 @@ package org.make.core.reference
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import org.make.core.question.QuestionId
 import org.make.core.tag.Tag
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
@@ -40,6 +41,7 @@ object ThemeTranslation {
 }
 
 final case class Theme(themeId: ThemeId,
+                       questionId: Option[QuestionId],
                        translations: Seq[ThemeTranslation],
                        actionsCount: Int,
                        proposalsCount: Long,

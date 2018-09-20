@@ -55,6 +55,7 @@ class ThemeServiceTest
 
   val fooTheme = Theme(
     themeId = ThemeId("foo"),
+    questionId = Some(QuestionId("foo")),
     translations = Seq(ThemeTranslation(slug = SlugHelper("foo"), title = "Foo", language = Language("lg"))),
     actionsCount = 7,
     proposalsCount = 0,
@@ -66,6 +67,7 @@ class ThemeServiceTest
 
   val barTheme = Theme(
     themeId = ThemeId("bar"),
+    questionId = Some(QuestionId("bar")),
     translations = Seq(ThemeTranslation(slug = SlugHelper("bar"), title = "Bar", language = Language("lg"))),
     actionsCount = 7,
     proposalsCount = 0,
