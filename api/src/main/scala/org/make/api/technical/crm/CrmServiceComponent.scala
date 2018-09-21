@@ -425,6 +425,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         unsubscribeStatus = Some(userProperty.unsubscribeStatus),
         accountCreationDate = userProperty.accountCreationDate.map(_.format(dateFormatter)),
         accountCreationSource = userProperty.accountCreationSource,
+        accountCreationOrigin = userProperty.accountCreationOrigin,
         accountCreationOperation = userProperty.accountCreationOperation,
         accountCreationCountry = userProperty.accountCreationCountry,
         countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
@@ -569,6 +570,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                                                   event: LogRegisterCitizenEvent): UserProperties = {
       accumulator.copy(
         accountCreationSource = event.requestContext.source,
+        accountCreationOrigin = event.requestContext.getParameters.map { parameters =>
+          parameters.getOrElse("utm_source", "unknown")
+        },
         accountCreationOperation = event.requestContext.operationId.map(_.value),
         accountCreationCountry = event.requestContext.country.map(_.value),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
@@ -599,6 +603,7 @@ final case class UserProperties(userId: UserId,
                                 accountCreationDate: Option[ZonedDateTime],
                                 isOrganisation: Boolean,
                                 accountCreationSource: Option[String] = None,
+                                accountCreationOrigin: Option[String] = None,
                                 accountCreationOperation: Option[String] = None,
                                 accountCreationCountry: Option[String] = None,
                                 countriesActivity: Seq[String] = Seq.empty,

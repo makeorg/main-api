@@ -313,6 +313,7 @@ class CrmServiceComponentTest
         maybeProperties.unsubscribeStatus shouldBe Some(false)
         maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
         maybeProperties.accountCreationSource shouldBe Some("core")
+        maybeProperties.accountCreationOrigin shouldBe None
         maybeProperties.accountCreationOperation shouldBe None
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
@@ -351,6 +352,7 @@ class CrmServiceComponentTest
         maybeProperties.unsubscribeStatus shouldBe Some(false)
         maybeProperties.accountCreationDate shouldBe Some(zonedDateTimeNow.format(dateFormatter))
         maybeProperties.accountCreationSource shouldBe None
+        maybeProperties.accountCreationOrigin shouldBe None
         maybeProperties.accountCreationOperation shouldBe None
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
@@ -390,6 +392,7 @@ class CrmServiceComponentTest
         maybeProperties.unsubscribeStatus shouldBe Some(false)
         maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
         maybeProperties.accountCreationSource shouldBe Some("core")
+        maybeProperties.accountCreationOrigin shouldBe None
         maybeProperties.accountCreationOperation shouldBe Some("999-99-99")
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR,IT,GB")
