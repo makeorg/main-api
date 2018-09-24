@@ -21,15 +21,11 @@ package org.make.api.user.social.models.facebook
 
 import io.circe.Decoder
 
-final case class UserInfo(id: String,
-                          email: Option[String],
-                          firstName: Option[String],
-                          lastName: Option[String],
-                          gender: Option[String]) {
+final case class UserInfo(id: String, email: Option[String], firstName: Option[String], lastName: Option[String]) {
   def picture: String = s"https://graph.facebook.com/v3.0/$id/picture"
 }
 
 object UserInfo {
   implicit val decoder: Decoder[UserInfo] =
-    Decoder.forProduct5("id", "email", "first_name", "last_name", "gender")(UserInfo.apply)
+    Decoder.forProduct4("id", "email", "first_name", "last_name")(UserInfo.apply)
 }
