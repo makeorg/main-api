@@ -426,21 +426,6 @@ case class UpdateTagRequest(label: String,
     )
   )
 
-  if (questionId.nonEmpty) {
-    Validation.validate(
-      Validation.requireNotPresent(
-        fieldName = "theme",
-        fieldValue = themeId,
-        message = Some("Tag can not have both question and theme")
-      ),
-      Validation.requireNotPresent(
-        fieldName = "operation",
-        fieldValue = operationId,
-        message = Some("Tag can not have both question and operation")
-      )
-    )
-  }
-
   if (operationId.nonEmpty) {
     Validation.validate(
       Validation.requireNotPresent(
