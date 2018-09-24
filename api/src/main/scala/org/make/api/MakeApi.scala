@@ -25,8 +25,8 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
-import de.knutwalker.akka.http.support.CirceHttpSupport
-import de.knutwalker.akka.stream.support.CirceStreamSupport.JsonParsingException
+import org.mdedetrich.akka.http.support.CirceHttpSupport
+import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
@@ -77,6 +77,11 @@ import org.make.api.technical.healthcheck.{
   HealthCheckApi,
   HealthCheckComponent,
   HealthCheckSupervisor
+}
+import org.make.api.technical.storage.{
+  DefaultStorageConfigurationComponent,
+  DefaultStorageServiceComponent,
+  DefaultSwiftClientComponent
 }
 import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
@@ -143,6 +148,9 @@ trait MakeApi
     with DefaultCrmServiceComponent
     with DefaultOrganisationServiceComponent
     with DefaultElasticsearchConfigurationComponent
+    with DefaultSwiftClientComponent
+    with DefaultStorageServiceComponent
+    with DefaultStorageConfigurationComponent
     with ModerationQuestionApi
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
