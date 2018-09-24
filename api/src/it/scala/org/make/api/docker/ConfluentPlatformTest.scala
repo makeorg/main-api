@@ -20,5 +20,5 @@
 package org.make.api.docker
 
 object ConfluentPlatformTest {
-  val confluentVersion: String = "4.1.1"
+  val confluentVersion: String = "5.0.0"
 }
