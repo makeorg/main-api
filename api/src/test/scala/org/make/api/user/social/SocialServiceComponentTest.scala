@@ -29,8 +29,6 @@ import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
 import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
-import org.make.core.profile.Gender.Male
-import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -38,10 +36,10 @@ import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationDouble
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 class SocialServiceComponentTest
     extends MakeUnitTest
@@ -366,8 +364,7 @@ class SocialServiceComponentTest
         id = "444444",
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
-        gender = None
+        lastName = Some("user")
       )
 
       val userFromFacebook = User(
@@ -459,116 +456,10 @@ class SocialServiceComponentTest
 
     }
 
-    scenario("successful login social user with gender") {
-      Given("a user logged via facebook")
-      val facebookData = FacebookUserInfos(
-        id = "444444",
-        email = Some("facebook@make.org"),
-        firstName = Some("facebook"),
-        lastName = Some("user"),
-        gender = Some("male")
-      )
-
-      val userFromFacebook = User(
-        userId = UserId("boo"),
-        email = "facebook@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Profile.parseProfile(gender = Some(Male), genderName = Some("male")),
-        createdAt = None,
-        updatedAt = None
-      )
-
-      val accessToken = AccessToken(
-        accessTokenValue,
-        Some(refreshTokenValue),
-        None,
-        Some(99000),
-        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-08-13 12:00:00"),
-        Map.empty
-      )
-
-      val info = UserInfo(
-        email = Some("facebook@make.org"),
-        firstName = Some("facebook"),
-        lastName = Some("user"),
-        country = "FR",
-        language = "fr",
-        gender = Some("male"),
-        googleId = None,
-        facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
-      )
-
-      Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken-444444")))
-        .thenReturn(Future.successful(facebookData))
-
-      Mockito
-        .when(userService.createOrUpdateUserFromSocial(matches(info), matches(None), any[RequestContext]))
-        .thenReturn(Future.successful(userFromFacebook))
-
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
-        .thenReturn(Future.successful(accessToken))
-
-      When("login facebook user")
-      val tokenResponse =
-        socialService.login(
-          "facebook",
-          "facebookToken-444444",
-          Country("FR"),
-          Language("fr"),
-          None,
-          RequestContext.empty
-        )
-
-      Then("my program call getOrCreateUserFromSocial with facebook data")
-
-      whenReady(tokenResponse, Timeout(3.seconds)) { _ =>
-        val userInfoFromFacebook =
-          UserInfo(
-            email = facebookData.email,
-            firstName = facebookData.firstName,
-            lastName = facebookData.lastName,
-            country = "FR",
-            language = "fr",
-            gender = Some("male"),
-            googleId = None,
-            facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
-          )
-
-        verify(userService).createOrUpdateUserFromSocial(
-          matches(userInfoFromFacebook),
-          matches(None),
-          any[RequestContext]
-        )
-      }
-
-    }
-
     scenario("successful login social user without name") {
       Given("a user logged via facebook")
-      val facebookData = FacebookUserInfos(
-        id = "444444",
-        email = Some("facebook@make.org"),
-        firstName = None,
-        lastName = None,
-        gender = None
-      )
+      val facebookData =
+        FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = None, lastName = None)
 
       val userFromFacebook = User(
         userId = UserId("boo"),
@@ -665,8 +556,7 @@ class SocialServiceComponentTest
         id = "444444",
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("USER"),
-        gender = None
+        lastName = Some("USER")
       )
 
       val userFromFacebook = User(

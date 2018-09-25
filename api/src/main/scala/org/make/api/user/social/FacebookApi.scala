@@ -52,7 +52,7 @@ trait DefaultFacebookApiComponent extends FacebookApiComponent {
 
     def getUserInfo(accessToken: String): Future[FacebookUserInfo] = {
       val url =
-        s"https://graph.facebook.com/v2.1/me?access_token=$accessToken&fields=email,first_name,last_name,gender"
+        s"https://graph.facebook.com/v3.0/me?access_token=$accessToken&fields=email,first_name,last_name"
 
       http
         .singleRequest(HttpRequest(method = HttpMethods.GET, uri = url))

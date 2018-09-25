@@ -95,7 +95,6 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               lastName = facebookUserInfo.lastName,
               country = country.value,
               language = language.value,
-              gender = facebookUserInfo.gender,
               facebookId = Some(facebookUserInfo.id),
               picture = Option(facebookUserInfo.picture)
             )
