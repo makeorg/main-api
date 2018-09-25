@@ -35,8 +35,8 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
-import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.user._
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify}

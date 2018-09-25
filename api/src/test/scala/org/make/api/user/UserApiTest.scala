@@ -1292,4 +1292,65 @@ class UserApiTest
       }
     }
   }
+
+  feature("follow user") {
+    scenario("unconnected user") {
+      Post("/user/sylvain-user-id/follow") ~> routes ~> check {
+        status shouldBe StatusCodes.Unauthorized
+      }
+    }
+
+    scenario("try to follow unexistant user") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(UserId("non-existant"))))
+        .thenReturn(Future.successful(None))
+
+      Post("/user/non-existant/follow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("try to follow a user without public profile") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Some(fakeUser)))
+      Post("/user/ABCD/follow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("try to follow a user already followed") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
+      Mockito
+        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Seq(fakeUser.userId)))
+      Mockito
+        .when(userService.followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(fakeUser.userId))
+      Post("/user/ABCD/follow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    scenario("successfully follow a user") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
+      Mockito
+        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(userService.followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .thenReturn(Future.successful(fakeUser.userId))
+      Post("/user/ABCD/follow")
+        .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+  }
 }

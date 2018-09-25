@@ -300,6 +300,7 @@ trait PersistentUserService {
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
+  def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -311,6 +312,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     private val userAlias = PersistentUser.userAlias
     private val followedUsersAlias = FollowedUsers.followedUsersAlias
     private val column = PersistentUser.column
+    private val followedUsersColumn = FollowedUsers.column
 
     override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
       implicit val cxt: EC = readExecutionContext
@@ -864,6 +866,21 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
 
       futureUserFollowed.map(_ => {})
+    }
+
+    override def followUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          insert
+            .into(FollowedUsers)
+            .namedValues(
+              followedUsersColumn.userId -> userId.value,
+              followedUsersColumn.followedUserId -> followedUserId.value,
+              followedUsersColumn.date -> DateHelper.now()
+            )
+        }.execute().apply()
+      })
     }
   }
 }

@@ -28,11 +28,11 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededRes
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserResponse
-import org.make.core.{HttpCodes, ParameterExtractors}
 import org.make.core.auth.UserRights
 import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.make.core.user.indexed.OrganisationSearchResult
+import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable

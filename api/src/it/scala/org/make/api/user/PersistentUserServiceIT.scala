@@ -814,6 +814,32 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
+  feature("follow user") {
+    scenario("follow user") {
+      val johnDoe2 = johnDoe.copy(
+        userId = UserId("johnDoe2"),
+        email = "doe2@example.com",
+        firstName = Some("John"),
+        lastName = Some("Doe2")
+      )
+
+      val jennaDoo2 =
+        jennaDoo.copy(userId = UserId("jennaDoo2"), email = "jennaDoo2@user.com", publicProfile = true)
+
+      val futureFollowOrganisation: Future[Seq[String]] = for {
+        user          <- persistentUserService.persist(johnDoe2)
+        userToFollow  <- persistentUserService.persist(jennaDoo2)
+        _             <- persistentUserService.followUser(userToFollow.userId, user.userId)
+        followedUsers <- persistentUserService.getFollowedUsers(user.userId)
+      } yield followedUsers
+
+      whenReady(futureFollowOrganisation, Timeout(3.seconds)) { userIds =>
+        userIds.length shouldBe 1
+        userIds.head shouldBe jennaDoo2.userId.value
+      }
+    }
+  }
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     futureJohnMailing2 =
