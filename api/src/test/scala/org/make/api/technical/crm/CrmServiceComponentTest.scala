@@ -77,6 +77,7 @@ class CrmServiceComponentTest
     operationId = OperationId("default"),
     slug = "default",
     defaultLanguage = Language("fr"),
+    allowedSources = Seq.empty,
     events = List.empty,
     createdAt = None,
     updatedAt = None,
@@ -89,7 +90,8 @@ class CrmServiceComponentTest
     defaultOperation.copy(operationId = OperationId("200-20-11"), slug = "vff")
   )
 
-  when(operationService.find()).thenReturn(Future.successful(operations))
+  when(operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
+    .thenReturn(Future.successful(operations))
 
   val fooProfile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),

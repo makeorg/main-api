@@ -265,17 +265,18 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
           makeOperation("ModerationGetOperations") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsync(operationService.find(slug = slug, country = country, openAt = openAt)) { operations =>
-                  provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
-                    users =>
-                      val operationResponses: Seq[ModerationOperationResponse] =
-                        operations.map(
-                          operation => ModerationOperationResponse(operation, users, requestContext.country)
-                        )
-                      val result: ModerationOperationListResponse =
-                        ModerationOperationListResponse(operationResponses.length, operationResponses)
-                      complete(result)
-                  }
+                provideAsync(operationService.find(slug = slug, country = country, maybeSource = None, openAt = openAt)) {
+                  operations =>
+                    provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
+                      users =>
+                        val operationResponses: Seq[ModerationOperationResponse] =
+                          operations.map(
+                            operation => ModerationOperationResponse(operation, users, requestContext.country)
+                          )
+                        val result: ModerationOperationListResponse =
+                          ModerationOperationListResponse(operationResponses.length, operationResponses)
+                        complete(result)
+                    }
                 }
               }
             }

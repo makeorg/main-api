@@ -134,6 +134,7 @@ class ModerationOperationApiTest
       OperationTranslation(title = "first operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
+    allowedSources = Seq.empty,
     events = List(
       OperationAction(
         date = now,
@@ -165,6 +166,7 @@ class ModerationOperationApiTest
       OperationTranslation(title = "second operation", language = Language("en"))
     ),
     defaultLanguage = Language("it"),
+    allowedSources = Seq.empty,
     events = List(
       OperationAction(
         date = now,
@@ -264,13 +266,14 @@ class ModerationOperationApiTest
 
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None))
+  when(operationService.find(slug = Some("second-operation"), country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = Some(Country("IT")), openAt = None))
+  when(operationService.find(slug = None, country = Some(Country("IT")), maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = None, openAt = Some(LocalDate.parse("2018-02-02"))))
-    .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = None, openAt = None))
+  when(
+    operationService.find(slug = None, country = None, maybeSource = None, openAt = Some(LocalDate.parse("2018-02-02")))
+  ).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
     Future.successful(

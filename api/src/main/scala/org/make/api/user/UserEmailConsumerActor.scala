@@ -122,7 +122,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               Future.successful("core")
             } else {
               operationService
-                .find(country = Some(country), openAt = Some(LocalDate.now()))
+                .find(country = Some(country), maybeSource = None, openAt = Some(LocalDate.now()))
                 .map(_.headOption.map(_.slug).getOrElse("core"))
             }
         }

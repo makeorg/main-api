@@ -154,42 +154,43 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                  question: Option[String],
                  language: Option[Language]) =>
                   provideAsync(themeService.findAll()) { themes =>
-                    provideAsync(operationService.find()) { operations =>
-                      provideAsync(
-                        proposalService.search(
-                          userId = Some(auth.user.userId),
-                          query = ExhaustiveSearchRequest(
-                            themesIds = themeId,
-                            tagsIds = tags,
-                            content = content,
-                            context =
-                              Some(ContextFilterRequest(operation = operation, source = source, question = question)),
-                            language = language,
-                            status = Some(Seq(Accepted)),
-                            limit = Some(5000) //TODO get limit value for export into config files
-                          ).toSearchQuery(requestContext),
-                          requestContext = requestContext
-                        )
-                      ) { proposals =>
-                        { // TODO: add question
-                          complete {
-                            HttpResponse(
-                              entity = HttpEntity(
-                                ContentTypes.`text/csv(UTF-8)`,
-                                ByteString(
-                                  (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
-                                    .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
+                    provideAsync(operationService.find(slug = None, country = None, maybeSource = None, openAt = None)) {
+                      operations =>
+                        provideAsync(
+                          proposalService.search(
+                            userId = Some(auth.user.userId),
+                            query = ExhaustiveSearchRequest(
+                              themesIds = themeId,
+                              tagsIds = tags,
+                              content = content,
+                              context =
+                                Some(ContextFilterRequest(operation = operation, source = source, question = question)),
+                              language = language,
+                              status = Some(Seq(Accepted)),
+                              limit = Some(5000) //TODO get limit value for export into config files
+                            ).toSearchQuery(requestContext),
+                            requestContext = requestContext
+                          )
+                        ) { proposals =>
+                          { // TODO: add question
+                            complete {
+                              HttpResponse(
+                                entity = HttpEntity(
+                                  ContentTypes.`text/csv(UTF-8)`,
+                                  ByteString(
+                                    (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
+                                      .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
+                                  )
+                                )
+                              ).withHeaders(
+                                `Content-Disposition`(
+                                  ContentDispositionTypes.attachment,
+                                  Map("filename" -> s"$fileName.csv")
                                 )
                               )
-                            ).withHeaders(
-                              `Content-Disposition`(
-                                ContentDispositionTypes.attachment,
-                                Map("filename" -> s"$fileName.csv")
-                              )
-                            )
+                            }
                           }
                         }
-                      }
                     }
                   }
               }

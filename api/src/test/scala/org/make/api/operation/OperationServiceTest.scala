@@ -66,6 +66,7 @@ class OperationServiceTest
       OperationTranslation(title = "first operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
+    allowedSources = Seq.empty,
     events = List(
       OperationAction(
         date = now,
@@ -123,7 +124,8 @@ class OperationServiceTest
         .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(QuestionId("foo-question"))))
         .thenReturn(Future.successful(Seq(fooTag)))
 
-      val futureOperations: Future[Seq[Operation]] = operationService.find()
+      val futureOperations: Future[Seq[Operation]] =
+        operationService.find(slug = None, country = None, maybeSource = None, openAt = None)
 
       whenReady(futureOperations, Timeout(3.seconds)) { operations =>
         logger.debug(operations.map(_.toString).mkString(", "))

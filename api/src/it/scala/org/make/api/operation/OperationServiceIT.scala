@@ -116,7 +116,8 @@ class OperationServiceIT
     translations = translations,
     countriesConfiguration = Seq.empty,
     events = List.empty,
-    defaultLanguage = languageFr
+    defaultLanguage = languageFr,
+    allowedSources = Seq.empty
   )
 
   feature("An operation can be created") {

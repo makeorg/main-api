@@ -52,6 +52,7 @@ class PersistentTagServiceIT
     slug = "fake-operation",
     translations = Seq.empty,
     defaultLanguage = Language("fr"),
+    allowedSources = Seq.empty,
     events = List.empty,
     createdAt = None,
     updatedAt = None,
