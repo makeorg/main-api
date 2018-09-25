@@ -452,6 +452,7 @@ object DefaultPersistentOperationServiceComponent {
                                  status: String,
                                  slug: String,
                                  defaultLanguage: String,
+                                 allowedSources: Seq[String],
                                  createdAt: ZonedDateTime,
                                  updatedAt: ZonedDateTime) {
 
@@ -463,6 +464,7 @@ object DefaultPersistentOperationServiceComponent {
         status = OperationStatus.statusMap(status),
         slug = slug,
         defaultLanguage = Language(defaultLanguage),
+        allowedSources = allowedSources,
         events = operationActions
           .map(
             action =>
@@ -622,7 +624,7 @@ object DefaultPersistentOperationServiceComponent {
 
   object PersistentOperation extends SQLSyntaxSupport[PersistentOperation] with ShortenedNames with StrictLogging {
     override val columnNames: Seq[String] =
-      Seq("uuid", "status", "slug", "default_language", "created_at", "updated_at")
+      Seq("uuid", "status", "slug", "default_language", "allowed_sources", "created_at", "updated_at")
 
     override val tableName: String = "operation"
 
@@ -636,6 +638,10 @@ object DefaultPersistentOperationServiceComponent {
         status = resultSet.string(operationResultName.status),
         slug = resultSet.string(operationResultName.slug),
         defaultLanguage = resultSet.string(operationResultName.defaultLanguage),
+        allowedSources = resultSet
+          .arrayOpt(operationResultName.allowedSources)
+          .map(_.getArray.asInstanceOf[Array[String]].toSeq)
+          .getOrElse(Seq.empty),
         operationActions = Seq.empty,
         operationTranslations = Seq.empty,
         operationCountryConfigurations = Seq.empty,

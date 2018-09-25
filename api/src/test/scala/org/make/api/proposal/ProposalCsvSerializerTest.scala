@@ -52,6 +52,7 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
     "bar-operation",
     Seq(OperationTranslation("Bar Operation", Language("fr"))),
     Language("fr"),
+    Seq("core"),
     List.empty,
     None,
     None,

@@ -52,6 +52,7 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
       OperationTranslation(title = "first operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
+    allowedSources = Seq("core"),
     events = List(
       OperationAction(
         date = now,
@@ -91,6 +92,7 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
       OperationTranslation(title = "second operation", language = Language("en"))
     ),
     defaultLanguage = Language("it"),
+    allowedSources = Seq("core"),
     events = List(
       OperationAction(
         date = now,
@@ -115,11 +117,11 @@ class OperationApiTest extends MakeApiTestBase with OperationApi with OperationS
 
   when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find(slug = None, country = None, openAt = None))
+  when(operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(operationService.find(slug = Some("second-operation"), country = None, openAt = None))
+  when(operationService.find(slug = Some("second-operation"), country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = Some("first-operation"), country = None, openAt = None))
+  when(operationService.find(slug = Some("first-operation"), country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation)))
 
   feature("get operations") {
