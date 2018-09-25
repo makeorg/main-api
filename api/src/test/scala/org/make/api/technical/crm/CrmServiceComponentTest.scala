@@ -352,10 +352,10 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationDate shouldBe Some(zonedDateTimeNow.format(dateFormatter))
         maybeProperties.accountCreationSource shouldBe None
         maybeProperties.accountCreationOperation shouldBe None
-        maybeProperties.accountCreationCountry shouldBe None
-        maybeProperties.countriesActivity shouldBe Some("")
-        maybeProperties.lastCountryActivity shouldBe None
-        maybeProperties.lastLanguageActivity shouldBe None
+        maybeProperties.accountCreationCountry shouldBe Some("FR")
+        maybeProperties.countriesActivity shouldBe Some("FR")
+        maybeProperties.lastCountryActivity shouldBe Some("FR")
+        maybeProperties.lastLanguageActivity shouldBe Some("fr")
         maybeProperties.totalProposals shouldBe Some(0)
         maybeProperties.totalVotes shouldBe Some(0)
         maybeProperties.firstContributionDate shouldBe None

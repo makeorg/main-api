@@ -407,7 +407,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
         accountCreationDate = user.createdAt,
         isOrganisation = user.isOrganisation,
-        updatedAt = Some(DateHelper.now())
+        updatedAt = Some(DateHelper.now()),
+        accountCreationCountry = Some(user.country.value),
+        lastLanguageActivity = Some(user.language.value),
+        lastCountryActivity = Some(user.country.value),
+        countriesActivity = Seq(user.country.value)
       )
     }
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
