@@ -479,8 +479,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 user = Some(UserSearchFilter(userId = user.userId)),
                 status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
                   case (_, status) => status != ProposalStatus.Archived
-                }.values.toSeq)),
-                context = Some(ContextSearchFilter(source = Some("core")))
+                }.values.toSeq))
               )
             )
           ),

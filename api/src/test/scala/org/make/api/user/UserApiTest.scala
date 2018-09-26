@@ -999,8 +999,7 @@ class UserApiTest
                             ProposalStatus.Refused
                           )
                         )
-                      ),
-                      context = Some(ContextSearchFilter(source = Some("core")))
+                      )
                     )
                   )
                 )
