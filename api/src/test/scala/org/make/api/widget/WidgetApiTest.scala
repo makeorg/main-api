@@ -51,6 +51,7 @@ import scala.concurrent.Future
 class WidgetApiTest
     extends MakeApiTestBase
     with WidgetApi
+    with WidgetServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -62,6 +63,7 @@ class WidgetApiTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
+  override val widgetService: WidgetService = mock[WidgetService]
 
   val routes: Route = sealRoute(widgetRoutes)
   val validAccessToken = "my-valid-access-token"
@@ -81,13 +83,11 @@ class WidgetApiTest
     scenario("Get proposal of an operation successfully") {
       Mockito
         .when(
-          proposalService.searchForUser(
+          widgetService.startNewWidgetSequence(
             ArgumentMatchers.any[Option[UserId]],
-            ArgumentMatchers.eq(
-              SearchQuery(
-                filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("foo-operation-id")))))
-              )
-            ),
+            ArgumentMatchers.eq(OperationId("foo-operation-id")),
+            ArgumentMatchers.any[Option[Seq[TagId]]],
+            ArgumentMatchers.any[Option[Int]],
             ArgumentMatchers.any[RequestContext]
           )
         )
@@ -105,18 +105,11 @@ class WidgetApiTest
     scenario("Get proposal of an operation filtred by tag successfully") {
       Mockito
         .when(
-          proposalService.searchForUser(
+          widgetService.startNewWidgetSequence(
             ArgumentMatchers.eq(Some(UserId("my-user-id"))),
-            ArgumentMatchers.eq(
-              SearchQuery(
-                filters = Some(
-                  SearchFilters(
-                    operation = Some(OperationSearchFilter(OperationId("foo-operation-id"))),
-                    tags = Some(TagsSearchFilter(Seq(TagId("foo-tag-id"), TagId("bar-tag-id"))))
-                  )
-                )
-              )
-            ),
+            ArgumentMatchers.eq(OperationId("foo-operation-id")),
+            ArgumentMatchers.eq(Some(Seq(TagId("foo-tag-id"), TagId("bar-tag-id")))),
+            ArgumentMatchers.any[Option[Int]],
             ArgumentMatchers.any[RequestContext]
           )
         )

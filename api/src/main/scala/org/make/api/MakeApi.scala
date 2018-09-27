@@ -88,7 +88,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.widget.WidgetApi
+import org.make.api.widget.{DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
 import scalaoauth2.provider._
 
@@ -172,6 +172,7 @@ trait MakeApi
     with OrganisationApi
     with ModerationProposalApi
     with WidgetApi
+    with DefaultWidgetServiceComponent
     with BuildInfoRoutes
     with DefaultMailJetConfigurationComponent
     with StrictLogging
