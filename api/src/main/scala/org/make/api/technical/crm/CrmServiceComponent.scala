@@ -390,7 +390,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
       for {
         properties <- userProperties
-        operations <- operationService.find()
+        operations <- operationService.find(slug = None, country = None, maybeSource = None, openAt = None)
       } yield {
         contactPropertiesFromUserProperties(properties.normalize(operations))
       }

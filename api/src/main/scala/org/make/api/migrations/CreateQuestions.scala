@@ -65,42 +65,44 @@ object CreateQuestions extends Migration with StrictLogging {
       }
       result
     }
-    val insertOperations = insertThemes.flatMap(_ => api.operationService.find()).flatMap { operations =>
-      var future = Future.successful {}
-      operations.flatMap { operation =>
-        operation.countriesConfiguration.map { conf =>
-          val question = operation.translations.find(_.language == languages(conf.countryCode)).map(_.title)
-          (operation.operationId, question.getOrElse(operation.operationId.value), conf)
-        }
-      }.foreach {
-        case (operationId, question, configuration) =>
-          future = future.flatMap { _ =>
-            api.questionService
-              .findQuestion(None, Some(operationId), configuration.countryCode, languages(configuration.countryCode))
-              .flatMap {
-                case Some(_) => Future.successful {}
-                case None =>
-                  api.persistentQuestionService
-                    .persist(
-                      Question(
-                        api.idGenerator.nextQuestionId(),
-                        configuration.countryCode,
-                        languages(configuration.countryCode),
-                        question,
-                        Some(operationId),
-                        None
-                      )
-                    )
-                    .map(_ => ())
-              }
-          }.recoverWith {
-            case e =>
-              logger.error("", e)
-              Future.successful {}
+    val insertOperations = insertThemes
+      .flatMap(_ => api.operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
+      .flatMap { operations =>
+        var future = Future.successful {}
+        operations.flatMap { operation =>
+          operation.countriesConfiguration.map { conf =>
+            val question = operation.translations.find(_.language == languages(conf.countryCode)).map(_.title)
+            (operation.operationId, question.getOrElse(operation.operationId.value), conf)
           }
+        }.foreach {
+          case (operationId, question, configuration) =>
+            future = future.flatMap { _ =>
+              api.questionService
+                .findQuestion(None, Some(operationId), configuration.countryCode, languages(configuration.countryCode))
+                .flatMap {
+                  case Some(_) => Future.successful {}
+                  case None =>
+                    api.persistentQuestionService
+                      .persist(
+                        Question(
+                          api.idGenerator.nextQuestionId(),
+                          configuration.countryCode,
+                          languages(configuration.countryCode),
+                          question,
+                          Some(operationId),
+                          None
+                        )
+                      )
+                      .map(_ => ())
+                }
+            }.recoverWith {
+              case e =>
+                logger.error("", e)
+                Future.successful {}
+            }
+        }
+        future
       }
-      future
-    }
 
     insertOperations
   }

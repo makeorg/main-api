@@ -116,6 +116,7 @@ class PersistentOperationServiceIT
       OperationTranslation(title = "hello operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
+    allowedSources = Seq.empty,
     events = List(
       OperationAction(
         date = now,

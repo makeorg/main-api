@@ -39,6 +39,7 @@ trait OperationServiceComponent {
 trait OperationService extends ShortenedNames {
   def find(slug: Option[String] = None,
            country: Option[Country] = None,
+           maybeSource: Option[String],
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
@@ -65,10 +66,15 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
     override def find(slug: Option[String] = None,
                       country: Option[Country] = None,
+                      maybeSource: Option[String],
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
 
       persistentOperationService.find(slug = slug, country = country, openAt = openAt).flatMap { operations =>
-        Future.traverse(operations) { operation =>
+        val filteredOperations = maybeSource match {
+          case Some(source) => operations.filter(operation => operation.allowedSources.contains(source))
+          case _            => operations
+        }
+        Future.traverse(filteredOperations) { operation =>
           Future
             .traverse(operation.countriesConfiguration) { configuration =>
               configuration.questionId.map { questionId =>
@@ -104,6 +110,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         slug = slug,
         translations = translations,
         defaultLanguage = defaultLanguage,
+        allowedSources = Seq.empty,
         countriesConfiguration = countriesConfiguration,
         events = Nil,
         createdAt = Some(now),

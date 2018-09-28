@@ -58,7 +58,10 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging with 
       path("operations") {
         parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
           makeOperation("GetOperations") { requestContext =>
-            provideAsync(operationService.find(slug = slug, country = country, openAt = openAt)) { result =>
+            provideAsync(
+              operationService
+                .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
+            ) { result =>
               complete(result.map(operation => OperationResponse(operation, requestContext.country)))
             }
           }
