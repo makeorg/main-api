@@ -32,7 +32,6 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.proposal.{OperationSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -42,19 +41,21 @@ import scala.collection.immutable
 @Api(value = "Widget")
 @Path(value = "/widget")
 trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with ProposalServiceComponent =>
+  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with WidgetServiceComponent =>
 
   @Path(value = "/operations/{operationId}/start-sequence")
   @ApiOperation(value = "get-widget-sequence", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse])))
-  @ApiImplicitParams(value = Array(
-    new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string"),
-    new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
-    new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
-  ))
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
+    )
+  )
   def getWidgetSequence: Route = {
     get {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
@@ -62,21 +63,17 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?)) {
               (tagsIds: Option[Seq[TagId]], limit: Option[Int]) =>
-              provideAsync(
-                proposalService.searchForUser(
-                  userId = userAuth.map(_.user.userId),
-                  query = SearchQuery(
-                    filters = Some(SearchFilters(
-                      tags = tagsIds.map(TagsSearchFilter),
-                      operation = Some(OperationSearchFilter(widgetOperationId))
-                    )),
-                    limit = limit
-                  ),
-                  requestContext = requestContext
-                )
-              ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
-                complete(proposalsResultSeededResponse)
-              }
+                provideAsync(
+                  widgetService.startNewWidgetSequence(
+                    maybeUserId = userAuth.map(_.user.userId),
+                    widgetOperationId = widgetOperationId,
+                    tagsIds = tagsIds,
+                    limit = limit,
+                    requestContext = requestContext
+                  )
+                ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
+                  complete(proposalsResultSeededResponse)
+                }
             }
           }
         }
@@ -89,9 +86,7 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
   private val widgetOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
 }
 
-final case class WidgetSequence(title: String,
-                                slug: String,
-                                proposals: Seq[IndexedProposal])
+final case class WidgetSequence(title: String, slug: String, proposals: Seq[IndexedProposal])
 
 object WidgetSequence {
   implicit val encoder: ObjectEncoder[WidgetSequence] = deriveEncoder[WidgetSequence]
