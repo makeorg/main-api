@@ -202,8 +202,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                   user = Some(UserSearchFilter(userId = organisationId)),
                   status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
                     case (_, status) => status != ProposalStatus.Archived
-                  }.values.toSeq)),
-                  context = Some(ContextSearchFilter(source = Some("core")))
+                  }.values.toSeq))
                 )
               )
             ),

@@ -591,8 +591,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                       user = Some(UserSearchFilter(userId = userId)),
                       status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
                         case (_, status) => status != ProposalStatus.Archived
-                      }.values.toSeq)),
-                      context = Some(ContextSearchFilter(source = Some("core")))
+                      }.values.toSeq))
                     )
                   )
                 ),
