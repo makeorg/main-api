@@ -57,6 +57,7 @@ class UserCrmConsumerActor(userService: UserService)
       case event: UserUpdatedTagEvent             => doNothing(event)
       case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
       case event: UserFollowEvent                 => doNothing(event)
+      case event: UserUnfollowEvent               => doNothing(event)
     }
   }
 

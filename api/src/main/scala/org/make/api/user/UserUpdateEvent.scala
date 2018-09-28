@@ -44,6 +44,7 @@ object UserUpdateEvent {
       UserUpdateValidatedEvent :+:
       UserAnonymizedEvent :+:
       UserFollowEvent :+:
+      UserUnfollowEvent :+:
       CNil
 
   final case class UserUpdateEventWrapper(version: Int,
@@ -63,8 +64,12 @@ object UserUpdateEvent {
         case e: UserUpdatedPasswordEvent        => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdatedOptInNewsletterEvent => Coproduct[AnyUserUpdateEvent](e)
         case e: UserUpdateValidatedEvent        => Coproduct[AnyUserUpdateEvent](e)
-        case e: UserAnonymizedEvent             => Coproduct[AnyUserUpdateEvent](e)
-        case e: UserFollowEvent                 => Coproduct[AnyUserUpdateEvent](e)
+        case e: UserAnonymizedEvent =>
+          Coproduct[AnyUserUpdateEvent](e)
+        case e: UserFollowEvent =>
+          Coproduct[AnyUserUpdateEvent](e)
+        case e: UserUnfollowEvent =>
+          Coproduct[AnyUserUpdateEvent](e)
       }
   }
 
@@ -83,7 +88,8 @@ object UserUpdateEvent {
     implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
     implicit val atUserUpdateValidatedEvent: Case.Aux[UserUpdateValidatedEvent, UserUpdateValidatedEvent] = at(identity)
     implicit val atUserDeletedEvent: Case.Aux[UserAnonymizedEvent, UserAnonymizedEvent] = at(identity)
-    implicit val atUserUnfollowEvent: Case.Aux[UserFollowEvent, UserFollowEvent] = at(identity)
+    implicit val atUserFollowEvent: Case.Aux[UserFollowEvent, UserFollowEvent] = at(identity)
+    implicit val atUserUnfollowEvent: Case.Aux[UserUnfollowEvent, UserUnfollowEvent] = at(identity)
   }
 
   case class UserCreatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
@@ -150,4 +156,11 @@ object UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
+  final case class UserUnfollowEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+                                     override val userId: Option[UserId],
+                                     override val email: Option[String] = None,
+                                     followedUserId: UserId)
+      extends UserUpdateEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
 }

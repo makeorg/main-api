@@ -826,16 +826,46 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       val jennaDoo2 =
         jennaDoo.copy(userId = UserId("jennaDoo2"), email = "jennaDoo2@user.com", publicProfile = true)
 
-      val futureFollowOrganisation: Future[Seq[String]] = for {
+      val futureFollowUser: Future[Seq[String]] = for {
         user          <- persistentUserService.persist(johnDoe2)
         userToFollow  <- persistentUserService.persist(jennaDoo2)
         _             <- persistentUserService.followUser(userToFollow.userId, user.userId)
         followedUsers <- persistentUserService.getFollowedUsers(user.userId)
       } yield followedUsers
 
-      whenReady(futureFollowOrganisation, Timeout(3.seconds)) { userIds =>
+      whenReady(futureFollowUser, Timeout(3.seconds)) { userIds =>
         userIds.length shouldBe 1
         userIds.head shouldBe jennaDoo2.userId.value
+      }
+    }
+  }
+
+  feature("unfollow user") {
+    scenario("unfollow user") {
+      val johnDoe3 = johnDoe.copy(
+        userId = UserId("johnDoe3"),
+        email = "doe3@example.com",
+        firstName = Some("John"),
+        lastName = Some("Doe3")
+      )
+
+      val jennaDoo3 =
+        jennaDoo.copy(userId = UserId("jennaDoo3"), email = "jennaDoo3@user.com", publicProfile = true)
+
+      val futureFollowAndUnfollowUser: Future[(Seq[String], Seq[String])] = for {
+        user                        <- persistentUserService.persist(johnDoe3)
+        userToFollow                <- persistentUserService.persist(jennaDoo3)
+        _                           <- persistentUserService.followUser(userToFollow.userId, user.userId)
+        followedUsersBeforeUnfollow <- persistentUserService.getFollowedUsers(user.userId)
+        _                           <- persistentUserService.unfollowUser(userToFollow.userId, user.userId)
+        followedUsersAfterUnfollow  <- persistentUserService.getFollowedUsers(user.userId)
+      } yield (followedUsersBeforeUnfollow, followedUsersAfterUnfollow)
+
+      whenReady(futureFollowAndUnfollowUser, Timeout(3.seconds)) {
+        case (userFollowedIds, userUnfollowedIds) =>
+          userFollowedIds.length shouldBe 1
+          userFollowedIds.head shouldBe jennaDoo3.userId.value
+          userUnfollowedIds.isEmpty shouldBe true
       }
     }
   }

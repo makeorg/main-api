@@ -75,6 +75,7 @@ trait UserService extends ShortenedNames {
   def anonymize(user: User): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId): Future[UserId]
+  def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId]
 }
 
 case class UserRegisterData(email: String,
@@ -548,6 +549,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def followUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
       persistentUserService.followUser(followedUserId, userId).map(_ => followedUserId).map { value =>
         eventBusService.publish(UserFollowEvent(userId = Some(userId), followedUserId = followedUserId))
+        value
+      }
+    }
+
+    override def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
+      persistentUserService.unfollowUser(followedUserId, userId).map(_ => followedUserId).map { value =>
+        eventBusService.publish(UserUnfollowEvent(userId = Some(userId), followedUserId = followedUserId))
         value
       }
     }

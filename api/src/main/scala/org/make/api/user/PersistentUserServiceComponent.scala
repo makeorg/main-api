@@ -301,6 +301,7 @@ trait PersistentUserService {
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
+  def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -880,6 +881,21 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               followedUsersColumn.date -> DateHelper.now()
             )
         }.execute().apply()
+      })
+    }
+
+    override def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          delete
+            .from(FollowedUsers)
+            .where(
+              sqls
+                .eq(followedUsersAlias.userId, userId.value)
+                .and(sqls.eq(followedUsersAlias.followedUserId, followedUserId.value))
+            )
+        }.executeUpdate().apply()
       })
     }
   }
