@@ -25,6 +25,8 @@ import org.make.core.Sharded
 import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
 
+import scala.util.matching.Regex
+
 case class Field(name: String, value: Option[Json]) {
   def toSeq: Seq[(String, Json)] =
     value match {
@@ -106,11 +108,36 @@ object SendEmail {
       Json.obj(fields: _*)
     }
 }
-case class SendMessages(messages: Seq[SendEmail])
+case class SendMessages(messages: Seq[SendEmail], sandboxMode: Option[Boolean])
 
 object SendMessages {
-  def apply(message: SendEmail): SendMessages = SendMessages(Seq(message))
-  implicit val encoder: Encoder[SendMessages] = Encoder.forProduct1("Messages")(sendMessages => sendMessages.messages)
+
+  val SandboxEmail: Regex = "^yopmail\\+([^@]+)@make\\.org$".r
+
+  def sandboxMode(message: SendEmail): Option[Boolean] = {
+    if (message.recipients.forall(_.email match {
+          case SandboxEmail(_) => true
+          case _               => false
+        })) {
+      Some(true)
+    } else {
+      None
+    }
+  }
+
+  def apply(message: SendEmail): SendMessages = {
+    SendMessages(Seq(message), sandboxMode(message))
+  }
+
+  implicit val encoder: Encoder[SendMessages] = { sendMessages: SendMessages =>
+    val fields: Seq[(String, Json)] =
+      Seq.empty ++ Field("Messages", Some(sendMessages.messages.asJson)).toSeq ++ Field(
+        "SandboxMode",
+        sendMessages.sandboxMode.map(_.asJson)
+      ).toSeq
+
+    Json.obj(fields: _*)
+  }
 }
 
 case class TransactionDetail(status: String,
