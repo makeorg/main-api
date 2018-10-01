@@ -364,7 +364,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = IdeaId("my-id")
+        idea = Some(IdeaId("my-id"))
       )
 
       Then("I should receive 'None' since nothing is found")
@@ -399,7 +399,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
         question = questionOnTheme,
-        idea = IdeaId("my-idea")
+        idea = Some(IdeaId("my-idea"))
       )
 
       Then("I should receive the accepted proposal with modified content")
@@ -447,7 +447,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnNothingFr,
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = IdeaId("some-idea")
+        idea = Some(IdeaId("some-idea"))
       )
 
       Then("I should receive the accepted proposal")
@@ -495,7 +495,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnNothingFr,
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = IdeaId("some-idea")
+        idea = Some(IdeaId("some-idea"))
       )
 
       Then("I should receive the accepted proposal")
@@ -540,7 +540,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = None,
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = IdeaId("some-idea"),
+        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr
       )
 
@@ -555,7 +555,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = Some("something different"),
         labels = Seq(LabelId("action2")),
         tags = Seq(TagId("some tag id 2")),
-        idea = IdeaId("some-idea"),
+        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr
       )
 
@@ -594,7 +594,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = None,
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = idea,
+        idea = Some(idea),
         question = questionOnTheme
       )
       val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
@@ -934,7 +934,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = None,
         labels = Seq.empty,
         tags = Seq(TagId("some tag id")),
-        idea = IdeaId("some-idea"),
+        idea = Some(IdeaId("some-idea")),
         question = questionOnTheme
       )
 

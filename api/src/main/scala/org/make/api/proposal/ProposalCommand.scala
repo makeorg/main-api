@@ -68,7 +68,7 @@ final case class AcceptProposalCommand(moderator: UserId,
                                        question: Question,
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       idea: IdeaId)
+                                       idea: Option[IdeaId])
     extends ProposalCommand
 
 final case class RefuseProposalCommand(moderator: UserId,

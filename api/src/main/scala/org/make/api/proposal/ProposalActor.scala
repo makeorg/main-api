@@ -627,7 +627,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = Seq.empty,
-                idea = Some(command.idea),
+                idea = command.idea,
                 operation = command.question.operationId.orElse(proposal.operation),
                 question = Some(command.question.questionId)
               )
