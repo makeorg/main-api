@@ -72,6 +72,8 @@ class CrmServiceComponentTest
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
 
+  when(mailJetConfiguration.url).thenReturn("")
+
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
     operationId = OperationId("default"),

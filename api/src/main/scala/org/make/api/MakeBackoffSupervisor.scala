@@ -31,8 +31,16 @@ object MakeBackoffSupervisor {
   }
 
   private def props(props: Props, name: String): Props = {
+    val maxNrOfRetries = 50
     BackoffSupervisor.props(
-      Backoff.onStop(props, childName = name, minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+      Backoff.onStop(
+        props,
+        childName = name,
+        minBackoff = 3.seconds,
+        maxBackoff = 30.seconds,
+        randomFactor = 0.2,
+        maxNrOfRetries = maxNrOfRetries
+      )
     )
   }
 
