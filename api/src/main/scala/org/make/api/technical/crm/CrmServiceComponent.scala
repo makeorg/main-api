@@ -46,8 +46,7 @@ import org.make.core.operation.Operation
 import org.make.core.user.{User, UserId}
 
 import scala.collection.immutable
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
@@ -88,36 +87,28 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   lazy val printer: Printer = Printer.noSpaces.copy(dropNullValues = false)
   lazy val url = new URL(mailJetConfiguration.url)
   val httpPort: Int = 443
-  lazy val httpFlow: Flow[(HttpRequest, HttpRequest), (Try[HttpResponse], HttpRequest), NotUsed] = {
-    Flow[(HttpRequest, HttpRequest)]
-      .via(Http(actorSystem).cachedHostConnectionPoolHttps(host = url.getHost, port = httpPort))
-  }
+
+  lazy val httpFlow
+    : Flow[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse]), Http.HostConnectionPool] =
+    Http(actorSystem).cachedHostConnectionPoolHttps[Promise[HttpResponse]](host = url.getHost, port = httpPort)
+
   private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
-  lazy val queue: SourceQueueWithComplete[(HttpRequest, HttpRequest)] = Source
-    .queue[(HttpRequest, HttpRequest)](bufferSize = bufferSize, OverflowStrategy.backpressure)
+  lazy val queue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
+    .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = bufferSize, OverflowStrategy.backpressure)
     .via(httpFlow)
     .withAttributes(ActorAttributes.dispatcher(api.mailJetDispatcher))
-    .toMat(Sink.foreach({
-      case (Success(r), request) =>
-        if (r.status.isSuccess()) {
-          logger.debug(s"CRM HTTP request succeed. response: ${r.toString()} request: {${request.toString}}")
-        } else {
-          logger.error(s"CRM HTTP request failed. status: ${r.status.toString}  body:${r.entity
-            .toStrict(3.seconds)(ActorMaterializer()(actorSystem))
-            .map { _.data }
-            .map(_.utf8String)} request:{${request.toString}}")
-        }
-      case (Failure(e), request) => logger.warn(s"failed request: ${request.toString}", e)
-
-    }))(Keep.left)
+    .toMat(Sink.foreach {
+      case (Success(resp), p) => p.success(resp)
+      case (Failure(e), p)    => p.failure(e)
+    })(Keep.left)
     .run()(ActorMaterializer()(actorSystem))
 
   private lazy val authorization = Authorization(
     BasicHttpCredentials(mailJetConfiguration.campaignApiKey, mailJetConfiguration.campaignSecretKey)
   )
 
-  def manageContactMailJetRequest(listId: String, manageContact: ManageContact): Future[QueueOfferResult] = {
+  def manageContactMailJetRequest(listId: String, manageContact: ManageContact): Future[HttpResponse] = {
     val request = HttpRequest(
       method = HttpMethods.POST,
       uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactslist/$listId/managecontact"),
@@ -127,7 +118,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     doHttpCall(request)
   }
 
-  def manageContactListMailJetRequest(manageContactList: ManageManyContacts): Future[QueueOfferResult] = {
+  def manageContactListMailJetRequest(manageContactList: ManageManyContacts): Future[HttpResponse] = {
     val request =
       HttpRequest(
         method = HttpMethods.POST,
@@ -138,7 +129,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     doHttpCall(request)
   }
 
-  def updateContactProperties(contactData: ContactData, email: String): Future[QueueOfferResult] = {
+  def updateContactProperties(contactData: ContactData, email: String): Future[HttpResponse] = {
     val encodedEmail: String = URLEncoder.encode(email, "UTF-8")
     val request =
       HttpRequest(
@@ -150,19 +141,27 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     doHttpCall(request)
   }
 
-  def sendEmailMailJetRequest(message: SendEmail): Future[QueueOfferResult] = {
+  def sendEmailMailJetRequest(message: SendMessages): Future[HttpResponse] = {
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.POST,
       uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
       headers = immutable
         .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
-      entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(SendMessages(message).asJson))
+      entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(message.asJson))
     )
     doHttpCall(request)
   }
 
-  private def doHttpCall(request: HttpRequest): Future[QueueOfferResult] = {
-    queue.offer((request, request))
+  private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
+    val promise = Promise[HttpResponse]()
+    queue.offer((request, promise)).flatMap {
+      case QueueOfferResult.Enqueued    => promise.future
+      case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+      case QueueOfferResult.Failure(ex) => Future.failed(ex)
+      case QueueOfferResult.QueueClosed =>
+        Future
+          .failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
+    }
   }
 
   override lazy val crmService: CrmService = new CrmService {
@@ -177,8 +176,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             action = ManageContactAction.AddNoForce,
             properties = Some(properties)
           )
-        ).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add single to optin list")
+        ).map { response =>
+          logMailjetResponse(response, "Add single to optin list")
         }
       }
     }
@@ -188,8 +187,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.optInListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Remove single from optin list")
+      ).map { response =>
+        logMailjetResponse(response, "Remove single from optin list")
       }
     }
 
@@ -203,8 +202,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             action = ManageContactAction.AddNoForce,
             properties = Some(properties)
           )
-        ).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add single to hardbounce list")
+        ).map { response =>
+          logMailjetResponse(response, "Add single to hardbounce list")
         }
       }
     }
@@ -219,15 +218,16 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             action = ManageContactAction.AddNoForce,
             properties = Some(properties)
           )
-        ).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add single to unsubscribe list")
+        ).map { response =>
+          logMailjetResponse(response, "Add single to unsubscribe list")
         }
       }
     }
 
     override def sendEmail(message: SendEmail): Future[Unit] = {
-      sendEmailMailJetRequest(message = message).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Sent email")
+      val messages = SendMessages(message)
+      sendEmailMailJetRequest(message = messages).map { response =>
+        logMailjetSendEmailResponse(messages, response)
       }
     }
 
@@ -236,8 +236,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.hardBounceListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Remove from hardbounce list")
+      ).map { response =>
+        logMailjetResponse(response, "Remove from hardbounce list")
       }
     }
 
@@ -246,8 +246,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         listId = mailJetConfiguration.unsubscribeListId,
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { queueOfferResult =>
-        logQueueOfferResult(queueOfferResult, "Remove from unsubscribe list")
+      ).map { response =>
+        logMailjetResponse(response, "Remove from unsubscribe list")
       }
     }
 
@@ -279,8 +279,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             ContactList(mailJetConfiguration.optInListId, ManageContactAction.AddNoForce)
           )
         )
-        manageContactListMailJetRequest(manageContactList = contacts).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add to optin list")
+        manageContactListMailJetRequest(manageContactList = contacts).map { response =>
+          logMailjetResponse(response, "Add to optin list")
         }
 
       }
@@ -311,8 +311,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
             )
           )
-        ).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add to unsubscribe list")
+        ).map { response =>
+          logMailjetResponse(response, "Add to unsubscribe list")
         }
       }
     }
@@ -342,8 +342,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
             )
           )
-        ).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Add to hardbounce list")
+        ).map { response =>
+          logMailjetResponse(response, "Add to hardbounce list")
         }
 
       }
@@ -354,8 +354,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       getPropertiesFromUser(user).flatMap { properties =>
         val contactData = properties.toContactPropertySeq
 
-        updateContactProperties(ContactData(data = contactData), user.email).map { queueOfferResult =>
-          logQueueOfferResult(queueOfferResult, "Update user properties")
+        updateContactProperties(ContactData(data = contactData), user.email).map { response =>
+          logMailjetResponse(response, "Update user properties")
         }
       }
 
@@ -580,14 +580,23 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       )
     }
 
-    def logQueueOfferResult(queueOfferResult: QueueOfferResult, operationName: String): Unit = {
-      queueOfferResult match {
-        case QueueOfferResult.Enqueued => logger.debug(s"$operationName: element has been consumed")
-        case QueueOfferResult.Dropped =>
-          logger.error(s"$operationName: element has been ignored because of backpressure")
-        case QueueOfferResult.QueueClosed => logger.error(s"$operationName: the queue upstream has terminated")
-        case QueueOfferResult.Failure(e) =>
-          logger.error(s"$operationName: the queue upstream has failed with an exception (${e.getMessage})")
+    def logMailjetResponse(result: HttpResponse, operationName: String): Unit = {
+      result match {
+        case HttpResponse(code, _, _, _) if code.isSuccess() =>
+          logger.debug(s"$operationName: call completed with status $code")
+        case HttpResponse(code, _, entity, _) =>
+          logger.error(s"$operationName failed with status $code: $entity")
+      }
+    }
+
+    val printer: Printer = Printer.noSpaces
+
+    def logMailjetSendEmailResponse(message: SendMessages, result: HttpResponse): Unit = {
+      result match {
+        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
+          logger.info(s"Sent email: ${printer.pretty(message.asJson)} ->  $entity")
+        case HttpResponse(code, _, entity, _) =>
+          logger.error(s"send email failed with status $code: $entity")
       }
     }
   }

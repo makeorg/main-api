@@ -62,9 +62,17 @@ object ThreadPoolMonitoringActor {
   val innerProps: Props = Props[ThreadPoolMonitoringActor]
 
   val name: String = "BackoffThreadPoolMonitoringActor"
+  private val maxNrOfRetries = 50
   val props: Props = BackoffSupervisor.props(
     Backoff
-      .onStop(innerProps, childName = innerName, minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+      .onStop(
+        innerProps,
+        childName = innerName,
+        minBackoff = 3.seconds,
+        maxBackoff = 30.seconds,
+        randomFactor = 0.2,
+        maxNrOfRetries = maxNrOfRetries
+      )
   )
 
   case object Monitor

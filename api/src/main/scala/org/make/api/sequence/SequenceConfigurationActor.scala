@@ -93,16 +93,19 @@ object SequenceConfigurationActor {
   val name = "sequence-configuration-backoff"
   val internalName = "sequence-configuration-backoff"
 
-  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props =
+  def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props = {
+    val maxNrOfRetries = 50
     BackoffSupervisor.props(
       Backoff.onStop(
         Props(new SequenceConfigurationActor(persistentSequenceConfigurationService)),
         childName = internalName,
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2
+        randomFactor = 0.2,
+        maxNrOfRetries = maxNrOfRetries
       )
     )
+  }
 
 }
 

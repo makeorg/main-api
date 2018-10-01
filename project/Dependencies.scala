@@ -21,8 +21,8 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.13"
-  private val akkaHttpVersion = "10.1.1"
+  private val akkaVersion = "2.5.17"
+  private val akkaHttpVersion = "10.1.5"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.2.9"
@@ -34,7 +34,7 @@ object Dependencies {
   private val kamonAkkaRemoteVersion = "1.0.1"
   private val kamonSystemMetricsVersion = "1.0.0"
   private val kamonPrometheusVersion = "1.1.1"
-  private val circeVersion = "0.9.1"
+  private val circeVersion = "0.10.0"
   val aspectJVersion: String = "1.8.13"
   val swaggerUiVersion: String = "3.14.0"
 
