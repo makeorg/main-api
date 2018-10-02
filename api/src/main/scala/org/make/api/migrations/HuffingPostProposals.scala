@@ -18,42 +18,13 @@
  */
 
 package org.make.api.migrations
-import java.util.concurrent.Executors
 
-import org.make.api.MakeApi
-import org.make.api.migrations.ProposalHelper.{FixtureDataLine, UserInfo}
-import org.make.core.SlugHelper
-import org.make.core.proposal.{SearchFilters, SearchQuery, SlugSearchFilter}
+import org.make.api.migrations.ProposalHelper.UserInfo
 import org.make.core.reference.{Country, Language}
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+object HuffingPostProposals extends MultiOperationsProposalHelper {
 
-object HuffingPostProposals extends Migration with ProposalHelper {
-
-  implicit override val executor: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
-
-  override def extractDataLine(line: String): Option[ProposalHelper.FixtureDataLine] = {
-    line.drop(1).dropRight(1).split("""";"""") match {
-      case Array(email, content, country, language, tags) =>
-        Some(
-          FixtureDataLine(
-            email = email,
-            content = content,
-            theme = None,
-            operation = None,
-            tags = tags.split('|').toSeq,
-            labels = Seq.empty,
-            country = Country(country),
-            language = Language(language),
-            acceptProposal = true
-          )
-        )
-      case _ => None
-    }
-  }
-
-  override val users: Seq[UserInfo] =
+  override def users: Seq[UserInfo] =
     Seq(
       UserInfo("yopmail+leila@make.org", "Leila", 33, Country("FR"), Language("fr")),
       UserInfo("yopmail+ariane@make.org", "Ariane", 19, Country("FR"), Language("fr")),
@@ -85,7 +56,7 @@ object HuffingPostProposals extends Migration with ProposalHelper {
       UserInfo("yopmail+sylvain@make.org", "Sylvain", 46, Country("FR"), Language("fr"))
     )
 
-  val operationsProposalsSource: Map[String, String] = Map(
+  def operationsProposalsSource: Map[String, String] = Map(
     "politique-huffpost" -> "fixtures/huffingpost/proposals_politique.csv",
     "economie-huffpost" -> "fixtures/huffingpost/proposals_economie.csv",
     "international-huffpost" -> "fixtures/huffingpost/proposals_international.csv",
@@ -94,50 +65,6 @@ object HuffingPostProposals extends Migration with ProposalHelper {
     "societe-huffpost" -> "fixtures/huffingpost/proposals_societe.csv",
     "education-huffpost" -> "fixtures/huffingpost/proposals_education.csv"
   )
-
-  override def initialize(api: MakeApi): Future[Unit] = {
-    Future.successful {}
-  }
-
-  override def migrate(api: MakeApi): Future[Unit] = {
-    sequentially(operationsProposalsSource.toSeq) {
-      case (operationSlug, dataFile) =>
-        api.operationService.findOneBySlug(operationSlug).flatMap {
-          case None => Future.failed(new IllegalStateException(s"Operation $operationSlug doesn't exist"))
-          case Some(operation) =>
-            api.questionService.findQuestion(None, Some(operation.operationId), Country("FR"), Language("fr")).flatMap {
-              case None =>
-                Future.failed(new IllegalStateException(s"no question for operation $operationSlug doesn't exist"))
-              case Some(question) =>
-                api.tagService.findByQuestionId(question.questionId).flatMap { tags =>
-                  sequentially(readProposalFile(dataFile)) { line =>
-                    api.elasticsearchProposalAPI
-                      .countProposals(
-                        SearchQuery(
-                          filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(line.content)))))
-                        )
-                      )
-                      .flatMap {
-                        case count if count > 0 => Future.successful {}
-                        case _ =>
-                          insertProposal(api, line.content, line.email, question).flatMap { proposalId =>
-                            val proposalTags = tags.filter(tag => line.tags.contains(tag.label)).map(_.tagId)
-                            if (line.acceptProposal) {
-                              acceptProposal(api, proposalId, line.content, question, proposalTags, line.labels)
-                            } else {
-                              Future.successful {}
-                            }
-                          }
-
-                      }
-                  }
-                }
-            }
-
-        }
-    }
-
-  }
 
   override def runInProduction: Boolean = false
 }
