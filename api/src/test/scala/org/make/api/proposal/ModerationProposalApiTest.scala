@@ -206,7 +206,18 @@ class ModerationProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = None,
-    idea = IdeaId("becoming-king"),
+    idea = Some(IdeaId("becoming-king")),
+    operation = None
+  ).asJson.toString
+
+  val validateProposalEntityWithoutTagNorIdea: String = ValidateProposalRequest(
+    newContent = None,
+    sendNotificationEmail = true,
+    theme = Some(ThemeId("fire and ice")),
+    labels = Seq(LabelId("sex"), LabelId("violence")),
+    tags = Seq.empty,
+    similarProposals = None,
+    idea = None,
     operation = None
   ).asJson.toString
 
@@ -238,7 +249,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[IdeaId],
+        any[Option[IdeaId]],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -252,7 +263,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[IdeaId],
+        any[Option[IdeaId]],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -266,7 +277,7 @@ class ModerationProposalApiTest
         any[Question],
         any[Option[String]],
         any[Boolean],
-        any[IdeaId],
+        any[Option[IdeaId]],
         any[Seq[LabelId]],
         any[Seq[TagId]]
       )
@@ -707,8 +718,36 @@ class ModerationProposalApiTest
       }
     }
 
-    // Todo: implement this test
-    scenario("validation of proposal without Tag: this test should be done") {}
+    scenario("validation of proposal without Tag nor Idea") {
+      when(
+        questionService.findQuestionByQuestionIdOrThemeOrOperation(
+          matches(None),
+          matches(Some(ThemeId("fire and ice"))),
+          matches(None),
+          matches(Country("FR")),
+          matches(Language("fr"))
+        )
+      ).thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              questionId = QuestionId("question-fire-and-ice"),
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "",
+              operationId = None,
+              themeId = Some(ThemeId("fire and ice"))
+            )
+          )
+        )
+      )
+
+      Post("/moderation/proposals/987654/accept")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntityWithoutTagNorIdea))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
   }
 
   feature("proposal refuse") {

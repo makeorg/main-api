@@ -96,7 +96,7 @@ trait ProposalService {
                        question: Question,
                        newContent: Option[String],
                        sendNotificationEmail: Boolean,
-                       idea: IdeaId,
+                       idea: Option[IdeaId],
                        labels: Seq[LabelId],
                        tags: Seq[TagId]): Future[Option[ProposalResponse]]
 
@@ -409,7 +409,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                   question: Question,
                                   newContent: Option[String],
                                   sendNotificationEmail: Boolean,
-                                  idea: IdeaId,
+                                  idea: Option[IdeaId],
                                   labels: Seq[LabelId],
                                   tags: Seq[TagId]): Future[Option[ProposalResponse]] = {
 

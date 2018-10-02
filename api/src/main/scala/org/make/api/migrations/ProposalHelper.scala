@@ -152,7 +152,7 @@ trait ProposalHelper {
           question = question,
           labels = labels,
           tagIds,
-          idea.ideaId
+          Some(idea.ideaId)
         )
       )
     }.map(_ => ())

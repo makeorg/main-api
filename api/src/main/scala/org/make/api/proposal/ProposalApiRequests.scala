@@ -78,11 +78,9 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          tags: Seq[TagId],
                                          // TODO: remove similarProposals once BO stops sending them
                                          similarProposals: Option[Seq[ProposalId]],
-                                         idea: IdeaId,
+                                         idea: Option[IdeaId],
                                          theme: Option[ThemeId],
-                                         operation: Option[OperationId]) {
-  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
-}
+                                         operation: Option[OperationId])
 
 object ValidateProposalRequest {
   implicit val decoder: Decoder[ValidateProposalRequest] = deriveDecoder[ValidateProposalRequest]

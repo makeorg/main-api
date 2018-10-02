@@ -30,19 +30,18 @@ import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
-import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed._
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -191,7 +190,7 @@ class ProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = None,
-    idea = IdeaId("becoming-king"),
+    idea = Some(IdeaId("becoming-king")),
     operation = None
   ).asJson.toString
 
@@ -225,125 +224,6 @@ class ProposalApiTest
       .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Question])
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
-  when(
-    proposalService
-      .validateProposal(
-        matches(ProposalId("123456")),
-        any[UserId],
-        any[RequestContext],
-        any[Question],
-        any[Option[String]],
-        any[Boolean],
-        any[IdeaId],
-        any[Seq[LabelId]],
-        any[Seq[TagId]]
-      )
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
-
-  when(
-    proposalService
-      .validateProposal(
-        matches(ProposalId("987654")),
-        any[UserId],
-        any[RequestContext],
-        any[Question],
-        any[Option[String]],
-        any[Boolean],
-        any[IdeaId],
-        any[Seq[LabelId]],
-        any[Seq[TagId]]
-      )
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
-
-  when(
-    proposalService
-      .validateProposal(
-        matches(ProposalId("nop")),
-        any[UserId],
-        any[RequestContext],
-        any[Question],
-        any[Option[String]],
-        any[Boolean],
-        any[IdeaId],
-        any[Seq[LabelId]],
-        any[Seq[TagId]]
-      )
-  ).thenReturn(Future.failed(ValidationFailedError(Seq())))
-
-  when(
-    proposalService
-      .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
-
-  when(
-    proposalService
-      .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
-
-  when(
-    proposalService
-      .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
-  ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
-
-  when(
-    proposalService
-      .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
-  ).thenReturn(Future.successful(Some(tyrion.userId)))
-
-  when(
-    proposalService
-      .getModerationProposalById(matches(ProposalId("sim-123")))
-  ).thenReturn(
-    Future.successful(
-      Some(
-        ProposalResponse(
-          proposalId = ProposalId("sim-123"),
-          slug = "a-song-of-fire-and-ice",
-          content = "A song of fire and ice",
-          author = UserResponse(
-            UserId("Georges RR Martin"),
-            email = "g@rr.martin",
-            firstName = Some("Georges"),
-            lastName = Some("Martin"),
-            organisationName = None,
-            enabled = true,
-            emailVerified = true,
-            isOrganisation = false,
-            lastConnection = DateHelper.now(),
-            roles = Seq.empty,
-            None,
-            country = Country("FR"),
-            language = Language("fr"),
-            isHardBounce = false,
-            lastMailingError = None,
-            hasPassword = false,
-            followedUsers = Seq.empty
-          ),
-          labels = Seq(),
-          theme = None,
-          status = Accepted,
-          tags = Seq(),
-          votes = Seq(
-            Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-            Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-            Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
-          ),
-          context = RequestContext.empty,
-          createdAt = Some(DateHelper.now()),
-          updatedAt = Some(DateHelper.now()),
-          events = Nil,
-          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
-          idea = None,
-          ideaProposals = Seq.empty,
-          operationId = None,
-          language = Some(Language("fr")),
-          country = Some(Country("FR")),
-          questionId = None
-        )
-      )
-    )
-  )
-
   val proposalResult: ProposalResult = ProposalResult(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
@@ -371,53 +251,6 @@ class ProposalApiTest
     proposalService
       .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(1, Seq(proposalResult), Some(42))))
-
-  private def proposal(id: ProposalId): ProposalResponse = {
-    ProposalResponse(
-      proposalId = id,
-      slug = "a-song-of-fire-and-ice",
-      content = "A song of fire and ice",
-      author = UserResponse(
-        UserId("Georges RR Martin"),
-        email = "g@rr.martin",
-        firstName = Some("Georges"),
-        lastName = Some("Martin"),
-        organisationName = None,
-        enabled = true,
-        emailVerified = true,
-        isOrganisation = false,
-        lastConnection = DateHelper.now(),
-        roles = Seq.empty,
-        None,
-        country = Country("FR"),
-        language = Language("fr"),
-        isHardBounce = false,
-        lastMailingError = None,
-        hasPassword = false,
-        followedUsers = Seq.empty
-      ),
-      labels = Seq(),
-      theme = None,
-      status = Accepted,
-      tags = Seq(),
-      votes = Seq(
-        Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
-      ),
-      context = RequestContext.empty,
-      createdAt = Some(DateHelper.now()),
-      updatedAt = Some(DateHelper.now()),
-      events = Nil,
-      similarProposals = Seq.empty,
-      idea = None,
-      ideaProposals = Seq.empty,
-      operationId = None,
-      language = Some(Language("fr")),
-      country = Some(Country("FR")),
-      questionId = None
-    )
-  }
 
   when(ideaService.fetchOne(any[IdeaId]))
     .thenReturn(
