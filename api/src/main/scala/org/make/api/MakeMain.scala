@@ -165,6 +165,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       HuffingPostOperations,
       HuffingPostTags,
       HuffingPostProposals,
+      HuffingPostV2Proposals,
       AinesOperation,
       AinesImportTagsData,
       AinesData
