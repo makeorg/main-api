@@ -139,6 +139,8 @@ class SortAlgorithmIT
       IndexedVote(key = VoteKey.Disagree, qualifications = Seq.empty),
       IndexedVote(key = VoteKey.Neutral, qualifications = Seq.empty)
     ),
+    votesCount = 3,
+    toEnrich = false,
     scores = IndexedScores.empty,
     context = None,
     author = Author(

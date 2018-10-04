@@ -42,6 +42,7 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
 import org.make.core.proposal.ProposalId
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   Author,
   IndexedOrganisationInfo,
@@ -163,13 +164,16 @@ trait ProposalIndexationStream
         },
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
+        votesCount = proposal.votes.map(_.count).sum,
+        toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
         scores = IndexedScores(
           engagement = ProposalScorerHelper.engagement(proposal),
           adhesion = ProposalScorerHelper.adhesion(proposal),
           realistic = ProposalScorerHelper.realistic(proposal),
           topScore = ProposalScorerHelper.topScore(proposal),
           controversy = ProposalScorerHelper.controversy(proposal),
-          rejection = ProposalScorerHelper.rejection(proposal)
+          rejection = ProposalScorerHelper.rejection(proposal),
+          scoreUpperBound = ProposalScorerHelper.scoreUpperBound(proposal)
         ),
         context = Some(
           ProposalContext(

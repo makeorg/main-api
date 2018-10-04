@@ -185,6 +185,9 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
                                          status: Option[Seq[ProposalStatus]] = None,
+                                         minVotesCount: Option[Int] = None,
+                                         toEnrich: Option[Boolean] = None,
+                                         minScore: Option[Float] = None,
                                          language: Option[Language] = None,
                                          country: Option[Country] = None,
                                          sort: Option[SortRequest] = None,
@@ -205,6 +208,9 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
         context = context.map(_.toContext),
         status = status.map(StatusSearchFilter.apply),
+        minVotesCount = minVotesCount.map(MinVotesCountSearchFilter.apply),
+        toEnrich = toEnrich.map(ToEnrichSearchFilter.apply),
+        minScore = minScore.map(MinScoreSearchFilter.apply),
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply)
       )

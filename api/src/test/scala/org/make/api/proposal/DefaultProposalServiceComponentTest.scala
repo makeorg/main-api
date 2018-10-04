@@ -148,6 +148,8 @@ class DefaultProposalServiceComponentTest
       createdAt = DateHelper.now(),
       updatedAt = None,
       votes = Seq.empty,
+      votesCount = 0,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
       trending = None,

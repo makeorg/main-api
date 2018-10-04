@@ -164,6 +164,8 @@ class ProposalSearchEngineIT
         )
       )
     ),
+    votesCount = 3,
+    toEnrich = false,
     scores = IndexedScores.empty,
     context = Some(Context(operation = None, location = None, question = None, source = None)),
     author = Author(
@@ -226,7 +228,9 @@ class ProposalSearchEngineIT
           )
         )
       ),
-      scores = IndexedScores.empty,
+      votesCount = 287,
+      toEnrich = true,
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 84),
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -284,6 +288,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 310,
+      toEnrich = true,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -342,6 +348,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 127,
+      toEnrich = true,
       scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
@@ -402,6 +410,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 353,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -460,6 +470,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 368,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -520,6 +532,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 305,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
       trending = None,
@@ -578,6 +592,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 286,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
       trending = None,
@@ -636,6 +652,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 162,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
       trending = None,
@@ -699,6 +717,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 178,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -759,6 +779,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 131,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -819,6 +841,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 356,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -879,6 +903,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 347,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -937,6 +963,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 267,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -995,6 +1023,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 204,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -1054,6 +1084,8 @@ class ProposalSearchEngineIT
           )
         )
       ),
+      votesCount = 254,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -1220,6 +1252,54 @@ class ProposalSearchEngineIT
     scenario("should return the number of votes of proposals") {
       whenReady(elasticsearchProposalAPI.countVotedProposals(query), Timeout(10.seconds)) { result =>
         result should be(597)
+      }
+    }
+  }
+
+  feature("search proposals by toEnrich") {
+    scenario("should return a list of proposals") {
+      Given("a boolean set to true")
+      val query =
+        SearchQuery(filters = Some(SearchFilters(toEnrich = Some(ToEnrichSearchFilter(toEnrich = true)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be < 6L
+        result.total should be > 0L
+      }
+    }
+
+    scenario("should not return proposals with no tags") {
+      Given("a boolean set to false")
+      val query =
+        SearchQuery(filters = Some(SearchFilters(toEnrich = Some(ToEnrichSearchFilter(toEnrich = false)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be > 0L
+        result.results.forall(!_.toEnrich) should be(true)
+      }
+    }
+  }
+
+  feature("search proposals by minVotes") {
+    scenario("should return a list of proposals") {
+      Given("minimum vote number")
+      val query =
+        SearchQuery(filters = Some(SearchFilters(minVotesCount = Some(MinVotesCountSearchFilter(42)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be > 0L
+      }
+    }
+  }
+
+  feature("search proposals by m") {
+    scenario("should return a list of proposals") {
+      Given("minimum vote number")
+      val query =
+        SearchQuery(filters = Some(SearchFilters(minScore = Some(MinScoreSearchFilter(42)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(1L)
       }
     }
   }

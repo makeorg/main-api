@@ -232,6 +232,14 @@
             }
           }
         },
+        "votesCount": {
+          "type": "integer",
+          "index": true
+        },
+        "toEnrich": {
+          "type": "boolean",
+          "index": true
+        },
         "scores": {
           "type": "object",
           "properties": {
@@ -260,6 +268,10 @@
               "index": true
             },
             "rejection": {
+              "type": "double",
+              "index": true
+            },
+            "scoreUpperBound": {
               "type": "double",
               "index": true
             }
