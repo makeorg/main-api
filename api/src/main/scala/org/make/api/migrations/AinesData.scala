@@ -42,5 +42,5 @@ object AinesData extends InsertOperationFixtureData {
     UserInfo("yopmail+solene@make.org", "Solène", 35, country, language),
   )
   override def dataResource: String = "fixtures/proposals_aines.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }
