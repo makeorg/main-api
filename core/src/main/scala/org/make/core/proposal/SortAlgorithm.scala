@@ -68,7 +68,7 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
     val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].values.size()"
     val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
     val orderingByActorVoteAndTagsCountScript =
-      s"$scriptActorVoteCount > 0 && $scriptTagsCount > 0 ? ($scriptActorVoteCount * 50 + $scriptTagsCount) * 100 :" +
+      s"($scriptActorVoteCount > 0 && $scriptTagsCount > 0) ? ($scriptActorVoteCount * 50 + $scriptTagsCount) * 100 :" +
         s"$scriptActorVoteCount > 0 ? $scriptActorVoteCount * 100 :" +
         s"$scriptTagsCount > 0 ? $scriptTagsCount * 10 : 1"
     request.query.map { query =>
