@@ -436,6 +436,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
         lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
         operationActivity = Some(userProperty.operationActivity.distinct.mkString(",")),
+        sourceActivity = Some(userProperty.sourceActivity.distinct.mkString(",")),
         activeCore = userProperty.activeCore,
         daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
         daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
@@ -469,6 +470,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
         daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
         daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -489,6 +491,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
         daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
         daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -509,6 +512,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
         daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
         daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -528,6 +532,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
         firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
         lastContributionDate = Some(event.action.date),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -551,6 +556,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
         firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
         lastContributionDate = Some(event.action.date),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -576,7 +582,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationOperation = event.requestContext.operationId.map(_.value),
         accountCreationCountry = event.requestContext.country.map(_.value),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value)
+        operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source
       )
     }
 
@@ -623,6 +630,7 @@ final case class UserProperties(userId: UserId,
                                 firstContributionDate: Option[ZonedDateTime] = None,
                                 lastContributionDate: Option[ZonedDateTime] = None,
                                 operationActivity: Seq[String] = Seq.empty,
+                                sourceActivity: Seq[String] = Seq.empty,
                                 activeCore: Option[Boolean] = None,
                                 daysOfActivity: Seq[String] = Seq.empty,
                                 daysOfActivity30d: Seq[String] = Seq.empty,
@@ -664,7 +672,8 @@ final case class UserProperties(userId: UserId,
           accountCreationCountry = accountCreationCountry.orElse(Some("FR")),
           countriesActivity = if (countriesActivity.isEmpty) Seq("FR") else countriesActivity,
           lastCountryActivity = lastCountryActivity.orElse(Some("FR")),
-          lastLanguageActivity = lastLanguageActivity.orElse(Some("fr"))
+          lastLanguageActivity = lastLanguageActivity.orElse(Some("fr")),
+          sourceActivity = (sourceActivity ++ Some("core")).distinct
         )
       case _ => this
     }
