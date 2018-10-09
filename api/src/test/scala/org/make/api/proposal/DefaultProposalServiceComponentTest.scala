@@ -193,7 +193,14 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(QuestionId("vff"), moderatorId, RequestContext.empty),
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId("vff"),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal should be(None)
@@ -371,7 +378,10 @@ class DefaultProposalServiceComponentTest
         proposalService.searchAndLockProposalToModerate(
           questionId = QuestionId("no-proposal-to-lock"),
           moderatorId,
-          RequestContext.empty
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
@@ -488,7 +498,14 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(QuestionId("lock-second"), moderatorId, RequestContext.empty),
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId("lock-second"),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal.isDefined should be(true)
@@ -551,7 +568,14 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
 
       whenReady(
-        proposalService.searchAndLockProposalToModerate(QuestionId("lock-first"), moderatorId, RequestContext.empty),
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId("lock-first"),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
         Timeout(3.seconds)
       ) { maybeProposal =>
         maybeProposal.isDefined should be(true)

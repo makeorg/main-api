@@ -142,7 +142,10 @@ trait ProposalService {
 
   def searchAndLockProposalToModerate(questionId: QuestionId,
                                       moderator: UserId,
-                                      requestContext: RequestContext): Future[Option[ProposalResponse]]
+                                      requestContext: RequestContext,
+                                      toEnrich: Boolean,
+                                      minVotesCount: Option[Int],
+                                      minScore: Option[Float]): Future[Option[ProposalResponse]]
 
   def anonymizeByUserId(userId: UserId): Future[Unit]
 }
@@ -682,21 +685,39 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .map(_.flatten)
     }
 
+    private def getSearchFilters(questionId: QuestionId,
+                                 toEnrich: Boolean,
+                                 minVotesCount: Option[Int],
+                                 minScore: Option[Float]): SearchFilters = {
+      if (toEnrich) {
+        SearchFilters(
+          question = Some(QuestionSearchFilter(questionId)),
+          status = Some(StatusSearchFilter(Seq(ProposalStatus.Accepted))),
+          toEnrich = Some(ToEnrichSearchFilter(toEnrich)),
+          minVotesCount = minVotesCount.map(MinVotesCountSearchFilter.apply),
+          minScore = minScore.map(MinScoreSearchFilter.apply)
+        )
+      } else {
+        SearchFilters(
+          question = Some(QuestionSearchFilter(questionId)),
+          status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
+        )
+      }
+    }
+
     override def searchAndLockProposalToModerate(questionId: QuestionId,
                                                  moderator: UserId,
-                                                 requestContext: RequestContext): Future[Option[ProposalResponse]] = {
+                                                 requestContext: RequestContext,
+                                                 toEnrich: Boolean,
+                                                 minVotesCount: Option[Int],
+                                                 minScore: Option[Float]): Future[Option[ProposalResponse]] = {
 
       userService.getUser(moderator).flatMap { user =>
         search(
           maybeUserId = Some(moderator),
           requestContext = requestContext,
           query = SearchQuery(
-            filters = Some(
-              SearchFilters(
-                question = Some(QuestionSearchFilter(questionId)),
-                status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
-              )
-            ),
+            filters = Some(getSearchFilters(questionId, toEnrich, minVotesCount, minScore)),
             sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
             limit = Some(50),
             language = None
@@ -707,7 +728,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               case Nil => Future.successful(None)
               case head :: tail =>
                 getModerationProposalById(head).flatMap { proposal =>
-                  if (proposal.exists(_.status != Pending)) {
+                  if (proposal.exists(_.status != Pending && !toEnrich)) {
                     recursiveLock(tail)
                   } else {
                     proposalCoordinatorService

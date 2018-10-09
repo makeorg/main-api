@@ -931,7 +931,8 @@ class ModerationProposalApiTest
         |{
         |  "operationId": "vff",
         |  "country": "FR",
-        |  "language": "fr"
+        |  "language": "fr",
+        |  "toEnrich": false
         |}
       """.stripMargin
 
@@ -1023,7 +1024,10 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(QuestionId("question-vff")),
           matches(tyrion.userId),
-          any[RequestContext]
+          any[RequestContext],
+          any[Boolean],
+          any[Option[Int]],
+          any[Option[Float]]
         )
       ).thenReturn(Future.successful(None))
 
@@ -1045,7 +1049,8 @@ class ModerationProposalApiTest
           |{
           |  "operationId": "mieux-vivre-ensemble",
           |  "country": "FR",
-          |  "language": "fr"
+          |  "language": "fr",
+          |  "toEnrich": false
           |}
         """.stripMargin
 
@@ -1076,7 +1081,10 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
-          any[RequestContext]
+          any[RequestContext],
+          any[Boolean],
+          any[Option[Int]],
+          any[Option[Float]]
         )
       ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
 
@@ -1105,7 +1113,10 @@ class ModerationProposalApiTest
         proposalService.searchAndLockProposalToModerate(
           matches(QuestionId("question-mieux-vivre-ensemble")),
           matches(tyrion.userId),
-          any[RequestContext]
+          any[RequestContext],
+          any[Boolean],
+          any[Option[Int]],
+          any[Option[Float]]
         )
       ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
 

@@ -293,7 +293,10 @@ final case class NextProposalToModerateRequest(questionId: Option[QuestionId],
                                                operationId: Option[OperationId],
                                                themeId: Option[ThemeId],
                                                country: Country,
-                                               language: Language) {
+                                               language: Language,
+                                               toEnrich: Boolean,
+                                               minVotesCount: Option[Int],
+                                               minScore: Option[Float]) {
   validate(
     requirePresent(
       "operationId",
