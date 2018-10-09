@@ -23,7 +23,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
-import de.knutwalker.akka.http.support.CirceHttpSupport
 import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
 import org.make.api.Predef._
@@ -35,6 +34,7 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.{reference, CirceFormatters, RequestContext, SlugHelper}
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
 import scala.concurrent.Future

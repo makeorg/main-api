@@ -1,5 +1,11 @@
 version: '3'
 services:
+  swift:
+    image: bouncestorage/swift-aio
+    ports:
+      - 48080:8080
+    networks:
+      - makeapi
   zookeeper:
     image: confluentinc/cp-zookeeper:5.0.0
     environment:

@@ -28,7 +28,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import de.knutwalker.akka.http.support.CirceHttpSupport
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._

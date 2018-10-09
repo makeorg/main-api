@@ -34,7 +34,7 @@ object Dependencies {
   private val kamonAkkaRemoteVersion = "1.0.1"
   private val kamonSystemMetricsVersion = "1.0.0"
   private val kamonPrometheusVersion = "1.1.1"
-  private val circeVersion = "0.10.0"
+  private val circeVersion = "0.9.3"
   val aspectJVersion: String = "1.8.13"
   val swaggerUiVersion: String = "3.14.0"
 
@@ -49,18 +49,18 @@ object Dependencies {
     ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("macos-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
-  val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % circeVersion
-
+  val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"         % circeVersion
   val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor"            % akkaVersion
   val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster"          % akkaVersion
   val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.knutwalker"           %% "akka-http-circe"       % "3.5.0"
+  val akkaHttpCirce: ModuleID = "org.mdedetrich"          %% "akka-http-circe"       % "0.1.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.14.0")
     .exclude("javax.ws.rs", "jsr311-api")
-  val akkaPersistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
+  val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
+  val akkaPersistenceQuesry: ModuleID = "com.typesafe.akka" %% "akka-persistence"       % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.89")
       .exclude("io.netty", "netty-handler")
@@ -99,6 +99,14 @@ object Dependencies {
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
+  val swiftClient: ModuleID =
+    ("org.make" %% "openstack-swift-client" % "1.0.1")
+      .exclude("io.circe", "circe-core_2.12")
+      .exclude("io.circe", "circe-parser_2.12")
+      .exclude("io.circe", "circe-generic_2.12")
+      .exclude("io.circe", "circe-jawn_2.12")
+      .exclude("io.circe", "circe-numbers_2.12")
+
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.3"
@@ -117,11 +125,12 @@ object Dependencies {
   val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.4"
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"     %% "akka-testkit"             % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"        %% "scalatest"                % "3.0.5"         % "it,test"
-  val akkaHttpTest: ModuleID = "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"            % "mockito-core"              % "2.13.0"        % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"      %% "docker-testkit-scalatest" % "0.9.6"         % "it"
+  val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
+  val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.5"         % "it,test"
+  val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
+  val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.13.0"        % "it,test"
+  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.6"         % "it"
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.6" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
