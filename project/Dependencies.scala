@@ -99,13 +99,7 @@ object Dependencies {
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
-  val swiftClient: ModuleID =
-    ("org.make" %% "openstack-swift-client" % "1.0.1")
-      .exclude("io.circe", "circe-core_2.12")
-      .exclude("io.circe", "circe-parser_2.12")
-      .exclude("io.circe", "circe-generic_2.12")
-      .exclude("io.circe", "circe-jawn_2.12")
-      .exclude("io.circe", "circe-numbers_2.12")
+  val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.2"
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
