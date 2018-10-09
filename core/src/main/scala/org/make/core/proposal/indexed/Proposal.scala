@@ -47,9 +47,6 @@ object ProposalElasticsearchFieldNames {
   val status: String = "status"
   val createdAt: String = "createdAt"
   val updatedAt: String = "updatedAt"
-  val countVotesAgree: String = "votesAgree.count"
-  val countVotesDisagree: String = "votesDisagree.count"
-  val countVotesUnsure: String = "votesUnsure.count"
   val contextOperation: String = "context.operation"
   val contextSource: String = "context.source"
   val contextLocation: String = "context.location"
@@ -70,7 +67,10 @@ object ProposalElasticsearchFieldNames {
   val organisations: String = "organisations"
   val organisationId: String = "organisations.organisationId"
   val organisationName: String = "organisations.organisationName"
+  val votesCount: String = "votesCount"
+  val toEnrich: String = "toEnrich"
   val scores: String = "scores"
+  val scoreUpperBound: String = "scores.scoreUpperBound"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -81,6 +81,8 @@ case class IndexedProposal(id: ProposalId,
                            createdAt: ZonedDateTime,
                            updatedAt: Option[ZonedDateTime],
                            votes: Seq[IndexedVote],
+                           votesCount: Int,
+                           toEnrich: Boolean,
                            scores: IndexedScores,
                            context: Option[Context],
                            trending: Option[String],
@@ -161,13 +163,14 @@ final case class IndexedScores(boost: Double = 0,
                                realistic: Double,
                                topScore: Double,
                                controversy: Double,
-                               rejection: Double)
+                               rejection: Double,
+                               scoreUpperBound: Double)
 
 object IndexedScores {
   implicit val encoder: ObjectEncoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
-  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0)
+  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])

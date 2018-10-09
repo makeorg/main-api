@@ -81,7 +81,10 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          idea: Option[IdeaSearchFilter] = None,
                          language: Option[LanguageSearchFilter] = None,
                          country: Option[CountrySearchFilter] = None,
-                         user: Option[UserSearchFilter] = None)
+                         user: Option[UserSearchFilter] = None,
+                         minVotesCount: Option[MinVotesCountSearchFilter] = None,
+                         toEnrich: Option[ToEnrichSearchFilter] = None,
+                         minScore: Option[MinScoreSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -100,7 +103,10 @@ object SearchFilters extends ElasticDsl {
             idea: Option[IdeaSearchFilter] = None,
             language: Option[LanguageSearchFilter] = None,
             country: Option[CountrySearchFilter] = None,
-            user: Option[UserSearchFilter] = None): Option[SearchFilters] = {
+            user: Option[UserSearchFilter] = None,
+            minVotesCount: Option[MinVotesCountSearchFilter] = None,
+            toEnrich: Option[ToEnrichSearchFilter] = None,
+            minScore: Option[MinScoreSearchFilter] = None): Option[SearchFilters] = {
 
     (
       proposals,
@@ -117,9 +123,32 @@ object SearchFilters extends ElasticDsl {
       idea,
       language,
       country,
-      user
+      user,
+      minVotesCount,
+      toEnrich,
+      minScore
     ) match {
-      case (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None) => None
+      case (
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None
+          ) =>
+        None
       case _ =>
         Some(
           SearchFilters(
@@ -137,7 +166,10 @@ object SearchFilters extends ElasticDsl {
             idea,
             language,
             country,
-            user
+            user,
+            minVotesCount,
+            toEnrich,
+            minScore
           )
         )
     }
@@ -168,7 +200,10 @@ object SearchFilters extends ElasticDsl {
       buildLanguageSearchFilter(searchQuery),
       buildCountrySearchFilter(searchQuery),
       buildUserSearchFilter(searchQuery),
-      buildQuestionSearchFilter(searchQuery)
+      buildQuestionSearchFilter(searchQuery),
+      buildMinVotesCountSearchFilter(searchQuery),
+      buildToEnrichSearchFilter(searchQuery),
+      buildMinScoreSearchFilter(searchQuery),
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSortDefinition] =
@@ -404,6 +439,36 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildMinVotesCountSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.minVotesCount match {
+        case Some(MinVotesCountSearchFilter(minVotesCount)) =>
+          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(minVotesCount))
+        case _ => None
+      }
+    }
+  }
+
+  def buildToEnrichSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.toEnrich match {
+        case Some(ToEnrichSearchFilter(toEnrich)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.toEnrich, toEnrich))
+        case _ => None
+      }
+    }
+  }
+
+  def buildMinScoreSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+    searchQuery.filters.flatMap {
+      _.minScore match {
+        case Some(MinScoreSearchFilter(minScore)) =>
+          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreUpperBound).gte(minScore))
+        case _ => None
+      }
+    }
+  }
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -446,3 +511,7 @@ case class IdeaSearchFilter(ideaId: IdeaId)
 case class Limit(value: Int)
 
 case class Skip(value: Int)
+
+case class MinVotesCountSearchFilter(minVotesCount: Int)
+case class ToEnrichSearchFilter(toEnrich: Boolean)
+case class MinScoreSearchFilter(minScore: Float)

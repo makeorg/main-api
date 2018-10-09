@@ -24,7 +24,11 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.{
+  ProposalServiceComponent,
+  ProposalsResultSeededResponse,
+  ProposalsResultWithUserVoteSeededResponse
+}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserResponse
@@ -127,8 +131,13 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
     )
   )
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+    value = Array(
+      new ApiResponse(
+        code = HttpCodes.OK,
+        message = "Ok",
+        response = classOf[ProposalsResultWithUserVoteSeededResponse]
+      )
+    )
   )
   @Path(value = "/{organisationId}/votes")
   def getOrganisationVotes: Route =

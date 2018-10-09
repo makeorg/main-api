@@ -127,6 +127,8 @@ class WidgetApiTest
                     status = ProposalStatus.Accepted,
                     createdAt = ZonedDateTime.now,
                     updatedAt = Some(ZonedDateTime.now),
+                    votesCount = 0,
+                    toEnrich = false,
                     votes = Seq.empty,
                     scores = IndexedScores.empty,
                     context = None,

@@ -100,6 +100,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
           )
         )
       ),
+      votesCount = 267,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
@@ -158,6 +160,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
           )
         )
       ),
+      votesCount = 210,
+      toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
