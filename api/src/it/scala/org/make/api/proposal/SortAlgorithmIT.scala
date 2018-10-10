@@ -35,6 +35,7 @@ import org.make.core.idea.CountrySearchFilter
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -177,7 +178,9 @@ class SortAlgorithmIT
         organisations = Seq(
           IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
           IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2"))
-        )
+        ),
+        tags =
+          Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
     newEmptyProposal("actor-3")
       .copy(
@@ -194,7 +197,9 @@ class SortAlgorithmIT
           IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
           IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3")),
           IndexedOrganisationInfo(UserId("4"), Some("4"), Some("4"))
-        )
+        ),
+        tags =
+          Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
     newEmptyProposal("controversy-1").copy(
       trending = Some("controversy"),
@@ -333,6 +338,20 @@ class SortAlgorithmIT
         result.results.size should be(1)
         result.results.forall(_.trending.contains("popular")) should be(true)
         result.results.forall(_.id == ProposalId("popular-2")) should be(true)
+      }
+    }
+  }
+
+  feature("tagged first algorithm") {
+    scenario("sort by tagged proposals votes") {
+      val query = SearchQuery(sortAlgorithm = Some(TaggedFirstAlgorithm(None)))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be > 4L
+        result.results.head should be(proposals.find(_.id.value == "actor-4").get)
+        result.results(1) should be(proposals.find(_.id.value == "actor-2").get)
+        result.results(2) should be(proposals.find(_.id.value == "actor-3").get)
+        result.results(3) should be(proposals.find(_.id.value == "actor-1").get)
       }
     }
   }

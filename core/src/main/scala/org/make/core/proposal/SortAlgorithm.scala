@@ -50,6 +50,54 @@ final case class RandomAlgorithm(override val maybeSeed: Option[Int] = None)
 }
 object RandomAlgorithm { val shortName: String = "random" }
 
+/*
+ * The ordering of the consultation feed must respect the following rule:
+ * - tagged proposals with at least one vote from actor
+ * - non tagged proposals with at least one vote from actor
+ * - tagged proposals without vote from actor
+ * - non tagged proposals without vote from actor
+ *
+ * To do so, a score is computed based on the number of actors votes and tags.
+ * The higher the score, the closer to first place the proposal will be.
+ * Since we want proposals with actors votes first, this number is put forward (thus the multiplication by 50).
+ */
+final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None)
+    extends SortAlgorithm
+    with RandomBaseAlgorithm {
+  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+    val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].values.size()"
+    val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
+    val orderingByActorVoteAndTagsCountScript =
+      s"($scriptActorVoteCount > 0 && $scriptTagsCount > 0) ? ($scriptActorVoteCount * 50 + $scriptTagsCount) * 100 :" +
+        s"$scriptActorVoteCount > 0 ? $scriptActorVoteCount * 100 :" +
+        s"$scriptTagsCount > 0 ? $scriptTagsCount * 10 : 1"
+    request.query.map { query =>
+      maybeSeed.map { seed =>
+        request
+          .query(
+            functionScoreQuery()
+              .query(query)
+              .functions(
+                scriptScore(ScriptDefinition(script = orderingByActorVoteAndTagsCountScript)),
+                randomScore(seed)
+              )
+              .scoreMode("sum")
+              .boostMode(CombineFunction.Sum)
+          )
+      }.getOrElse(
+        request
+          .query(
+            functionScoreQuery()
+              .query(query)
+              .functions(scriptScore(ScriptDefinition(script = orderingByActorVoteAndTagsCountScript)))
+          )
+      )
+    }.getOrElse(request)
+  }
+}
+
+object TaggedFirstAlgorithm { val shortName: String = "taggedFirst" }
+
 // Sorts the proposals by most actor votes and then randomly from the given seed
 final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
@@ -106,7 +154,8 @@ case object AlgorithmSelector {
     RandomAlgorithm.shortName,
     ActorVoteAlgorithm.shortName,
     ControversyAlgorithm.shortName,
-    PopularAlgorithm.shortName
+    PopularAlgorithm.shortName,
+    TaggedFirstAlgorithm.shortName
   )
 
   def select(sortAlgorithm: Option[String], randomSeed: Int): Option[SortAlgorithm] = sortAlgorithm match {
@@ -114,6 +163,7 @@ case object AlgorithmSelector {
     case Some(ActorVoteAlgorithm.shortName)   => Some(ActorVoteAlgorithm(Some(randomSeed)))
     case Some(ControversyAlgorithm.shortName) => Some(ControversyAlgorithm(Some(randomSeed)))
     case Some(PopularAlgorithm.shortName)     => Some(PopularAlgorithm(Some(randomSeed)))
+    case Some(TaggedFirstAlgorithm.shortName) => Some(TaggedFirstAlgorithm(Some(randomSeed)))
     case _                                    => None
   }
 
