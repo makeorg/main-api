@@ -120,8 +120,8 @@ object ProposalResult extends CirceFormatters {
       votes = indexedProposal.votes.map { indexedVote =>
         VoteResponse
           .parseVote(indexedVote, hasVoted = voteAndQualifications match {
-            case Some(VoteAndQualifications(indexedVote.key, _)) => true
-            case _                                               => false
+            case Some(VoteAndQualifications(indexedVote.key, _, _)) => true
+            case _                                                  => false
           }, voteAndQualifications)
       },
       context = indexedProposal.context,
@@ -154,8 +154,8 @@ object ProposalsResultSeededResponse {
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
-final case class ProposalResultWithUserVote(proposal: ProposalResult, vote: VoteKey)
-object ProposalResultWithUserVote {
+final case class ProposalResultWithUserVote(proposal: ProposalResult, vote: VoteKey, voteDate: ZonedDateTime)
+object ProposalResultWithUserVote extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
   implicit val decoder: Decoder[ProposalResultWithUserVote] = deriveDecoder[ProposalResultWithUserVote]
 }
@@ -188,8 +188,8 @@ object VoteResponse {
         .map(
           qualification =>
             QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
-              case Some(VoteAndQualifications(_, keys)) if keys.contains(qualification.key) => true
-              case _                                                                        => false
+              case Some(VoteAndQualifications(_, keys, _)) if keys.contains(qualification.key) => true
+              case _                                                                           => false
             })
         ),
       hasVoted = hasVoted
@@ -204,8 +204,8 @@ object VoteResponse {
         .map(
           qualification =>
             QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
-              case Some(VoteAndQualifications(_, keys)) if keys.contains(qualification.key) => true
-              case _                                                                        => false
+              case Some(VoteAndQualifications(_, keys, _)) if keys.contains(qualification.key) => true
+              case _                                                                           => false
             })
         ),
       hasVoted = hasVoted

@@ -21,17 +21,20 @@ package org.make.core.history
 
 import java.time.ZonedDateTime
 
+import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 object HistoryActions {
 
-  final case class VoteAndQualifications(voteKey: VoteKey, qualificationKeys: Seq[QualificationKey])
+  final case class VoteAndQualifications(voteKey: VoteKey,
+                                         qualificationKeys: Seq[QualificationKey],
+                                         date: ZonedDateTime)
 
   object VoteAndQualifications {
     implicit val formatter: RootJsonFormat[VoteAndQualifications] =
-      DefaultJsonProtocol.jsonFormat2(VoteAndQualifications.apply)
+      DefaultJsonProtocol.jsonFormat3(VoteAndQualifications.apply)
   }
 
   sealed trait VoteRelatedAction extends Product with Serializable {

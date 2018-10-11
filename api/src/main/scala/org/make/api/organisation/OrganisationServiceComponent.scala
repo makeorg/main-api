@@ -34,6 +34,7 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.core.history.HistoryActions
 import org.make.core.profile.Profile
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
@@ -282,7 +283,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       filterQualifications: Option[Seq[QualificationKey]],
       requestContext: RequestContext
     ): Future[ProposalsResultWithUserVoteSeededResponse] = {
-      val futureProposalWithVotes: Future[Map[ProposalId, VoteKey]] = for {
+      val futureProposalWithVotes: Future[Map[ProposalId, HistoryActions.VoteAndQualifications]] = for {
         proposalIds <- userHistoryCoordinatorService.retrieveVotedProposals(
           RequestUserVotedProposals(
             organisationId,
@@ -292,9 +293,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         )
         withVotes <- userHistoryCoordinatorService
           .retrieveVoteAndQualifications(RequestVoteValues(organisationId, proposalIds))
-          .map(_.map {
-            case (proposalId, voteAndQualif) => proposalId -> voteAndQualif.voteKey
-          })
       } yield withVotes
 
       futureProposalWithVotes.flatMap {
@@ -313,8 +311,14 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             .map { results =>
               ProposalsResultWithUserVoteSeededResponse(
                 total = results.total,
-                results = results.results
-                  .map(proposal => ProposalResultWithUserVote(proposal, proposalIdsWithVotes(proposal.id))),
+                results = results.results.map { proposal =>
+                  val proposalVoteAndQualification = proposalIdsWithVotes(proposal.id)
+                  ProposalResultWithUserVote(
+                    proposal,
+                    proposalVoteAndQualification.voteKey,
+                    proposalVoteAndQualification.date
+                  )
+                },
                 seed = results.seed
               )
             }

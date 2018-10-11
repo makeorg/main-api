@@ -364,8 +364,8 @@ class OrganisationServiceTest
         .thenReturn(
           Future.successful(
             Map(
-              ProposalId("proposal1") -> VoteAndQualifications(Agree, Seq.empty),
-              ProposalId("proposal2") -> VoteAndQualifications(Disagree, Seq.empty)
+              ProposalId("proposal1") -> VoteAndQualifications(Agree, Seq.empty, DateHelper.now()),
+              ProposalId("proposal2") -> VoteAndQualifications(Disagree, Seq.empty, DateHelper.now())
             )
           )
         )

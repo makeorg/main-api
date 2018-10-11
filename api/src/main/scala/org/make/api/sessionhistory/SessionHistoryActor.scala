@@ -150,10 +150,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)
 
     val voteAndQualifications: Map[ProposalId, VoteAndQualifications] = voteByProposalId(voteRelatedActions).map {
-      case (proposalId, voteKey) =>
+      case (proposalId, voteAction) =>
         proposalId -> VoteAndQualifications(
-          voteKey,
-          qualifications(voteRelatedActions).getOrElse(proposalId, Seq.empty).sortBy(_.shortName)
+          voteAction.key,
+          qualifications(voteRelatedActions).getOrElse(proposalId, Seq.empty).sortBy(_.shortName),
+          voteAction.date
         )
     }
     sender() ! voteAndQualifications
@@ -211,7 +212,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
         case _                  => false
       }
       .map {
-        case (proposalId, action) => proposalId -> action.asInstanceOf[VoteAction].key
+        case (proposalId, action) => proposalId -> action.asInstanceOf[VoteAction]
       }
   }
 
