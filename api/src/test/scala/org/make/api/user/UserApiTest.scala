@@ -27,6 +27,7 @@ import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{
   ProposalResult,
   ProposalService,
@@ -45,6 +46,7 @@ import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.profile.Profile
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -64,6 +66,7 @@ class UserApiTest
     extends MakeApiTestBase
     with UserApi
     with ProposalServiceComponent
+    with OperationServiceComponent
     with UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -82,6 +85,7 @@ class UserApiTest
   override val facebookApi: FacebookApi = mock[FacebookApi]
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val proposalService: ProposalService = mock[ProposalService]
+  override val operationService: OperationService = mock[OperationService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
@@ -859,7 +863,7 @@ class UserApiTest
       tags = Seq.empty,
       status = ProposalStatus.Accepted,
       ideaId = None,
-      operationId = None,
+      operationId = Some(OperationId("operation1")),
       questionId = None
     )
     val proposalResult: ProposalResult =
@@ -877,6 +881,33 @@ class UserApiTest
     Mockito
       .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
       .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    Mockito
+      .when(
+        operationService.find(
+          ArgumentMatchers.any[Option[String]],
+          ArgumentMatchers.any[Option[Country]],
+          ArgumentMatchers.any[Option[String]],
+          ArgumentMatchers.any[Option[LocalDate]]
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          Seq(
+            Operation(
+              operationId = OperationId("operation1"),
+              status = OperationStatus.Pending,
+              slug = "operation1",
+              defaultLanguage = Language("fr"),
+              allowedSources = Seq("core"),
+              events = List.empty,
+              createdAt = Some(DateHelper.now()),
+              updatedAt = None,
+              countriesConfiguration = Seq.empty
+            )
+          )
+        )
+      )
 
     Mockito
       .when(
@@ -982,6 +1013,33 @@ class UserApiTest
     Mockito
       .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
       .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    Mockito
+      .when(
+        operationService.find(
+          ArgumentMatchers.any[Option[String]],
+          ArgumentMatchers.any[Option[Country]],
+          ArgumentMatchers.any[Option[String]],
+          ArgumentMatchers.any[Option[LocalDate]]
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          Seq(
+            Operation(
+              operationId = OperationId("operation1"),
+              status = OperationStatus.Pending,
+              slug = "operation1",
+              defaultLanguage = Language("fr"),
+              allowedSources = Seq("core"),
+              events = List.empty,
+              createdAt = Some(DateHelper.now()),
+              updatedAt = None,
+              countriesConfiguration = Seq.empty
+            )
+          )
+        )
+      )
 
     Mockito
       .when(

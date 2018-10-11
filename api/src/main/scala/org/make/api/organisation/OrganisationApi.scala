@@ -24,6 +24,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{
   ProposalServiceComponent,
   ProposalsResultSeededResponse,
@@ -47,6 +48,7 @@ import scala.util.Try
 trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: OrganisationServiceComponent
     with ProposalServiceComponent
+    with OperationServiceComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with MakeSettingsComponent =>
@@ -107,14 +109,20 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
         makeOperation("GetOrganisationProposals") { requestContext =>
           optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              provideAsync(
-                proposalService.searchForUser(
-                  optionalUserAuth.map(_.user.userId),
-                  SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
-                  requestContext
-                )
-              ) { listProposals =>
-                complete(listProposals)
+              provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+                provideAsync(
+                  proposalService.searchForUser(
+                    optionalUserAuth.map(_.user.userId),
+                    SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
+                    requestContext
+                  )
+                ) { listProposals =>
+                  listProposals.copy(results = listProposals.results.filterNot { proposal =>
+                    proposal.operationId
+                      .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                  })
+                  complete(listProposals)
+                }
               }
             }
           }
@@ -148,16 +156,22 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
               parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
                 (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
-                  onSuccess(
-                    organisationService.getVotedProposals(
-                      organisationId = organisationId,
-                      maybeUserId = userAuth.map(_.user.userId),
-                      filterVotes = votes,
-                      filterQualifications = qualifications,
-                      requestContext = requestContext
-                    )
-                  ) { proposals =>
-                    complete(proposals)
+                  provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+                    onSuccess(
+                      organisationService.getVotedProposals(
+                        organisationId = organisationId,
+                        maybeUserId = userAuth.map(_.user.userId),
+                        filterVotes = votes,
+                        filterQualifications = qualifications,
+                        requestContext = requestContext
+                      )
+                    ) { proposals =>
+                      proposals.copy(results = proposals.results.filterNot { proposalWithVote =>
+                        proposalWithVote.proposal.operationId
+                          .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                      })
+                      complete(proposals)
+                    }
                   }
               }
             }

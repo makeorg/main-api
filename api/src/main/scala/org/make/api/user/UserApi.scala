@@ -34,6 +34,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -70,6 +71,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     with IdGeneratorComponent
     with SocialServiceComponent
     with ProposalServiceComponent
+    with OperationServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
     with MakeSettingsComponent
@@ -230,15 +232,21 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
               if (userAuth.user.userId != userId) {
                 complete(StatusCodes.Forbidden)
               } else {
-                provideAsync(
-                  proposalService.searchProposalsVotedByUser(
-                    userId = userId,
-                    filterVotes = votes,
-                    filterQualifications = qualifications,
-                    requestContext = requestContext
-                  )
-                ) { proposalsSearchResult =>
-                  complete(proposalsSearchResult)
+                provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+                  provideAsync(
+                    proposalService.searchProposalsVotedByUser(
+                      userId = userId,
+                      filterVotes = votes,
+                      filterQualifications = qualifications,
+                      requestContext = requestContext
+                    )
+                  ) { proposalsSearchResult =>
+                    proposalsSearchResult.copy(results = proposalsSearchResult.results.filterNot { proposal =>
+                      proposal.operationId
+                        .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                    })
+                    complete(proposalsSearchResult)
+                  }
                 }
               }
           }
@@ -582,23 +590,29 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
           if (connectedUserId != userId) {
             complete(StatusCodes.Forbidden)
           } else {
-            provideAsync(
-              proposalService.searchForUser(
-                userId = Some(userId),
-                query = SearchQuery(
-                  filters = Some(
-                    SearchFilters(
-                      user = Some(UserSearchFilter(userId = userId)),
-                      status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
-                        case (_, status) => status != ProposalStatus.Archived
-                      }.values.toSeq))
+            provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+              provideAsync(
+                proposalService.searchForUser(
+                  userId = Some(userId),
+                  query = SearchQuery(
+                    filters = Some(
+                      SearchFilters(
+                        user = Some(UserSearchFilter(userId = userId)),
+                        status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                          case (_, status) => status != ProposalStatus.Archived
+                        }.values.toSeq))
+                      )
                     )
-                  )
-                ),
-                requestContext = requestContext
-              )
-            ) { proposalsSearchResult =>
-              complete(proposalsSearchResult)
+                  ),
+                  requestContext = requestContext
+                )
+              ) { proposalsSearchResult =>
+                proposalsSearchResult.copy(results = proposalsSearchResult.results.filterNot { proposal =>
+                  proposal.operationId
+                    .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                })
+                complete(proposalsSearchResult)
+              }
             }
           }
         }
