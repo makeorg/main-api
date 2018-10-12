@@ -19,17 +19,19 @@
 
 package org.make.api.organisation
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
+import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -41,18 +43,21 @@ import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 class OrganisationApiTest
     extends MakeApiTestBase
     with OrganisationApi
     with ProposalServiceComponent
+    with OperationServiceComponent
     with OrganisationServiceComponent
     with OrganisationSearchEngineComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
   override val organisationService: OrganisationService = mock[OrganisationService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
+  override val operationService: OperationService = mock[OperationService]
 
   private val validAccessToken = "my-valid-access-token"
   val tokenCreationDate = new Date()
@@ -135,7 +140,7 @@ class OrganisationApiTest
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("idea-id")),
-        operationId = None,
+        operationId = Some(OperationId("operation1")),
         myProposal = false,
         questionId = None
       ),
@@ -165,13 +170,40 @@ class OrganisationApiTest
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("other-idea-id")),
-        operationId = None,
+        operationId = Some(OperationId("operation1")),
         myProposal = false,
         questionId = None
       )
     ),
     None
   )
+
+  Mockito
+    .when(
+      operationService.find(
+        ArgumentMatchers.any[Option[String]],
+        ArgumentMatchers.any[Option[Country]],
+        ArgumentMatchers.any[Option[String]],
+        ArgumentMatchers.any[Option[LocalDate]]
+      )
+    )
+    .thenReturn(
+      Future.successful(
+        Seq(
+          Operation(
+            operationId = OperationId("operation1"),
+            status = OperationStatus.Pending,
+            slug = "operation1",
+            defaultLanguage = Language("fr"),
+            allowedSources = Seq("core"),
+            events = List.empty,
+            createdAt = Some(DateHelper.now()),
+            updatedAt = None,
+            countriesConfiguration = Seq.empty
+          )
+        )
+      )
+    )
 
   Mockito
     .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
