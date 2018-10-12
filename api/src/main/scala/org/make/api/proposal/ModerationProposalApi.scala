@@ -846,7 +846,14 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
                   )
                 } { question =>
                   provideAsyncOrNotFound(
-                    proposalService.searchAndLockProposalToModerate(question.questionId, user.user.userId, context)
+                    proposalService.searchAndLockProposalToModerate(
+                      question.questionId,
+                      user.user.userId,
+                      context,
+                      request.toEnrich,
+                      request.minVotesCount,
+                      request.minScore
+                    )
                   ) { proposal =>
                     complete(proposal)
                   }
