@@ -232,7 +232,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
               if (userAuth.user.userId != userId) {
                 complete(StatusCodes.Forbidden)
               } else {
-                provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+                provideAsync(
+                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                ) { operations =>
                   provideAsync(
                     proposalService.searchProposalsVotedByUser(
                       userId = userId,
@@ -590,7 +592,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
           if (connectedUserId != userId) {
             complete(StatusCodes.Forbidden)
           } else {
-            provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+            provideAsync(
+              operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+            ) { operations =>
               provideAsync(
                 proposalService.searchForUser(
                   userId = Some(userId),

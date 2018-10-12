@@ -28,6 +28,7 @@ import akka.http.scaladsl.server.Route
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -55,6 +56,7 @@ class ProposalApiTest
     with ProposalServiceComponent
     with UserServiceComponent
     with ThemeServiceComponent
+    with OperationServiceComponent
     with QuestionServiceComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
@@ -63,6 +65,7 @@ class ProposalApiTest
   override val themeService: ThemeService = mock[ThemeService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
+  override val operationService: OperationService = mock[OperationService]
 
   when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
     .thenAnswer(

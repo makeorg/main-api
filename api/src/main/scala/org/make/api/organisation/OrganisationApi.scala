@@ -109,7 +109,9 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
         makeOperation("GetOrganisationProposals") { requestContext =>
           optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+              provideAsync(
+                operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+              ) { operations =>
                 provideAsync(
                   proposalService.searchForUser(
                     optionalUserAuth.map(_.user.userId),
@@ -156,7 +158,10 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
             provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
               parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
                 (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
-                  provideAsync(operationService.find(None, None, requestContext.source, None)) { operations =>
+                  provideAsync(
+                    operationService
+                      .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                  ) { operations =>
                     onSuccess(
                       organisationService.getVotedProposals(
                         organisationId = organisationId,
