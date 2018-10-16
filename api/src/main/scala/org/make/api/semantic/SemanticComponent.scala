@@ -38,7 +38,7 @@ import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.EventBusServiceComponent
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.reference.{Country, Language, ThemeId}
 
@@ -175,6 +175,7 @@ final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: Pro
                                   country: Country,
                                   language: Language,
                                   ideaId: Option[IdeaId],
+                                  status: ProposalStatus,
                                   content: String)
 
 object SemanticProposal {
@@ -190,7 +191,8 @@ object SemanticProposal {
       country = indexedProposal.country,
       language = indexedProposal.language,
       ideaId = indexedProposal.ideaId,
-      content = indexedProposal.content
+      content = indexedProposal.content,
+      status = indexedProposal.status
     )
   }
 }

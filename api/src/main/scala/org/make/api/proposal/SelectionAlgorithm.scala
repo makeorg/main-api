@@ -313,9 +313,9 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.ideaCompetitionEnabled) {
         val champions: Map[IdeaId, Proposal] = ideas.mapValues(chooseChampion(_))
         val topIdeas: Seq[IdeaId] =
-          selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
-        val topControversial: Seq[IdeaId] =
           selectIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionTargetCount)
+        val topControversial: Seq[IdeaId] =
+          selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
         topIdeas ++ topControversial
       } else {
         ideas.keys.toSeq
