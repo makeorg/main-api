@@ -91,12 +91,14 @@ object HuffingPostOperations extends OperationHelper with Migration {
     )
   )
 
+  val allowedSources: Seq[String] = Seq("huffingpost")
+
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
 
   override def migrate(api: MakeApi): Future[Unit] = {
     sequentially(operations.toSeq) {
       case (slug: String, countryConfiguration: CountryConfiguration) =>
-        createOperationIfNeeded(api, countryConfiguration.language, slug, Seq(countryConfiguration))
+        createOperationIfNeeded(api, countryConfiguration.language, slug, Seq(countryConfiguration), allowedSources)
     }
   }
 

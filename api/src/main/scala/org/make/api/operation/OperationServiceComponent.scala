@@ -47,14 +47,16 @@ trait OperationService extends ShortenedNames {
              slug: String,
              translations: Seq[OperationTranslation] = Seq.empty,
              defaultLanguage: Language,
-             countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId]
+             countriesConfiguration: Seq[OperationCountryConfiguration],
+             allowedSources: Seq[String]): Future[OperationId]
   def update(operationId: OperationId,
              userId: UserId,
              slug: Option[String] = None,
              translations: Option[Seq[OperationTranslation]] = None,
              defaultLanguage: Option[Language] = None,
              countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
-             status: Option[OperationStatus] = None): Future[Option[OperationId]]
+             status: Option[OperationStatus] = None,
+             allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]]
   def activate(operationId: OperationId, userId: UserId): Unit
   def archive(operationId: OperationId, userId: UserId): Unit
 }
@@ -102,7 +104,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         slug: String,
                         translations: Seq[OperationTranslation] = Seq.empty,
                         defaultLanguage: Language,
-                        countriesConfiguration: Seq[OperationCountryConfiguration]): Future[OperationId] = {
+                        countriesConfiguration: Seq[OperationCountryConfiguration],
+                        allowedSources: Seq[String]): Future[OperationId] = {
       val now = DateHelper.now()
       val operation: Operation = Operation(
         operationId = idGenerator.nextOperationId(),
@@ -110,7 +113,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         slug = slug,
         translations = translations,
         defaultLanguage = defaultLanguage,
-        allowedSources = Seq.empty,
+        allowedSources = allowedSources,
         countriesConfiguration = countriesConfiguration,
         events = Nil,
         createdAt = Some(now),
@@ -137,7 +140,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         translations: Option[Seq[OperationTranslation]] = None,
                         defaultLanguage: Option[Language] = None,
                         countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
-                        status: Option[OperationStatus] = None): Future[Option[OperationId]] = {
+                        status: Option[OperationStatus] = None,
+                        allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]] = {
 
       val now = DateHelper.now()
       persistentOperationService
@@ -149,6 +153,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
             defaultLanguage = defaultLanguage.getOrElse(registeredOperation.defaultLanguage),
             countriesConfiguration = countriesConfiguration.getOrElse(registeredOperation.countriesConfiguration),
             status = status.getOrElse(registeredOperation.status),
+            allowedSources = allowedSources.getOrElse(registeredOperation.allowedSources),
             updatedAt = Some(now)
           )
           persistentOperationService

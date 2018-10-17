@@ -134,7 +134,7 @@ class ModerationOperationApiTest
       OperationTranslation(title = "first operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
-    allowedSources = Seq.empty,
+    allowedSources = Seq("core"),
     events = List(
       OperationAction(
         date = now,
@@ -166,7 +166,7 @@ class ModerationOperationApiTest
       OperationTranslation(title = "second operation", language = Language("en"))
     ),
     defaultLanguage = Language("it"),
-    allowedSources = Seq.empty,
+    allowedSources = Seq("core"),
     events = List(
       OperationAction(
         date = now,
@@ -208,7 +208,8 @@ class ModerationOperationApiTest
       |      ],
       |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
-      |  ]
+      |  ],
+      |  "allowedSources": ["core"]
       |}
     """.stripMargin
 
@@ -234,7 +235,8 @@ class ModerationOperationApiTest
       |      "startDate": "2018-02-02",
       |      "endDate": "2018-05-02"
       |    }
-      |  ]
+      |  ],
+      |  "allowedSources": ["core"]
       |}
     """.stripMargin
 
@@ -333,7 +335,8 @@ class ModerationOperationApiTest
           endDate = None,
           questionId = None
         )
-      )
+      ),
+      allowedSources = Seq("core")
     )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
@@ -357,7 +360,8 @@ class ModerationOperationApiTest
             questionId = None
           )
         )
-      )
+      ),
+      allowedSources = Some(Seq("core"))
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
   when(
@@ -379,7 +383,8 @@ class ModerationOperationApiTest
             questionId = None
           )
         )
-      )
+      ),
+      allowedSources = Some(Seq("core"))
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
 

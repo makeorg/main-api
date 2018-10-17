@@ -41,8 +41,10 @@ trait CreateOperation extends Migration with OperationHelper {
   def defaultLanguage: Language
   def countryConfigurations: Seq[CountryConfiguration]
 
+  def allowedSources: Seq[String]
+
   override def migrate(api: MakeApi): Future[Unit] = {
-    createOperationIfNeeded(api, defaultLanguage, operationSlug, countryConfigurations)
+    createOperationIfNeeded(api, defaultLanguage, operationSlug, countryConfigurations, allowedSources)
   }
 }
 

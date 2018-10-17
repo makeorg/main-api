@@ -113,7 +113,8 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                             slug = request.slug,
                             translations = request.translations,
                             defaultLanguage = request.defaultLanguage,
-                            countriesConfiguration = request.countriesConfiguration
+                            countriesConfiguration = request.countriesConfiguration,
+                            allowedSources = request.allowedSources
                           )
                         ) { operationId =>
                           complete(StatusCodes.Created -> Map("operationId" -> operationId))
@@ -183,7 +184,8 @@ trait ModerationOperationApi extends MakeAuthenticationDirectives with StrictLog
                               status = OperationStatus.statusMap.get(request.status),
                               translations = Some(request.translations),
                               defaultLanguage = Some(request.defaultLanguage),
-                              countriesConfiguration = Some(request.countriesConfiguration)
+                              countriesConfiguration = Some(request.countriesConfiguration),
+                              allowedSources = Some(request.allowedSources)
                             )
                           ) { operationId =>
                             complete(StatusCodes.OK -> Map("operationId" -> operationId))

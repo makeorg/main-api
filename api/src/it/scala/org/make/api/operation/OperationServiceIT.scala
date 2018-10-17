@@ -144,7 +144,8 @@ class OperationServiceIT
           slug = simpleOperation.slug,
           translations = simpleOperation.translations,
           defaultLanguage = simpleOperation.defaultLanguage,
-          countriesConfiguration = simpleOperation.countriesConfiguration
+          countriesConfiguration = simpleOperation.countriesConfiguration,
+          allowedSources = simpleOperation.allowedSources
         )
         _ <- operationService.update(
           operationId = operationId,

@@ -45,6 +45,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.Future
+import collection.JavaConverters._
 
 trait PersistentOperationServiceComponent {
   def persistentOperationService: PersistentOperationService
@@ -167,6 +168,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
+              column.allowedSources -> session.connection
+                .createArrayOf("VARCHAR", operation.allowedSources.asJava.toArray()),
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -262,6 +265,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.status -> operation.status.shortName,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
+              column.allowedSources -> session.connection
+                .createArrayOf("VARCHAR", operation.allowedSources.asJava.toArray()),
               column.updatedAt -> nowDate
             )
             .where(
