@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
@@ -53,6 +54,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
     with IdGeneratorComponent
     with MakeSettingsComponent
     with UserServiceComponent
+    with OperationServiceComponent
     with QuestionServiceComponent =>
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
@@ -193,9 +195,10 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                   operationId.orElse(source).orElse(location).orElse(question).map { _ =>
                     ContextFilterRequest(operationId, source, location, question)
                   }
-                val sortRequest: Option[SortRequest] = sort.orElse(order).map { _ =>
-                  SortRequest(sort, order.flatMap(Order.matchOrder))
-                }
+                val sortRequest: Option[SortRequest] =
+                  sort.orElse(order).map { _ =>
+                    SortRequest(sort, order.flatMap(Order.matchOrder))
+                  }
                 val searchRequest: SearchRequest = SearchRequest(
                   proposalIds = proposalIds,
                   themesIds = themesIds,
@@ -217,14 +220,22 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                   sortAlgorithm = sortAlgorithm
                 )
                 provideAsync(
-                  proposalService
-                    .searchForUser(
-                      userId = userAuth.map(_.user.userId),
-                      query = searchRequest.toSearchQuery(requestContext),
-                      requestContext = requestContext
-                    )
-                ) { proposals =>
-                  complete(proposals)
+                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                ) { operations =>
+                  provideAsync(
+                    proposalService
+                      .searchForUser(
+                        userId = userAuth.map(_.user.userId),
+                        query = searchRequest.toSearchQuery(requestContext),
+                        requestContext = requestContext
+                      )
+                  ) { proposals =>
+                    proposals.copy(results = proposals.results.filterNot { proposal =>
+                      proposal.operationId
+                        .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                    })
+                    complete(proposals)
+                  }
                 }
             }
           }
