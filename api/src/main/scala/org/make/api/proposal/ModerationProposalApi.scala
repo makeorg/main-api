@@ -726,10 +726,9 @@ trait ModerationProposalApi extends MakeAuthenticationDirectives with StrictLogg
         makeOperation("Duplicates") { requestContext =>
           makeOAuth2 { auth =>
             requireModerationRole(auth.user) {
-              provideAsync(
-                proposalService.getSimilar(userId = auth.user.userId, proposalId = proposalId, requestContext)
-              ) { proposals =>
-                complete(proposals)
+              provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
+                val proposals = proposalService.getSimilar(auth.user.userId, proposal, requestContext)
+                onSuccess(proposals)(complete(_))
               }
             }
           }
