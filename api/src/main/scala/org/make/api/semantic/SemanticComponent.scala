@@ -28,19 +28,19 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import org.mdedetrich.akka.http.support.CirceHttpSupport
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.{semantic, ActorSystemComponent}
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.technical.EventBusServiceComponent
+import org.make.api.{semantic, ActorSystemComponent}
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.operation.OperationId
-import org.make.core.proposal.{ProposalId, ProposalStatus}
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.question.QuestionId
+import org.make.core.reference.Language
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -169,10 +169,7 @@ trait DefaultSemanticComponent extends SemanticComponent {
 }
 
 final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: ProposalId,
-                                  source: String,
-                                  operationId: Option[OperationId],
-                                  themeId: Option[ThemeId],
-                                  country: Country,
+                                  questionId: QuestionId,
                                   language: Language,
                                   ideaId: Option[IdeaId],
                                   status: ProposalStatus,
@@ -185,10 +182,7 @@ object SemanticProposal {
   def apply(indexedProposal: IndexedProposal): SemanticProposal = {
     new SemanticProposal(
       id = indexedProposal.id,
-      source = indexedProposal.context.flatMap(_.source).getOrElse("core"),
-      operationId = indexedProposal.operationId,
-      themeId = indexedProposal.themeId,
-      country = indexedProposal.country,
+      questionId = indexedProposal.questionId.getOrElse(QuestionId("None")),
       language = indexedProposal.language,
       ideaId = indexedProposal.ideaId,
       content = indexedProposal.content,

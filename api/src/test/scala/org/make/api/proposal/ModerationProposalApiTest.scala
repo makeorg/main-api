@@ -594,7 +594,10 @@ class ModerationProposalApiTest
       )
     )
 
-  when(proposalService.getSimilar(any[UserId], matches(ProposalId("123456")), any[RequestContext]))
+  when(proposalService.getProposalById(matches(ProposalId("123456")), any[RequestContext]))
+    .thenReturn(Future.successful(Some(mock[IndexedProposal])))
+
+  when(proposalService.getSimilar(any[UserId], any[IndexedProposal], any[RequestContext]))
     .thenReturn(
       Future.successful(
         Seq(

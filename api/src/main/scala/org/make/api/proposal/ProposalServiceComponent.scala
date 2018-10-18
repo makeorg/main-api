@@ -61,7 +61,7 @@ trait ProposalService {
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
 
-  def getSimilar(userId: UserId, proposalId: ProposalId, requestContext: RequestContext): Future[Seq[SimilarIdea]]
+  def getSimilar(userId: UserId, proposal: IndexedProposal, requestContext: RequestContext): Future[Seq[SimilarIdea]]
 
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
 
@@ -496,20 +496,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     //noinspection ScalaStyle
     override def getSimilar(userId: UserId,
-                            proposalId: ProposalId,
+                            proposal: IndexedProposal,
                             requestContext: RequestContext): Future[Seq[SimilarIdea]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
           requestContext,
-          UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposalId)
+          UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposal.id)
         )
       )
-      elasticsearchProposalAPI.findProposalById(proposalId).flatMap {
-        case Some(indexedProposal) =>
-          semanticService.getSimilarIdeas(indexedProposal, 10)
-        case None => Future.successful(Seq.empty)
-      }
+      semanticService.getSimilarIdeas(proposal, 10)
     }
 
     private def retrieveVoteHistory(proposalId: ProposalId,
