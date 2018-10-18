@@ -42,13 +42,15 @@ tests-coverage:
     - docker pull bouncestorage/swift-aio
     - export IMAGE_VERSION=`git rev-parse --short=10 HEAD`
     - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=$IMAGE&version=$IMAGE_VERSION"`
+    - mkdir -p /var/run/secrets/
+    - echo "$SWIFT_REPORTS_CONFIGURATION" > /var/run/secrets/main-api.conf
   script:
     - echo $SEARCH_CODE
     - >
       if [[ $SEARCH_CODE == "404" ]];then
         sbt clean coverage test it:test
         sbt coverageReport coverageAggregate
-        sbt codacyCoverage
+        sbt swiftSendReports
       fi
 
 build-image:
