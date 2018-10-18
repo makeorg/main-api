@@ -1,7 +1,0 @@
-{
-  "slug": "${operationSlug}",
-  "status": "${operationStatus}",
-  "translations": ${operationTranslations},
-  "defaultLanguage": "fr",
-  "countriesConfiguration": ${operationCountryConfigurations}
-}
