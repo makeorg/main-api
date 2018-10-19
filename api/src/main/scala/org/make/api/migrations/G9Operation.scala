@@ -18,15 +18,28 @@
  */
 
 package org.make.api.migrations
+import java.time.LocalDate
 
+import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.core.reference.{Country, Language}
 
-object AinesImportTagsData extends ImportTagsData {
+object G9Operation extends CreateOperation {
+  override val operationSlug: String = "european-digital-champions"
 
-  override val operationSlug: String = AinesOperation.operationSlug
-  override val country: Country = Country("FR")
-  override val language: Language = Language("fr")
+  override val defaultLanguage: Language = Language("fr")
 
-  override val dataResource: String = "fixtures/tags_aines.csv"
-  override val runInProduction: Boolean = false
+  override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
+    CountryConfiguration(
+      country = Country("FR"),
+      language = Language("fr"),
+      title = "Comment faire émerger des champions européens du numérique ? ",
+      startDate = LocalDate.parse("2018-10-18"),
+      endDate = Some(LocalDate.parse("2019-01-14")),
+      tags = Seq.empty
+    )
+  )
+
+  override val allowedSources: Seq[String] = Seq("core")
+
+  override val runInProduction: Boolean = true
 }

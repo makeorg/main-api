@@ -172,7 +172,10 @@ object MakeMain extends App with StrictLogging with MakeApi {
       AinesImportTagsData,
       AinesData,
       NiceMatinOperation,
-      NiceMatinData
+      NiceMatinData,
+      G9Operation,
+      G9ImportTagsData,
+      G9Data
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 
