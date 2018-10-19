@@ -116,7 +116,7 @@ class PersistentOperationServiceIT
       OperationTranslation(title = "hello operation", language = Language("en"))
     ),
     defaultLanguage = Language("fr"),
-    allowedSources = Seq.empty,
+    allowedSources = Seq("core"),
     events = List(
       OperationAction(
         date = now,
@@ -216,6 +216,8 @@ class PersistentOperationServiceIT
         createEvent.makeUserId should be(userId)
         createEvent.actionType should be("create")
         createEvent.arguments should be(Map("arg1" -> "valueArg1"))
+        And("the allowedSources should contain 'core'")
+        operation.allowedSources.head should be("core")
       }
     }
 

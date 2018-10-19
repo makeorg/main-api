@@ -71,7 +71,8 @@ final case class ModerationOperationResponse(operationId: OperationId,
                                              createdAt: Option[ZonedDateTime],
                                              updatedAt: Option[ZonedDateTime],
                                              events: Seq[OperationActionResponse],
-                                             countriesConfiguration: Seq[OperationCountryConfiguration])
+                                             countriesConfiguration: Seq[OperationCountryConfiguration],
+                                             allowedSources: Seq[String])
 
 object ModerationOperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
@@ -107,7 +108,8 @@ object ModerationOperationResponse extends CirceFormatters {
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
       countriesConfiguration = operation.countriesConfiguration,
-      events = events
+      events = events,
+      allowedSources = operation.allowedSources
     )
   }
 }

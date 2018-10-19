@@ -18,14 +18,13 @@
  */
 
 package org.make.api.migrations
-
 import java.time.LocalDate
 
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.core.reference.{Country, Language}
 
-object AinesOperation extends CreateOperation {
-  override val operationSlug: String = "aines"
+object NiceMatinOperation extends CreateOperation {
+  override val operationSlug: String = "plan-climat"
 
   override val defaultLanguage: Language = Language("fr")
 
@@ -33,14 +32,14 @@ object AinesOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
-      title = "Comment mieux prendre soin de nos aînés ?",
-      startDate = LocalDate.parse("2018-09-19"),
-      endDate = Some(LocalDate.parse("2018-12-10")),
+      title = "#MaSolutionPourLeClimat",
+      startDate = LocalDate.parse("2018-10-18"),
+      endDate = Some(LocalDate.parse("2018-12-06")),
       tags = Seq.empty
     )
   )
 
   override val allowedSources: Seq[String] = Seq("core")
 
-  override val runInProduction: Boolean = false
+  override val runInProduction: Boolean = true
 }

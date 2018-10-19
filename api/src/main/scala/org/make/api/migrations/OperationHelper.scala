@@ -94,7 +94,8 @@ trait OperationHelper extends StrictLogging {
   def createOperation(api: MakeApi,
                       operationSlug: String,
                       defaultLanguage: Language,
-                      countryConfigurations: Seq[CountryConfiguration]): Future[Operation] = {
+                      countryConfigurations: Seq[CountryConfiguration],
+                      allowedSources: Seq[String]): Future[Operation] = {
 
     val configurationsBySequence: Map[SequenceId, CountryConfiguration] =
       countryConfigurations.map(configuration => api.idGenerator.nextSequenceId() -> configuration).toMap
@@ -117,7 +118,8 @@ trait OperationHelper extends StrictLogging {
               endDate = configuration.endDate,
               questionId = None
             )
-        }
+        },
+        allowedSources = allowedSources
       )
       .flatMap(api.operationService.findOne)
       .map(_.get)
@@ -134,11 +136,13 @@ trait OperationHelper extends StrictLogging {
   def createOperationIfNeeded(api: MakeApi,
                               defaultLanguage: Language,
                               operationSlug: String,
-                              countryConfigurations: Seq[CountryConfiguration]): Future[Unit] = {
+                              countryConfigurations: Seq[CountryConfiguration],
+                              allowedSources: Seq[String]): Future[Unit] = {
 
     api.operationService.findOneBySlug(operationSlug).flatMap {
       case Some(_) => Future.successful {}
-      case None    => createOperation(api, operationSlug, defaultLanguage, countryConfigurations).map(_ => ())
+      case None =>
+        createOperation(api, operationSlug, defaultLanguage, countryConfigurations, allowedSources).map(_ => ())
     }
   }
 
