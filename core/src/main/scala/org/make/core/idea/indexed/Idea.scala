@@ -35,6 +35,7 @@ object IdeaElasticsearchFieldNames {
   val nameFr: String = "name.fr"
   val nameEn: String = "name.en"
   val nameIt: String = "name.it"
+  val nameDe: String = "name.de"
   val nameGeneral: String = "name.general"
   val questionId: String = "questionId"
   val operationId: String = "operationId"

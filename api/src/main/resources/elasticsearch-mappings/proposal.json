@@ -34,6 +34,10 @@
           "type": "stemmer",
           "language": "light_italian"
         },
+        "german_stemmer": {
+          "type":       "stemmer",
+          "language":   "light_german"
+        },
         "trigrams_filter": {
           "type":     "ngram",
           "min_gram": 3,
@@ -90,6 +94,7 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "italian_elision",
+            "lowercase",
             "icu_folding"
           ],
           "char_filter": [
@@ -100,11 +105,35 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "italian_elision",
+            "lowercase",
             "icu_folding",
             "italian_stemmer"
           ],
           "char_filter": [
             "make_char_filter-it"
+          ]
+        },
+        "german_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "german_normalization",
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-de"
+          ]
+        },
+        "german_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "german_normalization",
+            "lowercase",
+            "icu_folding",
+            "german_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-de"
           ]
         },
         "trigrams": {
@@ -130,6 +159,11 @@
         "make_char_filter-it": {
           "type": "pattern_replace",
           "pattern": "^C'è bisogno",
+          "replacement": ""
+        },
+        "make_char_filter-de": {
+          "type": "pattern_replace",
+          "pattern": "^Wir müssen",
           "replacement": ""
         }
       }
@@ -178,6 +212,14 @@
             "stemmed-it": {
               "type": "text",
               "analyzer": "italian_full"
+            },
+            "de": {
+              "type": "text",
+              "analyzer": "german_std"
+            },
+            "stemmed-de": {
+              "type": "text",
+              "analyzer": "german_full"
             },
             "general": {
               "type": "text"

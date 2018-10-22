@@ -51,6 +51,14 @@
             "icu_folding"
           ]
         },
+        "german_std": {
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "german_normalization",
+            "lowercase",
+            "icu_folding"
+          ]
+        },
         "trigrams": {
           "type":      "custom",
           "tokenizer": "icu_tokenizer",
@@ -88,6 +96,10 @@
             "it": {
               "type": "text",
               "analyzer": "italian_std"
+            },
+            "de": {
+              "type": "text",
+              "analyzer": "german_std"
             },
             "general": {
               "type": "text"
@@ -195,6 +207,10 @@
                 "it": {
                   "type": "text",
                   "analyzer": "italian_std"
+                },
+                "de": {
+                  "type": "text",
+                  "analyzer": "german_std"
                 },
                 "general": {
                   "type": "text",

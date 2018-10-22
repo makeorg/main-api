@@ -116,6 +116,7 @@ object IdeaSearchFilters extends ElasticDsl {
         IdeaElasticsearchFieldNames.nameFr -> 2D * languageOmission("fr"),
         IdeaElasticsearchFieldNames.nameEn -> 2D * languageOmission("en"),
         IdeaElasticsearchFieldNames.nameIt -> 2D * languageOmission("it"),
+        IdeaElasticsearchFieldNames.nameDe -> 2D * languageOmission("de"),
         IdeaElasticsearchFieldNames.nameGeneral -> 1D
       ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
