@@ -173,6 +173,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       AinesData,
       NiceMatinOperation,
       NiceMatinData,
+      NiceMatinImportTagsData,
       G9Operation,
       G9ImportTagsData,
       G9Data
