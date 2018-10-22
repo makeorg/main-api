@@ -21,12 +21,12 @@ package org.make.api.migrations
 
 import org.make.core.reference.{Country, Language}
 
-object AinesImportTagsData extends ImportTagsData {
+object G9ImportTagsData extends ImportTagsData {
 
-  override val operationSlug: String = AinesOperation.operationSlug
+  override val operationSlug: String = G9Operation.operationSlug
   override val country: Country = Country("FR")
   override val language: Language = Language("fr")
 
-  override val dataResource: String = "fixtures/tags_aines.csv"
-  override val runInProduction: Boolean = false
+  override val dataResource: String = "fixtures/tags_g9.csv"
+  override val runInProduction: Boolean = true
 }

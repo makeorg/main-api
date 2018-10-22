@@ -19,51 +19,13 @@
 
 package org.make.api.migrations
 
-import org.make.api.MakeApi
-import org.make.api.migrations.TagHelper.TagsDataLine
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.{TagDisplay, TagTypeId}
-
-import scala.concurrent.Future
 
 object CultureImportTagsData extends ImportTagsData {
 
-  override def initialize(api: MakeApi): Future[Unit] = {
-    api.operationService
-      .findOneBySlug(CultureOperation.operationSlug)
-      .flatMap {
-        case None =>
-          throw new IllegalStateException(s"Unable to find an operation with slug ${CultureOperation.operationSlug}")
-        case Some(operation) =>
-          api.questionService.findQuestion(None, Some(operation.operationId), Country("FR"), Language("fr"))
-      }
-      .map {
-        case None =>
-          throw new IllegalStateException(
-            s"Unable to find the question for the operation with slug ${CultureOperation.operationSlug}"
-          )
-        case Some(q) =>
-          this.question = q
-          Future.successful {}
-      }
-  }
-
-  override def extractDataLine(line: String): Option[TagsDataLine] = {
-    line.drop(1).dropRight(1).split("""";"""") match {
-      case Array(weight, label, tagType, tagDisplay, country, language) =>
-        Some(
-          TagsDataLine(
-            label = label,
-            tagTypeId = TagTypeId(tagType),
-            tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
-            weight = weight.toFloat,
-            country = Country(country),
-            language = Language(language)
-          )
-        )
-      case _ => None
-    }
-  }
+  override val operationSlug: String = CultureOperation.operationSlug
+  override val country: Country = Country("FR")
+  override val language: Language = Language("fr")
 
   override val dataResource: String = "fixtures/tags_culture.csv"
   override val runInProduction: Boolean = false
