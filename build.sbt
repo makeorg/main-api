@@ -17,6 +17,8 @@
  *
  */
 
+import java.time.LocalDate
+
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
@@ -88,15 +90,6 @@ lazy val phantom = project
   .settings(moduleName := "make-phantom": _*)
   .aggregate(core, api)
 
-lazy val fixtures = project
-  .in(file("fixtures"))
-  .settings(
-    organization := "org.make",
-    scalaVersion := "2.12.4"
-  )
-  .configs(Gatling)
-  .settings(moduleName := "make-fixtures": _*)
-
 lazy val core = project
   .in(file("core"))
   .configs(IntegrationTest)
@@ -126,3 +119,21 @@ gitCommitMessageHook := Some(baseDirectory.value / "bin" / "commit-msg.hook")
 
 enablePlugins(GitHooks)
 enablePlugins(GitVersioning)
+enablePlugins(SbtSwift)
+
+swiftContainerName := "reports"
+swiftConfigurationPath := file("/var/run/secrets/main-api.conf")
+swiftContainerDirectory := {
+  val currentBranch: String = {
+    if(Option(System.getenv("CI_COMMIT_REF_NAME")).exists(_.nonEmpty)) {
+      System.getenv("CI_COMMIT_REF_NAME")
+    } else {
+      git.gitCurrentBranch.value
+    }
+  }
+  Some(s"main-api/${LocalDate.now().toString}/$currentBranch/${version.value}")
+}
+swiftReportsToSendPath := {
+  (Compile / crossTarget).value / "scoverage-report"
+}
+
