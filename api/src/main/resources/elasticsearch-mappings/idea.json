@@ -22,6 +22,10 @@
             "sugl", "un", "m", "t", "s", "v", "d"
           ]
         },
+        "german_stemmer": {
+          "type":       "stemmer",
+          "language":   "light_german"
+        },
         "trigrams_filter": {
           "type":     "ngram",
           "min_gram": 3,
@@ -48,6 +52,14 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "italian_elision",
+            "icu_folding"
+          ]
+        },
+        "german_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "german_normalization",
+            "lowercase",
             "icu_folding"
           ]
         },
@@ -88,6 +100,10 @@
             "it": {
               "type": "text",
               "analyzer": "italian_std"
+            },
+            "de": {
+              "type": "text",
+              "analyzer": "german_std"
             },
             "general": {
               "type": "text"

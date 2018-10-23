@@ -373,6 +373,8 @@ object SearchFilters extends ElasticDsl {
           ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D * languageOmission("en"),
           ProposalElasticsearchFieldNames.contentIt -> 2D * languageOmission("it"),
           ProposalElasticsearchFieldNames.contentItStemmed -> 1.5D * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentDe -> 2D * languageOmission("de"),
+          ProposalElasticsearchFieldNames.contentDeStemmed -> 1.5D * languageOmission("de"),
           ProposalElasticsearchFieldNames.contentGeneral -> 1D
         ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {

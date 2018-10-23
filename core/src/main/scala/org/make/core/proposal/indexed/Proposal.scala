@@ -42,6 +42,8 @@ object ProposalElasticsearchFieldNames {
   val contentEnStemmed: String = "content.stemmed-en"
   val contentIt: String = "content.it"
   val contentItStemmed: String = "content.stemmed-it"
+  val contentDe: String = "content.de"
+  val contentDeStemmed: String = "content.stemmed-de"
   val contentGeneral: String = "content.general"
   val slug: String = "slug"
   val status: String = "status"
