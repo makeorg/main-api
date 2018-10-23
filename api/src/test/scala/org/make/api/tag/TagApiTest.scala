@@ -128,7 +128,9 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent wi
         )
       ).thenReturn(
         Future.successful(
-          Some(Question(QuestionId("foo"), Country("FR"), Language("fr"), "Foo?", Some(OperationId("foo")), None))
+          Some(
+            Question(QuestionId("foo"), "foo", Country("FR"), Language("fr"), "Foo?", Some(OperationId("foo")), None)
+          )
         )
       )
 

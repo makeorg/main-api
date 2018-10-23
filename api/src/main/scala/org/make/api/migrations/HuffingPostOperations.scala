@@ -36,6 +36,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "politique-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "politique-huffpost",
       title = "Politique",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -44,6 +45,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "economie-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "economie-huffpost",
       title = "Économie",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -52,6 +54,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "international-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "international-huffpost",
       title = "International",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -60,6 +63,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "culture-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "culture-huffpost",
       title = "Culture",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -68,6 +72,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "ecologie-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "ecologie-huffpost",
       title = "Écologie",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -76,6 +81,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "societe-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "societe-huffpost",
       title = "Société",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),
@@ -84,6 +90,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
     "education-huffpost" -> CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = "education-huffpost",
       title = "Éducation",
       startDate = LocalDate.parse("2018-08-06"),
       endDate = Some(LocalDate.parse("2020-08-06")),

@@ -32,6 +32,7 @@ object VffOperation extends CreateOperation {
     CountryConfiguration(
       Country("FR"),
       Language("fr"),
+      slug = operationSlug,
       Seq(
         TagId("signalement"),
         TagId("police-justice"),
@@ -61,6 +62,7 @@ object VffOperation extends CreateOperation {
     CountryConfiguration(
       Country("IT"),
       Language("it"),
+      slug = "vff-it",
       Seq(
         TagId("avviso"),
         TagId("polizia-giustizia"),
@@ -90,6 +92,7 @@ object VffOperation extends CreateOperation {
     CountryConfiguration(
       Country("GB"),
       Language("en"),
+      slug = "vff-gb",
       Seq(
         TagId("description"),
         TagId("police-justice"),

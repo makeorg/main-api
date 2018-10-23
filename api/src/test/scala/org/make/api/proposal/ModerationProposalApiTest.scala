@@ -84,6 +84,7 @@ class ModerationProposalApiTest
         Some(
           Question(
             QuestionId("my-question"),
+            slug = "my-question",
             country = invocation.getArgument[Country](2),
             language = invocation.getArgument[Language](3),
             question = "my question",
@@ -641,6 +642,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-fire-and-ice"),
+              slug = "question-fire-and-ice",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -672,6 +674,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-fire-and-ice"),
+              slug = "question-fire-and-ice",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -704,6 +707,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-fire-and-ice"),
+              slug = "question-fire-and-ice",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -735,6 +739,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-fire-and-ice"),
+              slug = "question-fire-and-ice",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -944,6 +949,7 @@ class ModerationProposalApiTest
         Some(
           Question(
             questionId = QuestionId("question-vff"),
+            slug = "question-vff",
             country = Country("FR"),
             language = Language("fr"),
             question = "",
@@ -960,6 +966,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-mieux-vivre-ensemble"),
+              slug = "question-mieux-vivre-ensemble",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -1013,6 +1020,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-vff"),
+              slug = "question-vff",
               country = Country("FR"),
               language = Language("fr"),
               question = "",
@@ -1070,6 +1078,7 @@ class ModerationProposalApiTest
           Some(
             Question(
               questionId = QuestionId("question-mieux-vivre-ensemble"),
+              slug = "question-mieux-vivre-ensemble",
               country = Country("FR"),
               language = Language("fr"),
               question = "",

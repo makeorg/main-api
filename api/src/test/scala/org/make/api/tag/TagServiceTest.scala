@@ -106,6 +106,7 @@ class TagServiceTest
         tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
         question = Question(
           questionId = QuestionId("new-question"),
+          slug = "new-question",
           operationId = None,
           themeId = None,
           country = Country("FR"),
@@ -290,6 +291,7 @@ class TagServiceTest
         weight = 0f,
         question = Question(
           questionId = QuestionId("fake-question"),
+          slug = "fake-question",
           operationId = None,
           themeId = None,
           country = Country("FR"),
@@ -341,6 +343,7 @@ class TagServiceTest
         weight = 0f,
         question = Question(
           questionId = QuestionId("fake-question"),
+          slug = "fake-question",
           operationId = None,
           themeId = None,
           country = Country("FR"),

@@ -19,7 +19,7 @@
 
 package org.make.api.question
 
-import org.make.api.DatabaseTest
+import org.make.api.{question, DatabaseTest}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -36,6 +36,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
     scenario("insert and then retrieve question") {
       val question = Question(
         questionId = QuestionId("some-question-id"),
+        slug = "some-question",
         country = Country("FR"),
         language = Language("fr"),
         question = "some question",
@@ -64,6 +65,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       val question1 = Question(
         questionId = QuestionId("some-question-id-1"),
+        slug = "some-aa-question",
         country = Country("AA"),
         language = Language("aa"),
         question = "some question",
@@ -73,6 +75,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       val question2 = Question(
         questionId = QuestionId("some-question-id-2"),
+        slug = "some-aa-question-2",
         country = Country("AA"),
         language = Language("bb"),
         question = "some question",
@@ -82,6 +85,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       val question3 = Question(
         questionId = QuestionId("some-question-id-3"),
+        slug = "some-bb-question",
         country = Country("BB"),
         language = Language("aa"),
         question = "some question",
@@ -91,6 +95,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       val question4 = Question(
         questionId = QuestionId("some-question-id-4"),
+        slug = "some-bb-question-2",
         country = Country("BB"),
         language = Language("bb"),
         question = "some question",
@@ -135,5 +140,53 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       }
 
     }
+
+    scenario("finding by slug") {
+
+      val question1 = Question(
+        questionId = QuestionId("some-new-question-id-1"),
+        slug = "some-new-aa-question",
+        country = Country("AA"),
+        language = Language("aa"),
+        question = "some question",
+        operationId = None,
+        themeId = None
+      )
+
+      val question2 = Question(
+        questionId = QuestionId("some-new-question-id-2"),
+        slug = "some-new-aa-question",
+        country = Country("AA"),
+        language = Language("bb"),
+        question = "some question",
+        operationId = None,
+        themeId = None
+      )
+
+      whenReady(persistentQuestionService.persist(question1), Timeout(5.seconds)) { _ =>
+        ()
+      }
+
+      whenReady(
+        persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some(question1.slug))),
+        Timeout(5.seconds)
+      ) { maybeQuestion =>
+        maybeQuestion.contains(question1) should be(true)
+      }
+
+      whenReady(
+        persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some("some-fake-slug-that-doesn't-exist"))),
+        Timeout(5.seconds)
+      ) { maybeQuestion =>
+        maybeQuestion should be(Seq.empty)
+      }
+
+      // Ensure unicity on slug
+      whenReady(persistentQuestionService.persist(question2).failed, Timeout(5.seconds)) { _ =>
+        ()
+      }
+
+    }
+
   }
 }

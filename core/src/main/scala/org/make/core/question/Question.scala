@@ -26,6 +26,7 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 case class Question(questionId: QuestionId,
+                    slug: String,
                     country: Country,
                     language: Language,
                     question: String,

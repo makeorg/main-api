@@ -33,6 +33,7 @@ object HdfOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "Comment vous aider à construire votre avenir en Hauts-de-France ?",
       startDate = LocalDate.parse("2018-10-07"),
       endDate = Some(LocalDate.parse("2019-01-03")),

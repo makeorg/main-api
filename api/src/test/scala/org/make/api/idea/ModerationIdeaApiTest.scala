@@ -144,6 +144,7 @@ class ModerationIdeaApiTest
       Some(
         Question(
           questionId = QuestionId("vff-fr-question"),
+          slug = "vff-fr-question",
           country = Country("FR"),
           language = Language("fr"),
           question = "??",
@@ -167,6 +168,7 @@ class ModerationIdeaApiTest
       Some(
         Question(
           questionId = QuestionId("vff-fr-question"),
+          slug = "vff-fr-question",
           country = Country("FR"),
           language = Language("fr"),
           question = "??",

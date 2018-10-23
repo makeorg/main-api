@@ -34,6 +34,7 @@ object ClimatParisOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       tags = Seq(
         TagId("pollution"),
         TagId("entreprises-emploi"),

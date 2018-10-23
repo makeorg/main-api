@@ -25,6 +25,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 
 case class QuestionResponse(questionId: QuestionId,
+                            slug: String,
                             question: String,
                             country: Country,
                             language: Language,
@@ -34,6 +35,7 @@ object QuestionResponse {
 
   def apply(question: Question): QuestionResponse = QuestionResponse(
     questionId = question.questionId,
+    slug = question.slug,
     question = question.question,
     operationId = question.operationId,
     themeId = question.themeId,

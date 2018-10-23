@@ -64,6 +64,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val questionOnNothingFr = Question(
     QuestionId("my-question"),
+    slug = "my-question",
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
@@ -73,6 +74,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val questionOnTheme = Question(
     QuestionId("my-question"),
+    slug = "my-question",
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
@@ -82,6 +84,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val questionOnNothingIT = Question(
     QuestionId("my-italian-question"),
+    slug = "my-question",
     country = Country("IT"),
     language = Language("it"),
     question = "some unsolved question",
@@ -1466,6 +1469,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         content = "This is a proposal",
         question = Question(
           questionId = QuestionId("some-question"),
+          slug = "some-question",
           country = Country("FR"),
           language = Language("fr"),
           question = "my question",

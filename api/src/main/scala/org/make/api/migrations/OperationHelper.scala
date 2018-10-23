@@ -23,14 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.api.sequence.CreateSequenceCommand
 import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationTranslation}
-import org.make.core.question.Question
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Language
-import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.sequence.SequenceStatus
 import org.make.core.tag.{TagDisplay, TagType}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, SlugHelper}
@@ -38,7 +37,7 @@ import org.make.core.{RequestContext, SlugHelper}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-trait OperationHelper extends StrictLogging {
+trait OperationHelper {
 
   val emptyContext: RequestContext = RequestContext.empty
   val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
@@ -67,7 +66,8 @@ trait OperationHelper extends StrictLogging {
     ).flatMap { _ =>
       api.persistentQuestionService.persist(
         Question(
-          questionId = api.idGenerator.nextQuestionId(),
+          questionId = configuration.questionId.get,
+          slug = countryConfiguration.slug,
           country = countryConfiguration.country,
           language = countryConfiguration.language,
           question = countryConfiguration.title,
@@ -95,10 +95,10 @@ trait OperationHelper extends StrictLogging {
                       operationSlug: String,
                       defaultLanguage: Language,
                       countryConfigurations: Seq[CountryConfiguration],
-                      allowedSources: Seq[String]): Future[Operation] = {
+                      allowedSource: Seq[String]): Future[Operation] = {
 
-    val configurationsBySequence: Map[SequenceId, CountryConfiguration] =
-      countryConfigurations.map(configuration => api.idGenerator.nextSequenceId() -> configuration).toMap
+    val configurationsByQuestion: Map[QuestionId, CountryConfiguration] =
+      countryConfigurations.map(configuration => api.idGenerator.nextQuestionId() -> configuration).toMap
 
     api.operationService
       .create(
@@ -108,25 +108,25 @@ trait OperationHelper extends StrictLogging {
         translations = countryConfigurations.map { configuration =>
           OperationTranslation(title = configuration.title, language = configuration.language)
         },
-        countriesConfiguration = configurationsBySequence.toSeq.map {
-          case (sequenceId, configuration) =>
+        countriesConfiguration = configurationsByQuestion.toSeq.map {
+          case (questionId, configuration) =>
             OperationCountryConfiguration(
               countryCode = configuration.country,
               tagIds = Seq.empty,
-              landingSequenceId = sequenceId,
+              landingSequenceId = api.idGenerator.nextSequenceId(),
               startDate = Some(configuration.startDate),
               endDate = configuration.endDate,
-              questionId = None
+              questionId = Some(questionId)
             )
         },
-        allowedSources = allowedSources
+        allowedSources = allowedSource
       )
       .flatMap(api.operationService.findOne)
       .map(_.get)
       .flatMap { operation =>
         Future
           .traverse(operation.countriesConfiguration) { configuration =>
-            val countryConfiguration = configurationsBySequence(configuration.landingSequenceId)
+            val countryConfiguration = configurationsByQuestion(configuration.questionId.get)
             createQuestionsAndSequences(api, operation, configuration, countryConfiguration)
           }
           .map(_ => operation)

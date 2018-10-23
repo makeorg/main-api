@@ -34,6 +34,7 @@ object MVEOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "Comment mieux vivre ensemble ?",
       startDate = LocalDate.parse("2018-03-12"),
       endDate = None,

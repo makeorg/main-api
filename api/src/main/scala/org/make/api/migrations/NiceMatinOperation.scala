@@ -32,6 +32,7 @@ object NiceMatinOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "#MaSolutionPourLeClimat",
       startDate = LocalDate.parse("2018-10-18"),
       endDate = Some(LocalDate.parse("2018-12-06")),

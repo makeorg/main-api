@@ -32,6 +32,7 @@ object G9Operation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "Comment faire émerger des champions européens du numérique ? ",
       startDate = LocalDate.parse("2018-10-18"),
       endDate = Some(LocalDate.parse("2019-01-14")),

@@ -944,6 +944,7 @@ class UserApiTest
             Question(
               operationId = Some(OperationId("operation1")),
               questionId = QuestionId("thequestionid"),
+              slug = "the-question",
               country = Country("FR"),
               language = Language("fr"),
               question = "question ?",

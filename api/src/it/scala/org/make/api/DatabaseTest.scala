@@ -68,18 +68,23 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource))
     ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource))
 
-    val flyway: Flyway = new Flyway()
-    flyway.setDataSource(dataSource)
-    flyway.setBaselineOnMigrate(true)
-    flyway.setPlaceholders(
-      Map(
-        "clientId" -> defaultClientId,
-        "clientSecret" -> defaultClientSecret,
-        "adminEmail" -> adminEmail,
-        "adminFirstName" -> adminFirstName,
-        "adminEncryptedPassword" -> adminPassword.bcrypt
-      ).asJava
-    )
+    val flyway: Flyway = Flyway
+      .configure()
+      .dataSource(dataSource)
+      .baselineOnMigrate(true)
+      .locations("classpath:db/migration", "classpath:org/make/api/migrations/db")
+      .placeholders(
+        Map(
+          "dbname" -> databaseName,
+          "clientId" -> defaultClientId,
+          "clientSecret" -> defaultClientSecret,
+          "adminEmail" -> adminEmail,
+          "adminFirstName" -> adminFirstName,
+          "adminEncryptedPassword" -> adminPassword.bcrypt
+        ).asJava
+      )
+      .load()
+
     flyway.migrate()
     Try(flyway.validate()) match {
       case Success(_) => logger.info("Database schema created")

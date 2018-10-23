@@ -32,6 +32,7 @@ object MIPIMOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "La ville de demain",
       startDate = LocalDate.parse("2018-10-21"),
       endDate = Some(LocalDate.parse("2018-12-31")),

@@ -53,6 +53,7 @@ object G9OperationDe extends Migration {
     CountryConfiguration(
       country = Country("DE"),
       language = Language("de"),
+      slug = "digital-champion-de",
       title = "Wie kann man europäische digitale Champions hervorbringen?",
       startDate = LocalDate.parse("2018-10-25"),
       endDate = Some(LocalDate.parse("2019-01-14")),
@@ -115,6 +116,7 @@ object G9OperationDe extends Migration {
         Question(
           questionId = api.idGenerator.nextQuestionId(),
           country = countryConfiguration.country,
+          slug = countryConfiguration.slug,
           language = countryConfiguration.language,
           question = countryConfiguration.title,
           operationId = Some(operationId),

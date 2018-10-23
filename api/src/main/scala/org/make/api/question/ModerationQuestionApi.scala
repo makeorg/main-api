@@ -61,6 +61,7 @@ trait ModerationQuestionApi extends MakeAuthenticationDirectives with StrictLogg
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
@@ -76,6 +77,7 @@ trait ModerationQuestionApi extends MakeAuthenticationDirectives with StrictLogg
       makeOperation("ModerationSearchQuestion") { _ =>
         parameters(
           (
+            'slug.?,
             'operationId.as[OperationId].?,
             'themeId.as[ThemeId].?,
             'country.as[Country].?,
@@ -85,20 +87,20 @@ trait ModerationQuestionApi extends MakeAuthenticationDirectives with StrictLogg
             '_sort.?,
             '_order.?
           )
-        ) { (operationId, themeId, country, language, start, end, sort, order) =>
+        ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireModerationRole(userAuth.user) {
-
               val first = start.getOrElse(0)
               val request = SearchQuestionRequest(
-                themeId,
-                operationId,
-                country,
-                language,
-                start,
-                end.map(offset => offset - first),
-                sort,
-                order
+                maybeThemeId = themeId,
+                maybeOperationId = operationId,
+                country = country,
+                language = language,
+                maybeSlug = maybeSlug,
+                skip = start,
+                limit = end.map(offset => offset - first),
+                sort = sort,
+                order = order
               )
               val searchResults =
                 questionService.countQuestion(request).flatMap { count =>

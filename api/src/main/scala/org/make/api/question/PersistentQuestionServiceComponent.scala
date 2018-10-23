@@ -67,6 +67,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
                 request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
+                request.maybeSlug.map(slug               => sqls.eq(questionAlias.slug, slug)),
               )
             )
         }.map(PersistentQuestion.apply()).list().apply()
@@ -112,6 +113,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .into(PersistentQuestion)
             .namedValues(
               column.questionId -> question.questionId.value,
+              column.slug -> question.slug,
               column.createdAt -> now,
               column.updatedAt -> now,
               column.question -> question.question,
@@ -132,6 +134,7 @@ object DefaultPersistentQuestionServiceComponent {
                                 country: String,
                                 language: String,
                                 question: String,
+                                slug: String,
                                 createdAt: ZonedDateTime,
                                 updatedAt: ZonedDateTime,
                                 operationId: Option[String],
@@ -140,6 +143,7 @@ object DefaultPersistentQuestionServiceComponent {
     def toQuestion: Question = {
       Question(
         questionId = QuestionId(this.questionId),
+        slug = this.slug,
         country = Country(this.country),
         language = Language(this.language),
         question = this.question,
@@ -152,7 +156,17 @@ object DefaultPersistentQuestionServiceComponent {
   object PersistentQuestion extends SQLSyntaxSupport[PersistentQuestion] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("question_id", "country", "language", "question", "created_at", "updated_at", "operation_id", "theme_id")
+      Seq(
+        "question_id",
+        "country",
+        "language",
+        "question",
+        "created_at",
+        "updated_at",
+        "operation_id",
+        "theme_id",
+        "slug"
+      )
 
     override val tableName: String = "question"
 
@@ -166,6 +180,7 @@ object DefaultPersistentQuestionServiceComponent {
 
       PersistentQuestion(
         questionId = resultSet.string(questionResultName.questionId),
+        slug = resultSet.string(questionResultName.slug),
         country = resultSet.string(questionResultName.country),
         language = resultSet.string(questionResultName.language),
         question = resultSet.string(questionResultName.question),

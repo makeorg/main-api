@@ -105,6 +105,7 @@ class ModerationTagApiTest
       Some(
         Question(
           QuestionId("1234-1234-1234-1234"),
+          slug = "my-question",
           Country("FR"),
           Language("fr"),
           "?",

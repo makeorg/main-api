@@ -30,6 +30,7 @@ import kamon.executors
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
+import org.flywaydb.core.api.configuration.FluentConfiguration
 import org.make.api.technical.MonitorableExecutionContext
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
@@ -108,16 +109,17 @@ class DatabaseConfiguration(override protected val configuration: Config)
     case Failure(e) => logger.debug(s"Error when creating database: ${e.getMessage}")
   }
 
-  val flyway: Flyway = new Flyway()
   val setBaselineVersion: Boolean = configuration.getBoolean("database.migration.init-schema")
+
   val baselineVersion: MigrationVersion =
     MigrationVersion.fromVersion(configuration.getString("database.migration.baseline-version"))
-  flyway.setDataSource(writeDatasource)
-  flyway.setBaselineOnMigrate(true)
-  if (!setBaselineVersion && flyway.getBaselineVersion.compareTo(baselineVersion) < 0) {
-    flyway.setBaselineVersion(baselineVersion)
-  } else {
-    flyway.setPlaceholders(
+
+  var flywayBuilder: FluentConfiguration = Flyway
+    .configure()
+    .dataSource(writeDatasource)
+    .baselineOnMigrate(true)
+    .locations("classpath:db/migration", "classpath:org/make/api/migrations/db")
+    .placeholders(
       Map(
         "dbname" -> databaseName,
         "clientId" -> defaultClientId,
@@ -127,7 +129,12 @@ class DatabaseConfiguration(override protected val configuration: Config)
         "adminEncryptedPassword" -> adminPassword.bcrypt
       ).asJava
     )
+
+  if (!setBaselineVersion && flywayBuilder.getBaselineVersion.compareTo(baselineVersion) < 0) {
+    flywayBuilder = flywayBuilder.baselineVersion(baselineVersion)
   }
+
+  val flyway: Flyway = flywayBuilder.load()
   flyway.migrate()
   Try(flyway.validate()) match {
     case Success(_) => logger.info("SQL migrations: success")

@@ -34,6 +34,7 @@ object LpaeOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       tags = Seq(
         TagId("lpae-prevention"),
         TagId("lpae-repression"),
