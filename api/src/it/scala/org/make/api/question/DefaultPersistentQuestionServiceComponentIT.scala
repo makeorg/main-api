@@ -19,7 +19,7 @@
 
 package org.make.api.question
 
-import org.make.api.{question, DatabaseTest}
+import org.make.api.DatabaseTest
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}

@@ -27,32 +27,21 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{HttpCodes, ParameterExtractors}
-import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-@Api(value = "Moderation questions")
-@Path(value = "/moderation/questions")
-trait ModerationQuestionApi {
+trait QuestionApiComponent {
+  def questionApi: QuestionApi
+}
 
-  @ApiOperation(
-    value = "moderation-list-questions",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
+@Api(value = "Questions")
+@Path(value = "/questions")
+trait QuestionApi {
+
+  @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
@@ -76,19 +65,15 @@ trait ModerationQuestionApi {
 
 }
 
-trait ModerationQuestionComponent {
-  def moderationQuestionApi: ModerationQuestionApi
-}
-
-trait DefaultModerationQuestionComponent
-    extends ModerationQuestionComponent
+trait DefaultQuestionApiComponent
+    extends QuestionApiComponent
     with MakeAuthenticationDirectives
     with StrictLogging
     with ParameterExtractors {
 
   this: QuestionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
-  override lazy val moderationQuestionApi: ModerationQuestionApi = new ModerationQuestionApi {
+  override lazy val questionApi: QuestionApi = new QuestionApi {
     override def listQuestions: Route = get {
       path("moderation" / "questions") {
         makeOperation("ModerationSearchQuestion") { _ =>
@@ -105,36 +90,32 @@ trait DefaultModerationQuestionComponent
               '_order.?
             )
           ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireModerationRole(userAuth.user) {
-                val first = start.getOrElse(0)
-                val request = SearchQuestionRequest(
-                  maybeThemeId = themeId,
-                  maybeOperationId = operationId,
-                  country = country,
-                  language = language,
-                  maybeSlug = maybeSlug,
-                  skip = start,
-                  limit = end.map(offset => offset - first),
-                  sort = sort,
-                  order = order
-                )
-                val searchResults =
-                  questionService.countQuestion(request).flatMap { count =>
-                    questionService.searchQuestion(request).map(results => count -> results)
-                  }
-
-                onSuccess(searchResults) {
-                  case (count, results) =>
-                    complete(
-                      (
-                        StatusCodes.OK,
-                        scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
-                        results.map(QuestionResponse.apply)
-                      )
-                    )
-                }
+            val first = start.getOrElse(0)
+            val request = SearchQuestionRequest(
+              maybeThemeId = themeId,
+              maybeOperationId = operationId,
+              country = country,
+              language = language,
+              maybeSlug = maybeSlug,
+              skip = start,
+              limit = end.map(offset => offset - first),
+              sort = sort,
+              order = order
+            )
+            val searchResults =
+              questionService.countQuestion(request).flatMap { count =>
+                questionService.searchQuestion(request).map(results => count -> results)
               }
+
+            onSuccess(searchResults) {
+              case (count, results) =>
+                complete(
+                  (
+                    StatusCodes.OK,
+                    scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
+                    results.map(QuestionResponse.apply)
+                  )
+                )
             }
           }
         }
