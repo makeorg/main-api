@@ -144,7 +144,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             postalCode = None,
             karmaLevel = None,
             locale = None,
-            optInNewsletter = false
+            optInNewsletter = false,
+            socioProfessionalCategory = None
           )
         ),
         publicProfile = true

@@ -33,7 +33,7 @@ import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
@@ -108,7 +108,8 @@ class CrmServiceComponentTest
     genderName = Some("other"),
     postalCode = Some("93"),
     karmaLevel = Some(2),
-    locale = Some("fr_FR")
+    locale = Some("fr_FR"),
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
   )
 
   val fooUser = User(

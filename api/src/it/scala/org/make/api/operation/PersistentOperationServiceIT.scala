@@ -28,7 +28,7 @@ import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
@@ -60,7 +60,8 @@ class PersistentOperationServiceIT
     genderName = Some("other"),
     postalCode = Some("93"),
     karmaLevel = Some(2),
-    locale = Some("FR_FR")
+    locale = Some("FR_FR"),
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
   )
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val johnDoe = User(

@@ -30,7 +30,7 @@ import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalikejdbc._
@@ -83,7 +83,8 @@ object PersistentUserServiceComponent {
                             lastMailingErrorDate: Option[ZonedDateTime],
                             lastMailingErrorMessage: Option[String],
                             organisationName: Option[String],
-                            publicProfile: Boolean) {
+                            publicProfile: Boolean,
+                            socioProfessionalCategory: String) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -121,8 +122,10 @@ object PersistentUserServiceComponent {
       UserRights(userId = UserId(uuid), roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq))
     }
 
-    private def toRole: String   => Option[Role] = Role.matchRole
-    private def toGender: String => Option[Gender] = Gender.matchGender
+    private def toRole: String                      => Option[Role] = Role.matchRole
+    private def toGender: String                    => Option[Gender] = Gender.matchGender
+    private def toSocioProfessionalCategory: String => Option[SocioProfessionalCategory] =
+      SocioProfessionalCategory.matchSocioProfessionalCategory
 
     private def toProfile: Option[Profile] = {
       Profile.parseProfile(
@@ -139,7 +142,8 @@ object PersistentUserServiceComponent {
         postalCode = postalCode,
         karmaLevel = karmaLevel,
         locale = locale,
-        optInNewsletter = optInNewsletter
+        optInNewsletter = optInNewsletter,
+        socioProfessionalCategory = toSocioProfessionalCategory(socioProfessionalCategory)
       )
     }
   }
@@ -160,7 +164,8 @@ object PersistentUserServiceComponent {
       "postal_code",
       "karma_level",
       "locale",
-      "opt_in_newsletter"
+      "opt_in_newsletter",
+      "socio_professional_category"
     )
 
     private val userColumnNames: Seq[String] = Seq(
@@ -237,7 +242,8 @@ object PersistentUserServiceComponent {
         lastMailingErrorDate = resultSet.zonedDateTimeOpt(userResultName.lastMailingErrorDate),
         lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage),
         organisationName = resultSet.stringOpt(userResultName.organisationName),
-        publicProfile = resultSet.boolean(userResultName.publicProfile)
+        publicProfile = resultSet.boolean(userResultName.publicProfile),
+        socioProfessionalCategory = resultSet.string(userResultName.socioProfessionalCategory)
       )
     }
   }
@@ -582,7 +588,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
-              column.publicProfile -> user.publicProfile
+              column.publicProfile -> user.publicProfile,
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
             )
         }.execute().apply()
       }).map(_ => user)
@@ -657,7 +664,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorDate -> user.lastMailingError.map(_.date),
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
-              column.publicProfile -> user.publicProfile
+              column.publicProfile -> user.publicProfile,
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
             )
             .where(
               sqls
@@ -842,7 +850,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.country -> user.country.value,
-              column.language -> user.language.value
+              column.language -> user.language.value,
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
             )
             .where(sqls.eq(column.uuid, user.userId.value))
         }.executeUpdate().apply() match {

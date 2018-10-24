@@ -34,7 +34,7 @@ import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
 import org.make.core.reference.{Country, Language}
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -85,7 +85,8 @@ class UserServiceTest
     genderName = Some("other"),
     postalCode = Some("93"),
     karmaLevel = Some(2),
-    locale = Some("fr_FR")
+    locale = Some("fr_FR"),
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
   )
   val fooUser = User(
     userId = UserId("1"),
@@ -124,7 +125,8 @@ class UserServiceTest
     genderName = None,
     postalCode = None,
     karmaLevel = None,
-    locale = None
+    locale = None,
+    socioProfessionalCategory = None
   )
 
   val johnDoeUser: User = User(
@@ -164,7 +166,8 @@ class UserServiceTest
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        socioProfessionalCategory = None
       )
 
       val returnedUser = User(
@@ -248,7 +251,8 @@ class UserServiceTest
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        socioProfessionalCategory = None
       )
 
       val returnedUser = User(

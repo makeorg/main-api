@@ -91,7 +91,8 @@ class CrmContactEventConsumerActorIt
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        socioProfessionalCategory = None
       )
       val johnDoeUser: User = User(
         userId = UserId("JOHNDOE"),
