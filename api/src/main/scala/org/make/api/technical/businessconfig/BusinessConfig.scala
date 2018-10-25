@@ -71,6 +71,12 @@ object BusinessConfig {
       defaultLanguage = Language("en"),
       supportedLanguages = Seq(Language("en")),
       coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("DE"),
+      defaultLanguage = Language("de"),
+      supportedLanguages = Seq(Language("de")),
+      coreIsAvailable = false
     )
   )
 

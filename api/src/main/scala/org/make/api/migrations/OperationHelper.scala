@@ -109,11 +109,11 @@ trait OperationHelper extends StrictLogging {
           OperationTranslation(title = configuration.title, language = configuration.language)
         },
         countriesConfiguration = configurationsBySequence.toSeq.map {
-          case (questionId, configuration) =>
+          case (sequenceId, configuration) =>
             OperationCountryConfiguration(
               countryCode = configuration.country,
               tagIds = Seq.empty,
-              landingSequenceId = questionId,
+              landingSequenceId = sequenceId,
               startDate = Some(configuration.startDate),
               endDate = configuration.endDate,
               questionId = None
