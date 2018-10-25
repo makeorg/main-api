@@ -21,6 +21,7 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
@@ -156,11 +157,13 @@ object UserEvent {
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
                                  postalCode: Option[String],
+                                 gender: Option[Gender],
+                                 socioProfessionalCategory: Option[SocioProfessionalCategory],
                                  override val country: Country = defaultCountry,
                                  override val language: Language = defaultLanguage,
                                  isSocialLogin: Boolean = false)
       extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
+    override def version(): Int = MakeSerializable.V2
   }
 
   final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,

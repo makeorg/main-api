@@ -162,12 +162,12 @@ class UserServiceTest
         twitterId = None,
         facebookId = None,
         googleId = None,
-        gender = None,
-        genderName = None,
+        gender = Some(Gender.Male),
+        genderName = Some(Gender.Male.toString),
         postalCode = None,
         karmaLevel = None,
         locale = None,
-        socioProfessionalCategory = None
+        socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
       )
 
       val returnedUser = User(
@@ -206,7 +206,9 @@ class UserServiceTest
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
           country = Country("FR"),
-          language = Language("fr")
+          language = Language("fr"),
+          gender = Some(Gender.Male),
+          socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
         ),
         RequestContext.empty
       )
@@ -217,6 +219,9 @@ class UserServiceTest
         user.firstName should be(Some("olive"))
         user.lastName should be(Some("tom"))
         user.profile.get.dateOfBirth should be(Some(LocalDate.parse("1984-10-11")))
+        user.profile.get.gender should be(Some(Gender.Male))
+        user.profile.get.genderName should be(Some(Gender.Male.toString))
+        user.profile.get.socioProfessionalCategory should be(Some(SocioProfessionalCategory.Employee))
       }
     }
 

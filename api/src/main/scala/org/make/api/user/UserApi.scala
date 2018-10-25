@@ -51,13 +51,14 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -288,7 +289,9 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                     profession = request.profession,
                     postalCode = request.postalCode,
                     country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                    language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                    language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
+                    gender = request.gender,
+                    socioProfessionalCategory = request.socioProfessionalCategory
                   ),
                   requestContext
                 )
@@ -673,10 +676,16 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                     description =
                       UpdateUserRequest.updateValue(user.profile.flatMap(_.description), request.description),
                     optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
-                    gender = Gender
-                      .matchGender(request.gender.getOrElse(""))
-                      .orElse(Gender.matchGender(user.profile.flatMap(_.gender).toString)),
-                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                    gender = UpdateUserRequest
+                      .updateValue(user.profile.flatMap(_.gender.map(_.shortName)), request.gender)
+                      .flatMap(Gender.matchGender),
+                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName)),
+                    socioProfessionalCategory = UpdateUserRequest
+                      .updateValue(
+                        user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+                        request.socioProfessionalCategory
+                      )
+                      .flatMap(SocioProfessionalCategory.matchSocioProfessionalCategory)
                   )
 
                   onSuccess(
@@ -902,15 +911,20 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     Segment.flatMap(id => Try(UserId(id)).toOption)
 }
 
-case class RegisterUserRequest(email: String,
-                               password: String,
-                               dateOfBirth: Option[LocalDate],
-                               firstName: Option[String],
-                               lastName: Option[String],
-                               profession: Option[String],
-                               postalCode: Option[String],
-                               country: Option[Country],
-                               language: Option[Language]) {
+@ApiModel
+case class RegisterUserRequest(
+  email: String,
+  password: String,
+  dateOfBirth: Option[LocalDate],
+  firstName: Option[String],
+  lastName: Option[String],
+  profession: Option[String],
+  postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
+  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[SocioProfessionalCategory]
+) {
 
   validate(
     mandatoryField("firstName", firstName),
@@ -928,19 +942,23 @@ object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
 }
 
-case class UpdateUserRequest(dateOfBirth: Option[String],
-                             firstName: Option[String],
-                             lastName: Option[String],
-                             organisationName: Option[String],
-                             profession: Option[String],
-                             postalCode: Option[String],
-                             phoneNumber: Option[String],
-                             description: Option[String],
-                             optInNewsletter: Option[Boolean],
-                             gender: Option[String],
-                             genderName: Option[String],
-                             country: Option[Country],
-                             language: Option[Language]) {
+@ApiModel
+case class UpdateUserRequest(
+  dateOfBirth: Option[String],
+  firstName: Option[String],
+  lastName: Option[String],
+  organisationName: Option[String],
+  profession: Option[String],
+  postalCode: Option[String],
+  phoneNumber: Option[String],
+  description: Option[String],
+  optInNewsletter: Option[Boolean],
+  @(ApiModelProperty @field)(dataType = "string") gender: Option[String],
+  genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[String]
+) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
   private val maxPostalCodeLength = 10
@@ -966,8 +984,16 @@ case class UpdateUserRequest(dateOfBirth: Option[String],
       value =>
         validateField(
           "gender",
-          Gender.matchGender(value).isDefined,
+          value == "" || Gender.matchGender(value).isDefined,
           s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
+      )
+    ),
+    socioProfessionalCategory.map(
+      value =>
+        validateField(
+          "socio professional category",
+          value == "" || SocioProfessionalCategory.matchSocioProfessionalCategory(value).isDefined,
+          s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
       )
     ),
     description.map(value => maxLength("description", maxDescriptionLength, value))
