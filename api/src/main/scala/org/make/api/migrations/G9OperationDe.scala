@@ -125,14 +125,21 @@ object G9OperationDe extends Migration {
   }
 
   override def migrate(api: MakeApi): Future[Unit] = {
-    val updatedOperation: OptionT[Future, OperationId] = for {
-      g9Operation      <- OptionT(api.operationService.findOneBySlug(G9Operation.operationSlug))
-      sequenceId       <- OptionT(createSequence(api, g9Operation.operationId, countryConfiguration))
-      question         <- OptionT(createQuestion(api, g9Operation.operationId, countryConfiguration))
-      updatedOperation <- OptionT(updateOperation(api, g9Operation, sequenceId, question.questionId))
-    } yield updatedOperation
 
-    updatedOperation.value.map(_ => ())
+    api.operationService.findOneBySlug(G9Operation.operationSlug).map { maybeOperation =>
+      if (maybeOperation.forall(!_.countriesConfiguration.exists(_.countryCode.value == "DE"))) {
+        val updatedOperation: OptionT[Future, OperationId] = for {
+          g9Operation      <- OptionT(Future.successful(maybeOperation))
+          sequenceId       <- OptionT(createSequence(api, g9Operation.operationId, countryConfiguration))
+          question         <- OptionT(createQuestion(api, g9Operation.operationId, countryConfiguration))
+          updatedOperation <- OptionT(updateOperation(api, g9Operation, sequenceId, question.questionId))
+        } yield updatedOperation
+
+        updatedOperation.value.map(_ => ())
+      } else {
+        Future.successful({})
+      }
+    }
   }
 
   override val runInProduction: Boolean = true
