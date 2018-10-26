@@ -724,7 +724,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               case Nil => Future.successful(None)
               case head :: tail =>
                 getModerationProposalById(head).flatMap { proposal =>
-                  if (proposal.exists(_.status != Pending && !toEnrich)) {
+                  if ((proposal.exists(_.status != Pending) && !toEnrich) || (toEnrich && proposal
+                        .exists(p => p.tags.nonEmpty && p.idea.isDefined))) {
                     recursiveLock(tail)
                   } else {
                     proposalCoordinatorService
