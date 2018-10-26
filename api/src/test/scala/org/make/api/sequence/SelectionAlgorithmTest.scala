@@ -1115,4 +1115,40 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       proportions(ProposalId("testedProposal51")) should equal(0.347 +- confidenceInterval)
     }
   }
+
+  feature("proposal sampling") {
+    scenario("check proposal sampling") {
+      val random = new Random(0)
+      val testedProposals: Seq[Proposal] = (1 to 1000).map { i =>
+        val a = random.nextInt(100) + 100
+        val d = random.nextInt(100) + 100
+        val n = random.nextInt(10) + 1
+        val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
+          VoteKey.Agree -> (
+            a ->
+              Map(
+                QualificationKey.LikeIt -> random.nextInt(a),
+                QualificationKey.PlatitudeAgree -> random.nextInt(a / 10)
+              )
+          ),
+          VoteKey.Disagree -> (
+            d ->
+              Map(
+                QualificationKey.NoWay -> random.nextInt(d),
+                QualificationKey.PlatitudeDisagree -> random.nextInt(d / 10)
+              )
+          ),
+          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> random.nextInt(n)))
+        )
+        fakeProposalQualif(ProposalId(s"tested$i"), votes, Some(IdeaId("Idea%s".format((i - 1) / 5))))
+      }
+
+      UniformRandom.random = new Random(0)
+      ProposalScorerHelper.random = new MersenneTwister(0)
+
+      val chosen: Seq[ProposalId] =
+        selectionAlgorithm.selectProposalsForSequence(10, sequenceConfiguration, testedProposals, Seq.empty, Seq.empty)
+      chosen.length should be(10)
+    }
+  }
 }
