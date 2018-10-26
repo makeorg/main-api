@@ -182,7 +182,10 @@ object MakeMain extends App with StrictLogging with MakeApi {
       MIPIMFrData,
       HdfOperation,
       HdfImportTagsData,
-      HdfData
+      HdfData,
+      G9OperationDe,
+      G9ImportTagsDataDe,
+      G9DataDe
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 
