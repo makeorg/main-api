@@ -21,16 +21,15 @@ package org.make.api.widget
 
 import org.make.api.operation.PersistentOperationServiceComponent
 import org.make.api.proposal._
-import org.make.api.sequence.SequenceConfigurationComponent
+import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal._
-import org.make.core.sequence.SequenceId
+import org.make.core.sequence.{Sequence, SequenceId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -57,6 +56,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
     with ProposalSearchEngineComponent
     with PersistentOperationServiceComponent
     with SequenceConfigurationComponent
+    with SequenceServiceComponent
     with SelectionAlgorithmComponent =>
 
   override lazy val widgetService: WidgetService = new WidgetService {
@@ -79,34 +79,17 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
                                         limit: Option[Int],
                                         requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      def allProposals(countProposals: Int): Future[Seq[IndexedProposal]] =
-        elasticsearchProposalAPI
-          .searchProposals(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  operation = Some(OperationSearchFilter(widgetOperationId)),
-                  tags = tagsIds.map(TagsSearchFilter)
-                )
-              ),
-              limit = Some(countProposals)
-            )
-          )
-          .map(_.results)
+      def allProposals(maybeSequence: Option[Sequence]): Future[Seq[Proposal]] = {
+        maybeSequence.map { sequence =>
+          Future
+            .traverse(sequence.proposalIds) { id =>
+              proposalCoordinatorService.getProposal(id)
+            }
+            .map(_.flatten)
+        }.getOrElse(Future.successful(Seq.empty))
+      }
 
       for {
-        countProposals <- elasticsearchProposalAPI.countProposals(
-          SearchQuery(
-            filters = Some(
-              SearchFilters(
-                operation = Some(OperationSearchFilter(widgetOperationId)),
-                tags = tagsIds.map(TagsSearchFilter)
-              )
-            )
-          )
-        )
-        allProposals   <- allProposals(countProposals.toInt)
-        votedProposals <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.id))
         sequenceId <- persistentOperationService
           .getById(widgetOperationId)
           .map(
@@ -118,16 +101,14 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
                   .landingSequenceId
             ).getOrElse(SequenceId(requestContext.source.getOrElse("widget")))
           )
+        sequence              <- sequenceService.getSequenceById(sequenceId, requestContext)
+        allProposals          <- allProposals(sequence)
+        votedProposals        <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
         sequenceConfiguration <- sequenceConfigurationService.getSequenceConfiguration(sequenceId)
-        proposals <- Future
-          .traverse(allProposals.map(_.id)) { id =>
-            proposalCoordinatorService.getProposal(id)
-          }
-          .map(_.flatten)
         selectedProposals = selectionAlgorithm.selectProposalsForSequence(
           limit.getOrElse(10),
           sequenceConfiguration,
-          proposals,
+          allProposals,
           votedProposals.keys.toSeq,
           Seq.empty
         )
