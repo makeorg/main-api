@@ -29,7 +29,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object CreateQuestions extends Migration with StrictLogging {
 
   private val languages =
-    Map(Country("FR") -> Language("fr"), Country("IT") -> Language("it"), Country("GB") -> Language("en"))
+    Map(
+      Country("FR") -> Language("fr"),
+      Country("IT") -> Language("it"),
+      Country("GB") -> Language("en"),
+      Country("DE") -> Language("de")
+    )
 
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
   override def migrate(api: MakeApi): Future[Unit] = {
