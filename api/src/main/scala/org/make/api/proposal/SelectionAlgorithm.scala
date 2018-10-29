@@ -142,13 +142,23 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val includedIdeasToExclude: Seq[IdeaId] = includedProposals.flatMap(p     => p.idea)
 
       // fetch available proposals for user
-      val availableProposals: Seq[Proposal] = proposals.filter(
-        p =>
-          p.status == ProposalStatus.Accepted &&
-            !includedProposalsToExclude.contains(p.proposalId) &&
-            !includedIdeasToExclude.exists(excludedIdea => p.idea.contains(excludedIdea)) &&
-            !votedProposals.contains(p.proposalId)
-      )
+      val availableProposalsSource: Seq[Proposal] = proposals
+        .filter(
+          p =>
+            p.status == ProposalStatus.Accepted &&
+              !includedProposalsToExclude.contains(p.proposalId) &&
+              !includedIdeasToExclude.exists(excludedIdea => p.idea.contains(excludedIdea)) &&
+              !votedProposals.contains(p.proposalId)
+        )
+
+      // sample long proposal list
+      val maxAvailableProposals = 1000
+      val availableProposals = if (availableProposalsSource.size < maxAvailableProposals) {
+        availableProposalsSource
+      } else {
+        val samplingRate: Float = maxAvailableProposals.toFloat / availableProposalsSource.size.toFloat
+        availableProposalsSource.filter(_ => random.nextFloat() < samplingRate)
+      }
 
       // balance proposals between new and tested
       val proposalsToChoose: Int = targetLength - includeList.size
