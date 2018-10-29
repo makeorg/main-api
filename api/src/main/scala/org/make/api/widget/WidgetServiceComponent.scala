@@ -29,6 +29,7 @@ import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
+import org.make.core.reference.Country
 import org.make.core.sequence.{Sequence, SequenceId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -44,6 +45,7 @@ trait WidgetService {
   def startNewWidgetSequence(maybeUserId: Option[UserId],
                              widgetOperationId: OperationId,
                              tagsIds: Option[Seq[TagId]],
+                             country: Option[Country],
                              limit: Option[Int],
                              requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 }
@@ -76,6 +78,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
     override def startNewWidgetSequence(maybeUserId: Option[UserId],
                                         widgetOperationId: OperationId,
                                         tagsIds: Option[Seq[TagId]],
+                                        country: Option[Country],
                                         limit: Option[Int],
                                         requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
@@ -96,7 +99,10 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
             _.map(
               operation =>
                 operation.countriesConfiguration
-                  .find(countryConfiguration => requestContext.country.contains(countryConfiguration.countryCode))
+                  .find(
+                    countryConfiguration =>
+                      country.orElse(requestContext.country).contains(countryConfiguration.countryCode)
+                  )
                   .getOrElse(operation.countriesConfiguration.head)
                   .landingSequenceId
             ).getOrElse(SequenceId(requestContext.source.getOrElse("widget")))

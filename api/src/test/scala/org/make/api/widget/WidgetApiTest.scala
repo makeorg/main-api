@@ -87,6 +87,7 @@ class WidgetApiTest
             ArgumentMatchers.any[Option[UserId]],
             ArgumentMatchers.eq(OperationId("foo-operation-id")),
             ArgumentMatchers.any[Option[Seq[TagId]]],
+            ArgumentMatchers.any[Option[Country]],
             ArgumentMatchers.any[Option[Int]],
             ArgumentMatchers.any[RequestContext]
           )
@@ -109,6 +110,7 @@ class WidgetApiTest
             ArgumentMatchers.eq(Some(UserId("my-user-id"))),
             ArgumentMatchers.eq(OperationId("foo-operation-id")),
             ArgumentMatchers.eq(Some(Seq(TagId("foo-tag-id"), TagId("bar-tag-id")))),
+            ArgumentMatchers.any[Option[Country]],
             ArgumentMatchers.any[Option[Int]],
             ArgumentMatchers.any[RequestContext]
           )
