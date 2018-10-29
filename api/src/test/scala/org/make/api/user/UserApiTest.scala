@@ -47,7 +47,7 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
-import org.make.core.profile.Profile
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
@@ -178,6 +178,8 @@ class UserApiTest
           | "lastName": "tom",
           | "password": "mypassss",
           | "dateOfBirth": "1997-12-02",
+          | "gender": "M",
+          | "socioProfessionalCategory": "EMPL",
           | "country": "FR",
           | "language": "fr"
           |}
@@ -197,7 +199,9 @@ class UserApiTest
               lastIp = Some("192.0.0.1"),
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
               country = Country("FR"),
-              language = Language("fr")
+              language = Language("fr"),
+              gender = Some(Gender.Male),
+              socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
             )
           ),
           any[RequestContext]
@@ -374,6 +378,38 @@ class UserApiTest
               Some(
                 "Could not decode [\"foo-12-02\"] at [.dateOfBirth] as " +
                   "[foo-12-02 is not a valid date, it should match yyyy-MM-dd]."
+              )
+            )
+          )
+        )
+      }
+    }
+
+    scenario("validation failed for invalid gender") {
+      val request =
+        """
+          |{
+          | "email": "foo",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "country": "FR",
+          | "language": "fr",
+          | "gender": "S"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val genderError = errors.find(_.field == "gender")
+        genderError should be(
+          Some(
+            ValidationError(
+              "gender",
+              Some(
+                "Could not decode [\"S\"] at [.gender] as " +
+                  "[S is not a Gender]."
               )
             )
           )
@@ -1115,7 +1151,9 @@ class UserApiTest
           | "lastName": "user",
           | "dateOfBirth": "1997-12-02",
           | "country": "FR",
-          | "language": "fr"
+          | "language": "fr",
+          | "gender": "F",
+          | "socioProfessionalCategory": "EMPL"
           |}
         """.stripMargin
 
@@ -1149,7 +1187,9 @@ class UserApiTest
           | "lastName": "tom",
           | "dateOfBirth": "1997-12-02",
           | "country": "IT",
-          | "language": "it"
+          | "language": "it",
+          | "gender": "F",
+          | "socioProfessionalCategory": "EMPL"
           |}
         """.stripMargin
 
@@ -1175,7 +1215,12 @@ class UserApiTest
               language = Language("it"),
               profile = Some(
                 Profile.default
-                  .copy(dateOfBirth = Some(LocalDate.parse("1997-12-02")), optInNewsletter = false)
+                  .copy(
+                    dateOfBirth = Some(LocalDate.parse("1997-12-02")),
+                    optInNewsletter = false,
+                    gender = Some(Gender.Female),
+                    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+                  )
               )
             )
           ),
@@ -1184,7 +1229,7 @@ class UserApiTest
       }
     }
 
-    scenario("user remove age from the front") {
+    scenario("user remove age, gender, csp from the front") {
       val token: String = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
@@ -1206,7 +1251,9 @@ class UserApiTest
           | "lastName": "tom",
           | "dateOfBirth": "",
           | "country": "IT",
-          | "language": "it"
+          | "language": "it",
+          | "gender": "",
+          | "socioProfessionalCategory": ""
           |}
         """.stripMargin
 
@@ -1232,7 +1279,7 @@ class UserApiTest
               language = Language("it"),
               profile = Some(
                 Profile.default
-                  .copy(dateOfBirth = None, optInNewsletter = false)
+                  .copy(dateOfBirth = None, optInNewsletter = false, gender = None, socioProfessionalCategory = None)
               )
             )
           ),

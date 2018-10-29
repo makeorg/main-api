@@ -34,7 +34,7 @@ import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
 import org.make.core.reference.{Country, Language}
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -85,7 +85,8 @@ class UserServiceTest
     genderName = Some("other"),
     postalCode = Some("93"),
     karmaLevel = Some(2),
-    locale = Some("fr_FR")
+    locale = Some("fr_FR"),
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
   )
   val fooUser = User(
     userId = UserId("1"),
@@ -124,7 +125,8 @@ class UserServiceTest
     genderName = None,
     postalCode = None,
     karmaLevel = None,
-    locale = None
+    locale = None,
+    socioProfessionalCategory = None
   )
 
   val johnDoeUser: User = User(
@@ -160,11 +162,12 @@ class UserServiceTest
         twitterId = None,
         facebookId = None,
         googleId = None,
-        gender = None,
-        genderName = None,
+        gender = Some(Gender.Male),
+        genderName = Some(Gender.Male.toString),
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
       )
 
       val returnedUser = User(
@@ -203,7 +206,9 @@ class UserServiceTest
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
           country = Country("FR"),
-          language = Language("fr")
+          language = Language("fr"),
+          gender = Some(Gender.Male),
+          socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
         ),
         RequestContext.empty
       )
@@ -214,6 +219,9 @@ class UserServiceTest
         user.firstName should be(Some("olive"))
         user.lastName should be(Some("tom"))
         user.profile.get.dateOfBirth should be(Some(LocalDate.parse("1984-10-11")))
+        user.profile.get.gender should be(Some(Gender.Male))
+        user.profile.get.genderName should be(Some(Gender.Male.toString))
+        user.profile.get.socioProfessionalCategory should be(Some(SocioProfessionalCategory.Employee))
       }
     }
 
@@ -248,7 +256,8 @@ class UserServiceTest
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        socioProfessionalCategory = None
       )
 
       val returnedUser = User(

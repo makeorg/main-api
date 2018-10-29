@@ -35,7 +35,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
-import org.make.core.profile.Profile
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
@@ -86,6 +86,8 @@ case class UserRegisterData(email: String,
                             dateOfBirth: Option[LocalDate] = None,
                             profession: Option[String] = None,
                             postalCode: Option[String] = None,
+                            gender: Option[Gender] = None,
+                            socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
                             country: Country,
                             language: Language)
 
@@ -179,7 +181,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         Profile.parseProfile(
           dateOfBirth = userRegisterData.dateOfBirth,
           profession = userRegisterData.profession,
-          postalCode = userRegisterData.postalCode
+          postalCode = userRegisterData.postalCode,
+          gender = userRegisterData.gender,
+          socioProfessionalCategory = userRegisterData.socioProfessionalCategory
         )
 
       val result = for {
@@ -202,7 +206,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             dateOfBirth = user.profile.flatMap(_.dateOfBirth),
             postalCode = user.profile.flatMap(_.postalCode),
             country = user.country,
-            language = user.language
+            language = user.language,
+            gender = user.profile.flatMap(_.gender),
+            socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory)
           )
         )
         user
@@ -340,7 +346,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           postalCode = user.profile.flatMap(_.postalCode),
           country = user.country,
           language = user.language,
-          isSocialLogin = true
+          isSocialLogin = true,
+          gender = user.profile.flatMap(_.gender),
+          socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory)
         )
       )
       eventBusService.publish(

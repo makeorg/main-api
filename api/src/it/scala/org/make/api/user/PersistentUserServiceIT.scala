@@ -25,7 +25,7 @@ import com.github.t3hnar.bcrypt._
 import org.make.api.DatabaseTest
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.DateHelper
-import org.make.core.profile.{Gender, Profile}
+import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -52,7 +52,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     genderName = Some("other"),
     postalCode = Some("93"),
     karmaLevel = Some(2),
-    locale = Some("FR_FR")
+    locale = Some("FR_FR"),
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
   )
 
   val johnDoe = User(
@@ -334,6 +335,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           |    - gender: Male
           |    - twitterId: @twitterid
           |    - karmaLevel: 2
+          |    - socioProfessionalCategory: farmers
         """.stripMargin)
 
       When("I persist John Doe and John Doe profile")
@@ -378,6 +380,10 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user newsletter option must be true")
         user.profile.get.optInNewsletter shouldBe true
+
+        And("the user socio professional category must be farmers")
+        user.profile.get.socioProfessionalCategory.get shouldBe SocioProfessionalCategory.Farmers
+
       }
     }
 
@@ -765,12 +771,25 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(persistentUserService.persist(updateUser), Timeout(3.seconds)) { user =>
         user.userId.value should be("update-user-1")
         whenReady(
-          persistentUserService.updateUser(updateUser.copy(firstName = Some("FooFoo"), lastName = Some("BarBar"))),
+          persistentUserService.updateUser(
+            updateUser.copy(
+              firstName = Some("FooFoo"),
+              lastName = Some("BarBar"),
+              profile = Some(
+                updateUser.profile.get.copy(
+                  gender = Some(Gender.Female),
+                  socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+                )
+              )
+            )
+          ),
           Timeout(3.seconds)
         ) { userUpdated =>
           userUpdated shouldBe a[User]
           userUpdated.firstName shouldBe Some("FooFoo")
           userUpdated.lastName shouldBe Some("BarBar")
+          userUpdated.profile.get.gender shouldBe Some(Gender.Female)
+          userUpdated.profile.get.socioProfessionalCategory shouldBe Some(SocioProfessionalCategory.Employee)
         }
       }
     }

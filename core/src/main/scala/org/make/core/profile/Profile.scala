@@ -62,6 +62,72 @@ object Gender extends StrictLogging {
   }
 }
 
+sealed trait SocioProfessionalCategory {
+  def shortName: String
+}
+
+object SocioProfessionalCategory extends StrictLogging {
+  implicit lazy val genderEncoder: Encoder[SocioProfessionalCategory] =
+    (socioProfessionalCategory: SocioProfessionalCategory) => Json.fromString(socioProfessionalCategory.shortName)
+  implicit lazy val genderDecoder: Decoder[SocioProfessionalCategory] =
+    Decoder.decodeString.emap(
+      socioProfessionalCategory =>
+        SocioProfessionalCategory
+          .matchSocioProfessionalCategory(socioProfessionalCategory)
+          .map(Right.apply)
+          .getOrElse(Left(s"$socioProfessionalCategory is not a socio professional category"))
+    )
+
+  val socioProfessionalCategories: Map[String, SocioProfessionalCategory] =
+    Map(
+      Farmers.shortName -> Farmers,
+      ArtisansMerchantsCompanyDirector.shortName -> ArtisansMerchantsCompanyDirector,
+      ManagersAndHigherIntellectualOccupations.shortName -> ManagersAndHigherIntellectualOccupations,
+      IntermediateProfessions.shortName -> IntermediateProfessions,
+      Employee.shortName -> Employee,
+      Workers.shortName -> Workers,
+      Other.shortName -> Other
+    )
+
+  def matchSocioProfessionalCategory(socioProfessionalCategoryOrNull: String): Option[SocioProfessionalCategory] = {
+    Option(socioProfessionalCategoryOrNull).flatMap { socioProfessionalCategory =>
+      val maybeSocioProfessionalCategory = socioProfessionalCategories.get(socioProfessionalCategory)
+      if (maybeSocioProfessionalCategory.isEmpty) {
+        logger.warn(s"$socioProfessionalCategory is not a socio professional category")
+      }
+      maybeSocioProfessionalCategory
+    }
+  }
+
+  case object Farmers extends SocioProfessionalCategory {
+    override val shortName: String = "FARM"
+  }
+
+  case object ArtisansMerchantsCompanyDirector extends SocioProfessionalCategory {
+    override val shortName: String = "AMCD"
+  }
+
+  case object ManagersAndHigherIntellectualOccupations extends SocioProfessionalCategory {
+    override val shortName: String = "MHIO"
+  }
+
+  case object IntermediateProfessions extends SocioProfessionalCategory {
+    override val shortName: String = "INPR"
+  }
+
+  case object Employee extends SocioProfessionalCategory {
+    override val shortName: String = "EMPL"
+  }
+
+  case object Workers extends SocioProfessionalCategory {
+    override val shortName: String = "WORK"
+  }
+
+  case object Other extends SocioProfessionalCategory {
+    override val shortName: String = "O"
+  }
+}
+
 case class Profile(dateOfBirth: Option[LocalDate],
                    avatarUrl: Option[String],
                    profession: Option[String],
@@ -75,7 +141,8 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    postalCode: Option[String],
                    karmaLevel: Option[Int],
                    locale: Option[String],
-                   optInNewsletter: Boolean = true)
+                   optInNewsletter: Boolean = true,
+                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None)
     extends MakeSerializable
 
 object Profile extends CirceFormatters {
@@ -95,7 +162,8 @@ object Profile extends CirceFormatters {
     genderName = None,
     postalCode = None,
     karmaLevel = None,
-    locale = None
+    locale = None,
+    socioProfessionalCategory = None
   )
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
@@ -111,7 +179,8 @@ object Profile extends CirceFormatters {
                    postalCode: Option[String] = None,
                    karmaLevel: Option[Int] = None,
                    locale: Option[String] = None,
-                   optInNewsletter: Boolean = true): Option[Profile] = {
+                   optInNewsletter: Boolean = true,
+                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None): Option[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,
@@ -127,7 +196,8 @@ object Profile extends CirceFormatters {
       postalCode = postalCode,
       karmaLevel = karmaLevel,
       locale = locale,
-      optInNewsletter = optInNewsletter
+      optInNewsletter = optInNewsletter,
+      socioProfessionalCategory = socioProfessionalCategory
     )
     Some(profile)
   }
