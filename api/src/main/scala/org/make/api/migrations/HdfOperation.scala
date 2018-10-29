@@ -25,7 +25,7 @@ import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.core.reference.{Country, Language}
 
 object HdfOperation extends CreateOperation {
-  override val operationSlug: String = "jeunes-hdf"
+  override val operationSlug: String = "jeunesse-hautsdefrance"
 
   override val defaultLanguage: Language = Language("fr")
 
