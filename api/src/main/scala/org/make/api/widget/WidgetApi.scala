@@ -32,6 +32,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.reference.Country
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -61,13 +62,14 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
         makeOperation("GetWidgetSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?)) {
-              (tagsIds: Option[Seq[TagId]], limit: Option[Int]) =>
+            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?, 'country.as[Country].?)) {
+              (tagsIds: Option[Seq[TagId]], limit: Option[Int], country: Option[Country]) =>
                 provideAsync(
                   widgetService.startNewWidgetSequence(
                     maybeUserId = userAuth.map(_.user.userId),
                     widgetOperationId = widgetOperationId,
                     tagsIds = tagsIds,
+                    country = country,
                     limit = limit,
                     requestContext = requestContext
                   )
