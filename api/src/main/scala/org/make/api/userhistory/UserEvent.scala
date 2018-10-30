@@ -157,8 +157,8 @@ object UserEvent {
                                  profession: Option[String],
                                  dateOfBirth: Option[LocalDate],
                                  postalCode: Option[String],
-                                 gender: Option[Gender],
-                                 socioProfessionalCategory: Option[SocioProfessionalCategory],
+                                 gender: Option[Gender] = None,
+                                 socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
                                  override val country: Country = defaultCountry,
                                  override val language: Language = defaultLanguage,
                                  isSocialLogin: Boolean = false)
