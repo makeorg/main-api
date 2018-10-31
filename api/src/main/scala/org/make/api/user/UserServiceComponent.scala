@@ -37,6 +37,7 @@ import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
@@ -89,7 +90,9 @@ case class UserRegisterData(email: String,
                             gender: Option[Gender] = None,
                             socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
                             country: Country,
-                            language: Language)
+                            language: Language,
+                            questionId: Option[QuestionId] = None,
+                            optInPartner: Option[Boolean] = None)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -128,6 +131,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                              language: Language,
                              profile: Option[Profile],
                              hashedVerificationToken: String): Future[User] = {
+
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
@@ -183,7 +187,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           profession = userRegisterData.profession,
           postalCode = userRegisterData.postalCode,
           gender = userRegisterData.gender,
-          socioProfessionalCategory = userRegisterData.socioProfessionalCategory
+          socioProfessionalCategory = userRegisterData.socioProfessionalCategory,
+          registerQuestionId = userRegisterData.questionId,
+          optInPartner = userRegisterData.optInPartner
         )
 
       val result = for {
@@ -208,7 +214,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             country = user.country,
             language = user.language,
             gender = user.profile.flatMap(_.gender),
-            socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory)
+            socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
+            optInPartner = user.profile.flatMap(_.optInPartner),
+            registerQuestionId = user.profile.flatMap(_.registerQuestionId)
           )
         )
         user
@@ -348,7 +356,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           language = user.language,
           isSocialLogin = true,
           gender = user.profile.flatMap(_.gender),
-          socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory)
+          socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
+          optInPartner = user.profile.flatMap(_.optInPartner),
+          registerQuestionId = user.profile.flatMap(_.registerQuestionId)
         )
       )
       eventBusService.publish(

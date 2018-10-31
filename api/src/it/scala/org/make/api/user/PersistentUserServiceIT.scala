@@ -26,6 +26,7 @@ import org.make.api.DatabaseTest
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.DateHelper
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -53,7 +54,9 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     postalCode = Some("93"),
     karmaLevel = Some(2),
     locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+    registerQuestionId = Some(QuestionId("the question")),
+    optInPartner = Some(true)
   )
 
   val johnDoe = User(
@@ -336,6 +339,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           |    - twitterId: @twitterid
           |    - karmaLevel: 2
           |    - socioProfessionalCategory: farmers
+          |    - registerQuestionId: "the question"
+          |    - optInPartner: true
         """.stripMargin)
 
       When("I persist John Doe and John Doe profile")
@@ -383,6 +388,12 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user socio professional category must be farmers")
         user.profile.get.socioProfessionalCategory.get shouldBe SocioProfessionalCategory.Farmers
+
+        And("the user register question id must be 'the question'")
+        user.profile.get.registerQuestionId.get.value shouldBe "the question"
+
+        And("the user opt in partner must be true")
+        user.profile.get.optInPartner.get shouldBe true
 
       }
     }

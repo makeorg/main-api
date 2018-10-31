@@ -36,6 +36,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
@@ -51,8 +52,10 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
@@ -73,6 +76,7 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
     with SocialServiceComponent
     with ProposalServiceComponent
     with OperationServiceComponent
+    with QuestionServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
     with MakeSettingsComponent
@@ -276,32 +280,48 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
       makeOperation("RegisterUser") { requestContext =>
         decodeRequest {
           entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
-            onSuccess(
-              userService
-                .register(
-                  UserRegisterData(
-                    email = request.email,
-                    firstName = request.firstName,
-                    lastName = request.lastName,
-                    password = Some(request.password),
-                    lastIp = requestContext.ipAddress,
-                    dateOfBirth = request.dateOfBirth,
-                    profession = request.profession,
-                    postalCode = request.postalCode,
-                    country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                    language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
-                    gender = request.gender,
-                    socioProfessionalCategory = request.socioProfessionalCategory
-                  ),
-                  requestContext
-                )
-                .flatMap { user =>
-                  sessionHistoryCoordinatorService
-                    .convertSession(requestContext.sessionId, user.userId)
-                    .map(_ => user)
-                }
-            ) { result =>
-              complete(StatusCodes.Created -> UserResponse(result))
+            val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
+            val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+
+            val futureMaybeQuestion: Future[Option[Question]] =
+              questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                maybeOperationId = request.operationId,
+                maybeQuestionId = request.questionId,
+                maybeThemeId = None,
+                country = country,
+                language = language
+              )
+
+            provideAsync(futureMaybeQuestion) { maybeQuestion =>
+              onSuccess(
+                userService
+                  .register(
+                    UserRegisterData(
+                      email = request.email,
+                      firstName = request.firstName,
+                      lastName = request.lastName,
+                      password = Some(request.password),
+                      lastIp = requestContext.ipAddress,
+                      dateOfBirth = request.dateOfBirth,
+                      profession = request.profession,
+                      postalCode = request.postalCode,
+                      country = country,
+                      language = language,
+                      gender = request.gender,
+                      socioProfessionalCategory = request.socioProfessionalCategory,
+                      questionId = maybeQuestion.map(_.questionId),
+                      optInPartner = request.optInPartner
+                    ),
+                    requestContext
+                  )
+                  .flatMap { user =>
+                    sessionHistoryCoordinatorService
+                      .convertSession(requestContext.sessionId, user.userId)
+                      .map(_ => user)
+                  }
+              ) { result =>
+                complete(StatusCodes.Created -> UserResponse(result))
+              }
             }
           }
         }
@@ -923,7 +943,10 @@ case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[SocioProfessionalCategory]
+  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[SocioProfessionalCategory],
+  @(ApiModelProperty @field)(dataType = "string") operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string") optInPartner: Option[Boolean]
 ) {
 
   validate(

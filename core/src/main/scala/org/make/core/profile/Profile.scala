@@ -24,6 +24,7 @@ import java.time.LocalDate
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import org.make.core.question.QuestionId
 import org.make.core.{CirceFormatters, MakeSerializable}
 
 sealed trait Gender {
@@ -142,7 +143,9 @@ case class Profile(dateOfBirth: Option[LocalDate],
                    karmaLevel: Option[Int],
                    locale: Option[String],
                    optInNewsletter: Boolean = true,
-                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None)
+                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+                   registerQuestionId: Option[QuestionId] = None,
+                   optInPartner: Option[Boolean] = None)
     extends MakeSerializable
 
 object Profile extends CirceFormatters {
@@ -163,7 +166,9 @@ object Profile extends CirceFormatters {
     postalCode = None,
     karmaLevel = None,
     locale = None,
-    socioProfessionalCategory = None
+    socioProfessionalCategory = None,
+    registerQuestionId = None,
+    optInPartner = None
   )
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
@@ -180,7 +185,9 @@ object Profile extends CirceFormatters {
                    karmaLevel: Option[Int] = None,
                    locale: Option[String] = None,
                    optInNewsletter: Boolean = true,
-                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None): Option[Profile] = {
+                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+                   registerQuestionId: Option[QuestionId] = None,
+                   optInPartner: Option[Boolean] = None): Option[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,
@@ -197,7 +204,9 @@ object Profile extends CirceFormatters {
       karmaLevel = karmaLevel,
       locale = locale,
       optInNewsletter = optInNewsletter,
-      socioProfessionalCategory = socioProfessionalCategory
+      socioProfessionalCategory = socioProfessionalCategory,
+      registerQuestionId = registerQuestionId,
+      optInPartner = optInPartner
     )
     Some(profile)
   }

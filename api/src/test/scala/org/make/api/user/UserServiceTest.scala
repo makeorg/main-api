@@ -36,6 +36,7 @@ import org.make.core.profile.Gender.Female
 import org.make.core.reference.{Country, Language}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
+import org.make.core.question.QuestionId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -167,7 +168,9 @@ class UserServiceTest
         postalCode = None,
         karmaLevel = None,
         locale = None,
-        socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+        socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+        optInPartner = Some(true),
+        registerQuestionId = Some(QuestionId("thequestionid"))
       )
 
       val returnedUser = User(
@@ -222,6 +225,8 @@ class UserServiceTest
         user.profile.get.gender should be(Some(Gender.Male))
         user.profile.get.genderName should be(Some(Gender.Male.toString))
         user.profile.get.socioProfessionalCategory should be(Some(SocioProfessionalCategory.Employee))
+        user.profile.get.optInPartner should be(Some(true))
+        user.profile.get.registerQuestionId should be(Some(QuestionId("thequestionid")))
       }
     }
 

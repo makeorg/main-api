@@ -31,6 +31,7 @@ import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, Persiste
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import scalikejdbc._
@@ -84,7 +85,9 @@ object PersistentUserServiceComponent {
                             lastMailingErrorMessage: Option[String],
                             organisationName: Option[String],
                             publicProfile: Boolean,
-                            socioProfessionalCategory: String) {
+                            socioProfessionalCategory: String,
+                            registerQuestionId: Option[String],
+                            optInPartner: Option[Boolean]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -143,7 +146,9 @@ object PersistentUserServiceComponent {
         karmaLevel = karmaLevel,
         locale = locale,
         optInNewsletter = optInNewsletter,
-        socioProfessionalCategory = toSocioProfessionalCategory(socioProfessionalCategory)
+        socioProfessionalCategory = toSocioProfessionalCategory(socioProfessionalCategory),
+        registerQuestionId = registerQuestionId.map(QuestionId.apply),
+        optInPartner = optInPartner
       )
     }
   }
@@ -165,7 +170,9 @@ object PersistentUserServiceComponent {
       "karma_level",
       "locale",
       "opt_in_newsletter",
-      "socio_professional_category"
+      "socio_professional_category",
+      "register_question_id",
+      "opt_in_partner"
     )
 
     private val userColumnNames: Seq[String] = Seq(
@@ -243,7 +250,9 @@ object PersistentUserServiceComponent {
         lastMailingErrorMessage = resultSet.stringOpt(userResultName.lastMailingErrorMessage),
         organisationName = resultSet.stringOpt(userResultName.organisationName),
         publicProfile = resultSet.boolean(userResultName.publicProfile),
-        socioProfessionalCategory = resultSet.string(userResultName.socioProfessionalCategory)
+        socioProfessionalCategory = resultSet.string(userResultName.socioProfessionalCategory),
+        registerQuestionId = resultSet.stringOpt(userResultName.registerQuestionId),
+        optInPartner = resultSet.booleanOpt(userResultName.optInPartner)
       )
     }
   }
@@ -589,7 +598,9 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
               column.publicProfile -> user.publicProfile,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
+              column.optInPartner -> user.profile.flatMap(_.optInPartner)
             )
         }.execute().apply()
       }).map(_ => user)

@@ -35,6 +35,7 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse,
   _
 }
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
@@ -50,7 +51,8 @@ import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{Country, Language}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -65,6 +67,7 @@ import scala.concurrent.duration.Duration
 class UserApiTest
     extends MakeApiTestBase
     with UserApi
+    with QuestionServiceComponent
     with ProposalServiceComponent
     with OperationServiceComponent
     with UserServiceComponent
@@ -86,6 +89,7 @@ class UserApiTest
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val proposalService: ProposalService = mock[ProposalService]
   override val operationService: OperationService = mock[OperationService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
@@ -180,6 +184,8 @@ class UserApiTest
           | "dateOfBirth": "1997-12-02",
           | "gender": "M",
           | "socioProfessionalCategory": "EMPL",
+          | "optInPartner": true,
+          | "questionId": "thequestionid",
           | "country": "FR",
           | "language": "fr"
           |}
@@ -201,7 +207,9 @@ class UserApiTest
               country = Country("FR"),
               language = Language("fr"),
               gender = Some(Gender.Male),
-              socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+              socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+              optInPartner = Some(true),
+              questionId = Some(QuestionId("thequestionid"))
             )
           ),
           any[RequestContext]
@@ -247,7 +255,8 @@ class UserApiTest
               postalCode = Some("75011"),
               profession = Some("football player"),
               country = Country("FR"),
-              language = Language("fr")
+              language = Language("fr"),
+              questionId = Some(QuestionId("thequestionid"))
             )
           ),
           any[RequestContext]
@@ -917,6 +926,31 @@ class UserApiTest
     Mockito
       .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
       .thenReturn(Future.successful(Some(fakeAuthInfo2)))
+
+    Mockito
+      .when(
+        questionService.findQuestionByQuestionIdOrThemeOrOperation(
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.any[Option[ThemeId]],
+          ArgumentMatchers.any[Option[OperationId]],
+          ArgumentMatchers.any[Country],
+          ArgumentMatchers.any[Language]
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              operationId = Some(OperationId("operation1")),
+              questionId = QuestionId("thequestionid"),
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "question ?",
+              themeId = None
+            )
+          )
+        )
+      )
 
     Mockito
       .when(
