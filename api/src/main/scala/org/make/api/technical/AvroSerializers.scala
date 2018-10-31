@@ -25,6 +25,7 @@ import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.make.api.technical.crm.MailJetError
+import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceStatus
@@ -79,6 +80,34 @@ trait AvroSerializers {
 
   implicit object LanguageFromValue extends FromValue[Language] {
     override def apply(value: Any, field: Field): Language = Language(value.toString)
+  }
+
+  implicit object GenderToSchema extends ToSchema[Gender] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object GenderToValue extends ToValue[Gender] {
+    override def apply(value: Gender): String = value.shortName
+  }
+
+  implicit object GenderFromValue extends FromValue[Gender] {
+    override def apply(value: Any, field: Field): Gender =
+      Gender.matchGender(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a Gender"))
+  }
+
+  implicit object SocioProfessionalCategoryToSchema extends ToSchema[SocioProfessionalCategory] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object SocioProfessionalCategoryToValue extends ToValue[SocioProfessionalCategory] {
+    override def apply(value: SocioProfessionalCategory): String = value.shortName
+  }
+
+  implicit object SocioProfessionalCategoryFromValue extends FromValue[SocioProfessionalCategory] {
+    override def apply(value: Any, field: Field): SocioProfessionalCategory =
+      SocioProfessionalCategory
+        .matchSocioProfessionalCategory(value.toString)
+        .getOrElse(throw new IllegalArgumentException(s"$value is not a SocioProfessionalCategory"))
   }
 
   implicit object VoteKeyToSchema extends ToSchema[VoteKey] {
