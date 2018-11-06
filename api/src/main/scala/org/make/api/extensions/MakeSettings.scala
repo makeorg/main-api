@@ -35,11 +35,13 @@ class MakeSettings(config: Config) extends Extension {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
     val name: String = "make-secure"
     val isSecure: Boolean = config.getBoolean("cookie-session.is-secure")
+    val domain: String = config.getString("cookie-session.domain")
   }
 
   object VisitorCookie {
     val name: String = "make-visitor"
     val isSecure: Boolean = config.getBoolean("cookie-visitor.is-secure")
+    val domain: String = config.getString("cookie-visitor.domain")
   }
 
   object Oauth {
