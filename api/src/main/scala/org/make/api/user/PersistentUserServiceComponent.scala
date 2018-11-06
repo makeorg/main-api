@@ -676,7 +676,9 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
               column.publicProfile -> user.publicProfile,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
+              column.optInPartner -> user.profile.flatMap(_.optInPartner)
             )
             .where(
               sqls

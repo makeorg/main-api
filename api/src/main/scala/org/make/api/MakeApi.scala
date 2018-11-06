@@ -173,7 +173,7 @@ trait MakeApi
     with ModerationTagTypeApi
     with ModerationIdeaApi
     with TrackingApi
-    with MigrationApi
+    with DefaultMigrationApiComponent
     with HealthCheckApi
     with ModerationOperationApi
     with ModerationOrganisationApi
@@ -306,7 +306,7 @@ trait MakeApi
       operationRoutes ~
       moderationOperationRoutes ~
       trackingRoutes ~
-      migrationRoutes ~
+      migrationApi.routes ~
       healthCheckRoutes ~
       moderationOrganisationRoutes ~
       organisationRoutes ~
