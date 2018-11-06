@@ -87,6 +87,9 @@ object SocioProfessionalCategory extends StrictLogging {
       IntermediateProfessions.shortName -> IntermediateProfessions,
       Employee.shortName -> Employee,
       Workers.shortName -> Workers,
+      HighSchoolStudent.shortName -> HighSchoolStudent,
+      Student.shortName -> Student,
+      Apprentice.shortName -> Apprentice,
       Other.shortName -> Other
     )
 
@@ -122,6 +125,18 @@ object SocioProfessionalCategory extends StrictLogging {
 
   case object Workers extends SocioProfessionalCategory {
     override val shortName: String = "WORK"
+  }
+
+  case object HighSchoolStudent extends SocioProfessionalCategory {
+    override val shortName: String = "HSTU"
+  }
+
+  case object Student extends SocioProfessionalCategory {
+    override val shortName: String = "STUD"
+  }
+
+  case object Apprentice extends SocioProfessionalCategory {
+    override val shortName: String = "APRE"
   }
 
   case object Other extends SocioProfessionalCategory {
