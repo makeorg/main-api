@@ -136,13 +136,14 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                                    votedProposals: Seq[ProposalId],
                                    includeList: Seq[ProposalId]): Seq[ProposalId] = {
 
-      // fetch included proposals and exclude same idea
+      // fetch included propo
+      // sals and exclude same idea
       val includedProposals: Seq[Proposal] = proposals.filter(p                 => includeList.contains(p.proposalId))
       val includedProposalsToExclude: Seq[ProposalId] = includedProposals.map(p => p.proposalId)
       val includedIdeasToExclude: Seq[IdeaId] = includedProposals.flatMap(p     => p.idea)
 
       // fetch available proposals for user
-      val availableProposalsSource: Seq[Proposal] = proposals
+      val availableProposals: Seq[Proposal] = proposals
         .filter(
           p =>
             p.status == ProposalStatus.Accepted &&
@@ -150,15 +151,6 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
               !includedIdeasToExclude.exists(excludedIdea => p.idea.contains(excludedIdea)) &&
               !votedProposals.contains(p.proposalId)
         )
-
-      // sample long proposal list
-      val maxAvailableProposals = 1000
-      val availableProposals = if (availableProposalsSource.size < maxAvailableProposals) {
-        availableProposalsSource
-      } else {
-        val samplingRate: Float = maxAvailableProposals.toFloat / availableProposalsSource.size.toFloat
-        availableProposalsSource.filter(_ => random.nextFloat() < samplingRate)
-      }
 
       // balance proposals between new and tested
       val proposalsToChoose: Int = targetLength - includeList.size
@@ -300,8 +292,17 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
 
     def chooseTestedProposals(sequenceConfiguration: SequenceConfiguration,
-                              availableProposals: Seq[Proposal],
+                              availableProposalsSource: Seq[Proposal],
                               testedProposalCount: Int): Seq[Proposal] = {
+
+      // sample long proposal list
+      val maxAvailableProposals = 1000
+      val availableProposals = if (availableProposalsSource.size < maxAvailableProposals) {
+        availableProposalsSource
+      } else {
+        val samplingRate: Float = maxAvailableProposals.toFloat / availableProposalsSource.size.toFloat
+        availableProposalsSource.filter(_ => random.nextFloat() < samplingRate)
+      }
 
       // filter proposals
       val testedProposals: Seq[Proposal] = availableProposals.filter { proposal =>
