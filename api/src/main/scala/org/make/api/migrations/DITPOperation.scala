@@ -33,9 +33,9 @@ object DITPOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
-      title = "Comment débloquer concrètement le travail des agents publics ?",
-      startDate = LocalDate.parse("2018-11-04"),
-      endDate = Some(LocalDate.parse("2019-01-15")),
+      title = "Agents publics : comment lever les blocages que vous rencontrez au quotidien ?",
+      startDate = LocalDate.parse("2018-11-08"),
+      endDate = Some(LocalDate.parse("2019-01-31")),
       tags = Seq.empty
     )
   )

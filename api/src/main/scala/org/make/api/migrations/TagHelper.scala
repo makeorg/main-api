@@ -35,9 +35,9 @@ trait TagHelper {
     val tags: Seq[TagHelper.TagsDataLine] =
       Source.fromResource(dataFile).getLines().toSeq.drop(1).flatMap(extractDataLine)
 
-    api.tagService.findByQuestionId(question.questionId).flatMap {
-      case operationTags if operationTags.isEmpty =>
-        sequentially(tags) { tag =>
+    api.tagService.findByQuestionId(question.questionId).flatMap { operationTags =>
+      sequentially(tags) { tag =>
+        if (!operationTags.map(_.label).contains(tag.label)) {
           api.tagService
             .createTag(
               label = tag.label,
@@ -47,8 +47,11 @@ trait TagHelper {
               weight = tag.weight
             )
             .flatMap(_ => Future.successful {})
+        } else {
+          Future.successful {}
         }
-      case _ => Future.successful {}
+      }
+
     }
   }
 
