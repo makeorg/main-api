@@ -66,7 +66,7 @@ import scala.concurrent.duration.Duration
 
 class UserApiTest
     extends MakeApiTestBase
-    with UserApi
+    with DefaultUserApiComponent
     with QuestionServiceComponent
     with ProposalServiceComponent
     with OperationServiceComponent
@@ -108,7 +108,7 @@ class UserApiTest
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
-    userRoutes
+    userApi.routes
   })
 
   val fakeUser = User(
