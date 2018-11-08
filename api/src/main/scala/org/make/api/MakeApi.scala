@@ -179,7 +179,7 @@ trait MakeApi
     with ModerationOperationApi
     with ModerationOrganisationApi
     with OrganisationApi
-    with ModerationProposalApi
+    with DefaultModerationProposalApiComponent
     with WidgetApi
     with DefaultWidgetServiceComponent
     with BuildInfoRoutes
@@ -297,7 +297,7 @@ trait MakeApi
       moderationTagRoutes ~
       moderationTagTypeRoutes ~
       proposalRoutes ~
-      moderationProposalRoutes ~
+      moderationProposalApi.routes ~
       sequenceRoutes ~
       optionsAuthorized ~
       buildRoutes ~

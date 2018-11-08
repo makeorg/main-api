@@ -52,7 +52,7 @@ import scala.concurrent.Future
 
 class ModerationProposalApiTest
     extends MakeApiTestBase
-    with ModerationProposalApi
+    with DefaultModerationProposalApiComponent
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
@@ -617,7 +617,7 @@ class ModerationProposalApiTest
       )
   ).thenReturn(Future.successful(Seq(proposalSim123, proposalSim124)))
 
-  val routes: Route = sealRoute(moderationProposalRoutes)
+  val routes: Route = sealRoute(moderationProposalApi.routes)
 
   feature("proposal validation") {
     scenario("unauthenticated validation") {
