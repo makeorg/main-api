@@ -74,11 +74,13 @@ trait MakeApiTestBase
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
+  when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
   when(idGenerator.nextId()).thenReturn("some-id")
 
   private val visitorCookieConfiguration = mock[makeSettings.VisitorCookie.type]
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
   when(visitorCookieConfiguration.isSecure).thenReturn(false)
+  when(visitorCookieConfiguration.domain).thenReturn(".foo.com")
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
   when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 

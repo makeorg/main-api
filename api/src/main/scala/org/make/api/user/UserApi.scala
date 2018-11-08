@@ -200,7 +200,8 @@ trait UserApi extends MakeAuthenticationDirectives with StrictLogging with Param
                           secure = makeSettings.SessionCookie.isSecure,
                           httpOnly = true,
                           maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                          path = Some("/")
+                          path = Some("/"),
+                          domain = Some(makeSettings.SessionCookie.domain)
                         )
                       )
                     )

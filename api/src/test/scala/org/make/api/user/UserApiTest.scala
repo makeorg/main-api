@@ -98,6 +98,7 @@ class UserApiTest
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
+  when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
   when(idGenerator.nextId()).thenReturn("some-id")
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 

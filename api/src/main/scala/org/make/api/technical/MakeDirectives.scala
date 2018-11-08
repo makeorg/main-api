@@ -94,7 +94,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = true,
             maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-            path = Some("/")
+            path = Some("/"),
+            domain = Some(makeSettings.SessionCookie.domain)
           )
         ),
         `Set-Cookie`(
@@ -104,7 +105,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             secure = makeSettings.VisitorCookie.isSecure,
             httpOnly = true,
             maxAge = Some(365.days.toSeconds),
-            path = Some("/")
+            path = Some("/"),
+            domain = Some(makeSettings.VisitorCookie.domain)
           )
         )
       ) ++ defaultCorsHeaders(origin)

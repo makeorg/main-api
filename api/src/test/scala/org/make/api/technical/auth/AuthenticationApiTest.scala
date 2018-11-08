@@ -51,6 +51,45 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
 
   val routes: Route = sealRoute(authenticationRoutes)
 
+  feature("get a token user") {
+    scenario("successful get token") {
+      val token = "TOKEN"
+      val accessToken: AccessToken =
+        AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
+      val fakeAuthInfo: AuthInfo[UserRights] = AuthInfo(UserRights(UserId("ABCD"), Seq.empty), None, None, None)
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
+        .thenReturn(Future.successful(Some(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
+        .thenReturn(Future.successful(Some(fakeAuthInfo)))
+      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.eq(fakeAuthInfo)))
+        .thenReturn(Future.successful(Some(accessToken)))
+
+      When("access token is called")
+      val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes
+
+      Then("the service must return the access token")
+      getAccessTokenRoute ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  scenario("unauthorize an empty authentication") {
+    Given("an invalid authentication")
+    val invalidToken: String = "FAULTY_TOKEN"
+    when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
+      .thenReturn(Future.successful(None))
+
+    When("access token is called")
+    val getAccessTokenRoute
+    : RouteTestResult = Get("/oauth/access_token").withHeaders(Authorization(OAuth2BearerToken(invalidToken))) ~> routes
+
+    Then("the service must return unauthorized")
+    getAccessTokenRoute ~> check {
+      status should be(StatusCodes.Unauthorized)
+    }
+  }
+
   feature("logout user by deleting its token") {
     scenario("successful logout") {
       Given("a valid authentication")
@@ -77,7 +116,7 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
     }
 
     scenario("unauthorize an empty authentication") {
-      Given("a invalid authentication")
+      Given("an invalid authentication")
       val invalidToken: String = "FAULTY_TOKEN"
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
         .thenReturn(Future.successful(None))

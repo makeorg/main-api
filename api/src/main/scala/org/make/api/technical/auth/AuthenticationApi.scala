@@ -20,7 +20,6 @@
 package org.make.api.technical.auth
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
@@ -39,7 +38,7 @@ import org.make.core.auth.UserRights
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scalaoauth2.provider.{AuthorizationRequest, GrantHandlerResult, OAuthError, TokenEndpoint}
+import scalaoauth2.provider._
 
 @Api(value = "Authentication")
 @Path(value = "/")
@@ -128,6 +127,43 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
         }
       }
     }
+  @ApiOperation(
+    value = "oauth-get_access_token",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @Path(value = "/oauth/access_token")
+  def getAccessTokenRoute: Route =
+    pathPrefix("oauth") {
+      get {
+        path("access_token") {
+          makeOperation("OauthGetAccessToken") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              provideAsyncOrNotFound(oauth2DataHandler.getStoredAccessToken(userAuth)) { tokenResult =>
+                complete(
+                  TokenResponse(
+                    "Bearer",
+                    tokenResult.token,
+                    tokenResult.expiresIn.getOrElse(1L),
+                    tokenResult.refreshToken.getOrElse("")
+                  )
+                )
+              }
+            }
+          }
+        }
+      }
+    }
 
   private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
     fields.get("redirect_uri") match {
@@ -143,7 +179,8 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                 secure = makeSettings.SessionCookie.isSecure,
                 httpOnly = true,
                 maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                path = Some("/")
+                path = Some("/"),
+                domain = Some(makeSettings.SessionCookie.domain)
               )
             )
           )
@@ -187,7 +224,8 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
                         maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                        path = Some("/")
+                        path = Some("/"),
+                        domain = Some(makeSettings.SessionCookie.domain)
                       )
                     ),
                     `Set-Cookie`(
@@ -197,7 +235,8 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
                         maxAge = Some(0),
-                        path = Some("/")
+                        path = Some("/"),
+                        domain = Some(makeSettings.SessionCookie.domain)
                       )
                     )
                   )
@@ -211,7 +250,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  val authenticationRoutes: Route = accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
+  val authenticationRoutes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
 }
 
 object AuthenticationApi {
