@@ -92,6 +92,7 @@ case class UserRegisterData(email: String,
                             country: Country,
                             language: Language,
                             questionId: Option[QuestionId] = None,
+                            optIn: Option[Boolean] = None,
                             optInPartner: Option[Boolean] = None)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
@@ -189,6 +190,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           gender = userRegisterData.gender,
           socioProfessionalCategory = userRegisterData.socioProfessionalCategory,
           registerQuestionId = userRegisterData.questionId,
+          optInNewsletter = userRegisterData.optIn.getOrElse(true),
           optInPartner = userRegisterData.optInPartner
         )
 
