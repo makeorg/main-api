@@ -18,10 +18,11 @@
  */
 
 package org.make.api.technical.healthcheck
-import akka.actor.Props
+import akka.actor.{ActorSystem, Props}
 import com.sksamuel.elastic4s.IndexAndType
+import com.sksamuel.elastic4s.http.ElasticClient
 import com.sksamuel.elastic4s.http.ElasticDsl.{searchWithType, _}
-import com.sksamuel.elastic4s.http.HttpClient
+import org.make.api.ActorSystemComponent
 import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.elasticsearch._
@@ -31,13 +32,18 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class ElasticsearchHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
     extends HealthCheck
-    with ShortenedNames {
+    with ShortenedNames
+    with ElasticsearchConfigurationComponent
+    with DefaultElasticsearchClientComponent
+    with ActorSystemComponent {
 
-  val elasticsearchConfiguration = new ElasticsearchConfiguration(
+  override def actorSystem: ActorSystem = context.system
+
+  override lazy val elasticsearchConfiguration = new ElasticsearchConfiguration(
     context.system.settings.config.getConfig("make-api.elasticSearch")
   )
 
-  lazy val client: HttpClient = elasticsearchConfiguration.client
+  lazy val client: ElasticClient = elasticsearchClient.client
 
   private val proposalAlias
     : IndexAndType = elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
@@ -45,7 +51,7 @@ class ElasticsearchHealthCheckActor(healthCheckExecutionContext: ExecutionContex
   override val techno: String = "elasticsearch"
 
   override def preStart(): Unit = {
-    Await.result(elasticsearchConfiguration.initialize(), atMost = 10.seconds)
+    Await.result(elasticsearchClient.initialize(), atMost = 10.seconds)
   }
 
   override def healthCheck(): Future[String] = {

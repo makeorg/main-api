@@ -19,30 +19,25 @@
 
 package org.make.api.technical
 
-import cats.Show
-import com.sksamuel.elastic4s.admin.AliasExistsDefinition
-import com.sksamuel.elastic4s.alias.{GetAliasesDefinition, IndicesAliasesRequestDefinition}
-import com.sksamuel.elastic4s.get.GetDefinition
-import com.sksamuel.elastic4s.http.{HttpClient, HttpExecutable}
+import com.sksamuel.elastic4s.http.{ElasticClient, Handler}
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 
 package object elasticsearch extends StrictLogging {
-  implicit class RichHttpClient(val self: HttpClient) extends AnyVal {
-    def executeAsFuture[T, U](request: T)(implicit exec: HttpExecutable[T, U],
-                                          executionContext: ExecutionContext = ExecutionContext.Implicits.global,
-                                          show: Show[T]): Future[U] = {
+  implicit class RichHttpClient(val self: ElasticClient) extends AnyVal {
+    def executeAsFuture[T, U](
+      request: T
+    )(implicit exec: Handler[T, U], executionContext: ExecutionContext, manifest: Manifest[U]): Future[U] = {
+
       logger.debug(self.show(request).replace('\n', ' '))
-      self.execute(request).flatMap {
-        case Right(result) => Future.successful(result.result)
-        case Left(errors)  => Future.failed(new ElasticException(errors.error, self.show(request)))
+      self.execute(request).flatMap { result =>
+        if (result.isSuccess) {
+          Future.successful(result.result)
+        } else {
+          Future.failed(new ElasticException(result.error, self.show(request)))
+        }
       }
     }
   }
-
-  implicit val showGetDefinition: Show[GetDefinition] = _.toString
-  implicit val showGetAliasDefinition: Show[GetAliasesDefinition] = _.toString
-  implicit val showIndicesAliasesRequestDefinition: Show[IndicesAliasesRequestDefinition] = _.toString
-  implicit val showAliasExistsDefinition: Show[AliasExistsDefinition] = _.toString
 }

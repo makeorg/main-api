@@ -57,7 +57,12 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
     context.watch(
       context.actorOf(
-        SequenceSupervisor.props(userHistoryCoordinator, makeApi.themeService, makeApi.elasticsearchConfiguration),
+        SequenceSupervisor.props(
+          userHistoryCoordinator,
+          makeApi.themeService,
+          makeApi.elasticsearchConfiguration,
+          makeApi.elasticsearchClient
+        ),
         SequenceSupervisor.name
       )
     )
@@ -115,7 +120,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          IdeaConsumerActor.props(makeApi.ideaService, makeApi.elasticsearchConfiguration),
+          IdeaConsumerActor.props(makeApi.ideaService, makeApi.elasticsearchConfiguration, makeApi.elasticsearchClient),
           IdeaConsumerActor.name
         )
       context.actorOf(props, name)

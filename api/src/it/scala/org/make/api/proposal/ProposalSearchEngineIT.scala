@@ -28,12 +28,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import com.sksamuel.elastic4s.ElasticsearchClientUri
-import com.sksamuel.elastic4s.http.HttpClient
 import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -54,7 +56,8 @@ class ProposalSearchEngineIT
     with CirceFormatters
     with DockerElasticsearchService
     with DefaultProposalSearchEngineComponent
-    with ElasticsearchConfigurationComponent {
+    with ElasticsearchConfigurationComponent
+    with DefaultElasticsearchClientComponent {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
@@ -65,9 +68,6 @@ class ProposalSearchEngineIT
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
-  Mockito
-    .when(elasticsearchConfiguration.client)
-    .thenReturn(HttpClient(ElasticsearchClientUri(s"elasticsearch://localhost:$elasticsearchExposedPort")))
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -76,7 +76,7 @@ class ProposalSearchEngineIT
   }
 
   private def initializeElasticsearch(): Unit = {
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val actorSystem: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val proposalMapping =
       Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
@@ -100,7 +100,7 @@ class ProposalSearchEngineIT
       Http().cachedHostConnectionPool[ProposalId](
         "localhost",
         elasticsearchExposedPort,
-        ConnectionPoolSettings(system).withMaxConnections(3)
+        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
       )
 
     val insertFutures = AkkaSource[IndexedProposal](proposals).map { proposal =>

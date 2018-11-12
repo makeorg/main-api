@@ -21,7 +21,7 @@ package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
@@ -73,13 +73,13 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
 
   val searchQuery = SearchQuery(Some(filters), sort, Some(limit), Some(skip), Some(Language("en")))
 
-  feature("transform searchFilter into QueryDefinition") {
+  feature("transform searchFilter into Query") {
     scenario("get Sort from Search filter") {
       Given("a searchFilter")
       When("call getSort with SearchQuery")
       val fieldSortDefinition = SearchFilters.getSort(searchQuery)
       Then("result is a list of FieldSortDefinition")
-      fieldSortDefinition shouldBe Some(FieldSortDefinition("field", None, None, None, None, None, SortOrder.ASC))
+      fieldSortDefinition shouldBe Some(FieldSort("field", None, None, None, None, None, SortOrder.ASC))
     }
 
     scenario("get skip from Search filter") {

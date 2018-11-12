@@ -21,8 +21,8 @@ package org.make.core.user
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
@@ -80,7 +80,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     *
     * @return sequence of query definitions
     */
-  def getOrganisationSearchFilters(organisationSearchQuery: OrganisationSearchQuery): Seq[QueryDefinition] =
+  def getOrganisationSearchFilters(organisationSearchQuery: OrganisationSearchQuery): Seq[Query] =
     Seq(
       buildOrganisationIdsSearchFilter(organisationSearchQuery),
       buildOrganisationNameSearchFilter(organisationSearchQuery),
@@ -98,7 +98,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     organisationSearchQuery.limit
       .getOrElse(-1) // TODO get default value from configurations
 
-  def getSort(organisationSearchQuery: OrganisationSearchQuery): Option[FieldSortDefinition] = {
+  def getSort(organisationSearchQuery: OrganisationSearchQuery): Option[FieldSort] = {
     val order = organisationSearchQuery.order.map {
       case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
       case desc if desc.toLowerCase == "desc" => SortOrder.DESC
@@ -110,11 +110,11 @@ object OrganisationSearchFilters extends ElasticDsl {
       } else {
         sort
       }
-      FieldSortDefinition(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
+      FieldSort(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
     }
   }
 
-  def buildOrganisationIdsSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
+  def buildOrganisationIdsSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     organisationSearchQuery.filters.flatMap {
       _.organisationIds match {
         case Some(OrganisationIdsSearchFilter(Seq(organisationId))) =>
@@ -126,8 +126,8 @@ object OrganisationSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildOrganisationNameSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
-    val query: Option[QueryDefinition] = for {
+  def buildOrganisationNameSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
+    val query: Option[Query] = for {
       filters                                        <- organisationSearchQuery.filters
       OrganisationNameSearchFilter(text, maybeFuzzy) <- filters.organisationName
     } yield {
@@ -151,7 +151,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSlugSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
+  def buildSlugSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     organisationSearchQuery.filters.flatMap {
       _.slug match {
         case Some(SlugSearchFilter(slug)) =>
@@ -161,7 +161,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildDescriptionSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
+  def buildDescriptionSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     organisationSearchQuery.filters.flatMap {
       _.description match {
         case Some(DescriptionSearchFilter(description)) =>
@@ -171,7 +171,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildCountrySearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
+  def buildCountrySearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     organisationSearchQuery.filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
@@ -181,7 +181,7 @@ object OrganisationSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildLanguageSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[QueryDefinition] = {
+  def buildLanguageSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     organisationSearchQuery.filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>

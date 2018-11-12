@@ -22,8 +22,8 @@ package org.make.api.organisation
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.SearchDefinition
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -52,12 +52,12 @@ object OrganisationSearchEngine {
 }
 
 trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineComponent with CirceFormatters {
-  self: ElasticsearchConfigurationComponent =>
+  self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchOrganisationAPI: OrganisationSearchEngine = new OrganisationSearchEngine
   with StrictLogging {
 
-    private lazy val client = elasticsearchConfiguration.client
+    private lazy val client = elasticsearchClient.client
 
     private val organisationAlias: IndexAndType =
       elasticsearchConfiguration.organisationAliasName / OrganisationSearchEngine.organisationIndexName
@@ -73,7 +73,7 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
       )
       val searchFilters = OrganisationSearchFilters.getOrganisationSearchFilters(query)
       val request = searchWithType(organisationAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters))
         .from(0)
         .size(1)
 
@@ -87,8 +87,8 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
 
     override def searchOrganisations(query: OrganisationSearchQuery): Future[OrganisationSearchResult] = {
       val searchFilters = OrganisationSearchFilters.getOrganisationSearchFilters(query)
-      val request: SearchDefinition = searchWithType(organisationAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+      val request: SearchRequest = searchWithType(organisationAlias)
+        .bool(BoolQuery(must = searchFilters))
         .sortBy(OrganisationSearchFilters.getSort(query))
         .size(OrganisationSearchFilters.getLimitSearch(query))
         .from(OrganisationSearchFilters.getSkipSearch(query))

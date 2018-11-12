@@ -19,23 +19,11 @@
 
 package org.make.api.technical.elasticsearch
 
-import java.security.MessageDigest
-import java.time.format.DateTimeFormatter
-
 import akka.actor.Extension
-import com.sksamuel.elastic4s.ElasticsearchClientUri
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.HttpClient
-import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.ConfigurationSupport
-import org.make.core.DateHelper
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.io.{Codec, Source}
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
     extends Extension
@@ -51,87 +39,6 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
   lazy val proposalAliasName: String = configuration.getString("proposal-alias-name")
   lazy val sequenceAliasName: String = configuration.getString("sequence-alias-name")
   lazy val organisationAliasName: String = configuration.getString("organisation-alias-name")
-  private lazy val allAliases = Seq(ideaAliasName, proposalAliasName, sequenceAliasName, organisationAliasName)
-
-  // create index
-  lazy val elasticsearchIdeaMapping: String =
-    Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
-  lazy val elasticsearchProposalMapping: String =
-    Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
-  lazy val elasticsearchSequenceMapping: String =
-    Source.fromResource("elasticsearch-mappings/sequence.json")(Codec.UTF8).getLines().mkString("")
-  lazy val elasticsearchOrganisationMapping: String =
-    Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
-
-  lazy val client = HttpClient(ElasticsearchClientUri(s"elasticsearch://$connectionString"))
-
-  private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
-
-  def mappingForAlias: String => String = {
-    case `ideaAliasName`         => elasticsearchIdeaMapping
-    case `proposalAliasName`     => elasticsearchProposalMapping
-    case `sequenceAliasName`     => elasticsearchSequenceMapping
-    case `organisationAliasName` => elasticsearchOrganisationMapping
-  }
-
-  def hashForAlias(aliasName: String): String = {
-    val localMapping: String = mappingForAlias(aliasName)
-    MessageDigest
-      .getInstance("SHA-1")
-      .digest(localMapping.getBytes)
-      .map("%02X".format(_))
-      .mkString
-      .take(12)
-      .toLowerCase()
-  }
-
-  def createIndexName(aliasName: String): String = {
-    Seq(indexName, aliasName, dateFormatter.format(DateHelper.now()), hashForAlias(aliasName)).mkString("-")
-  }
-
-  def getHashFromIndex(index: String): String =
-    index.split("-").lastOption.getOrElse("")
-
-  def getCurrentIndicesName: Future[Seq[String]] = {
-    client
-      .executeAsFuture(getAliases(Seq.empty, allAliases))
-      .map(_.mappings.map { case (index, _) => index.name }.toSeq)
-      .recover {
-        case e: Exception =>
-          logger.error("fail to retrieve ES alias", e)
-          Seq.empty
-      }
-  }
-
-  private def createInitialIndexAndAlias(aliasName: String): Future[Unit] = {
-    val newIndexName = createIndexName(aliasName)
-    client
-      .executeAsFuture(createIndex(newIndexName).source(mappingForAlias(aliasName)))
-      .flatMap { _ =>
-        logger.info(s"Elasticsearch index $newIndexName created")
-        client
-          .executeAsFuture(aliases(addAlias(aliasName).on(newIndexName)))
-          .map { _ =>
-            logger.info(s"Elasticsearch alias $aliasName created")
-          }
-      }
-  }
-
-  def initialize(): Future[Unit] = {
-    Future
-      .traverse(allAliases) { aliasName =>
-        client.executeAsFuture(aliasExists(aliasName)).flatMap {
-          case AliasExistsResponse(true) =>
-            logger.info(s"Elasticsearch alias $aliasName exist")
-            Future.successful {}
-          case AliasExistsResponse(false) =>
-            logger.info(s"Elasticsearch alias $aliasName not found")
-            createInitialIndexAndAlias(aliasName)
-        }
-      }
-      .map(_ => ())
-  }
-
 }
 
 trait ElasticsearchConfigurationComponent {

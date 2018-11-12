@@ -63,6 +63,7 @@ import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
 import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
 import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
   DefaultIndexationComponent,
   ElasticSearchApi
@@ -148,6 +149,7 @@ trait MakeApi
     with DefaultCrmServiceComponent
     with DefaultOrganisationServiceComponent
     with DefaultElasticsearchConfigurationComponent
+    with DefaultElasticsearchClientComponent
     with DefaultSwiftClientComponent
     with DefaultStorageServiceComponent
     with DefaultStorageConfigurationComponent

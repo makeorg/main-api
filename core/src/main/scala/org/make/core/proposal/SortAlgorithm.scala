@@ -21,13 +21,13 @@ package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, randomScore, scriptScore}
-import com.sksamuel.elastic4s.script.ScriptDefinition
-import com.sksamuel.elastic4s.searches.SearchDefinition
+import com.sksamuel.elastic4s.script.Script
+import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.CombineFunction
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 
 sealed trait SortAlgorithm {
-  def sortDefinition(request: SearchDefinition): SearchDefinition
+  def sortDefinition(request: SearchRequest): SearchRequest
 }
 
 trait RandomBaseAlgorithm {
@@ -38,7 +38,7 @@ trait RandomBaseAlgorithm {
 final case class RandomAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
-  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
     (
       for {
         seed  <- maybeSeed
@@ -64,7 +64,7 @@ object RandomAlgorithm { val shortName: String = "random" }
 final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
-  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
     val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].values.size()"
     val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
     val orderingByActorVoteAndTagsCountScript =
@@ -77,10 +77,7 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(
-                scriptScore(ScriptDefinition(script = orderingByActorVoteAndTagsCountScript)),
-                randomScore(seed)
-              )
+              .functions(scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)), randomScore(seed))
               .scoreMode("sum")
               .boostMode(CombineFunction.Sum)
           )
@@ -89,7 +86,7 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(scriptScore(ScriptDefinition(script = orderingByActorVoteAndTagsCountScript)))
+              .functions(scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)))
           )
       )
     }.getOrElse(request)
@@ -102,7 +99,7 @@ object TaggedFirstAlgorithm { val shortName: String = "taggedFirst" }
 final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
-  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
     val scriptActorVoteNumber = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
     val actorVoteScript = s"$scriptActorVoteNumber > 0 ? ($scriptActorVoteNumber + 1) * 10 : 1"
     request.query.map { query =>
@@ -111,7 +108,7 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(scriptScore(ScriptDefinition(script = actorVoteScript)), randomScore(seed))
+              .functions(scriptScore(Script(script = actorVoteScript)), randomScore(seed))
               .scoreMode("sum")
               .boostMode(CombineFunction.Sum)
           )
@@ -120,7 +117,7 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(scriptScore(ScriptDefinition(script = actorVoteScript)))
+              .functions(scriptScore(Script(script = actorVoteScript)))
           )
       )
     }.getOrElse(request)
@@ -132,7 +129,7 @@ object ActorVoteAlgorithm { val shortName: String = "actorVote" }
 final case class ControversyAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
-  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
     request.postFilter(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, ControversyAlgorithm.shortName))
   }
 }
@@ -143,7 +140,7 @@ final case class PopularAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
 
-  override def sortDefinition(request: SearchDefinition): SearchDefinition = {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
     request.postFilter(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, PopularAlgorithm.shortName))
   }
 }

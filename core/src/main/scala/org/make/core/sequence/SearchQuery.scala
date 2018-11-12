@@ -21,8 +21,8 @@ package org.make.core.sequence
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
 import org.make.core.reference.ThemeId
@@ -91,7 +91,7 @@ object SearchFilters extends ElasticDsl {
     * @param searchQuery search query
     * @return sequence of query definitions
     */
-  def getSearchFilters(searchQuery: SearchQuery): Seq[QueryDefinition] =
+  def getSearchFilters(searchQuery: SearchQuery): Seq[Query] =
     Seq(
       buildThemesSearchFilter(searchQuery),
       buildTitleSearchFilter(searchQuery),
@@ -105,10 +105,10 @@ object SearchFilters extends ElasticDsl {
       buildSearchableFilter(searchQuery)
     ).flatten
 
-  def getSort(searchQuery: SearchQuery): Seq[FieldSortDefinition] =
+  def getSort(searchQuery: SearchQuery): Seq[FieldSort] =
     searchQuery.sorts.flatMap { sort =>
       sort.field.map { fieldValue =>
-        FieldSortDefinition(field = fieldValue, order = sort.mode.getOrElse(SortOrder.ASC))
+        FieldSort(field = fieldValue, order = sort.mode.getOrElse(SortOrder.ASC))
       }
     }
 
@@ -120,7 +120,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.limit
       .getOrElse(10) // TODO get default value from configurations
 
-  def buildThemesSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+  def buildThemesSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
       _.themes match {
         case Some(ThemesSearchFilter(Seq(themeId))) =>
@@ -132,8 +132,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildContextOperationSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val operationFilter: Option[QueryDefinition] = for {
+  def buildContextOperationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val operationFilter: Option[Query] = for {
       filters   <- searchQuery.filters
       context   <- filters.context
       operation <- context.operation
@@ -142,8 +142,8 @@ object SearchFilters extends ElasticDsl {
     operationFilter
   }
 
-  def buildOperationSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val operationFilter: Option[QueryDefinition] = for {
+  def buildOperationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val operationFilter: Option[Query] = for {
       filters     <- searchQuery.filters
       operationId <- filters.operationId
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.operationId, operationId)
@@ -151,8 +151,8 @@ object SearchFilters extends ElasticDsl {
     operationFilter
   }
 
-  def buildContextSourceSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val sourceFilter: Option[QueryDefinition] = for {
+  def buildContextSourceSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val sourceFilter: Option[Query] = for {
       filters <- searchQuery.filters
       context <- filters.context
       source  <- context.source
@@ -161,8 +161,8 @@ object SearchFilters extends ElasticDsl {
     sourceFilter
   }
 
-  def buildContextLocationSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val locationFilter: Option[QueryDefinition] = for {
+  def buildContextLocationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val locationFilter: Option[Query] = for {
       filters  <- searchQuery.filters
       context  <- filters.context
       location <- context.location
@@ -171,8 +171,8 @@ object SearchFilters extends ElasticDsl {
     locationFilter
   }
 
-  def buildContextQuestionSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val questionFilter: Option[QueryDefinition] = for {
+  def buildContextQuestionSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val questionFilter: Option[Query] = for {
       filters  <- searchQuery.filters
       context  <- filters.context
       question <- context.question
@@ -185,9 +185,9 @@ object SearchFilters extends ElasticDsl {
    * TODO complete fuzzy search. potential hint:
    * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_fuzziness
    */
-  def buildTitleSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
+  def buildTitleSearchFilter(searchQuery: SearchQuery): Option[Query] = {
 
-    val query: Option[QueryDefinition] = for {
+    val query: Option[Query] = for {
       filters                        <- searchQuery.filters
       TitleSearchFilter(text, fuzzy) <- filters.title
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.title, text)
@@ -198,8 +198,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSlugSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val query: Option[QueryDefinition] = for {
+  def buildSlugSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val query: Option[Query] = for {
       filters                <- searchQuery.filters
       SlugSearchFilter(text) <- filters.slug
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.slug, text)
@@ -210,8 +210,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildStatusSearchFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val query: Option[QueryDefinition] = searchQuery.filters.flatMap {
+  def buildStatusSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    val query: Option[Query] = searchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(SequenceStatus.Unpublished) =>
           ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Unpublished.shortName)
@@ -227,8 +227,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSearchableFilter(searchQuery: SearchQuery): Option[QueryDefinition] = {
-    val query: Option[QueryDefinition] = for {
+  def buildSearchableFilter(searchQuery: SearchQuery): Option[Query] = {
+    val query: Option[Query] = for {
       filters    <- searchQuery.filters
       searchable <- filters.searchable
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.searchable, searchable)

@@ -22,8 +22,8 @@ package org.make.api.idea
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.SearchDefinition
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -51,23 +51,25 @@ object IdeaSearchEngine {
 }
 
 trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with CirceFormatters {
-  self: ElasticsearchConfigurationComponent =>
+  self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new IdeaSearchEngine with StrictLogging {
 
-    private lazy val client = elasticsearchConfiguration.client
+    private lazy val client = elasticsearchClient.client
 
     private val ideaAlias: IndexAndType = elasticsearchConfiguration.ideaAliasName / IdeaSearchEngine.ideaIndexName
 
     override def findIdeaById(ideaId: IdeaId): Future[Option[IndexedIdea]] = {
-      client.executeAsFuture(get(id = ideaId.value).from(ideaAlias)).map(_.toOpt[IndexedIdea])
+      client
+        .executeAsFuture(get(id = ideaId.value).from(ideaAlias))
+        .map(_.toOpt[IndexedIdea])
     }
 
     override def searchIdeas(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
       // parse json string to build search query
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
-      val request: SearchDefinition = searchWithType(ideaAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+      val request: SearchRequest = searchWithType(ideaAlias)
+        .bool(BoolQuery(must = searchFilters))
         .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))

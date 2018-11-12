@@ -21,8 +21,8 @@ package org.make.core.idea
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
+import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
@@ -72,7 +72,7 @@ object IdeaSearchFilters extends ElasticDsl {
     *
     * @return sequence of query definitions
     */
-  def getIdeaSearchFilters(ideaSearchQuery: IdeaSearchQuery): Seq[QueryDefinition] =
+  def getIdeaSearchFilters(ideaSearchQuery: IdeaSearchQuery): Seq[Query] =
     Seq(
       buildNameSearchFilter(ideaSearchQuery),
       buildQuestionIdSearchFilter(ideaSearchQuery),
@@ -87,7 +87,7 @@ object IdeaSearchFilters extends ElasticDsl {
     ideaSearchQuery.limit
       .getOrElse(-1) // TODO get default value from configurations
 
-  def getSort(ideaSearchQuery: IdeaSearchQuery): Option[FieldSortDefinition] = {
+  def getSort(ideaSearchQuery: IdeaSearchQuery): Option[FieldSort] = {
     val order = ideaSearchQuery.order.map {
       case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
       case desc if desc.toLowerCase == "desc" => SortOrder.DESC
@@ -99,15 +99,15 @@ object IdeaSearchFilters extends ElasticDsl {
       } else {
         sort
       }
-      FieldSortDefinition(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
+      FieldSort(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
     }
   }
 
-  def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
+  def buildNameSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[Query] = {
     def languageOmission(boostedLanguage: String): Double =
       if (ideaSearchQuery.language.contains(Language(boostedLanguage))) 1 else 0
 
-    val query: Option[QueryDefinition] = for {
+    val query = for {
       filters                            <- ideaSearchQuery.filters
       NameSearchFilter(text, maybeFuzzy) <- filters.name
     } yield {
@@ -144,7 +144,7 @@ object IdeaSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildQuestionIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
+  def buildQuestionIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[Query] = {
     ideaSearchQuery.filters.flatMap {
       _.questionId match {
         case Some(QuestionIdSearchFilter(questionId)) =>
@@ -154,8 +154,8 @@ object IdeaSearchFilters extends ElasticDsl {
     }
   }
 
-  def buildStatusSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[QueryDefinition] = {
-    val query: Option[QueryDefinition] = ideaSearchQuery.filters.flatMap {
+  def buildStatusSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[Query] = {
+    val query: Option[Query] = ideaSearchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(status)) =>
           ElasticApi.termQuery(IdeaElasticsearchFieldNames.status, status.shortName)
