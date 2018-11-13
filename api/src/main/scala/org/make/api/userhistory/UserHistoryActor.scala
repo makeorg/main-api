@@ -19,10 +19,14 @@
 
 package org.make.api.userhistory
 
+import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, ActorRef, Stash}
+import akka.pattern.pipe
 import akka.persistence.SnapshotOffer
+import akka.persistence.query.EventEnvelope
+import akka.stream.ActorMaterializer
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.technical.{ActorReadJournalComponent, MakePersistentActor}
 import org.make.api.userhistory.UserHistoryActor._
@@ -33,10 +37,14 @@ import org.make.core.user._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 class UserHistoryActor
     extends MakePersistentActor(classOf[UserVotesAndQualifications], classOf[UserHistoryEvent[_]])
     with ActorLogging
-    with ActorReadJournalComponent {
+    with ActorReadJournalComponent
+    with Stash {
 
   def userId: UserId = UserId(self.path.name)
 
@@ -65,6 +73,7 @@ class UserHistoryActor
       persistEvent(command) { _ =>
         ()
       }
+    case _: ReloadState => reloadState()
   }
 
   override def onRecoveryCompleted(): Unit = {}
@@ -95,36 +104,46 @@ class UserHistoryActor
     }
   }
 
-  override val applyEvent: PartialFunction[UserHistoryEvent[_], Option[UserVotesAndQualifications]] = {
-    case LogUserVoteEvent(_, _, UserAction(_, _, UserVote(proposalId, voteKey))) =>
-      applyVoteEvent(proposalId, voteKey)
+  override def applyEvent: PartialFunction[UserHistoryEvent[_], Option[UserVotesAndQualifications]] =
+    applyEventOnState(this.state)
+
+  def applyEventOnState(
+    userHistoryState: Option[UserVotesAndQualifications]
+  ): PartialFunction[UserHistoryEvent[_], Option[UserVotesAndQualifications]] = {
+    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey))) =>
+      applyVoteEvent(userHistoryState, proposalId, voteKey, date)
     case LogUserUnvoteEvent(_, _, UserAction(_, _, UserUnvote(proposalId, voteKey))) =>
-      applyUnvoteEvent(proposalId, voteKey)
+      applyUnvoteEvent(userHistoryState, proposalId, voteKey)
     case LogUserQualificationEvent(_, _, UserAction(_, _, UserQualification(proposalId, qualificationKey))) =>
-      applyQualificationEvent(proposalId, qualificationKey)
+      applyQualificationEvent(userHistoryState, proposalId, qualificationKey)
     case LogUserUnqualificationEvent(_, _, UserAction(_, _, UserUnqualification(proposalId, qualificationKey))) =>
-      applyUnqualificationEvent(proposalId, qualificationKey)
-    case _ => state
+      applyUnqualificationEvent(userHistoryState, proposalId, qualificationKey)
+    case _ => userHistoryState
   }
 
-  def applyVoteEvent(proposalId: ProposalId, voteKey: VoteKey): Option[UserVotesAndQualifications] = {
-    var nextState = state.getOrElse(UserVotesAndQualifications(Map.empty))
+  def applyVoteEvent(userHistoryState: Option[UserVotesAndQualifications],
+                     proposalId: ProposalId,
+                     voteKey: VoteKey,
+                     voteDate: ZonedDateTime): Option[UserVotesAndQualifications] = {
+    var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     if (nextState.votesAndQualifications.contains(proposalId)) {
       nextState = nextState.copy(votesAndQualifications = nextState.votesAndQualifications - proposalId)
     }
     nextState = nextState.copy(
       votesAndQualifications = nextState.votesAndQualifications + (proposalId -> VoteAndQualifications(
         voteKey,
-        Seq.empty
+        Seq.empty,
+        voteDate
       ))
     )
     Some(nextState)
   }
 
-  def applyQualificationEvent(proposalId: ProposalId,
+  def applyQualificationEvent(userHistoryState: Option[UserVotesAndQualifications],
+                              proposalId: ProposalId,
                               qualificationKey: QualificationKey): Option[UserVotesAndQualifications] = {
 
-    var nextState = state.getOrElse(UserVotesAndQualifications(Map.empty))
+    var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     val newVoteAndQualifications = nextState.votesAndQualifications.get(proposalId).map { voteAndQualifications =>
       voteAndQualifications.copy(qualificationKeys = voteAndQualifications.qualificationKeys :+ qualificationKey)
     }
@@ -136,10 +155,11 @@ class UserHistoryActor
     Some(nextState)
   }
 
-  def applyUnqualificationEvent(proposalId: ProposalId,
+  def applyUnqualificationEvent(userHistoryState: Option[UserVotesAndQualifications],
+                                proposalId: ProposalId,
                                 qualificationKey: QualificationKey): Option[UserVotesAndQualifications] = {
 
-    var nextState = state.getOrElse(UserVotesAndQualifications(Map.empty))
+    var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     val newVoteAndQualifications = nextState.votesAndQualifications.get(proposalId).map { voteAndQualifications =>
       voteAndQualifications
         .copy(qualificationKeys = voteAndQualifications.qualificationKeys.filter(_ != qualificationKey))
@@ -152,12 +172,51 @@ class UserHistoryActor
     Some(nextState)
   }
 
-  def applyUnvoteEvent(proposalId: ProposalId, voteKey: VoteKey): Option[UserVotesAndQualifications] = {
-    var nextState = state.getOrElse(UserVotesAndQualifications(Map.empty))
+  def applyUnvoteEvent(userHistoryState: Option[UserVotesAndQualifications],
+                       proposalId: ProposalId,
+                       voteKey: VoteKey): Option[UserVotesAndQualifications] = {
+    var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     if (nextState.votesAndQualifications.get(proposalId).exists(_.voteKey == voteKey)) {
       nextState = nextState.copy(votesAndQualifications = nextState.votesAndQualifications - proposalId)
     }
     Some(nextState)
+  }
+
+  def applyEventFromState(currentState: Option[UserVotesAndQualifications],
+                          event: Option[UserHistoryEvent[_]]): Option[UserVotesAndQualifications] = {
+    event.map(e => applyEventOnState(currentState)(e)).getOrElse(currentState)
+  }
+
+  def reloadState(): Unit = {
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+    val newState: Option[UserVotesAndQualifications] = None
+    userJournal
+      .currentEventsByPersistenceId(this.persistenceId, 0, Long.MaxValue)
+      .map {
+        case EventEnvelope(_, _, _, event: UserHistoryEvent[_]) => Some(event)
+        case _                                                  => None
+      }
+      .runFold(newState)(applyEventFromState)
+      .map(s => MigrationCompletedWithNewState(s))
+      .recoverWith {
+        case e => Future.successful(MigrationFailure(e))
+      }
+      .pipeTo(self)
+
+    context.become(migrating(Seq.empty))
+  }
+
+  def migrating(pendingEvents: Seq[(ActorRef, Any)]): Receive = {
+    case MigrationCompletedWithNewState(newState) =>
+      context.become(receiveCommand)
+      state = newState
+      self ! Snapshot
+      pendingEvents.foreach {
+        case (messageSender, e) => self.tell(e, messageSender)
+      }
+    case MigrationFailure(e) => log.error(e, e.getMessage)
+    case _: ReloadState      =>
+    case event               => context.become(migrating(pendingEvents :+ sender() -> event))
   }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
@@ -210,4 +269,7 @@ object UserHistoryActor {
   case object SessionEventsInjected
 
   case object LogAcknowledged
+
+  case class MigrationCompletedWithNewState(newState: Option[UserVotesAndQualifications])
+  case class MigrationFailure(e: Throwable)
 }

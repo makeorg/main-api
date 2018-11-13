@@ -343,11 +343,14 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       )
     )
 
+    val defaultDate = ZonedDateTime.parse("2018-10-10T00:00:00Z")
+
     val userVotesAndQualifications = UserVotesAndQualifications(
       Map(
         ProposalId("some-proposal") -> VoteAndQualifications(
           VoteKey.Agree,
-          Seq(QualificationKey.LikeIt, QualificationKey.Doable)
+          Seq(QualificationKey.LikeIt, QualificationKey.Doable),
+          defaultDate
         )
       )
     )
@@ -371,7 +374,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       sample(registerCitizenEvent),
       sample(lockProposalEvent),
       sample(userCreateSequenceEvent),
-      sample(userVotesAndQualifications),
+      PersistableSample[V2]("userVotesAndQualification", userVotesAndQualifications, None),
       PersistableSample[V2](
         "recent",
         recentRegisterCitizenEvent,

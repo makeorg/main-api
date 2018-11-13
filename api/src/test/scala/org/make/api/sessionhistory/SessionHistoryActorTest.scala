@@ -63,7 +63,9 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq.empty
     }
 
     scenario("vote then unvote proposal") {
@@ -121,7 +123,9 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq.empty)))
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq.empty
     }
 
     scenario("vote then one qualification proposal") {
@@ -144,7 +148,9 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(Map(proposalId -> VoteAndQualifications(VoteKey.Agree, Seq(QualificationKey.LikeIt))))
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.LikeIt)
     }
 
     scenario("vote then two qualifications proposal") {
@@ -183,14 +189,9 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(
-        Map(
-          proposalId -> VoteAndQualifications(
-            VoteKey.Agree,
-            Seq(QualificationKey.LikeIt, QualificationKey.PlatitudeAgree)
-          )
-        )
-      )
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.LikeIt, QualificationKey.PlatitudeAgree)
     }
 
     scenario("vote then three qualification proposal") {
@@ -241,13 +242,12 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(
-        Map(
-          proposalId -> VoteAndQualifications(
-            VoteKey.Agree,
-            Seq(QualificationKey.Doable, QualificationKey.LikeIt, QualificationKey.PlatitudeAgree)
-          )
-        )
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq(
+        QualificationKey.Doable,
+        QualificationKey.LikeIt,
+        QualificationKey.PlatitudeAgree
       )
     }
 
@@ -311,14 +311,9 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      expectMsg(
-        Map(
-          proposalId -> VoteAndQualifications(
-            VoteKey.Agree,
-            Seq(QualificationKey.Doable, QualificationKey.PlatitudeAgree)
-          )
-        )
-      )
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.Doable, QualificationKey.PlatitudeAgree)
     }
 
     scenario("vote on many proposal") {
@@ -355,13 +350,13 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
-      expectMsg(
-        Map(
-          proposalId1 -> VoteAndQualifications(VoteKey.Agree, Seq.empty),
-          proposalId2 -> VoteAndQualifications(VoteKey.Disagree, Seq.empty),
-          proposalId3 -> VoteAndQualifications(VoteKey.Neutral, Seq.empty)
-        )
-      )
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId1).voteKey shouldBe VoteKey.Agree
+      response(proposalId1).qualificationKeys shouldBe Seq.empty
+      response(proposalId2).voteKey shouldBe VoteKey.Disagree
+      response(proposalId2).qualificationKeys shouldBe Seq.empty
+      response(proposalId3).voteKey shouldBe VoteKey.Neutral
+      response(proposalId3).qualificationKeys shouldBe Seq.empty
     }
 
     scenario("vote and qualif on many proposal") {
@@ -434,16 +429,13 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
-      expectMsg(
-        Map(
-          proposalId1 -> VoteAndQualifications(VoteKey.Agree, Seq(QualificationKey.Doable)),
-          proposalId2 -> VoteAndQualifications(
-            VoteKey.Disagree,
-            Seq(QualificationKey.Impossible, QualificationKey.NoWay)
-          ),
-          proposalId3 -> VoteAndQualifications(VoteKey.Neutral, Seq.empty)
-        )
-      )
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId1).voteKey shouldBe VoteKey.Agree
+      response(proposalId1).qualificationKeys shouldBe Seq(QualificationKey.Doable)
+      response(proposalId2).voteKey shouldBe VoteKey.Disagree
+      response(proposalId2).qualificationKeys shouldBe Seq(QualificationKey.Impossible, QualificationKey.NoWay)
+      response(proposalId3).voteKey shouldBe VoteKey.Neutral
+      response(proposalId3).qualificationKeys shouldBe Seq.empty
     }
   }
 

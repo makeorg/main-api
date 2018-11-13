@@ -175,8 +175,12 @@ object UserHistorySerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('action / 'arguments / 'includedProposals ! set[Seq[String]](Seq.empty)))
     )
 
-  private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V1] =
-    json.persister[UserVotesAndQualifications]("user-votes-and-qualifications")
+  val defaultVoteDate: ZonedDateTime = ZonedDateTime.parse("2018-10-10T00:00:00Z")
+  private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V2] =
+    json.persister[UserVotesAndQualifications, V2](
+      "user-votes-and-qualifications",
+      from[V1].to[V2](_.update('votesAndQualifications / * / 'date ! set[ZonedDateTime](defaultVoteDate)))
+    )
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
