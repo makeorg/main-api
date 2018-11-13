@@ -33,6 +33,7 @@ object AinesOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "Comment mieux prendre soin de nos aînés ?",
       startDate = LocalDate.parse("2018-09-19"),
       endDate = Some(LocalDate.parse("2018-12-10")),

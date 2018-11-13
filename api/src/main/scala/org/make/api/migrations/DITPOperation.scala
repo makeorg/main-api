@@ -33,6 +33,7 @@ object DITPOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       title = "Agents publics : comment lever les blocages que vous rencontrez au quotidien ?",
       startDate = LocalDate.parse("2018-11-08"),
       endDate = Some(LocalDate.parse("2019-01-31")),

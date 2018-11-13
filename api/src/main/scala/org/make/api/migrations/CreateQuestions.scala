@@ -52,12 +52,13 @@ object CreateQuestions extends Migration with StrictLogging {
                 api.persistentQuestionService
                   .persist(
                     Question(
-                      api.idGenerator.nextQuestionId(),
-                      theme.country,
-                      languages(theme.country),
-                      theme.translations.headOption.map(_.title).getOrElse(theme.themeId.value),
-                      None,
-                      Some(theme.themeId)
+                      questionId = api.idGenerator.nextQuestionId(),
+                      slug = theme.translations.head.slug,
+                      country = theme.country,
+                      language = languages(theme.country),
+                      question = theme.translations.headOption.map(_.title).getOrElse(theme.themeId.value),
+                      operationId = None,
+                      themeId = Some(theme.themeId),
                     )
                   )
                   .map(_ => ())
@@ -70,32 +71,36 @@ object CreateQuestions extends Migration with StrictLogging {
       }
       result
     }
-    val insertOperations = insertThemes
-      .flatMap(_ => api.operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
-      .flatMap { operations =>
+    val insertOperations = insertThemes.flatMap(_ => api.operationService.find(maybeSource = None)).flatMap {
+      operations =>
         var future = Future.successful {}
         operations.flatMap { operation =>
           operation.countriesConfiguration.map { conf =>
             val question = operation.translations.find(_.language == languages(conf.countryCode)).map(_.title)
-            (operation.operationId, question.getOrElse(operation.operationId.value), conf)
+            (operation.operationId, operation.slug, question.getOrElse(operation.operationId.value), conf)
           }
         }.foreach {
-          case (operationId, question, configuration) =>
+          case (operationId, operationSlug, question, configuration) =>
             future = future.flatMap { _ =>
               api.questionService
                 .findQuestion(None, Some(operationId), configuration.countryCode, languages(configuration.countryCode))
                 .flatMap {
                   case Some(_) => Future.successful {}
-                  case None =>
+                  case None    =>
+                    // Trick to handle vff
+                    val questionSlug = if (configuration.countryCode == Country("FR")) { operationSlug } else {
+                      s"$operationSlug-${configuration.countryCode.value.toLowerCase()}"
+                    }
                     api.persistentQuestionService
                       .persist(
                         Question(
-                          api.idGenerator.nextQuestionId(),
-                          configuration.countryCode,
-                          languages(configuration.countryCode),
-                          question,
-                          Some(operationId),
-                          None
+                          questionId = api.idGenerator.nextQuestionId(),
+                          slug = questionSlug,
+                          country = configuration.countryCode,
+                          language = languages(configuration.countryCode),
+                          question = question,
+                          operationId = Some(operationId),
+                          themeId = None
                         )
                       )
                       .map(_ => ())
@@ -107,11 +112,11 @@ object CreateQuestions extends Migration with StrictLogging {
             }
         }
         future
-      }
+    }
 
     insertOperations
   }
 
-  override def runInProduction: Boolean = true
+  override def runInProduction: Boolean = false
 
 }

@@ -36,12 +36,7 @@ import org.make.api.idea.{
   DefaultPersistentIdeaServiceComponent,
   ModerationIdeaApi
 }
-import org.make.api.operation.{
-  DefaultOperationServiceComponent,
-  DefaultPersistentOperationServiceComponent,
-  ModerationOperationApi,
-  OperationApi
-}
+import org.make.api.operation._
 import org.make.api.organisation.{
   DefaultOrganisationSearchEngineComponent,
   DefaultOrganisationServiceComponent,
@@ -49,7 +44,7 @@ import org.make.api.organisation.{
   OrganisationApi
 }
 import org.make.api.proposal._
-import org.make.api.question.{DefaultPersistentQuestionServiceComponent, DefaultQuestionService, ModerationQuestionApi}
+import org.make.api.question._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -156,7 +151,8 @@ trait MakeApi
     with DefaultSwiftClientComponent
     with DefaultStorageServiceComponent
     with DefaultStorageConfigurationComponent
-    with ModerationQuestionApi
+    with DefaultQuestionApiComponent
+    with DefaultModerationQuestionComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
@@ -166,7 +162,7 @@ trait MakeApi
     with HealthCheckComponent
     with MakeDBExecutionContextComponent
     with ElasticSearchApi
-    with OperationApi
+    with DefaultOperationApiComponent
     with ProposalApi
     with SequenceApi
     with CrmApi
@@ -268,11 +264,12 @@ trait MakeApi
       classOf[HealthCheckApi],
       classOf[CrmApi],
       classOf[ModerationOperationApi],
-      classOf[ModerationProposalApi],
-      classOf[ModerationTagApi],
       classOf[ModerationOrganisationApi],
-      classOf[OrganisationApi],
+      classOf[ModerationProposalApi],
       classOf[ModerationQuestionApi],
+      classOf[ModerationTagApi],
+      classOf[OrganisationApi],
+      classOf[QuestionApi],
       classOf[WidgetApi]
     )
 
@@ -308,7 +305,7 @@ trait MakeApi
       authenticationRoutes ~
       businessConfigRoutes ~
       ideaRoutes ~
-      operationRoutes ~
+      operationApi.routes ~
       moderationOperationRoutes ~
       trackingRoutes ~
       migrationApi.routes ~
@@ -316,7 +313,8 @@ trait MakeApi
       moderationOrganisationRoutes ~
       organisationRoutes ~
       widgetRoutes ~
-      moderationQuestionRoutes
+      questionApi.routes ~
+      moderationQuestionApi.routes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

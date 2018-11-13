@@ -73,6 +73,7 @@ class PersistentTagServiceIT
                            language: Language = Language("fr")): Question = {
     Question(
       questionId = QuestionId(operationId.value),
+      slug = s"some-question-on-operation-${operationId.value}",
       themeId = None,
       operationId = Some(operationId),
       country = country,
@@ -86,6 +87,7 @@ class PersistentTagServiceIT
                        language: Language = Language("fr")): Question = {
     Question(
       questionId = QuestionId(themeId.value),
+      slug = s"some-question-on-theme-${themeId.value}",
       themeId = Some(themeId),
       operationId = None,
       country = country,

@@ -35,11 +35,11 @@ import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
-class OperationApiTest extends MakeApiTestBase with OperationApi with OperationServiceComponent {
+class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent with OperationServiceComponent {
 
   override val operationService: OperationService = mock[OperationService]
 
-  val routes: Route = sealRoute(operationRoutes)
+  val routes: Route = sealRoute(operationApi.routes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
 

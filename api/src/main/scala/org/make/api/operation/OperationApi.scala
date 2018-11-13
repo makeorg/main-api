@@ -34,12 +34,7 @@ import org.make.core.reference.Country
 
 @Api(value = "Operation")
 @Path(value = "/operations")
-trait OperationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
-  this: OperationServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with OperationServiceComponent =>
+trait OperationApi extends Directives {
 
   @ApiOperation(value = "get-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -53,22 +48,7 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging with 
     )
   )
   @Path(value = "/")
-  def getOperations: Route = {
-    get {
-      path("operations") {
-        parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
-          makeOperation("GetOperations") { requestContext =>
-            provideAsync(
-              operationService
-                .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
-            ) { result =>
-              complete(result.map(operation => OperationResponse(operation, requestContext.country)))
-            }
-          }
-        }
-      }
-    }
-  }
+  def getOperations: Route
 
   @ApiOperation(value = "get-operation", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -76,20 +56,59 @@ trait OperationApi extends MakeAuthenticationDirectives with StrictLogging with 
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string")))
   @Path(value = "/{operationId}")
-  def getOperation: Route = {
-    get {
-      path("operations" / operationId) { operationId =>
-        makeOperation("GetOperation") { requestContext =>
-          provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
-            complete(OperationResponse(operation, requestContext.country))
+  def getOperation: Route
+
+  def routes: Route = getOperations ~ getOperation
+
+}
+
+trait OperationApiComponent {
+  def operationApi: OperationApi
+}
+
+trait DefaultOperationApiComponent
+    extends OperationApiComponent
+    with MakeAuthenticationDirectives
+    with StrictLogging
+    with ParameterExtractors {
+
+  this: OperationServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with OperationServiceComponent =>
+
+  override lazy val operationApi: OperationApi = new OperationApi {
+
+    val operationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
+
+    override def getOperations: Route = {
+      get {
+        path("operations") {
+          parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
+            makeOperation("GetOperations") { requestContext =>
+              provideAsync(
+                operationService
+                  .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
+              ) { result =>
+                complete(result.map(operation => OperationResponse(operation, requestContext.country)))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getOperation: Route = {
+      get {
+        path("operations" / operationId) { operationId =>
+          makeOperation("GetOperation") { requestContext =>
+            provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
+              complete(OperationResponse(operation, requestContext.country))
+            }
           }
         }
       }
     }
   }
-
-  val operationRoutes: Route =
-    getOperations ~ getOperation
-
-  val operationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
 }

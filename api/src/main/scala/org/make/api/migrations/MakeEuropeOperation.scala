@@ -33,6 +33,7 @@ object MakeEuropeOperation extends CreateOperation {
     CreateOperation.CountryConfiguration(
       country = Country("GB"),
       language = Language("en"),
+      slug = operationSlug,
       title = "Consultation européenne (démo)",
       startDate = LocalDate.parse("2018-03-26"),
       endDate = Some(LocalDate.parse("2018-04-30")),

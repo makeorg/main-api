@@ -74,6 +74,7 @@ class ProposalApiTest
           Some(
             Question(
               QuestionId("my-question"),
+              slug = "my-question",
               country = invocation.getArgument[Country](2),
               language = invocation.getArgument[Language](3),
               question = "my question",
@@ -98,6 +99,7 @@ class ProposalApiTest
         Some(
           Question(
             QuestionId("my-question"),
+            slug = "my-question",
             country = invocation.getArgument[Country](3),
             language = invocation.getArgument[Language](4),
             question = "my question",

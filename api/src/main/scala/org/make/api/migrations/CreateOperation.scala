@@ -51,6 +51,7 @@ trait CreateOperation extends Migration with OperationHelper {
 object CreateOperation {
   final case class CountryConfiguration(country: Country,
                                         language: Language,
+                                        slug: String,
                                         tags: Seq[TagId],
                                         title: String,
                                         startDate: LocalDate,

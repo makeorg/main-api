@@ -121,6 +121,7 @@ class ThemeServiceTest
             Some(
               Question(
                 questionId = QuestionId("some-question"),
+                slug = "some-question",
                 operationId = None,
                 themeId = None,
                 question = "",
@@ -166,6 +167,7 @@ class ThemeServiceTest
             Some(
               Question(
                 questionId = QuestionId("foo"),
+                slug = "foo",
                 themeId = Some(ThemeId("foo")),
                 operationId = None,
                 country = Country("WE"),
@@ -190,6 +192,7 @@ class ThemeServiceTest
             Some(
               Question(
                 questionId = QuestionId("bar"),
+                slug = "bar",
                 themeId = Some(ThemeId("bar")),
                 operationId = None,
                 country = Country("WE"),

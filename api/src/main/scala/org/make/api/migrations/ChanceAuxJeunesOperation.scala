@@ -34,6 +34,7 @@ object ChanceAuxJeunesOperation extends CreateOperation {
     CountryConfiguration(
       country = Country("FR"),
       language = Language("fr"),
+      slug = operationSlug,
       tags = Seq(
         TagId("fracture-numerique"),
         TagId("ruralite"),
