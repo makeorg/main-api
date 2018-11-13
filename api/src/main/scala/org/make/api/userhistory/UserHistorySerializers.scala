@@ -179,7 +179,12 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V2] =
     json.persister[UserVotesAndQualifications, V2](
       "user-votes-and-qualifications",
-      from[V1].to[V2](_.update('votesAndQualifications / * / 'date ! set[ZonedDateTime](defaultVoteDate)))
+      from[V1].to[V2](_.update('votesAndQualifications ! modify[Map[String, JsValue]] { voteAndQualifications =>
+        voteAndQualifications.map {
+          case (k, v) =>
+            k -> v.update('date ! set[ZonedDateTime](defaultVoteDate))
+        }
+      }))
     )
 
   val serializers: Seq[JsonPersister[_, _]] =

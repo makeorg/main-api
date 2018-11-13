@@ -355,6 +355,32 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       )
     )
 
+    val multipleVoteAndQualifications =
+      UserVotesAndQualifications(
+        Map(
+          ProposalId("df9c3bac-ca5d-43dc-87fb-c4980c711297") -> VoteAndQualifications(
+            VoteKey.Neutral,
+            Seq.empty,
+            defaultDate
+          ),
+          ProposalId("9c2dfbcd-1a52-4337-9378-47c5ef1e94a6") -> VoteAndQualifications(
+            VoteKey.Neutral,
+            Seq.empty,
+            defaultDate
+          ),
+          ProposalId("17f40d57-f510-4049-bb1a-9637193107d6") -> VoteAndQualifications(
+            VoteKey.Neutral,
+            Seq.empty,
+            defaultDate
+          ),
+          ProposalId("857a9689-9e97-4811-b18e-3f4e8f993b0d") -> VoteAndQualifications(
+            VoteKey.Neutral,
+            Seq.empty,
+            defaultDate
+          )
+        )
+      )
+
     persisters.generateTestsFor(
       sample(userAddProposalsSequenceEvent),
       sample(userUnvoteEvent),
@@ -379,6 +405,11 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
         "recent",
         recentRegisterCitizenEvent,
         Some("to validate source migration with recent event")
+      ),
+      PersistableSample[V1](
+        "multiple",
+        multipleVoteAndQualifications,
+        Some("to validate source migration with old votes and multiple proposals")
       ),
       sample(
         UserHistory(

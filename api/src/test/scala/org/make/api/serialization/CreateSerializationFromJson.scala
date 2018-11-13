@@ -26,12 +26,14 @@ object CreateSerializationFromJson extends App {
 
   val json =
     """
-      |{"author":{"userId":"my-user-id","firstName":"first name","postalCode":"75011","age":42},"slug":"my-proposal","id":"proposal-id","operation":"my-operation","eventDate":"2018-03-01T16:09:30.441Z","content":"my proposal","requestContext":{"requestId":"","sessionId":"","externalId":""},"userId":"my-user-id","theme":"theme-id"}
+      |{"votesAndQualifications":{"df9c3bac-ca5d-43dc-87fb-c4980c711297":{"voteKey":"neutral","qualificationKeys":[]},"9c2dfbcd-1a52-4337-9378-47c5ef1e94a6":{"voteKey":"neutral","qualificationKeys":[]},"17f40d57-f510-4049-bb1a-9637193107d6":{"voteKey":"neutral","qualificationKeys":[]},"857a9689-9e97-4811-b18e-3f4e8f993b0d":{"voteKey":"neutral","qualificationKeys":[]}}}
     """.stripMargin
 
   val data = Base64.getEncoder.encode(json.getBytes("UTF-8"))
   val destination =
-    Paths.get("/home/francois/dev/make/make-api/api/src/test/resources/serialization/proposal-proposed-v1-default")
+    Paths.get(
+      "/home/francois/dev/make/make-api/api/src/test/resources/serialization/user-votes-and-qualifications-v1-multiple"
+    )
 
   Files.write(destination, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
 
