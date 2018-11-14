@@ -31,7 +31,21 @@ import org.make.core.proposal.{BaseVote, ProposalStatus, QualificationKey, VoteK
 object ProposalScorerHelper extends StrictLogging {
   var random: RandomGenerator = new MersenneTwister()
 
+  case class ScoreComponent(name: String, weight: Double, mean: Double, std: Double)
+
+  val topScoreComponents = Seq(
+    ScoreComponent("engagement", 1, 0.8, 0.1),
+    ScoreComponent("agreement", 1, 0.75, 0.1),
+    ScoreComponent("adhesion", 1, 0.075, 0.07),
+    ScoreComponent("realistic", 2, 0.1, 0.07),
+    ScoreComponent("platitude", -2, 0.05, 0.05)
+  )
+
+  val combinedStd = math.sqrt(topScoreComponents.map(sc => math.pow(sc.weight, 2)).sum)
+
   case class ScoreCounts(votes: Int,
+                         agreeCount: Int,
+                         disagreeCount: Int,
                          neutralCount: Int,
                          platitudeAgreeCount: Int,
                          platitudeDisagreeCount: Int,
@@ -53,6 +67,8 @@ object ProposalScorerHelper extends StrictLogging {
 
   def scoreCounts(votes: Seq[BaseVote]): ScoreCounts = {
     val votesCount: Int = votes.map(_.count).sum
+    val agreeCount: Int = voteCounts(votes, Agree)
+    val disagreeCount: Int = voteCounts(votes, Disagree)
     val neutralCount: Int = voteCounts(votes, Neutral)
     val platitudeAgreeCount: Int = qualificationCounts(votes, Agree, PlatitudeAgree)
     val platitudeDisagreeCount: Int = qualificationCounts(votes, Disagree, PlatitudeDisagree)
@@ -63,6 +79,8 @@ object ProposalScorerHelper extends StrictLogging {
 
     ScoreCounts(
       votesCount,
+      agreeCount,
+      disagreeCount,
       neutralCount,
       platitudeAgreeCount,
       platitudeDisagreeCount,
@@ -74,21 +92,35 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   /*
-   * platitude qualifications counts as neutral votes
+   * Note on bayesian estimates: the estimator requires a prior,
+   * i.e. an initial probability to start the estimate from.
+   *
+   * We choose 1/3 for the vote because there are 3 possible choices.
+   * The prior for the qualification is 0.01 because we want a value close to 0 but not null
+   * The prior is used with a basis of 1 vote
    */
+  val VotePrior = 0.33
+  val QualificationPrior = 0.01
+  val CountPrior = 1
+
   def engagement(counts: ScoreCounts): Double = {
-    1 -
-      (counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount + 0.33) /
-        (counts.votes + 1).toDouble
+    (counts.agreeCount + counts.disagreeCount + 2 * VotePrior) / (counts.votes + CountPrior).toDouble
   }
 
   def engagement(votes: Seq[BaseVote]): Double = {
     engagement(scoreCounts(votes))
   }
 
+  def agreement(counts: ScoreCounts): Double = {
+    (counts.agreeCount + VotePrior) / (counts.votes + CountPrior).toDouble
+  }
+
+  def agreement(votes: Seq[BaseVote]): Double = {
+    agreement(scoreCounts(votes))
+  }
+
   def adhesion(counts: ScoreCounts): Double = {
-    ((counts.loveCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
-      - (counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
+    (counts.loveCount - counts.hateCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
   }
 
   def adhesion(votes: Seq[BaseVote]): Double = {
@@ -96,16 +128,44 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   def realistic(counts: ScoreCounts): Double = {
-    ((counts.doableCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
-      - (counts.impossibleCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
+    (counts.doableCount - counts.impossibleCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
   }
 
   def realistic(votes: Seq[BaseVote]): Double = {
     realistic(scoreCounts(votes))
   }
 
+  def platitude(counts: ScoreCounts): Double = {
+    (counts.platitudeAgreeCount + counts.platitudeDisagreeCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
+  }
+
+  def platitude(votes: Seq[BaseVote]): Double = {
+    platitude(scoreCounts(votes))
+  }
+
+  /**
+    * The score components are first standardized == centered to their mean and rescaled by their standard error
+    * this scale the score back to a distribution of mean=0 and var=std=1
+    *
+    * Then the score components are summed with their respective weigths
+    *
+    * Finally the score itself is normalized by the theoretical standard error of a weigthed sum of random variable of variance 1
+    *
+    * This should ensure that the top score itself is standardized
+    *
+    * */
+  val topScoreFunctions: Map[String, ScoreCounts => Double] = Map(
+    "engagement" -> engagement,
+    "agreement" -> agreement,
+    "adhesion" -> adhesion,
+    "realistic" -> realistic,
+    "platitude" -> platitude
+  )
+
   def topScore(counts: ScoreCounts): Double = {
-    engagement(counts) + adhesion(counts) + 2 * realistic(counts)
+    val sumScores =
+      topScoreComponents.map(sc => sc.weight * (topScoreFunctions(sc.name)(counts) - sc.mean) / sc.std).sum
+    sumScores / combinedStd
   }
 
   def topScore(votes: Seq[BaseVote]): Double = {
@@ -113,7 +173,7 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   def controversy(counts: ScoreCounts): Double = {
-    math.min(counts.loveCount + 0.01, counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
+    math.min(counts.loveCount + QualificationPrior, counts.hateCount + QualificationPrior) / (counts.votes - counts.neutralCount + CountPrior).toDouble
   }
 
   def controversy(votes: Seq[BaseVote]): Double = {
@@ -133,20 +193,28 @@ object ProposalScorerHelper extends StrictLogging {
    * Each rate is sampled from its own beta distribution with a prior at 0.33 for votes and 0.01 for qualifications
    */
   def sampleRate(successes: Int, trials: Int, prior: Double): Double = {
-    new BetaDistribution(random, successes + prior, trials - successes + 1).sample()
+    new BetaDistribution(random, successes + prior, trials - successes + CountPrior).sample()
   }
 
   def sampleEngagement(counts: ScoreCounts): Double = {
-    1 - sampleRate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes, 0.33)
+    sampleRate(counts.agreeCount + counts.disagreeCount, counts.votes, 2 * VotePrior)
   }
 
   def sampleEngagement(votes: Seq[BaseVote]): Double = {
     sampleEngagement(scoreCounts(votes))
   }
 
+  def sampleAgreement(counts: ScoreCounts): Double = {
+    sampleRate(counts.agreeCount, counts.votes, VotePrior)
+  }
+
+  def sampleAgreement(votes: Seq[BaseVote]): Double = {
+    sampleAgreement(scoreCounts(votes))
+  }
+
   def sampleAdhesion(counts: ScoreCounts): Double = {
-    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount, 0.01)
-      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount, 0.01))
+    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount, QualificationPrior)
+      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount, QualificationPrior))
   }
 
   def sampleAdhesion(votes: Seq[BaseVote]): Double = {
@@ -154,28 +222,47 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   def sampleRealistic(counts: ScoreCounts): Double = {
-    (sampleRate(counts.doableCount, counts.votes - counts.neutralCount, 0.01)
-      - sampleRate(counts.impossibleCount, counts.votes - counts.neutralCount, 0.01))
+    (sampleRate(counts.doableCount, counts.votes - counts.neutralCount, QualificationPrior)
+      - sampleRate(counts.impossibleCount, counts.votes - counts.neutralCount, QualificationPrior))
   }
 
   def sampleRealistic(votes: Seq[BaseVote]): Double = {
     sampleRealistic(scoreCounts(votes))
   }
 
+  def samplePlatitude(counts: ScoreCounts): Double = {
+    (sampleRate(counts.platitudeAgreeCount, counts.votes - counts.neutralCount, QualificationPrior)
+      + sampleRate(counts.platitudeDisagreeCount, counts.votes - counts.neutralCount, QualificationPrior))
+  }
+
+  def samplePlatitude(votes: Seq[BaseVote]): Double = {
+    samplePlatitude(scoreCounts(votes))
+  }
+
   def sampleControversy(counts: ScoreCounts): Double = {
-    sampleRate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount, 0.01)
+    sampleRate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount, QualificationPrior)
   }
 
   def sampleControversy(votes: Seq[BaseVote]): Double = {
     sampleControversy(scoreCounts(votes))
   }
 
-  def sampleScore(counts: ScoreCounts): Double = {
-    sampleEngagement(counts) + sampleAdhesion(counts) + 2 * sampleRealistic(counts)
+  val topScoreSampleFunctions: Map[String, ScoreCounts => Double] = Map(
+    "engagement" -> sampleEngagement,
+    "agreement" -> sampleAgreement,
+    "adhesion" -> sampleAdhesion,
+    "realistic" -> sampleRealistic,
+    "platitude" -> samplePlatitude
+  )
+
+  def sampleTopScore(counts: ScoreCounts): Double = {
+    val sumScores =
+      topScoreComponents.map(sc => sc.weight * (topScoreSampleFunctions(sc.name)(counts) - sc.mean) / sc.std).sum
+    sumScores / combinedStd
   }
 
-  def sampleScore(votes: Seq[BaseVote]): Double = {
-    sampleScore(scoreCounts(votes))
+  def sampleTopScore(votes: Seq[BaseVote]): Double = {
+    sampleTopScore(scoreCounts(votes))
   }
 
   /*
@@ -196,35 +283,76 @@ object ProposalScorerHelper extends StrictLogging {
     RateEstimate(pp, sd)
   }
 
+  /*
+   * Note on confidence intervals:
+   * For a normal (gausssian) random variable, the 95% confidence interval is mean +/- 2 * standard error
+   */
+  val ConfidenceInterval95Percent = 2
+
   def engagementUpperBound(votes: Seq[BaseVote]): Double = {
     val counts = scoreCounts(votes)
 
     val engagementEstimate: RateEstimate =
-      rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
+      rateEstimate(counts.agreeCount + counts.disagreeCount, counts.votes)
 
-    1 - engagementEstimate.rate + 2 * engagementEstimate.sd
+    engagementEstimate.rate + ConfidenceInterval95Percent * engagementEstimate.sd
   }
 
-  def scoreUpperBound(votes: Seq[BaseVote]): Double = {
-    val counts = scoreCounts(votes)
+  def engagementConfidenceInterval(counts: ScoreCounts): Double = {
+    val estimate = rateEstimate(counts.agreeCount + counts.disagreeCount, counts.votes)
+    ConfidenceInterval95Percent * estimate.sd
+  }
 
-    val engagementEstimate: RateEstimate =
-      rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
+  def agreementConfidenceInterval(counts: ScoreCounts): Double = {
+    val estimate = rateEstimate(counts.agreeCount, counts.votes)
+    ConfidenceInterval95Percent * estimate.sd
+  }
 
-    val adhesionEstimate: RateEstimate =
-      rateEstimate(math.max(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
+  def adhesionCondidenceInterval(counts: ScoreCounts): Double = {
+    val loveEstimate = rateEstimate(counts.loveCount, counts.agreeCount + counts.disagreeCount)
+    val hateEstimate = rateEstimate(counts.hateCount, counts.agreeCount + counts.disagreeCount)
+    ConfidenceInterval95Percent * math.hypot(loveEstimate.sd, hateEstimate.sd)
+  }
 
-    val realisticEstimate: RateEstimate =
-      rateEstimate(math.max(counts.doableCount, counts.impossibleCount), counts.votes - counts.neutralCount)
+  def realisticConfidenceInterval(counts: ScoreCounts): Double = {
+    val doableEstimate = rateEstimate(counts.doableCount, counts.agreeCount + counts.disagreeCount)
+    val impossibleEstimate = rateEstimate(counts.impossibleCount, counts.agreeCount + counts.disagreeCount)
+    ConfidenceInterval95Percent * math.hypot(doableEstimate.sd, impossibleEstimate.sd)
+  }
 
-    val scoreEstimate: Double = topScore(counts)
-    val confidenceInterval: Double = 2 * math.sqrt(
-      math.pow(engagementEstimate.sd, 2) +
-        math.pow(adhesionEstimate.sd, 2) +
-        2 * math.pow(realisticEstimate.sd, 2)
+  def platitudeConfidenceInterval(counts: ScoreCounts): Double = {
+    val platitudeAgreeEstimate = rateEstimate(counts.platitudeAgreeCount, counts.agreeCount + counts.disagreeCount)
+    val platitudeDisagreeEstimate =
+      rateEstimate(counts.platitudeDisagreeCount, counts.agreeCount + counts.disagreeCount)
+    ConfidenceInterval95Percent * math.hypot(platitudeAgreeEstimate.sd, platitudeDisagreeEstimate.sd)
+  }
+
+  val topScoreConfidenceIntervalFunctions: Map[String, ScoreCounts => Double] = Map(
+    "engagement" -> engagementConfidenceInterval,
+    "agreement" -> agreementConfidenceInterval,
+    "adhesion" -> adhesionCondidenceInterval,
+    "realistic" -> realisticConfidenceInterval,
+    "platitude" -> platitudeConfidenceInterval
+  )
+
+  def topScoreConfidenceInterval(counts: ScoreCounts): Double = {
+    val sumCI = math.sqrt(
+      topScoreComponents
+        .map(sc => math.pow(sc.weight * topScoreConfidenceIntervalFunctions(sc.name)(counts) / sc.std, 2))
+        .sum
     )
+    sumCI / combinedStd
+  }
 
-    scoreEstimate + confidenceInterval
+  def topScoreConfidenceInterval(votes: Seq[BaseVote]): Double = {
+    topScoreConfidenceInterval(scoreCounts(votes))
+  }
+
+  def topScoreUpperBound(votes: Seq[BaseVote]): Double = {
+    val counts = scoreCounts(votes)
+    val score = topScore(counts)
+    val confidenceInterval = topScoreConfidenceInterval(counts)
+    score + confidenceInterval
   }
 
   def controversyUpperBound(votes: Seq[BaseVote]): Double = {
@@ -233,7 +361,7 @@ object ProposalScorerHelper extends StrictLogging {
     val controversyEstimate: RateEstimate =
       rateEstimate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
 
-    controversyEstimate.rate + 2 * controversyEstimate.sd
+    controversyEstimate.rate + ConfidenceInterval95Percent * controversyEstimate.sd
   }
 
   def sequencePool(sequenceConfiguration: SequenceConfiguration,
@@ -241,7 +369,7 @@ object ProposalScorerHelper extends StrictLogging {
                    status: ProposalStatus): SequencePool = {
     val votesCount: Int = votes.map(_.count).sum
     val engagementRate: Double = ProposalScorerHelper.engagementUpperBound(votes)
-    val scoreRate: Double = ProposalScorerHelper.scoreUpperBound(votes)
+    val scoreRate: Double = ProposalScorerHelper.topScoreUpperBound(votes)
     val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(votes)
 
     if (status == ProposalStatus.Accepted && votesCount < sequenceConfiguration.newProposalsVoteThreshold) {

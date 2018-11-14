@@ -20,6 +20,7 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
+import scala.util.Random
 
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
@@ -99,10 +100,11 @@ class ProposalScorerHelperTest extends MakeUnitTest {
   )
 
   val proposalWithoutvote: Proposal = createProposal()
-  val proposalWithVote: Proposal = createProposal(nbVoteNeutral = 20)
+  val proposalWithVote: Proposal = createProposal(nbVoteAgree = 100, nbVoteNeutral = 20)
   val proposalWithVoteandQualification: Proposal =
     createProposal(
-      nbVoteAgree = 10,
+      nbVoteAgree = 100,
+      nbVoteNeutral = 20,
       nbQualificationLikeIt = 10,
       nbQualificationDoable = 20,
       nbQualificationPlatitudeAgree = 30
@@ -110,6 +112,8 @@ class ProposalScorerHelperTest extends MakeUnitTest {
   val scoreCounts: ScoreCounts =
     ScoreCounts(
       votes = 20,
+      agreeCount = 12,
+      disagreeCount = 4,
       neutralCount = 4,
       platitudeAgreeCount = 6,
       platitudeDisagreeCount = 2,
@@ -154,12 +158,12 @@ class ProposalScorerHelperTest extends MakeUnitTest {
   feature("calculate engagement") {
     scenario("calculate engagement from proposal") {
       ProposalScorerHelper.engagement(proposalWithoutvote.votes) should equal(0.66 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVote.votes) should equal(0.03 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVoteandQualification.votes) should equal(-1.75 +- 0.01)
+      ProposalScorerHelper.engagement(proposalWithVote.votes) should equal(0.83 +- 0.01)
+      ProposalScorerHelper.engagement(proposalWithVoteandQualification.votes) should equal(0.83 +- 0.01)
     }
 
     scenario("calculate engagement from count score") {
-      ProposalScorerHelper.engagement(scoreCounts) should equal(0.41 +- 0.01)
+      ProposalScorerHelper.engagement(scoreCounts) should equal(0.79 +- 0.01)
     }
   }
 
@@ -167,7 +171,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     scenario("calculate adhesion from proposal") {
       ProposalScorerHelper.adhesion(proposalWithoutvote.votes) should equal(0.0)
       ProposalScorerHelper.adhesion(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.adhesion(proposalWithVoteandQualification.votes) should equal(0.9 +- 0.01)
+      ProposalScorerHelper.adhesion(proposalWithVoteandQualification.votes) should equal(0.1 +- 0.01)
     }
 
     scenario("calculate adhesion from count score") {
@@ -179,7 +183,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     scenario("calculate realistic from proposal") {
       ProposalScorerHelper.realistic(proposalWithoutvote.votes) should equal(0.0)
       ProposalScorerHelper.realistic(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.realistic(proposalWithVoteandQualification.votes) should equal(1.81 +- 0.01)
+      ProposalScorerHelper.realistic(proposalWithVoteandQualification.votes) should equal(0.2 +- 0.01)
     }
 
     scenario("calculate realistic from count score") {
@@ -189,13 +193,13 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate topScore") {
     scenario("calculate topScore from proposal") {
-      ProposalScorerHelper.topScore(proposalWithoutvote.votes) should equal(0.66 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVote.votes) should equal(0.03 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVoteandQualification.votes) should equal(2.78 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithoutvote.votes) should equal(-2.27 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithVote.votes) should equal(-0.25 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithVoteandQualification.votes) should equal(-1.7 +- 0.01)
     }
 
     scenario("calculate topScore from count score") {
-      ProposalScorerHelper.topScore(scoreCounts) should equal(1.29 +- 0.01)
+      ProposalScorerHelper.topScore(scoreCounts) should equal(-2.97 +- 0.01)
     }
   }
 
@@ -215,7 +219,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     scenario("calculate rejection from proposal") {
       ProposalScorerHelper.rejection(proposalWithoutvote.votes) should equal(0.0)
       ProposalScorerHelper.rejection(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.rejection(proposalWithVoteandQualification.votes) should equal(-0.9 +- 0.01)
+      ProposalScorerHelper.rejection(proposalWithVoteandQualification.votes) should equal(-0.1 +- 0.01)
     }
 
     scenario("calculate rejection from count score") {
@@ -223,8 +227,47 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     }
   }
 
-  feature("proposal pool") {
+  feature("score confidence interval") {
+    val rgen = Random
+    rgen.setSeed(0)
+    val nTrials = 1000
+    val success = (1 to nTrials)
+      .map(_ => {
+        val nbVoteAgree = rgen.nextInt(100)
+        val nbVoteDisagree = rgen.nextInt(100 - nbVoteAgree)
+        val nbVoteNeutral = 100 - nbVoteAgree - nbVoteDisagree
 
+        val proposal = createProposal(
+          nbVoteAgree,
+          nbVoteDisagree,
+          nbVoteNeutral,
+          nbQualificationLikeIt = rgen.nextInt(1 + nbVoteAgree / 2),
+          nbQualificationDoable = rgen.nextInt(1 + nbVoteAgree / 2),
+          nbQualificationPlatitudeAgree = rgen.nextInt(1 + nbVoteAgree / 3),
+          nbQualificationNoWay = rgen.nextInt(1 + nbVoteDisagree / 2),
+          nbQualificationImpossible = rgen.nextInt(1 + nbVoteDisagree / 2),
+          nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
+        )
+
+        val score = ProposalScorerHelper.topScore(proposal.votes)
+        val confidence_interval = ProposalScorerHelper.topScoreConfidenceInterval(proposal.votes)
+        val sampleScore = ProposalScorerHelper.sampleTopScore(proposal.votes)
+
+        if (sampleScore > score - confidence_interval && sampleScore < score + confidence_interval) {
+          1
+        } else {
+          0
+        }
+      })
+      .sum
+      .toDouble / nTrials.toDouble
+
+    logger.debug(success.toString)
+
+    (success should be).equals(0.95 +- 0.05)
+  }
+
+  feature("proposal pool") {
     scenario("news proposal") {
       val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
       ProposalScorerHelper.sequencePool(configuration, proposalWithoutvote.votes, Accepted) should be(SequencePool.New)

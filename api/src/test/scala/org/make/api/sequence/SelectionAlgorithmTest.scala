@@ -705,12 +705,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       ProposalScorerHelper.random = new MersenneTwister(0)
       val trials = 1000
-      val samples = (1 to trials).map(i => ProposalScorerHelper.sampleScore(testProposal.votes))
+      val samples = (1 to trials).map(i => ProposalScorerHelper.sampleTopScore(testProposal.votes))
 
       testProposal.votes.map(_.count).sum should be(100)
       samples.max should be > testProposalScore + 0.1
       samples.min should be < testProposalScore - 0.1
-      samples.sum / trials should be(testProposalScore +- 0.01)
+      samples.sum / trials should be(testProposalScore +- 0.05)
     }
 
     scenario("check proposal scorer with pathological proposal") {
@@ -723,10 +723,10 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         fakeProposalQualif(ProposalId("tested"), votes, SequencePool.Tested)
 
       val testProposalScore: Double = ProposalScorerHelper.topScore(testProposal.votes)
-      val testProposalScoreSample: Double = ProposalScorerHelper.sampleScore(testProposal.votes)
+      val testProposalScoreSample: Double = ProposalScorerHelper.sampleTopScore(testProposal.votes)
 
-      testProposalScore should be > 0.0
-      testProposalScoreSample should be > 0.0
+      testProposalScore should be > -10.0
+      testProposalScoreSample should be > -10.0
     }
 
     scenario("check bandit chooser for similars") {
@@ -753,12 +753,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ProposalScorerHelper.random = new MersenneTwister(0)
 
       val sortedProposals: Seq[ProposalId] = testedProposals
-        .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorerHelper.sampleScore(p.votes)))
+        .map(p => selectionAlgorithm.ScoredProposal(p, ProposalScorerHelper.sampleTopScore(p.votes)))
         .sortWith(_.score > _.score)
         .map(sp => sp.proposal.id)
 
       val chosenCounts: Seq[ProposalId] =
-        (1 to 1000)
+        (1 to 10000)
           .map(i => selectionAlgorithm.chooseProposalBandit(sequenceConfiguration, testedProposals).id -> 1)
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
@@ -767,7 +767,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           .map(_._1)
 
       chosenCounts.slice(0, 2).contains(sortedProposals.head) should be(true)
-      chosenCounts.slice(0, 5).contains(sortedProposals(1)) should be(true)
+      chosenCounts.slice(0, 10).contains(sortedProposals(1)) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(2)) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(19)) should be(false)
     }
