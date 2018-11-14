@@ -19,9 +19,12 @@
 
 package org.make.core.proposal
 
+import java.time.format.DateTimeFormatter
+import java.time.{ZoneOffset, ZonedDateTime}
+
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.searches.queries.Query
+import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.Validation.{validate, validateField}
@@ -84,7 +87,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          user: Option[UserSearchFilter] = None,
                          minVotesCount: Option[MinVotesCountSearchFilter] = None,
                          toEnrich: Option[ToEnrichSearchFilter] = None,
-                         minScore: Option[MinScoreSearchFilter] = None)
+                         minScore: Option[MinScoreSearchFilter] = None,
+                         createdAt: Option[CreatedAtSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -106,7 +110,8 @@ object SearchFilters extends ElasticDsl {
             user: Option[UserSearchFilter] = None,
             minVotesCount: Option[MinVotesCountSearchFilter] = None,
             toEnrich: Option[ToEnrichSearchFilter] = None,
-            minScore: Option[MinScoreSearchFilter] = None): Option[SearchFilters] = {
+            minScore: Option[MinScoreSearchFilter] = None,
+            createdAt: Option[CreatedAtSearchFilter] = None): Option[SearchFilters] = {
 
     (
       proposals,
@@ -126,9 +131,11 @@ object SearchFilters extends ElasticDsl {
       user,
       minVotesCount,
       toEnrich,
-      minScore
+      minScore,
+      createdAt
     ) match {
       case (
+          None,
           None,
           None,
           None,
@@ -169,7 +176,8 @@ object SearchFilters extends ElasticDsl {
             user,
             minVotesCount,
             toEnrich,
-            minScore
+            minScore,
+            createdAt
           )
         )
     }
@@ -204,6 +212,7 @@ object SearchFilters extends ElasticDsl {
       buildMinVotesCountSearchFilter(searchQuery),
       buildToEnrichSearchFilter(searchQuery),
       buildMinScoreSearchFilter(searchQuery),
+      buildCreatedAtSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -471,6 +480,28 @@ object SearchFilters extends ElasticDsl {
       }
     }
   }
+
+  def buildCreatedAtSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.createdAt match {
+        case Some(CreatedAtSearchFilter(maybeBefore, maybeAfter)) =>
+          val createdAtRangeQuery: RangeQuery = ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.createdAt)
+          val dateFormatter: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
+          (
+            maybeBefore.map(before => before.format(dateFormatter)),
+            maybeAfter.map(after   => after.format(dateFormatter))
+          ) match {
+            case (Some(before), Some(after)) => Some(createdAtRangeQuery.lt(before).gt(after))
+            case (Some(before), None)        => Some(createdAtRangeQuery.lt(before))
+            case (None, Some(after))         => Some(createdAtRangeQuery.gte(after))
+            case _                           => None
+          }
+        case _ => None
+      }
+    }
+
+  }
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -496,6 +527,8 @@ case class OperationSearchFilter(operationId: OperationId)
 case class TrendingSearchFilter(trending: String) {
   validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))
 }
+
+case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])
 
 case class ContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
 

@@ -19,7 +19,7 @@
 
 package org.make.core
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import org.make.core.idea.IdeaId
@@ -34,6 +34,11 @@ trait ParameterExtractors {
   implicit val localDateFromStringUnmarshaller: Unmarshaller[String, LocalDate] =
     Unmarshaller.strict[String, LocalDate] { string ⇒
       LocalDate.parse(string)
+    }
+
+  implicit val zonedDateTimeFromStringUnmarshaller: Unmarshaller[String, ZonedDateTime] =
+    Unmarshaller.strict[String, ZonedDateTime] { string ⇒
+      ZonedDateTime.parse(string)
     }
 
   implicit val languageFromStringUnmarshaller: Unmarshaller[String, Language] =
