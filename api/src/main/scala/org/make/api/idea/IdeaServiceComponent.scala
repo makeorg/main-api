@@ -25,7 +25,7 @@ import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, S
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
-import org.make.core.question.Question
+import org.make.core.question.{Question, QuestionId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ trait IdeaService extends ShortenedNames {
   def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult]
   def fetchAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]]
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
-  def fetchOneByName(name: String): Future[Option[Idea]]
+  def fetchOneByName(questionId: QuestionId, name: String): Future[Option[Idea]]
   def insert(name: String, question: Question): Future[Idea]
   def update(ideaId: IdeaId, name: String): Future[Int]
 }
@@ -63,8 +63,8 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
       persistentIdeaService.findOne(ideaId)
     }
 
-    override def fetchOneByName(name: String): Future[Option[Idea]] = {
-      persistentIdeaService.findOneByName(name)
+    override def fetchOneByName(questionId: QuestionId, name: String): Future[Option[Idea]] = {
+      persistentIdeaService.findOneByName(questionId, name)
     }
 
     override def insert(name: String, question: Question): Future[Idea] = {
@@ -81,7 +81,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now())
         )
-      persistentIdeaService.findOneByName(name).flatMap { result =>
+      persistentIdeaService.findOneByName(question.questionId, name).flatMap { result =>
         if (result.isDefined) {
           Future.failed(IdeaAlreadyExistsException(idea.name))
         } else {

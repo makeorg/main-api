@@ -183,63 +183,64 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
           requireAdminRole(userAuth.user) {
             decodeRequest {
               entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
-                provideAsync(ideaService.fetchOneByName(request.name)) { idea =>
+                Validation.validate(
+                  Validation.requirePresent(
+                    fieldValue = request.language.orElse(request.questionId),
+                    fieldName = "Language",
+                    message = Some("Language is required")
+                  )
+                )
+                Validation.validate(
+                  Validation.requirePresent(
+                    fieldValue = request.country.orElse(request.questionId),
+                    fieldName = "Country",
+                    message = Some("Country is required")
+                  )
+                )
+                Validation.validate(
+                  Validation.requirePresent(
+                    fieldName = "operation/theme",
+                    fieldValue = request.operation.orElse(request.theme).orElse(request.questionId),
+                    message = Some("operation or theme should not be empty")
+                  )
+                )
+                if (request.operation.nonEmpty) {
                   Validation.validate(
                     Validation.requireNotPresent(
-                      fieldName = "name",
-                      fieldValue = idea,
-                      message = Some("idea already exist. Duplicates are not allowed")
+                      fieldName = "theme",
+                      fieldValue = request.theme,
+                      message = Some("Idea can not have both operation and theme")
                     )
                   )
+                }
+                if (request.theme.nonEmpty) {
                   Validation.validate(
-                    Validation.requirePresent(
-                      fieldValue = request.language,
-                      fieldName = "Language",
-                      message = Some("Language is required")
+                    Validation.requireNotPresent(
+                      fieldName = "operation",
+                      fieldValue = request.operation,
+                      message = Some("Idea can not have both operation and theme")
                     )
                   )
-                  Validation.validate(
-                    Validation.requirePresent(
-                      fieldValue = request.country,
-                      fieldName = "Country",
-                      message = Some("Country is required")
-                    )
-                  )
-                  Validation.validate(
-                    Validation.requirePresent(
-                      fieldName = "operation/theme",
-                      fieldValue = request.operation.orElse(request.theme),
-                      message = Some("operation or theme should not be empty")
-                    )
-                  )
-                  if (request.operation.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "theme",
-                        fieldValue = request.theme,
-                        message = Some("Idea can not have both operation and theme")
-                      )
-                    )
-                  }
-                  if (request.theme.nonEmpty) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "operation",
-                        fieldValue = request.operation,
-                        message = Some("Idea can not have both operation and theme")
-                      )
-                    )
-                  }
+                }
 
-                  provideAsyncOrNotFound(
-                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                      request.questionId,
-                      request.theme,
-                      request.operation,
-                      request.country.getOrElse(Country("FR")),
-                      request.language.getOrElse(Language("fr"))
+                provideAsyncOrNotFound(
+                  questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                    request.questionId,
+                    request.theme,
+                    request.operation,
+                    request.country.getOrElse(Country("FR")),
+                    request.language.getOrElse(Language("fr"))
+                  )
+                ) { question: Question =>
+                  provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { idea =>
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "name",
+                        fieldValue = idea,
+                        message = Some("idea already exist. Duplicates are not allowed")
+                      )
                     )
-                  ) { question: Question =>
+
                     onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
                       complete(StatusCodes.Created -> idea)
                     }
@@ -279,18 +280,20 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
           requireAdminRole(auth.user) {
             decodeRequest {
               entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
-                provideAsync(ideaService.fetchOneByName(request.name)) { idea =>
-                  if (!idea.map(_.ideaId).contains(ideaId)) {
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "name",
-                        fieldValue = idea,
-                        message = Some("idea already exist. Duplicates are not allowed")
+                provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
+                  provideAsync(ideaService.fetchOneByName(idea.questionId.get, request.name)) { duplicateIdea =>
+                    if (!duplicateIdea.map(_.ideaId).contains(ideaId)) {
+                      Validation.validate(
+                        Validation.requireNotPresent(
+                          fieldName = "name",
+                          fieldValue = duplicateIdea,
+                          message = Some("idea already exist. Duplicates are not allowed")
+                        )
                       )
-                    )
-                  }
-                  onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
-                    complete(ideaId)
+                    }
+                    onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
+                      complete(ideaId)
+                    }
                   }
                 }
               }
