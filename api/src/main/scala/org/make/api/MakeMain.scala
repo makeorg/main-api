@@ -91,7 +91,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
 
-  Await.result(elasticsearchConfiguration.initialize(), 10.seconds)
+  Await.result(elasticsearchClient.initialize(), 10.seconds)
 
   Await.result(swiftClient.init(), 10.seconds)
 

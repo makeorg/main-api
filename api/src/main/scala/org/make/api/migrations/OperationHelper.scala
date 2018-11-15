@@ -27,9 +27,9 @@ import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.api.sequence.CreateSequenceCommand
 import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationTranslation}
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.Question
 import org.make.core.reference.Language
-import org.make.core.sequence.SequenceStatus
+import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.tag.{TagDisplay, TagType}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, SlugHelper}
@@ -66,9 +66,9 @@ trait OperationHelper {
     ).flatMap { _ =>
       api.persistentQuestionService.persist(
         Question(
-          questionId = configuration.questionId.get,
-          slug = countryConfiguration.slug,
+          questionId = api.idGenerator.nextQuestionId(),
           country = countryConfiguration.country,
+          slug = countryConfiguration.slug,
           language = countryConfiguration.language,
           question = countryConfiguration.title,
           operationId = Some(operation.operationId),
@@ -95,10 +95,10 @@ trait OperationHelper {
                       operationSlug: String,
                       defaultLanguage: Language,
                       countryConfigurations: Seq[CountryConfiguration],
-                      allowedSource: Seq[String]): Future[Operation] = {
+                      allowedSources: Seq[String]): Future[Operation] = {
 
-    val configurationsByQuestion: Map[QuestionId, CountryConfiguration] =
-      countryConfigurations.map(configuration => api.idGenerator.nextQuestionId() -> configuration).toMap
+    val configurationsBySequence: Map[SequenceId, CountryConfiguration] =
+      countryConfigurations.map(configuration => api.idGenerator.nextSequenceId() -> configuration).toMap
 
     api.operationService
       .create(
@@ -108,25 +108,25 @@ trait OperationHelper {
         translations = countryConfigurations.map { configuration =>
           OperationTranslation(title = configuration.title, language = configuration.language)
         },
-        countriesConfiguration = configurationsByQuestion.toSeq.map {
-          case (questionId, configuration) =>
+        countriesConfiguration = configurationsBySequence.toSeq.map {
+          case (sequenceId, configuration) =>
             OperationCountryConfiguration(
               countryCode = configuration.country,
               tagIds = Seq.empty,
-              landingSequenceId = api.idGenerator.nextSequenceId(),
+              landingSequenceId = sequenceId,
               startDate = Some(configuration.startDate),
               endDate = configuration.endDate,
-              questionId = Some(questionId)
+              questionId = None
             )
         },
-        allowedSources = allowedSource
+        allowedSources = allowedSources
       )
       .flatMap(api.operationService.findOne)
       .map(_.get)
       .flatMap { operation =>
         Future
           .traverse(operation.countriesConfiguration) { configuration =>
-            val countryConfiguration = configurationsByQuestion(configuration.questionId.get)
+            val countryConfiguration = configurationsBySequence(configuration.landingSequenceId)
             createQuestionsAndSequences(api, operation, configuration, countryConfiguration)
           }
           .map(_ => operation)

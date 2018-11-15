@@ -28,7 +28,12 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.sequence.PublishedSequenceEvent._
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  ElasticsearchClient,
+  ElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.api.theme.ThemeService
 import org.make.core.RequestContext
 import org.make.core.reference.{Theme, ThemeId}
@@ -41,11 +46,13 @@ import scala.concurrent.duration.DurationInt
 
 class SequenceConsumerActor(sequenceCoordinator: ActorRef,
                             themeService: ThemeService,
-                            override val elasticsearchConfiguration: ElasticsearchConfiguration)
+                            override val elasticsearchConfiguration: ElasticsearchConfiguration,
+                            override val elasticsearchClient: ElasticsearchClient)
     extends KafkaConsumerActor[SequenceEventWrapper]
     with KafkaConfigurationExtension
     with DefaultSequenceSearchEngineComponent
     with ElasticsearchConfigurationComponent
+    with ElasticsearchClientComponent
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(SequenceProducerActor.topicKey)
@@ -130,7 +137,8 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
 object SequenceConsumerActor {
   def props(sequenceCoordinator: ActorRef,
             themeService: ThemeService,
-            elasticsearchConfiguration: ElasticsearchConfiguration): Props =
-    Props(new SequenceConsumerActor(sequenceCoordinator, themeService, elasticsearchConfiguration))
+            elasticsearchConfiguration: ElasticsearchConfiguration,
+            elasticsearchClient: ElasticsearchClient): Props =
+    Props(new SequenceConsumerActor(sequenceCoordinator, themeService, elasticsearchConfiguration, elasticsearchClient))
   val name: String = "sequence-consumer"
 }

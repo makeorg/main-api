@@ -25,12 +25,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import com.sksamuel.elastic4s.ElasticsearchClientUri
-import com.sksamuel.elastic4s.http.HttpClient
 import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.core.CirceFormatters
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.IndexedOrganisation
@@ -49,7 +51,9 @@ class OrganisationSearchEngineIT
     with CirceFormatters
     with DockerElasticsearchService
     with DefaultOrganisationSearchEngineComponent
-    with ElasticsearchConfigurationComponent {
+    with ElasticsearchConfigurationComponent
+    with DefaultElasticsearchClientComponent {
+
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
   override protected def afterAll(): Unit = {
@@ -67,9 +71,6 @@ class OrganisationSearchEngineIT
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.organisationAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
-  Mockito
-    .when(elasticsearchConfiguration.client)
-    .thenReturn(HttpClient(ElasticsearchClientUri(s"elasticsearch://localhost:$elasticsearchExposedPort")))
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -117,7 +118,8 @@ class OrganisationSearchEngineIT
   )
 
   private def initializeElasticsearch(): Unit = {
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val actorSystem: ActorSystem = ActorSystem()
+
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val organisationMapping =
       Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
@@ -141,7 +143,7 @@ class OrganisationSearchEngineIT
       Http().cachedHostConnectionPool[UserId](
         "localhost",
         elasticsearchExposedPort,
-        ConnectionPoolSettings(system).withMaxConnections(3)
+        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
       )
 
     val insertFutures = AkkaSource[IndexedOrganisation](organisations).map { organisation =>

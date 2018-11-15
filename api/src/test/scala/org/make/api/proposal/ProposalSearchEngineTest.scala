@@ -23,7 +23,12 @@ import java.time.ZonedDateTime
 
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeAuthentication
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  ElasticsearchClient,
+  ElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
@@ -36,9 +41,11 @@ import scala.collection.immutable.Seq
 class ProposalSearchEngineTest
     extends MakeApiTestBase
     with ElasticsearchConfigurationComponent
+    with ElasticsearchClientComponent
     with DefaultProposalSearchEngineComponent
     with MakeAuthentication {
 
+  override val elasticsearchClient: ElasticsearchClient = mock[ElasticsearchClient]
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn("localhost:9200")
   Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn("fakeAliasName")

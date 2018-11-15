@@ -28,12 +28,16 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.{ElasticApi, IndexAndType}
 import com.typesafe.config.ConfigFactory
 import io.circe.syntax._
-import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.technical.TimeSettings
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, RichHttpClient}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
+  DefaultElasticsearchConfigurationComponent,
+  RichHttpClient
+}
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
+import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
@@ -50,6 +54,9 @@ class ElasticSearchHealthCheckActorIT
     with ImplicitSender
     with ItMakeTest
     with CirceFormatters
+    with DefaultElasticsearchConfigurationComponent
+    with DefaultElasticsearchClientComponent
+    with ActorSystemComponent
     with DockerElasticsearchService {
 
   override protected def beforeAll(): Unit = {
@@ -58,9 +65,7 @@ class ElasticSearchHealthCheckActorIT
     initializeElasticsearch()
   }
 
-  val elasticsearchConfiguration = new ElasticsearchConfiguration(
-    system.settings.config.getConfig("make-api.elasticSearch")
-  )
+  override def actorSystem: ActorSystem = system
 
   val proposal =
     IndexedProposal(
@@ -125,14 +130,13 @@ class ElasticSearchHealthCheckActorIT
     )
 
   private def initializeElasticsearch(): Unit = {
-    Await.result(elasticsearchConfiguration.initialize(), 5.seconds)
+    Await.result(elasticsearchClient.initialize(), 30.seconds)
 
     val proposalAlias: IndexAndType =
       elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
 
-    val insertFutures = elasticsearchConfiguration.client.executeAsFuture(
-      ElasticApi.indexInto(proposalAlias).doc(proposal.asJson.toString)
-    )
+    val insertFutures =
+      elasticsearchClient.client.executeAsFuture(ElasticApi.indexInto(proposalAlias).doc(proposal.asJson.toString))
 
     Await.result(insertFutures, 150.seconds)
 

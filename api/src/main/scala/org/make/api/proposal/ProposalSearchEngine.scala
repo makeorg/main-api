@@ -21,9 +21,9 @@ package org.make.api.proposal
 
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.SearchDefinition
-import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQueryDefinition
-import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, IdQuery}
+import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
+import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -61,9 +61,9 @@ object ProposalSearchEngine {
 }
 
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent {
-  self: ElasticsearchConfigurationComponent =>
+  self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
-  private lazy val client = elasticsearchConfiguration.client
+  private lazy val client = elasticsearchClient.client
 
   override lazy val elasticsearchProposalAPI: ProposalSearchEngine = new ProposalSearchEngine with StrictLogging {
 
@@ -82,10 +82,10 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val seed: Int = DateHelper.now().toEpochSecond.toInt
 
       val query: IdQuery = idsQuery(ids = proposalIds.map(_.value)).types("proposal")
-      val randomQuery: FunctionScoreQueryDefinition =
+      val randomQuery: FunctionScoreQuery =
         functionScoreQuery(idsQuery(ids = proposalIds.map(_.value)).types("proposal")).functions(Seq(randomScore(seed)))
 
-      val request: SearchDefinition = searchWithType(proposalAlias)
+      val request: ElasticSearchRequest = searchWithType(proposalAlias)
         .query(if (random) randomQuery else query)
         .size(size.getOrElse(defaultMax))
 
@@ -97,8 +97,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
-      var request: SearchDefinition = searchWithType(proposalAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+      var request: ElasticSearchRequest = searchWithType(proposalAlias)
+        .bool(BoolQuery(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
 
@@ -119,7 +119,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
       val request = searchWithType(proposalAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters))
         .limit(0)
 
       client.executeAsFuture(request).map { response =>
@@ -133,7 +133,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
 
       val request = searchWithType(proposalAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters))
         .aggregations(sumAgg("total_votes", "votes.count"))
 
       client.executeAsFuture(request).map { response =>

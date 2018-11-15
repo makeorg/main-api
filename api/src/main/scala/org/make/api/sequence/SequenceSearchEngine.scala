@@ -22,7 +22,7 @@ package org.make.api.sequence
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.DefaultProposalSearchEngineComponent
@@ -55,11 +55,11 @@ trait DefaultSequenceSearchEngineComponent
     extends SequenceSearchEngineComponent
     with CirceFormatters
     with DefaultProposalSearchEngineComponent {
-  self: ElasticsearchConfigurationComponent =>
+  self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchSequenceAPI: SequenceSearchEngine = new SequenceSearchEngine with StrictLogging {
 
-    private lazy val client = elasticsearchConfiguration.client
+    private lazy val client = elasticsearchClient.client
 
     private val sequenceAlias: IndexAndType =
       elasticsearchConfiguration.sequenceAliasName / SequenceSearchEngine.sequenceIndexName
@@ -72,7 +72,7 @@ trait DefaultSequenceSearchEngineComponent
       val query = SearchStartSequenceRequest(slug = slugSequence).toSearchQuery
       val searchFilters = SearchFilters.getSearchFilters(query)
       val request = searchWithType(sequenceAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters))
         .from(0)
         .size(1)
 
@@ -88,7 +88,7 @@ trait DefaultSequenceSearchEngineComponent
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
       val request = searchWithType(sequenceAlias)
-        .bool(BoolQueryDefinition(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
         .size(SearchFilters.getLimitSearch(searchQuery))

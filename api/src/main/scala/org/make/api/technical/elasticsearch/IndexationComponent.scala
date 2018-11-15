@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.Done
 import akka.stream._
 import akka.stream.scaladsl._
-import com.sksamuel.elastic4s.http.ElasticDsl.{aliases, _}
+import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.typesafe.scalalogging.StrictLogging
@@ -68,9 +68,13 @@ trait DefaultIndexationComponent
     with ProposalIndexationStream
     with SequenceIndexationStream {
 
-  this: ElasticsearchConfigurationComponent with StrictLogging with ActorSystemComponent with ReadJournalComponent =>
+  this: ElasticsearchConfigurationComponent
+    with ElasticsearchClientComponent
+    with StrictLogging
+    with ActorSystemComponent
+    with ReadJournalComponent =>
 
-  private lazy val client = elasticsearchConfiguration.client
+  private lazy val client = elasticsearchClient.client
 
   override lazy val indexationService: IndexationService = new IndexationService {
 
@@ -84,7 +88,7 @@ trait DefaultIndexationComponent
       indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceSequences).map { indicesNotUpToDate =>
         val futureIdeasIndexation: Future[Done] = if (indicesNotUpToDate.contains(IndexIdeas)) {
           logger.info("Reindexing ideas")
-          val ideaIndexName = elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.ideaAliasName)
+          val ideaIndexName = elasticsearchClient.createIndexName(elasticsearchConfiguration.ideaAliasName)
           for {
             _           <- executeCreateIndex(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
             resultIdeas <- executeIndexIdeas(ideaIndexName)
@@ -98,7 +102,7 @@ trait DefaultIndexationComponent
           if (indicesNotUpToDate.contains(IndexOrganisations)) {
             logger.info("Reindexing organisations")
             val organisationIndexName =
-              elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.organisationAliasName)
+              elasticsearchClient.createIndexName(elasticsearchConfiguration.organisationAliasName)
             for {
               _                   <- executeCreateIndex(elasticsearchConfiguration.organisationAliasName, organisationIndexName)
               resultOrganisations <- executeIndexOrganisations(organisationIndexName)
@@ -111,7 +115,7 @@ trait DefaultIndexationComponent
         val futureProposalsIndexation = if (indicesNotUpToDate.contains(IndexProposals)) {
           logger.info("Reindexing proposals")
           val proposalIndexName =
-            elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.proposalAliasName)
+            elasticsearchClient.createIndexName(elasticsearchConfiguration.proposalAliasName)
           for {
             _               <- executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
             resultProposals <- executeIndexProposal(proposalIndexName)
@@ -124,7 +128,7 @@ trait DefaultIndexationComponent
         val futureSequencesIndexation = if (indicesNotUpToDate.contains(IndexSequences)) {
           logger.info("Reindexing sequences")
           val sequenceIndexName =
-            elasticsearchConfiguration.createIndexName(elasticsearchConfiguration.sequenceAliasName)
+            elasticsearchClient.createIndexName(elasticsearchConfiguration.sequenceAliasName)
           for {
             _               <- executeCreateIndex(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName)
             resultSequences <- executeIndexSequences(sequenceIndexName)
@@ -151,13 +155,13 @@ trait DefaultIndexationComponent
                                   forceProposals: Boolean,
                                   forceSequences: Boolean): Future[Set[EntitiesToIndex]] = {
       val hashes: Map[EntitiesToIndex, String] = Map(
-        IndexIdeas -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.ideaAliasName),
-        IndexOrganisations -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.organisationAliasName),
-        IndexProposals -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.proposalAliasName),
-        IndexSequences -> elasticsearchConfiguration.hashForAlias(elasticsearchConfiguration.sequenceAliasName)
+        IndexIdeas -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.ideaAliasName),
+        IndexOrganisations -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.organisationAliasName),
+        IndexProposals -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.proposalAliasName),
+        IndexSequences -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.sequenceAliasName)
       )
-      elasticsearchConfiguration.getCurrentIndicesName.map { currentIndices =>
-        val currentHashes: Seq[String] = currentIndices.map(elasticsearchConfiguration.getHashFromIndex)
+      elasticsearchClient.getCurrentIndicesName.map { currentIndices =>
+        val currentHashes: Seq[String] = currentIndices.map(elasticsearchClient.getHashFromIndex)
         var result: Set[EntitiesToIndex] = Set.empty
         if (forceIdeas) {
           result += IndexIdeas
@@ -210,7 +214,7 @@ trait DefaultIndexationComponent
     }
 
     private def executeCreateIndex(aliasName: String, indexName: String): Future[CreateIndexResponse] = {
-      client.executeAsFuture(createIndex(indexName).source(elasticsearchConfiguration.mappingForAlias(aliasName)))
+      client.executeAsFuture(createIndex(indexName).source(elasticsearchClient.mappingForAlias(aliasName)))
     }
 
     private def executeIndexProposal(proposalIndexName: String)(implicit mat: Materializer): Future[Done] = {

@@ -25,12 +25,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import com.sksamuel.elastic4s.ElasticsearchClientUri
-import com.sksamuel.elastic4s.http.HttpClient
 import io.circe.syntax._
 import org.make.api.ItMakeTest
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.core
 import org.make.core.idea.indexed._
 import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
@@ -51,6 +53,7 @@ class IdeaSearchEngineIT
     with CirceFormatters
     with DockerElasticsearchService
     with DefaultIdeaSearchEngineComponent
+    with DefaultElasticsearchClientComponent
     with ElasticsearchConfigurationComponent {
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
@@ -70,9 +73,6 @@ class IdeaSearchEngineIT
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
-  Mockito
-    .when(elasticsearchConfiguration.client)
-    .thenReturn(HttpClient(ElasticsearchClientUri(s"elasticsearch://localhost:$elasticsearchExposedPort")))
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -125,7 +125,7 @@ class IdeaSearchEngineIT
   private def ideas: Seq[IndexedIdea] = ideasActivated
 
   private def initializeElasticsearch(): Unit = {
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val actorSystem: ActorSystem = ActorSystem()
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val ideaMapping =
       Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
@@ -149,7 +149,7 @@ class IdeaSearchEngineIT
       Http().cachedHostConnectionPool[IdeaId](
         "localhost",
         elasticsearchExposedPort,
-        ConnectionPoolSettings(system).withMaxConnections(3)
+        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
       )
 
     val insertFutures = AkkaSource[IndexedIdea](ideas).map { idea =>
@@ -186,10 +186,10 @@ class IdeaSearchEngineIT
         .copy(limit = Some(3), skip = Some(0), order = Some("asc"), sort = Some("name"))
         .toSearchQuery(core.RequestContext.empty)
       whenReady(elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery), Timeout(5.seconds)) { result =>
-        result.total shouldBe (3)
-        result.results(0).name shouldBe ("a-idea02")
-        result.results(1).name shouldBe ("b-idea03")
-        result.results(2).name shouldBe ("c-idea01")
+        result.total should be(3)
+        result.results(0).name should be("a-idea02")
+        result.results(1).name should be("b-idea03")
+        result.results(2).name should be("c-idea01")
       }
     }
   }

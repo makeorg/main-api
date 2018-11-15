@@ -56,6 +56,7 @@ class IndexationComponentTest
     extends MakeUnitTest
     with DefaultIndexationComponent
     with ElasticsearchConfigurationComponent
+    with ElasticsearchClientComponent
     with StrictLogging
     with ActorSystemComponent
     with ProposalCoordinatorServiceComponent
@@ -82,6 +83,7 @@ class IndexationComponentTest
   override val userService: UserService = mock[UserService]
   override val organisationService: OrganisationService = mock[OrganisationService]
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
+  override val elasticsearchClient: ElasticsearchClient = mock[ElasticsearchClient]
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
   override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
@@ -108,22 +110,22 @@ class IndexationComponentTest
   private val proposalHash = "proposal#hash"
   private val sequenceHash = "sequence#hash"
 
-  when(elasticsearchConfiguration.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
-  when(elasticsearchConfiguration.getHashFromIndex(organisationHash)).thenReturn(organisationHash)
-  when(elasticsearchConfiguration.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
-  when(elasticsearchConfiguration.getHashFromIndex(sequenceHash)).thenReturn(sequenceHash)
+  when(elasticsearchClient.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
+  when(elasticsearchClient.getHashFromIndex(organisationHash)).thenReturn(organisationHash)
+  when(elasticsearchClient.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
+  when(elasticsearchClient.getHashFromIndex(sequenceHash)).thenReturn(sequenceHash)
 
-  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
-  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("organisation"))).thenReturn(organisationHash)
-  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)
-  when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("sequence"))).thenReturn(sequenceHash)
+  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
+  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("organisation"))).thenReturn(organisationHash)
+  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)
+  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("sequence"))).thenReturn(sequenceHash)
 
   when(elasticsearchConfiguration.connectionString).thenReturn("fake:3232")
 
   feature("Check if ES schema is up to date") {
     scenario("schema is up to date") {
       Given("a defined hash of indices")
-      when(elasticsearchConfiguration.getCurrentIndicesName)
+      when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
       When("I ask which indices are to update")
 
@@ -143,7 +145,7 @@ class IndexationComponentTest
 
     scenario("schema is up to date but force proposal indexation") {
       Given("a defined hash of indices")
-      when(elasticsearchConfiguration.getCurrentIndicesName)
+      when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
       When("I ask which indices are to update and force the proposal indexation")
 
@@ -164,8 +166,8 @@ class IndexationComponentTest
 
     scenario("schema is not up to date on the proposal index") {
       Given("a defined hash of indices and an old hash for the proposal index")
-      when(elasticsearchConfiguration.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn("old-hash")
-      when(elasticsearchConfiguration.getCurrentIndicesName)
+      when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn("old-hash")
+      when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
       When("I ask which indices are to update")
 

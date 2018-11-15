@@ -25,7 +25,12 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaEventWrapper, IdeaUpdatedEvent}
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  ElasticsearchClient,
+  ElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.core.idea.IdeaId
 import org.make.core.idea.indexed.IndexedIdea
 import shapeless.Poly1
@@ -34,11 +39,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IdeaConsumerActor(ideaService: IdeaService, override val elasticsearchConfiguration: ElasticsearchConfiguration)
+class IdeaConsumerActor(ideaService: IdeaService,
+                        override val elasticsearchConfiguration: ElasticsearchConfiguration,
+                        override val elasticsearchClient: ElasticsearchClient)
     extends KafkaConsumerActor[IdeaEventWrapper]
     with KafkaConfigurationExtension
     with DefaultIdeaSearchEngineComponent
     with ElasticsearchConfigurationComponent
+    with ElasticsearchClientComponent
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(IdeaProducerActor.topicKey)
@@ -85,7 +93,9 @@ class IdeaConsumerActor(ideaService: IdeaService, override val elasticsearchConf
 }
 
 object IdeaConsumerActor {
-  def props(ideaService: IdeaService, elasticsearchConfiguration: ElasticsearchConfiguration): Props =
-    Props(new IdeaConsumerActor(ideaService, elasticsearchConfiguration))
+  def props(ideaService: IdeaService,
+            elasticsearchConfiguration: ElasticsearchConfiguration,
+            elasticsearchClient: ElasticsearchClient): Props =
+    Props(new IdeaConsumerActor(ideaService, elasticsearchConfiguration, elasticsearchClient))
   val name: String = "idea-consumer"
 }
