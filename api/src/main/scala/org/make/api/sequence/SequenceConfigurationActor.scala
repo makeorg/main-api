@@ -32,21 +32,7 @@ import scala.util.{Failure, Success}
 class SequenceConfigurationActor(persistentSequenceConfigurationService: PersistentSequenceConfigurationService)
     extends Actor
     with ActorLogging {
-  val defaultConfiguration: SequenceConfiguration = SequenceConfiguration(
-    sequenceId = SequenceId("default"),
-    newProposalsRatio = 0.5,
-    newProposalsVoteThreshold = 100,
-    testedProposalsEngagementThreshold = 0.8,
-    testedProposalsScoreThreshold = 0.0,
-    testedProposalsControversyThreshold = 0.0,
-    banditEnabled = true,
-    banditMinCount = 1,
-    banditProposalsRatio = 0.0,
-    ideaCompetitionEnabled = false,
-    ideaCompetitionTargetCount = 50,
-    ideaCompetitionControversialRatio = 0.0,
-    ideaCompetitionControversialCount = 0
-  )
+  val defaultConfiguration: SequenceConfiguration = SequenceConfiguration(sequenceId = SequenceId("default"))
 
   var configCache: Map[SequenceId, SequenceConfiguration] = Map.empty
 
