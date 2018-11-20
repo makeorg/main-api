@@ -50,7 +50,7 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        newContent: Option[String],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
-                                       idea: IdeaId,
+                                       idea: Option[IdeaId],
                                        question: Question)
     extends ProposalCommand
 
