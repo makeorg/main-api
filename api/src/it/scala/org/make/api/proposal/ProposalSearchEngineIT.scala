@@ -20,6 +20,7 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 import akka.actor.ActorSystem
@@ -257,8 +258,8 @@ class ProposalSearchEngineIT
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content = "Il faut qu'il/elle interdise les élevages et cultures intensives",
       slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -317,8 +318,8 @@ class ProposalSearchEngineIT
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -379,8 +380,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle protège notre agriculture locale et donne les moyens aux agriculteurs de vivre de leur métier de production",
       slug =
         "il-faut-qu-il-elle-protege-notre-agriculture-locale-et-donne-les-moyens-aux-agriculteurs-de-vivre-de-leur-metier-de-production",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -501,8 +502,8 @@ class ProposalSearchEngineIT
         "Il faut qu'il/elle dissolve la SAFER et ainsi laisser les petits paysans s'installer, avec des petites exploitations",
       slug =
         "il-faut-qu-il-elle-dissolve-la-SAFER-et-ainsi-laisser-les-petits-paysans-s-installer-avec-des-petites-exploitations",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -561,8 +562,8 @@ class ProposalSearchEngineIT
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve sostenere e difendere l'agricoltura nel mio dipartimento",
       slug = "c-e-bisogno-lui-lei-deve-sostenere-e-difendere-l-agricoltura-nel-mio-dipartimento",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -621,8 +622,8 @@ class ProposalSearchEngineIT
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve favorire i produttori locali per le mense e i pasti a casa.",
       slug = "c-e-bisogno-lui-lei-deve-favorire-i-produttori-locali-per-le-mense-e-i-pasti-a-casa",
-      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
-      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z")),
+      updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z"))),
       votes = Seq(
         IndexedVote(
           key = VoteKey.Agree,
@@ -1219,6 +1220,41 @@ class ProposalSearchEngineIT
         result.total should be(4)
       }
     }
+
+    scenario("search proposals by created date") {
+
+      val searchDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))
+      val queryBefore: SearchQuery = SearchQuery(
+        Some(SearchFilters(createdAt = Some(CreatedAtSearchFilter(before = Some(searchDate), after = None))))
+      )
+      val queryAfter: SearchQuery =
+        SearchQuery(Some(SearchFilters(createdAt = Some(CreatedAtSearchFilter(None, after = Some(searchDate))))))
+      val queryBeforeAfter: SearchQuery =
+        SearchQuery(
+          Some(
+            SearchFilters(
+              createdAt = Some(
+                CreatedAtSearchFilter(
+                  before = Some(searchDate.plus(3, ChronoUnit.DAYS)),
+                  after = Some(searchDate.minus(1, ChronoUnit.DAYS))
+                )
+              )
+            )
+          )
+        )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(queryBefore), Timeout(3.seconds)) { result =>
+        result.total should be(5)
+      }
+      whenReady(elasticsearchProposalAPI.searchProposals(queryAfter), Timeout(3.seconds)) { result =>
+        result.total should be(3)
+      }
+      whenReady(elasticsearchProposalAPI.searchProposals(queryBeforeAfter), Timeout(3.seconds)) { result =>
+        result.total should be(2)
+      }
+
+    }
+
   }
 
   feature("saving new proposal") {

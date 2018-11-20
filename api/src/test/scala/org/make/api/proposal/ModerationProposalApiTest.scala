@@ -19,6 +19,7 @@
 
 package org.make.api.proposal
 
+import java.time.ZonedDateTime
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -1138,6 +1139,38 @@ class ModerationProposalApiTest
         status should be(StatusCodes.BadRequest)
       }
     }
-
   }
+  feature("get proposals") {
+    scenario("get proposals by created at date") {
+      Given("an authenticated user with the moderator role")
+      When("the user search proposals using created before")
+      And("there is a proposal matching criterias")
+      Then("The return code should be 200")
+
+      val beforeDateString: String = "2017-06-04T01:01:01.123Z"
+      val beforeDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse(beforeDateString))
+
+      when(
+        proposalService.search(
+          any[Option[UserId]],
+          matches(
+            SearchQuery(
+              filters =
+                Some(SearchFilters(createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None))))
+            )
+          ),
+          any[RequestContext]
+        )
+      ).thenReturn(Future.successful(ProposalsSearchResult(total = 42, results = Seq.empty)))
+
+      Get(s"/moderation/proposals?createdBefore=$beforeDateString")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val results: ProposalsSearchResult = entityAs[ProposalsSearchResult]
+        results.total should be(42)
+      }
+
+    }
+  }
+
 }

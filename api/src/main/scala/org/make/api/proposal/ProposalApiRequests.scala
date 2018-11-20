@@ -19,6 +19,8 @@
 
 package org.make.api.proposal
 
+import java.time.ZonedDateTime
+
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
@@ -34,7 +36,7 @@ import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.make.core.{RequestContext, Validation}
+import org.make.core.{CirceFormatters, RequestContext, Validation}
 
 import scala.annotation.meta.field
 import scala.util.Random
@@ -192,7 +194,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          country: Option[Country] = None,
                                          sort: Option[SortRequest] = None,
                                          limit: Option[Int] = None,
-                                         skip: Option[Int] = None) {
+                                         skip: Option[Int] = None,
+                                         createdBefore: Option[ZonedDateTime] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val fuzziness = Fuzziness.Auto
     val filters: Option[SearchFilters] =
@@ -212,7 +215,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         toEnrich = toEnrich.map(ToEnrichSearchFilter.apply),
         minScore = minScore.map(MinScoreSearchFilter.apply),
         language = language.map(LanguageSearchFilter.apply),
-        country = country.map(CountrySearchFilter.apply)
+        country = country.map(CountrySearchFilter.apply),
+        createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None))
       )
 
     SearchQuery(
@@ -225,7 +229,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
   }
 }
 
-object ExhaustiveSearchRequest {
+object ExhaustiveSearchRequest extends CirceFormatters {
   implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
 }
 

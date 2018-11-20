@@ -19,9 +19,12 @@
 
 package org.make.api.proposal
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -30,6 +33,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.semantic.SimilarIdea
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
@@ -42,8 +46,9 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.proposal.{ProposalId, ProposalStatus}
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
@@ -52,9 +57,6 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import org.make.api.question.QuestionServiceComponent
-import org.make.core.question.{Question, QuestionId}
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -122,9 +124,9 @@ trait ModerationProposalApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),
@@ -423,6 +425,7 @@ trait DefaultModerationProposalApiComponent
               }
             }
           }
+
         }
       }
     }
@@ -513,9 +516,9 @@ trait DefaultModerationProposalApiComponent
                 parameters(
                   (
                     'proposalIds.as[immutable.Seq[ProposalId]].?,
+                    'createdBefore.as[ZonedDateTime].?,
                     'themesIds.as[immutable.Seq[ThemeId]].?,
                     'tagsIds.as[immutable.Seq[TagId]].?,
-                    'labelsIds.as[immutable.Seq[LabelId]].?,
                     'operationId.as[OperationId].?,
                     'questionId.as[QuestionId].?,
                     'ideaId.as[IdeaId].?,
@@ -537,9 +540,9 @@ trait DefaultModerationProposalApiComponent
                   )
                 ) {
                   (proposalIds: Option[Seq[ProposalId]],
+                   createdBefore: Option[ZonedDateTime],
                    themesIds: Option[Seq[ThemeId]],
                    tagsIds: Option[Seq[TagId]],
-                   labelsIds: Option[Seq[LabelId]],
                    operationId: Option[OperationId],
                    questionId: Option[QuestionId],
                    ideaId: Option[IdeaId],
@@ -609,7 +612,6 @@ trait DefaultModerationProposalApiComponent
                       proposalIds = proposalIds,
                       themesIds = themesIds,
                       tagsIds = tagsIds,
-                      labelsIds = labelsIds,
                       operationId = operationId,
                       questionId = questionId,
                       ideaId = ideaId,
@@ -624,14 +626,13 @@ trait DefaultModerationProposalApiComponent
                       country = country,
                       sort = sortRequest,
                       limit = limit,
-                      skip = skip
+                      skip = skip,
+                      createdBefore = createdBefore
                     )
+                    val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                     provideAsync(
-                      proposalService.search(
-                        userId = Some(userAuth.user.userId),
-                        query = exhaustiveSearchRequest.toSearchQuery(requestContext),
-                        requestContext = requestContext
-                      )
+                      proposalService
+                        .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
                     ) { proposals =>
                       complete(proposals)
                     }
