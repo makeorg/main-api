@@ -904,7 +904,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        idea = IdeaId("some-idea"),
+        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr
       )
 
@@ -952,7 +952,127 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = Some("This content must be changed"),
         labels = Seq(LabelId("action")),
         tags = Seq(TagId("some tag id")),
-        idea = IdeaId("idea-id"),
+        idea = Some(IdeaId("idea-id")),
+        question = questionOnTheme
+      )
+
+      Then("I should receive the updated proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+
+      response.proposalId should be(ProposalId("updateCommand"))
+      response.content should be("This content must be changed")
+      response.status should be(Accepted)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+      response.tags should be(Seq(TagId("some tag id")))
+      response.labels should be(Seq(LabelId("action")))
+      response.theme should be(questionOnTheme.themeId)
+      response.idea should be(Some(IdeaId("idea-id")))
+    }
+
+    scenario("Update a validated Proposal with no tags") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I accept the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq.empty,
+        tags = Seq(),
+        idea = Some(IdeaId("some-idea")),
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+
+      And("I update this Proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        moderator = UserId("some user"),
+        newContent = Some("This content must be changed"),
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = Some(IdeaId("idea-id")),
+        question = questionOnTheme
+      )
+
+      Then("I should receive the updated proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+
+      response.proposalId should be(ProposalId("updateCommand"))
+      response.content should be("This content must be changed")
+      response.status should be(Accepted)
+      response.author should be(mainUserId)
+      response.createdAt.isDefined should be(true)
+      response.updatedAt.isDefined should be(true)
+      response.tags should be(Seq(TagId("some tag id")))
+      response.labels should be(Seq(LabelId("action")))
+      response.theme should be(questionOnTheme.themeId)
+      response.idea should be(Some(IdeaId("idea-id")))
+    }
+
+    scenario("Update a validated Proposal with no idea") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I accept the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq.empty,
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+
+      And("I update this Proposal")
+      coordinator ! UpdateProposalCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        moderator = UserId("some user"),
+        newContent = Some("This content must be changed"),
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = Some(IdeaId("idea-id")),
         question = questionOnTheme
       )
 
@@ -997,7 +1117,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         newContent = None,
         labels = Seq.empty,
         tags = Seq.empty,
-        idea = IdeaId("some-idea"),
+        idea = Some(IdeaId("some-idea")),
         question = questionOnNothingFr
       )
 

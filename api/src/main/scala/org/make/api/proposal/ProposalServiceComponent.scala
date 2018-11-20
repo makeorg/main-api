@@ -88,7 +88,7 @@ trait ProposalService {
              question: Question,
              labels: Seq[LabelId],
              tags: Seq[TagId],
-             idea: IdeaId): Future[Option[ProposalResponse]]
+             idea: Option[IdeaId]): Future[Option[ProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
@@ -375,7 +375,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         question: Question,
                         labels: Seq[LabelId],
                         tags: Seq[TagId],
-                        idea: IdeaId): Future[Option[ProposalResponse]] = {
+                        idea: Option[IdeaId]): Future[Option[ProposalResponse]] = {
 
       val updatedProposal = {
         proposalCoordinatorService.update(

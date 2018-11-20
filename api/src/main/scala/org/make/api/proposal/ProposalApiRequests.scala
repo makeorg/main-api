@@ -59,16 +59,14 @@ object ProposeProposalRequest {
 }
 
 final case class UpdateProposalRequest(newContent: Option[String],
-                                       idea: IdeaId,
+                                       idea: Option[IdeaId],
                                        labels: Seq[LabelId],
                                        tags: Seq[TagId],
                                        // TODO: remove similarProposals once BO stops sending them
                                        similarProposals: Option[Seq[ProposalId]],
                                        questionId: Option[QuestionId],
                                        theme: Option[ThemeId],
-                                       operation: Option[OperationId]) {
-  validate(requireNonEmpty("tags", tags), requireNonEmpty("idea", idea.value))
-}
+                                       operation: Option[OperationId])
 
 object UpdateProposalRequest {
   implicit val decoder: Decoder[UpdateProposalRequest] = deriveDecoder[UpdateProposalRequest]
