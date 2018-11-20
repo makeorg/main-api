@@ -35,11 +35,13 @@ import org.make.core.sequence.SequenceId
 import scala.concurrent.Future
 
 case class SequenceConfiguration(sequenceId: SequenceId,
+                                 maxAvailableProposals: Int = 1000,
                                  newProposalsRatio: Double = 0.5,
                                  newProposalsVoteThreshold: Int = 100,
                                  testedProposalsEngagementThreshold: Double = 0.0,
                                  testedProposalsScoreThreshold: Double = 0.0,
                                  testedProposalsControversyThreshold: Double = 0.0,
+                                 testedProposalsMaxVotesThreshold: Int = 1500,
                                  banditEnabled: Boolean = false,
                                  banditMinCount: Int = 1,
                                  banditProposalsRatio: Double = 0.0,

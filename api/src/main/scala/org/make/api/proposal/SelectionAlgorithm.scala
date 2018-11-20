@@ -296,11 +296,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                               testedProposalCount: Int): Seq[Proposal] = {
 
       // sample long proposal list
-      val maxAvailableProposals = 1000
-      val availableProposals = if (availableProposalsSource.size < maxAvailableProposals) {
+      val availableProposals = if (availableProposalsSource.size < sequenceConfiguration.maxAvailableProposals) {
         availableProposalsSource
       } else {
-        val samplingRate: Float = maxAvailableProposals.toFloat / availableProposalsSource.size.toFloat
+        val samplingRate
+          : Float = sequenceConfiguration.maxAvailableProposals.toFloat / availableProposalsSource.size.toFloat
         availableProposalsSource.filter(_ => random.nextFloat() < samplingRate)
       }
 
@@ -311,6 +311,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         val scoreRate: Double = ProposalScorerHelper.scoreUpperBound(proposal)
         val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(proposal)
         (votes >= sequenceConfiguration.newProposalsVoteThreshold
+        && votes <= sequenceConfiguration.testedProposalsMaxVotesThreshold
         && engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold
         && (scoreRate > sequenceConfiguration.testedProposalsScoreThreshold
         || controversyRate > sequenceConfiguration.testedProposalsControversyThreshold))

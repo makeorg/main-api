@@ -85,11 +85,13 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               .into(PersistentSequenceConfiguration)
               .namedValues(
                 column.sequenceId -> sequenceConfig.sequenceId.value,
+                column.maxAvailableProposals -> sequenceConfig.maxAvailableProposals,
                 column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
                 column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
                 column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
                 column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
                 column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
+                column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
                 column.banditEnabled -> sequenceConfig.banditEnabled,
                 column.banditMinCount -> sequenceConfig.banditMinCount,
                 column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio,
@@ -110,11 +112,13 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
           withSQL {
             update(PersistentSequenceConfiguration)
               .set(
+                column.maxAvailableProposals -> sequenceConfig.maxAvailableProposals,
                 column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
                 column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
                 column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
                 column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
                 column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
+                column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
                 column.banditEnabled -> sequenceConfig.banditEnabled,
                 column.banditMinCount -> sequenceConfig.banditMinCount,
                 column.banditProposalsRatio -> sequenceConfig.banditProposalsRatio,
@@ -148,11 +152,13 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 object DefaultPersistentSequenceConfigurationServiceComponent {
 
   case class PersistentSequenceConfiguration(sequenceId: String,
+                                             maxAvailableProposals: Int,
                                              newProposalsRatio: Double,
                                              newProposalsVoteThreshold: Int,
                                              testedProposalsEngagementThreshold: Double,
                                              testedProposalsScoreThreshold: Double,
                                              testedProposalsControversyThreshold: Double,
+                                             testedProposalsMaxVotesThreshold: Int,
                                              banditEnabled: Boolean,
                                              banditMinCount: Int,
                                              banditProposalsRatio: Double,
@@ -165,11 +171,13 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     def toSequenceConfiguration: SequenceConfiguration =
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
+        maxAvailableProposals = maxAvailableProposals,
         newProposalsRatio = newProposalsRatio,
         newProposalsVoteThreshold = newProposalsVoteThreshold,
         testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
         testedProposalsScoreThreshold = testedProposalsScoreThreshold,
         testedProposalsControversyThreshold = testedProposalsControversyThreshold,
+        testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
         banditEnabled = banditEnabled,
         banditMinCount = banditMinCount,
         banditProposalsRatio = banditProposalsRatio,
@@ -188,11 +196,13 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     override val columnNames: Seq[String] =
       Seq(
         "sequence_id",
+        "max_available_proposals",
         "new_proposals_ratio",
         "new_proposals_vote_threshold",
         "tested_proposals_engagement_threshold",
         "tested_proposals_score_threshold",
         "tested_proposals_controversy_threshold",
+        "tested_proposals_max_votes_threshold",
         "bandit_enabled",
         "bandit_min_count",
         "bandit_proposals_ratio",
@@ -215,11 +225,13 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     )(resultSet: WrappedResultSet): PersistentSequenceConfiguration = {
       PersistentSequenceConfiguration.apply(
         sequenceId = resultSet.string(resultName.sequenceId),
+        maxAvailableProposals = resultSet.int(resultName.maxAvailableProposals),
         newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
         newProposalsVoteThreshold = resultSet.int(resultName.newProposalsVoteThreshold),
         testedProposalsEngagementThreshold = resultSet.double(resultName.testedProposalsEngagementThreshold),
         testedProposalsScoreThreshold = resultSet.double(resultName.testedProposalsScoreThreshold),
         testedProposalsControversyThreshold = resultSet.double(resultName.testedProposalsControversyThreshold),
+        testedProposalsMaxVotesThreshold = resultSet.int(resultName.testedProposalsMaxVotesThreshold),
         banditEnabled = resultSet.boolean(resultName.banditEnabled),
         banditMinCount = resultSet.int(resultName.banditMinCount),
         banditProposalsRatio = resultSet.double(resultName.banditProposalsRatio),
