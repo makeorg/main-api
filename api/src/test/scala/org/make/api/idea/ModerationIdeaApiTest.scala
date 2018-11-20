@@ -103,6 +103,7 @@ class ModerationIdeaApiTest
       ideaId = fooIdeaId,
       name = fooIdeaText,
       operationId = Some(OperationId("vff")),
+      questionId = Some(QuestionId("vff-fr-question")),
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now())
     )
@@ -179,6 +180,53 @@ class ModerationIdeaApiTest
     )
   )
 
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      ArgumentMatchers.eq(Some(QuestionId("vff-fr-question"))),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          questionId = QuestionId("vff-fr-question"),
+          slug = "vff-fr-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "??",
+          operationId = None,
+          themeId = Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))
+        )
+      )
+    )
+  )
+
+  when(
+    questionService.findQuestionByQuestionIdOrThemeOrOperation(
+      ArgumentMatchers.eq(Some(QuestionId("my-question-id"))),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.eq(None),
+      ArgumentMatchers.any[Country],
+      ArgumentMatchers.any[Language]
+    )
+  ).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          questionId = QuestionId("my-question-id"),
+          slug = "my-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "to be or not to be ?",
+          operationId = None,
+          themeId = None
+        )
+      )
+    )
+  )
   when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
     .thenReturn(Future.successful(IdeaSearchResult.empty))
 
@@ -188,9 +236,14 @@ class ModerationIdeaApiTest
   when(ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(1))
 
-  when(ideaService.fetchOneByName(ArgumentMatchers.eq(fooIdeaText))).thenReturn(Future.successful(None))
-  when(ideaService.fetchOneByName(ArgumentMatchers.eq(barIdeaText))).thenReturn(Future.successful(None))
-  when(ideaService.fetchOneByName(ArgumentMatchers.eq(otherIdeaText))).thenReturn(Future.successful(Some(otherIdea)))
+  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(fooIdeaText)))
+    .thenReturn(Future.successful(None))
+  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(barIdeaText)))
+    .thenReturn(Future.successful(None))
+  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(otherIdeaText)))
+    .thenReturn(Future.successful(Some(otherIdea)))
+  when(ideaService.fetchOne(ArgumentMatchers.eq(fooIdeaId)))
+    .thenReturn(Future.successful(Some(fooIdea)))
 
   val routes: Route = sealRoute(ideaRoutes)
 
@@ -272,6 +325,22 @@ class ModerationIdeaApiTest
             ContentTypes.`application/json`,
             s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "language": "fr", "country": "FR"}"""
           )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Created)
+        val idea: Idea = entityAs[Idea]
+        idea.ideaId.value should be(fooIdeaId.value)
+      }
+    }
+
+    scenario("authenticated admin with questionId") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create an idea with an questionId")
+      Then("the idea should be saved if valid")
+
+      Post("/moderation/ideas")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "questionId": "my-question-id"}""")
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)

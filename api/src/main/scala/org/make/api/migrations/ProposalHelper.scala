@@ -127,7 +127,7 @@ trait ProposalHelper {
   }
 
   def getOrCreateIdea(api: MakeApi, name: String, question: Question): Future[Idea] = {
-    api.ideaService.fetchOneByName(name).flatMap {
+    api.ideaService.fetchOneByName(question.questionId, name).flatMap {
       case Some(idea) => Future.successful(idea)
       case None =>
         api.ideaService.insert(name, question)
