@@ -25,6 +25,7 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
+import org.make.core.question.QuestionId
 import org.make.core.reference.ThemeId
 import org.make.core.sequence._
 
@@ -145,9 +146,10 @@ final case class SequenceConfigurationRequest(newProposalsRatio: Double,
                                               ideaCompetitionTargetCount: Int,
                                               ideaCompetitionControversialRatio: Double,
                                               ideaCompetitionControversialCount: Int) {
-  def toSequenceConfiguration(sequenceId: SequenceId): SequenceConfiguration = {
+  def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
     SequenceConfiguration(
       sequenceId = sequenceId,
+      questionId = questionId,
       newProposalsRatio = newProposalsRatio,
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,

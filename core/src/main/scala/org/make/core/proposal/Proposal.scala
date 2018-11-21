@@ -171,7 +171,13 @@ object QualificationKey extends StrictLogging {
   case object DoNotCare extends QualificationKey { override val shortName: String = "doNotCare" }
 }
 
-final case class Qualification(key: QualificationKey, count: Int = 0)
+trait BaseQualification {
+  def key: QualificationKey
+  def count: Int
+}
+
+final case class Qualification(override val key: QualificationKey, override val count: Int = 0)
+    extends BaseQualification
 
 object Qualification {
   implicit val encoder: ObjectEncoder[Qualification] = deriveEncoder[Qualification]
@@ -182,7 +188,16 @@ object Qualification {
 
 }
 
-final case class Vote(key: VoteKey, count: Int = 0, qualifications: Seq[Qualification])
+trait BaseVote {
+  def key: VoteKey
+  def count: Int = 0
+  def qualifications: Seq[BaseQualification]
+}
+
+final case class Vote(override val key: VoteKey,
+                      override val count: Int = 0,
+                      override val qualifications: Seq[Qualification])
+    extends BaseVote
 
 object Vote {
   implicit val encoder: ObjectEncoder[Vote] = deriveEncoder[Vote]

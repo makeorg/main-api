@@ -25,6 +25,7 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import org.make.api.MakeApiTestBase
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
@@ -43,6 +44,8 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
+import scala.concurrent.duration._
+import akka.testkit.TestDuration
 
 import scala.concurrent.Future
 
@@ -64,6 +67,8 @@ class SequenceApiTest
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
   val mainUpdatedAt: Option[ZonedDateTime] = Some(DateHelper.now())
+
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   when(themeService.findAll()).thenReturn(
     Future.successful(
@@ -316,7 +321,13 @@ class SequenceApiTest
 
   when(
     sequenceService
-      .startNewSequence(any[Option[UserId]], matches("start-sequence"), any[Seq[ProposalId]], any[RequestContext])
+      .startNewSequence(
+        any[Option[UserId]],
+        matches("start-sequence"),
+        any[Seq[ProposalId]],
+        any[Option[Seq[TagId]]],
+        any[RequestContext]
+      )
   ).thenReturn(
     Future.successful(
       Some(
@@ -335,6 +346,7 @@ class SequenceApiTest
       any[Option[UserId]],
       ArgumentMatchers.eq(SequenceId("start-sequence-by-id")),
       any[Seq[ProposalId]],
+      any[Option[Seq[TagId]]],
       any[RequestContext]
     )
   ).thenReturn(
@@ -355,6 +367,7 @@ class SequenceApiTest
       any[Option[UserId]],
       ArgumentMatchers.eq(SequenceId("non-existing-sequence")),
       any[Seq[ProposalId]],
+      any[Option[Seq[TagId]]],
       any[RequestContext]
     )
   ).thenReturn(Future.successful(None))
@@ -367,6 +380,7 @@ class SequenceApiTest
       Some(
         SequenceConfiguration(
           sequenceId = SequenceId("mySequence"),
+          questionId = QuestionId("myQuestion"),
           newProposalsRatio = 0.5,
           newProposalsVoteThreshold = 100,
           testedProposalsEngagementThreshold = 0.8,
@@ -685,7 +699,7 @@ class SequenceApiTest
 
   feature("set sequence configuration") {
     scenario("set sequence config as user") {
-      Put("/moderation/sequences/mySequence/configuration")
+      Put("/moderation/sequences/mySequence/myQuestion/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -693,7 +707,7 @@ class SequenceApiTest
     }
 
     scenario("set sequence config as moderator") {
-      Put("/moderation/sequences/mySequence/configuration")
+      Put("/moderation/sequences/mySequence/myQuestion/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)

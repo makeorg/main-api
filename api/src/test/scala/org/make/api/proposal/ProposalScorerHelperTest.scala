@@ -117,39 +117,41 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("count vote by voteKey") {
     scenario("count vote when proposal has no vote") {
-      ProposalScorerHelper.voteCounts(proposalWithoutvote, VoteKey.Neutral) should be(0)
+      ProposalScorerHelper.voteCounts(proposalWithoutvote.votes, VoteKey.Neutral) should be(0)
     }
 
     scenario("count vote when proposal has vote") {
-      ProposalScorerHelper.voteCounts(proposalWithVote, VoteKey.Neutral) should be(20)
+      ProposalScorerHelper.voteCounts(proposalWithVote.votes, VoteKey.Neutral) should be(20)
     }
   }
 
   feature("count qualification by voteKey and qualification key") {
     scenario("count qualification when proposal has no vote") {
-      ProposalScorerHelper.qualificationCounts(proposalWithoutvote, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
+      ProposalScorerHelper.qualificationCounts(proposalWithoutvote.votes, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
         0
       )
     }
 
     scenario("count vote when proposal has vote and qualification") {
-      ProposalScorerHelper.qualificationCounts(proposalWithVoteandQualification, VoteKey.Agree, QualificationKey.LikeIt) should be(
-        10
-      )
+      ProposalScorerHelper.qualificationCounts(
+        proposalWithVoteandQualification.votes,
+        VoteKey.Agree,
+        QualificationKey.LikeIt
+      ) should be(10)
     }
   }
 
   feature("count score of a proposal") {
     scenario("return a ScoreCounts object") {
-      ProposalScorerHelper.scoreCounts(proposalWithVoteandQualification) shouldBe a[ScoreCounts]
+      ProposalScorerHelper.scoreCounts(proposalWithVoteandQualification.votes) shouldBe a[ScoreCounts]
     }
   }
 
   feature("calculate engagement") {
     scenario("calculate engagement from proposal") {
-      ProposalScorerHelper.engagement(proposalWithoutvote) should equal(0.66 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVote) should equal(0.03 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVoteandQualification) should equal(-1.75 +- 0.01)
+      ProposalScorerHelper.engagement(proposalWithoutvote.votes) should equal(0.66 +- 0.01)
+      ProposalScorerHelper.engagement(proposalWithVote.votes) should equal(0.03 +- 0.01)
+      ProposalScorerHelper.engagement(proposalWithVoteandQualification.votes) should equal(-1.75 +- 0.01)
     }
 
     scenario("calculate engagement from count score") {
@@ -159,9 +161,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate adhesion") {
     scenario("calculate adhesion from proposal") {
-      ProposalScorerHelper.adhesion(proposalWithoutvote) should equal(0.0)
-      ProposalScorerHelper.adhesion(proposalWithVote) should equal(0.0)
-      ProposalScorerHelper.adhesion(proposalWithVoteandQualification) should equal(0.9 +- 0.01)
+      ProposalScorerHelper.adhesion(proposalWithoutvote.votes) should equal(0.0)
+      ProposalScorerHelper.adhesion(proposalWithVote.votes) should equal(0.0)
+      ProposalScorerHelper.adhesion(proposalWithVoteandQualification.votes) should equal(0.9 +- 0.01)
     }
 
     scenario("calculate adhesion from count score") {
@@ -171,9 +173,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate realistic") {
     scenario("calculate realistic from proposal") {
-      ProposalScorerHelper.realistic(proposalWithoutvote) should equal(0.0)
-      ProposalScorerHelper.realistic(proposalWithVote) should equal(0.0)
-      ProposalScorerHelper.realistic(proposalWithVoteandQualification) should equal(1.81 +- 0.01)
+      ProposalScorerHelper.realistic(proposalWithoutvote.votes) should equal(0.0)
+      ProposalScorerHelper.realistic(proposalWithVote.votes) should equal(0.0)
+      ProposalScorerHelper.realistic(proposalWithVoteandQualification.votes) should equal(1.81 +- 0.01)
     }
 
     scenario("calculate realistic from count score") {
@@ -183,9 +185,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate topScore") {
     scenario("calculate topScore from proposal") {
-      ProposalScorerHelper.topScore(proposalWithoutvote) should equal(0.66 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVote) should equal(0.03 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVoteandQualification) should equal(2.78 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithoutvote.votes) should equal(0.66 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithVote.votes) should equal(0.03 +- 0.01)
+      ProposalScorerHelper.topScore(proposalWithVoteandQualification.votes) should equal(2.78 +- 0.01)
     }
 
     scenario("calculate topScore from count score") {
@@ -195,9 +197,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate controversy") {
     scenario("calculate controversy from proposal") {
-      ProposalScorerHelper.controversy(proposalWithoutvote) should equal(0.01 +- 0.01)
-      ProposalScorerHelper.controversy(proposalWithVote) should equal(0.01 +- 0.01)
-      //ProposalScorerHelper.controversy(proposalWithVoteandQualification) should equal(0.0009 +- 0.01)
+      ProposalScorerHelper.controversy(proposalWithoutvote.votes) should equal(0.01 +- 0.01)
+      ProposalScorerHelper.controversy(proposalWithVote.votes) should equal(0.01 +- 0.01)
+      //ProposalScorerHelper.controversy(proposalWithVoteandQualification.votes) should equal(0.0009 +- 0.01)
     }
 
     scenario("calculate controversy from count score") {
@@ -207,9 +209,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("calculate rejection") {
     scenario("calculate rejection from proposal") {
-      ProposalScorerHelper.rejection(proposalWithoutvote) should equal(0.0)
-      ProposalScorerHelper.rejection(proposalWithVote) should equal(0.0)
-      ProposalScorerHelper.rejection(proposalWithVoteandQualification) should equal(-0.9 +- 0.01)
+      ProposalScorerHelper.rejection(proposalWithoutvote.votes) should equal(0.0)
+      ProposalScorerHelper.rejection(proposalWithVote.votes) should equal(0.0)
+      ProposalScorerHelper.rejection(proposalWithVoteandQualification.votes) should equal(-0.9 +- 0.01)
     }
 
     scenario("calculate rejection from count score") {

@@ -31,12 +31,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.semantic.{SemanticComponent, SemanticService}
-import org.make.api.sequence.{
-  SequenceCoordinatorService,
-  SequenceCoordinatorServiceComponent,
-  SequenceSearchEngine,
-  SequenceSearchEngineComponent
-}
+import org.make.api.sequence._
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
@@ -95,7 +90,8 @@ class IndexationComponentTest
   override val semanticService: SemanticService = mock[SemanticService]
   override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  override def userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
+  override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
+  override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
 
   override val tagService: TagService = mock[TagService]
 

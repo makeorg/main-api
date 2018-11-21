@@ -169,7 +169,8 @@ class DefaultProposalServiceComponentTest
       tags = Seq.empty,
       ideaId = None,
       operationId = None,
-      questionId = None
+      questionId = None,
+      sequencePool = SequencePool.New
     )
   }
 

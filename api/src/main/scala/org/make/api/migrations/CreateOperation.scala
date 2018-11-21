@@ -24,7 +24,7 @@ import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
-import org.make.api.sequence.SequenceResponse
+import org.make.api.sequence.{SequenceConfiguration, SequenceResponse}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 
@@ -55,7 +55,8 @@ object CreateOperation {
                                         tags: Seq[TagId],
                                         title: String,
                                         startDate: LocalDate,
-                                        endDate: Option[LocalDate])
+                                        endDate: Option[LocalDate],
+                                        sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default)
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 

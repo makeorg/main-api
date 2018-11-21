@@ -27,7 +27,12 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.{SemanticComponent, SemanticService}
-import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
+import org.make.api.sequence.{
+  SequenceConfigurationComponent,
+  SequenceConfigurationService,
+  SequenceService,
+  SequenceServiceComponent
+}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ProposalIndexationStream
@@ -46,7 +51,8 @@ class ProposalConsumerActor(sequenceService: SequenceService,
                             override val organisationService: OrganisationService,
                             override val tagService: TagService,
                             override val semanticService: SemanticService,
-                            override val elasticsearchProposalAPI: ProposalSearchEngine)
+                            override val elasticsearchProposalAPI: ProposalSearchEngine,
+                            override val sequenceConfigurationService: SequenceConfigurationService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with ActorLogging
@@ -138,6 +144,7 @@ object ProposalConsumerActor {
       with SemanticComponent
       with ProposalSearchEngineComponent
       with ProposalIndexerServiceComponent
+      with SequenceConfigurationComponent
 
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             dependencies: ProposalConsumerActorDependencies): Props =
@@ -151,7 +158,8 @@ object ProposalConsumerActor {
         dependencies.organisationService,
         dependencies.tagService,
         dependencies.semanticService,
-        dependencies.elasticsearchProposalAPI
+        dependencies.elasticsearchProposalAPI,
+        dependencies.sequenceConfigurationService
       )
     )
   val name: String = "proposal-consumer"

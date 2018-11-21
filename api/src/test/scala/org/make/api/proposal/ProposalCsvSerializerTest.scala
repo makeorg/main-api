@@ -120,7 +120,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      questionId = None
+      questionId = None,
+      sequencePool = SequencePool.Tested
     ),
     IndexedProposal(
       id = ProposalId("22222222-2222-2222-2222-222222222222"),
@@ -180,7 +181,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = Some(operation.operationId),
-      questionId = None
+      questionId = None,
+      sequencePool = SequencePool.Tested
     )
   )
 

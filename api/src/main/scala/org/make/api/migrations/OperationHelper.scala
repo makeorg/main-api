@@ -27,7 +27,7 @@ import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
 import org.make.api.sequence.CreateSequenceCommand
 import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationTranslation}
-import org.make.core.question.Question
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Language
 import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.tag.{TagDisplay, TagType}
@@ -50,6 +50,7 @@ trait OperationHelper {
                                   countryConfiguration: CountryConfiguration): Future[Unit] = {
 
     implicit val timeout: Timeout = Timeout(20.seconds)
+    val questionId: QuestionId = api.idGenerator.nextQuestionId()
 
     (
       api.sequenceCoordinator ? CreateSequenceCommand(
@@ -66,7 +67,7 @@ trait OperationHelper {
     ).flatMap { _ =>
       api.persistentQuestionService.persist(
         Question(
-          questionId = api.idGenerator.nextQuestionId(),
+          questionId = questionId,
           country = countryConfiguration.country,
           slug = countryConfiguration.slug,
           language = countryConfiguration.language,
@@ -88,7 +89,14 @@ trait OperationHelper {
           )
           .map(_ => ())
       }
-    }.map(_ => ())
+    }.flatMap { _ =>
+      api.persistentSequenceConfigurationService
+        .persist(
+          countryConfiguration.sequenceConfiguration
+            .copy(sequenceId = configuration.landingSequenceId, questionId = questionId)
+        )
+        .map(_ => ())
+    }
   }
 
   def createOperation(api: MakeApi,

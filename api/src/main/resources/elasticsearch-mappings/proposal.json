@@ -434,6 +434,10 @@
         "operationId": {
           "type": "keyword",
           "index": true
+        },
+        "sequencePool": {
+          "type": "keyword",
+          "index": true
         }
       }
     }
