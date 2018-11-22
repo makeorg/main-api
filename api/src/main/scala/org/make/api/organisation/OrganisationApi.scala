@@ -20,6 +20,8 @@
 package org.make.api.organisation
 
 import akka.http.scaladsl.server.{PathMatcher1, Route}
+import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -34,6 +36,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Sort
 import org.make.core.proposal._
 import org.make.core.user.UserId
 import org.make.core.user.indexed.OrganisationSearchResult
@@ -108,22 +111,30 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
       path("organisations" / organisationId / "proposals") { organisationId =>
         makeOperation("GetOrganisationProposals") { requestContext =>
           optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              provideAsync(
-                operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-              ) { operations =>
+            parameters(('sort.?, 'order.as[SortOrder].?)) { (sort: Option[String], order: Option[SortOrder]) =>
+              provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                 provideAsync(
-                  proposalService.searchForUser(
-                    optionalUserAuth.map(_.user.userId),
-                    SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId))))),
-                    requestContext
-                  )
-                ) { listProposals =>
-                  listProposals.copy(results = listProposals.results.filterNot { proposal =>
-                    proposal.operationId
-                      .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                  })
-                  complete(listProposals)
+                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                ) { operations =>
+                  val defaultSort = Some("createdAt")
+                  val defaultOrder = Some(Desc)
+                  provideAsync(
+                    proposalService.searchForUser(
+                      optionalUserAuth.map(_.user.userId),
+                      SearchQuery(
+                        filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId)))),
+                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder)))
+                      ),
+                      requestContext
+                    )
+                  ) { listProposals =>
+                    val proposalListFiltered = listProposals.results.filter { proposal =>
+                      proposal.operationId
+                        .exists(operationId => operations.map(_.operationId).contains(operationId))
+                    }
+                    val result = listProposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                    complete(result)
+                  }
                 }
               }
             }
@@ -171,11 +182,12 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
                         requestContext = requestContext
                       )
                     ) { proposals =>
-                      proposals.copy(results = proposals.results.filterNot { proposalWithVote =>
+                      val proposalListFiltered = proposals.results.filter { proposalWithVote =>
                         proposalWithVote.proposal.operationId
-                          .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                      })
-                      complete(proposals)
+                          .exists(operationId => operations.map(_.operationId).contains(operationId))
+                      }
+                      val result = proposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                      complete(result)
                     }
                   }
               }

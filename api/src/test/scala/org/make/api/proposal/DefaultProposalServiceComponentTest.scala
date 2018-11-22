@@ -19,6 +19,8 @@
 
 package org.make.api.proposal
 
+import java.time.ZonedDateTime
+
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
@@ -34,6 +36,8 @@ import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.operation.OperationId
+import org.make.core.proposal.QualificationKey.LikeIt
+import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
@@ -586,7 +590,7 @@ class DefaultProposalServiceComponentTest
     }
   }
 
-  feature("search proposals by user") {
+  feature("search proposals voted by user") {
 
     val paul: User = user(UserId("paul-user-id"))
     scenario("user has no votes on the proposals") {
@@ -596,6 +600,10 @@ class DefaultProposalServiceComponentTest
             .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(userId = paul.userId)))
         )
         .thenReturn(Future.successful(Seq.empty))
+
+      Mockito
+        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
+        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       whenReady(
         proposalService.searchProposalsVotedByUser(
@@ -624,23 +632,26 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
       Mockito
         .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-
-      Mockito
-        .when(
-          elasticsearchProposalAPI.searchProposals(
-            ArgumentMatchers.eq(
-              SearchQuery(
-                filters = Some(
-                  SearchFilters(
-                    proposal = Some(ProposalSearchFilter(proposalIds = Seq(gilProposal1.id, gilProposal2.id)))
-                  )
-                )
+        .thenReturn(
+          Future.successful(
+            Map(
+              gilProposal2.id -> VoteAndQualifications(
+                Agree,
+                Seq(LikeIt),
+                ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
+              ),
+              gilProposal1.id -> VoteAndQualifications(
+                Agree,
+                Seq(LikeIt),
+                ZonedDateTime.parse("2018-03-02T16:09:30.441Z")
               )
             )
           )
         )
-        .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal1, gilProposal2))))
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(ArgumentMatchers.any[SearchQuery]))
+        .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal2, gilProposal1))))
 
       whenReady(
         proposalService.searchProposalsVotedByUser(

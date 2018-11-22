@@ -22,11 +22,7 @@ package org.make.api.organisation
 import com.github.t3hnar.bcrypt._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
-import org.make.api.proposal.{
-  ProposalResultWithUserVote,
-  ProposalServiceComponent,
-  ProposalsResultWithUserVoteSeededResponse
-}
+import org.make.api.proposal._
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -340,19 +336,29 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         case proposalIdsWithVotes if proposalIdsWithVotes.isEmpty =>
           Future.successful(ProposalsResultWithUserVoteSeededResponse(total = 0, Seq.empty, None))
         case proposalIdsWithVotes =>
-          val proposalIds: Seq[ProposalId] = proposalIdsWithVotes.map {
+          val proposalIds: Seq[ProposalId] = proposalIdsWithVotes.toSeq.sortWith {
+            case ((_, firstVotesAndQualifications), (_, nextVotesAndQualifications)) =>
+              firstVotesAndQualifications.date.isAfter(nextVotesAndQualifications.date)
+          }.map {
             case (proposalId, _) => proposalId
-          }.toSeq
+          }
           proposalService
             .searchForUser(
-              userId = maybeUserId,
-              query = SearchQuery(Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds))))),
+              userId = Some(organisationId),
+              query = SearchQuery(
+                filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
+              ),
               requestContext = requestContext
             )
+            .map { proposalResultSeededResponse =>
+              proposalResultSeededResponse.results.sortWith {
+                case (first, next) => proposalIds.indexOf(first.id) < proposalIds.indexOf(next.id)
+              }
+            }
             .map { results =>
               ProposalsResultWithUserVoteSeededResponse(
-                total = results.total,
-                results = results.results.map { proposal =>
+                total = results.size,
+                results = results.map { proposal =>
                   val proposalVoteAndQualification = proposalIdsWithVotes(proposal.id)
                   ProposalResultWithUserVote(
                     proposal,
@@ -360,7 +366,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                     proposalVoteAndQualification.date
                   )
                 },
-                seed = results.seed
+                seed = None
               )
             }
       }

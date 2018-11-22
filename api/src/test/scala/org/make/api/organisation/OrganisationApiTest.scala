@@ -32,6 +32,7 @@ import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -136,7 +137,7 @@ class OrganisationApiTest
           avatarUrl = None
         ),
         organisations = Seq.empty,
-        themeId = Some(ThemeId("foo-theme")),
+        themeId = None,
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("idea-id")),
@@ -166,11 +167,71 @@ class OrganisationApiTest
           avatarUrl = None
         ),
         organisations = Seq.empty,
-        themeId = Some(ThemeId("bar-theme")),
+        themeId = None,
         tags = Seq.empty,
         status = ProposalStatus.Accepted,
         idea = Some(IdeaId("other-idea-id")),
         operationId = Some(OperationId("operation1")),
+        myProposal = false,
+        questionId = None
+      ),
+      ProposalResult(
+        id = ProposalId("proposal-3"),
+        country = Country("FR"),
+        language = Language("fr"),
+        userId = UserId("make-org"),
+        content = "blablabla",
+        slug = "blablabla",
+        createdAt = ZonedDateTime.now(),
+        updatedAt = Some(ZonedDateTime.now()),
+        votes = Seq.empty,
+        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        trending = None,
+        labels = Seq.empty,
+        author = Author(
+          firstName = None,
+          organisationName = None,
+          organisationSlug = None,
+          postalCode = None,
+          age = None,
+          avatarUrl = None
+        ),
+        organisations = Seq.empty,
+        themeId = None,
+        tags = Seq.empty,
+        status = ProposalStatus.Accepted,
+        idea = Some(IdeaId("other-idea-id")),
+        operationId = Some(OperationId("operation2")),
+        myProposal = false,
+        questionId = None
+      ),
+      ProposalResult(
+        id = ProposalId("proposal-4"),
+        country = Country("FR"),
+        language = Language("fr"),
+        userId = UserId("make-org"),
+        content = "blablabla",
+        slug = "blablabla",
+        createdAt = ZonedDateTime.now(),
+        updatedAt = Some(ZonedDateTime.now()),
+        votes = Seq.empty,
+        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        trending = None,
+        labels = Seq.empty,
+        author = Author(
+          firstName = None,
+          organisationName = None,
+          organisationSlug = None,
+          postalCode = None,
+          age = None,
+          avatarUrl = None
+        ),
+        organisations = Seq.empty,
+        themeId = Some(ThemeId("bar-theme")),
+        tags = Seq.empty,
+        status = ProposalStatus.Accepted,
+        idea = Some(IdeaId("other-idea-id")),
+        operationId = None,
         myProposal = false,
         questionId = None
       )
@@ -274,6 +335,8 @@ class OrganisationApiTest
         proposalsSearchResult.results.size shouldBe 2
         proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
         proposalsSearchResult.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
+        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-3")) shouldBe false
+        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-4")) shouldBe false
       }
     }
 
@@ -286,11 +349,23 @@ class OrganisationApiTest
         proposalsResultSeededResponse.results.size shouldBe 2
         proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
         proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
+        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-3")) shouldBe false
+        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-4")) shouldBe false
       }
     }
   }
 
   feature("get votes of an organisation") {
+
+    val proposalListWithVote = ProposalsResultWithUserVoteSeededResponse(
+      total = proposalsList.total,
+      results = proposalsList.results.map(
+        proposalResult =>
+          ProposalResultWithUserVote(proposal = proposalResult, vote = Agree, voteDate = DateHelper.now())
+      ),
+      seed = None
+    )
+
     Mockito
       .when(
         organisationService.getVotedProposals(
@@ -301,12 +376,18 @@ class OrganisationApiTest
           ArgumentMatchers.any[RequestContext]
         )
       )
-      .thenReturn(Future.successful(ProposalsResultWithUserVoteSeededResponse(2, Seq.empty, None)))
+      .thenReturn(Future.successful(proposalListWithVote))
+
     scenario("get proposals voted from existing organisation unauthenticated") {
       Get("/organisations/make-org/votes") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val votedProposals: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        val votedProposals: ProposalsResultWithUserVoteSeededResponse =
+          entityAs[ProposalsResultWithUserVoteSeededResponse]
         votedProposals.total should be(2)
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-1")) shouldBe true
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-2")) shouldBe true
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-3")) shouldBe false
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-4")) shouldBe false
       }
     }
 
@@ -314,8 +395,13 @@ class OrganisationApiTest
       Get("/organisations/make-org/votes")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val votedProposals: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        val votedProposals: ProposalsResultWithUserVoteSeededResponse =
+          entityAs[ProposalsResultWithUserVoteSeededResponse]
         votedProposals.total should be(2)
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-1")) shouldBe true
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-2")) shouldBe true
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-3")) shouldBe false
+        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-4")) shouldBe false
       }
     }
 
