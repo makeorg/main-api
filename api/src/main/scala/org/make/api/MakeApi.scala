@@ -25,8 +25,6 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
-import org.mdedetrich.akka.http.support.CirceHttpSupport
-import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
@@ -69,12 +67,13 @@ import org.make.api.technical.healthcheck.{
   HealthCheckComponent,
   HealthCheckSupervisor
 }
+import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.storage.{
   DefaultStorageConfigurationComponent,
   DefaultStorageServiceComponent,
   DefaultSwiftClientComponent
 }
-import org.make.api.technical.tracking.TrackingApi
+import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -86,6 +85,8 @@ import org.make.api.userhistory.{
 }
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
+import org.mdedetrich.akka.http.support.CirceHttpSupport
+import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
 import scalaoauth2.provider._
 
 import scala.concurrent.Await
@@ -146,6 +147,7 @@ trait MakeApi
     with DefaultStorageConfigurationComponent
     with DefaultQuestionApiComponent
     with DefaultModerationQuestionComponent
+    with DefaultMonitoringService
     with DefaultModerationOperationOfQuestionApiComponent
     with ProposalCoordinatorComponent
     with UserHistoryCoordinatorComponent
@@ -166,7 +168,7 @@ trait MakeApi
     with DefaultModerationTagApiComponent
     with ModerationTagTypeApi
     with DefaultModerationIdeaApiComponent
-    with TrackingApi
+    with DefaultTrackingApiComponent
     with DefaultMigrationApiComponent
     with HealthCheckApi
     with DefaultModerationOperationApiComponent
@@ -296,7 +298,7 @@ trait MakeApi
       moderationIdeaApi.routes ~
       operationApi.routes ~
       moderationOperationApi.routes ~
-      trackingRoutes ~
+      trackingApi.routes ~
       migrationApi.routes ~
       healthCheckRoutes ~
       moderationOrganisationRoutes ~
