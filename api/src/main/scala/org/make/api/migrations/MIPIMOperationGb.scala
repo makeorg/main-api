@@ -1,0 +1,148 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package org.make.api.migrations
+
+import java.time.LocalDate
+import java.util.concurrent.Executors
+
+import akka.pattern.ask
+import akka.util.Timeout
+import cats.data.OptionT
+import cats.implicits._
+import org.make.api.MakeApi
+import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.sequence.CreateSequenceCommand
+import org.make.core.{RequestContext, SlugHelper}
+import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationId, OperationTranslation}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.user.UserId
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+
+object MIPIMOperationGb extends Migration {
+  implicit val executor: ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
+
+  override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
+
+  val emptyContext: RequestContext = RequestContext.empty
+  val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
+
+  val countryConfiguration: CountryConfiguration =
+    CountryConfiguration(
+      country = Country("GB"),
+      language = Language("en"),
+      slug = "cityoftomorrow",
+      title = "How can we plan the city of tomorrow ?",
+      startDate = LocalDate.parse("2018-11-26"),
+      endDate = Some(LocalDate.parse("2018-12-31")),
+      tags = Seq.empty
+    )
+
+  def updateOperation(api: MakeApi,
+                      operation: Operation,
+                      sequenceId: SequenceId,
+                      questionId: QuestionId): Future[Option[OperationId]] = {
+    val countryConfigurations: Seq[OperationCountryConfiguration] =
+      operation.countriesConfiguration ++ Seq(
+        OperationCountryConfiguration(
+          countryCode = countryConfiguration.country,
+          tagIds = Seq.empty,
+          landingSequenceId = sequenceId,
+          startDate = Some(countryConfiguration.startDate),
+          endDate = countryConfiguration.endDate,
+          questionId = Some(questionId)
+        )
+      )
+    val translations = operation.translations ++ Seq(
+      OperationTranslation(title = countryConfiguration.title, language = countryConfiguration.language)
+    )
+
+    api.operationService.update(
+      operation.operationId,
+      moderatorId,
+      countriesConfiguration = Some(countryConfigurations),
+      translations = Some(translations)
+    )
+  }
+
+  def createSequence(api: MakeApi,
+                     operationId: OperationId,
+                     countryConfiguration: CountryConfiguration): Future[Option[SequenceId]] = {
+
+    implicit val timeout: Timeout = Timeout(20.seconds)
+
+    val landingSequenceId = api.idGenerator.nextSequenceId()
+
+    (api.sequenceCoordinator ? CreateSequenceCommand(
+      sequenceId = landingSequenceId,
+      title = countryConfiguration.title,
+      slug = SlugHelper(countryConfiguration.title),
+      themeIds = Seq.empty,
+      operationId = Some(operationId),
+      requestContext = emptyContext,
+      moderatorId = moderatorId,
+      status = SequenceStatus.Published,
+      searchable = false
+    )).map(_ => Some(landingSequenceId))
+  }
+
+  def createQuestion(api: MakeApi,
+                     operationId: OperationId,
+                     countryConfiguration: CountryConfiguration): Future[Option[Question]] = {
+    api.persistentQuestionService
+      .persist(
+        Question(
+          questionId = api.idGenerator.nextQuestionId(),
+          country = countryConfiguration.country,
+          slug = countryConfiguration.slug,
+          language = countryConfiguration.language,
+          question = countryConfiguration.title,
+          operationId = Some(operationId),
+          themeId = None
+        )
+      )
+      .map(question => Some(question))
+  }
+
+  override def migrate(api: MakeApi): Future[Unit] = {
+
+    api.operationService.findOneBySlug(MIPIMOperation.operationSlug).flatMap { maybeOperation =>
+      if (maybeOperation.forall(_.countriesConfiguration.forall(_.countryCode.value != "GB"))) {
+        val updatedOperation: OptionT[Future, OperationId] = for {
+          mipimOperation   <- OptionT(Future.successful(maybeOperation))
+          sequenceId       <- OptionT(createSequence(api, mipimOperation.operationId, countryConfiguration))
+          question         <- OptionT(createQuestion(api, mipimOperation.operationId, countryConfiguration))
+          updatedOperation <- OptionT(updateOperation(api, mipimOperation, sequenceId, question.questionId))
+        } yield updatedOperation
+
+        updatedOperation.value.map(_ => ())
+      } else {
+        Future.successful {}
+      }
+    }
+  }
+
+  override val runInProduction: Boolean = true
+
+}
