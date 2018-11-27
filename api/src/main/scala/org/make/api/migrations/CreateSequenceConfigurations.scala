@@ -28,13 +28,16 @@ object CreateSequenceConfigurations extends Migration {
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
   override def migrate(api: MakeApi): Future[Unit] = {
     api.operationService.find(None, None, None, None).flatMap { operations =>
-      sequentially(operations.flatMap(_.countriesConfiguration)) { question =>
-        api.persistentSequenceConfigurationService.findOne(question.landingSequenceId).flatMap {
+      sequentially(operations.flatMap(_.questions)) { question =>
+        api.persistentSequenceConfigurationService.findOne(question.details.landingSequenceId).flatMap {
           case Some(_) => Future.successful {}
           case None =>
             api.persistentSequenceConfigurationService
               .persist(
-                SequenceConfiguration(sequenceId = question.landingSequenceId, questionId = question.questionId.get)
+                SequenceConfiguration(
+                  sequenceId = question.details.landingSequenceId,
+                  questionId = question.question.questionId
+                )
               )
               .map(_ => ())
         }

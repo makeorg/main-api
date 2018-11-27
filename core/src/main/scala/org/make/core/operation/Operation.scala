@@ -26,7 +26,7 @@ import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
@@ -36,16 +36,17 @@ import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonF
 
 import scala.annotation.meta.field
 
+case class QuestionWithDetails(question: Question, details: OperationOfQuestion)
+
 final case class Operation(status: OperationStatus,
                            operationId: OperationId,
                            slug: String,
-                           translations: Seq[OperationTranslation] = Seq.empty,
                            defaultLanguage: Language,
                            allowedSources: Seq[String],
                            events: List[OperationAction],
+                           questions: Seq[QuestionWithDetails],
                            override val createdAt: Option[ZonedDateTime],
-                           override val updatedAt: Option[ZonedDateTime],
-                           countriesConfiguration: Seq[OperationCountryConfiguration])
+                           override val updatedAt: Option[ZonedDateTime])
     extends MakeSerializable
     with Timestamped
 
@@ -68,6 +69,14 @@ object OperationId {
     }
   }
 }
+
+@ApiModel
+final case class OperationOfQuestion(questionId: QuestionId,
+                                     operationId: OperationId,
+                                     startDate: Option[LocalDate],
+                                     endDate: Option[LocalDate],
+                                     operationTitle: String,
+                                     landingSequenceId: SequenceId)
 
 @ApiModel
 final case class OperationCountryConfiguration(countryCode: Country,
@@ -152,6 +161,7 @@ object OperationStatus {
 case class SimpleOperation(operationId: OperationId,
                            status: OperationStatus,
                            slug: String,
+                           allowedSources: Seq[String],
                            defaultLanguage: Language,
                            createdAt: Option[ZonedDateTime],
                            updatedAt: Option[ZonedDateTime])

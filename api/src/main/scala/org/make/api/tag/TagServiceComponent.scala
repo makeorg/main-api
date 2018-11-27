@@ -55,6 +55,7 @@ trait TagService extends ShortenedNames {
   def findAllDisplayed(): Future[Seq[Tag]]
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def findByQuestionId(questionId: QuestionId): Future[Seq[Tag]]
+  def findByQuestionIds(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Seq[TagId]]]
   def findByLabel(partialLabel: String, like: Boolean): Future[Seq[Tag]]
   def updateTag(tagId: TagId,
                 label: String,
@@ -216,6 +217,14 @@ trait DefaultTagServiceComponent
 
     override def count(tagFilter: TagFilter = TagFilter.empty): Future[Int] = {
       persistentTagService.count(PersistentTagFilter(tagFilter.label, tagFilter.questionId, tagFilter.tagTypeId))
+    }
+    override def findByQuestionIds(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Seq[TagId]]] = {
+      persistentTagService.findByQuestions(questionIds).map(_.groupBy(_.questionId)).map {
+        _.flatMap {
+          case (Some(questionId), tags) => Some(questionId -> tags.map(_.tagId))
+          case _                        => None
+        }
+      }
     }
   }
 }

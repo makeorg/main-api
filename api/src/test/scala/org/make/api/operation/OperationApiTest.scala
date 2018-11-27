@@ -25,19 +25,31 @@ import java.util.UUID
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.CountryHeader
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
-class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent with OperationServiceComponent {
+class OperationApiTest
+    extends MakeApiTestBase
+    with DefaultOperationApiComponent
+    with OperationServiceComponent
+    with TagServiceComponent {
 
   override val operationService: OperationService = mock[OperationService]
+  override val tagService: TagService = mock[TagService]
+
+  when(tagService.findByQuestionIds(any[Seq[QuestionId]]))
+    .thenReturn(Future.successful(Map.empty[QuestionId, Seq[TagId]]))
 
   val routes: Route = sealRoute(operationApi.routes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
@@ -47,10 +59,6 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    translations = Seq(
-      OperationTranslation(title = "première operation", language = Language("fr")),
-      OperationTranslation(title = "first operation", language = Language("en"))
-    ),
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
     events = List(
@@ -63,22 +71,44 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("BR"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-BR"),
-        startDate = None,
-        endDate = None,
-        questionId = None
+    questions = Seq(
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("first-question-BR"),
+          country = Country("BR"),
+          language = Language("fr"),
+          slug = "first-operation-BR",
+          question = "question BR?",
+          operationId = Some(OperationId("firstOperation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("first-question-BR"),
+          operationId = OperationId("firstOperation"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "première operation",
+          landingSequenceId = SequenceId("first-sequence-id-BR")
+        )
       ),
-      OperationCountryConfiguration(
-        countryCode = Country("GB"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-GB"),
-        startDate = None,
-        endDate = None,
-        questionId = None
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("first-question-GB"),
+          country = Country("GB"),
+          language = Language("en"),
+          slug = "first-operation-GB",
+          question = "question GB?",
+          operationId = Some(OperationId("firstOperation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("first-question-GB"),
+          operationId = OperationId("firstOperation"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "first operation",
+          landingSequenceId = SequenceId("first-sequence-id-BR")
+        )
       )
     )
   )
@@ -87,10 +117,6 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
     status = OperationStatus.Pending,
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
-    translations = Seq(
-      OperationTranslation(title = "secondo operazione", language = Language("it")),
-      OperationTranslation(title = "second operation", language = Language("en"))
-    ),
     defaultLanguage = Language("it"),
     allowedSources = Seq("core"),
     events = List(
@@ -103,14 +129,25 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("IT"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("second-sequence-id"),
-        startDate = None,
-        endDate = None,
-        questionId = None
+    questions = Seq(
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("second-question"),
+          slug = "second-question",
+          country = Country("IT"),
+          language = Language("it"),
+          question = "second question?",
+          operationId = Some(OperationId("secondOperation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("second-question"),
+          operationId = OperationId("secondOperation"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "secondo operazione",
+          landingSequenceId = SequenceId("second-sequence-id")
+        )
       )
     )
   )
@@ -151,13 +188,7 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
         operationResponseList.head.translations.filter(_.language == Language("it")).head.title should be(
           "secondo operazione"
         )
-        operationResponseList.head.translations.filter(_.language == Language("en")).head.title should be(
-          "second operation"
-        )
         operationResponseList.head.defaultLanguage should be(Language("it"))
-        operationResponseList.head.sequenceLandingId.value should be(
-          secondOperation.countriesConfiguration.head.landingSequenceId.value
-        )
         operationResponseList.head.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponseList.head.countriesConfiguration.length should be(1)
@@ -181,9 +212,6 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
         operationResponse.translations.filter(_.language == Language("fr")).head.title should be("première operation")
         operationResponse.translations.filter(_.language == Language("en")).head.title should be("first operation")
         operationResponse.defaultLanguage should be(Language("fr"))
-        operationResponse.sequenceLandingId.value should be(
-          firstOperation.countriesConfiguration.head.landingSequenceId.value
-        )
         operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.countriesConfiguration.length should be(2)
@@ -208,7 +236,6 @@ class OperationApiTest extends MakeApiTestBase with DefaultOperationApiComponent
         operationResponse.translations.filter(_.language == Language("fr")).head.title should be("première operation")
         operationResponse.translations.filter(_.language == Language("en")).head.title should be("first operation")
         operationResponse.defaultLanguage should be(Language("fr"))
-        operationResponse.sequenceLandingId.value should be("first-sequence-id-GB")
         operationResponse.createdAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.updatedAt.get.toEpochSecond should be(now.toEpochSecond)
         operationResponse.countriesConfiguration.length should be(2)

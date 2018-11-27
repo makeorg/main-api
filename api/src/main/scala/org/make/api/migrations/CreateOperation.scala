@@ -23,10 +23,9 @@ import java.time.LocalDate
 import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.api.sequence.{SequenceConfiguration, SequenceResponse}
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.TagId
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
@@ -39,24 +38,24 @@ trait CreateOperation extends Migration with OperationHelper {
 
   def operationSlug: String
   def defaultLanguage: Language
-  def countryConfigurations: Seq[CountryConfiguration]
+  def questions: Seq[QuestionConfiguration]
 
   def allowedSources: Seq[String]
 
   override def migrate(api: MakeApi): Future[Unit] = {
-    createOperationIfNeeded(api, defaultLanguage, operationSlug, countryConfigurations, allowedSources)
+    createOperationIfNeeded(api, defaultLanguage, operationSlug, questions, allowedSources)
   }
 }
 
 object CreateOperation {
-  final case class CountryConfiguration(country: Country,
-                                        language: Language,
-                                        slug: String,
-                                        tags: Seq[TagId],
-                                        title: String,
-                                        startDate: LocalDate,
-                                        endDate: Option[LocalDate],
-                                        sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default)
+  final case class QuestionConfiguration(country: Country,
+                                         language: Language,
+                                         slug: String,
+                                         question: String,
+                                         title: String,
+                                         startDate: LocalDate,
+                                         endDate: Option[LocalDate],
+                                         sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default)
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 

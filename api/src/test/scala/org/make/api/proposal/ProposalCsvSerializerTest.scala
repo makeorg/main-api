@@ -24,11 +24,12 @@ import java.time.ZonedDateTime
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.idea.IdeaId
-import org.make.core.operation.{Operation, OperationId, OperationStatus, OperationTranslation}
+import org.make.core.operation._
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
+import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
@@ -50,13 +51,32 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
     OperationStatus.Active,
     OperationId("bar-operation"),
     "bar-operation",
-    Seq(OperationTranslation("Bar Operation", Language("fr"))),
     Language("fr"),
     Seq("core"),
     List.empty,
+    Seq(
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("bar-question"),
+          slug = "bar",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "blabla?",
+          operationId = Some(OperationId("bar-operation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("bar-question"),
+          operationId = OperationId("bar-operation"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "Bar Operation",
+          landingSequenceId = SequenceId("bar")
+        )
+      )
+    ),
     None,
-    None,
-    Seq.empty
+    None
   )
   val now: ZonedDateTime = ZonedDateTime.now()
   val nowRepresentation: String = now.toLocalDateTime.toString.split("T").mkString(" - ")

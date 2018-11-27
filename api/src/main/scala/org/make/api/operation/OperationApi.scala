@@ -26,6 +26,7 @@ import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.{HttpCodes, ParameterExtractors}
@@ -76,7 +77,8 @@ trait DefaultOperationApiComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with OperationServiceComponent =>
+    with OperationServiceComponent
+    with TagServiceComponent =>
 
   override lazy val operationApi: OperationApi = new OperationApi {
 
@@ -91,7 +93,10 @@ trait DefaultOperationApiComponent
                 operationService
                   .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
               ) { result =>
-                complete(result.map(operation => OperationResponse(operation, requestContext.country)))
+                provideAsync(tagService.findByQuestionIds(result.flatMap(_.questions).map(_.question.questionId))) {
+                  tags =>
+                    complete(result.map(operation => OperationResponse(operation, tags)))
+                }
               }
             }
           }
@@ -104,7 +109,9 @@ trait DefaultOperationApiComponent
         path("operations" / operationId) { operationId =>
           makeOperation("GetOperation") { requestContext =>
             provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
-              complete(OperationResponse(operation, requestContext.country))
+              provideAsync(tagService.findByQuestionIds(operation.questions.map(_.question.questionId))) { tags =>
+                complete(OperationResponse(operation, tags))
+              }
             }
           }
         }

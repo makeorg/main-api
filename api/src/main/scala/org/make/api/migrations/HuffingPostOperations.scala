@@ -22,7 +22,7 @@ import java.time.LocalDate
 import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -32,69 +32,69 @@ object HuffingPostOperations extends OperationHelper with Migration {
   implicit override val executor: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
-  val operations: Map[String, CreateOperation.CountryConfiguration] = Map(
-    "politique-huffpost" -> CountryConfiguration(
+  val operations: Map[String, QuestionConfiguration] = Map(
+    "politique-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "politique-huffpost",
+      question = "politique-huffpost",
       title = "Politique",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "economie-huffpost" -> CountryConfiguration(
+    "economie-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "economie-huffpost",
       title = "Économie",
+      question = "Économie",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "international-huffpost" -> CountryConfiguration(
+    "international-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "international-huffpost",
       title = "International",
+      question = "International",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "culture-huffpost" -> CountryConfiguration(
+    "culture-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "culture-huffpost",
       title = "Culture",
+      question = "Culture",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "ecologie-huffpost" -> CountryConfiguration(
+    "ecologie-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "ecologie-huffpost",
       title = "Écologie",
+      question = "Écologie",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "societe-huffpost" -> CountryConfiguration(
+    "societe-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "societe-huffpost",
       title = "Société",
+      question = "Société",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     ),
-    "education-huffpost" -> CountryConfiguration(
+    "education-huffpost" -> QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = "education-huffpost",
       title = "Éducation",
+      question = "Éducation",
       startDate = LocalDate.parse("2018-08-06"),
-      endDate = Some(LocalDate.parse("2020-08-06")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2020-08-06"))
     )
   )
 
@@ -104,8 +104,8 @@ object HuffingPostOperations extends OperationHelper with Migration {
 
   override def migrate(api: MakeApi): Future[Unit] = {
     sequentially(operations.toSeq) {
-      case (slug: String, countryConfiguration: CountryConfiguration) =>
-        createOperationIfNeeded(api, countryConfiguration.language, slug, Seq(countryConfiguration), allowedSources)
+      case (slug: String, questionConfiguration: QuestionConfiguration) =>
+        createOperationIfNeeded(api, questionConfiguration.language, slug, Seq(questionConfiguration), allowedSources)
     }
   }
 
