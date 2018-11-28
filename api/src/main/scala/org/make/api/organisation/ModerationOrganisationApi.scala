@@ -154,6 +154,27 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
   }
 
   @ApiOperation(value = "get-organisation", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
+  @Path(value = "/{organisationId}")
+  def moderationGetOrganisation: Route =
+    get {
+      path("moderation" / "organisations" / organisationId) { organisationId =>
+        makeOperation("ModerationGetOrganisation") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
+                complete(UserResponse(user))
+              }
+            }
+          }
+        }
+      }
+    }
+
+  @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
   )
@@ -170,12 +191,11 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
             }
           }
         }
-
       }
     }
 
   val moderationOrganisationRoutes
-    : Route = moderationPostOrganisation ~ moderationPutOrganisation ~ moderationGetOrganisations
+    : Route = moderationPostOrganisation ~ moderationPutOrganisation ~ moderationGetOrganisation ~ moderationGetOrganisations
 
   private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
 }
