@@ -289,6 +289,7 @@ trait PersistentUserService {
   def findByUserIdAndPassword(userId: UserId, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def findAllOrganisations(): Future[Seq[User]]
+  def findOrganisations(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
@@ -317,6 +318,7 @@ trait PersistentUserService {
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
+  def countOrganisations(): Future[Int]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -329,6 +331,8 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
     private val followedUsersAlias = FollowedUsers.followedUsersAlias
     private val column = PersistentUser.column
     private val followedUsersColumn = FollowedUsers.column
+
+    private val defaultLimit = 10
 
     override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
       implicit val cxt: EC = readExecutionContext
@@ -426,6 +430,38 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 
       futurePersistentUsers.map(_.map(_.toUser))
 
+    }
+
+    override def findOrganisations(start: Int,
+                                   end: Option[Int],
+                                   sort: Option[String],
+                                   order: Option[String]): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            select
+              .from(PersistentUser.as(userAlias))
+              .where(sqls.eq(userAlias.isOrganisation, true))
+
+          val queryOrdered = (sort, order) match {
+            case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
+              query.orderBy(userAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentUser.columnNames.contains(field) =>
+              query.orderBy(userAlias.field(field)).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.asc.offset(start)
+            case (_, _) => query.asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered.limit(defaultLimit)
+          }
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
     }
 
     override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
@@ -918,6 +954,15 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
                 .and(sqls.eq(followedUsersAlias.followedUserId, followedUserId.value))
             )
         }.executeUpdate().apply()
+      })
+    }
+
+    override def countOrganisations(): Future[Int] = {
+      implicit val ctx: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select(sqls.count).from(PersistentUser.as(userAlias)).where(sqls.eq(userAlias.isOrganisation, true))
+        }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }
   }

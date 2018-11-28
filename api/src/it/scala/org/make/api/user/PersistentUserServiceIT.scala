@@ -584,6 +584,16 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         }
       }
     }
+
+    scenario("find organisations with params") {
+      whenReady(
+        persistentUserService.findOrganisations(
+          start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"))) { organisations =>
+        organisations.size should be(2)
+        organisations.head.userId shouldBe UserId("CIA")
+        organisations.last.userId shouldBe UserId("DGSE")
+      }
+    }
   }
 
   feature("register mailing data") {

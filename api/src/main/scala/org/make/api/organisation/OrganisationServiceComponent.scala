@@ -56,6 +56,8 @@ trait OrganisationServiceComponent {
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def getOrganisations: Future[Seq[User]]
+  def find(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
+  def count(): Future[Int]
   def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisationId: UserId,
@@ -99,6 +101,23 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       persistentUserService.findAllOrganisations()
     }
 
+    /**
+      * This method fetch the organisations from cockroach
+      * start and end are here to paginate the result
+      * sort and order are here to sort the result
+      */
+    override def find(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]] = {
+      persistentUserService.findOrganisations(start, end, sort, order)
+    }
+
+    override def count(): Future[Int] = {
+      persistentUserService.countOrganisations()
+    }
+
+    /**
+      * This method fetch the organisations from elasticsearch
+      * organisations can be search by name or slug
+      */
     override def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult] = {
       elasticsearchOrganisationAPI.searchOrganisations(
         OrganisationSearchQuery(

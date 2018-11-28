@@ -22,20 +22,20 @@ package org.make.api.organisation
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.api.user._
-import org.make.core.{CirceFormatters, HttpCodes}
 import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
+import org.make.core.{CirceFormatters, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
 @Api(
@@ -84,8 +84,8 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                           name = request.organisationName,
                           email = request.email,
                           password = request.password,
-                          avatar = request.profile.flatMap(_.avatarUrl),
-                          description = request.profile.flatMap(_.description),
+                          avatar = request.avatarUrl,
+                          description = request.description,
                           country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
                           language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
                         ),
@@ -167,7 +167,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
-                complete(UserResponse(user))
+                complete(OrganisationResponse(user))
               }
             }
           }
@@ -184,12 +184,25 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
     get {
       path("moderation" / "organisations") {
         makeOperation("ModerationGetOrganisations") { _ =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireModerationRole(auth.user) {
-              provideAsync(organisationService.getOrganisations) { result =>
-                complete(result.map(UserResponse.apply))
+          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?)) {
+            (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
+              makeOAuth2 { auth: AuthInfo[UserRights] =>
+                requireModerationRole(auth.user) {
+                  order.foreach { orderValue =>
+                    Validation.validate(
+                      Validation
+                        .validChoices("_order", Some("Invalid order"), Seq(orderValue.toLowerCase), Seq("desc", "asc"))
+                    )
+                  }
+                  provideAsync(organisationService.count()) { count =>
+                    provideAsync(organisationService.find(start.getOrElse(0), end, sort, order)) { result =>
+                      complete(
+                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), result.map(OrganisationResponse.apply))
+                      )
+                    }
+                  }
+                }
               }
-            }
           }
         }
       }
@@ -205,14 +218,11 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
 final case class ModerationCreateOrganisationRequest(organisationName: String,
                                                      email: String,
                                                      password: Option[String],
-                                                     profile: Option[Profile],
+                                                     description: Option[String],
+                                                     avatarUrl: Option[String],
                                                      country: Option[Country],
                                                      language: Option[Language]) {
-  OrganisationValidation.validateCreate(
-    organisationName = organisationName,
-    email = email,
-    description = profile.flatMap(_.description)
-  )
+  OrganisationValidation.validateCreate(organisationName = organisationName, email = email, description = description)
 }
 
 object ModerationCreateOrganisationRequest {
