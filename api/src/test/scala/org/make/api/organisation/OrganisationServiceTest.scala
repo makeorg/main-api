@@ -26,7 +26,11 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
-import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
+import org.make.api.userhistory.UserEvent.{
+  OrganisationInitializationEvent,
+  OrganisationRegisteredEvent,
+  OrganisationUpdatedEvent
+}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -51,6 +55,7 @@ import scala.concurrent.duration.DurationInt
 class OrganisationServiceTest
     extends MakeUnitTest
     with DefaultOrganisationServiceComponent
+    with UserServiceComponent
     with IdGeneratorComponent
     with PersistentUserServiceComponent
     with UserHistoryCoordinatorServiceComponent
@@ -59,6 +64,7 @@ class OrganisationServiceTest
     with OrganisationSearchEngineComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
+  override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
@@ -70,6 +76,14 @@ class OrganisationServiceTest
       argument match {
         case i: OrganisationRegisteredEvent if maybeUserId.contains(i.userId) => true
         case _                                                                => false
+      }
+  }
+
+  class MatchOrganisationAskPasswordEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
+    override def matches(argument: AnyRef): Boolean =
+      argument match {
+        case i: OrganisationInitializationEvent if maybeUserId.contains(i.userId) => true
+        case _                                                                    => false
       }
   }
 
@@ -130,7 +144,7 @@ class OrganisationServiceTest
   }
 
   feature("register organisation") {
-    scenario("successfully register an organisation") {
+    scenario("successfully register an organisation with password") {
       Mockito.reset(eventBusService)
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
 
@@ -164,6 +178,51 @@ class OrganisationServiceTest
         .publish(
           ArgumentMatchers
             .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
+        )
+    }
+
+    scenario("successfully register an organisation without password") {
+      Mockito.reset(eventBusService)
+      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
+
+      Mockito
+        .when(
+          persistentUserService
+            .persist(any[User])
+        )
+        .thenReturn(Future.successful(returnedOrganisation))
+
+      Mockito.when(userService.requestPasswordReset(any[UserId])).thenReturn(Future.successful(true))
+
+      val futureOrganisation = organisationService.register(
+        OrganisationRegisterData(
+          name = "John Doe Corp.",
+          email = "any@mail.com",
+          password = None,
+          avatar = None,
+          description = None,
+          country = Country("FR"),
+          language = Language("fr")
+        ),
+        RequestContext.empty
+      )
+
+      whenReady(futureOrganisation, Timeout(2.seconds)) { user =>
+        user shouldBe a[User]
+        user.email should be("any@mail.com")
+        user.organisationName should be(Some("John Doe Corp."))
+      }
+
+      verify(eventBusService, times(1))
+        .publish(
+          ArgumentMatchers
+            .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
+        )
+
+      verify(eventBusService, times(1))
+        .publish(
+          ArgumentMatchers
+            .argThat(new MatchOrganisationAskPasswordEvents(Some(returnedOrganisation.userId)))
         )
     }
 

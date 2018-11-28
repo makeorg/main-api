@@ -52,6 +52,7 @@ object UserEvent {
       UserValidatedAccountEvent :+:
       OrganisationRegisteredEvent :+:
       OrganisationUpdatedEvent :+:
+      OrganisationInitializationEvent :+:
       CNil
 
   final case class UserEventWrapper(version: Int,
@@ -64,14 +65,15 @@ object UserEvent {
   object UserEventWrapper {
     def wrapEvent(event: UserEvent): AnyUserEvent =
       event match {
-        case e: ResetPasswordEvent          => Coproduct[AnyUserEvent](e)
-        case e: ResendValidationEmailEvent  => Coproduct[AnyUserEvent](e)
-        case e: UserConnectedEvent          => Coproduct[AnyUserEvent](e)
-        case e: UserUpdatedTagEvent         => Coproduct[AnyUserEvent](e)
-        case e: UserRegisteredEvent         => Coproduct[AnyUserEvent](e)
-        case e: UserValidatedAccountEvent   => Coproduct[AnyUserEvent](e)
-        case e: OrganisationRegisteredEvent => Coproduct[AnyUserEvent](e)
-        case e: OrganisationUpdatedEvent    => Coproduct[AnyUserEvent](e)
+        case e: ResetPasswordEvent              => Coproduct[AnyUserEvent](e)
+        case e: ResendValidationEmailEvent      => Coproduct[AnyUserEvent](e)
+        case e: UserConnectedEvent              => Coproduct[AnyUserEvent](e)
+        case e: UserUpdatedTagEvent             => Coproduct[AnyUserEvent](e)
+        case e: UserRegisteredEvent             => Coproduct[AnyUserEvent](e)
+        case e: UserValidatedAccountEvent       => Coproduct[AnyUserEvent](e)
+        case e: OrganisationRegisteredEvent     => Coproduct[AnyUserEvent](e)
+        case e: OrganisationUpdatedEvent        => Coproduct[AnyUserEvent](e)
+        case e: OrganisationInitializationEvent => Coproduct[AnyUserEvent](e)
       }
   }
 
@@ -91,6 +93,9 @@ object UserEvent {
       identity
     )
     implicit val atOrganisationUpdatedEvent: Case.Aux[OrganisationUpdatedEvent, OrganisationUpdatedEvent] = at(identity)
+    implicit val atOrganisationAskPasswordEvent
+      : Case.Aux[OrganisationInitializationEvent, OrganisationInitializationEvent] =
+      at(identity)
   }
 
   private val defaultCountry = Country("FR")
@@ -224,6 +229,16 @@ object UserEvent {
                                       override val requestContext: RequestContext,
                                       override val country: Country = defaultCountry,
                                       override val language: Language = defaultLanguage)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class OrganisationInitializationEvent(override val connectedUserId: Option[UserId] = None,
+                                             override val eventDate: ZonedDateTime = DateHelper.now(),
+                                             override val userId: UserId,
+                                             override val requestContext: RequestContext,
+                                             override val country: Country = defaultCountry,
+                                             override val language: Language = defaultLanguage)
       extends UserEvent {
     override def version(): Int = MakeSerializable.V1
   }

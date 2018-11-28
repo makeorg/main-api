@@ -51,14 +51,15 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
-      case event: ResetPasswordEvent          => handleResetPasswordEvent(event)
-      case event: UserRegisteredEvent         => handleUserRegisteredEventEvent(event)
-      case event: UserValidatedAccountEvent   => handleUserValidatedAccountEvent(event)
-      case event: UserConnectedEvent          => doNothing(event)
-      case event: UserUpdatedTagEvent         => doNothing(event)
-      case event: ResendValidationEmailEvent  => handleResendValidationEmailEvent(event)
-      case event: OrganisationRegisteredEvent => doNothing(event)
-      case event: OrganisationUpdatedEvent    => doNothing(event)
+      case event: ResetPasswordEvent              => handleResetPasswordEvent(event)
+      case event: UserRegisteredEvent             => handleUserRegisteredEventEvent(event)
+      case event: UserValidatedAccountEvent       => handleUserValidatedAccountEvent(event)
+      case event: UserConnectedEvent              => doNothing(event)
+      case event: UserUpdatedTagEvent             => doNothing(event)
+      case event: ResendValidationEmailEvent      => handleResendValidationEmailEvent(event)
+      case event: OrganisationRegisteredEvent     => doNothing(event)
+      case event: OrganisationUpdatedEvent        => doNothing(event)
+      case event: OrganisationInitializationEvent => handleOrganisationAskPassword(event)
     }
   }
 
@@ -277,6 +278,61 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 ),
                 customCampaign = resendAccountValidationLink.customCampaign,
                 monitoringCategory = resendAccountValidationLink.monitoringCategory
+              )
+            )
+          }
+        }
+      }
+    }
+  }
+
+  private def handleOrganisationAskPassword(event: OrganisationInitializationEvent): Future[Unit] = {
+    getUserWithValidEmail(event.userId).map { maybeUser =>
+      maybeUser.foreach { user =>
+        val language = event.language
+        val country = event.country
+
+        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
+          case None              => Future.successful("core")
+        }
+
+        futureOperationSlug.map { operationSlug =>
+          val forgottenPassword =
+            mailJetTemplateConfiguration
+              .organisationInitialization(operation = operationSlug, country = country, language = language)
+
+          if (forgottenPassword.enabled) {
+            val resetToken: String = user.resetToken match {
+              case Some(token) => token
+              case _           => throw new IllegalStateException("reset token required")
+            }
+            val url = s"${mailJetTemplateConfiguration
+              .getFrontUrl()}/#/${user.country}/password-recovery/${user.userId.value}/$resetToken" +
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
+
+            context.system.eventStream.publish(
+              SendEmail.create(
+                templateId = Some(forgottenPassword.templateId),
+                recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                from = Some(
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
+                ),
+                variables = Some(
+                  Map(
+                    "firstname" -> user.firstName.getOrElse(""),
+                    "forgotten_password_url" -> url,
+                    "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
+                    "question" -> event.requestContext.question.getOrElse(""),
+                    "location" -> event.requestContext.location.getOrElse(""),
+                    "source" -> event.requestContext.source.getOrElse("")
+                  )
+                ),
+                customCampaign = forgottenPassword.customCampaign,
+                monitoringCategory = forgottenPassword.monitoringCategory
               )
             )
           }

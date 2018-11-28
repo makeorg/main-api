@@ -41,6 +41,8 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
     parseTemplateConfiguration(config.getConfig("resend-validation-link"), operation, country, language)
   def forgottenPassword(operation: String, country: Country, language: Language): TemplateConfiguration =
     parseTemplateConfiguration(config.getConfig("forgotten-password"), operation, country, language)
+  def organisationInitialization(operation: String, country: Country, language: Language): TemplateConfiguration =
+    parseTemplateConfiguration(config.getConfig("organisation-initialization"), operation, country, language)
   def proposalRefused(operation: String,
                       country: Country,
                       language: Language,
