@@ -299,23 +299,29 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   private def onQualificationProposalCommand(command: QualifyVoteCommand): Unit = {
     command.vote match {
       case None =>
-        sender() ! Right(
-          state
-            .flatMap(_.proposal.votes.find(_.key == command.voteKey))
-            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        )
+        val maybeQualification = state
+          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+        if (maybeQualification.exists(_.count == 0)) {
+          log.warning(s"Qualification returned a 0 value [1]. ${command.toString}")
+        }
+        sender() ! Right(maybeQualification)
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
-        sender() ! Right(
-          state
-            .flatMap(_.proposal.votes.find(_.key == command.voteKey))
-            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        )
+        val maybeQualification = state
+          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+        if (maybeQualification.exists(_.count == 0)) {
+          log.warning(s"Qualification returned a 0 value [2]. ${command.toString}")
+        }
+        sender() ! Right(maybeQualification)
       case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
-        sender() ! Right(
-          state
-            .flatMap(_.proposal.votes.find(_.key == command.voteKey))
-            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        )
+        val maybeQualification = state
+          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+        if (maybeQualification.exists(_.count == 0)) {
+          log.warning(s"Qualification returned a 0 value [3]. ${command.toString}")
+        }
+        sender() ! Right(maybeQualification)
       case _ =>
         persistAndPublishEvent(
           ProposalQualified(
@@ -330,11 +336,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           val originalSender = sender()
           logQualifyVoteEvent(event).onComplete {
             case Success(_) =>
-              originalSender ! Right(
-                state
-                  .flatMap(_.proposal.votes.find(_.key == command.voteKey))
-                  .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-              )
+              val maybeQualification = state
+                .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+                .flatMap(_.qualifications.find(_.key == command.qualificationKey))
+              originalSender ! Right(maybeQualification)
+              if (maybeQualification.exists(_.count == 0)) {
+                log.warning(s"Qualification returned a 0 value [4]. ${command.toString}")
+              }
             case Failure(e) => Left(e)
           }
         }
