@@ -910,7 +910,8 @@ class UserApiTest
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = Some(OperationId("operation1")),
-      questionId = None
+      questionId = None,
+      sequencePool = SequencePool.New
     )
     val proposalResult: ProposalResult =
       ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
@@ -1068,7 +1069,8 @@ class UserApiTest
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None
+      questionId = None,
+      sequencePool = SequencePool.New
     )
     val proposalResult: ProposalResult =
       ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)

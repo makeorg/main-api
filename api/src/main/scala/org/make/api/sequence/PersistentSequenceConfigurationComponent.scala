@@ -27,6 +27,7 @@ import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceCompon
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
+import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
 import scalikejdbc._
 
@@ -85,6 +86,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               .into(PersistentSequenceConfiguration)
               .namedValues(
                 column.sequenceId -> sequenceConfig.sequenceId.value,
+                column.questionId -> sequenceConfig.questionId.value,
                 column.maxAvailableProposals -> sequenceConfig.maxAvailableProposals,
                 column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
                 column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
@@ -131,6 +133,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               .where(
                 sqls
                   .eq(column.sequenceId, sequenceConfig.sequenceId.value)
+                  .or(sqls.eq(column.questionId, sequenceConfig.questionId.value))
               )
           }.update().apply()
         })
@@ -152,6 +155,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 object DefaultPersistentSequenceConfigurationServiceComponent {
 
   case class PersistentSequenceConfiguration(sequenceId: String,
+                                             questionId: String,
                                              maxAvailableProposals: Int,
                                              newProposalsRatio: Double,
                                              newProposalsVoteThreshold: Int,
@@ -166,11 +170,15 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
                                              ideaCompetitionTargetCount: Int,
                                              ideaCompetitionControversialRatio: Double,
                                              ideaCompetitionControversialCount: Int,
+                                             maxTestedProposalCount: Int,
+                                             sequenceSize: Int,
+                                             maxVotes: Int,
                                              createdAt: ZonedDateTime,
                                              updatedAt: ZonedDateTime) {
     def toSequenceConfiguration: SequenceConfiguration =
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
+        questionId = QuestionId(questionId),
         maxAvailableProposals = maxAvailableProposals,
         newProposalsRatio = newProposalsRatio,
         newProposalsVoteThreshold = newProposalsVoteThreshold,
@@ -184,7 +192,10 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         ideaCompetitionEnabled = ideaCompetitionEnabled,
         ideaCompetitionTargetCount = ideaCompetitionTargetCount,
         ideaCompetitionControversialRatio = ideaCompetitionControversialRatio,
-        ideaCompetitionControversialCount = ideaCompetitionControversialCount
+        ideaCompetitionControversialCount = ideaCompetitionControversialCount,
+        maxTestedProposalCount = maxTestedProposalCount,
+        sequenceSize = sequenceSize,
+        maxVotes = maxVotes
       )
   }
 
@@ -196,6 +207,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     override val columnNames: Seq[String] =
       Seq(
         "sequence_id",
+        "question_id",
         "max_available_proposals",
         "new_proposals_ratio",
         "new_proposals_vote_threshold",
@@ -210,6 +222,9 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "idea_competition_target_count",
         "idea_competition_controversial_ratio",
         "idea_competition_controversial_count",
+        "maxTestedProposalCount",
+        "sequenceSize",
+        "maxVotes",
         "created_at",
         "updated_at"
       )
@@ -225,6 +240,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
     )(resultSet: WrappedResultSet): PersistentSequenceConfiguration = {
       PersistentSequenceConfiguration.apply(
         sequenceId = resultSet.string(resultName.sequenceId),
+        questionId = resultSet.string(resultName.questionId),
         maxAvailableProposals = resultSet.int(resultName.maxAvailableProposals),
         newProposalsRatio = resultSet.double(resultName.newProposalsRatio),
         newProposalsVoteThreshold = resultSet.int(resultName.newProposalsVoteThreshold),
@@ -239,6 +255,9 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         ideaCompetitionTargetCount = resultSet.int(resultName.ideaCompetitionTargetCount),
         ideaCompetitionControversialRatio = resultSet.double(resultName.ideaCompetitionControversialRatio),
         ideaCompetitionControversialCount = resultSet.int(resultName.ideaCompetitionControversialCount),
+        maxTestedProposalCount = resultSet.int(resultName.maxTestedProposalCount),
+        sequenceSize = resultSet.int(resultName.sequenceSize),
+        maxVotes = resultSet.int(resultName.maxVotes),
         createdAt = resultSet.zonedDateTime(resultName.createdAt),
         updatedAt = resultSet.zonedDateTime(resultName.updatedAt)
       )

@@ -24,7 +24,7 @@ import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.semantic.SemanticComponent
-import org.make.api.sequence.SequenceServiceComponent
+import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserServiceComponent
@@ -98,6 +98,7 @@ object ProposalSupervisor {
     with SemanticComponent
     with ProposalSearchEngineComponent
     with ProposalIndexerServiceComponent
+    with SequenceConfigurationComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,

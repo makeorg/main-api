@@ -88,7 +88,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          minVotesCount: Option[MinVotesCountSearchFilter] = None,
                          toEnrich: Option[ToEnrichSearchFilter] = None,
                          minScore: Option[MinScoreSearchFilter] = None,
-                         createdAt: Option[CreatedAtSearchFilter] = None)
+                         createdAt: Option[CreatedAtSearchFilter] = None,
+                         sequencePool: Option[SequencePoolSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -111,7 +112,8 @@ object SearchFilters extends ElasticDsl {
             minVotesCount: Option[MinVotesCountSearchFilter] = None,
             toEnrich: Option[ToEnrichSearchFilter] = None,
             minScore: Option[MinScoreSearchFilter] = None,
-            createdAt: Option[CreatedAtSearchFilter] = None): Option[SearchFilters] = {
+            createdAt: Option[CreatedAtSearchFilter] = None,
+            sequencePool: Option[SequencePoolSearchFilter] = None): Option[SearchFilters] = {
 
     (
       proposals,
@@ -132,9 +134,11 @@ object SearchFilters extends ElasticDsl {
       minVotesCount,
       toEnrich,
       minScore,
-      createdAt
+      createdAt,
+      sequencePool
     ) match {
       case (
+          None,
           None,
           None,
           None,
@@ -177,7 +181,8 @@ object SearchFilters extends ElasticDsl {
             minVotesCount,
             toEnrich,
             minScore,
-            createdAt
+            createdAt,
+            sequencePool
           )
         )
     }
@@ -212,7 +217,8 @@ object SearchFilters extends ElasticDsl {
       buildMinVotesCountSearchFilter(searchQuery),
       buildToEnrichSearchFilter(searchQuery),
       buildMinScoreSearchFilter(searchQuery),
-      buildCreatedAtSearchFilter(searchQuery)
+      buildCreatedAtSearchFilter(searchQuery),
+      buildSequencePoolSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -500,8 +506,18 @@ object SearchFilters extends ElasticDsl {
         case _ => None
       }
     }
-
   }
+
+  def buildSequencePoolSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.sequencePool match {
+        case Some(SequencePoolSearchFilter(sequencePool)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool))
+        case _ => None
+      }
+    }
+  }
+
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -550,3 +566,4 @@ case class Skip(value: Int)
 case class MinVotesCountSearchFilter(minVotesCount: Int)
 case class ToEnrichSearchFilter(toEnrich: Boolean)
 case class MinScoreSearchFilter(minScore: Float)
+case class SequencePoolSearchFilter(sequencePool: String)

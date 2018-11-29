@@ -163,7 +163,8 @@ class SortAlgorithmIT
     status = ProposalStatus.Accepted,
     ideaId = None,
     operationId = None,
-    questionId = None
+    questionId = None,
+    sequencePool = SequencePool.New
   )
 
   private val proposals: Seq[IndexedProposal] = Seq(

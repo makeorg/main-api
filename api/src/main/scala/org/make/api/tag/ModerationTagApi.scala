@@ -313,9 +313,7 @@ trait ModerationTagApi extends MakeAuthenticationDirectives with ParameterExtrac
               entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
                 provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
                   val duplicateLabel = tagList.find { tag =>
-                    (tag.tagId != tagId) &&
-                    (tag.operationId.isDefined && tag.operationId == request.operationId) ||
-                    (tag.themeId.isDefined && tag.themeId == request.themeId)
+                    tag.tagId != tagId && tag.questionId.isDefined && tag.questionId == request.questionId
                   }
                   Validation.validate(
                     Validation.requireNotPresent(

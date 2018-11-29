@@ -38,6 +38,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.semantic.SemanticComponent
+import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
@@ -51,6 +52,7 @@ import org.make.core.proposal.indexed.{
   IndexedVote,
   Context => ProposalContext
 }
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.User
 
@@ -65,6 +67,7 @@ trait ProposalIndexationStream
     with OrganisationServiceComponent
     with TagServiceComponent
     with ProposalSearchEngineComponent
+    with SequenceConfigurationComponent
     with SemanticComponent
     with StrictLogging {
 
@@ -137,6 +140,12 @@ trait ProposalIndexationStream
   }
 
   private def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
+    def getSequenceConfiguration: Option[QuestionId] => Future[Option[SequenceConfiguration]] = {
+      case Some(questionId) =>
+        sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).map(Option.apply)
+      case None => Future.successful[Option[SequenceConfiguration]](None)
+    }
+
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
@@ -148,10 +157,10 @@ trait ProposalIndexationStream
           }
           .map[Option[Seq[User]]](organisations => Some(organisations.flatten))
       )
+      sequenceConfiguration <- OptionT(getSequenceConfiguration(proposal.questionId))
     } yield {
       val isBeforeContextSourceFeature: Boolean =
         proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
-
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,
@@ -167,13 +176,13 @@ trait ProposalIndexationStream
         votesCount = proposal.votes.map(_.count).sum,
         toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
         scores = IndexedScores(
-          engagement = ProposalScorerHelper.engagement(proposal),
-          adhesion = ProposalScorerHelper.adhesion(proposal),
-          realistic = ProposalScorerHelper.realistic(proposal),
-          topScore = ProposalScorerHelper.topScore(proposal),
-          controversy = ProposalScorerHelper.controversy(proposal),
-          rejection = ProposalScorerHelper.rejection(proposal),
-          scoreUpperBound = ProposalScorerHelper.scoreUpperBound(proposal)
+          engagement = ProposalScorerHelper.engagement(proposal.votes),
+          adhesion = ProposalScorerHelper.adhesion(proposal.votes),
+          realistic = ProposalScorerHelper.realistic(proposal.votes),
+          topScore = ProposalScorerHelper.topScore(proposal.votes),
+          controversy = ProposalScorerHelper.controversy(proposal.votes),
+          rejection = ProposalScorerHelper.rejection(proposal.votes),
+          scoreUpperBound = ProposalScorerHelper.scoreUpperBound(proposal.votes)
         ),
         context = Some(
           ProposalContext(
@@ -213,7 +222,8 @@ trait ProposalIndexationStream
         tags = tags,
         ideaId = proposal.idea,
         operationId = proposal.operation,
-        questionId = proposal.questionId
+        questionId = proposal.questionId,
+        sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status)
       )
     }
 

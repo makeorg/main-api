@@ -36,7 +36,7 @@ import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, ProposalsSearchResult}
+import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
@@ -151,7 +151,8 @@ class WidgetApiTest
                     ideaId = None,
                     operationId = None,
                     country = Country("FR"),
-                    language = Language("fr")
+                    language = Language("fr"),
+                    sequencePool = SequencePool.New
                   ),
                   myProposal = false,
                   voteAndQualifications = None

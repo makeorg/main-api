@@ -24,17 +24,16 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
-import org.make.api.sequence.SequenceConfigurationActor.{
-  GetPersistentSequenceConfiguration,
-  GetSequenceConfiguration,
-  SetSequenceConfiguration
-}
+import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.api.technical.TimeSettings
+import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 
 case class SequenceConfiguration(sequenceId: SequenceId,
+                                 questionId: QuestionId,
                                  maxAvailableProposals: Int = 1000,
                                  newProposalsRatio: Double = 0.5,
                                  newProposalsVoteThreshold: Int = 100,
@@ -48,15 +47,42 @@ case class SequenceConfiguration(sequenceId: SequenceId,
                                  ideaCompetitionEnabled: Boolean = false,
                                  ideaCompetitionTargetCount: Int = 50,
                                  ideaCompetitionControversialRatio: Double = 0.0,
-                                 ideaCompetitionControversialCount: Int = 0)
+                                 ideaCompetitionControversialCount: Int = 0,
+                                 maxTestedProposalCount: Int = 1000,
+                                 sequenceSize: Int = 12,
+                                 maxVotes: Int = 1500)
 
 object SequenceConfiguration {
   implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]
   implicit val encoder: Encoder[SequenceConfiguration] = deriveEncoder[SequenceConfiguration]
+
+  val default: SequenceConfiguration = SequenceConfiguration(
+    sequenceId = SequenceId("default-sequence"),
+    questionId = QuestionId("default-question"),
+    maxAvailableProposals = 1000,
+    newProposalsRatio = 0.5,
+    newProposalsVoteThreshold = 100,
+    testedProposalsEngagementThreshold = 0.8,
+    testedProposalsScoreThreshold = 0.0,
+    testedProposalsControversyThreshold = 0.0,
+    testedProposalsMaxVotesThreshold = 1500,
+    banditEnabled = true,
+    banditMinCount = 1,
+    banditProposalsRatio = 0.0,
+    ideaCompetitionEnabled = false,
+    ideaCompetitionTargetCount = 50,
+    ideaCompetitionControversialRatio = 0.0,
+    ideaCompetitionControversialCount = 0,
+    maxTestedProposalCount = 1000,
+    sequenceSize = 12,
+    maxVotes = 1500
+  )
+
 }
 
 trait SequenceConfigurationService {
   def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration]
+  def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration]
   def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
   def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
 }
@@ -72,7 +98,15 @@ trait DefaultSequenceConfigurationComponent extends SequenceConfigurationCompone
 
   override lazy val sequenceConfigurationService: SequenceConfigurationService = new SequenceConfigurationService {
     override def getSequenceConfiguration(sequenceId: SequenceId): Future[SequenceConfiguration] = {
-      (sequenceConfigurationActor ? GetSequenceConfiguration(sequenceId)).mapTo[SequenceConfiguration]
+      (sequenceConfigurationActor ? GetSequenceConfiguration(sequenceId))
+        .mapTo[CachedSequenceConfiguration]
+        .map(_.sequenceConfiguration)
+    }
+
+    override def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration] = {
+      (sequenceConfigurationActor ? GetSequenceConfigurationByQuestionId(questionId))
+        .mapTo[CachedSequenceConfiguration]
+        .map(_.sequenceConfiguration)
     }
 
     override def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean] = {
@@ -80,7 +114,9 @@ trait DefaultSequenceConfigurationComponent extends SequenceConfigurationCompone
     }
 
     override def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
-      (sequenceConfigurationActor ? GetPersistentSequenceConfiguration(sequenceId)).mapTo[Option[SequenceConfiguration]]
+      (sequenceConfigurationActor ? GetPersistentSequenceConfiguration(sequenceId))
+        .mapTo[StoredSequenceConfiguration]
+        .map(_.sequenceConfiguration)
     }
   }
 }

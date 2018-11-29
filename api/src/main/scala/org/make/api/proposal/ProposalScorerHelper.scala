@@ -22,9 +22,11 @@ package org.make.api.proposal
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
+import org.make.api.sequence.SequenceConfiguration
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
-import org.make.core.proposal._
+import org.make.core.proposal.indexed.SequencePool
+import org.make.core.proposal.{BaseVote, ProposalStatus, QualificationKey, VoteKey}
 
 object ProposalScorerHelper extends StrictLogging {
   var random: RandomGenerator = new MersenneTwister()
@@ -38,29 +40,29 @@ object ProposalScorerHelper extends StrictLogging {
                          doableCount: Int,
                          impossibleCount: Int)
 
-  def voteCounts(proposal: Proposal, voteKey: VoteKey): Int = {
-    proposal.votes.filter(_.key == voteKey).map(_.count).sum
+  def voteCounts(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
+    votes.filter(_.key == voteKey).map(_.count).sum
   }
 
-  def qualificationCounts(proposal: Proposal, voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
-    proposal.votes
+  def qualificationCounts(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
+    votes
       .filter(_.key == voteKey)
       .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.count))
       .sum
   }
 
-  def scoreCounts(proposal: Proposal): ScoreCounts = {
-    val votes: Int = proposal.votes.map(_.count).sum
-    val neutralCount: Int = voteCounts(proposal, Neutral)
-    val platitudeAgreeCount: Int = qualificationCounts(proposal, Agree, PlatitudeAgree)
-    val platitudeDisagreeCount: Int = qualificationCounts(proposal, Disagree, PlatitudeDisagree)
-    val loveCount: Int = qualificationCounts(proposal, Agree, LikeIt)
-    val hateCount: Int = qualificationCounts(proposal, Disagree, NoWay)
-    val doableCount: Int = qualificationCounts(proposal, Agree, Doable)
-    val impossibleCount: Int = qualificationCounts(proposal, Agree, Impossible)
+  def scoreCounts(votes: Seq[BaseVote]): ScoreCounts = {
+    val votesCount: Int = votes.map(_.count).sum
+    val neutralCount: Int = voteCounts(votes, Neutral)
+    val platitudeAgreeCount: Int = qualificationCounts(votes, Agree, PlatitudeAgree)
+    val platitudeDisagreeCount: Int = qualificationCounts(votes, Disagree, PlatitudeDisagree)
+    val loveCount: Int = qualificationCounts(votes, Agree, LikeIt)
+    val hateCount: Int = qualificationCounts(votes, Disagree, NoWay)
+    val doableCount: Int = qualificationCounts(votes, Agree, Doable)
+    val impossibleCount: Int = qualificationCounts(votes, Agree, Impossible)
 
     ScoreCounts(
-      votes,
+      votesCount,
       neutralCount,
       platitudeAgreeCount,
       platitudeDisagreeCount,
@@ -80,8 +82,8 @@ object ProposalScorerHelper extends StrictLogging {
         (counts.votes + 1).toDouble
   }
 
-  def engagement(proposal: Proposal): Double = {
-    engagement(scoreCounts(proposal))
+  def engagement(votes: Seq[BaseVote]): Double = {
+    engagement(scoreCounts(votes))
   }
 
   def adhesion(counts: ScoreCounts): Double = {
@@ -89,8 +91,8 @@ object ProposalScorerHelper extends StrictLogging {
       - (counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
   }
 
-  def adhesion(proposal: Proposal): Double = {
-    adhesion(scoreCounts(proposal))
+  def adhesion(votes: Seq[BaseVote]): Double = {
+    adhesion(scoreCounts(votes))
   }
 
   def realistic(counts: ScoreCounts): Double = {
@@ -98,32 +100,32 @@ object ProposalScorerHelper extends StrictLogging {
       - (counts.impossibleCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble)
   }
 
-  def realistic(proposal: Proposal): Double = {
-    realistic(scoreCounts(proposal))
+  def realistic(votes: Seq[BaseVote]): Double = {
+    realistic(scoreCounts(votes))
   }
 
   def topScore(counts: ScoreCounts): Double = {
     engagement(counts) + adhesion(counts) + 2 * realistic(counts)
   }
 
-  def topScore(proposal: Proposal): Double = {
-    topScore(scoreCounts(proposal))
+  def topScore(votes: Seq[BaseVote]): Double = {
+    topScore(scoreCounts(votes))
   }
 
   def controversy(counts: ScoreCounts): Double = {
     math.min(counts.loveCount + 0.01, counts.hateCount + 0.01) / (counts.votes - counts.neutralCount + 1).toDouble
   }
 
-  def controversy(proposal: Proposal): Double = {
-    controversy(scoreCounts(proposal))
+  def controversy(votes: Seq[BaseVote]): Double = {
+    controversy(scoreCounts(votes))
   }
 
   def rejection(counts: ScoreCounts): Double = {
     -1 * adhesion(counts)
   }
 
-  def rejection(proposal: Proposal): Double = {
-    rejection(scoreCounts(proposal))
+  def rejection(votes: Seq[BaseVote]): Double = {
+    rejection(scoreCounts(votes))
   }
 
   /*
@@ -138,8 +140,8 @@ object ProposalScorerHelper extends StrictLogging {
     1 - sampleRate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes, 0.33)
   }
 
-  def sampleEngagement(proposal: Proposal): Double = {
-    sampleEngagement(scoreCounts(proposal))
+  def sampleEngagement(votes: Seq[BaseVote]): Double = {
+    sampleEngagement(scoreCounts(votes))
   }
 
   def sampleAdhesion(counts: ScoreCounts): Double = {
@@ -147,8 +149,8 @@ object ProposalScorerHelper extends StrictLogging {
       - sampleRate(counts.hateCount, counts.votes - counts.neutralCount, 0.01))
   }
 
-  def sampleAdhesion(proposal: Proposal): Double = {
-    sampleAdhesion(scoreCounts(proposal))
+  def sampleAdhesion(votes: Seq[BaseVote]): Double = {
+    sampleAdhesion(scoreCounts(votes))
   }
 
   def sampleRealistic(counts: ScoreCounts): Double = {
@@ -156,24 +158,24 @@ object ProposalScorerHelper extends StrictLogging {
       - sampleRate(counts.impossibleCount, counts.votes - counts.neutralCount, 0.01))
   }
 
-  def sampleRealistic(proposal: Proposal): Double = {
-    sampleRealistic(scoreCounts(proposal))
+  def sampleRealistic(votes: Seq[BaseVote]): Double = {
+    sampleRealistic(scoreCounts(votes))
   }
 
   def sampleControversy(counts: ScoreCounts): Double = {
     sampleRate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount, 0.01)
   }
 
-  def sampleControversy(proposal: Proposal): Double = {
-    sampleControversy(scoreCounts(proposal))
+  def sampleControversy(votes: Seq[BaseVote]): Double = {
+    sampleControversy(scoreCounts(votes))
   }
 
   def sampleScore(counts: ScoreCounts): Double = {
     sampleEngagement(counts) + sampleAdhesion(counts) + 2 * sampleRealistic(counts)
   }
 
-  def sampleScore(proposal: Proposal): Double = {
-    sampleScore(scoreCounts(proposal))
+  def sampleScore(votes: Seq[BaseVote]): Double = {
+    sampleScore(scoreCounts(votes))
   }
 
   /*
@@ -194,8 +196,8 @@ object ProposalScorerHelper extends StrictLogging {
     RateEstimate(pp, sd)
   }
 
-  def engagementUpperBound(proposal: Proposal): Double = {
-    val counts = scoreCounts(proposal)
+  def engagementUpperBound(votes: Seq[BaseVote]): Double = {
+    val counts = scoreCounts(votes)
 
     val engagementEstimate: RateEstimate =
       rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
@@ -203,8 +205,8 @@ object ProposalScorerHelper extends StrictLogging {
     1 - engagementEstimate.rate + 2 * engagementEstimate.sd
   }
 
-  def scoreUpperBound(proposal: Proposal): Double = {
-    val counts = scoreCounts(proposal)
+  def scoreUpperBound(votes: Seq[BaseVote]): Double = {
+    val counts = scoreCounts(votes)
 
     val engagementEstimate: RateEstimate =
       rateEstimate(counts.neutralCount + counts.platitudeAgreeCount + counts.platitudeDisagreeCount, counts.votes)
@@ -225,12 +227,33 @@ object ProposalScorerHelper extends StrictLogging {
     scoreEstimate + confidenceInterval
   }
 
-  def controversyUpperBound(proposal: Proposal): Double = {
-    val counts = scoreCounts(proposal)
+  def controversyUpperBound(votes: Seq[BaseVote]): Double = {
+    val counts = scoreCounts(votes)
 
     val controversyEstimate: RateEstimate =
       rateEstimate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
 
     controversyEstimate.rate + 2 * controversyEstimate.sd
   }
+
+  def sequencePool(sequenceConfiguration: SequenceConfiguration,
+                   votes: Seq[BaseVote],
+                   status: ProposalStatus): SequencePool = {
+    val votesCount: Int = votes.map(_.count).sum
+    val engagementRate: Double = ProposalScorerHelper.engagementUpperBound(votes)
+    val scoreRate: Double = ProposalScorerHelper.scoreUpperBound(votes)
+    val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(votes)
+
+    if (status == ProposalStatus.Accepted && votesCount < sequenceConfiguration.newProposalsVoteThreshold) {
+      SequencePool.New
+    } else if (status == ProposalStatus.Accepted && votesCount >= sequenceConfiguration.newProposalsVoteThreshold
+               && engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold
+               && (scoreRate > sequenceConfiguration.testedProposalsScoreThreshold
+               || controversyRate > sequenceConfiguration.testedProposalsControversyThreshold)) {
+      SequencePool.Tested
+    } else {
+      SequencePool.Excluded
+    }
+  }
+
 }

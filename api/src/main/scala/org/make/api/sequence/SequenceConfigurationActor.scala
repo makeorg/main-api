@@ -22,6 +22,7 @@ package org.make.api.sequence
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern.{pipe, Backoff, BackoffSupervisor}
 import org.make.api.sequence.SequenceConfigurationActor._
+import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,7 +33,6 @@ import scala.util.{Failure, Success}
 class SequenceConfigurationActor(persistentSequenceConfigurationService: PersistentSequenceConfigurationService)
     extends Actor
     with ActorLogging {
-  val defaultConfiguration: SequenceConfiguration = SequenceConfiguration(sequenceId = SequenceId("default"))
 
   var configCache: Map[SequenceId, SequenceConfiguration] = Map.empty
 
@@ -60,21 +60,33 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
     case ReloadSequenceConfiguration                 => refreshCache()
     case UpdateSequenceConfiguration(configurations) => updateConfiguration(configurations)
     case GetSequenceConfiguration(sequenceId) =>
-      sender() ! configCache.getOrElse(sequenceId, defaultConfiguration)
+      sender() ! CachedSequenceConfiguration(configCache.getOrElse(sequenceId, SequenceConfiguration.default))
+    case GetSequenceConfigurationByQuestionId(questionId) =>
+      sender() ! CachedSequenceConfiguration(
+        configCache.values.find(_.questionId == questionId).getOrElse(SequenceConfiguration.default)
+      )
     case SetSequenceConfiguration(configuration) =>
       pipe(persistentSequenceConfigurationService.persist(configuration)).to(sender())
     case GetPersistentSequenceConfiguration(sequenceId) =>
-      pipe(persistentSequenceConfigurationService.findOne(sequenceId)).to(sender())
+      pipe(persistentSequenceConfigurationService.findOne(sequenceId).map(StoredSequenceConfiguration.apply))
+        .to(sender())
   }
 
 }
 
 object SequenceConfigurationActor {
-  case object ReloadSequenceConfiguration
+  sealed trait SequenceConfigurationActorProtocol
+  case object ReloadSequenceConfiguration extends SequenceConfigurationActorProtocol
   case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
-  case class GetSequenceConfiguration(sequenceId: SequenceId)
+      extends SequenceConfigurationActorProtocol
+  case class GetSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
+  case class GetSequenceConfigurationByQuestionId(questionId: QuestionId) extends SequenceConfigurationActorProtocol
   case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
-  case class GetPersistentSequenceConfiguration(sequenceId: SequenceId)
+      extends SequenceConfigurationActorProtocol
+  case class GetPersistentSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
+
+  case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
+  case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])
 
   val name = "sequence-configuration-backoff"
   val internalName = "sequence-configuration-backoff"

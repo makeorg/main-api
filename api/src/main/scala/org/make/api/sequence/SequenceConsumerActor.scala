@@ -65,7 +65,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
       case event: SequenceViewed           => doNothing(event)
       case event: SequenceUpdated          => onCreateOrUpdate(event)
       case event: SequenceCreated          => onCreateOrUpdate(event)
-      case event: SequenceProposalsAdded   => onCreateOrUpdate(event)
+      case event: SequenceProposalsAdded   => doNothing(event)
       case event: SequenceProposalsRemoved => onCreateOrUpdate(event)
       case event: SequencePatched          => onCreateOrUpdate(event)
     }

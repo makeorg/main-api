@@ -22,7 +22,7 @@ package org.make.core.proposal.indexed
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -73,6 +73,7 @@ object ProposalElasticsearchFieldNames {
   val toEnrich: String = "toEnrich"
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
+  val sequencePool: String = "sequencePool"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -97,10 +98,11 @@ case class IndexedProposal(id: ProposalId,
                            questionId: Option[QuestionId],
                            tags: Seq[IndexedTag],
                            ideaId: Option[IdeaId],
-                           operationId: Option[OperationId])
+                           operationId: Option[OperationId],
+                           sequencePool: SequencePool)
 
 object IndexedProposal extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedProposal] = deriveEncoder[IndexedProposal]
+  implicit val encoder: Encoder[IndexedProposal] = deriveEncoder[IndexedProposal]
   implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
 }
 
@@ -110,7 +112,7 @@ final case class Context(operation: Option[OperationId],
                          question: Option[String])
 
 object Context {
-  implicit val encoder: ObjectEncoder[Context] = deriveEncoder[Context]
+  implicit val encoder: Encoder[Context] = deriveEncoder[Context]
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
 }
 
@@ -122,7 +124,7 @@ final case class Author(firstName: Option[String],
                         avatarUrl: Option[String])
 
 object Author {
-  implicit val encoder: ObjectEncoder[Author] = deriveEncoder[Author]
+  implicit val encoder: Encoder[Author] = deriveEncoder[Author]
   implicit val decoder: Decoder[Author] = deriveDecoder[Author]
 }
 
@@ -131,14 +133,17 @@ final case class IndexedOrganisationInfo(organisationId: UserId,
                                          organisationSlug: Option[String])
 
 object IndexedOrganisationInfo {
-  implicit val encoder: ObjectEncoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
+  implicit val encoder: Encoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
   implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
 }
 
-final case class IndexedVote(key: VoteKey, count: Int = 0, qualifications: Seq[IndexedQualification])
+final case class IndexedVote(override val key: VoteKey,
+                             override val count: Int = 0,
+                             override val qualifications: Seq[IndexedQualification])
+    extends BaseVote
 
 object IndexedVote {
-  implicit val encoder: ObjectEncoder[IndexedVote] = deriveEncoder[IndexedVote]
+  implicit val encoder: Encoder[IndexedVote] = deriveEncoder[IndexedVote]
   implicit val decoder: Decoder[IndexedVote] = deriveDecoder[IndexedVote]
 
   def apply(vote: Vote): IndexedVote =
@@ -149,10 +154,11 @@ object IndexedVote {
     )
 }
 
-final case class IndexedQualification(key: QualificationKey, count: Int = 0)
+final case class IndexedQualification(override val key: QualificationKey, override val count: Int = 0)
+    extends BaseQualification
 
 object IndexedQualification {
-  implicit val encoder: ObjectEncoder[IndexedQualification] = deriveEncoder[IndexedQualification]
+  implicit val encoder: Encoder[IndexedQualification] = deriveEncoder[IndexedQualification]
   implicit val decoder: Decoder[IndexedQualification] = deriveDecoder[IndexedQualification]
 
   def apply(qualification: Qualification): IndexedQualification =
@@ -169,7 +175,7 @@ final case class IndexedScores(boost: Double = 0,
                                scoreUpperBound: Double)
 
 object IndexedScores {
-  implicit val encoder: ObjectEncoder[IndexedScores] = deriveEncoder[IndexedScores]
+  implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
   def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0)
@@ -178,7 +184,7 @@ object IndexedScores {
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])
 
 object ProposalsSearchResult {
-  implicit val encoder: ObjectEncoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
+  implicit val encoder: Encoder[ProposalsSearchResult] = deriveEncoder[ProposalsSearchResult]
   implicit val decoder: Decoder[ProposalsSearchResult] = deriveDecoder[ProposalsSearchResult]
 
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
@@ -187,6 +193,27 @@ object ProposalsSearchResult {
 final case class IndexedTag(tagId: TagId, label: String, display: Boolean)
 
 object IndexedTag {
-  implicit val encoder: ObjectEncoder[IndexedTag] = deriveEncoder[IndexedTag]
+  implicit val encoder: Encoder[IndexedTag] = deriveEncoder[IndexedTag]
   implicit val decoder: Decoder[IndexedTag] = deriveDecoder[IndexedTag]
+}
+
+sealed trait SequencePool {
+  val shortName: String
+}
+
+object SequencePool {
+  case object New extends SequencePool { override val shortName: String = "new" }
+  case object Tested extends SequencePool { override val shortName: String = "tested" }
+  case object Excluded extends SequencePool { override val shortName: String = "excluded" }
+
+  val sequencePools = Map(New.shortName -> New, Tested.shortName -> Tested, Excluded.shortName -> Excluded)
+
+  implicit lazy val sequencePoolEncoder: Encoder[SequencePool] =
+    (sequencePool: SequencePool) => Json.fromString(sequencePool.shortName)
+  implicit lazy val sequencePoolDecoder: Decoder[SequencePool] =
+    Decoder.decodeString.emap(
+      sequencePool =>
+        sequencePools.get(sequencePool).map(Right.apply).getOrElse(Left(s"$sequencePool is not a SequencePool"))
+    )
+
 }

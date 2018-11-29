@@ -20,7 +20,6 @@
 package org.make.api.sequence
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
@@ -33,6 +32,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.theme.ThemeServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
+import org.make.core.question.QuestionId
 import org.make.core.sequence._
 import org.make.core.sequence.indexed.{IndexedStartSequence, SequencesSearchResult}
 import org.make.core.{DateHelper, HttpCodes, Validation}
@@ -277,6 +277,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
     value = "moderation-update-sequence-configuration",
     httpMethod = "PUT",
     code = HttpCodes.OK,
+    notes = "/!\\ You need to reindex proposals to apply these modifications.",
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -295,21 +296,24 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
         paramType = "body",
         dataType = "org.make.api.sequence.SequenceConfigurationRequest"
       ),
-      new ApiImplicitParam(name = "sequenceId", paramType = "path", required = true, value = "", dataType = "string")
+      new ApiImplicitParam(name = "sequenceId", paramType = "path", required = true, value = "", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, value = "", dataType = "string")
     )
   )
-  @Path(value = "/moderation/sequences/{sequenceId}/configuration")
+  @Path(value = "/moderation/sequences/{sequenceId}/{questionId}/configuration")
   def putSequenceConfiguration: Route =
     put {
-      path("moderation" / "sequences" / sequenceId / "configuration") { sequenceId =>
-        makeOperation("PostSequenceConfiguration") { requestContext =>
+      path("moderation" / "sequences" / sequenceId / questionId / "configuration") { (sequenceId, questionId) =>
+        makeOperation("PostSequenceConfiguration") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[SequenceConfigurationRequest]) { sequenceConfigurationRequest: SequenceConfigurationRequest =>
                   provideAsync[Boolean](
                     sequenceConfigurationService
-                      .setSequenceConfiguration(sequenceConfigurationRequest.toSequenceConfiguration(sequenceId))
+                      .setSequenceConfiguration(
+                        sequenceConfigurationRequest.toSequenceConfiguration(sequenceId, questionId)
+                      )
                   ) { complete(_) }
                 }
               }
@@ -491,7 +495,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def startSequenceBySlug: Route = {
     get {
       path("sequences" / sequenceSlug) { slug =>
-        parameters('include.*) { (includes) =>
+        parameters('include.*) { includes =>
           makeOperation("StartSequenceBySlug") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
@@ -501,6 +505,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       maybeUserId = userAuth.map(_.user.userId),
                       slug = slug,
                       includedProposals = includes.toSeq.map(ProposalId(_)),
+                      tagsIds = None,
                       requestContext = requestContext
                     )
                 ) { sequence =>
@@ -530,7 +535,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
   def startSequenceById: Route = {
     get {
       path("sequences" / "start" / sequenceId) { sequenceId =>
-        parameters('include.*) { (includes) =>
+        parameters('include.*) { includes =>
           makeOperation("StartSequenceById") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest {
@@ -540,6 +545,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
                       maybeUserId = userAuth.map(_.user.userId),
                       sequenceId = sequenceId,
                       includedProposals = includes.toSeq.map(ProposalId(_)),
+                      tagsIds = None,
                       requestContext = requestContext
                     )
                 ) { sequences =>
@@ -566,5 +572,6 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       putSequenceConfiguration
 
   val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
+  val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
   val sequenceSlug: PathMatcher1[String] = Segment
 }

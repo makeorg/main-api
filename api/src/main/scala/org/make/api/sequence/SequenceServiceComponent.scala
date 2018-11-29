@@ -21,28 +21,26 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
-import org.make.api.sessionhistory.{
-  LogSessionStartSequenceEvent,
-  RequestSessionVoteValues,
-  SessionAction,
-  SessionHistoryCoordinatorServiceComponent
-}
-import org.make.api.technical.businessconfig.BackofficeConfiguration
+import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
-import org.make.api.userhistory.UserHistoryActor.RequestVoteValues
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
+import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.{ProposalId, QuestionSearchFilter, RandomAlgorithm, SequencePoolSearchFilter}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames}
 import org.make.core.reference.ThemeId
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.{IndexedSequence, SequencesSearchResult}
+import org.make.core.sequence.indexed.SequencesSearchResult
+import org.make.core.tag.TagId
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext, SlugHelper}
+import org.make.core.{proposal, DateHelper, RequestContext, SlugHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,10 +56,12 @@ trait SequenceService {
   def startNewSequence(maybeUserId: Option[UserId],
                        slug: String,
                        includedProposals: Seq[ProposalId],
+                       tagsIds: Option[Seq[TagId]],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
   def startNewSequence(maybeUserId: Option[UserId],
                        sequenceId: SequenceId,
                        includedProposals: Seq[ProposalId],
+                       tagsIds: Option[Seq[TagId]],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
   def getSequenceById(sequenceId: SequenceId, requestContext: RequestContext): Future[Option[Sequence]]
   def create(userId: UserId,
@@ -126,62 +126,105 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     override def startNewSequence(maybeUserId: Option[UserId],
                                   slug: String,
                                   includedProposals: Seq[ProposalId],
+                                  tagsIds: Option[Seq[TagId]],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
       logStartSequenceUserHisory(Some(slug), None, maybeUserId, includedProposals, requestContext)
 
       elasticsearchSequenceAPI.findSequenceBySlug(slug).flatMap {
         case None => Future.successful(None)
         case Some(sequence) =>
-          startSequence(maybeUserId, sequence, includedProposals, requestContext)
+          sequenceConfigurationService.getSequenceConfiguration(sequence.id).flatMap { sequenceConfiguration =>
+            startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext)
+          }
       }
     }
 
     override def startNewSequence(maybeUserId: Option[UserId],
                                   sequenceId: SequenceId,
                                   includedProposals: Seq[ProposalId],
+                                  tagsIds: Option[Seq[TagId]],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
       logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, includedProposals, requestContext)
 
-      elasticsearchSequenceAPI.findSequenceById(sequenceId).flatMap {
-        case None => Future.successful(None)
-        case Some(sequence) =>
-          startSequence(maybeUserId, sequence, includedProposals, requestContext)
+      sequenceConfigurationService.getSequenceConfiguration(sequenceId).flatMap { sequenceConfiguration =>
+        startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext)
       }
     }
 
     private def startSequence(maybeUserId: Option[UserId],
-                              sequence: IndexedSequence,
-                              includedProposals: Seq[ProposalId],
+                              sequenceConfiguration: SequenceConfiguration,
+                              includedProposalIds: Seq[ProposalId],
+                              tagsIds: Option[Seq[TagId]],
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      val allProposals: Future[Seq[Proposal]] = Future
-        .traverse(sequence.proposals) { id =>
-          proposalCoordinatorService.getProposal(id.proposalId)
-        }
-        .map(_.flatten)
+
+      val futureIncludedProposals: Future[Seq[IndexedProposal]] = if (includedProposalIds.nonEmpty) {
+        elasticsearchProposalAPI.findProposalsByIds(includedProposalIds, random = false)
+      } else {
+        Future.successful(Seq.empty)
+      }
+
+      val futureNewProposalsPool: Future[Seq[IndexedProposal]] =
+        elasticsearchProposalAPI
+          .searchProposals(
+            proposal.SearchQuery(
+              filters = Some(
+                proposal.SearchFilters(
+                  sequencePool = Some(SequencePoolSearchFilter("new")),
+                  question = Some(QuestionSearchFilter(sequenceConfiguration.questionId)),
+                  tags = tagsIds.map(proposal.TagsSearchFilter.apply)
+                )
+              ),
+              limit = Some(sequenceConfiguration.sequenceSize * 3),
+              sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC)))
+            )
+          )
+          .map(_.results)
+
+      val futureTestedProposalsPool: Future[Seq[IndexedProposal]] =
+        elasticsearchProposalAPI
+          .searchProposals(
+            proposal.SearchQuery(
+              filters = Some(
+                proposal.SearchFilters(
+                  sequencePool = Some(SequencePoolSearchFilter("tested")),
+                  question = Some(QuestionSearchFilter(sequenceConfiguration.questionId)),
+                  tags = tagsIds.map(proposal.TagsSearchFilter.apply)
+                )
+              ),
+              limit = Some(sequenceConfiguration.maxTestedProposalCount),
+              sortAlgorithm = Some(RandomAlgorithm())
+            )
+          )
+          .map(_.results)
 
       for {
-        allProposals          <- allProposals
-        votedProposals        <- futureVotedProposals(maybeUserId, requestContext, allProposals.map(_.proposalId))
-        sequenceConfiguration <- sequenceConfigurationService.getSequenceConfiguration(sequence.id)
-        selectedProposals: Seq[ProposalId] = selectionAlgorithm
+        includedProposals  <- futureIncludedProposals
+        allNewProposals    <- futureNewProposalsPool
+        allTestedProposals <- futureTestedProposalsPool
+        allVotes           <- futureVotedProposals(maybeUserId, requestContext)
+
+        newProposals = allNewProposals.groupBy(_.userId).values.map(_.head).toSeq
+        testedProposals = allTestedProposals.groupBy(_.userId).values.map(_.head).toSeq
+        votes = allVotes.filter(id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id))
+
+        selectedProposals = selectionAlgorithm
           .selectProposalsForSequence(
-            targetLength = BackofficeConfiguration.defaultMaxProposalsPerSequence,
             sequenceConfiguration = sequenceConfiguration,
-            proposals = allProposals,
-            votedProposals = votedProposals.keys.toSeq,
-            includeList = includedProposals
+            includedProposals = includedProposals,
+            newProposals = newProposals,
+            testedProposals = testedProposals,
+            votedProposals = votes
           )
-        indexedProposals <- elasticsearchProposalAPI.findProposalsByIds(selectedProposals, random = false)
+        sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.map(_.id))
       } yield {
-        val indexedProposalsSorted = indexedProposals.sortBy(proposal => selectedProposals.indexOf(proposal.id))
         Some(
           SequenceResult(
-            id = sequence.id,
-            title = sequence.title,
-            slug = sequence.slug,
-            proposals = indexedProposalsSorted
+            id = sequenceConfiguration.sequenceId,
+            title = "deprecated",
+            slug = "deprecated",
+            proposals = selectedProposals
               .map(
-                indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), votedProposals.get(indexed.id))
+                indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id))
               )
           )
         )
@@ -224,8 +267,19 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     }
 
     private def futureVotedProposals(maybeUserId: Option[UserId],
-                                     requestContext: RequestContext,
-                                     proposals: Seq[ProposalId]): Future[Map[ProposalId, VoteAndQualifications]] =
+                                     requestContext: RequestContext): Future[Seq[ProposalId]] =
+      maybeUserId.map { userId =>
+        userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(userId))
+      }.getOrElse {
+        sessionHistoryCoordinatorService
+          .retrieveVotedProposals(RequestSessionVotedProposals(requestContext.sessionId))
+      }
+
+    private def futureVotedProposalsAndVotes(
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext,
+      proposals: Seq[ProposalId]
+    ): Future[Map[ProposalId, VoteAndQualifications]] =
       maybeUserId.map { userId =>
         userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(userId, proposals))
       }.getOrElse {
