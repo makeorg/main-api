@@ -36,7 +36,7 @@ class V24_1__Populate_question_id_for_sequence_configuration extends BaseJavaMig
       val sequenceId = resultSet.getString("landing_sequence_id")
       val questionId = resultSet.getString("question_id")
       val statement =
-        connection.prepareStatement("UPDATE sequence_configuration SET questionId = ? WHERE sequence_id = ?")
+        connection.prepareStatement("UPDATE sequence_configuration SET question_id = ? WHERE sequence_id = ?")
       statement.setString(1, questionId)
       statement.setString(2, sequenceId)
       statement.execute()
