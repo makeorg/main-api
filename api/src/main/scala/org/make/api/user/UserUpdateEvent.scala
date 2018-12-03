@@ -22,7 +22,7 @@ package org.make.api.user
 import java.time.ZonedDateTime
 
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, EventWrapper, MakeSerializable}
+import org.make.core.{EventWrapper, MakeSerializable}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 sealed trait UserUpdateEvent {
@@ -33,6 +33,8 @@ sealed trait UserUpdateEvent {
 }
 
 object UserUpdateEvent {
+
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
 
   type AnyUserUpdateEvent =
     UserCreatedEvent :+:
@@ -92,25 +94,25 @@ object UserUpdateEvent {
     implicit val atUserUnfollowEvent: Case.Aux[UserUnfollowEvent, UserUnfollowEvent] = at(identity)
   }
 
-  case class UserCreatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  case class UserCreatedEvent(override val eventDate: ZonedDateTime = defaultDate,
                               override val userId: Option[UserId] = None,
                               override val email: Option[String] = None)
       extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
-  case class UserUpdatedHardBounceEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  case class UserUpdatedHardBounceEvent(override val eventDate: ZonedDateTime = defaultDate,
                                         override val email: Option[String] = None,
                                         override val userId: Option[UserId] = None)
       extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
-  case class UserUpdatedPasswordEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  case class UserUpdatedPasswordEvent(override val eventDate: ZonedDateTime = defaultDate,
                                       override val email: Option[String] = None,
                                       override val userId: Option[UserId] = None)
       extends UserUpdateEvent {
     def version(): Int = MakeSerializable.V1
   }
-  case class UserUpdatedOptInNewsletterEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  case class UserUpdatedOptInNewsletterEvent(override val eventDate: ZonedDateTime = defaultDate,
                                              override val email: Option[String] = None,
                                              override val userId: Option[UserId] = None,
                                              optInNewsletter: Boolean)
@@ -118,7 +120,7 @@ object UserUpdateEvent {
     def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserUpdatedTagEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserUpdatedTagEvent(override val eventDate: ZonedDateTime = defaultDate,
                                        override val userId: Option[UserId] = None,
                                        override val email: Option[String] = None,
                                        oldTag: String,
@@ -127,28 +129,28 @@ object UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserUpdateValidatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserUpdateValidatedEvent(override val eventDate: ZonedDateTime = defaultDate,
                                             override val userId: Option[UserId] = None,
                                             override val email: Option[String] = None)
       extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserUpdatedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserUpdatedEvent(override val eventDate: ZonedDateTime = defaultDate,
                                     override val userId: Option[UserId] = None,
                                     override val email: Option[String] = None)
       extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserAnonymizedEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserAnonymizedEvent(override val eventDate: ZonedDateTime = defaultDate,
                                        override val userId: Option[UserId] = None,
                                        override val email: Option[String] = None)
       extends UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserFollowEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserFollowEvent(override val eventDate: ZonedDateTime = defaultDate,
                                    override val userId: Option[UserId],
                                    override val email: Option[String] = None,
                                    followedUserId: UserId)
@@ -156,7 +158,7 @@ object UserUpdateEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
-  final case class UserUnfollowEvent(override val eventDate: ZonedDateTime = DateHelper.now(),
+  final case class UserUnfollowEvent(override val eventDate: ZonedDateTime = defaultDate,
                                      override val userId: Option[UserId],
                                      override val email: Option[String] = None,
                                      followedUserId: UserId)

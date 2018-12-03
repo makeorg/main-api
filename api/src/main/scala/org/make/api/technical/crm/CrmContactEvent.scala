@@ -38,6 +38,8 @@ sealed trait PublishedCrmContactEvent extends CrmContactEvent {
 
 object PublishedCrmContactEvent {
 
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+
   type AnyCrmContactEvent =
     CrmContactNew :+:
       CrmContactHardBounce :+:
@@ -81,8 +83,7 @@ object PublishedCrmContactEvent {
     )
   }
 
-  final case class CrmContactNew(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
-      extends PublishedCrmContactEvent {
+  final case class CrmContactNew(id: UserId, eventDate: ZonedDateTime = defaultDate) extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
   object CrmContactNew {
@@ -90,7 +91,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactNew.apply)
   }
 
-  final case class CrmContactUpdateProperties(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactUpdateProperties(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -99,7 +100,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactNew.apply)
   }
 
-  final case class CrmContactHardBounce(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactHardBounce(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -108,7 +109,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactHardBounce.apply)
   }
 
-  final case class CrmContactUnsubscribe(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactUnsubscribe(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -117,7 +118,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactUnsubscribe.apply)
   }
 
-  final case class CrmContactSubscribe(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactSubscribe(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -126,7 +127,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactSubscribe.apply)
   }
 
-  final case class CrmContactRemoveFromLists(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactRemoveFromLists(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }
@@ -135,7 +136,7 @@ object PublishedCrmContactEvent {
       DefaultJsonProtocol.jsonFormat2(CrmContactRemoveFromLists.apply)
   }
 
-  final case class CrmContactListSync(id: UserId, eventDate: ZonedDateTime = ZonedDateTime.now())
+  final case class CrmContactListSync(id: UserId, eventDate: ZonedDateTime = defaultDate)
       extends PublishedCrmContactEvent {
     override def version(): Int = MakeSerializable.V1
   }

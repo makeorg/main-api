@@ -41,9 +41,11 @@ sealed trait ProposalEvent extends MakeSerializable {
 }
 
 object ProposalEvent {
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+
   // This event isn't published and so doesn't need to be in the coproduct
   final case class SimilarProposalsCleared(id: ProposalId,
-                                           eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                           eventDate: ZonedDateTime = defaultDate,
                                            requestContext: RequestContext = RequestContext.empty)
       extends ProposalEvent
 
@@ -56,7 +58,7 @@ object ProposalEvent {
   // This event isn't published and so doesn't need to be in the coproduct
   final case class SimilarProposalRemoved(id: ProposalId,
                                           proposalToRemove: ProposalId,
-                                          eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                          eventDate: ZonedDateTime = defaultDate,
                                           requestContext: RequestContext = RequestContext.empty)
       extends ProposalEvent
 
@@ -73,6 +75,8 @@ sealed trait PublishedProposalEvent extends ProposalEvent {
 }
 
 object PublishedProposalEvent {
+
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
 
   type AnyProposalEvent =
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
@@ -131,7 +135,7 @@ object PublishedProposalEvent {
   }
 
   final case class ProposalPatched(id: ProposalId,
-                                   eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                   eventDate: ZonedDateTime = defaultDate,
                                    requestContext: RequestContext = RequestContext.empty,
                                    proposal: Proposal)
       extends PublishedProposalEvent {
@@ -280,7 +284,7 @@ object PublishedProposalEvent {
   }
 
   final case class ProposalPostponed(id: ProposalId,
-                                     eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                     eventDate: ZonedDateTime = defaultDate,
                                      requestContext: RequestContext = RequestContext.empty,
                                      moderator: UserId)
       extends PublishedProposalEvent {
@@ -396,7 +400,7 @@ object PublishedProposalEvent {
   final case class ProposalLocked(id: ProposalId,
                                   moderatorId: UserId,
                                   moderatorName: Option[String] = None,
-                                  eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                  eventDate: ZonedDateTime = defaultDate,
                                   requestContext: RequestContext = RequestContext.empty)
       extends PublishedProposalEvent {
 
@@ -414,7 +418,7 @@ object PublishedProposalEvent {
   final case class ProposalAddedToOperation(id: ProposalId,
                                             operationId: OperationId,
                                             moderatorId: UserId,
-                                            eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                            eventDate: ZonedDateTime = defaultDate,
                                             requestContext: RequestContext = RequestContext.empty)
       extends PublishedProposalEvent {
 
@@ -430,7 +434,7 @@ object PublishedProposalEvent {
   final case class ProposalRemovedFromOperation(id: ProposalId,
                                                 operationId: OperationId,
                                                 moderatorId: UserId,
-                                                eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                                eventDate: ZonedDateTime = defaultDate,
                                                 requestContext: RequestContext = RequestContext.empty)
       extends PublishedProposalEvent {
 
@@ -443,7 +447,7 @@ object PublishedProposalEvent {
   }
 
   final case class ProposalAnonymized(id: ProposalId,
-                                      eventDate: ZonedDateTime = ZonedDateTime.now(),
+                                      eventDate: ZonedDateTime = defaultDate,
                                       requestContext: RequestContext = RequestContext.empty)
       extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1

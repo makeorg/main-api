@@ -25,7 +25,7 @@ import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
+import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
@@ -96,8 +96,10 @@ object UserEvent {
   private val defaultCountry = Country("FR")
   private val defaultLanguage = Language("fr")
 
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = DateHelper.now(),
+                                      override val eventDate: ZonedDateTime = defaultDate,
                                       override val userId: UserId,
                                       override val country: Country = defaultCountry,
                                       override val language: Language = defaultLanguage,
@@ -123,7 +125,7 @@ object UserEvent {
   }
 
   final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
-                                              override val eventDate: ZonedDateTime = DateHelper.now(),
+                                              override val eventDate: ZonedDateTime = defaultDate,
                                               override val userId: UserId,
                                               override val country: Country = defaultCountry,
                                               override val language: Language = defaultLanguage,
@@ -149,7 +151,7 @@ object UserEvent {
   }
 
   case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
-                                 override val eventDate: ZonedDateTime = DateHelper.now(),
+                                 override val eventDate: ZonedDateTime = defaultDate,
                                  override val userId: UserId,
                                  override val requestContext: RequestContext,
                                  email: String,
@@ -170,7 +172,7 @@ object UserEvent {
   }
 
   final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = DateHelper.now(),
+                                      override val eventDate: ZonedDateTime = defaultDate,
                                       override val userId: UserId,
                                       override val country: Country = defaultCountry,
                                       override val language: Language = defaultLanguage,
@@ -181,7 +183,7 @@ object UserEvent {
   }
 
   final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
-                                             override val eventDate: ZonedDateTime = DateHelper.now(),
+                                             override val eventDate: ZonedDateTime = defaultDate,
                                              override val userId: UserId = UserId(value = ""),
                                              override val country: Country = defaultCountry,
                                              override val language: Language = defaultLanguage,
@@ -192,7 +194,7 @@ object UserEvent {
   }
 
   final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
-                                       override val eventDate: ZonedDateTime = DateHelper.now(),
+                                       override val eventDate: ZonedDateTime = defaultDate,
                                        override val userId: UserId = UserId(value = ""),
                                        override val country: Country = defaultCountry,
                                        override val language: Language = defaultLanguage,
@@ -204,7 +206,7 @@ object UserEvent {
   }
 
   case class OrganisationRegisteredEvent(override val connectedUserId: Option[UserId] = None,
-                                         override val eventDate: ZonedDateTime = DateHelper.now(),
+                                         override val eventDate: ZonedDateTime = defaultDate,
                                          override val userId: UserId,
                                          override val requestContext: RequestContext,
                                          email: String,
@@ -215,7 +217,7 @@ object UserEvent {
   }
 
   case class OrganisationUpdatedEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = DateHelper.now(),
+                                      override val eventDate: ZonedDateTime = defaultDate,
                                       override val userId: UserId,
                                       override val requestContext: RequestContext,
                                       override val country: Country = defaultCountry,

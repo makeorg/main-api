@@ -22,7 +22,7 @@ package org.make.api.idea
 import java.time.ZonedDateTime
 
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.{DateHelper, EventWrapper, MakeSerializable}
+import org.make.core.{EventWrapper, MakeSerializable}
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait IdeaEvent {
@@ -32,6 +32,8 @@ sealed trait IdeaEvent {
 }
 
 object IdeaEvent {
+
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
 
   type AnyIdeaEvent =
     IdeaCreatedEvent :+:
@@ -53,8 +55,7 @@ object IdeaEvent {
       }
   }
 
-  final case class IdeaCreatedEvent(override val ideaId: IdeaId,
-                                    override val eventDate: ZonedDateTime = DateHelper.now())
+  final case class IdeaCreatedEvent(override val ideaId: IdeaId, override val eventDate: ZonedDateTime = defaultDate)
       extends IdeaEvent {
 
     def version(): Int = MakeSerializable.V1
@@ -66,8 +67,7 @@ object IdeaEvent {
     }
   }
 
-  final case class IdeaUpdatedEvent(override val ideaId: IdeaId,
-                                    override val eventDate: ZonedDateTime = DateHelper.now())
+  final case class IdeaUpdatedEvent(override val ideaId: IdeaId, override val eventDate: ZonedDateTime = defaultDate)
       extends IdeaEvent {
     def version(): Int = MakeSerializable.V1
   }
