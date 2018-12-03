@@ -191,7 +191,10 @@ object MakeMain extends App with StrictLogging with MakeApi {
       DITPdata,
       MIPIMGbOperation,
       MIPIMGbImportTagsData,
-      MIPIMGbData
+      MIPIMGbData,
+      CreateSequenceConfigurations,
+      // ReloadSequences should always be the last in this list
+      ReloadSequences
     )
   val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 

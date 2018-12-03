@@ -85,6 +85,7 @@ trait SequenceConfigurationService {
   def getSequenceConfigurationByQuestionId(questionId: QuestionId): Future[SequenceConfiguration]
   def setSequenceConfiguration(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
   def getPersistentSequenceConfiguration(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
+  def reloadConfigurations(): Unit
 }
 
 trait SequenceConfigurationComponent {
@@ -117,6 +118,9 @@ trait DefaultSequenceConfigurationComponent extends SequenceConfigurationCompone
       (sequenceConfigurationActor ? GetPersistentSequenceConfiguration(sequenceId))
         .mapTo[StoredSequenceConfiguration]
         .map(_.sequenceConfiguration)
+    }
+    override def reloadConfigurations(): Unit = {
+      sequenceConfigurationActor ! ReloadSequenceConfiguration
     }
   }
 }

@@ -101,6 +101,9 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.ideaCompetitionTargetCount -> sequenceConfig.ideaCompetitionTargetCount,
                 column.ideaCompetitionControversialRatio -> sequenceConfig.ideaCompetitionControversialRatio,
                 column.ideaCompetitionControversialCount -> sequenceConfig.ideaCompetitionControversialCount,
+                column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
+                column.sequenceSize -> sequenceConfig.sequenceSize,
+                column.maxVotes -> sequenceConfig.maxVotes,
                 column.createdAt -> DateHelper.now,
                 column.updatedAt -> DateHelper.now
               )
@@ -128,6 +131,9 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.ideaCompetitionTargetCount -> sequenceConfig.ideaCompetitionTargetCount,
                 column.ideaCompetitionControversialRatio -> sequenceConfig.ideaCompetitionControversialRatio,
                 column.ideaCompetitionControversialCount -> sequenceConfig.ideaCompetitionControversialCount,
+                column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
+                column.sequenceSize -> sequenceConfig.sequenceSize,
+                column.maxVotes -> sequenceConfig.maxVotes,
                 column.updatedAt -> DateHelper.now
               )
               .where(
@@ -222,9 +228,9 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "idea_competition_target_count",
         "idea_competition_controversial_ratio",
         "idea_competition_controversial_count",
-        "maxTestedProposalCount",
-        "sequenceSize",
-        "maxVotes",
+        "max_tested_proposal_count",
+        "sequence_size",
+        "max_votes",
         "created_at",
         "updated_at"
       )

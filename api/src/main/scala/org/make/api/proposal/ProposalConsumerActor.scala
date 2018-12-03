@@ -23,29 +23,21 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.{SemanticComponent, SemanticService}
-import org.make.api.sequence.{
-  SequenceConfigurationComponent,
-  SequenceConfigurationService,
-  SequenceService,
-  SequenceServiceComponent
-}
+import org.make.api.sequence.{SequenceConfigurationComponent, SequenceConfigurationService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.ProposalIndexationStream
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.core.sequence.SequenceId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(sequenceService: SequenceService,
-                            operationService: OperationService,
-                            proposalIndexerService: ProposalIndexerService,
+class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
                             override val proposalCoordinatorService: ProposalCoordinatorService,
                             override val userService: UserService,
                             override val organisationService: OrganisationService,
@@ -65,27 +57,23 @@ class ProposalConsumerActor(sequenceService: SequenceService,
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
     message.event.fold(ToProposalEvent) match {
-      case event: ProposalViewed      => doNothing(event)
-      case event: ReindexProposal     => onCreateOrUpdate(event)
-      case event: ProposalUpdated     => onCreateOrUpdate(event)
-      case event: ProposalProposed    => onCreateOrUpdate(event)
-      case event: ProposalAccepted    => onCreateOrUpdate(event)
-      case event: ProposalRefused     => onCreateOrUpdate(event)
-      case event: ProposalPostponed   => onCreateOrUpdate(event)
-      case event: ProposalVoted       => onCreateOrUpdate(event)
-      case event: ProposalUnvoted     => onCreateOrUpdate(event)
-      case event: ProposalQualified   => onCreateOrUpdate(event)
-      case event: ProposalUnqualified => onCreateOrUpdate(event)
-      case event: ProposalPatched     => onCreateOrUpdate(event)
-      case event: ProposalAddedToOperation =>
-        addToOperation(event)
-        onCreateOrUpdate(event)
-      case event: ProposalRemovedFromOperation =>
-        removeFromOperation(event)
-        onCreateOrUpdate(event)
-      case event: ProposalLocked        => doNothing(event)
-      case event: ProposalAnonymized    => onCreateOrUpdate(event)
-      case event: SimilarProposalsAdded => doNothing(event)
+      case event: ProposalViewed               => doNothing(event)
+      case event: ReindexProposal              => onCreateOrUpdate(event)
+      case event: ProposalUpdated              => onCreateOrUpdate(event)
+      case event: ProposalProposed             => onCreateOrUpdate(event)
+      case event: ProposalAccepted             => onCreateOrUpdate(event)
+      case event: ProposalRefused              => onCreateOrUpdate(event)
+      case event: ProposalPostponed            => onCreateOrUpdate(event)
+      case event: ProposalVoted                => onCreateOrUpdate(event)
+      case event: ProposalUnvoted              => onCreateOrUpdate(event)
+      case event: ProposalQualified            => onCreateOrUpdate(event)
+      case event: ProposalUnqualified          => onCreateOrUpdate(event)
+      case event: ProposalPatched              => onCreateOrUpdate(event)
+      case event: ProposalAddedToOperation     => onCreateOrUpdate(event)
+      case event: ProposalRemovedFromOperation => onCreateOrUpdate(event)
+      case event: ProposalLocked               => doNothing(event)
+      case event: ProposalAnonymized           => onCreateOrUpdate(event)
+      case event: SimilarProposalsAdded        => doNothing(event)
     }
 
   }
@@ -94,40 +82,6 @@ class ProposalConsumerActor(sequenceService: SequenceService,
     proposalIndexerService.offer(event.id).recover {
       case ex =>
         logger.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
-    }
-  }
-
-  def addToOperation(event: ProposalAddedToOperation): Future[Unit] = {
-    proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
-        operationService.findOne(event.operationId).map { maybeOperation =>
-          maybeOperation.foreach { operation =>
-            val sequenceId: SequenceId = operation.countriesConfiguration
-              .find(countryConfiguration => proposal.country.contains(countryConfiguration.countryCode))
-              .getOrElse(operation.countriesConfiguration.head)
-              .landingSequenceId
-            sequenceService
-              .addProposals(sequenceId, event.moderatorId, event.requestContext, Seq(event.id))
-          }
-        }
-      case None => Future.successful[Unit] {}
-    }
-  }
-
-  def removeFromOperation(event: ProposalRemovedFromOperation): Future[Unit] = {
-    proposalCoordinatorService.getProposal(event.id).flatMap {
-      case Some(proposal) =>
-        operationService.findOne(event.operationId).map { maybeOperation =>
-          maybeOperation.foreach { operation =>
-            val sequenceId: SequenceId = operation.countriesConfiguration
-              .find(countryConfiguration => proposal.country.contains(countryConfiguration.countryCode))
-              .getOrElse(operation.countriesConfiguration.head)
-              .landingSequenceId
-            sequenceService
-              .removeProposals(sequenceId, event.moderatorId, event.requestContext, Seq(event.id))
-          }
-        }
-      case None => Future.successful[Unit] {}
     }
   }
 
@@ -150,8 +104,6 @@ object ProposalConsumerActor {
             dependencies: ProposalConsumerActorDependencies): Props =
     Props(
       new ProposalConsumerActor(
-        dependencies.sequenceService,
-        dependencies.operationService,
         dependencies.proposalIndexerService,
         proposalCoordinatorService,
         dependencies.userService,

@@ -215,19 +215,24 @@ class SequenceApiTest
     """.stripMargin
 
   val setSequenceConfigurationPayload: String = """{
-                                          |  "newProposalsRatio": 0.666,
-                                          |  "newProposalsVoteThreshold": 100,
-                                          |  "testedProposalsEngagementThreshold": 0.5,
-                                          |  "testedProposalsScoreThreshold": 1.2,
-                                          |  "testedProposalsControversyThreshold": 0.1,
-                                          |  "banditEnabled": false,
-                                          |  "banditMinCount": 3,
-                                          |  "banditProposalsRatio": 0.3,
-                                          |  "ideaCompetitionEnabled": false,
-                                          |  "ideaCompetitionTargetCount": 50,
-                                          |  "ideaCompetitionControversialRatio": 0.0,
-                                          |  "ideaCompetitionControversialCount": 0
-                                          |}""".stripMargin
+                                                  |  "maxAvailableProposals": 1000,
+                                                  |  "newProposalsRatio": 0.5,
+                                                  |  "newProposalsVoteThreshold": 100,
+                                                  |  "testedProposalsEngagementThreshold": 0.8,
+                                                  |  "testedProposalsScoreThreshold": 0,
+                                                  |  "testedProposalsControversyThreshold": 0,
+                                                  |  "testedProposalsMaxVotesThreshold": 1500,
+                                                  |  "banditEnabled": true,
+                                                  |  "banditMinCount": 1,
+                                                  |  "banditProposalsRatio": 0,
+                                                  |  "ideaCompetitionEnabled": false,
+                                                  |  "ideaCompetitionTargetCount": 50,
+                                                  |  "ideaCompetitionControversialRatio": 0,
+                                                  |  "ideaCompetitionControversialCount": 0,
+                                                  |  "maxTestedProposalCount": 1000,
+                                                  |  "sequenceSize": 12,
+                                                  |  "maxVotes": 1500
+                                                  |}""".stripMargin
 
   val routes: Route = sealRoute(sequenceRoutes)
 
@@ -681,7 +686,7 @@ class SequenceApiTest
       }
     }
 
-    scenario("set sequence config as moderator") {
+    scenario("get sequence config as moderator") {
       Get("/moderation/sequences/mySequence/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
@@ -690,7 +695,7 @@ class SequenceApiTest
     }
 
     scenario("get unknown sequence config as moderator") {
-      Get("/moderation/sequences/unknownSequence/configuration")
+      Get("/moderation/sequences/unknownSequence/unknownQuestion/configuration")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }

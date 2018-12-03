@@ -21,20 +21,16 @@ package org.make.api.migrations
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.pattern.ask
-import akka.util.Timeout
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.CountryConfiguration
-import org.make.api.sequence.CreateSequenceCommand
+import org.make.core.RequestContext
 import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationTranslation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Language
-import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.sequence.SequenceId
 import org.make.core.tag.{TagDisplay, TagType}
 import org.make.core.user.UserId
-import org.make.core.{RequestContext, SlugHelper}
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 trait OperationHelper {
@@ -49,23 +45,10 @@ trait OperationHelper {
                                   configuration: OperationCountryConfiguration,
                                   countryConfiguration: CountryConfiguration): Future[Unit] = {
 
-    implicit val timeout: Timeout = Timeout(20.seconds)
     val questionId: QuestionId = api.idGenerator.nextQuestionId()
 
-    (
-      api.sequenceCoordinator ? CreateSequenceCommand(
-        sequenceId = configuration.landingSequenceId,
-        title = countryConfiguration.title,
-        slug = SlugHelper(countryConfiguration.title),
-        themeIds = Seq.empty,
-        operationId = Some(operation.operationId),
-        requestContext = emptyContext,
-        moderatorId = moderatorId,
-        status = SequenceStatus.Published,
-        searchable = false
-      )
-    ).flatMap { _ =>
-      api.persistentQuestionService.persist(
+    api.persistentQuestionService
+      .persist(
         Question(
           questionId = questionId,
           country = countryConfiguration.country,
@@ -76,27 +59,28 @@ trait OperationHelper {
           themeId = None
         )
       )
-    }.flatMap { question =>
-      val weights = new AtomicInteger()
-      sequentially(countryConfiguration.tags) { tagId =>
-        api.tagService
-          .createTag(
-            tagId.value,
-            tagTypeId = TagType.LEGACY.tagTypeId,
-            question = question,
-            display = if (tagId.value.contains("--")) { TagDisplay.Hidden } else { TagDisplay.Displayed },
-            weight = weights.getAndIncrement()
+      .flatMap { question =>
+        api.persistentSequenceConfigurationService
+          .persist(
+            countryConfiguration.sequenceConfiguration
+              .copy(sequenceId = configuration.landingSequenceId, questionId = questionId)
           )
-          .map(_ => ())
+          .map(_ => question)
       }
-    }.flatMap { _ =>
-      api.persistentSequenceConfigurationService
-        .persist(
-          countryConfiguration.sequenceConfiguration
-            .copy(sequenceId = configuration.landingSequenceId, questionId = questionId)
-        )
-        .map(_ => ())
-    }
+      .flatMap { question =>
+        val weights = new AtomicInteger()
+        sequentially(countryConfiguration.tags) { tagId =>
+          api.tagService
+            .createTag(
+              tagId.value,
+              tagTypeId = TagType.LEGACY.tagTypeId,
+              question = question,
+              display = if (tagId.value.contains("--")) { TagDisplay.Hidden } else { TagDisplay.Displayed },
+              weight = weights.getAndIncrement()
+            )
+            .map(_ => ())
+        }
+      }
   }
 
   def createOperation(api: MakeApi,

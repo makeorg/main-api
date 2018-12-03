@@ -134,34 +134,45 @@ object SearchStartSequenceRequest {
   implicit val decoder: Decoder[SearchStartSequenceRequest] = deriveDecoder[SearchStartSequenceRequest]
 }
 
-final case class SequenceConfigurationRequest(newProposalsRatio: Double,
+final case class SequenceConfigurationRequest(maxAvailableProposals: Int,
+                                              newProposalsRatio: Double,
                                               newProposalsVoteThreshold: Int,
                                               testedProposalsEngagementThreshold: Double,
                                               testedProposalsScoreThreshold: Double,
                                               testedProposalsControversyThreshold: Double,
+                                              testedProposalsMaxVotesThreshold: Int,
                                               banditEnabled: Boolean,
                                               banditMinCount: Int,
                                               banditProposalsRatio: Double,
                                               ideaCompetitionEnabled: Boolean,
                                               ideaCompetitionTargetCount: Int,
                                               ideaCompetitionControversialRatio: Double,
-                                              ideaCompetitionControversialCount: Int) {
+                                              ideaCompetitionControversialCount: Int,
+                                              maxTestedProposalCount: Int,
+                                              sequenceSize: Int,
+                                              maxVotes: Int) {
+
   def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
     SequenceConfiguration(
       sequenceId = sequenceId,
       questionId = questionId,
+      maxAvailableProposals = maxAvailableProposals,
       newProposalsRatio = newProposalsRatio,
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
       testedProposalsScoreThreshold = testedProposalsScoreThreshold,
       testedProposalsControversyThreshold = testedProposalsControversyThreshold,
+      testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
       banditEnabled = banditEnabled,
       banditMinCount = banditMinCount,
       banditProposalsRatio = banditProposalsRatio,
       ideaCompetitionEnabled = ideaCompetitionEnabled,
       ideaCompetitionTargetCount = ideaCompetitionTargetCount,
       ideaCompetitionControversialRatio = ideaCompetitionControversialRatio,
-      ideaCompetitionControversialCount = ideaCompetitionControversialCount
+      ideaCompetitionControversialCount = ideaCompetitionControversialCount,
+      maxTestedProposalCount = maxTestedProposalCount,
+      sequenceSize = sequenceSize,
+      maxVotes = maxVotes
     )
   }
 }

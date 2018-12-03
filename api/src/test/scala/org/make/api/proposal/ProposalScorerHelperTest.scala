@@ -23,10 +23,15 @@ import java.time.ZonedDateTime
 
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.api.sequence.SequenceConfiguration
 import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.SequencePool
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
 
 import scala.collection.immutable.Seq
@@ -217,5 +222,14 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     scenario("calculate rejection from count score") {
       ProposalScorerHelper.rejection(scoreCounts) should equal(-0.41 +- 0.01)
     }
+  }
+
+  feature("proposal pool") {
+
+    scenario("news proposal") {
+      val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
+      ProposalScorerHelper.sequencePool(configuration, proposalWithoutvote.votes, Accepted) should be(SequencePool.New)
+    }
+
   }
 }

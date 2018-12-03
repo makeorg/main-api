@@ -31,7 +31,6 @@ import org.make.api.idea._
 import org.make.api.technical.ReadJournalComponent
 import org.make.core.idea.Idea
 import org.make.core.proposal.ProposalId
-import org.make.core.sequence.SequenceId
 import org.make.core.user.User
 
 import scala.collection.immutable
@@ -47,17 +46,12 @@ sealed trait EntitiesToIndex
 case object IndexIdeas extends EntitiesToIndex
 case object IndexOrganisations extends EntitiesToIndex
 case object IndexProposals extends EntitiesToIndex
-case object IndexSequences extends EntitiesToIndex
 
 trait IndexationService {
-  def reindexData(forceIdeas: Boolean,
-                  forceOrganisations: Boolean,
-                  forceProposals: Boolean,
-                  forceSequences: Boolean): Future[Done]
+  def reindexData(forceIdeas: Boolean, forceOrganisations: Boolean, forceProposals: Boolean): Future[Done]
   def indicesToReindex(forceIdeas: Boolean,
                        forceOrganisations: Boolean,
-                       forceProposals: Boolean,
-                       forceSequences: Boolean): Future[Set[EntitiesToIndex]]
+                       forceProposals: Boolean): Future[Set[EntitiesToIndex]]
 }
 
 //TODO: test this component
@@ -65,8 +59,7 @@ trait DefaultIndexationComponent
     extends IndexationComponent
     with IdeaIndexationStream
     with OrganisationIndexationStream
-    with ProposalIndexationStream
-    with SequenceIndexationStream {
+    with ProposalIndexationStream {
 
   this: ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
@@ -80,70 +73,63 @@ trait DefaultIndexationComponent
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
 
+    private def reindexOrganisationsIfNeeded(needsReindex: Boolean): Future[Done] = {
+      if (needsReindex) {
+        logger.info("Reindexing organisations")
+        val organisationIndexName =
+          elasticsearchClient.createIndexName(elasticsearchConfiguration.organisationAliasName)
+        for {
+          _      <- executeCreateIndex(elasticsearchConfiguration.organisationAliasName, organisationIndexName)
+          result <- executeIndexOrganisations(organisationIndexName)
+          _      <- executeSetAlias(elasticsearchConfiguration.organisationAliasName, organisationIndexName)
+        } yield result
+      } else {
+        Future.successful(Done)
+      }
+    }
+
+    private def reindexIdeasIfNeeded(needsReindex: Boolean): Future[Done] = {
+      if (needsReindex) {
+        logger.info("Reindexing ideas")
+        val ideaIndexName = elasticsearchClient.createIndexName(elasticsearchConfiguration.ideaAliasName)
+        for {
+          _           <- executeCreateIndex(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
+          resultIdeas <- executeIndexIdeas(ideaIndexName)
+          _           <- executeSetAlias(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
+        } yield resultIdeas
+      } else {
+        Future.successful(Done)
+      }
+    }
+
+    private def reindexProposalsIfNeeded(needsReindex: Boolean): Future[Done] = {
+      if (needsReindex) {
+        logger.info("Reindexing proposals")
+        val proposalIndexName =
+          elasticsearchClient.createIndexName(elasticsearchConfiguration.proposalAliasName)
+        for {
+          _               <- executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
+          resultProposals <- executeIndexProposal(proposalIndexName)
+          _               <- executeSetAlias(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
+        } yield resultProposals
+      } else {
+        Future.successful(Done)
+      }
+    }
+
     override def reindexData(forceIdeas: Boolean = false,
                              forceOrganisations: Boolean = false,
-                             forceProposals: Boolean = false,
-                             forceSequences: Boolean = false): Future[Done] = {
+                             forceProposals: Boolean = false): Future[Done] = {
       logger.info(s"Elasticsearch Reindexation")
-      indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceSequences).map { indicesNotUpToDate =>
-        val futureIdeasIndexation: Future[Done] = if (indicesNotUpToDate.contains(IndexIdeas)) {
-          logger.info("Reindexing ideas")
-          val ideaIndexName = elasticsearchClient.createIndexName(elasticsearchConfiguration.ideaAliasName)
-          for {
-            _           <- executeCreateIndex(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
-            resultIdeas <- executeIndexIdeas(ideaIndexName)
-            _           <- executeSetAlias(elasticsearchConfiguration.ideaAliasName, ideaIndexName)
-          } yield resultIdeas
-        } else {
-          Future.successful(Done)
-        }
-
-        def futureOrganisationsIndexation =
-          if (indicesNotUpToDate.contains(IndexOrganisations)) {
-            logger.info("Reindexing organisations")
-            val organisationIndexName =
-              elasticsearchClient.createIndexName(elasticsearchConfiguration.organisationAliasName)
-            for {
-              _                   <- executeCreateIndex(elasticsearchConfiguration.organisationAliasName, organisationIndexName)
-              resultOrganisations <- executeIndexOrganisations(organisationIndexName)
-              _                   <- executeSetAlias(elasticsearchConfiguration.organisationAliasName, organisationIndexName)
-            } yield resultOrganisations
-          } else {
-            Future.successful(Done)
-          }
-
-        val futureProposalsIndexation = if (indicesNotUpToDate.contains(IndexProposals)) {
-          logger.info("Reindexing proposals")
-          val proposalIndexName =
-            elasticsearchClient.createIndexName(elasticsearchConfiguration.proposalAliasName)
-          for {
-            _               <- executeCreateIndex(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
-            resultProposals <- executeIndexProposal(proposalIndexName)
-            _               <- executeSetAlias(elasticsearchConfiguration.proposalAliasName, proposalIndexName)
-          } yield resultProposals
-        } else {
-          Future.successful(Done)
-        }
-
-        val futureSequencesIndexation = if (indicesNotUpToDate.contains(IndexSequences)) {
-          logger.info("Reindexing sequences")
-          val sequenceIndexName =
-            elasticsearchClient.createIndexName(elasticsearchConfiguration.sequenceAliasName)
-          for {
-            _               <- executeCreateIndex(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName)
-            resultSequences <- executeIndexSequences(sequenceIndexName)
-            _               <- executeSetAlias(elasticsearchConfiguration.sequenceAliasName, sequenceIndexName)
-          } yield resultSequences
-        } else {
-          Future.successful(Done)
-        }
+      indicesToReindex(forceIdeas, forceOrganisations, forceProposals).map { indicesNotUpToDate =>
+        val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
+        val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
 
         for {
           _ <- futureIdeasIndexation
           _ <- futureProposalsIndexation
-          _ <- futureSequencesIndexation
           // !mandatory: lauch organisation indexation after proposals and not in parallel
-          _ <- futureOrganisationsIndexation
+          _ <- reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
         } yield Done
       }.flatMap { _ =>
         Future.successful(Done)
@@ -152,13 +138,11 @@ trait DefaultIndexationComponent
 
     override def indicesToReindex(forceIdeas: Boolean,
                                   forceOrganisations: Boolean,
-                                  forceProposals: Boolean,
-                                  forceSequences: Boolean): Future[Set[EntitiesToIndex]] = {
+                                  forceProposals: Boolean): Future[Set[EntitiesToIndex]] = {
       val hashes: Map[EntitiesToIndex, String] = Map(
         IndexIdeas -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.ideaAliasName),
         IndexOrganisations -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.organisationAliasName),
-        IndexProposals -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.proposalAliasName),
-        IndexSequences -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.sequenceAliasName)
+        IndexProposals -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.proposalAliasName)
       )
       elasticsearchClient.getCurrentIndicesName.map { currentIndices =>
         val currentHashes: Seq[String] = currentIndices.map(elasticsearchClient.getHashFromIndex)
@@ -171,9 +155,6 @@ trait DefaultIndexationComponent
         }
         if (forceProposals) {
           result += IndexProposals
-        }
-        if (forceSequences) {
-          result += IndexSequences
         }
         result ++= hashes.flatMap {
           case (entitiesToIndex, hash) if !currentHashes.contains(hash) => Some(entitiesToIndex)
@@ -232,26 +213,6 @@ trait DefaultIndexationComponent
           logger.info("Proposal indexation success in {} ms", System.currentTimeMillis() - start)
         case Failure(e) =>
           logger.error(s"Proposal indexation failed in ${System.currentTimeMillis() - start} ms", e)
-      }
-
-      result
-    }
-
-    private def executeIndexSequences(sequenceIndexName: String)(implicit mat: Materializer): Future[Done] = {
-      val start = System.currentTimeMillis()
-
-      val result =
-        sequenceJournal
-          .currentPersistenceIds()
-          .map(SequenceId.apply)
-          .via(SequenceStream.flowIndexSequences(sequenceIndexName))
-          .runWith(Sink.ignore)
-
-      result.onComplete {
-        case Success(_) =>
-          logger.info("Sequence indexation success in {} ms", System.currentTimeMillis() - start)
-        case Failure(e) =>
-          logger.error(s"Sequence indexation failed in ${System.currentTimeMillis() - start} ms", e)
       }
 
       result

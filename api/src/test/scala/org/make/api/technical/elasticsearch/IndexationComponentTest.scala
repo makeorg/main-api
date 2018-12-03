@@ -126,12 +126,7 @@ class IndexationComponentTest
       When("I ask which indices are to update")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
-        indexationService.indicesToReindex(
-          forceIdeas = false,
-          forceOrganisations = false,
-          forceProposals = false,
-          forceSequences = false
-        )
+        indexationService.indicesToReindex(forceIdeas = false, forceOrganisations = false, forceProposals = false)
 
       Then("no indices should be returned")
       whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>
@@ -146,12 +141,7 @@ class IndexationComponentTest
       When("I ask which indices are to update and force the proposal indexation")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
-        indexationService.indicesToReindex(
-          forceIdeas = false,
-          forceOrganisations = false,
-          forceProposals = true,
-          forceSequences = false
-        )
+        indexationService.indicesToReindex(forceIdeas = false, forceOrganisations = false, forceProposals = true)
 
       Then("the proposal")
       whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>
@@ -168,12 +158,7 @@ class IndexationComponentTest
       When("I ask which indices are to update")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
-        indexationService.indicesToReindex(
-          forceIdeas = false,
-          forceOrganisations = false,
-          forceProposals = false,
-          forceSequences = false
-        )
+        indexationService.indicesToReindex(forceIdeas = false, forceOrganisations = false, forceProposals = false)
 
       Then("the resullt should be true")
       whenReady(futureSchemaIsUpToDate, Timeout(3.seconds)) { indicesToUpdate =>

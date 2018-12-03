@@ -246,10 +246,11 @@ object ProposalScorerHelper extends StrictLogging {
 
     if (status == ProposalStatus.Accepted && votesCount < sequenceConfiguration.newProposalsVoteThreshold) {
       SequencePool.New
-    } else if (status == ProposalStatus.Accepted && votesCount >= sequenceConfiguration.newProposalsVoteThreshold
-               && engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold
-               && (scoreRate > sequenceConfiguration.testedProposalsScoreThreshold
-               || controversyRate > sequenceConfiguration.testedProposalsControversyThreshold)) {
+    } else if (status == ProposalStatus.Accepted &&
+               votesCount < sequenceConfiguration.testedProposalsMaxVotesThreshold &&
+               engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold &&
+               (scoreRate >= sequenceConfiguration.testedProposalsScoreThreshold ||
+               controversyRate >= sequenceConfiguration.testedProposalsControversyThreshold)) {
       SequencePool.Tested
     } else {
       SequencePool.Excluded
