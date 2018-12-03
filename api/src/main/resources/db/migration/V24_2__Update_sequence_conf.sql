@@ -1,3 +1,2 @@
-UPDATE sequence_configuration SET maxTestedProposalCount = 1000, sequenceSize = 12, maxVotes = 1500;
-ALTER TABLE sequence_configuration ALTER COLUMN question_id DROP DEFAULT;
+UPDATE sequence_configuration SET max_tested_proposal_count = 1000, sequence_size = 12, max_votes = 1500;
 COMMIT;
