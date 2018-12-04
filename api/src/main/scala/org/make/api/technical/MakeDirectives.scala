@@ -30,6 +30,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -141,6 +142,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeUser            <- optionalMakeOAuth2
+      maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -167,7 +169,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             }
             .toMap
         ),
-        userAgent = maybeUserAgent.map(_.toString)
+        userAgent = maybeUserAgent.map(_.toString),
+        questionId = maybeQuestionId.map(QuestionId.apply)
       )
     }
   }
@@ -473,4 +476,15 @@ final case class VisitorIdHeader(override val value: String) extends ModeledCust
 object VisitorIdHeader extends ModeledCustomHeaderCompanion[VisitorIdHeader] {
   override val name: String = "x-visitor-id"
   override def parse(value: String): Try[VisitorIdHeader] = Success(new VisitorIdHeader(value))
+}
+
+final case class QuestionIdHeader(override val value: String) extends ModeledCustomHeader[QuestionIdHeader] {
+  override def companion: ModeledCustomHeaderCompanion[QuestionIdHeader] = QuestionIdHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object QuestionIdHeader extends ModeledCustomHeaderCompanion[QuestionIdHeader] {
+  override val name: String = "x-make-question-id"
+  override def parse(value: String): Try[QuestionIdHeader] = Success(new QuestionIdHeader(value))
 }
