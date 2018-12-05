@@ -132,26 +132,30 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                                    testedProposals: Seq[IndexedProposal],
                                    votedProposals: Seq[ProposalId]): Seq[IndexedProposal] = {
 
+      def uniqueIdeaIdForProposal(proposal: IndexedProposal): IdeaId =
+        IdeaId(proposal.id.value)
+
       // fetch included proposals and exclude same idea
       var sequence: Seq[IndexedProposal] = includedProposals
       var distinctProposals: Set[ProposalId] = (votedProposals ++ includedProposals.map(_.id)).toSet
-      var distinctIdeas: Set[IdeaId] = includedProposals.map(p => p.ideaId.getOrElse(IdeaId(p.id.value))).toSet
+      var distinctIdeas: Set[IdeaId] = includedProposals.map(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p))).toSet
 
       // distinct proposals by distinct ideas
       def filterDistinct(proposals: Seq[IndexedProposal],
                          proposalIds: Set[ProposalId] = distinctProposals,
                          ideaIds: Set[IdeaId] = distinctIdeas): Map[IdeaId, Seq[IndexedProposal]] =
         proposals
-          .groupBy(p => p.ideaId.getOrElse(IdeaId(p.id.value)))
-          .filterNot {
-            case (ideaId, _) => ideaIds.contains(ideaId)
-          }
+          .groupBy(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p)))
+          .filterKeys(ideaId => !ideaIds.contains(ideaId))
           .mapValues(_.filterNot(p => proposalIds.contains(p.id)))
+          .filterNot {
+            case (_, proposalsList) => proposalsList.isEmpty
+          }
 
       def includeProposalToSequence(proposals: Seq[IndexedProposal]): Seq[IndexedProposal] = {
         sequence ++= proposals
         distinctProposals ++= proposals.map(_.id).toSet
-        distinctIdeas ++= proposals.map(p => p.ideaId.getOrElse(IdeaId(p.id.value))).toSet
+        distinctIdeas ++= proposals.map(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p))).toSet
         proposals
       }
 
@@ -166,7 +170,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         math.ceil(proposalsToChoose * sequenceConfiguration.newProposalsRatio).toInt
 
       val maxNewIdeas: Int = newProposalsByIdea.keys.size
-      val maxTestedIdeas: Int = testedProposals.map(p => p.ideaId.getOrElse(IdeaId(p.id.value))).toSet.size
+      val maxTestedIdeas: Int = testedProposals.map(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p))).toSet.size
 
       val newProposalsCount: Int =
         math.min(math.max(askedNewProposalsCount, sequenceSize - maxTestedIdeas - includedSize), maxNewIdeas)
@@ -218,10 +222,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
 
-    def chooseProposals(proposals: Seq[IndexedProposal],
-                        count: Int,
-                        algorithm: ProposalChooser,
-                        aggregator: Seq[IndexedProposal] = Seq.empty): Seq[IndexedProposal] = {
+    @tailrec
+    final def chooseProposals(proposals: Seq[IndexedProposal],
+                              count: Int,
+                              algorithm: ProposalChooser,
+                              aggregator: Seq[IndexedProposal] = Seq.empty): Seq[IndexedProposal] = {
       if (proposals.isEmpty || count <= 0) {
         aggregator
       } else {

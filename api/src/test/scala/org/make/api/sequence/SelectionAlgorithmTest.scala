@@ -249,6 +249,74 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.toSet.size should be(sequenceConfiguration.sequenceSize)
     }
 
+    scenario("no duplicates with only already voted tested proposals") {
+
+      val testedProposals: Seq[IndexedProposal] =
+        proposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val selectedProposals =
+        selectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = sequenceConfiguration,
+          includedProposals = Seq.empty,
+          newProposals = Seq.empty,
+          testedProposals = testedProposals,
+          votedProposals = proposalIds
+        )
+
+      selectedProposals.size should be(0)
+    }
+
+    scenario("no duplicates with only already voted tested proposals without bandit") {
+
+      val testedProposals: Seq[IndexedProposal] =
+        proposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val selectedProposals =
+        selectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = sequenceConfiguration.copy(banditEnabled = false),
+          includedProposals = Seq.empty,
+          newProposals = Seq.empty,
+          testedProposals = testedProposals,
+          votedProposals = proposalIds
+        )
+
+      selectedProposals.size should be(0)
+    }
+
+    scenario("no duplicates with only already voted new proposals") {
+
+      val newProposals: Seq[IndexedProposal] =
+        proposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val selectedProposals =
+        selectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = sequenceConfiguration,
+          includedProposals = Seq.empty,
+          newProposals = newProposals,
+          testedProposals = Seq.empty,
+          votedProposals = proposalIds
+        )
+
+      selectedProposals.size should be(0)
+    }
+
+    scenario("no duplicates with only already voted new proposals without bandit") {
+
+      val newProposals: Seq[IndexedProposal] =
+        proposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
+
+      val selectedProposals =
+        selectionAlgorithm.selectProposalsForSequence(
+          sequenceConfiguration = sequenceConfiguration.copy(banditEnabled = false),
+          includedProposals = Seq.empty,
+          newProposals = newProposals,
+          testedProposals = Seq.empty,
+          votedProposals = proposalIds
+        )
+
+      selectedProposals.size should be(0)
+    }
+
     scenario("no duplicates with enough proposals and include list only tested proposals") {
 
       val proposals: Seq[IndexedProposal] =
