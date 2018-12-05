@@ -22,19 +22,20 @@ package org.make.api.organisation
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user._
-import org.make.core.HttpCodes
+import org.make.core.{CirceFormatters, HttpCodes}
 import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
+import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.UserId
+import org.make.core.user.{User, UserId}
 import scalaoauth2.provider.AuthInfo
 
 @Api(
@@ -80,11 +81,11 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                     organisationService
                       .register(
                         OrganisationRegisterData(
-                          name = request.name,
+                          name = request.organisationName,
                           email = request.email,
-                          password = Some(request.password),
-                          avatar = request.avatar,
-                          description = request.description,
+                          password = request.password,
+                          avatar = request.profile.flatMap(_.avatarUrl),
+                          description = request.profile.flatMap(_.description),
                           country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
                           language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
                         ),
@@ -133,10 +134,10 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
                         .update(
                           organisationId,
                           OrganisationUpdateData(
-                            name = request.name,
+                            name = request.organisationName,
                             email = maybeEmail,
-                            avatar = request.avatar,
-                            description = request.description
+                            avatar = request.profile.flatMap(_.avatarUrl),
+                            description = request.profile.flatMap(_.description)
                           ),
                           requestContext
                         )
@@ -201,14 +202,17 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
 }
 
 @ApiModel
-final case class ModerationCreateOrganisationRequest(name: String,
+final case class ModerationCreateOrganisationRequest(organisationName: String,
                                                      email: String,
-                                                     password: String,
-                                                     avatar: Option[String],
-                                                     description: Option[String],
+                                                     password: Option[String],
+                                                     profile: Option[Profile],
                                                      country: Option[Country],
                                                      language: Option[Language]) {
-  OrganisationValidation.validateCreate(name = name, email = email, description)
+  OrganisationValidation.validateCreate(
+    organisationName = organisationName,
+    email = email,
+    description = profile.flatMap(_.description)
+  )
 }
 
 object ModerationCreateOrganisationRequest {
@@ -216,11 +220,13 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(name: Option[String] = None,
+final case class ModerationUpdateOrganisationRequest(organisationName: Option[String] = None,
                                                      email: Option[String] = None,
-                                                     avatar: Option[String] = None,
-                                                     description: Option[String] = None) {
-  OrganisationValidation.validateUpdate(name = name, description = description)
+                                                     profile: Option[Profile]) {
+  OrganisationValidation.validateUpdate(
+    organisationName = organisationName,
+    description = profile.flatMap(_.description)
+  )
 }
 
 object ModerationUpdateOrganisationRequest {
@@ -232,19 +238,40 @@ private object OrganisationValidation {
   private val maxNameLength = 256
   private val maxDescriptionLength = 450
 
-  def validateCreate(name: String, email: String, description: Option[String]): Unit = {
+  def validateCreate(organisationName: String, email: String, description: Option[String]): Unit = {
     validate(
       Some(mandatoryField("email", email)),
-      Some(mandatoryField("name", name)),
-      Some(maxLength("name", maxNameLength, name)),
+      Some(mandatoryField("name", organisationName)),
+      Some(maxLength("name", maxNameLength, organisationName)),
       description.map(value => maxLength("description", maxDescriptionLength, value))
     )
   }
 
-  def validateUpdate(name: Option[String], description: Option[String]): Unit = {
+  def validateUpdate(organisationName: Option[String], description: Option[String]): Unit = {
     validate(
-      name.map(value        => maxLength("name", maxNameLength, value)),
-      description.map(value => maxLength("description", maxDescriptionLength, value))
+      organisationName.map(value => maxLength("organisationName", maxNameLength, value)),
+      description.map(value      => maxLength("description", maxDescriptionLength, value))
     )
   }
+}
+
+case class OrganisationResponse(id: UserId,
+                                email: String,
+                                organisationName: Option[String],
+                                profile: Option[Profile],
+                                country: Country,
+                                language: Language)
+
+object OrganisationResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[OrganisationResponse] = deriveEncoder[OrganisationResponse]
+  implicit val decoder: Decoder[OrganisationResponse] = deriveDecoder[OrganisationResponse]
+
+  def apply(user: User): OrganisationResponse = OrganisationResponse(
+    id = user.userId,
+    email = user.email,
+    organisationName = user.organisationName,
+    profile = user.profile,
+    country = user.country,
+    language = user.language,
+  )
 }

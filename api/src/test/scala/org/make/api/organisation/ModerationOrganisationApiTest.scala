@@ -133,8 +133,23 @@ class ModerationOrganisationApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            """{"name": "orga", "email": "bar@foo.com", "password": "azertyui"}"""
+            """{"organisationName": "orga", "email": "bar@foo.com", "password": "azertyui"}"""
           )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Created
+      }
+    }
+
+    scenario("register organisation with admin rights without password") {
+      Given("a admin user")
+      When("I want to register an organisation without a password")
+      Then("I should get a Created status")
+      when(organisationService.register(any[OrganisationRegisterData], any[RequestContext]))
+        .thenReturn(Future.successful(fakeOrganisation))
+      Post("/moderation/organisations")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga", "email": "bar@foo.com"}""")
         )
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
@@ -220,7 +235,7 @@ class ModerationOrganisationApiTest
       when(organisationService.update(any[UserId], any[OrganisationUpdateData], any[RequestContext]))
         .thenReturn(Future.successful(Some(UserId("ABCD"))))
       Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -233,7 +248,7 @@ class ModerationOrganisationApiTest
       when(organisationService.getOrganisation(any[UserId]))
         .thenReturn(Future.successful(None))
       Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
@@ -246,7 +261,7 @@ class ModerationOrganisationApiTest
       when(organisationService.getOrganisation(any[UserId]))
         .thenReturn(Future.successful(None))
       Put("/moderation/organisations/ABCD")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"name": "orga"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
