@@ -83,7 +83,7 @@ class CrmServiceComponentTest
     events = List.empty,
     createdAt = None,
     updatedAt = None,
-    countriesConfiguration = Seq.empty
+    questions = Seq.empty
   )
 
   val operations: Seq[Operation] = Seq(

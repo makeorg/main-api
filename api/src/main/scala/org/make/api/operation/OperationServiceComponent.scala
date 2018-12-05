@@ -22,6 +22,7 @@ package org.make.api.operation
 import java.time.LocalDate
 
 import io.circe.syntax._
+import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
@@ -43,26 +44,20 @@ trait OperationService extends ShortenedNames {
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
-  def create(userId: UserId,
-             slug: String,
-             translations: Seq[OperationTranslation] = Seq.empty,
-             defaultLanguage: Language,
-             countriesConfiguration: Seq[OperationCountryConfiguration],
-             allowedSources: Seq[String]): Future[OperationId]
+  def create(userId: UserId, slug: String, defaultLanguage: Language, allowedSources: Seq[String]): Future[OperationId]
   def update(operationId: OperationId,
              userId: UserId,
              slug: Option[String] = None,
-             translations: Option[Seq[OperationTranslation]] = None,
              defaultLanguage: Option[Language] = None,
-             countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
              status: Option[OperationStatus] = None,
              allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]]
-  def activate(operationId: OperationId, userId: UserId): Unit
-  def archive(operationId: OperationId, userId: UserId): Unit
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
-  this: PersistentOperationServiceComponent with IdGeneratorComponent with PersistentTagServiceComponent =>
+  this: PersistentOperationServiceComponent
+    with IdGeneratorComponent
+    with PersistentTagServiceComponent
+    with PersistentQuestionServiceComponent =>
 
   val operationService: OperationService = new OperationService {
 
@@ -71,25 +66,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                       maybeSource: Option[String],
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
 
-      persistentOperationService.find(slug = slug, country = country, openAt = openAt).flatMap { operations =>
-        val filteredOperations = maybeSource match {
-          case Some(source) => operations.filter(operation => operation.allowedSources.contains(source))
-          case _            => operations
-        }
-        Future.traverse(filteredOperations) { operation =>
-          Future
-            .traverse(operation.countriesConfiguration) { configuration =>
-              configuration.questionId.map { questionId =>
-                persistentTagService.findByQuestion(questionId).map { tags =>
-                  configuration.copy(tagIds = tags.map(_.tagId))
-                }
-              }.getOrElse(Future.successful(configuration))
-            }
-            .map { configurations =>
-              operation.copy(countriesConfiguration = configurations)
-            }
-        }
-      }
+      persistentOperationService.find(slug = slug, country = country, openAt = openAt)
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {
@@ -102,125 +79,76 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
     override def create(userId: UserId,
                         slug: String,
-                        translations: Seq[OperationTranslation] = Seq.empty,
                         defaultLanguage: Language,
-                        countriesConfiguration: Seq[OperationCountryConfiguration],
                         allowedSources: Seq[String]): Future[OperationId] = {
       val now = DateHelper.now()
-      val operation: Operation = Operation(
+
+      val operation: SimpleOperation = SimpleOperation(
         operationId = idGenerator.nextOperationId(),
         status = OperationStatus.Pending,
         slug = slug,
-        translations = translations,
         defaultLanguage = defaultLanguage,
         allowedSources = allowedSources,
-        countriesConfiguration = countriesConfiguration,
-        events = Nil,
         createdAt = Some(now),
         updatedAt = Some(now)
       )
-      persistentOperationService
-        .persist(
-          operation.copy(
-            events = List(
-              OperationAction(
-                makeUserId = userId,
-                actionType = OperationCreateAction.name,
-                arguments = Map("operation" -> operationToString(operation))
-              )
-            )
+
+      persistentOperationService.persist(operation).flatMap { persisted =>
+        persistentOperationService
+          .addActionToOperation(
+            OperationAction(
+              makeUserId = userId,
+              actionType = OperationCreateAction.name,
+              arguments = Map("operation" -> operationToString(operation))
+            ),
+            persisted.operationId
           )
-        )
-        .map(_.operationId)
+          .map(_ => persisted.operationId)
+      }
     }
 
     override def update(operationId: OperationId,
                         userId: UserId,
                         slug: Option[String] = None,
-                        translations: Option[Seq[OperationTranslation]] = None,
                         defaultLanguage: Option[Language] = None,
-                        countriesConfiguration: Option[Seq[OperationCountryConfiguration]] = None,
                         status: Option[OperationStatus] = None,
                         allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]] = {
 
-      val now = DateHelper.now()
       persistentOperationService
         .getById(operationId)
-        .flatMap(_.map { registeredOperation =>
-          val operationUpdated = registeredOperation.copy(
-            slug = slug.getOrElse(registeredOperation.slug),
-            translations = translations.getOrElse(registeredOperation.translations),
-            defaultLanguage = defaultLanguage.getOrElse(registeredOperation.defaultLanguage),
-            countriesConfiguration = countriesConfiguration.getOrElse(registeredOperation.countriesConfiguration),
-            status = status.getOrElse(registeredOperation.status),
-            allowedSources = allowedSources.getOrElse(registeredOperation.allowedSources),
-            updatedAt = Some(now)
-          )
-          persistentOperationService
-            .modify(
-              operationUpdated.copy(
-                events = OperationAction(
-                  makeUserId = userId,
-                  actionType = OperationUpdateAction.name,
-                  arguments = Map("operation" -> operationToString(operationUpdated))
-                ) :: registeredOperation.events
-              )
+        .flatMap {
+          case None => Future.successful(None)
+          case Some(operation) =>
+            val modifiedOperation = SimpleOperation(
+              operationId = operationId,
+              status = status.getOrElse(operation.status),
+              slug = slug.getOrElse(operation.slug),
+              allowedSources = allowedSources.getOrElse(operation.allowedSources),
+              defaultLanguage = defaultLanguage.getOrElse(operation.defaultLanguage),
+              createdAt = operation.createdAt,
+              updatedAt = operation.updatedAt
             )
-            .map(operation => Some(operation.operationId))
-        }.getOrElse(Future.successful(None)))
+            persistentOperationService.modify(modifiedOperation).flatMap { operationUpdated =>
+              persistentOperationService
+                .addActionToOperation(
+                  OperationAction(
+                    makeUserId = userId,
+                    actionType = OperationUpdateAction.name,
+                    arguments = Map("operation" -> operationToString(operationUpdated))
+                  ),
+                  operationUpdated.operationId
+                )
+                .map(_ => Some(operationUpdated.operationId))
+            }
+        }
     }
 
-    override def activate(operationId: OperationId, userId: UserId): Unit = {
-      persistentOperationService
-        .getById(operationId)
-        .map(_.map { operation =>
-          val operationUpdated: Operation =
-            operation.copy(status = OperationStatus.Active, updatedAt = Some(DateHelper.now()))
-
-          persistentOperationService.modify(
-            operationUpdated.copy(
-              events = OperationAction(
-                makeUserId = userId,
-                actionType = OperationActivateAction.name,
-                arguments = Map("operation" -> operationToString(operationUpdated))
-              ) :: operation.events
-            )
-          )
-        })
-    }
-
-    override def archive(operationId: OperationId, userId: UserId): Unit = {
-      persistentOperationService
-        .getById(operationId)
-        .map(_.map { operation =>
-          val operationUpdated = operation.copy(status = OperationStatus.Archived, updatedAt = Some(DateHelper.now()))
-
-          persistentOperationService.modify(
-            operationUpdated.copy(
-              events = OperationAction(
-                makeUserId = userId,
-                actionType = OperationArchiveAction.name,
-                arguments = Map("operation" -> operationToString(operationUpdated))
-              ) :: operation.events
-            )
-          )
-        })
-    }
-
-    private def operationToString(operation: Operation): String = {
+    private def operationToString(operation: SimpleOperation): String = {
       scala.collection
         .Map[String, String](
           "operationId" -> operation.operationId.value,
           "status" -> operation.status.shortName,
-          "translations" -> operation.translations
-            .map(translation => s"${translation.language}:${translation.title}")
-            .mkString(","),
-          "defaultLanguage" -> operation.defaultLanguage.value,
-          "countriesConfiguration" -> operation.countriesConfiguration
-            .map(countryConfiguration => s"""${countryConfiguration.countryCode}:
-                  |${countryConfiguration.landingSequenceId}:
-                  |${countryConfiguration.tagIds.map(_.value).mkString("[", ",", "]")}""".stripMargin)
-            .mkString(",")
+          "defaultLanguage" -> operation.defaultLanguage.value
         )
         .asJson
         .toString

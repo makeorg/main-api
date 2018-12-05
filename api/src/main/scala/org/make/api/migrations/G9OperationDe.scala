@@ -22,125 +22,42 @@ package org.make.api.migrations
 import java.time.LocalDate
 import java.util.concurrent.Executors
 
-import akka.pattern.ask
-import akka.util.Timeout
-import cats.data.OptionT
-import cats.implicits._
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeApi
-import org.make.api.migrations.CreateOperation.CountryConfiguration
-import org.make.api.sequence.CreateSequenceCommand
-import org.make.core.operation.{Operation, OperationCountryConfiguration, OperationId, OperationTranslation}
-import org.make.core.question.{Question, QuestionId}
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.{SequenceId, SequenceStatus}
-import org.make.core.user.UserId
-import org.make.core.{RequestContext, SlugHelper}
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
-object G9OperationDe extends Migration {
+object G9OperationDe extends Migration with OperationHelper with StrictLogging {
 
   implicit val executor: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
 
-  val emptyContext: RequestContext = RequestContext.empty
-  val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
-
-  val countryConfiguration: CountryConfiguration =
-    CountryConfiguration(
+  val question: QuestionConfiguration =
+    QuestionConfiguration(
       country = Country("DE"),
       language = Language("de"),
       slug = "digital-champion-de",
       title = "Wie kann man europäische digitale Champions hervorbringen?",
+      question = "Wie kann man europäische digitale Champions hervorbringen?",
       startDate = LocalDate.parse("2018-10-25"),
-      endDate = Some(LocalDate.parse("2019-01-14")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2019-01-14"))
     )
-
-  def updateOperation(api: MakeApi,
-                      operation: Operation,
-                      sequenceId: SequenceId,
-                      questionId: QuestionId): Future[Option[OperationId]] = {
-    val countryConfigurations: Seq[OperationCountryConfiguration] =
-      operation.countriesConfiguration ++ Seq(
-        OperationCountryConfiguration(
-          countryCode = countryConfiguration.country,
-          tagIds = Seq.empty,
-          landingSequenceId = sequenceId,
-          startDate = Some(countryConfiguration.startDate),
-          endDate = countryConfiguration.endDate,
-          questionId = Some(questionId)
-        )
-      )
-    val translations = operation.translations ++ Seq(
-      OperationTranslation(title = countryConfiguration.title, language = countryConfiguration.language)
-    )
-
-    api.operationService.update(
-      operation.operationId,
-      moderatorId,
-      countriesConfiguration = Some(countryConfigurations),
-      translations = Some(translations)
-    )
-  }
-
-  def createSequence(api: MakeApi,
-                     operationId: OperationId,
-                     countryConfiguration: CountryConfiguration): Future[Option[SequenceId]] = {
-
-    implicit val timeout: Timeout = Timeout(20.seconds)
-
-    val landingSequenceId = api.idGenerator.nextSequenceId()
-
-    (api.sequenceCoordinator ? CreateSequenceCommand(
-      sequenceId = landingSequenceId,
-      title = countryConfiguration.title,
-      slug = SlugHelper(countryConfiguration.title),
-      themeIds = Seq.empty,
-      operationId = Some(operationId),
-      requestContext = emptyContext,
-      moderatorId = moderatorId,
-      status = SequenceStatus.Published,
-      searchable = false
-    )).map(_ => Some(landingSequenceId))
-  }
-
-  def createQuestion(api: MakeApi,
-                     operationId: OperationId,
-                     countryConfiguration: CountryConfiguration): Future[Option[Question]] = {
-    api.persistentQuestionService
-      .persist(
-        Question(
-          questionId = api.idGenerator.nextQuestionId(),
-          country = countryConfiguration.country,
-          slug = countryConfiguration.slug,
-          language = countryConfiguration.language,
-          question = countryConfiguration.title,
-          operationId = Some(operationId),
-          themeId = None
-        )
-      )
-      .map(question => Some(question))
-  }
 
   override def migrate(api: MakeApi): Future[Unit] = {
-
-    api.operationService.findOneBySlug(G9Operation.operationSlug).map { maybeOperation =>
-      if (maybeOperation.forall(!_.countriesConfiguration.exists(_.countryCode.value == "DE"))) {
-        val updatedOperation: OptionT[Future, OperationId] = for {
-          g9Operation      <- OptionT(Future.successful(maybeOperation))
-          sequenceId       <- OptionT(createSequence(api, g9Operation.operationId, countryConfiguration))
-          question         <- OptionT(createQuestion(api, g9Operation.operationId, countryConfiguration))
-          updatedOperation <- OptionT(updateOperation(api, g9Operation, sequenceId, question.questionId))
-        } yield updatedOperation
-
-        updatedOperation.value.map(_ => ())
-      } else {
-        Future.successful({})
-      }
+    api.operationService.findOneBySlug(G9Operation.operationSlug).map {
+      case None =>
+        logger.error("Unable to find G9+ operation to add it the DE question!")
+        Future.failed(new IllegalStateException("Unable to find G9+ operation to add it the DE question!"))
+      case Some(operation) =>
+        if (operation.questions.exists(_.question.slug == question.slug)) {
+          Future.successful {}
+        } else {
+          createQuestionsAndSequences(api, operation, question)
+        }
     }
   }
 

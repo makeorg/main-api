@@ -67,25 +67,26 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
                                         limit: Option[Int],
                                         requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      def getSequenceId =
+      def getSequenceId: Future[SequenceId] =
         persistentOperationService
           .getById(widgetOperationId)
           .map(
             _.map(
               operation =>
-                operation.countriesConfiguration
+                operation.questions
                   .find(
                     countryConfiguration =>
-                      country.orElse(requestContext.country).contains(countryConfiguration.countryCode)
+                      country.orElse(requestContext.country).contains(countryConfiguration.question.country)
                   )
-                  .getOrElse(operation.countriesConfiguration.head)
+                  .getOrElse(operation.questions.head)
+                  .details
                   .landingSequenceId
             ).getOrElse(SequenceId(requestContext.source.getOrElse("widget")))
           )
 
       for {
-        sequenceId            <- getSequenceId
-        sequenceConfiguration <- sequenceConfigurationService.getSequenceConfiguration(sequenceId)
+        sequenceId <- getSequenceId
+        _          <- sequenceConfigurationService.getSequenceConfiguration(sequenceId)
         selectedProposals <- sequenceService.startNewSequence(
           maybeUserId = maybeUserId,
           sequenceId = sequenceId,

@@ -976,7 +976,7 @@ class UserApiTest
               events = List.empty,
               createdAt = Some(DateHelper.now()),
               updatedAt = None,
-              countriesConfiguration = Seq.empty
+              questions = Seq.empty
             )
           )
         )
@@ -1109,7 +1109,7 @@ class UserApiTest
               events = List.empty,
               createdAt = Some(DateHelper.now()),
               updatedAt = None,
-              countriesConfiguration = Seq.empty
+              questions = Seq.empty
             )
           )
         )

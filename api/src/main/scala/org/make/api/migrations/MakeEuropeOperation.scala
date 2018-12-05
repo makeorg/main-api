@@ -21,33 +21,23 @@ package org.make.api.migrations
 
 import java.time.LocalDate
 
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.TagId
 
 object MakeEuropeOperation extends CreateOperation {
   override val operationSlug: String = "make-europe"
 
   override val defaultLanguage: Language = Language("en")
 
-  override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
-    CreateOperation.CountryConfiguration(
+  override val questions: Seq[QuestionConfiguration] = Seq(
+    QuestionConfiguration(
       country = Country("GB"),
       language = Language("en"),
       slug = operationSlug,
       title = "Consultation européenne (démo)",
+      question = "Consultation européenne (démo)",
       startDate = LocalDate.parse("2018-03-26"),
-      endDate = Some(LocalDate.parse("2018-04-30")),
-      tags = Seq(
-        TagId("european-commission"),
-        TagId("social"),
-        TagId("taxes"),
-        TagId("environment"),
-        TagId("minimum-wage"),
-        TagId("finance"),
-        TagId("budget"),
-        TagId("students"),
-        TagId("erasmus")
-      )
+      endDate = Some(LocalDate.parse("2018-04-30"))
     )
   )
 

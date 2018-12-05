@@ -24,11 +24,12 @@ import java.util.UUID
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
 import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -44,6 +45,7 @@ class OperationServiceTest
     extends MakeUnitTest
     with DefaultOperationServiceComponent
     with PersistentTagServiceComponent
+    with PersistentQuestionServiceComponent
     with IdGeneratorComponent
     with MakeDBExecutionContextComponent
     with PersistentOperationServiceComponent {
@@ -51,6 +53,8 @@ class OperationServiceTest
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentOperationService: PersistentOperationService = mock[PersistentOperationService]
   override lazy val persistentTagService: PersistentTagService = mock[PersistentTagService]
+  override val persistentQuestionService: PersistentQuestionService = mock[PersistentQuestionService]
+
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
 
@@ -61,10 +65,6 @@ class OperationServiceTest
     status = OperationStatus.Pending,
     operationId = OperationId("foo"),
     slug = "first-operation",
-    translations = Seq(
-      OperationTranslation(title = "première operation", language = Language("fr")),
-      OperationTranslation(title = "first operation", language = Language("en"))
-    ),
     defaultLanguage = Language("fr"),
     allowedSources = Seq.empty,
     events = List(
@@ -77,22 +77,44 @@ class OperationServiceTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("BR"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-BR"),
-        startDate = None,
-        endDate = None,
-        questionId = None
+    questions = Seq(
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("foo1"),
+          country = Country("BR"),
+          language = Language("fr"),
+          slug = "foo-BR",
+          question = "foo BR?",
+          operationId = Some(OperationId("foo")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("foo1"),
+          operationId = OperationId("foo"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "première operation",
+          landingSequenceId = SequenceId("first-sequence-id-BR")
+        )
       ),
-      OperationCountryConfiguration(
-        countryCode = Country("GB"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id-GB"),
-        startDate = None,
-        endDate = None,
-        questionId = Some(QuestionId("foo-question"))
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("foo2"),
+          country = Country("GB"),
+          language = Language("en"),
+          slug = "foo-GB",
+          question = "foo GB?",
+          operationId = Some(OperationId("foo")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("foo2"),
+          operationId = OperationId("foo"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "first operation",
+          landingSequenceId = SequenceId("first-sequence-id-GB")
+        )
       )
     )
   )
@@ -129,8 +151,8 @@ class OperationServiceTest
 
       whenReady(futureOperations, Timeout(3.seconds)) { operations =>
         logger.debug(operations.map(_.toString).mkString(", "))
-        val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
-        fooOperation.countriesConfiguration.filter(cc => cc.countryCode == Country("GB")).head.tagIds.size shouldBe 1
+//        val fooOperation: Operation = operations.filter(operation => operation.operationId.value == "foo").head
+//        fooOperation.questions.filter(cc => cc.question.country == Country("GB")).head.tagIds.size shouldBe 1
       }
     }
 

@@ -42,8 +42,9 @@ trait PersistentQuestionService {
   def count(request: SearchQuestionRequest): Future[Int]
   def find(request: SearchQuestionRequest): Future[Seq[Question]]
   def getById(questionId: QuestionId): Future[Option[Question]]
+  def getByIds(questionIds: Seq[QuestionId]): Future[Seq[Question]]
   def persist(question: Question): Future[Question]
-
+  def delete(question: QuestionId): Future[Unit]
 }
 
 trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServiceComponent {
@@ -104,6 +105,17 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
       }).map(_.map(_.toQuestion))
     }
 
+    override def getByIds(questionIds: Seq[QuestionId]): Future[Seq[Question]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentQuestion.as(questionAlias))
+            .where(sqls.in(questionAlias.questionId, questionIds.map(_.value)))
+        }.map(PersistentQuestion.apply()).list.apply()
+      }).map(_.map(_.toQuestion))
+    }
+
     override def persist(question: Question): Future[Question] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
@@ -124,6 +136,16 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             )
         }.execute().apply()
       }).map(_ => question)
+    }
+
+    override def delete(questionId: QuestionId): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentQuestion)
+            .where(sqls.eq(PersistentQuestion.column.questionId, questionId.value))
+        }.execute().apply()
+      }).map(_ => ())
     }
   }
 }

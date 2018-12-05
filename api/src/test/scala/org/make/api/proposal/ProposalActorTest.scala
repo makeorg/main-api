@@ -63,58 +63,56 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
   val questionOnNothingFr = Question(
-    QuestionId("my-question"),
+    questionId = QuestionId("my-question"),
     slug = "my-question",
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
-    None,
-    None
+    operationId = None,
+    themeId = None
   )
 
   val questionOnTheme = Question(
-    QuestionId("my-question"),
+    questionId = QuestionId("my-question"),
     slug = "my-question",
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
-    None,
-    Some(ThemeId("some-theme"))
+    operationId = None,
+    themeId = Some(ThemeId("some-theme"))
   )
 
   val questionOnNothingIT = Question(
-    QuestionId("my-italian-question"),
+    questionId = QuestionId("my-italian-question"),
     slug = "my-question",
     country = Country("IT"),
     language = Language("it"),
     question = "some unsolved question",
-    None,
-    None
+    operationId = None,
+    themeId = None
   )
 
   val operation1: Operation = Operation(
-    OperationStatus.Active,
-    OperationId("operation1"),
-    "operation-1",
-    Seq.empty,
-    Language("en"),
-    Seq("core"),
-    List.empty,
-    None,
-    None,
-    Seq.empty
+    status = OperationStatus.Active,
+    operationId = OperationId("operation1"),
+    slug = "operation-1",
+    defaultLanguage = Language("en"),
+    allowedSources = Seq("core"),
+    events = List.empty,
+    questions = Seq.empty,
+    createdAt = None,
+    updatedAt = None
   )
   val operation2: Operation = Operation(
-    OperationStatus.Active,
-    OperationId("operation2"),
-    "operation-2",
-    Seq.empty,
-    Language("en"),
-    Seq("core"),
-    List.empty,
-    None,
-    None,
-    Seq.empty
+    status = OperationStatus.Active,
+    operationId = OperationId("operation2"),
+    slug = "operation-2",
+    defaultLanguage = Language("en"),
+    allowedSources = Seq("core"),
+    events = List.empty,
+    questions = Seq.empty,
+    createdAt = None,
+    updatedAt = None,
   )
 
   val CREATED_DATE_SECOND_MINUS: Int = 10

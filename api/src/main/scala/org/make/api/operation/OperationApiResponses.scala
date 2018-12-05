@@ -26,8 +26,9 @@ import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.user.UserResponse
 import org.make.core.CirceFormatters
 import org.make.core.operation._
-import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
+import org.make.core.question.QuestionId
+import org.make.core.reference.Language
+import org.make.core.tag.TagId
 import org.make.core.user.User
 
 final case class OperationResponse(operationId: OperationId,
@@ -35,7 +36,6 @@ final case class OperationResponse(operationId: OperationId,
                                    slug: String,
                                    translations: Seq[OperationTranslation] = Seq.empty,
                                    defaultLanguage: Language,
-                                   @Deprecated sequenceLandingId: SequenceId,
                                    createdAt: Option[ZonedDateTime],
                                    updatedAt: Option[ZonedDateTime],
                                    countriesConfiguration: Seq[OperationCountryConfiguration])
@@ -44,20 +44,27 @@ object OperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[OperationResponse] = deriveEncoder[OperationResponse]
   implicit val decoder: Decoder[OperationResponse] = deriveDecoder[OperationResponse]
 
-  def apply(operation: Operation, countryCode: Option[Country]): OperationResponse = {
+  def apply(operation: Operation, tags: Map[QuestionId, Seq[TagId]]): OperationResponse = {
     OperationResponse(
       operationId = operation.operationId,
       status = operation.status,
       slug = operation.slug,
-      translations = operation.translations,
+      translations = operation.questions.map { question =>
+        OperationTranslation(title = question.details.operationTitle, language = question.question.language)
+      },
       defaultLanguage = operation.defaultLanguage,
-      sequenceLandingId = operation.countriesConfiguration
-        .find(conf => countryCode.contains(conf.countryCode))
-        .getOrElse(operation.countriesConfiguration.head)
-        .landingSequenceId,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
-      countriesConfiguration = operation.countriesConfiguration
+      countriesConfiguration = operation.questions.map { question =>
+        OperationCountryConfiguration(
+          countryCode = question.question.country,
+          tagIds = tags.get(question.question.questionId).toSeq.flatten,
+          landingSequenceId = question.details.landingSequenceId,
+          startDate = question.details.startDate,
+          questionId = Some(question.question.questionId),
+          endDate = question.details.endDate
+        )
+      }
     )
   }
 }
@@ -67,7 +74,6 @@ final case class ModerationOperationResponse(operationId: OperationId,
                                              slug: String,
                                              translations: Seq[OperationTranslation] = Seq.empty,
                                              defaultLanguage: Language,
-                                             @Deprecated sequenceLandingId: SequenceId,
                                              createdAt: Option[ZonedDateTime],
                                              updatedAt: Option[ZonedDateTime],
                                              events: Seq[OperationActionResponse],
@@ -80,7 +86,7 @@ object ModerationOperationResponse extends CirceFormatters {
 
   def apply(operation: Operation,
             operationActionUsers: Seq[User],
-            countryCode: Option[Country]): ModerationOperationResponse = {
+            tags: Map[QuestionId, Seq[TagId]]): ModerationOperationResponse = {
     val events: Seq[OperationActionResponse] = operation.events.map { action =>
       OperationActionResponse(
         date = action.date,
@@ -99,15 +105,22 @@ object ModerationOperationResponse extends CirceFormatters {
       operationId = operation.operationId,
       status = operation.status,
       slug = operation.slug,
-      translations = operation.translations,
+      translations = operation.questions.map { question =>
+        OperationTranslation(title = question.details.operationTitle, language = question.question.language)
+      },
       defaultLanguage = operation.defaultLanguage,
-      sequenceLandingId = operation.countriesConfiguration
-        .find(conf => countryCode.contains(conf.countryCode))
-        .getOrElse(operation.countriesConfiguration.head)
-        .landingSequenceId,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
-      countriesConfiguration = operation.countriesConfiguration,
+      countriesConfiguration = operation.questions.map { question =>
+        OperationCountryConfiguration(
+          countryCode = question.question.country,
+          tagIds = tags.get(question.question.questionId).toSeq.flatten,
+          landingSequenceId = question.details.landingSequenceId,
+          startDate = question.details.startDate,
+          questionId = Some(question.question.questionId),
+          endDate = question.details.endDate
+        )
+      },
       events = events,
       allowedSources = operation.allowedSources
     )

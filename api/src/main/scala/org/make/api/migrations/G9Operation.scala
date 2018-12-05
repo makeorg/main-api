@@ -20,7 +20,7 @@
 package org.make.api.migrations
 import java.time.LocalDate
 
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
 object G9Operation extends CreateOperation {
@@ -28,15 +28,15 @@ object G9Operation extends CreateOperation {
 
   override val defaultLanguage: Language = Language("fr")
 
-  override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
-    CountryConfiguration(
+  override val questions: Seq[QuestionConfiguration] = Seq(
+    QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = operationSlug,
       title = "Comment faire émerger des champions européens du numérique ? ",
+      question = "Comment faire émerger des champions européens du numérique ? ",
       startDate = LocalDate.parse("2018-10-18"),
-      endDate = Some(LocalDate.parse("2019-01-14")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2019-01-14"))
     )
   )
 

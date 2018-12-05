@@ -49,6 +49,7 @@ trait PersistentTagService {
   def findByLabel(label: String): Future[Seq[Tag]]
   def findByLabelLike(partialLabel: String): Future[Seq[Tag]]
   def findByQuestion(questionId: QuestionId): Future[Seq[Tag]]
+  def findByQuestions(questionIds: Seq[QuestionId]): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
@@ -84,6 +85,19 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.questionId, questionId.value))
+        }.map(PersistentTag.apply()).list().apply
+      })
+
+      futurePersistentTag.map(_.map(_.toTag))
+    }
+
+    override def findByQuestions(questionIds: Seq[QuestionId]): Future[Seq[Tag]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.in(tagAlias.questionId, questionIds.map(_.value)))
         }.map(PersistentTag.apply()).list().apply
       })
 

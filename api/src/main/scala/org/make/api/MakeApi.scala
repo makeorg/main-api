@@ -103,16 +103,16 @@ import scala.concurrent.duration.DurationInt
 
 trait MakeApi
     extends DefaultIdGeneratorComponent
-    with DefaultPersistentUserServiceComponent
     with DefaultPersistentClientServiceComponent
+    with DefaultPersistentIdeaServiceComponent
+    with DefaultPersistentOperationServiceComponent
+    with DefaultPersistentOperationOfQuestionServiceComponent
+    with DefaultPersistentQuestionServiceComponent
+    with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
-    with DefaultPersistentIdeaServiceComponent
-    with DefaultPersistentOperationServiceComponent
-    with DefaultSocialServiceComponent
-    with DefaultGoogleApiComponent
-    with DefaultFacebookApiComponent
+    with DefaultPersistentUserServiceComponent
     with DefaultUserServiceComponent
     with DefaultTagServiceComponent
     with DefaultTagTypeServiceComponent
@@ -120,10 +120,11 @@ trait MakeApi
     with DefaultThemeServiceComponent
     with DefaultProposalServiceComponent
     with DefaultSequenceServiceComponent
+    with DefaultSocialServiceComponent
+    with DefaultGoogleApiComponent
+    with DefaultFacebookApiComponent
     with DefaultSequenceConfigurationComponent
-    with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultQuestionService
-    with DefaultPersistentQuestionServiceComponent
     with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
@@ -178,7 +179,7 @@ trait MakeApi
     with TrackingApi
     with DefaultMigrationApiComponent
     with HealthCheckApi
-    with ModerationOperationApi
+    with DefaultModerationOperationApiComponent
     with ModerationOrganisationApi
     with OrganisationApi
     with DefaultModerationProposalApiComponent
@@ -308,7 +309,7 @@ trait MakeApi
       businessConfigRoutes ~
       ideaRoutes ~
       operationApi.routes ~
-      moderationOperationRoutes ~
+      moderationOperationApi.routes ~
       trackingRoutes ~
       migrationApi.routes ~
       healthCheckRoutes ~

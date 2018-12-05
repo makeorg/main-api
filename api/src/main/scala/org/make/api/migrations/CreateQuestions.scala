@@ -38,9 +38,8 @@ object CreateQuestions extends Migration with StrictLogging {
 
   override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
   override def migrate(api: MakeApi): Future[Unit] = {
-
     // Insert Themes
-    val insertThemes = api.themeService.findAll().flatMap { themes =>
+    api.themeService.findAll().flatMap { themes =>
       var result = Future.successful {}
       themes.foreach { theme =>
         result = result.flatMap { _ =>
@@ -71,50 +70,6 @@ object CreateQuestions extends Migration with StrictLogging {
       }
       result
     }
-    val insertOperations = insertThemes.flatMap(_ => api.operationService.find(maybeSource = None)).flatMap {
-      operations =>
-        var future = Future.successful {}
-        operations.flatMap { operation =>
-          operation.countriesConfiguration.map { conf =>
-            val question = operation.translations.find(_.language == languages(conf.countryCode)).map(_.title)
-            (operation.operationId, operation.slug, question.getOrElse(operation.operationId.value), conf)
-          }
-        }.foreach {
-          case (operationId, operationSlug, question, configuration) =>
-            future = future.flatMap { _ =>
-              api.questionService
-                .findQuestion(None, Some(operationId), configuration.countryCode, languages(configuration.countryCode))
-                .flatMap {
-                  case Some(_) => Future.successful {}
-                  case None    =>
-                    // Trick to handle vff
-                    val questionSlug = if (configuration.countryCode == Country("FR")) { operationSlug } else {
-                      s"$operationSlug-${configuration.countryCode.value.toLowerCase()}"
-                    }
-                    api.persistentQuestionService
-                      .persist(
-                        Question(
-                          questionId = api.idGenerator.nextQuestionId(),
-                          slug = questionSlug,
-                          country = configuration.countryCode,
-                          language = languages(configuration.countryCode),
-                          question = question,
-                          operationId = Some(operationId),
-                          themeId = None
-                        )
-                      )
-                      .map(_ => ())
-                }
-            }.recoverWith {
-              case e =>
-                logger.error("", e)
-                Future.successful {}
-            }
-        }
-        future
-    }
-
-    insertOperations
   }
 
   override def runInProduction: Boolean = false

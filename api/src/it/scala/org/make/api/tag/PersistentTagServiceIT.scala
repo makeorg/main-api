@@ -28,7 +28,6 @@ import org.make.api.theme.DefaultPersistentThemeServiceComponent
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, Theme, ThemeId}
-import org.make.core.sequence.SequenceId
 import org.make.core.tag._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -46,26 +45,14 @@ class PersistentTagServiceIT
 
   override protected val cockroachExposedPort: Int = 40003
 
-  val fakeOperation = Operation(
+  val fakeOperation = SimpleOperation(
     status = OperationStatus.Active,
     operationId = OperationId("fakeOperation"),
     slug = "fake-operation",
-    translations = Seq.empty,
     defaultLanguage = Language("fr"),
     allowedSources = Seq.empty,
-    events = List.empty,
     createdAt = None,
-    updatedAt = None,
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("FR"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("fake-sequence-id"),
-        startDate = None,
-        endDate = None,
-        questionId = None
-      )
-    )
+    updatedAt = None
   )
 
   def questionForOperation(operationId: OperationId,
@@ -452,37 +439,9 @@ class PersistentTagServiceIT
       Given(s"a list of persisted tags: \n ${Seq(hestia, athena).mkString("\n")}")
 
       val futureTagListResultOperations: Future[(Seq[Tag], Seq[Tag])] = for {
+        _ <- persistentOperationService.persist(fakeOperation.copy(operationId = operationIdFirst, slug = "ope-first"))
         _ <- persistentOperationService.persist(
-          fakeOperation.copy(
-            operationId = operationIdFirst,
-            slug = "ope-first",
-            countriesConfiguration = Seq(
-              OperationCountryConfiguration(
-                countryCode = Country("FR"),
-                tagIds = Seq.empty,
-                landingSequenceId = SequenceId("fr"),
-                startDate = None,
-                endDate = None,
-                questionId = None
-              )
-            )
-          )
-        )
-        _ <- persistentOperationService.persist(
-          fakeOperation.copy(
-            operationId = operationIdSecond,
-            slug = "ope-second",
-            countriesConfiguration = Seq(
-              OperationCountryConfiguration(
-                countryCode = Country("FR"),
-                tagIds = Seq.empty,
-                landingSequenceId = SequenceId("fr"),
-                startDate = None,
-                endDate = None,
-                questionId = None
-              )
-            )
-          )
+          fakeOperation.copy(operationId = operationIdSecond, slug = "ope-second")
         )
         _ <- persistentTagTypeService.persist(tagTypeFirst)
         _ <- persistentTagTypeService.persist(tagTypeSecond)
@@ -610,22 +569,7 @@ class PersistentTagServiceIT
            |language = 'br' """.stripMargin)
       val futureTagListResultHera: Future[Seq[Tag]] = for {
         _ <- persistentTagTypeService.persist(tagTypeSeventh)
-        _ <- persistentOperationService.persist(
-          fakeOperation.copy(
-            operationId = operationIdThird,
-            slug = "ope-third",
-            countriesConfiguration = Seq(
-              OperationCountryConfiguration(
-                countryCode = Country("FR"),
-                tagIds = Seq.empty,
-                landingSequenceId = SequenceId("fr"),
-                startDate = None,
-                endDate = None,
-                questionId = None
-              )
-            )
-          )
-        )
+        _ <- persistentOperationService.persist(fakeOperation.copy(operationId = operationIdThird, slug = "ope-third"))
         _ <- persistentTagService.persist(hera)
         result <- persistentTagService.find(
           start = 0,
@@ -702,20 +646,7 @@ class PersistentTagServiceIT
     )
     scenario("Search tags by label") {
 
-      val fooOperation = fakeOperation.copy(
-        operationId = fooOperationId,
-        slug = "foo-operation",
-        countriesConfiguration = Seq(
-          OperationCountryConfiguration(
-            countryCode = Country("FR"),
-            tagIds = Seq.empty,
-            landingSequenceId = SequenceId("fr"),
-            startDate = None,
-            endDate = None,
-            questionId = None
-          )
-        )
-      )
+      val fooOperation = fakeOperation.copy(operationId = fooOperationId, slug = "foo-operation")
       val persistedTags: Future[Seq[Tag]] = for {
         _   <- persistentThemeService.persist(baseTheme.copy(themeId = fooThemeId))
         _   <- persistentOperationService.persist(fooOperation)

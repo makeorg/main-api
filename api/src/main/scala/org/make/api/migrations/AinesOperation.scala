@@ -21,7 +21,7 @@ package org.make.api.migrations
 
 import java.time.LocalDate
 
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
 object AinesOperation extends CreateOperation {
@@ -29,15 +29,15 @@ object AinesOperation extends CreateOperation {
 
   override val defaultLanguage: Language = Language("fr")
 
-  override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
-    CountryConfiguration(
+  override val questions: Seq[QuestionConfiguration] = Seq(
+    QuestionConfiguration(
       country = Country("FR"),
       language = Language("fr"),
       slug = operationSlug,
       title = "Comment mieux prendre soin de nos aînés ?",
+      question = "Comment mieux prendre soin de nos aînés ?",
       startDate = LocalDate.parse("2018-09-19"),
-      endDate = Some(LocalDate.parse("2018-12-10")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2018-12-10"))
     )
   )
 

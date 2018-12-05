@@ -48,7 +48,9 @@ object ProposalCsvSerializer {
           .getOrElse(""),
         proposal.operationId.flatMap { operationId =>
           operations.find(_.operationId.value == operationId.value).flatMap { operation =>
-            operation.translations.find(_.language == operation.defaultLanguage).map(START + _.title + END)
+            operation.questions
+              .find(_.question.language == operation.defaultLanguage)
+              .map(START + _.details.operationTitle + END)
           }
         }.getOrElse(""),
         proposal.tags.map(_.label).mkString(START, SEPARATOR, END),

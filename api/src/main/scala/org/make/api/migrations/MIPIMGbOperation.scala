@@ -21,7 +21,7 @@ package org.make.api.migrations
 
 import java.time.LocalDate
 
-import org.make.api.migrations.CreateOperation.CountryConfiguration
+import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
 object MIPIMGbOperation extends CreateOperation {
@@ -29,15 +29,15 @@ object MIPIMGbOperation extends CreateOperation {
 
   override val defaultLanguage: Language = Language("en")
 
-  override val countryConfigurations: Seq[CreateOperation.CountryConfiguration] = Seq(
-    CountryConfiguration(
+  override val questions: Seq[QuestionConfiguration] = Seq(
+    QuestionConfiguration(
       country = Country("GB"),
       language = Language("en"),
       slug = operationSlug,
       title = "How can we plan the city of tomorrow ?",
+      question = "How can we plan the city of tomorrow ?",
       startDate = LocalDate.parse("2018-11-29"),
-      endDate = Some(LocalDate.parse("2018-12-31")),
-      tags = Seq.empty
+      endDate = Some(LocalDate.parse("2018-12-31"))
     )
   )
 

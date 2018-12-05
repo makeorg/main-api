@@ -371,7 +371,7 @@ trait ModerationProposalApi extends Directives {
   @Path(value = "/next")
   def nextProposalToModerate: Route
 
-  val routes: Route =
+  def routes: Route =
     searchAllProposals ~
       updateProposal ~
       acceptProposal ~
@@ -409,7 +409,7 @@ trait DefaultModerationProposalApiComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
 
-  override def moderationProposalApi: ModerationProposalApi = new ModerationProposalApi {
+  override lazy val moderationProposalApi: ModerationProposalApi = new ModerationProposalApi {
 
     val moderationProposalId: PathMatcher1[ProposalId] = Segment.flatMap(id => Try(ProposalId(id)).toOption)
 

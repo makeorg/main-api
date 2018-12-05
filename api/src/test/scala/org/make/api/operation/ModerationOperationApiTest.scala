@@ -31,6 +31,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.{SequenceId, SequenceStatus}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -46,7 +47,7 @@ import scala.concurrent.Future
 
 class ModerationOperationApiTest
     extends MakeApiTestBase
-    with ModerationOperationApi
+    with DefaultModerationOperationApiComponent
     with TagServiceComponent
     with SequenceServiceComponent
     with OperationServiceComponent
@@ -57,7 +58,10 @@ class ModerationOperationApiTest
   override val sequenceService: SequenceService = mock[SequenceService]
   override val userService: UserService = mock[UserService]
 
-  val routes: Route = sealRoute(moderationOperationRoutes)
+  when(tagService.findByQuestionIds(any[Seq[QuestionId]]))
+    .thenReturn(Future.successful(Map.empty[QuestionId, Seq[TagId]]))
+
+  val operationRoutes: Route = sealRoute(moderationOperationApi.routes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
 
@@ -129,10 +133,6 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    translations = Seq(
-      OperationTranslation(title = "première operation", language = Language("fr")),
-      OperationTranslation(title = "first operation", language = Language("en"))
-    ),
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
     events = List(
@@ -145,14 +145,25 @@ class ModerationOperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("BR"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("first-sequence-id"),
-        startDate = Some(LocalDate.parse("2018-02-02")),
-        endDate = None,
-        questionId = None
+    questions = Seq(
+      QuestionWithDetails(
+        question = Question(
+          country = Country("BR"),
+          language = Language("fr"),
+          questionId = QuestionId("first-question-id"),
+          slug = "first-operation-BR",
+          question = "first question?",
+          operationId = Some(OperationId("firstOperation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("first-question-id"),
+          operationId = OperationId("firstOperation"),
+          startDate = Some(LocalDate.parse("2018-02-02")),
+          endDate = None,
+          operationTitle = "première operation",
+          landingSequenceId = SequenceId("first-sequence-id")
+        )
       )
     )
   )
@@ -161,10 +172,6 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
-    translations = Seq(
-      OperationTranslation(title = "secondo operazione", language = Language("it")),
-      OperationTranslation(title = "second operation", language = Language("en"))
-    ),
     defaultLanguage = Language("it"),
     allowedSources = Seq("core"),
     events = List(
@@ -177,14 +184,25 @@ class ModerationOperationApiTest
     ),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    countriesConfiguration = Seq(
-      OperationCountryConfiguration(
-        countryCode = Country("IT"),
-        tagIds = Seq.empty,
-        landingSequenceId = SequenceId("second-sequence-id"),
-        startDate = Some(LocalDate.parse("2018-02-02")),
-        endDate = Some(LocalDate.parse("2018-05-02")),
-        questionId = None
+    questions = Seq(
+      QuestionWithDetails(
+        question = Question(
+          questionId = QuestionId("second-question"),
+          country = Country("IT"),
+          language = Language("it"),
+          slug = "second-operation-IT",
+          question = "second question?",
+          operationId = Some(OperationId("secondOperation")),
+          themeId = None
+        ),
+        details = OperationOfQuestion(
+          questionId = QuestionId("second-question"),
+          operationId = OperationId("secondOperation"),
+          startDate = Some(LocalDate.parse("2018-02-02")),
+          endDate = Some(LocalDate.parse("2018-05-02")),
+          operationTitle = "secondo operazione",
+          landingSequenceId = SequenceId("second-sequence-id")
+        )
       )
     )
   )
@@ -324,18 +342,7 @@ class ModerationOperationApiTest
     operationService.create(
       userId = tyrion.userId,
       slug = "my-create-operation",
-      translations = Seq(OperationTranslation(title = "first create operation", language = Language("fr"))),
       defaultLanguage = Language("fr"),
-      countriesConfiguration = Seq(
-        OperationCountryConfiguration(
-          countryCode = Country("FR"),
-          tagIds = Seq(TagId("hello")),
-          landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
-          startDate = None,
-          endDate = None,
-          questionId = None
-        )
-      ),
       allowedSources = Seq("core")
     )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
@@ -347,20 +354,7 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("my-update-operation"),
-      translations = Some(Seq(OperationTranslation(title = "first update operation", language = Language("fr")))),
       defaultLanguage = Some(Language("fr")),
-      countriesConfiguration = Some(
-        Seq(
-          OperationCountryConfiguration(
-            countryCode = Country("FR"),
-            tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
-            startDate = Some(LocalDate.parse("2018-02-02")),
-            endDate = Some(LocalDate.parse("2018-05-02")),
-            questionId = None
-          )
-        )
-      ),
       allowedSources = Some(Seq("core"))
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
@@ -370,20 +364,7 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("existing-operation-slug-second"),
-      translations = Some(Seq(OperationTranslation(title = "first update operation", language = Language("fr")))),
       defaultLanguage = Some(Language("fr")),
-      countriesConfiguration = Some(
-        Seq(
-          OperationCountryConfiguration(
-            countryCode = Country("FR"),
-            tagIds = Seq(TagId("hello")),
-            landingSequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
-            startDate = Some(LocalDate.parse("2018-02-02")),
-            endDate = Some(LocalDate.parse("2018-05-02")),
-            questionId = None
-          )
-        )
-      ),
       allowedSources = Some(Seq("core"))
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
@@ -398,7 +379,7 @@ class ModerationOperationApiTest
       When("I get all proposals without authentication")
       Then("I get an unauthorized status response")
       Get("/moderation/operations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> operationRoutes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -409,7 +390,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -420,7 +401,7 @@ class ModerationOperationApiTest
       Then("I get a list of 2 operations")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
@@ -437,9 +418,7 @@ class ModerationOperationApiTest
         firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
           "première operation"
         )
-        firstOperationResult.translations.filter(_.language == Language("en")).head.title should be("first operation")
         firstOperationResult.defaultLanguage should be(Language("fr"))
-        firstOperationResult.sequenceLandingId.value should be("first-sequence-id")
         firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
           Seq.empty
         )
@@ -455,7 +434,7 @@ class ModerationOperationApiTest
       And("the operation match the slug")
       Get("/moderation/operations?slug=second-operation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
@@ -467,9 +446,7 @@ class ModerationOperationApiTest
         secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
           "secondo operazione"
         )
-        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
         secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
           Seq.empty
         )
@@ -485,7 +462,7 @@ class ModerationOperationApiTest
       And("the operation match the country")
       Get("/moderation/operations?country=IT")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
@@ -497,9 +474,7 @@ class ModerationOperationApiTest
         secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
           "secondo operazione"
         )
-        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
         secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
           Seq.empty
         )
@@ -515,7 +490,7 @@ class ModerationOperationApiTest
       And("the operation match the openAt")
       Get("/moderation/operations?openAt=2018-02-02")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
@@ -527,9 +502,7 @@ class ModerationOperationApiTest
         secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
           "secondo operazione"
         )
-        secondOperationResult.translations.filter(_.language == Language("en")).head.title should be("second operation")
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.sequenceLandingId.value should be("second-sequence-id")
         secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
           Seq.empty
         )
@@ -546,7 +519,7 @@ class ModerationOperationApiTest
       When("I get a proposal without authentication")
       Then("I get an unauthorized status response")
       Get("/moderation/operations/firstOperation")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> operationRoutes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -557,7 +530,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -568,7 +541,7 @@ class ModerationOperationApiTest
       Then("I get a not found status response")
       Get("/moderation/operations/fakeid")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -579,7 +552,7 @@ class ModerationOperationApiTest
       Then("the call success")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val firstOperationResult: ModerationOperationResponse =
           entityAs[ModerationOperationResponse]
@@ -588,9 +561,7 @@ class ModerationOperationApiTest
         firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
           "première operation"
         )
-        firstOperationResult.translations.filter(_.language == Language("en")).head.title should be("first operation")
         firstOperationResult.defaultLanguage should be(Language("fr"))
-        firstOperationResult.sequenceLandingId.value should be("first-sequence-id")
         firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
           Seq.empty
         )
@@ -605,7 +576,7 @@ class ModerationOperationApiTest
       When("I create an operation without authentication")
       Then("I get an unauthorized status response")
       Post("/moderation/operations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson")) ~> routes ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson")) ~> operationRoutes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -615,7 +586,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -626,7 +597,7 @@ class ModerationOperationApiTest
       And("operation is registered")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -642,7 +613,7 @@ class ModerationOperationApiTest
             "29625b5a-56da-4539-b195-15303187c20b".r.replaceFirstIn(s"$validCreateJson", "fakeSequenceId")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "sequenceLandingId")
@@ -660,7 +631,7 @@ class ModerationOperationApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, "hello".r.replaceFirstIn(s"$validCreateJson", "fakeTag"))
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "tagIds")
@@ -679,7 +650,7 @@ class ModerationOperationApiTest
             "my-create-operation".r.replaceFirstIn(s"$validCreateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -695,7 +666,7 @@ class ModerationOperationApiTest
       When("I update the operation without authentication")
       Then("I get an unauthorized status response")
       Put("/moderation/operations/updateOperationId")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson")) ~> routes ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson")) ~> operationRoutes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -706,7 +677,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -717,7 +688,7 @@ class ModerationOperationApiTest
       And("operation is registered")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -733,7 +704,7 @@ class ModerationOperationApiTest
             "29625b5a-56da-4539-b195-15303187c20b".r.replaceFirstIn(s"$validUpdateJson", "fakeSequenceId")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "sequenceLandingId")
@@ -751,7 +722,7 @@ class ModerationOperationApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, "hello".r.replaceFirstIn(s"$validUpdateJson", "fakeTag"))
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "tagIds")
@@ -770,7 +741,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -789,7 +760,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug-second")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }

@@ -23,6 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import org.make.api.DatabaseTest
+import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
@@ -44,7 +45,8 @@ class OperationServiceIT
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentTagServiceComponent
-    with DefaultIdGeneratorComponent {
+    with DefaultIdGeneratorComponent
+    with DefaultPersistentQuestionServiceComponent {
 
   override protected val cockroachExposedPort: Int = 40007
 
@@ -103,38 +105,25 @@ class OperationServiceIT
     questionId = None
   )
 
-  private val translations: scala.collection.Seq[OperationTranslation] = Seq(
-    OperationTranslation(title = "bonjour operation", language = languageFr),
-    OperationTranslation(title = "hello operation", language = Language("en"))
-  )
-
-  val simpleOperation = Operation(
+  val simpleOperation = SimpleOperation(
     operationId = operationId,
     createdAt = None,
     updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
-    translations = translations,
-    countriesConfiguration = Seq.empty,
-    events = List.empty,
     defaultLanguage = languageFr,
     allowedSources = Seq.empty
   )
 
   feature("An operation can be created") {
     scenario("Create an operation and get the operation") {
-      Given(s"""
-               |an operation "${simpleOperation.translations.head.title}" with
-               |titles =
-               |  fr -> "bonjour operation"
-               |  en -> "hello operation"
+      Given("""
+               |an operation with
                |status = Pending
                |slug = "hello-operation"
                |defaultLanguage = fr
-               |countriesConfiguration = Seq.empty
-               |events = List.empty
                |""".stripMargin)
-      When(s"""I persist "${simpleOperation.translations.head.title}"""")
+      When("""I persist it""")
       And("I update operation")
       And("I get the created operation")
 
@@ -143,20 +132,12 @@ class OperationServiceIT
         operationId <- operationService.create(
           userId = userId,
           slug = simpleOperation.slug,
-          translations = simpleOperation.translations,
           defaultLanguage = simpleOperation.defaultLanguage,
-          countriesConfiguration = simpleOperation.countriesConfiguration,
           allowedSources = simpleOperation.allowedSources
         )
         _ <- operationService.update(
           operationId = operationId,
           slug = Some("hello-updated-operation"),
-          translations = Some(
-            Seq(
-              OperationTranslation(title = "ola operation", language = Language("pt")),
-              OperationTranslation(title = "hello operation", language = Language("en"))
-            )
-          ),
           defaultLanguage = Some(Language("pt")),
           userId = userId
         )
@@ -175,8 +156,6 @@ class OperationServiceIT
           .arguments
           .get("operation")
           .toString should be(s"""Some({
-            |  "translations" : "fr:bonjour operation,en:hello operation",
-            |  "countriesConfiguration" : "",
             |  "operationId" : "${operation.operationId.value}",
             |  "status" : "Pending",
             |  "defaultLanguage" : "fr"
@@ -188,8 +167,6 @@ class OperationServiceIT
           .arguments
           .get("operation")
           .toString should be(s"""Some({
-            |  "translations" : "pt:ola operation,en:hello operation",
-            |  "countriesConfiguration" : "",
             |  "operationId" : "${operation.operationId.value}",
             |  "status" : "Pending",
             |  "defaultLanguage" : "pt"
