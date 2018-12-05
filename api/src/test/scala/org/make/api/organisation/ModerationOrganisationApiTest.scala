@@ -28,6 +28,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
@@ -148,6 +149,43 @@ class ModerationOrganisationApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"email": "bar@foo.com", "password": "azertyui"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  feature("get organisation") {
+
+    when(organisationService.getOrganisation(matches(UserId("ABCD"))))
+      .thenReturn(Future.successful(Some(fakeOrganisation)))
+
+    when(organisationService.getOrganisation(matches(UserId("non-existant"))))
+      .thenReturn(Future.successful(None))
+
+    scenario("get moderation organisation unauthenticate") {
+      Get("/moderation/organisations/ABCD") ~> routes ~> check {
+        status shouldBe StatusCodes.Unauthorized
+      }
+    }
+
+    scenario("get moderation organisation without admin rights") {
+      Get("/moderation/organisations/ABCD")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("get existing organisation") {
+      Get("/moderation/organisations/ABCD")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val organisation: UserResponse = entityAs[UserResponse]
+        organisation.userId should be(UserId("ABCD"))
+      }
+    }
+
+    scenario("get non existing organisation") {
+      Get("/moderation/organisations/non-existant").withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
       }
     }
   }
