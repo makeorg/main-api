@@ -112,7 +112,8 @@ object Validation extends StrictLogging {
   def validateEmail(fieldName: String, fieldValue: => String, message: Option[String] = None): Requirement = {
     val condition: () => Boolean = () => {
       val value: String = fieldValue
-      exists(value) && emailRegex.findFirstIn(value).isDefined
+      val maybeEmail = emailRegex.findFirstIn(value)
+      exists(value) && maybeEmail.isDefined && maybeEmail.contains(value)
     }
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
   }
