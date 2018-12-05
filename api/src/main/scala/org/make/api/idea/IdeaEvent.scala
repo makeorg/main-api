@@ -33,7 +33,7 @@ sealed trait IdeaEvent {
 
 object IdeaEvent {
 
-  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   type AnyIdeaEvent =
     IdeaCreatedEvent :+:

@@ -38,7 +38,7 @@ sealed trait PublishedCrmContactEvent extends CrmContactEvent {
 
 object PublishedCrmContactEvent {
 
-  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   type AnyCrmContactEvent =
     CrmContactNew :+:

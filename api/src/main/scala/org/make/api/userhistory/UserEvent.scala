@@ -96,7 +96,7 @@ object UserEvent {
   private val defaultCountry = Country("FR")
   private val defaultLanguage = Language("fr")
 
-  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
                                       override val eventDate: ZonedDateTime = defaultDate,

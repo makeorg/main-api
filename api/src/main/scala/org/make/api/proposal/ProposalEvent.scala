@@ -41,7 +41,7 @@ sealed trait ProposalEvent extends MakeSerializable {
 }
 
 object ProposalEvent {
-  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   // This event isn't published and so doesn't need to be in the coproduct
   final case class SimilarProposalsCleared(id: ProposalId,
@@ -76,7 +76,7 @@ sealed trait PublishedProposalEvent extends ProposalEvent {
 
 object PublishedProposalEvent {
 
-  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2018-12-03T17:41:05Z")
+  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   type AnyProposalEvent =
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
