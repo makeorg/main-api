@@ -125,6 +125,7 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultSequenceConfigurationComponent
     with DefaultQuestionService
+    with DefaultOperationOfQuestionServiceComponent
     with SequenceConfigurationActorComponent
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
@@ -156,6 +157,7 @@ trait MakeApi
     with DefaultStorageConfigurationComponent
     with DefaultQuestionApiComponent
     with DefaultModerationQuestionComponent
+    with DefaultModerationOperationOfQuestionApiComponent
     with ProposalCoordinatorComponent
     with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
@@ -238,7 +240,7 @@ trait MakeApi
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
-    override val handlers = Map(OAuthGrantType.PASSWORD -> new Password)
+    override val handlers: Map[String, Password] = Map(OAuthGrantType.PASSWORD -> new Password)
   }
 
   private lazy val swagger: Route =
@@ -267,6 +269,7 @@ trait MakeApi
       classOf[HealthCheckApi],
       classOf[CrmApi],
       classOf[ModerationOperationApi],
+      classOf[ModerationOperationOfQuestionApi],
       classOf[ModerationOrganisationApi],
       classOf[ModerationProposalApi],
       classOf[ModerationQuestionApi],
@@ -317,7 +320,8 @@ trait MakeApi
       organisationRoutes ~
       widgetRoutes ~
       questionApi.routes ~
-      moderationQuestionApi.routes
+      moderationQuestionApi.routes ~
+      moderationOperationOfQuestionApi.routes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

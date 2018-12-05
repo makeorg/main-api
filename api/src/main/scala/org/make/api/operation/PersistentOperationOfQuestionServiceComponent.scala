@@ -35,6 +35,9 @@ import scalikejdbc._
 import scala.concurrent.Future
 
 trait PersistentOperationOfQuestionService {
+  def search(questionId: Option[QuestionId],
+             operationId: Option[OperationId],
+             openAt: Option[LocalDate]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def getById(id: QuestionId): Future[Option[OperationOfQuestion]]
@@ -51,6 +54,37 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
   override lazy val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
     new PersistentOperationOfQuestionService with ShortenedNames with StrictLogging {
+
+      override def search(questionId: Option[QuestionId],
+                          operationId: Option[OperationId],
+                          openAt: Option[LocalDate]): Future[scala.Seq[OperationOfQuestion]] = {
+        implicit val context: EC = readExecutionContext
+        Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL[PersistentOperationOfQuestion] {
+            select
+              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+              .where(
+                sqls.toAndConditionOpt(
+                  operationId
+                    .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value)),
+                  questionId.map(q => sqls.eq(PersistentOperationOfQuestion.column.questionId, q.value)),
+                  openAt.map(
+                    openAt =>
+                      sqls
+                        .isNull(PersistentOperationOfQuestion.column.startDate)
+                        .or(sqls.ge(PersistentOperationOfQuestion.column.startDate, openAt))
+                        .and(
+                          sqls
+                            .isNull(PersistentOperationOfQuestion.column.endDate)
+                            .or(sqls.le(PersistentOperationOfQuestion.column.endDate, openAt))
+                      )
+                  )
+                )
+              )
+          }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)).list().apply()
+        }).map(_.map(_.toOperationOfQuestion))
+      }
+
       override def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
         implicit val context: EC = writeExecutionContext
         Future(NamedDB('WRITE).retryableTx { implicit session =>
