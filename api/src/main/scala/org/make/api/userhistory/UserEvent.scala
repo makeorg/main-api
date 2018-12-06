@@ -25,7 +25,7 @@ import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
+import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
@@ -119,7 +119,8 @@ object UserEvent {
         connectedUserId = connectedUserId,
         country = country,
         language = language,
-        requestContext = requestContext
+        requestContext = requestContext,
+        eventDate = DateHelper.now()
       )
     }
   }
@@ -141,8 +142,9 @@ object UserEvent {
               language: Language,
               requestContext: RequestContext): ResendValidationEmailEvent = {
       ResendValidationEmailEvent(
+        connectedUserId = Some(connectedUserId),
+        eventDate = DateHelper.now(),
         userId = userId,
-        connectedUserId = connectedUserId,
         country = country,
         language = language,
         requestContext = requestContext

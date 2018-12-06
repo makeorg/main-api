@@ -86,7 +86,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
           Future.failed(IdeaAlreadyExistsException(idea.name))
         } else {
           persistentIdeaService.persist(idea).map { idea =>
-            eventBusService.publish(IdeaCreatedEvent(ideaId = idea.ideaId))
+            eventBusService.publish(IdeaCreatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now()))
             idea
           }
 
@@ -100,7 +100,7 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
           Future.failed(IdeaDoesnotExistsException(ideaId.value))
         } else {
           persistentIdeaService.modify(ideaId = ideaId, name = name).map { idea =>
-            eventBusService.publish(IdeaUpdatedEvent(ideaId = ideaId))
+            eventBusService.publish(IdeaUpdatedEvent(ideaId = ideaId, eventDate = DateHelper.now()))
             idea
           }
         }

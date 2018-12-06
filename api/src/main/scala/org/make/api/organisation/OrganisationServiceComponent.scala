@@ -177,7 +177,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             requestContext = requestContext,
             email = user.email,
             country = user.country,
-            language = user.language
+            language = user.language,
+            eventDate = DateHelper.now()
           )
         )
         user
@@ -251,7 +252,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                     userId = organisation.userId,
                     requestContext = requestContext,
                     country = organisation.country,
-                    language = organisation.language
+                    language = organisation.language,
+                    eventDate = DateHelper.now()
                   )
                 )
                 updateProposalsFromOrganisation(organisationId)

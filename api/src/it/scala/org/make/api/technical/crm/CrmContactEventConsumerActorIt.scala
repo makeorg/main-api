@@ -324,7 +324,7 @@ class CrmContactEventConsumerActorIt
           Future.successful {}
         })
       val updateCrmContactUpdatePropertiesEvent: CrmContactUpdateProperties =
-        CrmContactUpdateProperties(id = contactUpdatePropertiesUser.userId)
+        CrmContactUpdateProperties(id = contactUpdatePropertiesUser.userId, eventDate = DateHelper.now())
       val wrappedCrmContactUpdatePropertiesEvent: CrmContactEventWrapper = CrmContactEventWrapper(
         version = MakeSerializable.V1,
         id = "some-event",

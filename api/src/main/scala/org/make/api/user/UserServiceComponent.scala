@@ -155,7 +155,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       val futureUser: Future[User] = persistentUserService.persist(user)
       futureUser.map { user =>
-        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
+        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
         user
       }
     }
@@ -201,7 +201,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield user
 
       result.map { user =>
-        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
+        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
         eventBusService.publish(
           UserRegisteredEvent(
             connectedUserId = Some(user.userId),
@@ -218,7 +218,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             gender = user.profile.flatMap(_.gender),
             socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
             optInPartner = user.profile.flatMap(_.optInPartner),
-            registerQuestionId = user.profile.flatMap(_.registerQuestionId)
+            registerQuestionId = user.profile.flatMap(_.registerQuestionId),
+            eventDate = DateHelper.now()
           )
         )
         user
@@ -342,7 +343,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def publishCreateEventsFromSocial(user: User, requestContext: RequestContext): Unit = {
-      eventBusService.publish(UserCreatedEvent(userId = Some(user.userId)))
+      eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
       eventBusService.publish(
         UserRegisteredEvent(
           connectedUserId = Some(user.userId),
@@ -360,7 +361,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           gender = user.profile.flatMap(_.gender),
           socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
           optInPartner = user.profile.flatMap(_.optInPartner),
-          registerQuestionId = user.profile.flatMap(_.registerQuestionId)
+          registerQuestionId = user.profile.flatMap(_.registerQuestionId),
+          eventDate = DateHelper.now()
         )
       )
       eventBusService.publish(
@@ -369,7 +371,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           country = user.country,
           language = user.language,
           requestContext = requestContext,
-          isSocialLogin = true
+          isSocialLogin = true,
+          eventDate = DateHelper.now()
         )
       )
     }
@@ -389,7 +392,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val futureResult: Future[Boolean] = persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
       futureResult.map { result =>
         if (result) {
-          eventBusService.publish(UserUpdatedPasswordEvent(userId = Some(userId)))
+          eventBusService.publish(UserUpdatedPasswordEvent(userId = Some(userId), eventDate = DateHelper.now()))
         }
         result
       }
@@ -420,7 +423,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       futureResult.map { result =>
         if (result && isHardBounce) {
-          eventBusService.publish(UserUpdatedHardBounceEvent(userId = Some(userId)))
+          eventBusService.publish(UserUpdatedHardBounceEvent(userId = Some(userId), eventDate = DateHelper.now()))
         }
         result
       }
@@ -524,7 +527,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield updatedUser
 
       futureUser.map { value =>
-        eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId)))
+        eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId), eventDate = DateHelper.now()))
         value
       }
     }
@@ -558,7 +561,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         _ <- proposalService.anonymizeByUserId(user.userId)
       } yield {}
       futureDelete.map { _ =>
-        eventBusService.publish(UserAnonymizedEvent(userId = Some(user.userId)))
+        eventBusService.publish(UserAnonymizedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
       }
     }
 
@@ -568,14 +571,18 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def followUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
       persistentUserService.followUser(followedUserId, userId).map(_ => followedUserId).map { value =>
-        eventBusService.publish(UserFollowEvent(userId = Some(userId), followedUserId = followedUserId))
+        eventBusService.publish(
+          UserFollowEvent(userId = Some(userId), followedUserId = followedUserId, eventDate = DateHelper.now())
+        )
         value
       }
     }
 
     override def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
       persistentUserService.unfollowUser(followedUserId, userId).map(_ => followedUserId).map { value =>
-        eventBusService.publish(UserUnfollowEvent(userId = Some(userId), followedUserId = followedUserId))
+        eventBusService.publish(
+          UserUnfollowEvent(userId = Some(userId), followedUserId = followedUserId, eventDate = DateHelper.now())
+        )
         value
       }
     }

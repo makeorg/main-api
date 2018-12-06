@@ -602,10 +602,12 @@ trait DefaultUserApiComponent
                           userId = userId,
                           country = user.country,
                           language = user.language,
-                          requestContext = requestContext
+                          requestContext = requestContext,
+                          eventDate = DateHelper.now()
                         )
                       )
-                      eventBusService.publish(UserUpdateValidatedEvent(userId = Some(user.userId)))
+                      eventBusService
+                        .publish(UserUpdateValidatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
 
                       result
                     }
@@ -633,7 +635,8 @@ trait DefaultUserApiComponent
                         connectedUserId = userAuth.map(_.user.userId),
                         country = user.country,
                         language = user.language,
-                        requestContext = requestContext
+                        requestContext = requestContext,
+                        eventDate = DateHelper.now()
                       )
                     )
                     result
@@ -893,7 +896,8 @@ trait DefaultUserApiComponent
                             userId = user.userId,
                             requestContext = requestContext,
                             country = user.country,
-                            language = user.language
+                            language = user.language,
+                            eventDate = DateHelper.now()
                           )
                         )
                       }

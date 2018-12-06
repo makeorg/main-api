@@ -30,7 +30,7 @@ import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsCompo
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.crm.PublishedCrmContactEvent.CrmContactListSync
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.HttpCodes
+import org.make.core.{DateHelper, HttpCodes}
 import org.make.core.auth.UserRights
 import scalaoauth2.provider.AuthInfo
 
@@ -108,7 +108,7 @@ trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
       makeOAuth2 { auth: AuthInfo[UserRights] =>
         requireAdminRole(auth.user) {
           makeOperation("SyncCrmData") { _ =>
-            eventBusService.publish(CrmContactListSync(id = auth.user.userId))
+            eventBusService.publish(CrmContactListSync(id = auth.user.userId, eventDate = DateHelper.now()))
             complete(StatusCodes.NoContent)
           }
         }

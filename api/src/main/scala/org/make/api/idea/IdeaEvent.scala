@@ -22,7 +22,7 @@ package org.make.api.idea
 import java.time.ZonedDateTime
 
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.{EventWrapper, MakeSerializable}
+import org.make.core.{DateHelper, EventWrapper, MakeSerializable}
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait IdeaEvent {
@@ -63,7 +63,7 @@ object IdeaEvent {
 
   object IdeaCreatedEvent {
     def apply(idea: Idea): IdeaCreatedEvent = {
-      IdeaCreatedEvent(ideaId = idea.ideaId)
+      IdeaCreatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
     }
   }
 
@@ -74,7 +74,7 @@ object IdeaEvent {
 
   object IdeaUpdatedEvent {
     def apply(idea: Idea): IdeaUpdatedEvent = {
-      IdeaUpdatedEvent(ideaId = idea.ideaId)
+      IdeaUpdatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
     }
   }
 }

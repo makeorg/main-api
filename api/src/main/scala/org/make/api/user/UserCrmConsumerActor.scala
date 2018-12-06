@@ -108,7 +108,7 @@ class UserCrmConsumerActor(userService: UserService)
   def handleUserAnonymizedEvent(event: UserAnonymizedEvent): Future[Unit] = {
     getUserFromEmailOrUserId(event.email, event.userId).map { maybeUser =>
       maybeUser.foreach { user =>
-        eventBusService.publish(CrmContactRemoveFromLists(id = user.userId))
+        eventBusService.publish(CrmContactRemoveFromLists(id = user.userId, eventDate = DateHelper.now()))
       }
     }
   }

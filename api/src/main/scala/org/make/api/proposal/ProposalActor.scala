@@ -125,7 +125,12 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         )
 
       persistAndPublishEvent(
-        ProposalPatched(id = command.proposalId, requestContext = command.requestContext, proposal = modifiedProposal)
+        ProposalPatched(
+          id = command.proposalId,
+          requestContext = command.requestContext,
+          proposal = modifiedProposal,
+          eventDate = DateHelper.now()
+        )
       ) { event =>
         state = applyEvent(event)
         if (command.changes.operation.isDefined && command.changes.operation != proposal.operation) {
@@ -432,7 +437,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                                 requestContext: RequestContext,
                                 moderatorId: UserId): Unit = {
     persistAndPublishEvent(
-      ProposalAddedToOperation(proposalId, operation, moderatorId, requestContext = requestContext)
+      ProposalAddedToOperation(
+        proposalId,
+        operation,
+        moderatorId,
+        requestContext = requestContext,
+        eventDate = DateHelper.now()
+      )
     ) { _ =>
       ()
     }
@@ -443,7 +454,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                                   requestContext: RequestContext,
                                   moderatorId: UserId): Unit = {
     persistAndPublishEvent(
-      ProposalRemovedFromOperation(proposalId, operation, moderatorId, requestContext = requestContext)
+      ProposalRemovedFromOperation(
+        proposalId,
+        operation,
+        moderatorId,
+        requestContext = requestContext,
+        eventDate = DateHelper.now()
+      )
     ) { _ =>
       ()
     }
@@ -727,7 +744,8 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               ProposalPostponed(
                 id = command.proposalId,
                 requestContext = command.requestContext,
-                moderator = command.moderator
+                moderator = command.moderator,
+                eventDate = DateHelper.now()
               )
             )
           )
@@ -737,9 +755,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   }
 
   def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): Unit = {
-    persistAndPublishEvent(PublishedProposalEvent.ProposalAnonymized(command.proposalId)) { _ =>
-      ()
-    }
+    persistAndPublishEvent(ProposalAnonymized(command.proposalId, eventDate = DateHelper.now()))(_ => ())
   }
 
   override def persistenceId: String = proposalId.value
