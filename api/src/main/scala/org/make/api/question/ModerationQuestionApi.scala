@@ -19,9 +19,12 @@
 
 package org.make.api.question
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -30,6 +33,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.Question
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -39,7 +43,7 @@ import scala.concurrent.Future
 
 @Api(value = "Moderation questions")
 @Path(value = "/moderation/questions")
-trait ModerationQuestionApi {
+trait ModerationQuestionApi extends Directives {
 
   @ApiOperation(
     value = "moderation-list-questions",
@@ -75,7 +79,27 @@ trait ModerationQuestionApi {
   @Path(value = "/")
   def listQuestions: Route
 
-  def routes: Route = listQuestions
+  @ApiOperation(value = "get-question", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationQuestionResponse]))
+  )
+  @Path(value = "/{questionId}")
+  def getQuestion: Route
+
+  @ApiOperation(value = "post-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.CreateQuestionRequest")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationQuestionResponse]))
+  )
+  @Path(value = "/")
+  def createQuestion: Route
+
+  def routes: Route = listQuestions ~ getQuestion ~ createQuestion
 
 }
 
@@ -90,6 +114,8 @@ trait DefaultModerationQuestionComponent
     with ParameterExtractors {
 
   this: QuestionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+
+  private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
 
   override lazy val moderationQuestionApi: ModerationQuestionApi = new ModerationQuestionApi {
     override def listQuestions: Route = get {
@@ -143,5 +169,53 @@ trait DefaultModerationQuestionComponent
         }
       }
     }
+
+    override def getQuestion: Route = get {
+      path("moderation" / "questions" / questionId) { questionId =>
+        makeOperation("ModerationGetQuestion") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                complete(ModerationQuestionResponse(question))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def createQuestion: Route =
+      post {
+        path("moderation" / "questions") {
+          makeOperation("ModerationCreateQuestion") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireModerationRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[CreateQuestionRequest]) { request =>
+                    provideAsync(
+                      questionService
+                        .createQuestion(
+                          country = request.country,
+                          language = request.language,
+                          question = request.question,
+                          slug = request.slug
+                        )
+                    ) { question =>
+                      complete(ModerationQuestionResponse(question))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
   }
+}
+
+final case class CreateQuestionRequest(country: Country, language: Language, question: String, slug: String)
+
+object CreateQuestionRequest {
+  implicit val decoder: Decoder[CreateQuestionRequest] = deriveDecoder[CreateQuestionRequest]
 }

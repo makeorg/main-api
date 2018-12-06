@@ -18,27 +18,22 @@
  */
 
 package org.make.api.question
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import org.make.core.operation.OperationId
+import io.circe.{Decoder, Encoder}
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 
 case class ModerationQuestionResponse(id: QuestionId,
                                       slug: String,
                                       question: String,
                                       country: Country,
-                                      language: Language,
-                                      operationId: Option[OperationId],
-                                      themeId: Option[ThemeId])
+                                      language: Language)
 object ModerationQuestionResponse {
 
   def apply(question: Question): ModerationQuestionResponse = ModerationQuestionResponse(
     id = question.questionId,
     slug = question.slug,
     question = question.question,
-    operationId = question.operationId,
-    themeId = question.themeId,
     country = question.country,
     language = question.language
   )
