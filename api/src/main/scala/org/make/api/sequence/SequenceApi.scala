@@ -571,7 +571,7 @@ trait SequenceApi extends MakeAuthenticationDirectives with StrictLogging {
       getModerationSequenceConfiguration ~
       putSequenceConfiguration
 
-  val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
-  val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
+  val sequenceId: PathMatcher1[SequenceId] = Segment.map(id         => SequenceId(id))
+  private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
   val sequenceSlug: PathMatcher1[String] = Segment
 }

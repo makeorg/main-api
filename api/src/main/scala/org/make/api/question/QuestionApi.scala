@@ -19,17 +19,27 @@
 
 package org.make.api.question
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
+import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
+import org.make.core.proposal.ProposalId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.{HttpCodes, ParameterExtractors}
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -39,7 +49,7 @@ trait QuestionApiComponent {
 
 @Api(value = "Questions")
 @Path(value = "/questions")
-trait QuestionApi {
+trait QuestionApi extends Directives {
 
   @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -61,12 +71,32 @@ trait QuestionApi {
   @Path(value = "/")
   def listQuestions: Route
 
-  def routes: Route = listQuestions
+  @ApiOperation(value = "start-sequence-by-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.question.StartSequenceByQuestionIdRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
+  )
+  @Path(value = "/questions/{questionId}/start-sequence")
+  def startSequenceByQuestionId: Route
+
+  def routes: Route = listQuestions ~ startSequenceByQuestionId
 
 }
 
 trait DefaultQuestionApiComponent
     extends QuestionApiComponent
+    with SequenceServiceComponent
+    with PersistentOperationOfQuestionServiceComponent
     with MakeAuthenticationDirectives
     with StrictLogging
     with ParameterExtractors {
@@ -74,6 +104,9 @@ trait DefaultQuestionApiComponent
   this: QuestionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   override lazy val questionApi: QuestionApi = new QuestionApi {
+
+    private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
+
     override def listQuestions: Route = get {
       path("moderation" / "questions") {
         makeOperation("ModerationSearchQuestion") { _ =>
@@ -121,5 +154,40 @@ trait DefaultQuestionApiComponent
         }
       }
     }
+
+    override def startSequenceByQuestionId: Route = post {
+      path("questions" / questionId / "start-sequence") { questionId =>
+        makeOperation("StartSequenceById") { requestContext =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[StartSequenceByQuestionIdRequest]) { request: StartSequenceByQuestionIdRequest =>
+                provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) {
+                  operationOfquestion =>
+                    provideAsyncOrNotFound(
+                      sequenceService
+                        .startNewSequence(
+                          maybeUserId = userAuth.map(_.user.userId),
+                          sequenceId = operationOfquestion.landingSequenceId,
+                          includedProposals = request.include.getOrElse(Seq.empty),
+                          tagsIds = None,
+                          requestContext = requestContext
+                        )
+                    ) { sequences =>
+                      complete(sequences)
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
   }
+}
+
+final case class StartSequenceByQuestionIdRequest(include: Option[Seq[ProposalId]] = None)
+
+object StartSequenceByQuestionIdRequest {
+  implicit val decoder: Decoder[StartSequenceByQuestionIdRequest] = deriveDecoder[StartSequenceByQuestionIdRequest]
 }
