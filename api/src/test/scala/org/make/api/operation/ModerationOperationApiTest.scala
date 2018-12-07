@@ -602,43 +602,6 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation with an invalid sequenceId") {
-      When("I create a proposal with an invalid sequence id")
-      Then("I get a bad request status")
-      And("a correct error message")
-      Post("/moderation/operations")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            "29625b5a-56da-4539-b195-15303187c20b".r.replaceFirstIn(s"$validCreateJson", "fakeSequenceId")
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "sequenceLandingId")
-        contentError should be(
-          Some(ValidationError("sequenceLandingId", Some("Sequence with id 'fakeSequenceId' not found")))
-        )
-      }
-    }
-
-    scenario("create an operation with an invalid tag") {
-      When("I create a proposal with an invalid tag")
-      Then("I get a bad request status")
-      And("a correct error message")
-      Post("/moderation/operations")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, "hello".r.replaceFirstIn(s"$validCreateJson", "fakeTag"))
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "tagIds")
-        contentError should be(Some(ValidationError("tagIds", Some("Some tag ids are invalid"))))
-      }
-    }
-
     scenario("create an operation with an existing slug") {
       When("I create a proposal with an existing slug")
       Then("I get a bad request status")
@@ -690,43 +653,6 @@ class ModerationOperationApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
-      }
-    }
-
-    scenario("update an operation with an invalid sequenceId") {
-      When("I update a proposal with an invalid sequence id")
-      Then("I get a bad request status")
-      And("a correct error message")
-      Put("/moderation/operations/updateOperationId")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            "29625b5a-56da-4539-b195-15303187c20b".r.replaceFirstIn(s"$validUpdateJson", "fakeSequenceId")
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "sequenceLandingId")
-        contentError should be(
-          Some(ValidationError("sequenceLandingId", Some("Sequence with id 'fakeSequenceId' not found")))
-        )
-      }
-    }
-
-    scenario("update an operation with an invalid tag") {
-      When("I update a proposal with an invalid tag")
-      Then("I get a bad request status")
-      And("a correct error message")
-      Put("/moderation/operations/updateOperationId")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, "hello".r.replaceFirstIn(s"$validUpdateJson", "fakeTag"))
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "tagIds")
-        contentError should be(Some(ValidationError("tagIds", Some("Some tag ids are invalid"))))
       }
     }
 

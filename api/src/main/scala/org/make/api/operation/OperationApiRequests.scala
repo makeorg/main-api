@@ -24,19 +24,17 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.ApiModel
 import org.make.core.Validation
 import org.make.core.Validation.{maxLength, requireValidSlug, validChoices, validate}
-import org.make.core.operation.{OperationCountryConfiguration, OperationStatus, OperationTranslation}
+import org.make.core.operation.{OperationStatus, OperationTranslation}
 import org.make.core.reference.Language
 
 @ApiModel
 final case class ModerationCreateOperationRequest(slug: String,
                                                   translations: Seq[OperationTranslation],
                                                   defaultLanguage: Language,
-                                                  countriesConfiguration: Seq[OperationCountryConfiguration],
                                                   allowedSources: Seq[String]) {
   OperationValidation.validateCreate(
     translations = translations,
     defaultLanguage = defaultLanguage,
-    countriesConfiguration = countriesConfiguration,
     slug = slug,
     allowedSources = allowedSources
   )
@@ -50,12 +48,10 @@ final case class ModerationUpdateOperationRequest(status: String,
                                                   slug: String,
                                                   translations: Seq[OperationTranslation],
                                                   defaultLanguage: Language,
-                                                  countriesConfiguration: Seq[OperationCountryConfiguration],
                                                   allowedSources: Seq[String]) {
   OperationValidation.validateUpdate(
     translations = translations,
     defaultLanguage = defaultLanguage,
-    countriesConfiguration = countriesConfiguration,
     status = status,
     slug = slug,
     allowedSources = allowedSources
@@ -69,11 +65,9 @@ object ModerationUpdateOperationRequest {
 private object OperationValidation {
   private val maxTitleLength = 256
   private val maxLanguageLength = 3
-  private val maxCountryLength = 3
 
   def validateCreate(translations: Seq[OperationTranslation],
                      defaultLanguage: Language,
-                     countriesConfiguration: Seq[OperationCountryConfiguration],
                      slug: String,
                      allowedSources: Seq[String]): Unit = {
     translations.foreach { translation =>
@@ -81,9 +75,6 @@ private object OperationValidation {
         maxLength(s"translation.title[${translation.language}]", maxTitleLength, translation.title),
         maxLength("translation.language", maxLanguageLength, translation.language.value)
       )
-    }
-    countriesConfiguration.foreach { countryConfiguration =>
-      validate(maxLength("countriesConfiguration.country", maxCountryLength, countryConfiguration.countryCode.value))
     }
     validate(
       maxLength("defaultLanguage", maxLanguageLength, defaultLanguage.value),
@@ -95,11 +86,10 @@ private object OperationValidation {
 
   def validateUpdate(translations: Seq[OperationTranslation],
                      defaultLanguage: Language,
-                     countriesConfiguration: Seq[OperationCountryConfiguration],
                      status: String,
                      slug: String,
                      allowedSources: Seq[String]): Unit = {
-    validateCreate(translations, defaultLanguage, countriesConfiguration, slug, allowedSources)
+    validateCreate(translations, defaultLanguage, slug, allowedSources)
     val validStatusChoices: Seq[String] = OperationStatus.statusMap.toSeq.map {
       case (name, _) => name
     }
