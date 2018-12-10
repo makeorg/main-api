@@ -177,7 +177,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             properties = Some(properties)
           )
         ).map { response =>
-          logMailjetResponse(response, "Add single to optin list")
+          logMailjetResponse(response, "Add single to optin list", Some(user.email))
         }
       }
     }
@@ -188,7 +188,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
       ).map { response =>
-        logMailjetResponse(response, "Remove single from optin list")
+        logMailjetResponse(response, "Remove single from optin list", Some(user.email))
       }
     }
 
@@ -203,7 +203,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             properties = Some(properties)
           )
         ).map { response =>
-          logMailjetResponse(response, "Add single to hardbounce list")
+          logMailjetResponse(response, "Add single to hardbounce list", Some(user.email))
         }
       }
     }
@@ -219,7 +219,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             properties = Some(properties)
           )
         ).map { response =>
-          logMailjetResponse(response, "Add single to unsubscribe list")
+          logMailjetResponse(response, "Add single to unsubscribe list", Some(user.email))
         }
       }
     }
@@ -237,7 +237,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
       ).map { response =>
-        logMailjetResponse(response, "Remove from hardbounce list")
+        logMailjetResponse(response, "Remove from hardbounce list", Some(user.email))
       }
     }
 
@@ -247,7 +247,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         manageContact =
           ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
       ).map { response =>
-        logMailjetResponse(response, "Remove from unsubscribe list")
+        logMailjetResponse(response, "Remove from unsubscribe list", Some(user.email))
       }
     }
 
@@ -280,7 +280,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           )
         )
         manageContactListMailJetRequest(manageContactList = contacts).map { response =>
-          logMailjetResponse(response, "Add to optin list")
+          logMailjetResponse(response, "Add to optin list", None)
         }
 
       }
@@ -312,7 +312,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             )
           )
         ).map { response =>
-          logMailjetResponse(response, "Add to unsubscribe list")
+          logMailjetResponse(response, "Add to unsubscribe list", None)
         }
       }
     }
@@ -343,7 +343,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             )
           )
         ).map { response =>
-          logMailjetResponse(response, "Add to hardbounce list")
+          logMailjetResponse(response, "Add to hardbounce list", None)
         }
 
       }
@@ -355,7 +355,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         val contactData = properties.toContactPropertySeq
 
         updateContactProperties(ContactData(data = contactData), user.email).map { response =>
-          logMailjetResponse(response, "Update user properties")
+          logMailjetResponse(response, "Update user properties", Some(user.email))
         }
       }
 
@@ -587,12 +587,17 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       )
     }
 
-    def logMailjetResponse(result: HttpResponse, operationName: String): Unit = {
+    def logMailjetResponse(result: HttpResponse, operationName: String, maybeUserEmail: Option[String]): Unit = {
       result match {
         case HttpResponse(code, _, _, _) if code.isSuccess() =>
           logger.debug(s"$operationName: call completed with status $code")
         case HttpResponse(code, _, entity, _) =>
-          logger.error(s"$operationName failed with status $code: $entity")
+          maybeUserEmail match {
+            case Some(userEmail) =>
+              logger.error(s"$operationName for user '$userEmail' failed with status $code: $entity")
+            case _ => logger.error(s"$operationName failed with status $code: $entity")
+          }
+
       }
     }
 
