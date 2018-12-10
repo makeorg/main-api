@@ -43,14 +43,15 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
-      case event: ResetPasswordEvent          => doNothing(event)
-      case event: UserRegisteredEvent         => handleUserRegisteredEvent(event)
-      case event: UserConnectedEvent          => doNothing(event)
-      case event: UserUpdatedTagEvent         => doNothing(event)
-      case event: ResendValidationEmailEvent  => doNothing(event)
-      case event: UserValidatedAccountEvent   => doNothing(event)
-      case event: OrganisationRegisteredEvent => doNothing(event)
-      case event: OrganisationUpdatedEvent    => doNothing(event)
+      case event: ResetPasswordEvent              => doNothing(event)
+      case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
+      case event: UserConnectedEvent              => doNothing(event)
+      case event: UserUpdatedTagEvent             => doNothing(event)
+      case event: ResendValidationEmailEvent      => doNothing(event)
+      case event: UserValidatedAccountEvent       => doNothing(event)
+      case event: OrganisationRegisteredEvent     => doNothing(event)
+      case event: OrganisationUpdatedEvent        => doNothing(event)
+      case event: OrganisationInitializationEvent => doNothing(event)
     }
   }
 

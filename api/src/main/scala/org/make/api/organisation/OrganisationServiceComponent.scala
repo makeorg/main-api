@@ -29,9 +29,13 @@ import org.make.api.proposal.{
 }
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
+import org.make.api.user.{PersistentUserServiceComponent, UserServiceComponent}
+import org.make.api.userhistory.UserEvent.{
+  OrganisationInitializationEvent,
+  OrganisationRegisteredEvent,
+  OrganisationUpdatedEvent
+}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.history.HistoryActions
@@ -79,6 +83,7 @@ case class OrganisationUpdateData(name: Option[String],
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
   this: IdGeneratorComponent
+    with UserServiceComponent
     with PersistentUserServiceComponent
     with EventBusServiceComponent
     with UserHistoryCoordinatorServiceComponent
@@ -170,6 +175,19 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       } yield user
 
       result.map { user =>
+        if (organisationRegisterData.password.isEmpty) {
+          userService.requestPasswordReset(user.userId).map { _ =>
+            eventBusService.publish(
+              OrganisationInitializationEvent(
+                userId = user.userId,
+                connectedUserId = None,
+                country = user.country,
+                language = user.language,
+                requestContext = requestContext
+              )
+            )
+          }
+        }
         eventBusService.publish(
           OrganisationRegisteredEvent(
             connectedUserId = Some(user.userId),
