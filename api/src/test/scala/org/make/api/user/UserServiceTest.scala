@@ -636,14 +636,14 @@ class UserServiceTest
 
       val futureBoolean = userService.updateOptInNewsletter("user@example.com", optInNewsletter = true)
 
-      Mockito
-        .verify(eventBusService, Mockito.times(1))
-        .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent] { event =>
-          event.email.contains("user@example.com")
-        })
-
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
         result shouldBe true
+
+        Mockito
+          .verify(eventBusService, Mockito.times(1))
+          .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent] { event =>
+            event.email.contains("user@example.com")
+          })
       }
     }
   }
