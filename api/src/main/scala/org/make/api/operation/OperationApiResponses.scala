@@ -29,7 +29,6 @@ import org.make.core.operation._
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
 import org.make.core.tag.TagId
-import org.make.core.user.User
 
 final case class OperationResponse(operationId: OperationId,
                                    status: OperationStatus,
@@ -72,56 +71,23 @@ object OperationResponse extends CirceFormatters {
 final case class ModerationOperationResponse(operationId: OperationId,
                                              status: OperationStatus,
                                              slug: String,
-                                             translations: Seq[OperationTranslation] = Seq.empty,
                                              defaultLanguage: Language,
                                              createdAt: Option[ZonedDateTime],
                                              updatedAt: Option[ZonedDateTime],
-                                             events: Seq[OperationActionResponse],
-                                             countriesConfiguration: Seq[OperationCountryConfiguration],
                                              allowedSources: Seq[String])
 
 object ModerationOperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
   implicit val decoder: Decoder[ModerationOperationResponse] = deriveDecoder[ModerationOperationResponse]
 
-  def apply(operation: Operation,
-            operationActionUsers: Seq[User],
-            tags: Map[QuestionId, Seq[TagId]]): ModerationOperationResponse = {
-    val events: Seq[OperationActionResponse] = operation.events.map { action =>
-      OperationActionResponse(
-        date = action.date,
-        user = operationActionUsers
-          .filter(_.userId == action.makeUserId)
-          .map(userAction => UserResponse.apply(userAction)) match {
-          case value if value.isEmpty => None
-          case other                  => Some(other.head)
-        },
-        actionType = action.actionType,
-        arguments = action.arguments
-      )
-    }
-
+  def apply(operation: SimpleOperation): ModerationOperationResponse = {
     ModerationOperationResponse(
       operationId = operation.operationId,
       status = operation.status,
       slug = operation.slug,
-      translations = operation.questions.map { question =>
-        OperationTranslation(title = question.details.operationTitle, language = question.question.language)
-      },
       defaultLanguage = operation.defaultLanguage,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
-      countriesConfiguration = operation.questions.map { question =>
-        OperationCountryConfiguration(
-          countryCode = question.question.country,
-          tagIds = tags.get(question.question.questionId).toSeq.flatten,
-          landingSequenceId = question.details.landingSequenceId,
-          startDate = question.details.startDate,
-          questionId = Some(question.question.questionId),
-          endDate = question.details.endDate
-        )
-      },
-      events = events,
       allowedSources = operation.allowedSources
     )
   }

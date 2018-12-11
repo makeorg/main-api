@@ -42,7 +42,12 @@ trait OperationService extends ShortenedNames {
            country: Option[Country] = None,
            maybeSource: Option[String],
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
+  def findSimple(slug: Option[String] = None,
+                 country: Option[Country] = None,
+                 maybeSource: Option[String],
+                 openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
+  def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
   def create(userId: UserId, slug: String, defaultLanguage: Language, allowedSources: Seq[String]): Future[OperationId]
   def update(operationId: OperationId,
@@ -69,8 +74,20 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       persistentOperationService.find(slug = slug, country = country, openAt = openAt)
     }
 
+    override def findSimple(slug: Option[String] = None,
+                            country: Option[Country] = None,
+                            maybeSource: Option[String],
+                            openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]] = {
+
+      persistentOperationService.findSimple(slug = slug, country = country, openAt = openAt)
+    }
+
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {
       persistentOperationService.getById(operationId)
+    }
+
+    override def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]] = {
+      persistentOperationService.getSimpleById(operationId)
     }
 
     override def findOneBySlug(slug: String): Future[Option[Operation]] = {

@@ -28,7 +28,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -129,7 +129,17 @@ class ModerationOperationApiTest
     updatedAt = None
   )
 
-  val firstOperation: Operation = Operation(
+  val firstOperation: SimpleOperation = SimpleOperation(
+    status = OperationStatus.Pending,
+    operationId = OperationId("firstOperation"),
+    slug = "first-operation",
+    defaultLanguage = Language("fr"),
+    allowedSources = Seq("core"),
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
+  )
+
+  val firstFullOperation: Operation = Operation(
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
@@ -168,43 +178,14 @@ class ModerationOperationApiTest
     )
   )
 
-  val secondOperation: Operation = Operation(
+  val secondOperation: SimpleOperation = SimpleOperation(
     status = OperationStatus.Pending,
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
     defaultLanguage = Language("it"),
     allowedSources = Seq("core"),
-    events = List(
-      OperationAction(
-        date = now,
-        makeUserId = john.userId,
-        actionType = OperationCreateAction.name,
-        arguments = Map("arg1" -> "valueArg1")
-      )
-    ),
     createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now()),
-    questions = Seq(
-      QuestionWithDetails(
-        question = Question(
-          questionId = QuestionId("second-question"),
-          country = Country("IT"),
-          language = Language("it"),
-          slug = "second-operation-IT",
-          question = "second question?",
-          operationId = Some(OperationId("secondOperation")),
-          themeId = None
-        ),
-        details = OperationOfQuestion(
-          questionId = QuestionId("second-question"),
-          operationId = OperationId("secondOperation"),
-          startDate = Some(LocalDate.parse("2018-02-02")),
-          endDate = Some(LocalDate.parse("2018-05-02")),
-          operationTitle = "secondo operazione",
-          landingSequenceId = SequenceId("second-sequence-id")
-        )
-      )
-    )
+    updatedAt = Some(DateHelper.now())
   )
 
   val validCreateJson: String =
@@ -284,16 +265,18 @@ class ModerationOperationApiTest
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 
-  when(operationService.findOne(OperationId("firstOperation"))).thenReturn(Future.successful(Some(firstOperation)))
-  when(operationService.findOne(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.find(slug = Some("second-operation"), country = None, maybeSource = None, openAt = None))
+  when(operationService.findOneSimple(OperationId("firstOperation")))
+    .thenReturn(Future.successful(Some(firstOperation)))
+  when(operationService.findOneSimple(OperationId("fakeid"))).thenReturn(Future.successful(None))
+  when(operationService.findSimple(slug = Some("second-operation"), country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = Some(Country("IT")), maybeSource = None, openAt = None))
+  when(operationService.findSimple(slug = None, country = Some(Country("IT")), maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(secondOperation)))
   when(
-    operationService.find(slug = None, country = None, maybeSource = None, openAt = Some(LocalDate.parse("2018-02-02")))
+    operationService
+      .findSimple(slug = None, country = None, maybeSource = None, openAt = Some(LocalDate.parse("2018-02-02")))
   ).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
+  when(operationService.findSimple(slug = None, country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
     Future.successful(
@@ -317,9 +300,10 @@ class ModerationOperationApiTest
 
   when(operationService.findOneBySlug("my-create-operation")).thenReturn(Future.successful(None))
   when(operationService.findOneBySlug("my-update-operation")).thenReturn(Future.successful(None))
-  when(operationService.findOneBySlug("existing-operation-slug")).thenReturn(Future.successful(Some(firstOperation)))
+  when(operationService.findOneBySlug("existing-operation-slug"))
+    .thenReturn(Future.successful(Some(firstFullOperation)))
   when(operationService.findOneBySlug("existing-operation-slug-second"))
-    .thenReturn(Future.successful(Some(firstOperation.copy(operationId = OperationId("updateOperationId")))))
+    .thenReturn(Future.successful(Some(firstFullOperation.copy(operationId = OperationId("updateOperationId")))))
   when(
     operationService.create(
       userId = tyrion.userId,
@@ -329,7 +313,8 @@ class ModerationOperationApiTest
     )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
-  when(operationService.findOne(OperationId("updateOperationId"))).thenReturn(Future.successful(Some(firstOperation)))
+  when(operationService.findOneSimple(OperationId("updateOperationId")))
+    .thenReturn(Future.successful(Some(firstOperation)))
   when(
     operationService.update(
       operationId = OperationId("updateOperationId"),
@@ -397,15 +382,7 @@ class ModerationOperationApiTest
         val firstOperationResult: ModerationOperationResponse =
           moderationOperationListResponse.results.filter(_.operationId.value == "firstOperation").head
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
-          "première operation"
-        )
         firstOperationResult.defaultLanguage should be(Language("fr"))
-        firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
-          Seq.empty
-        )
-        firstOperationResult.events.length should be(1)
-        firstOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
     }
 
@@ -425,15 +402,7 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
-          "secondo operazione"
-        )
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
-          Seq.empty
-        )
-        secondOperationResult.events.length should be(1)
-        secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
     }
 
@@ -453,15 +422,7 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
-          "secondo operazione"
-        )
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
-          Seq.empty
-        )
-        secondOperationResult.events.length should be(1)
-        secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
     }
 
@@ -481,15 +442,7 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.translations.filter(_.language == Language("it")).head.title should be(
-          "secondo operazione"
-        )
         secondOperationResult.defaultLanguage should be(Language("it"))
-        secondOperationResult.countriesConfiguration.filter(_.countryCode == Country("IT")).head.tagIds should be(
-          Seq.empty
-        )
-        secondOperationResult.events.length should be(1)
-        secondOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
     }
   }
@@ -540,15 +493,7 @@ class ModerationOperationApiTest
           entityAs[ModerationOperationResponse]
         firstOperationResult shouldBe a[ModerationOperationResponse]
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.translations.filter(_.language == Language("fr")).head.title should be(
-          "première operation"
-        )
         firstOperationResult.defaultLanguage should be(Language("fr"))
-        firstOperationResult.countriesConfiguration.filter(_.countryCode == Country("BR")).head.tagIds should be(
-          Seq.empty
-        )
-        firstOperationResult.events.length should be(1)
-        firstOperationResult.events.head.user.get shouldBe a[UserResponse]
       }
     }
   }
@@ -627,7 +572,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation") {
+    scenario("update an operation") {
       When("I create a proposal with a moderation role authentication")
       Then("I get a success status")
       And("operation is registered")
