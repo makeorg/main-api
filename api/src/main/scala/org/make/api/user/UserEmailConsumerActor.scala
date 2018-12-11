@@ -139,9 +139,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
             }
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${verificationToken}" +
-              s"?operation=${event.requestContext.operationId
-                .map(_.value)
-                .getOrElse(operationSlug)}&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse(operationSlug)}&language=$language&country=$country&question=${event.requestContext.questionId.map(_.value).getOrElse("")}"
 
             eventBusService.publish(
               SendEmail.create(
@@ -196,7 +194,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
             }
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}/#/${user.country}/password-recovery/${user.userId.value}/$resetToken" +
-              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country&question=${event.requestContext.questionId.map(_.value).getOrElse("")}"
 
             context.system.eventStream.publish(
               SendEmail.create(
@@ -255,7 +253,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
             }
             val url = s"${mailJetTemplateConfiguration
               .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/$verificationToken" +
-              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country"
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country&question=${event.requestContext.questionId.map(_.value).getOrElse("")}"
             eventBusService.publish(
               SendEmail.create(
                 templateId = Some(resendAccountValidationLink.templateId),
@@ -271,7 +269,6 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                     "firstname" -> user.firstName.getOrElse(""),
                     "email_validation_url" -> url,
                     "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
-                    "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
                     "source" -> event.requestContext.source.getOrElse("")
                   )

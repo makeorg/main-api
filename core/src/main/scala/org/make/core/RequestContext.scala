@@ -22,6 +22,7 @@ package org.make.core
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, ObjectEncoder}
 import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
@@ -44,7 +45,8 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 hostname: Option[String] = None,
                                 ipAddress: Option[String] = None,
                                 getParameters: Option[Map[String, String]] = None,
-                                userAgent: Option[String] = None)
+                                userAgent: Option[String] = None,
+                                questionId: Option[QuestionId] = None)
 
 object RequestContext {
   implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]
@@ -68,10 +70,11 @@ object RequestContext {
       hostname = None,
       ipAddress = None,
       getParameters = None,
-      userAgent = None
+      userAgent = None,
+      questionId = None
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat17(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat18(RequestContext.apply)
 
 }
