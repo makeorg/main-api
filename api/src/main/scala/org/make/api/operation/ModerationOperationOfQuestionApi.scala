@@ -45,8 +45,8 @@ import org.make.core.sequence.SequenceId
 import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
-@Api(value = "Operation")
-@Path(value = "/operations-of-questions")
+@Api(value = "Moderation Operation of question")
+@Path(value = "/moderation/operations-of-questions")
 trait ModerationOperationOfQuestionApi extends Directives {
 
   @ApiOperation(

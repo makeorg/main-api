@@ -72,11 +72,11 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                     openAt =>
                       sqls
                         .isNull(PersistentOperationOfQuestion.column.startDate)
-                        .or(sqls.ge(PersistentOperationOfQuestion.column.startDate, openAt))
+                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
                         .and(
                           sqls
                             .isNull(PersistentOperationOfQuestion.column.endDate)
-                            .or(sqls.le(PersistentOperationOfQuestion.column.endDate, openAt))
+                            .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
                       )
                   )
                 )
