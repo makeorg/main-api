@@ -191,7 +191,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       Option(authInfoByAccessTokenCache.getIfPresent(accessToken.token))
         .map(authInfo => Future.successful(Some(authInfo)))
         .getOrElse {
-          persistentTokenService.findByAccessToken(accessToken.token).flatMap {
+          persistentTokenService.findByAccessToken(accessToken.token).flatMap[Option[AuthInfo[UserRights]]] {
             case Some(token) =>
               val authInfo = AuthInfo(
                 user = token.user,

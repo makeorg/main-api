@@ -41,6 +41,7 @@ trait PersistentSequenceConfigurationService {
   def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
   def findAll(): Future[Seq[SequenceConfiguration]]
   def persist(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
+  def delete(questionId: QuestionId): Future[Unit]
 }
 
 trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentSequenceConfigurationComponent {
@@ -154,6 +155,15 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
           case result: Boolean => result
           case result: Int     => result == 1
         }
+      }
+      override def delete(questionId: QuestionId): Future[Unit] = {
+        implicit val context: EC = readExecutionContext
+        Future(NamedDB('WRITE).retryableTx { implicit session =>
+          withSQL {
+            deleteFrom(PersistentSequenceConfiguration)
+              .where(sqls.eq(PersistentSequenceConfiguration.column.questionId, questionId.value))
+          }.execute().apply()
+        }).map(_ => ())
       }
     }
 }
