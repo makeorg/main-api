@@ -28,7 +28,6 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
@@ -193,13 +192,14 @@ class ModerationOrganisationApiTest
       Get("/moderation/organisations/ABCD")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val organisation: UserResponse = entityAs[UserResponse]
-        organisation.userId should be(UserId("ABCD"))
+        val organisation: OrganisationResponse = entityAs[OrganisationResponse]
+        organisation.id should be(UserId("ABCD"))
       }
     }
 
     scenario("get non existing organisation") {
-      Get("/moderation/organisations/non-existant").withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get("/moderation/organisations/non-existant")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -289,10 +289,13 @@ class ModerationOrganisationApiTest
     }
 
     scenario("get organisations with moderation role") {
+
+      when(organisationService.count()).thenReturn(Future.successful(1))
+
       Given("a moderator")
       When("I want to get organisations")
       Then("I should get an OK status")
-      when(organisationService.getOrganisations)
+      when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
         .thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
