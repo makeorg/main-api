@@ -84,7 +84,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
 
-    override def search(request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = ???
+    override def search(request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = {
+      persistentOperationOfQuestionService.search(request.questionId, request.operationId, request.openAt)
+    }
 
     override def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]] = {
       persistentOperationOfQuestionService.getById(questionId)
