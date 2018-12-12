@@ -31,6 +31,7 @@ import scala.concurrent.Future
 trait QuestionService {
   def getQuestion(questionId: QuestionId): Future[Option[Question]]
   def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]]
+  def getQuestionByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]
   def findQuestion(maybeThemeId: Option[ThemeId],
                    maybeOperationId: Option[OperationId],
                    country: Country,
@@ -66,6 +67,10 @@ trait DefaultQuestionService extends QuestionServiceComponent {
 
     override def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]] = {
       persistentQuestionService.getByIds(questionIds)
+    }
+
+    override def getQuestionByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]] = {
+      persistentQuestionService.getByQuestionIdValueOrSlug(questionIdValueOrSlug)
     }
 
     override def getQuestion(questionId: QuestionId): Future[Option[Question]] = {

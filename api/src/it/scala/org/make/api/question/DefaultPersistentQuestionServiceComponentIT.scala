@@ -216,5 +216,48 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
     }
 
+    scenario("finding by slug or id") {
+      val question1 = Question(
+        questionId = QuestionId("question-slugorid-id-1"),
+        slug = "question-slugorid-slug-1",
+        country = Country("AA"),
+        language = Language("aa"),
+        question = "some question 1",
+        operationId = None,
+        themeId = None
+      )
+      val question2 = Question(
+        questionId = QuestionId("question-slugorid-id-2"),
+        slug = "question-slugorid-slug-2",
+        country = Country("AA"),
+        language = Language("bb"),
+        question = "some question 2",
+        operationId = None,
+        themeId = None
+      )
+
+      val insertQuestions: Future[Unit] = for {
+        _ <- persistentQuestionService.persist(question1)
+        _ <- persistentQuestionService.persist(question2)
+      } yield ()
+
+      whenReady(insertQuestions, Timeout(2.seconds)) { _ =>
+        ()
+      }
+
+      whenReady(
+        persistentQuestionService.getByQuestionIdValueOrSlug(questionIdValueOrSlug = "question-slugorid-id-1"),
+        Timeout(5.seconds)
+      ) { maybeQuestion =>
+        maybeQuestion should be(Some(question1))
+      }
+
+      whenReady(
+        persistentQuestionService.getByQuestionIdValueOrSlug(questionIdValueOrSlug = "question-slugorid-slug-2"),
+        Timeout(5.seconds)
+      ) { maybeQuestion =>
+        maybeQuestion should be(Some(question2))
+      }
+    }
   }
 }

@@ -18,10 +18,15 @@
  */
 
 package org.make.api.question
+import java.time.LocalDate
+
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import org.make.core.CirceFormatters
+import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.SequenceId
 
 case class ModerationQuestionResponse(id: QuestionId,
                                       slug: String,
@@ -40,4 +45,37 @@ object ModerationQuestionResponse {
 
   implicit val encoder: Encoder[ModerationQuestionResponse] = deriveEncoder[ModerationQuestionResponse]
   implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
+}
+
+case class QuestionDetailsResponse(questionId: QuestionId,
+                                   operationId: OperationId,
+                                   slug: String,
+                                   question: String,
+                                   country: Country,
+                                   language: Language,
+                                   allowedSources: Seq[String],
+                                   startDate: Option[LocalDate],
+                                   endDate: Option[LocalDate],
+                                   landingSequenceId: SequenceId,
+                                   operationTitle: String)
+
+object QuestionDetailsResponse extends CirceFormatters {
+  def apply(question: Question,
+            operation: Operation,
+            operationOfQuestion: OperationOfQuestion): QuestionDetailsResponse = QuestionDetailsResponse(
+    questionId = question.questionId,
+    operationId = operation.operationId,
+    slug = question.slug,
+    question = question.question,
+    country = question.country,
+    language = question.language,
+    allowedSources = operation.allowedSources,
+    startDate = operationOfQuestion.startDate,
+    endDate = operationOfQuestion.endDate,
+    landingSequenceId = operationOfQuestion.landingSequenceId,
+    operationTitle = operationOfQuestion.operationTitle
+  )
+
+  implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]
+  implicit val decoder: Decoder[QuestionDetailsResponse] = deriveDecoder[QuestionDetailsResponse]
 }

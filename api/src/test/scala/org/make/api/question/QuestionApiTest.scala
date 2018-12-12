@@ -1,14 +1,35 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.question
+
+import java.time.LocalDate
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.PersistentOperationOfQuestionService
+import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.RequestContext
-import org.make.core.operation.{OperationId, OperationOfQuestion}
+import org.make.core.{DateHelper, RequestContext}
+import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -30,34 +51,49 @@ class QuestionApiTest
     with QuestionServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
+    with OperationServiceComponent
+    with OperationOfQuestionServiceComponent
     with MakeSettingsComponent
     with MakeAuthentication {
+
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
   override val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
     mock[PersistentOperationOfQuestionService]
+  override val operationService: OperationService = mock[OperationService]
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
-  val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None, None)
+  val baseQuestion = Question(
+    questionId = QuestionId("questionid"),
+    slug = "question-slug",
+    country = Country("FR"),
+    language = Language("fr"),
+    question = "the question",
+    operationId = Some(OperationId("operationid")),
+    themeId = None
+  )
+  val baseOperation = Operation(
+    status = OperationStatus.Active,
+    operationId = OperationId("operationid"),
+    slug = "operation-slug",
+    defaultLanguage = Language("fr"),
+    allowedSources = Seq("core"),
+    events = List.empty,
+    questions = Seq.empty,
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now())
+  )
 
-  feature("list questions") {
-
-    when(questionService.countQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(42))
-    when(questionService.searchQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(Seq(baseQuestion)))
-
-    val uri = "/moderation/questions?start=0&end=1&operationId=foo&country=FR&language=fr"
-
-    scenario("list questions") {
-      Get(uri) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        header("x-total-count").isDefined shouldBe true
-        val questions: Seq[ModerationQuestionResponse] = entityAs[Seq[ModerationQuestionResponse]]
-        questions.size should be(1)
-        questions.head.id.value should be(baseQuestion.questionId.value)
-      }
-    }
-  }
+  val baseOperationOfQuestion = OperationOfQuestion(
+    questionId = baseQuestion.questionId,
+    operationId = baseOperation.operationId,
+    startDate = Some(LocalDate.parse("2018-10-21")),
+    endDate = None,
+    operationTitle = "operation title",
+    landingSequenceId = SequenceId("sequenceId")
+  )
 
   feature("start sequence by question id") {
     val baseOperationOfQuestion = OperationOfQuestion(
@@ -89,6 +125,45 @@ class QuestionApiTest
         .thenReturn(Future.successful(None))
       Post("/questions/question-id/start-sequence").withEntity(HttpEntity(ContentTypes.`application/json`, "{}")) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
+      }
+    }
+  }
+
+  feature("get question details") {
+
+    when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.slug))
+      .thenReturn(Future.successful(Some(baseQuestion)))
+    when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.questionId.value))
+      .thenReturn(Future.successful(Some(baseQuestion)))
+    when(operationOfQuestionService.findByQuestionId(baseQuestion.questionId))
+      .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
+    when(operationService.findOne(baseQuestion.operationId.get)).thenReturn(Future.successful(Some(baseOperation)))
+
+    scenario("get by id") {
+      Given("a registered question")
+      When("I get question details by id")
+      Then("I get a question with details")
+      Get("/questions/questionid/details") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
+        questionDetailsResponse.operationId should be(baseOperation.operationId)
+        questionDetailsResponse.slug should be(baseQuestion.slug)
+        questionDetailsResponse.allowedSources should be(baseOperation.allowedSources)
+        questionDetailsResponse.country should be(baseQuestion.country)
+        questionDetailsResponse.language should be(baseQuestion.language)
+        questionDetailsResponse.operationTitle should be(baseOperationOfQuestion.operationTitle)
+        questionDetailsResponse.startDate should be(baseOperationOfQuestion.startDate)
+        questionDetailsResponse.endDate should be(baseOperationOfQuestion.endDate)
+      }
+    }
+    scenario("get by slug") {
+      Given("a registered question")
+      When("I get question details by slug")
+      Then("I get a question with details")
+      Get("/questions/questionid/details") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
+        questionDetailsResponse.questionId should be(baseQuestion.questionId)
       }
     }
   }
