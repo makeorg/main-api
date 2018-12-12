@@ -41,5 +41,5 @@ object HdfData extends InsertOperationFixtureData {
     UserInfo("yopmail+solene@make.org", "Soplène", 21, country, language),
   )
   override def dataResource: String = "fixtures/proposals_jeunes_hdf.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

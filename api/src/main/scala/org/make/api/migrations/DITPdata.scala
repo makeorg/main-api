@@ -40,6 +40,6 @@ object DITPdata extends InsertOperationFixtureData {
     UserInfo("yopmail+mattéo@make.org", "Mattéo", 28, country, language),
   )
   override def dataResource: String = "fixtures/proposals_ditp.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 
 }

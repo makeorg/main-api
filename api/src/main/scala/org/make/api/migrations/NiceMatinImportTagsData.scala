@@ -47,5 +47,5 @@ object NiceMatinImportTagsData extends ImportTagsData {
     }
   }
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

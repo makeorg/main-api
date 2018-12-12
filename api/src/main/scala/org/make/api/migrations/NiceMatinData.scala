@@ -109,5 +109,5 @@ object NiceMatinData extends InsertOperationFixtureData {
     }
   }
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

@@ -50,5 +50,5 @@ object G9Data extends InsertOperationFixtureData {
     UserInfo("yopmail+karine@make.org", "Karine", 56, country, language),
   )
   override def dataResource: String = "fixtures/proposals_g9.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

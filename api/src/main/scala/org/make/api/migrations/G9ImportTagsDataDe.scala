@@ -27,5 +27,5 @@ object G9ImportTagsDataDe extends ImportTagsData {
   override val language: Language = Language("de")
 
   override val dataResource: String = "fixtures/tags_g9-de.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

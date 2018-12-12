@@ -61,5 +61,5 @@ object G9OperationDe extends Migration with OperationHelper with StrictLogging {
     }
   }
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

@@ -48,5 +48,5 @@ object MIPIMGbData extends InsertOperationFixtureData {
     UserInfo("yopmail+Philip@make.org", "Philip", 43, country, language),
   )
   override def dataResource: String = "fixtures/proposals_mipim-gb.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

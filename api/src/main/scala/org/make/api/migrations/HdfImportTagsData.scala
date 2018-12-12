@@ -28,5 +28,5 @@ object HdfImportTagsData extends ImportTagsData {
   override val language: Language = Language("fr")
 
   override val dataResource: String = "fixtures/tags_jeunes_hdf.csv"
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 }

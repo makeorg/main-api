@@ -43,6 +43,6 @@ object DITPOperation extends CreateOperation {
 
   override val allowedSources: Seq[String] = Seq("core")
 
-  override val runInProduction: Boolean = true
+  override val runInProduction: Boolean = false
 
 }
