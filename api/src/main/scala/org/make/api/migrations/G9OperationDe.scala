@@ -40,7 +40,7 @@ object G9OperationDe extends Migration with OperationHelper with StrictLogging {
     QuestionConfiguration(
       country = Country("DE"),
       language = Language("de"),
-      slug = "digital-champion-de",
+      slug = "european-digital-champions-de",
       title = "Wie kann man europäische digitale Champions hervorbringen?",
       question = "Wie kann man europäische digitale Champions hervorbringen?",
       startDate = LocalDate.parse("2018-10-25"),
