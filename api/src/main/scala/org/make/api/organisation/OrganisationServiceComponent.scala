@@ -193,20 +193,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language)
       } yield user
 
-      result.map { user =>
-        if (organisationRegisterData.password.isEmpty) {
-          userService.requestPasswordReset(user.userId).map { _ =>
-            eventBusService.publish(
-              OrganisationInitializationEvent(
-                userId = user.userId,
-                connectedUserId = None,
-                country = user.country,
-                language = user.language,
-                requestContext = requestContext
-              )
-            )
-          }
-        }
+      result.flatMap { user =>
         eventBusService.publish(
           OrganisationRegisteredEvent(
             connectedUserId = Some(user.userId),
@@ -218,7 +205,22 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             eventDate = DateHelper.now()
           )
         )
-        user
+        if (organisationRegisterData.password.isEmpty) {
+          userService.requestPasswordReset(user.userId).map { _ =>
+            eventBusService.publish(
+              OrganisationInitializationEvent(
+                userId = user.userId,
+                connectedUserId = None,
+                country = user.country,
+                language = user.language,
+                requestContext = requestContext
+              )
+            )
+            user
+          }
+        } else {
+          Future.successful(user)
+        }
       }
     }
 
