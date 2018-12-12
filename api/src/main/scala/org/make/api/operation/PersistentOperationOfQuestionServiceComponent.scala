@@ -119,7 +119,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.updatedAt -> now
               )
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
-          }
+          }.execute().apply()
         }).map(_ => operationOfQuestion)
       }
 
@@ -128,7 +128,6 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
             select
-              .all()
               .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id.value))
           }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single.apply()
@@ -140,7 +139,6 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
             select
-              .all()
               .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
               .where(
                 sqls.toAndConditionOpt(

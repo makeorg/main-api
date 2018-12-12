@@ -29,11 +29,6 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.DefaultModerationOperationOfQuestionApiComponent.{
-  CreateOperationOfQuestionRequest,
-  ModifyOperationOfQuestionRequest,
-  OperationOfQuestionResponse
-}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -123,8 +118,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
         value = "body",
         paramType = "body",
         required = true,
-        dataType =
-          "org.make.api.operation.DefaultModerationOperationOfQuestionApiComponent.CreateOperationOfQuestionRequest"
+        dataType = "org.make.api.operation.ModifyOperationOfQuestionRequest"
       )
     )
   )
@@ -155,7 +149,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
   def deleteOperationOfQuestionAndQuestion: Route
 
   @ApiOperation(
-    value = "modify-operation-of-question",
+    value = "create-operation-of-question",
     httpMethod = "POST",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -174,13 +168,11 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, dataType = "string"),
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
         required = true,
-        dataType =
-          "org.make.api.operation.DefaultModerationOperationOfQuestionApiComponent.ModifyOperationOfQuestionRequest"
+        dataType = "org.make.api.operation.CreateOperationOfQuestionRequest"
       )
     )
   )
@@ -345,57 +337,55 @@ trait DefaultModerationOperationOfQuestionApiComponent
       }
     }
 }
-object DefaultModerationOperationOfQuestionApiComponent extends CirceFormatters {
 
-  final case class ModifyOperationOfQuestionRequest(startDate: Option[LocalDate],
-                                                    endDate: Option[LocalDate],
-                                                    operationTitle: String)
-  object ModifyOperationOfQuestionRequest {
-    implicit val decoder: Decoder[ModifyOperationOfQuestionRequest] = deriveDecoder[ModifyOperationOfQuestionRequest]
-    implicit val encoder: Encoder[ModifyOperationOfQuestionRequest] = deriveEncoder[ModifyOperationOfQuestionRequest]
-  }
+final case class ModifyOperationOfQuestionRequest(startDate: Option[LocalDate],
+                                                  endDate: Option[LocalDate],
+                                                  operationTitle: String)
+object ModifyOperationOfQuestionRequest extends CirceFormatters {
+  implicit val decoder: Decoder[ModifyOperationOfQuestionRequest] = deriveDecoder[ModifyOperationOfQuestionRequest]
+  implicit val encoder: Encoder[ModifyOperationOfQuestionRequest] = deriveEncoder[ModifyOperationOfQuestionRequest]
+}
 
-  final case class CreateOperationOfQuestionRequest(operationId: OperationId,
-                                                    startDate: Option[LocalDate],
-                                                    endDate: Option[LocalDate],
-                                                    operationTitle: String,
-                                                    country: Country,
-                                                    language: Language,
-                                                    question: String,
-                                                    questionSlug: String)
+final case class CreateOperationOfQuestionRequest(operationId: OperationId,
+                                                  startDate: Option[LocalDate],
+                                                  endDate: Option[LocalDate],
+                                                  operationTitle: String,
+                                                  country: Country,
+                                                  language: Language,
+                                                  question: String,
+                                                  questionSlug: String)
 
-  object CreateOperationOfQuestionRequest {
-    implicit val decoder: Decoder[CreateOperationOfQuestionRequest] = deriveDecoder[CreateOperationOfQuestionRequest]
-    implicit val encoder: Encoder[CreateOperationOfQuestionRequest] = deriveEncoder[CreateOperationOfQuestionRequest]
-  }
+object CreateOperationOfQuestionRequest extends CirceFormatters {
+  implicit val decoder: Decoder[CreateOperationOfQuestionRequest] = deriveDecoder[CreateOperationOfQuestionRequest]
+  implicit val encoder: Encoder[CreateOperationOfQuestionRequest] = deriveEncoder[CreateOperationOfQuestionRequest]
+}
 
-  final case class OperationOfQuestionResponse(questionId: QuestionId,
-                                               operationId: OperationId,
-                                               startDate: Option[LocalDate],
-                                               endDate: Option[LocalDate],
-                                               landingSequenceId: SequenceId,
-                                               operationTitle: String,
-                                               questionSlug: String,
-                                               question: String,
-                                               country: Country,
-                                               language: Language)
+final case class OperationOfQuestionResponse(questionId: QuestionId,
+                                             operationId: OperationId,
+                                             startDate: Option[LocalDate],
+                                             endDate: Option[LocalDate],
+                                             landingSequenceId: SequenceId,
+                                             operationTitle: String,
+                                             questionSlug: String,
+                                             question: String,
+                                             country: Country,
+                                             language: Language)
 
-  object OperationOfQuestionResponse {
-    implicit val encoder: Encoder[OperationOfQuestionResponse] = deriveEncoder[OperationOfQuestionResponse]
+object OperationOfQuestionResponse extends CirceFormatters {
+  implicit val encoder: Encoder[OperationOfQuestionResponse] = deriveEncoder[OperationOfQuestionResponse]
 
-    def apply(operationOfQuestion: OperationOfQuestion, question: Question): OperationOfQuestionResponse = {
-      OperationOfQuestionResponse(
-        questionId = operationOfQuestion.questionId,
-        operationId = operationOfQuestion.operationId,
-        operationTitle = operationOfQuestion.operationTitle,
-        startDate = operationOfQuestion.startDate,
-        endDate = operationOfQuestion.endDate,
-        landingSequenceId = operationOfQuestion.landingSequenceId,
-        questionSlug = question.slug,
-        question = question.question,
-        country = question.country,
-        language = question.language
-      )
-    }
+  def apply(operationOfQuestion: OperationOfQuestion, question: Question): OperationOfQuestionResponse = {
+    OperationOfQuestionResponse(
+      questionId = operationOfQuestion.questionId,
+      operationId = operationOfQuestion.operationId,
+      operationTitle = operationOfQuestion.operationTitle,
+      startDate = operationOfQuestion.startDate,
+      endDate = operationOfQuestion.endDate,
+      landingSequenceId = operationOfQuestion.landingSequenceId,
+      questionSlug = question.slug,
+      question = question.question,
+      country = question.country,
+      language = question.language
+    )
   }
 }

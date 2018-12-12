@@ -21,28 +21,24 @@ package org.make.api.operation
 import java.time.LocalDate
 import java.util.Date
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.DefaultModerationOperationOfQuestionApiComponent.{
-  CreateOperationOfQuestionRequest,
-  ModifyOperationOfQuestionRequest
-}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.auth.UserRights
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{Role, UserId}
-import org.mockito.Mockito._
-import org.mockito.ArgumentMatchers._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
-import io.circe.syntax._
 import org.make.core.operation.{OperationId, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.user.{Role, UserId}
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
