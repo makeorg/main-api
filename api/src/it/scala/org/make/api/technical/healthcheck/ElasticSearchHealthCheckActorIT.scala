@@ -127,7 +127,8 @@ class ElasticSearchHealthCheckActorIT
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
       questionId = None,
-      sequencePool = SequencePool.Tested
+      sequencePool = SequencePool.Tested,
+      initialProposal = false
     )
 
   private def initializeElasticsearch(): Unit = {

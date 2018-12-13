@@ -438,6 +438,10 @@
         "sequencePool": {
           "type": "keyword",
           "index": true
+        },
+        "initialProposal": {
+          "type": "boolean",
+          "index": true
         }
       }
     }

@@ -78,7 +78,8 @@ trait ProposalService {
               requestContext: RequestContext,
               createdAt: ZonedDateTime,
               content: String,
-              question: Question): Future[ProposalId]
+              question: Question,
+              initialProposal: Boolean): Future[ProposalId]
 
   def update(proposalId: ProposalId,
              moderator: UserId,
@@ -182,7 +183,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       for {
         user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
-        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question)
+        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, true)
         _ <- validateProposal(
           proposalId = proposalId,
           moderator = moderator,
@@ -277,7 +278,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               createdAt = proposal.createdAt,
               updatedAt = proposal.updatedAt,
               events = events,
-              similarProposals = proposal.similarProposals,
               idea = proposal.idea,
               ideaProposals = ideaProposals,
               operationId = proposal.operation,
@@ -397,7 +397,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                          requestContext: RequestContext,
                          createdAt: ZonedDateTime,
                          content: String,
-                         question: Question): Future[ProposalId] = {
+                         question: Question,
+                         initialProposal: Boolean): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -406,7 +407,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           user = user,
           createdAt = createdAt,
           content = content,
-          question = question
+          question = question,
+          initialProposal = initialProposal
         )
       )
     }

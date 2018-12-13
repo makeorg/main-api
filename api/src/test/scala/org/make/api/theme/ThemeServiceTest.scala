@@ -25,7 +25,6 @@ import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponen
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.core.SlugHelper
-import org.make.core.proposal.SearchQuery
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -101,14 +100,6 @@ class ThemeServiceTest
         .thenReturn(Future.successful(Seq(fooTheme, barTheme)))
 
       Mockito
-        .when(elasticsearchProposalAPI.countProposals(any[SearchQuery]))
-        .thenReturn(Future.successful(5L))
-
-      Mockito
-        .when(elasticsearchProposalAPI.countVotedProposals(any[SearchQuery]))
-        .thenReturn(Future.successful(10))
-
-      Mockito
         .when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq.empty))
 
@@ -136,10 +127,6 @@ class ThemeServiceTest
 
       whenReady(futureThemes, Timeout(3.seconds)) { themes =>
         themes.size shouldBe 2
-        themes.foreach { theme =>
-          theme.proposalsCount shouldBe 5
-          theme.votesCount shouldBe 10
-        }
       }
 
     }

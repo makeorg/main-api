@@ -175,7 +175,8 @@ class DefaultProposalServiceComponentTest
       ideaId = None,
       operationId = None,
       questionId = None,
-      sequencePool = SequencePool.New
+      sequencePool = SequencePool.New,
+      initialProposal = false
     )
   }
 
@@ -230,7 +231,7 @@ class DefaultProposalServiceComponentTest
           language = Some(Language("fr")),
           country = Some(Country("FR")),
           creationContext = RequestContext.empty,
-          similarProposals = Seq.empty,
+          initialProposal = false,
           idea = None,
           operation = Some(OperationId("unlockable")),
           createdAt = None,
@@ -454,7 +455,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("unlockable")),
                 createdAt = None,
@@ -484,7 +485,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,
@@ -558,7 +559,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,

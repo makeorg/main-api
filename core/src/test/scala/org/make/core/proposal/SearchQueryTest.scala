@@ -26,15 +26,14 @@ import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
 class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
-  val themeValue = "Theme"
-  val themeFilter = ThemeSearchFilter(Seq(ThemeId(themeValue)))
+  val initialProposalFilter = InitialProposalFilter(true)
   val tagValue = "Tag1"
   val tagsFilter = TagsSearchFilter(Seq(TagId(tagValue)))
   val labelValue = "Label"
@@ -53,7 +52,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
 
   val filters =
     SearchFilters(
-      theme = Some(themeFilter),
+      initialProposal = Some(initialProposalFilter),
       tags = Some(tagsFilter),
       labels = Some(labelsFilter),
       operation = Some(operationFilter),
@@ -98,12 +97,14 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       limitResult shouldBe limit
     }
 
-    scenario("build ThemeSearchFilter from Search filter") {
+    scenario("build InitialProposalSearchFilter from Search filter") {
       Given("a searchFilter")
-      When("call buildThemeSearchFilter with SearchQuery")
-      val themeSearchFilterResult = SearchFilters.buildThemeSearchFilter(searchQuery)
+      When("call buildInitialProposalSearchFilterwith SearchQuery")
+      val themeSearchFilterResult = SearchFilters.buildInitialProposalSearchFilter(searchQuery)
       Then("result is a termQuery")
-      themeSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeValue))
+      themeSearchFilterResult shouldBe Some(
+        ElasticApi.termQuery(field = ProposalElasticsearchFieldNames.initialProposal, value = true)
+      )
     }
 
     scenario("build TagsSearchFilter from Search filter") {

@@ -28,17 +28,21 @@ import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
 import stamina.json._
-import stamina.{V1, V2, V3, V4}
+import stamina._
 
 object ProposalSerializers extends SprayJsonFormatters {
 
-  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V2] =
-    persister[ProposalProposed, V2](
+  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V3] =
+    persister[ProposalProposed, V3](
       "proposal-proposed",
-      from[V1].to[V2](
-        _.update('language ! set[Option[String]](Some("fr")))
-          .update('country ! set[Option[String]](Some("FR")))
-      )
+      from[V1]
+        .to[V2](
+          _.update('language ! set[Option[String]](Some("fr")))
+            .update('country ! set[Option[String]](Some("FR")))
+        )
+        .to[V3] {
+          _.update('initialProposal ! set[Boolean](false))
+        }
     )
 
   private val proposalViewedSerializer: JsonPersister[ProposalViewed, V1] =
@@ -96,8 +100,8 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
     persister[ProposalLocked]("proposal-locked")
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V4] =
-    persister[ProposalState, V4](
+  private val proposalStateSerializer: JsonPersister[ProposalState, V5] =
+    persister[ProposalState, V5](
       "proposalState",
       from[V1]
         .to[V2](
@@ -109,6 +113,9 @@ object ProposalSerializers extends SprayJsonFormatters {
           val organisationInfos = json.extract[Seq[OrganisationInfo]]('proposal / 'organisations)
           json.update('proposal / 'organisationIds ! set[Seq[UserId]](organisationInfos.map(_.organisationId)))
         }
+        .to[V5] {
+          _.update('proposal / 'initialProposal ! set[Boolean](false))
+        }
     )
 
   private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
@@ -117,14 +124,17 @@ object ProposalSerializers extends SprayJsonFormatters {
   private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
     persister[SimilarProposalsCleared]("similar-proposals-cleared")
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V3] =
-    persister[ProposalPatched, V3](
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V4] =
+    persister[ProposalPatched, V4](
       "proposal-tags-updated",
       from[V1]
         .to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
         .to[V3] { json =>
           val organisationInfos = json.extract[Seq[OrganisationInfo]]('proposal / 'organisations)
           json.update('proposal / 'organisationIds ! set[Seq[UserId]](organisationInfos.map(_.organisationId)))
+        }
+        .to[V4] {
+          _.update('proposal / 'initialProposal ! set[Boolean](false))
         }
     )
 

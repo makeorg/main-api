@@ -38,7 +38,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
@@ -113,7 +113,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
             parameters(
               (
                 'proposalIds.as[immutable.Seq[ProposalId]].?,
-                'themesIds.as[immutable.Seq[ThemeId]].?,
                 'questionId.as[QuestionId].?,
                 'tagsIds.as[immutable.Seq[TagId]].?,
                 'labelsIds.as[immutable.Seq[LabelId]].?,
@@ -136,7 +135,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
               )
             ) {
               (proposalIds: Option[Seq[ProposalId]],
-               themesIds: Option[Seq[ThemeId]],
                questionId: Option[QuestionId],
                tagsIds: Option[Seq[TagId]],
                labelsIds: Option[Seq[LabelId]],
@@ -201,7 +199,6 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                   }
                 val searchRequest: SearchRequest = SearchRequest(
                   proposalIds = proposalIds,
-                  themesIds = themesIds,
                   questionId = questionId,
                   tagsIds = tagsIds,
                   labelsIds = labelsIds,
@@ -299,7 +296,8 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                           requestContext = requestContext,
                           createdAt = DateHelper.now(),
                           content = request.content,
-                          question = maybeQuestion.get
+                          question = maybeQuestion.get,
+                          initialProposal = false
                         )
                     ) { proposalId =>
                       complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))

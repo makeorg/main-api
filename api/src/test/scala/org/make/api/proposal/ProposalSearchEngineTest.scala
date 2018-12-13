@@ -110,7 +110,8 @@ class ProposalSearchEngineTest
     ideaId = Some(IdeaId("idea-id")),
     operationId = None,
     questionId = None,
-    sequencePool = SequencePool.New
+    sequencePool = SequencePool.New,
+    initialProposal = false
   )
 
   val normalProposal: IndexedProposal = proposal(42, 1, 3)

@@ -33,7 +33,7 @@ import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.question.QuestionId
-import org.make.core.reference.{LabelId, Language, ThemeId}
+import org.make.core.reference.{LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -60,18 +60,8 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
     }
 }
 
-/**
-  * The class holding the filters
-  *
-  * @param theme   The Theme to filter
-  * @param tags    List of Tags to filters
-  * @param labels  List of Tags to filters
-  * @param content Text to search into the proposal
-  * @param status  The Status of proposal
-  * @param language Language of the proposal.
-  */
 case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
-                         theme: Option[ThemeSearchFilter] = None,
+                         initialProposal: Option[InitialProposalFilter] = None,
                          tags: Option[TagsSearchFilter] = None,
                          labels: Option[LabelsSearchFilter] = None,
                          operation: Option[OperationSearchFilter] = None,
@@ -95,7 +85,7 @@ object SearchFilters extends ElasticDsl {
 
   //noinspection ScalaStyle
   def parse(proposals: Option[ProposalSearchFilter] = None,
-            themes: Option[ThemeSearchFilter] = None,
+            initialProposal: Option[InitialProposalFilter] = None,
             tags: Option[TagsSearchFilter] = None,
             labels: Option[LabelsSearchFilter] = None,
             operation: Option[OperationSearchFilter] = None,
@@ -117,7 +107,7 @@ object SearchFilters extends ElasticDsl {
 
     (
       proposals,
-      themes,
+      initialProposal,
       tags,
       labels,
       operation,
@@ -164,7 +154,7 @@ object SearchFilters extends ElasticDsl {
         Some(
           SearchFilters(
             proposals,
-            themes,
+            initialProposal,
             tags,
             labels,
             operation,
@@ -197,7 +187,7 @@ object SearchFilters extends ElasticDsl {
   def getSearchFilters(searchQuery: SearchQuery): Seq[Query] =
     Seq(
       buildProposalSearchFilter(searchQuery),
-      buildThemeSearchFilter(searchQuery),
+      buildInitialProposalSearchFilter(searchQuery),
       buildTagsSearchFilter(searchQuery),
       buildLabelsSearchFilter(searchQuery),
       buildOperationSearchFilter(searchQuery),
@@ -268,14 +258,13 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildThemeSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildInitialProposalSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
-      _.theme match {
-        case Some(ThemeSearchFilter(Seq(themeId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.themeId, themeId.value))
-        case Some(ThemeSearchFilter(themeIds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.themeId, themeIds.map(_.value)))
-        case _ => None
+      _.initialProposal.map { initialProposal =>
+        ElasticApi.termQuery(
+          field = ProposalElasticsearchFieldNames.initialProposal,
+          value = initialProposal.isInitialProposal
+        )
       }
     }
   }
@@ -524,9 +513,7 @@ case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
 
 case class UserSearchFilter(userId: UserId)
 
-case class ThemeSearchFilter(themeIds: Seq[ThemeId]) {
-  validate(validateField("ThemeId", themeIds.nonEmpty, "ids cannot be empty in theme search filters"))
-}
+case class InitialProposalFilter(isInitialProposal: Boolean)
 
 case class QuestionSearchFilter(questionId: QuestionId)
 
