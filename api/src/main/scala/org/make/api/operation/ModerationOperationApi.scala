@@ -27,7 +27,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sequence.{SequenceResponse, SequenceServiceComponent}
+import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -35,13 +35,8 @@ import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.reference.Country
-import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
-import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 @Api(
   value = "Moderation Operation",
@@ -139,18 +134,6 @@ trait DefaultModerationOperationApiComponent
         .validateEquals("slug", Some(s"Slug '$slug' already exist"), operationId, operationIdOfSlug)
     }
 
-    private def tagsValidation(tagIds: Seq[TagId], validTags: Seq[tag.Tag]) = {
-      Validation.validateEquals("tagIds", Some("Some tag ids are invalid"), tagIds.distinct.size, validTags.size)
-    }
-
-    private def sequenceLandingIdValidation(sequenceLandingId: SequenceId, sequence: Option[SequenceResponse]) = {
-      Validation.requirePresent(
-        "sequenceLandingId",
-        sequence,
-        Some(s"Sequence with id '${sequenceLandingId.value}' not found")
-      )
-    }
-
     def moderationPostOperation: Route = {
       post {
         path("moderation" / "operations") {
@@ -159,38 +142,20 @@ trait DefaultModerationOperationApiComponent
               requireModerationRole(auth.user) {
                 decodeRequest {
                   entity(as[ModerationCreateOperationRequest]) { request: ModerationCreateOperationRequest =>
-                    provideAsync(tagService.findByTagIds(request.countriesConfiguration.flatMap(_.tagIds))) { tags =>
-                      provideAsync(
-                        Future.traverse(request.countriesConfiguration.map(_.landingSequenceId))(
-                          sequenceService.getModerationSequenceById
+                    provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
+                      Validation.validate(
+                        Validation
+                          .requireNotPresent("slug", maybeOperation, Some(s"Slug '${request.slug}' already exist"))
+                      )
+                      onSuccess(
+                        operationService.create(
+                          userId = auth.user.userId,
+                          slug = request.slug,
+                          defaultLanguage = request.defaultLanguage,
+                          allowedSources = request.allowedSources
                         )
-                      ) { sequences =>
-                        sequences.zipWithIndex.foreach {
-                          case (sequence, idx) =>
-                            Validation.validate(
-                              sequenceLandingIdValidation(
-                                request.countriesConfiguration(idx).landingSequenceId,
-                                sequence
-                              ),
-                              tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
-                            )
-                        }
-                        provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
-                          Validation.validate(
-                            Validation
-                              .requireNotPresent("slug", maybeOperation, Some(s"Slug '${request.slug}' already exist"))
-                          )
-                          onSuccess(
-                            operationService.create(
-                              userId = auth.user.userId,
-                              slug = request.slug,
-                              defaultLanguage = request.defaultLanguage,
-                              allowedSources = request.allowedSources
-                            )
-                          ) { operationId =>
-                            complete(StatusCodes.Created -> Map("operationId" -> operationId))
-                          }
-                        }
+                      ) { operationId =>
+                        complete(StatusCodes.Created -> Map("operationId" -> operationId))
                       }
                     }
                   }
@@ -211,42 +176,24 @@ trait DefaultModerationOperationApiComponent
                 provideAsyncOrNotFound(operationService.findOne(operationId)) { _ =>
                   decodeRequest {
                     entity(as[ModerationUpdateOperationRequest]) { request: ModerationUpdateOperationRequest =>
-                      provideAsync(tagService.findByTagIds(request.countriesConfiguration.flatMap(_.tagIds))) { tags =>
-                        provideAsync(
-                          Future.traverse(request.countriesConfiguration.map(_.landingSequenceId))(
-                            sequenceService.getModerationSequenceById
+                      provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
+                        maybeOperation.foreach { operation =>
+                          Validation.validate(
+                            allowedSameSlugValidation(request.slug, operation.operationId.value, operationId.value)
                           )
-                        ) { sequences =>
-                          sequences.zipWithIndex.foreach {
-                            case (sequence, idx) =>
-                              Validation.validate(
-                                sequenceLandingIdValidation(
-                                  request.countriesConfiguration(idx).landingSequenceId,
-                                  sequence
-                                ),
-                                tagsValidation(request.countriesConfiguration.flatMap(_.tagIds), tags)
-                              )
-                          }
-                          provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
-                            maybeOperation.foreach { operation =>
-                              Validation.validate(
-                                allowedSameSlugValidation(request.slug, operation.operationId.value, operationId.value)
-                              )
-                            }
-                            onSuccess(
-                              operationService.update(
-                                operationId = operationId,
-                                userId = auth.user.userId,
-                                slug = Some(request.slug),
-                                status = OperationStatus.statusMap.get(request.status),
-                                defaultLanguage = Some(request.defaultLanguage),
-                                allowedSources = Some(request.allowedSources)
-                              )
-                            ) {
-                              case Some(id) => complete(StatusCodes.OK -> Map("operationId" -> id))
-                              case None     => complete(StatusCodes.NotFound)
-                            }
-                          }
+                        }
+                        onSuccess(
+                          operationService.update(
+                            operationId = operationId,
+                            userId = auth.user.userId,
+                            slug = Some(request.slug),
+                            status = OperationStatus.statusMap.get(request.status),
+                            defaultLanguage = Some(request.defaultLanguage),
+                            allowedSources = Some(request.allowedSources)
+                          )
+                        ) {
+                          case Some(id) => complete(StatusCodes.OK -> Map("operationId" -> id))
+                          case None     => complete(StatusCodes.NotFound)
                         }
                       }
                     }
