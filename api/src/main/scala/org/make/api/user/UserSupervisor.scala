@@ -21,12 +21,13 @@ package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.OperationServiceComponent
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.{
   OrganisationConsumerActor,
   OrganisationSearchEngineComponent,
   OrganisationServiceComponent
 }
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.api.technical.{AvroSerializers, ShortenedNames}
 import org.make.api.user.UserSupervisor.UserSupervisorDependencies
@@ -53,7 +54,8 @@ class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervi
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          UserEmailConsumerActor.props(dependencies.userService, dependencies.operationService),
+          UserEmailConsumerActor
+            .props(dependencies.userService, dependencies.questionService, dependencies.operationOfQuestionService),
           UserEmailConsumerActor.name
         )
       context.actorOf(props, name)
@@ -106,6 +108,8 @@ object UserSupervisor {
     with OrganisationServiceComponent
     with OrganisationSearchEngineComponent
     with ElasticsearchConfigurationComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent
 
   val name: String = "users"
   def props(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies): Props =

@@ -25,7 +25,8 @@ import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
-import org.make.api.operation.OperationService
+import org.make.api.operation.{OperationOfQuestionService, SearchOperationsOfQuestions}
+import org.make.api.question.{QuestionService, SearchQuestionRequest}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
@@ -36,7 +37,9 @@ import org.make.core.user.{User, UserId}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class UserEmailConsumerActor(userService: UserService, operationService: OperationService)
+class UserEmailConsumerActor(userService: UserService,
+                             questionService: QuestionService,
+                             operationOfQuestionService: OperationOfQuestionService)
     extends KafkaConsumerActor[UserEventWrapper]
     with MakeSettingsExtension
     with MailJetTemplateConfigurationExtension
@@ -69,14 +72,22 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
-        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
-          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-          case None              => Future.successful("core")
+//TODO: when questionId is sent in requestContext from front, use it in every `futureQuestionSlug`
+        val futureQuestionSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) =>
+            questionService
+              .findQuestion(
+                maybeOperationId = Some(operationId),
+                country = country,
+                language = language,
+                maybeThemeId = None
+              )
+              .map(_.map(_.slug).getOrElse(s"core.$country"))
+          case None => Future.successful(s"core.$country")
         }
 
-        futureOperationSlug.map { operationSlug =>
-          val templateConfiguration = mailJetTemplateConfiguration
-            .welcome(operation = operationSlug, country = country, language = language)
+        futureQuestionSlug.map { questionSlug =>
+          val templateConfiguration = mailJetTemplateConfiguration.welcome(questionSlug, country, language)
 
           if (templateConfiguration.enabled) {
             eventBusService.publish(
@@ -92,7 +103,7 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
                 variables = Some(
                   Map(
                     "firstname" -> user.firstName.getOrElse(""),
-                    "registration_context" -> operationSlug,
+                    "registration_context" -> questionSlug,
                     "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
@@ -115,22 +126,36 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
-        //todo: refactor to handle multiple operation by country
-        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
-          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
+        val futureQuestionSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) =>
+            questionService
+              .findQuestion(
+                maybeOperationId = Some(operationId),
+                country = country,
+                language = language,
+                maybeThemeId = None
+              )
+              .map(_.map(_.slug).getOrElse(s"core.$country"))
           case None =>
             if (BusinessConfig.coreIsAvailableForCountry(country)) {
-              Future.successful("core")
+              Future.successful(s"core.$country")
             } else {
-              operationService
-                .find(country = Some(country), maybeSource = None, openAt = Some(LocalDate.now()))
-                .map(_.headOption.map(_.slug).getOrElse("core"))
+              operationOfQuestionService
+                .search(
+                  SearchOperationsOfQuestions(questionId = None, operationId = None, openAt = Some(LocalDate.now()))
+                )
+                .flatMap { opOfQuestion =>
+                  questionService
+                    .searchQuestion(SearchQuestionRequest(country = Some(country), language = Some(language)))
+                    .map(_.filter(question => opOfQuestion.map(_.questionId).contains(question.questionId)))
+                }
+                .map(_.headOption.map(_.slug).getOrElse(s"core.$country"))
             }
         }
 
-        futureOperationSlug.map { operationSlug =>
+        futureQuestionSlug.map { questionSlug =>
           val registration =
-            mailJetTemplateConfiguration.registration(operation = operationSlug, country = country, language = language)
+            mailJetTemplateConfiguration.registration(questionSlug, country, language)
 
           if (registration.enabled) {
             val verificationToken: String = user.verificationToken match {
@@ -138,8 +163,8 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
               case _           => throw new IllegalStateException
             }
             val url = s"${mailJetTemplateConfiguration
-              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/${verificationToken}" +
-              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse(operationSlug)}&language=$language&country=$country&question=${event.requestContext.questionId.map(_.value).getOrElse("")}"
+              .getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=validation&utm_content=cta#/${user.country}/account-activation/${user.userId.value}/$verificationToken" +
+              s"?operation=${event.requestContext.operationId.map(_.value).getOrElse("core")}&language=$language&country=$country&question=${event.requestContext.questionId.map(_.value).getOrElse("")}"
 
             eventBusService.publish(
               SendEmail.create(
@@ -177,15 +202,21 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
-        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
-          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-          case None              => Future.successful("core")
+        val futureQuestionSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) =>
+            questionService
+              .findQuestion(
+                maybeOperationId = Some(operationId),
+                country = country,
+                language = language,
+                maybeThemeId = None
+              )
+              .map(_.map(_.slug).getOrElse(s"core.$country"))
+          case None => Future.successful(s"core.$country")
         }
 
-        futureOperationSlug.map { operationSlug =>
-          val forgottenPassword =
-            mailJetTemplateConfiguration
-              .forgottenPassword(operation = operationSlug, country = country, language = language)
+        futureQuestionSlug.map { questionSlug =>
+          val forgottenPassword = mailJetTemplateConfiguration.forgottenPassword(questionSlug, country, language)
 
           if (forgottenPassword.enabled) {
             val resetToken: String = user.resetToken match {
@@ -237,14 +268,22 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.requestContext.language.getOrElse(Language("fr"))
         val country = event.requestContext.country.getOrElse(Country("FR"))
 
-        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
-          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-          case None              => Future.successful("core")
+        val futureQuestionSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) =>
+            questionService
+              .findQuestion(
+                maybeOperationId = Some(operationId),
+                country = country,
+                language = language,
+                maybeThemeId = None
+              )
+              .map(_.map(_.slug).getOrElse(s"core.$country"))
+          case None => Future.successful(s"core.$country")
         }
 
-        futureOperationSlug.map { operationSlug =>
-          val resendAccountValidationLink = mailJetTemplateConfiguration
-            .resendAccountValidationLink(operation = operationSlug, country = country, language = language)
+        futureQuestionSlug.map { questionSlug =>
+          val resendAccountValidationLink =
+            mailJetTemplateConfiguration.resendAccountValidationLink(questionSlug, country, language)
 
           if (resendAccountValidationLink.enabled) {
             val verificationToken: String = user.verificationToken match {
@@ -289,15 +328,22 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
         val language = event.language
         val country = event.country
 
-        val futureOperationSlug: Future[String] = event.requestContext.operationId match {
-          case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-          case None              => Future.successful("core")
+        val futureQuestionSlug: Future[String] = event.requestContext.operationId match {
+          case Some(operationId) =>
+            questionService
+              .findQuestion(
+                maybeOperationId = Some(operationId),
+                country = country,
+                language = language,
+                maybeThemeId = None
+              )
+              .map(_.map(_.slug).getOrElse(s"core.$country"))
+          case None => Future.successful(s"core.$country")
         }
 
-        futureOperationSlug.map { operationSlug =>
+        futureQuestionSlug.map { questionSlug =>
           val forgottenPassword =
-            mailJetTemplateConfiguration
-              .organisationInitialization(operation = operationSlug, country = country, language = language)
+            mailJetTemplateConfiguration.organisationInitialization(questionSlug, country, language)
 
           if (forgottenPassword.enabled) {
             val resetToken: String = user.resetToken match {
@@ -349,7 +395,9 @@ class UserEmailConsumerActor(userService: UserService, operationService: Operati
 }
 
 object UserEmailConsumerActor {
-  def props(userService: UserService, operationService: OperationService): Props =
-    Props(new UserEmailConsumerActor(userService, operationService))
+  def props(userService: UserService,
+            questionService: QuestionService,
+            operationOfQuestionService: OperationOfQuestionService): Props =
+    Props(new UserEmailConsumerActor(userService, questionService, operationOfQuestionService))
   val name: String = "user-events-consumer"
 }

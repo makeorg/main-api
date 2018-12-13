@@ -25,8 +25,8 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
-import org.make.api.operation.OperationService
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.question.QuestionService
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserService
@@ -37,14 +37,14 @@ import scala.concurrent.Future
 
 class ProposalEmailConsumer(userService: UserService,
                             proposalCoordinatorService: ProposalCoordinatorService,
-                            operationService: OperationService)
+                            questionService: QuestionService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with MakeSettingsExtension
     with ActorEventBusServiceComponent
     with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
-  override protected lazy val kafkaTopic = ProposalProducerActor.topicKey
+  override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-email"
 
@@ -78,13 +78,15 @@ class ProposalEmailConsumer(userService: UserService,
       // OptionT[Future, Unit] is some kind of monad wrapper to be able to unwrap options with no boilerplate
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
+      val country: String = event.requestContext.country.map(_.value).getOrElse("")
 
-      val futureOperationSlug: Future[String] = event.operation match {
-        case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-        case None              => Future.successful("core")
+      val futureQuestionSlug: Future[String] = event.question match {
+        case Some(questionId) =>
+          questionService.getQuestion(questionId).map(_.map(_.slug).getOrElse(s"core.$country"))
+        case None => Future.successful(s"core.$country")
       }
 
-      futureOperationSlug.map { operationSlug =>
+      futureQuestionSlug.map { questionSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
@@ -92,7 +94,7 @@ class ProposalEmailConsumer(userService: UserService,
           val country: Country = proposal.country.getOrElse(user.country)
           val language: Language = proposal.language.getOrElse(user.language)
           val templateConfiguration =
-            mailJetTemplateConfiguration.proposalAccepted(operationSlug, country, language, user.isOrganisation)
+            mailJetTemplateConfiguration.proposalAccepted(questionSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
@@ -140,13 +142,14 @@ class ProposalEmailConsumer(userService: UserService,
       // OptionT[Future, Unit] is some kind of monad wrapper to be able to unwrap options with no boilerplate
       // it allows here to have a for-comprehension on methods returning Future[Option[_]]
       // Do not use unless it really simplifies the code readability
+      val country: String = event.requestContext.country.map(_.value).getOrElse("")
 
-      val futureOperationSlug: Future[String] = event.operation match {
-        case Some(operationId) => operationService.findOne(operationId).map(_.map(_.slug).getOrElse("core"))
-        case None              => Future.successful("core")
-      }
+      val futureQuestionSlug: Future[String] = (for {
+        questionId <- OptionT(proposalCoordinatorService.getProposal(event.id).map(_.flatMap(_.questionId)))
+        question   <- OptionT(questionService.getQuestion(questionId).map(_.map(_.slug)))
+      } yield question).value.map(_.getOrElse(s"core.$country"))
 
-      futureOperationSlug.map { operationSlug =>
+      futureQuestionSlug.map { questionSlug =>
         val maybePublish: OptionT[Future, Unit] = for {
           proposal <- OptionT(proposalCoordinatorService.getProposal(event.id))
           user     <- OptionT(userService.getUser(proposal.author))
@@ -154,7 +157,7 @@ class ProposalEmailConsumer(userService: UserService,
           val country: Country = proposal.country.getOrElse(user.country)
           val language: Language = proposal.language.getOrElse(user.language)
           val templateConfiguration =
-            mailJetTemplateConfiguration.proposalRefused(operationSlug, country, language, user.isOrganisation)
+            mailJetTemplateConfiguration.proposalRefused(questionSlug, country, language, user.isOrganisation)
           if (user.emailVerified && templateConfiguration.enabled) {
             eventBusService.publish(
               SendEmail.create(
@@ -208,6 +211,6 @@ object ProposalEmailConsumerActor {
   val name: String = "proposal-events-emails-consumer"
   def props(userService: UserService,
             proposalCoordinatorService: ProposalCoordinatorService,
-            operationService: OperationService): Props =
-    Props(new ProposalEmailConsumer(userService, proposalCoordinatorService, operationService))
+            questionService: QuestionService): Props =
+    Props(new ProposalEmailConsumer(userService, proposalCoordinatorService, questionService))
 }
