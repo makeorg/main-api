@@ -21,12 +21,14 @@ package org.make.api.widget
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
-import io.circe.ObjectEncoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, ObjectEncoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.proposal._
+import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
@@ -38,11 +40,15 @@ import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
+
+trait WidgetApiComponent {
+  def widgetApi: WidgetApi
+}
 
 @Api(value = "Widget")
 @Path(value = "/widget")
-trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with WidgetServiceComponent =>
+trait WidgetApi extends Directives {
 
   @Path(value = "/operations/{operationId}/start-sequence")
   @ApiOperation(value = "get-widget-sequence", httpMethod = "GET", code = HttpCodes.OK)
@@ -57,8 +63,43 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
     )
   )
-  def getWidgetSequence: Route = {
-    get {
+  def getWidgetSequence: Route
+
+  @Path(value = "/questions/{questionSlug}/start-sequence")
+  @ApiOperation(value = "get-widget-sequence-by-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionSlug", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.widget.StartSequenceByQuestionSlugRequest"
+      )
+    )
+  )
+  def startSequenceByQuestionSlug: Route
+
+  def routes: Route = getWidgetSequence ~ startSequenceByQuestionSlug
+}
+
+trait DefaultWidgetApiComponent
+    extends WidgetApiComponent
+    with MakeAuthenticationDirectives
+    with ParameterExtractors
+    with PersistentQuestionServiceComponent
+    with PersistentOperationOfQuestionServiceComponent {
+  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with WidgetServiceComponent =>
+
+  override lazy val widgetApi: WidgetApi = new WidgetApi {
+
+    private val widgetOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
+//    private val questionSlug: PathMatcher1[String] = Segment
+
+    override def getWidgetSequence: Route = get {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
         makeOperation("GetWidgetSequence") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
@@ -81,15 +122,54 @@ trait WidgetApi extends MakeAuthenticationDirectives with ParameterExtractors {
         }
       }
     }
+
+    override def startSequenceByQuestionSlug: Route = post {
+      path("widget" / "questions" / Segment / "start-sequence") { questionSlug =>
+        makeOperation("GetWidgetSequenceByQuestionSlug") { requestContext =>
+          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[StartSequenceByQuestionSlugRequest]) { request: StartSequenceByQuestionSlugRequest =>
+                provideAsyncOrNotFound(
+                  persistentQuestionService
+                    .find(SearchQuestionRequest(maybeSlug = Some(questionSlug)))
+                    .map(_.headOption)
+                ) { question =>
+                  provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(question.questionId)) {
+                    operationOfQuestion =>
+                      provideAsync(
+                        widgetService.startNewWidgetSequence(
+                          maybeUserId = userAuth.map(_.user.userId),
+                          widgetOperationId = operationOfQuestion.operationId,
+                          tagsIds = request.tagsIds,
+                          country = request.country,
+                          limit = request.limit,
+                          requestContext = requestContext
+                        )
+                      ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
+                        complete(proposalsResultSeededResponse)
+                      }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
-
-  val widgetRoutes: Route = getWidgetSequence
-
-  private val widgetOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
 }
 
 final case class WidgetSequence(title: String, slug: String, proposals: Seq[IndexedProposal])
 
 object WidgetSequence {
   implicit val encoder: ObjectEncoder[WidgetSequence] = deriveEncoder[WidgetSequence]
+}
+
+final case class StartSequenceByQuestionSlugRequest(tagsIds: Option[Seq[TagId]] = None,
+                                                    limit: Option[Int] = None,
+                                                    country: Option[Country] = None)
+
+object StartSequenceByQuestionSlugRequest {
+  implicit val decoder: Decoder[StartSequenceByQuestionSlugRequest] = deriveDecoder[StartSequenceByQuestionSlugRequest]
 }

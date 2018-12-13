@@ -18,8 +18,8 @@
  */
 
 package org.make.api.question
-import io.circe.ObjectEncoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -43,5 +43,6 @@ object QuestionResponse {
     language = question.language
   )
 
-  implicit val encoder: ObjectEncoder[QuestionResponse] = deriveEncoder[QuestionResponse]
+  implicit val encoder: Encoder[QuestionResponse] = deriveEncoder[QuestionResponse]
+  implicit val decoder: Decoder[QuestionResponse] = deriveDecoder[QuestionResponse]
 }
