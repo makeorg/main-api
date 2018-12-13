@@ -27,7 +27,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
-import org.make.api.question.QuestionServiceComponent
+import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
@@ -148,6 +148,13 @@ trait ProposalService {
                                       minScore: Option[Float]): Future[Option[ProposalResponse]]
 
   def anonymizeByUserId(userId: UserId): Future[Unit]
+
+  def createInitialProposal(content: String,
+                            question: Question,
+                            tags: Seq[TagId],
+                            author: AuthorRequest,
+                            moderator: UserId,
+                            moderatorRequestContext: RequestContext): Future[ProposalId]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -165,6 +172,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with QuestionServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
+
+    def createInitialProposal(content: String,
+                              question: Question,
+                              tags: Seq[TagId],
+                              author: AuthorRequest,
+                              moderator: UserId,
+                              moderatorRequestContext: RequestContext): Future[ProposalId] = {
+
+      for {
+        user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
+        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question)
+        _ <- validateProposal(
+          proposalId = proposalId,
+          moderator = moderator,
+          requestContext = moderatorRequestContext,
+          question = question,
+          newContent = None,
+          sendNotificationEmail = false,
+          idea = None,
+          labels = Seq.empty,
+          tags = tags
+        )
+      } yield proposalId
+    }
 
     override def searchProposalsVotedByUser(userId: UserId,
                                             filterVotes: Option[Seq[VoteKey]],

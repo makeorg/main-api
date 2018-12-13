@@ -25,7 +25,8 @@ import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
-import org.make.api.technical.auth.UserTokenGeneratorComponent
+import org.make.api.question.AuthorRequest
+import org.make.api.technical.auth.{TokenGeneratorComponent, UserTokenGeneratorComponent}
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
@@ -77,6 +78,8 @@ trait UserService extends ShortenedNames {
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId]
+
+  def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
 }
 
 case class UserRegisterData(email: String,
@@ -101,7 +104,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with PersistentUserServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
-    with EventBusServiceComponent =>
+    with EventBusServiceComponent
+    with TokenGeneratorComponent =>
 
   val userService: UserService = new UserService {
 
@@ -584,6 +588,34 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           UserUnfollowEvent(userId = Some(userId), followedUserId = followedUserId, eventDate = DateHelper.now())
         )
         value
+      }
+    }
+    override def retrieveOrCreateVirtualUser(userInfo: AuthorRequest,
+                                             country: Country,
+                                             language: Language): Future[User] = {
+      val hash: String = tokenGenerator.tokenToHash(s"$userInfo")
+      val email = s"yopmail+$hash@make.org"
+      getUserByEmail(email).flatMap {
+        case Some(user) => Future.successful(user)
+        case None =>
+          val dateOfBirth: Option[LocalDate] = userInfo.age.map(DateHelper.computeBirthDate)
+
+          userService
+            .register(
+              UserRegisterData(
+                email = email,
+                password = None,
+                lastIp = None,
+                dateOfBirth = dateOfBirth,
+                firstName = userInfo.firstName,
+                lastName = userInfo.lastName,
+                profession = userInfo.profession,
+                country = country,
+                language = language,
+                optIn = Some(false)
+              ),
+              RequestContext.empty
+            )
       }
     }
   }

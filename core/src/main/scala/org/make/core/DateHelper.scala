@@ -19,11 +19,13 @@
 
 package org.make.core
 
-import java.time.{ZoneOffset, ZonedDateTime}
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 trait DateHelper {
   def now(): ZonedDateTime
+  def computeBirthDate(age: Int): LocalDate
 }
+
 object DateHelper extends DateHelper {
   private val utc = ZoneOffset.UTC
 
@@ -40,5 +42,10 @@ object DateHelper extends DateHelper {
     def toUTC: ZonedDateTime = {
       self.withZoneSameInstant(ZoneOffset.UTC)
     }
+  }
+
+  def computeBirthDate(age: Int): LocalDate = {
+    val birthYear = LocalDate.now().getYear - age
+    LocalDate.parse(s"$birthYear-01-01")
   }
 }

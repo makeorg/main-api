@@ -23,18 +23,20 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.question.Question
-import org.make.core.question.QuestionId
+import org.make.core.proposal.ProposalId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
@@ -79,6 +81,36 @@ trait ModerationQuestionApi extends Directives {
   @Path(value = "/")
   def listQuestions: Route
 
+  @ApiOperation(
+    value = "moderation-list-questions",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.question.CreateInitialProposalRequest"
+      ),
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalIdResponse]))
+  )
+  @Path(value = "/{questionId}/initial-proposals")
+  def addInitialProposal: Route
+
   @ApiOperation(value = "get-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationQuestionResponse]))
@@ -107,17 +139,74 @@ trait ModerationQuestionComponent {
   def moderationQuestionApi: ModerationQuestionApi
 }
 
+final case class ProposalIdResponse(proposalId: ProposalId)
+
+object ProposalIdResponse {
+  implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
+}
+
+final case class AuthorRequest(age: Option[Int],
+                               firstName: Option[String],
+                               lastName: Option[String],
+                               postalCode: Option[String],
+                               profession: Option[String])
+object AuthorRequest {
+  implicit val decoder: Decoder[AuthorRequest] = deriveDecoder[AuthorRequest]
+}
+
+final case class CreateInitialProposalRequest(content: String, author: AuthorRequest, tags: Seq[TagId])
+
+object CreateInitialProposalRequest {
+  implicit val decoder: Decoder[CreateInitialProposalRequest] = deriveDecoder[CreateInitialProposalRequest]
+}
+
 trait DefaultModerationQuestionComponent
     extends ModerationQuestionComponent
     with MakeAuthenticationDirectives
     with StrictLogging
     with ParameterExtractors {
 
-  this: QuestionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: QuestionServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with ProposalServiceComponent =>
 
   private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
 
   override lazy val moderationQuestionApi: ModerationQuestionApi = new ModerationQuestionApi {
+
+    lazy val questionId: PathMatcher1[QuestionId] = Segment.map(QuestionId.apply)
+
+    override def addInitialProposal: Route = post {
+      path("moderation" / "questions" / questionId / "initial-proposals") { questionId =>
+        makeOperation("ModerationAddInitialProposalToQuestion") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[CreateInitialProposalRequest]) { request =>
+                  provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                    provideAsync(
+                      proposalService.createInitialProposal(
+                        request.content,
+                        question,
+                        request.tags,
+                        request.author,
+                        userAuth.user.userId,
+                        requestContext
+                      )
+                    ) { proposalId =>
+                      complete(StatusCodes.Created -> ProposalIdResponse(proposalId))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     override def listQuestions: Route = get {
       path("moderation" / "questions") {
         makeOperation("ModerationSearchQuestion") { _ =>
