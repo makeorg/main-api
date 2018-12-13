@@ -50,7 +50,8 @@ trait PersistentQuestionService {
 trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  lazy val persistentQuestionService: PersistentQuestionService = new PersistentQuestionService with ShortenedNames {
+  lazy val persistentQuestionService: PersistentQuestionService = new PersistentQuestionService with ShortenedNames
+  with StrictLogging {
 
     private val column = PersistentQuestion.column
     private val questionAlias = PersistentQuestion.questionAlias
@@ -60,7 +61,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
-          select
+          val query: scalikejdbc.ConditionSQLBuilder[WrappedResultSet] = select
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -71,6 +72,24 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.maybeSlug.map(slug               => sqls.eq(questionAlias.slug, slug)),
               )
             )
+
+          val queryOrdered = (request.sort, request.order) match {
+            case (Some(field), Some("DESC")) if !PersistentQuestion.columnNames.contains(field) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query
+            case (Some(field), Some("DESC")) => query.orderBy(questionAlias.field(field)).desc
+            case (Some(field), _)            => query.orderBy(questionAlias.field(field)).asc
+            case _                           => query
+          }
+
+          val queryOrderedWithLimit = (request.skip, request.limit) match {
+            case (Some(skip), Some(limit)) => queryOrdered.offset(skip).limit(limit)
+            case (_, Some(limit))          => queryOrdered.limit(limit)
+            case (Some(skip), _)           => queryOrdered.offset(skip)
+            case _                         => queryOrdered
+          }
+
+          queryOrderedWithLimit
         }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
 

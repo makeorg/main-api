@@ -24,17 +24,17 @@ import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 
-case class QuestionResponse(questionId: QuestionId,
-                            slug: String,
-                            question: String,
-                            country: Country,
-                            language: Language,
-                            operationId: Option[OperationId],
-                            themeId: Option[ThemeId])
-object QuestionResponse {
+case class ModerationQuestionResponse(id: QuestionId,
+                                      slug: String,
+                                      question: String,
+                                      country: Country,
+                                      language: Language,
+                                      operationId: Option[OperationId],
+                                      themeId: Option[ThemeId])
+object ModerationQuestionResponse {
 
-  def apply(question: Question): QuestionResponse = QuestionResponse(
-    questionId = question.questionId,
+  def apply(question: Question): ModerationQuestionResponse = ModerationQuestionResponse(
+    id = question.questionId,
     slug = question.slug,
     question = question.question,
     operationId = question.operationId,
@@ -43,6 +43,6 @@ object QuestionResponse {
     language = question.language
   )
 
-  implicit val encoder: Encoder[QuestionResponse] = deriveEncoder[QuestionResponse]
-  implicit val decoder: Decoder[QuestionResponse] = deriveDecoder[QuestionResponse]
+  implicit val encoder: Encoder[ModerationQuestionResponse] = deriveEncoder[ModerationQuestionResponse]
+  implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
 }
