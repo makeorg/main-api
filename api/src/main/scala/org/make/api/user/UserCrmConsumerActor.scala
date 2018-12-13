@@ -39,7 +39,7 @@ class UserCrmConsumerActor(userService: UserService)
     with AvroSerializers
     with ActorLogging {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserUpdateProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = UserUpdateProducerActor.topicKey
   override protected val format: RecordFormat[UserUpdateEventWrapper] = RecordFormat[UserUpdateEventWrapper]
   override val groupId = "user-crm"
 

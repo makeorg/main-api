@@ -55,7 +55,7 @@ class SequenceConsumerActor(sequenceCoordinator: ActorRef,
     with ElasticsearchClientComponent
     with ActorLogging {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(SequenceProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = SequenceProducerActor.topicKey
   override protected val format: RecordFormat[SequenceEventWrapper] = RecordFormat[SequenceEventWrapper]
 
   implicit val timeout: Timeout = Timeout(5.seconds)

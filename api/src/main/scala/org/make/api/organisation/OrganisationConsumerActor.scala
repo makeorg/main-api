@@ -44,7 +44,7 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
     with OrganisationSearchEngineComponent
     with ActorLogging {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
 
   implicit val timeout: Timeout = Timeout(5.seconds)

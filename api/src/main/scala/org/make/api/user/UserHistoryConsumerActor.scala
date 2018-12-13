@@ -35,7 +35,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     with ActorEventBusServiceComponent
     with AvroSerializers {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
   override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
   override val groupId = "user-history"
 

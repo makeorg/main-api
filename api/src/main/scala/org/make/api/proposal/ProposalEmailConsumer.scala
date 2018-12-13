@@ -44,7 +44,7 @@ class ProposalEmailConsumer(userService: UserService,
     with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
-  override protected lazy val kafkaTopic = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
+  override protected lazy val kafkaTopic = ProposalProducerActor.topicKey
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-email"
 

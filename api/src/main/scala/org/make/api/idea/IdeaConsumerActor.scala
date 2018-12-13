@@ -49,7 +49,7 @@ class IdeaConsumerActor(ideaService: IdeaService,
     with ElasticsearchClientComponent
     with ActorLogging {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(IdeaProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = IdeaProducerActor.topicKey
   override protected val format: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
 
   implicit val timeout: Timeout = Timeout(5.seconds)

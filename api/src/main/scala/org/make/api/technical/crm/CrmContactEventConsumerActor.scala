@@ -42,7 +42,7 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
     with ActorLogging {
 
   override lazy val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(context.system)
-  override protected val kafkaTopic: String = kafkaConfiguration.topics(CrmContactProducerActor.topicKey)
+  override protected val kafkaTopic: String = CrmContactProducerActor.topicKey
   override protected val format: RecordFormat[CrmContactEventWrapper] = RecordFormat[CrmContactEventWrapper]
   override def groupId: String = "crm-contact-event-consumer"
   private val httpThreads = 5

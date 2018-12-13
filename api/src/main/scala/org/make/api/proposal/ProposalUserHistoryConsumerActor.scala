@@ -35,7 +35,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
-  override protected lazy val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
+  override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
   override val groupId = "proposal-user-history"
 
