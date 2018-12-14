@@ -68,7 +68,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         slug = "some-aa-question",
         country = Country("AA"),
         language = Language("aa"),
-        question = "some question",
+        question = "some question1",
         operationId = None,
         themeId = None
       )
@@ -78,7 +78,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         slug = "some-aa-question-2",
         country = Country("AA"),
         language = Language("bb"),
-        question = "some question",
+        question = "some question2",
         operationId = None,
         themeId = None
       )
@@ -88,7 +88,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         slug = "some-bb-question",
         country = Country("BB"),
         language = Language("aa"),
-        question = "some question",
+        question = "some question3",
         operationId = None,
         themeId = None
       )
@@ -98,7 +98,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         slug = "some-bb-question-2",
         country = Country("BB"),
         language = Language("bb"),
-        question = "some question",
+        question = "some question4",
         operationId = None,
         themeId = None
       )
@@ -137,6 +137,34 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         Timeout(2.seconds)
       ) { results =>
         results.size should be(0)
+      }
+
+      whenReady(persistentQuestionService.find(SearchQuestionRequest(limit = Some(2))), Timeout(2.seconds)) { results =>
+        results.size should be(2)
+      }
+
+      whenReady(
+        persistentQuestionService.find(
+          SearchQuestionRequest(limit = Some(3), order = Some("DESC"), sort = Some("slug"), skip = Some(1))
+        ),
+        Timeout(2.seconds)
+      ) { results =>
+        results.size should be(3)
+        results(0).question should be("some question4")
+        results(1).question should be("some question3")
+        results(2).question should be("some question2")
+      }
+
+      whenReady(
+        persistentQuestionService.find(
+          SearchQuestionRequest(limit = Some(3), order = Some("ASC"), sort = Some("slug"), skip = Some(2))
+        ),
+        Timeout(2.seconds)
+      ) { results =>
+        results.size should be(3)
+        results(2).question should be("some question")
+        results(1).question should be("some question4")
+        results(0).question should be("some question3")
       }
 
     }

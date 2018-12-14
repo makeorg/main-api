@@ -29,11 +29,13 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
+import org.make.core.question.Question
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Api(value = "Moderation questions")
 @Path(value = "/moderation/questions")
@@ -67,7 +69,8 @@ trait ModerationQuestionApi {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[QuestionResponse]]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModerationQuestionResponse]]))
   )
   @Path(value = "/")
   def listQuestions: Route
@@ -107,8 +110,8 @@ trait DefaultModerationQuestionComponent
           ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
-                val first = start.getOrElse(0)
-                val request = SearchQuestionRequest(
+                val first: Int = start.getOrElse(0)
+                val request: SearchQuestionRequest = SearchQuestionRequest(
                   maybeThemeId = themeId,
                   maybeOperationId = operationId,
                   country = country,
@@ -119,7 +122,7 @@ trait DefaultModerationQuestionComponent
                   sort = sort,
                   order = order
                 )
-                val searchResults =
+                val searchResults: Future[(Int, Seq[Question])] =
                   questionService.countQuestion(request).flatMap { count =>
                     questionService.searchQuestion(request).map(results => count -> results)
                   }
@@ -130,7 +133,7 @@ trait DefaultModerationQuestionComponent
                       (
                         StatusCodes.OK,
                         scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
-                        results.map(QuestionResponse.apply)
+                        results.map(ModerationQuestionResponse.apply)
                       )
                     )
                 }

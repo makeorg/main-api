@@ -52,9 +52,9 @@ class QuestionApiTest
       Get(uri) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").isDefined shouldBe true
-        val questions: Seq[QuestionResponse] = entityAs[Seq[QuestionResponse]]
+        val questions: Seq[ModerationQuestionResponse] = entityAs[Seq[ModerationQuestionResponse]]
         questions.size should be(1)
-        questions.head.questionId.value should be(baseQuestion.questionId.value)
+        questions.head.id.value should be(baseQuestion.questionId.value)
       }
     }
   }

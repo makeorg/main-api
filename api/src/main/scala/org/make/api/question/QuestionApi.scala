@@ -66,7 +66,8 @@ trait QuestionApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[QuestionResponse]]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModerationQuestionResponse]]))
   )
   @Path(value = "/")
   def listQuestions: Route
@@ -146,7 +147,7 @@ trait DefaultQuestionApiComponent
                   (
                     StatusCodes.OK,
                     scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
-                    results.map(QuestionResponse.apply)
+                    results.map(ModerationQuestionResponse.apply)
                   )
                 )
             }
