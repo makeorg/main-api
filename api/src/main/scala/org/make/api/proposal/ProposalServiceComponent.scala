@@ -170,28 +170,41 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                             filterVotes: Option[Seq[VoteKey]],
                                             filterQualifications: Option[Seq[QualificationKey]],
                                             requestContext: RequestContext): Future[ProposalsResultResponse] = {
-      val votedProposals: Future[Seq[ProposalId]] =
-        userHistoryCoordinatorService.retrieveVotedProposals(
-          RequestUserVotedProposals(userId = userId, filterVotes, filterQualifications)
-        )
-
-      votedProposals.flatMap { proposalIds =>
-        if (proposalIds.isEmpty) {
-          Future.successful(ProposalsResultSeededResponse(total = 0, Seq.empty, seed = None))
-        } else {
-          proposalService.searchForUser(
-            userId = Some(userId),
-            query = SearchQuery(
-              filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
-            ),
-            requestContext = requestContext
+      val votedProposals: Future[Map[ProposalId, VoteAndQualifications]] =
+        for {
+          proposalIds <- userHistoryCoordinatorService.retrieveVotedProposals(
+            RequestUserVotedProposals(userId = userId, filterVotes, filterQualifications)
           )
-        }
-      }.map { proposalResultSeededResponse =>
-        ProposalsResultResponse(
-          total = proposalResultSeededResponse.total,
-          results = proposalResultSeededResponse.results
-        )
+          withVote <- userHistoryCoordinatorService.retrieveVoteAndQualifications(
+            RequestVoteValues(userId, proposalIds)
+          )
+        } yield withVote
+
+      votedProposals.flatMap {
+        case proposalIdsWithVotes if proposalIdsWithVotes.isEmpty =>
+          Future.successful(Seq.empty)
+        case proposalIdsWithVotes =>
+          val proposalIds: Seq[ProposalId] = proposalIdsWithVotes.toSeq.sortWith {
+            case ((_, firstVotesAndQualifications), (_, nextVotesAndQualifications)) =>
+              firstVotesAndQualifications.date.isAfter(nextVotesAndQualifications.date)
+          }.map {
+            case (proposalId, _) => proposalId
+          }
+          proposalService
+            .searchForUser(
+              userId = Some(userId),
+              query = SearchQuery(
+                filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
+              ),
+              requestContext = requestContext
+            )
+            .map { proposalResultSeededResponse =>
+              proposalResultSeededResponse.results.sortWith {
+                case (first, next) => proposalIds.indexOf(first.id) < proposalIds.indexOf(next.id)
+              }
+            }
+      }.map { proposalResult =>
+        ProposalsResultResponse(total = proposalResult.size, results = proposalResult)
       }
     }
 

@@ -22,6 +22,8 @@ package org.make.core
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
@@ -115,6 +117,14 @@ trait ParameterExtractors {
           Seq(ValidationError("qualification", Some(s"$string is not a valid qualification key")))
         )
       )
+    }
+
+  implicit val sortOrderFromStringUnmarshaller: Unmarshaller[String, SortOrder] =
+    Unmarshaller.strict[String, SortOrder] {
+      case "asc"  => Asc
+      case "desc" => Desc
+      case string =>
+        throw ValidationFailedError(Seq(ValidationError("order", Some(s"$string is not a valid sort order"))))
     }
 
 }

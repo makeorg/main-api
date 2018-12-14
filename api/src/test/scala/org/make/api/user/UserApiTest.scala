@@ -26,6 +26,7 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, StatusCodes}
 import akka.http.scaladsl.server.Route
+import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{
@@ -47,6 +48,7 @@ import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Sort
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -168,6 +170,33 @@ class UserApiTest
     .thenReturn(Future.successful(Some(fakeAuthInfo2)))
 
   feature("register user") {
+
+    Mockito
+      .when(
+        questionService.findQuestionByQuestionIdOrThemeOrOperation(
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.any[Option[ThemeId]],
+          ArgumentMatchers.any[Option[OperationId]],
+          ArgumentMatchers.any[Country],
+          ArgumentMatchers.any[Language]
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              operationId = Some(OperationId("operation1")),
+              questionId = QuestionId("thequestionid"),
+              slug = "the-question",
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "question ?",
+              themeId = None
+            )
+          )
+        )
+      )
+
     scenario("successful register user") {
       Mockito
         .when(
@@ -856,13 +885,10 @@ class UserApiTest
 
   feature("get voted proposals of an user") {
 
-    val paul: User = fakeUser.copy(
-      userId = UserId("11111111-aaaa-2222-bbbb-333333333333"),
-      email = "paul-email@example.com",
-      firstName = Some("paul")
-    )
+    val paul: User =
+      fakeUser.copy(userId = UserId("paul-id"), email = "paul-email@example.com", firstName = Some("paul"))
     val gaston: User =
-      fakeUser.copy(userId = UserId("22222222-bbbbbb"), email = "gaston-email@example.com", firstName = Some("gaston"))
+      fakeUser.copy(userId = UserId("gaston-id"), email = "gaston-email@example.com", firstName = Some("gaston"))
 
     val token: String = "TOKEN_GET_USERS_VOTES"
     val accessToken: AccessToken =
@@ -880,8 +906,8 @@ class UserApiTest
     when(userService.getUser(ArgumentMatchers.eq(gaston.userId)))
       .thenReturn(Future.successful(Some(paul.copy(userId = gaston.userId))))
 
-    val indexedProposal = IndexedProposal(
-      id = ProposalId("22222222-2222-2222-2222-222222222222"),
+    val indexedProposal1 = IndexedProposal(
+      id = ProposalId("proposal-1"),
       country = Country("FR"),
       language = Language("fr"),
       userId = paul.userId,
@@ -913,8 +939,16 @@ class UserApiTest
       questionId = None,
       sequencePool = SequencePool.New
     )
-    val proposalResult: ProposalResult =
-      ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
+    val indexedProposal2 =
+      indexedProposal1.copy(id = ProposalId("proposal-2"), operationId = Some(OperationId("operation2")))
+    val indexedProposal3 =
+      indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None, themeId = Some(ThemeId("theme1")))
+    val proposalsResult: Seq[ProposalResult] =
+      Seq(
+        ProposalResult(indexedProposal = indexedProposal1, myProposal = false, voteAndQualifications = None),
+        ProposalResult(indexedProposal = indexedProposal2, myProposal = false, voteAndQualifications = None),
+        ProposalResult(indexedProposal = indexedProposal3, myProposal = false, voteAndQualifications = None)
+      )
 
     Mockito
       .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
@@ -928,32 +962,6 @@ class UserApiTest
     Mockito
       .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
       .thenReturn(Future.successful(Some(fakeAuthInfo2)))
-
-    Mockito
-      .when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          ArgumentMatchers.any[Option[QuestionId]],
-          ArgumentMatchers.any[Option[ThemeId]],
-          ArgumentMatchers.any[Option[OperationId]],
-          ArgumentMatchers.any[Country],
-          ArgumentMatchers.any[Language]
-        )
-      )
-      .thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              operationId = Some(OperationId("operation1")),
-              questionId = QuestionId("thequestionid"),
-              slug = "the-question",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "question ?",
-              themeId = None
-            )
-          )
-        )
-      )
 
     Mockito
       .when(
@@ -992,7 +1000,7 @@ class UserApiTest
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
-      .thenReturn(Future.successful(ProposalsResultResponse(total = 1, results = Seq(proposalResult))))
+      .thenReturn(Future.successful(ProposalsResultResponse(total = 3, results = proposalsResult)))
     Mockito
       .when(
         proposalService
@@ -1006,7 +1014,7 @@ class UserApiTest
       .thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
 
     scenario("not authenticated") {
-      Get("/user/11111111-aaaa-2222-bbbb-333333333333/votes") ~> routes ~> check {
+      Get("/user/paul-id/votes") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -1018,28 +1026,28 @@ class UserApiTest
     }
 
     scenario("authenticated with empty voted proposals") {
-      Get("/user/22222222-bbbbbb/votes").withHeaders(Authorization(OAuth2BearerToken(token2))) ~> routes ~> check {
+      Get("/user/gaston-id/votes").withHeaders(Authorization(OAuth2BearerToken(token2))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val result = entityAs[ProposalsResultSeededResponse]
+        val result = entityAs[ProposalsResultResponse]
         result.total should be(0)
         result.results should be(Seq.empty)
       }
     }
 
     scenario("authenticated with some voted proposals") {
-      Get("/user/11111111-aaaa-2222-bbbb-333333333333/votes")
+      Get("/user/paul-id/votes")
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val result = entityAs[ProposalsResultSeededResponse]
+        val result = entityAs[ProposalsResultResponse]
         result.total should be(1)
-        result.results.head.id should be(ProposalId("22222222-2222-2222-2222-222222222222"))
+        result.results.head.id should be(ProposalId("proposal-1"))
       }
     }
   }
 
   feature("get user proposals") {
 
-    val indexedProposal = IndexedProposal(
+    val indexedProposal1 = IndexedProposal(
       id = ProposalId("333333-3333-3333-3333-33333333"),
       country = Country("FR"),
       language = Language("fr"),
@@ -1068,12 +1076,18 @@ class UserApiTest
       tags = Seq.empty,
       status = ProposalStatus.Accepted,
       ideaId = None,
-      operationId = None,
+      operationId = Some(OperationId("operation1")),
       questionId = None,
       sequencePool = SequencePool.New
     )
-    val proposalResult: ProposalResult =
-      ProposalResult(indexedProposal = indexedProposal, myProposal = true, voteAndQualifications = None)
+    val indexedProposal2 = indexedProposal1.copy(operationId = Some(OperationId("operation2")))
+    val indexedProposal3 = indexedProposal1.copy(operationId = None, themeId = Some(ThemeId("theme1")))
+    val proposalsResult: Seq[ProposalResult] =
+      Seq(
+        ProposalResult(indexedProposal = indexedProposal1, myProposal = true, voteAndQualifications = None),
+        ProposalResult(indexedProposal = indexedProposal2, myProposal = true, voteAndQualifications = None),
+        ProposalResult(indexedProposal = indexedProposal3, myProposal = true, voteAndQualifications = None)
+      )
 
     Mockito
       .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(token)))
@@ -1137,15 +1151,14 @@ class UserApiTest
                         )
                       )
                     )
-                  )
+                  ),
+                  sort = Some(Sort(field = Some("createdAt"), mode = Some(Desc)))
                 )
               ),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
-      .thenReturn(
-        Future.successful(ProposalsResultSeededResponse(total = 1, results = Seq(proposalResult), seed = None))
-      )
+      .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 1, results = proposalsResult, seed = None)))
 
     scenario("not authenticated") {
       Get("/user/sylvain-user-id/proposals") ~> routes ~> check {
@@ -1160,12 +1173,12 @@ class UserApiTest
     }
 
     scenario("authenticated with some proposals") {
-      Get("/user/sylvain-user-id/proposals")
+      Get("/user/sylvain-user-id/proposals?sort=createdAt&order=desc")
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val result = entityAs[ProposalsResultSeededResponse]
         result.total should be(1)
-        result.results.head.id should be(indexedProposal.id)
+        result.results.head.id should be(indexedProposal1.id)
       }
     }
   }

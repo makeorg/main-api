@@ -19,9 +19,11 @@
 
 package org.make.api.organisation
 
+import java.time.ZonedDateTime
+
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeUnitTest
-import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -36,7 +38,8 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
-import org.make.core.proposal.{ProposalId, SearchQuery}
+import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, SequencePool}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
 import org.make.core.user._
@@ -415,6 +418,43 @@ class OrganisationServiceTest
 
   feature("get proposals voted") {
     scenario("successfully get proposals voted") {
+
+      def indexedProposal(id: ProposalId): IndexedProposal = {
+        IndexedProposal(
+          id = id,
+          userId = UserId(s"user-${id.value}"),
+          content = s"proposal with id ${id.value}",
+          slug = s"proposal-with-id-${id.value}",
+          status = ProposalStatus.Pending,
+          createdAt = DateHelper.now(),
+          updatedAt = None,
+          votes = Seq.empty,
+          votesCount = 0,
+          toEnrich = false,
+          scores = IndexedScores.empty,
+          context = None,
+          trending = None,
+          labels = Seq.empty,
+          author = Author(
+            firstName = Some(id.value),
+            organisationName = None,
+            organisationSlug = None,
+            postalCode = None,
+            age = None,
+            avatarUrl = None
+          ),
+          organisations = Seq.empty,
+          country = Country("FR"),
+          language = Language("fr"),
+          themeId = None,
+          tags = Seq.empty,
+          ideaId = None,
+          operationId = None,
+          questionId = None,
+          sequencePool = SequencePool.New
+        )
+      }
+
       Mockito
         .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
@@ -423,21 +463,48 @@ class OrganisationServiceTest
         .thenReturn(
           Future.successful(
             Map(
-              ProposalId("proposal1") -> VoteAndQualifications(Agree, Seq.empty, DateHelper.now()),
-              ProposalId("proposal2") -> VoteAndQualifications(Disagree, Seq.empty, DateHelper.now())
+              ProposalId("proposal2") -> VoteAndQualifications(
+                Agree,
+                Seq.empty,
+                ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
+              ),
+              ProposalId("proposal1") -> VoteAndQualifications(
+                Disagree,
+                Seq.empty,
+                ZonedDateTime.parse("2018-03-02T16:09:30.441Z")
+              )
             )
           )
         )
 
       Mockito
-        .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, Seq.empty, None)))
+        .when(
+          proposalService.searchForUser(
+            ArgumentMatchers.any[Option[UserId]],
+            ArgumentMatchers.any[SearchQuery],
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            ProposalsResultSeededResponse(
+              total = 2,
+              results = Seq(
+                ProposalResult(indexedProposal(ProposalId("proposal2")), myProposal = false, None),
+                ProposalResult(indexedProposal(ProposalId("proposal1")), myProposal = false, None)
+              ),
+              seed = None
+            )
+          )
+        )
 
       val futureProposalsVoted =
         organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
 
       whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
         proposalsList.total shouldBe 2
+        proposalsList.results.head.proposal.id shouldBe ProposalId("proposal1")
+        proposalsList.results.last.proposal.id shouldBe ProposalId("proposal2")
       }
     }
 

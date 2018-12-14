@@ -27,6 +27,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
+import com.sksamuel.elastic4s.searches.sort.SortOrder
+import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
@@ -52,6 +54,7 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -492,6 +495,10 @@ trait DefaultUserApiComponent
       }
     }
 
+    /**
+      *
+      * proposals from themes will not be retrieve since themes are not displayed on front
+      */
     override def getVotedProposalsByUser: Route = get {
       path("user" / userId / "votes") { userId: UserId =>
         makeOperation("UserVotedProposals") { requestContext =>
@@ -513,11 +520,13 @@ trait DefaultUserApiComponent
                         requestContext = requestContext
                       )
                     ) { proposalsSearchResult =>
-                      proposalsSearchResult.copy(results = proposalsSearchResult.results.filterNot { proposal =>
+                      val proposalListFiltered = proposalsSearchResult.results.filter { proposal =>
                         proposal.operationId
-                          .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                      })
-                      complete(proposalsSearchResult)
+                          .exists(operationId => operations.map(_.operationId).contains(operationId))
+                      }
+                      val result =
+                        proposalsSearchResult.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                      complete(result)
                     }
                   }
                 }
@@ -786,38 +795,49 @@ trait DefaultUserApiComponent
       }
     }
 
+    /**
+      *
+      * proposals from themes will not be retrieve since themes are not displayed on front
+      */
     override def getProposalsByUser: Route = get {
       path("user" / userId / "proposals") { userId: UserId =>
         makeOperation("UserProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            val connectedUserId: UserId = userAuth.user.userId
-            if (connectedUserId != userId) {
-              complete(StatusCodes.Forbidden)
-            } else {
-              provideAsync(
-                operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-              ) { operations =>
+            parameters(('sort.?, 'order.as[SortOrder].?)) { (sort: Option[String], order: Option[SortOrder]) =>
+              val connectedUserId: UserId = userAuth.user.userId
+              if (connectedUserId != userId) {
+                complete(StatusCodes.Forbidden)
+              } else {
                 provideAsync(
-                  proposalService.searchForUser(
-                    userId = Some(userId),
-                    query = SearchQuery(
-                      filters = Some(
-                        SearchFilters(
-                          user = Some(UserSearchFilter(userId = userId)),
-                          status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
-                            case (_, status) => status != ProposalStatus.Archived
-                          }.values.toSeq))
-                        )
-                      )
-                    ),
-                    requestContext = requestContext
-                  )
-                ) { proposalsSearchResult =>
-                  proposalsSearchResult.copy(results = proposalsSearchResult.results.filterNot { proposal =>
-                    proposal.operationId
-                      .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                  })
-                  complete(proposalsSearchResult)
+                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                ) { operations =>
+                  val defaultSort = Some("createdAt")
+                  val defaultOrder = Some(Desc)
+                  provideAsync(
+                    proposalService.searchForUser(
+                      userId = Some(userId),
+                      query = SearchQuery(
+                        filters = Some(
+                          SearchFilters(
+                            user = Some(UserSearchFilter(userId = userId)),
+                            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.filter { status =>
+                              status != ProposalStatus.Archived
+                            }.toSeq))
+                          )
+                        ),
+                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder)))
+                      ),
+                      requestContext = requestContext
+                    )
+                  ) { proposalsSearchResult =>
+                    val proposalListFiltered = proposalsSearchResult.results.filter { proposal =>
+                      proposal.operationId
+                        .exists(operationId => operations.map(_.operationId).contains(operationId))
+                    }
+                    val result =
+                      proposalsSearchResult.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                    complete(result)
+                  }
                 }
               }
             }
