@@ -62,7 +62,6 @@ class CrmServiceComponentTest
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
-  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val userJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]

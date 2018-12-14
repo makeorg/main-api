@@ -64,7 +64,6 @@ trait MakeApiTestBase
     mock[SessionHistoryCoordinatorService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override lazy val actorSystem: ActorSystem = ActorSystem()

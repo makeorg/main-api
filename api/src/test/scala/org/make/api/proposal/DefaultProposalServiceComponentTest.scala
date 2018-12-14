@@ -77,7 +77,6 @@ class DefaultProposalServiceComponentTest
   override val semanticService: SemanticService = mock[SemanticService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override val actorSystem: ActorSystem = ActorSystem()

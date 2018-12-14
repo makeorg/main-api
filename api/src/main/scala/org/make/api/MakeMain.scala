@@ -26,24 +26,22 @@ import akka.actor.{ActorSystem, ExtendedActorSystem, PoisonPill}
 import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import kamon.prometheus.PrometheusReporter
 import kamon.system.SystemMetrics
+import org.make.api.MakeGuardian.Ping
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
 import org.make.api.migrations._
 import org.make.api.proposal.ShardedProposal
-import org.make.api.sequence.ShardedSequence
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 import org.make.api.userhistory.ShardedUserHistory
-import org.make.core.DateHelper
-import akka.pattern.ask
-import org.make.api.MakeGuardian.Ping
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
@@ -110,14 +108,12 @@ object MakeMain extends App with StrictLogging with MakeApi {
     proposalCoordinator ! StartShard(i.toString)
     userHistoryCoordinator ! StartShard(i.toString)
     sessionHistoryCoordinator ! StartShard(i.toString)
-    sequenceCoordinator ! StartShard(i.toString)
   }
 
   // Initialize journals
   actorSystem.actorOf(ShardedProposal.props(sessionHistoryCoordinator), "fake-proposal") ! PoisonPill
   actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator), "fake-session") ! PoisonPill
-  actorSystem.actorOf(ShardedSequence.props(DateHelper), "fake-sequence") ! PoisonPill
 
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)

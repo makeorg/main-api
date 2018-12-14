@@ -105,7 +105,6 @@ class UserApiTest
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
 

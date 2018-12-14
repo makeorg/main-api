@@ -27,16 +27,11 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
-import org.make.api.sequence.PublishedSequenceEvent.{
-  SequenceCreated,
-  SequenceProposalsAdded,
-  SequenceProposalsRemoved,
-  SequenceUpdated
-}
 import org.make.core.SprayJsonFormatters._
+import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.sequence.{SequenceId, SearchQuery => SequenceSearchQuery}
+import org.make.core.sequence.{SequenceId, SequenceStatus, SearchQuery => SequenceSearchQuery}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
 import spray.json.DefaultJsonProtocol._
@@ -373,6 +368,7 @@ final case class LogUserCreateSequenceEvent(userId: UserId,
     extends UserHistoryEvent[SequenceCreated] {
   override val protagonist: Protagonist = Moderator
 }
+
 object LogUserCreateSequenceEvent {
   val action: String = "create-sequence"
 
@@ -447,4 +443,75 @@ object LogUserStartSequenceEvent {
   implicit val logUserStartSequenceEventFormatted: RootJsonFormat[LogUserStartSequenceEvent] =
     DefaultJsonProtocol.jsonFormat(LogUserStartSequenceEvent.apply, "userId", "context", "action")
 
+}
+
+final case class SequenceProposalsAdded(id: SequenceId,
+                                        proposalIds: Seq[ProposalId],
+                                        requestContext: RequestContext,
+                                        eventDate: ZonedDateTime,
+                                        userId: UserId) {
+
+  def version(): Int = MakeSerializable.V1
+}
+
+object SequenceProposalsAdded {
+  val actionType: String = "sequence-proposal-added"
+
+  implicit val sequenceProposalsAddedFormatter: RootJsonFormat[SequenceProposalsAdded] =
+    DefaultJsonProtocol.jsonFormat5(SequenceProposalsAdded.apply)
+}
+
+final case class SequenceProposalsRemoved(id: SequenceId,
+                                          proposalIds: Seq[ProposalId],
+                                          requestContext: RequestContext,
+                                          eventDate: ZonedDateTime,
+                                          userId: UserId) {
+
+  def version(): Int = MakeSerializable.V1
+}
+
+object SequenceProposalsRemoved {
+  val actionType: String = "sequence-proposal-added"
+
+  implicit val sequenceProposalsRemovedFormatter: RootJsonFormat[SequenceProposalsRemoved] =
+    DefaultJsonProtocol.jsonFormat5(SequenceProposalsRemoved.apply)
+
+}
+
+final case class SequenceCreated(id: SequenceId,
+                                 slug: String,
+                                 requestContext: RequestContext,
+                                 userId: UserId,
+                                 eventDate: ZonedDateTime,
+                                 title: String,
+                                 themeIds: Seq[ThemeId],
+                                 operationId: Option[OperationId] = None,
+                                 searchable: Boolean) {
+  def version(): Int = MakeSerializable.V2
+}
+
+object SequenceCreated {
+  val actionType: String = "sequence-created"
+
+  implicit val sequenceCreatedFormatter: RootJsonFormat[SequenceCreated] =
+    DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
+}
+
+final case class SequenceUpdated(id: SequenceId,
+                                 userId: UserId,
+                                 eventDate: ZonedDateTime,
+                                 requestContext: RequestContext,
+                                 title: Option[String],
+                                 status: Option[SequenceStatus],
+                                 @Deprecated operation: Option[String] = None,
+                                 operationId: Option[OperationId] = None,
+                                 themeIds: Seq[ThemeId]) {
+  def version(): Int = MakeSerializable.V2
+}
+
+object SequenceUpdated {
+  val actionType: String = "sequence-updated"
+
+  implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
+    DefaultJsonProtocol.jsonFormat9(SequenceUpdated.apply)
 }
