@@ -26,18 +26,18 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.api.sequence.{SequenceResponse, SequenceService, SequenceServiceComponent}
+import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.{SequenceId, SequenceStatus}
+import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.{DateHelper, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -314,24 +314,6 @@ class ModerationOperationApiTest
     )
   )
   when(tagService.findByTagIds(Seq(TagId("fakeTag")))).thenReturn(Future.successful(Seq()))
-  when(sequenceService.getModerationSequenceById(SequenceId("29625b5a-56da-4539-b195-15303187c20b"))).thenReturn(
-    Future.successful(
-      Option(
-        SequenceResponse(
-          sequenceId = SequenceId("29625b5a-56da-4539-b195-15303187c20b"),
-          title = "sequence",
-          slug = "slug",
-          themeIds = Seq.empty,
-          createdAt = None,
-          updatedAt = None,
-          creationContext = RequestContext.empty,
-          events = List.empty,
-          status = SequenceStatus.Published
-        )
-      )
-    )
-  )
-  when(sequenceService.getModerationSequenceById(SequenceId("fakeSequenceId"))).thenReturn(Future.successful(None))
 
   when(operationService.findOneBySlug("my-create-operation")).thenReturn(Future.successful(None))
   when(operationService.findOneBySlug("my-update-operation")).thenReturn(Future.successful(None))

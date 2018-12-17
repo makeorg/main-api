@@ -24,12 +24,12 @@ import org.make.api.MakeGuardian.{Ping, Pong}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.SemanticProducerActor
-import org.make.api.sequence.{SequenceConfigurationActor, SequenceSupervisor}
+import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
-import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.tracking.TrackingProducerActor
+import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.UserHistoryCoordinator
 
@@ -55,17 +55,6 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
         )
     )
 
-    context.watch(
-      context.actorOf(
-        SequenceSupervisor.props(
-          userHistoryCoordinator,
-          makeApi.themeService,
-          makeApi.elasticsearchConfiguration,
-          makeApi.elasticsearchClient
-        ),
-        SequenceSupervisor.name
-      )
-    )
     context.watch(
       context.actorOf(
         ProposalSupervisor

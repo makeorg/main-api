@@ -47,9 +47,7 @@ class SequenceServiceComponentTest
     with UserHistoryCoordinatorServiceComponent
     with SessionHistoryCoordinatorServiceComponent
     with SequenceServiceComponent
-    with SequenceSearchEngineComponent
     with ProposalSearchEngineComponent
-    with SequenceCoordinatorServiceComponent
     with EventBusServiceComponent
     with UserServiceComponent
     with MakeSettingsComponent
@@ -57,9 +55,7 @@ class SequenceServiceComponentTest
     with StrictLogging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
-  override val elasticsearchSequenceAPI: SequenceSearchEngine = mock[SequenceSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
-  override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     mock[SessionHistoryCoordinatorService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService =

@@ -26,28 +26,27 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, Theme, ThemeId}
 import org.make.core.sequence.indexed.SequencesSearchResult
-import org.make.core.sequence.{SearchQuery, Sequence, SequenceId, SequenceStatus}
+import org.make.core.sequence.{Sequence, SequenceId, SequenceStatus}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
-import scala.concurrent.duration._
-import akka.testkit.TestDuration
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class SequenceApiTest
     extends MakeApiTestBase
@@ -55,13 +54,11 @@ class SequenceApiTest
     with SequenceServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
-    with SequenceCoordinatorServiceComponent
     with SequenceConfigurationComponent {
 
   override val sequenceService: SequenceService = mock[SequenceService]
   override val themeService: ThemeService = mock[ThemeService]
   override val operationService: OperationService = mock[OperationService]
-  override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
 
   val CREATED_DATE_SECOND_MINUS: Int = 10
@@ -170,19 +167,6 @@ class SequenceApiTest
     events = Nil,
     searchable = false
   )
-  private def sequenceResponse(id: SequenceId): SequenceResponse = {
-    SequenceResponse(
-      sequenceId = id,
-      slug = "my-sequence-1",
-      title = "my sequence 1",
-      status = SequenceStatus.Published,
-      themeIds = Seq.empty,
-      creationContext = RequestContext.empty,
-      createdAt = Some(DateHelper.now()),
-      updatedAt = Some(DateHelper.now()),
-      events = Nil
-    )
-  }
 
   val sequenceModeratorSearchResult = SequencesSearchResult(0, Seq.empty)
 
@@ -235,116 +219,6 @@ class SequenceApiTest
                                                   |}""".stripMargin
 
   val routes: Route = sealRoute(sequenceRoutes)
-
-  when(
-    sequenceService
-      .create(
-        any[UserId],
-        any[RequestContext],
-        any[ZonedDateTime],
-        any[String],
-        any[Seq[ThemeId]],
-        any[Option[OperationId]],
-        matches(true)
-      )
-  ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("43")))))
-
-  when(
-    sequenceService
-      .addProposals(
-        matches(SequenceId("add1")),
-        any[UserId],
-        any[RequestContext],
-        matches(Seq(ProposalId("proposal1")))
-      )
-  ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
-
-  when(
-    sequenceService
-      .addProposals(
-        matches(SequenceId("notexistsequenceId")),
-        any[UserId],
-        any[RequestContext],
-        matches(Seq(ProposalId("proposal1")))
-      )
-  ).thenReturn(Future.successful(None))
-
-  when(
-    sequenceService
-      .removeProposals(
-        matches(SequenceId("remove1")),
-        any[UserId],
-        any[RequestContext],
-        matches(Seq(ProposalId("proposal1")))
-      )
-  ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
-
-  when(
-    sequenceService
-      .removeProposals(
-        matches(SequenceId("notexistsequenceId")),
-        any[UserId],
-        any[RequestContext],
-        matches(Seq(ProposalId("proposal1")))
-      )
-  ).thenReturn(Future.successful(None))
-
-  when(
-    sequenceService
-      .update(
-        matches(SequenceId("moderationSequence1")),
-        any[UserId],
-        any[RequestContext],
-        matches(Some("newSequenceTitle")),
-        matches(None),
-        matches(None),
-        matches(Seq.empty)
-      )
-  ).thenReturn(Future.successful(Some(sequenceResponse(SequenceId("default")))))
-
-  when(
-    sequenceService
-      .update(
-        matches(SequenceId("notexistsequenceId")),
-        any[UserId],
-        any[RequestContext],
-        matches(Some("newSequenceTitle")),
-        matches(None),
-        matches(None),
-        matches(Seq.empty)
-      )
-  ).thenReturn(Future.successful(None))
-
-  when(sequenceService.getSequenceById(any[SequenceId], any[RequestContext]))
-    .thenReturn(Future.successful(Some(defaultSequence)))
-
-  when(sequenceService.getSequenceById(matches(SequenceId("notexistsequenceId")), any[RequestContext]))
-    .thenReturn(Future.successful(None))
-
-  when(sequenceService.search(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
-    .thenReturn(Future.successful(sequenceModeratorSearchResult))
-
-  when(
-    sequenceService
-      .startNewSequence(
-        any[Option[UserId]],
-        matches("start-sequence"),
-        any[Seq[ProposalId]],
-        any[Option[Seq[TagId]]],
-        any[RequestContext]
-      )
-  ).thenReturn(
-    Future.successful(
-      Some(
-        SequenceResult(
-          id = SequenceId("searchSequence"),
-          title = "sequence search",
-          slug = "start-sequence",
-          proposals = Seq.empty
-        )
-      )
-    )
-  )
 
   when(
     sequenceService.startNewSequence(
@@ -402,201 +276,6 @@ class SequenceApiTest
   when(sequenceConfigurationService.setSequenceConfiguration(any[SequenceConfiguration]))
     .thenReturn(Future.successful(true))
 
-  feature("creating") {
-    scenario("unauthenticated user") {
-      Given("an un authenticated user")
-      When("the user wants to create a sequence")
-      Then("he should get an unauthorized (401) return code")
-      Post("/moderation/sequences").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("authenticated user with citizen role") {
-      Given("an authenticated user with citizen role")
-      When("the user wants to create a sequence")
-      Then("he should get an forbidden (403) return code")
-
-      Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validCreateJson))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("authenticated user with moderator role") {
-      Given("an authenticated user with moderator role")
-      When("the user wants to create a sequence")
-      Then("he should get an success (201) return code")
-
-      Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validCreateJson))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-      }
-    }
-
-    scenario("create sequence without themes field") {
-      Given("an authenticated user with moderator role")
-      When("the user wants to create a sequence without themes field")
-      Then("he should get a bad request (400) return code")
-
-      Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"title": "my valid sequence"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("create sequence without title field") {
-      Given("an authenticated user with moderator role")
-      When("the user wants to create a sequence without title field")
-      Then("he should get a bad request (400) return code")
-
-      Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"themeIds: []"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("invalid sequence due to bad theme") {
-      Given("an authenticated moderator")
-      When("the moderator wants to create a sequence with an invalid theme")
-      Then("the sequence should be rejected if invalid")
-
-      Post("/moderation/sequences")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, invalidCreateJson))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "themeIds")
-        contentError should be(Some(ValidationError("themeIds", Some("Some theme ids are invalid"))))
-      }
-    }
-  }
-
-  feature("sequence add proposals") {
-    scenario("unauthenticated user") {
-      Post("/moderation/sequences/add1/proposals/add") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("authenticated user with citizen role") {
-      Post("/moderation/sequences/add1/proposals/add")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("invalid request") {
-      Post("/moderation/sequences/add1/proposals/add")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("valid request with a sequence id that not exist") {
-      Post("/moderation/sequences/notexistsequenceId/proposals/add")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["proposal1"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
-
-    scenario("valid request") {
-      Post("/moderation/sequences/add1/proposals/add")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["proposal1"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-  }
-
-  feature("sequence remove proposals") {
-    scenario("unauthenticated user") {
-      Post("/moderation/sequences/remove1/proposals/remove") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("authenticated user with citizen role") {
-      Post("/moderation/sequences/remove1/proposals/remove")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("invalid request") {
-      Post("/moderation/sequences/remove1/proposals/remove")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("valid request with a sequence id that not exist") {
-      Post("/moderation/sequences/notexistsequenceId/proposals/remove")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["proposal1"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
-
-    scenario("valid request") {
-      Post("/moderation/sequences/remove1/proposals/remove")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["proposal1"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-  }
-
-  feature("sequence moderation search") {
-    scenario("unauthenticated user") {
-      Post("/moderation/sequences/search") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("authenticated user with citizen role") {
-      Post("/moderation/sequences/search")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("invalid request") {
-      Post("/moderation/sequences/search")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("valid request") {
-      Post("/moderation/sequences/search")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, validModeratorSearchJson))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-  }
-
-  feature("sequence start by slug") {
-    scenario("unauthenticated user") {
-      Post("/moderation/sequences/search") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("valid request") {
-      Get("/sequences/start-sequence")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-  }
-
   feature("sequence start by id") {
     scenario("unauthenticated user") {
       Get("/sequences/start/start-sequence-by-id") ~> routes ~> check {
@@ -614,66 +293,6 @@ class SequenceApiTest
     scenario("non existing sequence") {
       Get("/sequences/start/non-existing-sequence") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
-      }
-    }
-  }
-
-  feature("sequence update proposal") {
-    scenario("unauthenticated user") {
-      Patch("/moderation/sequences/moderationSequence1") ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-
-    scenario("authenticated user with citizen role") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-
-    scenario("invalid request") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("invalid status") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"status": "badstatus"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "status")
-        contentError should be(Some(ValidationError("status", Some("Invalid status"))))
-      }
-    }
-
-    scenario("invalid themeId") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"themeIds": ["badthemeid"]}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        val contentError = errors.find(_.field == "themeIds")
-        contentError should be(Some(ValidationError("themeIds", Some("Some theme ids are invalid"))))
-      }
-    }
-
-    scenario("valid request with a sequence id that not exist") {
-      Patch("/moderation/sequences/notexistsequenceId")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"title": "newSequenceTitle"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
-
-    scenario("valid request") {
-      Patch("/moderation/sequences/moderationSequence1")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"title": "newSequenceTitle"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
       }
     }
   }

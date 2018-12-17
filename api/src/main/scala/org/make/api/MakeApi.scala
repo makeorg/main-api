@@ -144,8 +144,6 @@ trait MakeApi
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
     with DefaultOperationServiceComponent
-    with DefaultSequenceCoordinatorServiceComponent
-    with DefaultSequenceSearchEngineComponent
     with DefaultReadJournalComponent
     with DefaultHealthCheckServiceComponent
     with DefaultCrmServiceComponent
@@ -159,7 +157,6 @@ trait MakeApi
     with DefaultModerationQuestionComponent
     with DefaultModerationOperationOfQuestionApiComponent
     with ProposalCoordinatorComponent
-    with SequenceCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
     with DefaultIndexationComponent
@@ -197,13 +194,6 @@ trait MakeApi
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
-  )
-
-  override lazy val sequenceCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / SequenceSupervisor.name / SequenceCoordinator.name)
       .resolveOne()(Timeout(5.seconds)),
     atMost = 5.seconds
   )

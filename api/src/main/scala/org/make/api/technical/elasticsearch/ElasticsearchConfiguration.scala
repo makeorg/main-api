@@ -37,7 +37,6 @@ class ElasticsearchConfiguration(override protected val configuration: Config)
 
   lazy val ideaAliasName: String = configuration.getString("idea-alias-name")
   lazy val proposalAliasName: String = configuration.getString("proposal-alias-name")
-  lazy val sequenceAliasName: String = configuration.getString("sequence-alias-name")
   lazy val organisationAliasName: String = configuration.getString("organisation-alias-name")
 }
 

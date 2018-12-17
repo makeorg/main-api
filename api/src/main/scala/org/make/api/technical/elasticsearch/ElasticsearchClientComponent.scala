@@ -54,7 +54,6 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Seq(
         elasticsearchConfiguration.ideaAliasName,
         elasticsearchConfiguration.proposalAliasName,
-        elasticsearchConfiguration.sequenceAliasName,
         elasticsearchConfiguration.organisationAliasName
       )
 
@@ -63,8 +62,6 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
     lazy val elasticsearchProposalMapping: String =
       Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
-    lazy val elasticsearchSequenceMapping: String =
-      Source.fromResource("elasticsearch-mappings/sequence.json")(Codec.UTF8).getLines().mkString("")
     lazy val elasticsearchOrganisationMapping: String =
       Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
 
@@ -77,7 +74,6 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
     override def mappingForAlias: String => String = {
       case alias if alias == elasticsearchConfiguration.ideaAliasName         => elasticsearchIdeaMapping
       case alias if alias == elasticsearchConfiguration.proposalAliasName     => elasticsearchProposalMapping
-      case alias if alias == elasticsearchConfiguration.sequenceAliasName     => elasticsearchSequenceMapping
       case alias if alias == elasticsearchConfiguration.organisationAliasName => elasticsearchOrganisationMapping
     }
 

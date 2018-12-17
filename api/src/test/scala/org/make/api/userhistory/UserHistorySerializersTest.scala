@@ -27,12 +27,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
-import org.make.api.sequence.PublishedSequenceEvent.{
-  SequenceCreated,
-  SequenceProposalsAdded,
-  SequenceProposalsRemoved,
-  SequenceUpdated
-}
+
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications

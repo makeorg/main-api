@@ -55,7 +55,6 @@ class IndexationComponentTest
     with StrictLogging
     with ActorSystemComponent
     with ProposalCoordinatorServiceComponent
-    with SequenceCoordinatorServiceComponent
     with ReadJournalComponent
     with UserServiceComponent
     with OrganisationServiceComponent
@@ -63,7 +62,6 @@ class IndexationComponentTest
     with DefaultPersistentTagTypeServiceComponent
     with PersistentThemeServiceComponent
     with ProposalSearchEngineComponent
-    with SequenceSearchEngineComponent
     with IdeaSearchEngineComponent
     with DefaultPersistentIdeaServiceComponent
     with MakeDBExecutionContextComponent
@@ -71,7 +69,6 @@ class IndexationComponentTest
     with UserHistoryCoordinatorServiceComponent {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
-  override val elasticsearchSequenceAPI: SequenceSearchEngine = mock[SequenceSearchEngine]
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
@@ -81,10 +78,8 @@ class IndexationComponentTest
   override val elasticsearchClient: ElasticsearchClient = mock[ElasticsearchClient]
   override def writeExecutionContext: ExecutionContext = mock[ExecutionContext]
   override def readExecutionContext: ExecutionContext = mock[ExecutionContext]
-  override val sequenceCoordinatorService: SequenceCoordinatorService = mock[SequenceCoordinatorService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
-  override val sequenceJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override val semanticService: SemanticService = mock[SemanticService]
@@ -99,22 +94,18 @@ class IndexationComponentTest
   when(elasticsearchConfiguration.ideaAliasName).thenReturn("idea")
   when(elasticsearchConfiguration.organisationAliasName).thenReturn("organisation")
   when(elasticsearchConfiguration.proposalAliasName).thenReturn("proposal")
-  when(elasticsearchConfiguration.sequenceAliasName).thenReturn("sequence")
 
   private val ideaHash = "idea#hash"
   private val organisationHash = "organisation#hash"
   private val proposalHash = "proposal#hash"
-  private val sequenceHash = "sequence#hash"
 
   when(elasticsearchClient.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
   when(elasticsearchClient.getHashFromIndex(organisationHash)).thenReturn(organisationHash)
   when(elasticsearchClient.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
-  when(elasticsearchClient.getHashFromIndex(sequenceHash)).thenReturn(sequenceHash)
 
   when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
   when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("organisation"))).thenReturn(organisationHash)
   when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)
-  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("sequence"))).thenReturn(sequenceHash)
 
   when(elasticsearchConfiguration.connectionString).thenReturn("fake:3232")
 
@@ -122,7 +113,7 @@ class IndexationComponentTest
     scenario("schema is up to date") {
       Given("a defined hash of indices")
       when(elasticsearchClient.getCurrentIndicesName)
-        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
+        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash)))
       When("I ask which indices are to update")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
@@ -137,7 +128,7 @@ class IndexationComponentTest
     scenario("schema is up to date but force proposal indexation") {
       Given("a defined hash of indices")
       when(elasticsearchClient.getCurrentIndicesName)
-        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
+        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash)))
       When("I ask which indices are to update and force the proposal indexation")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
@@ -154,7 +145,7 @@ class IndexationComponentTest
       Given("a defined hash of indices and an old hash for the proposal index")
       when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn("old-hash")
       when(elasticsearchClient.getCurrentIndicesName)
-        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, sequenceHash)))
+        .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash)))
       When("I ask which indices are to update")
 
       val futureSchemaIsUpToDate: Future[Set[EntitiesToIndex]] =
