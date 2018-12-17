@@ -19,13 +19,13 @@
 
 package org.make.api.question
 
-import org.make.core.{ValidationError, ValidationFailedError}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.concurrent.Future
 
 trait QuestionService {
@@ -42,6 +42,7 @@ trait QuestionService {
                                                  maybeOperationId: Option[OperationId],
                                                  country: Country,
                                                  language: Language): Future[Option[Question]]
+  def createQuestion(country: Country, language: Language, question: String, slug: String): Future[Question]
 }
 
 case class SearchQuestionRequest(maybeThemeId: Option[ThemeId] = None,
@@ -59,7 +60,7 @@ trait QuestionServiceComponent {
 }
 
 trait DefaultQuestionService extends QuestionServiceComponent {
-  this: PersistentQuestionServiceComponent =>
+  this: PersistentQuestionServiceComponent with IdGeneratorComponent =>
 
   override lazy val questionService: QuestionService = new QuestionService {
 
@@ -130,6 +131,23 @@ trait DefaultQuestionService extends QuestionServiceComponent {
 
     override def countQuestion(request: SearchQuestionRequest): Future[Int] = {
       persistentQuestionService.count(request)
+    }
+
+    override def createQuestion(country: Country,
+                                language: Language,
+                                question: String,
+                                slug: String): Future[Question] = {
+      persistentQuestionService.persist(
+        Question(
+          questionId = idGenerator.nextQuestionId(),
+          slug = slug,
+          country = country,
+          language = language,
+          question = question,
+          operationId = None,
+          themeId = None
+        )
+      )
     }
   }
 }
