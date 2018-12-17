@@ -30,7 +30,7 @@ import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -44,7 +44,7 @@ import scala.concurrent.Future
 
 class ModerationTagApiTest
     extends MakeApiTestBase
-    with ModerationTagApi
+    with DefaultModerationTagApiComponent
     with MockitoSugar
     with TagServiceComponent
     with QuestionServiceComponent {
@@ -92,15 +92,7 @@ class ModerationTagApiTest
         .successful(Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin)), None, Some("admin"), None)))
     )
 
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      any[Option[QuestionId]],
-      any[Option[ThemeId]],
-      any[Option[OperationId]],
-      any[Country],
-      any[Language]
-    )
-  ).thenReturn(
+  when(questionService.getQuestion(any[QuestionId])).thenReturn(
     Future.successful(
       Some(
         Question(
@@ -131,10 +123,11 @@ class ModerationTagApiTest
     themeId = None,
     country = Country("FR"),
     language = Language("fr"),
-    questionId = None
+    questionId = Some(QuestionId("1234-1234-1234-1234"))
   )
 
   val validTag: Tag = newTag(validTagText, TagId("valid-tag"))
+  val newValidTag: Tag = newTag(s"new$validTagText", TagId("valid-tag"))
   val helloWorldTagId: String = "hello-world"
   val helloWorldTag: Tag = newTag(helloWorldTagText, TagId(helloWorldTagId))
   val fakeTag: Tag = newTag(fakeTagText)
@@ -144,9 +137,15 @@ class ModerationTagApiTest
   when(
     tagService.createTag(ArgumentMatchers.eq(validTagText), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
   ).thenReturn(Future.successful(validTag))
+  when(
+    tagService
+      .createTag(ArgumentMatchers.eq(s"new$validTagText"), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
+  ).thenReturn(Future.successful(newValidTag))
   when(tagService.findByLabel(ArgumentMatchers.eq(validTagText), any[Boolean]))
     .thenReturn(Future.successful(Seq(validTag)))
   when(tagService.findByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), any[Boolean]))
+    .thenReturn(Future.successful(Seq.empty))
+  when(tagService.findByLabel(ArgumentMatchers.eq(s"new$validTagText"), any[Boolean]))
     .thenReturn(Future.successful(Seq.empty))
   when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
@@ -197,7 +196,7 @@ class ModerationTagApiTest
 
   when(tagService.count(any[TagFilter])).thenReturn(Future.successful(2))
 
-  val routes: Route = sealRoute(moderationTagRoutes)
+  val routes: Route = sealRoute(moderationTagApi.routes)
 
   feature("create a tag") {
     scenario("unauthenticated") {
@@ -230,11 +229,9 @@ class ModerationTagApiTest
       Then("the tag should be saved if valid")
       val tagRequest =
         s"""{
-           |"label": "$validTagText",
+           |"label": "new$validTagText",
            |"tagTypeId": "1234-1234-1234-1234",
-           |"operationId": "1234-1234-1234-1234",
-           |"country": "FR",
-           |"language": "fr",
+           |"questionId": "1234-1234-1234-1234",
            |"display": "INHERIT"
        }""".stripMargin
 
@@ -251,9 +248,7 @@ class ModerationTagApiTest
         s"""{
            |"label": "$validTagText",
            |"tagTypeId": "1234-1234-1234-1234",
-           |"operationId": "operation-id",
-           |"country": "FR",
-           |"language": "fr",
+           |"questionId": "1234-1234-1234-1234",
            |"display": "INHERIT"
        }""".stripMargin
 
@@ -264,39 +259,17 @@ class ModerationTagApiTest
       }
 
       Given("an authenticated user with the moderator role")
-      When("the user wants to create a tag without operation nor theme")
+      When("the user wants to create a tag without question")
       Then("the status should be BadRequest")
       val tagRequestEmpty =
         s"""{
            |"label": "$validTagText",
            |"tagTypeId": "1234-1234-1234-1234",
-           |"country": "FR",
-           |"language": "fr",
            |"display": "INHERIT"
        }""".stripMargin
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-
-      Given("an authenticated user with the moderator role")
-      When("the user wants to create a tag with operation and theme")
-      Then("the status should be BadRequest")
-      val tagRequestFull =
-        s"""{
-           |"label": "$validTagText",
-           |"tagTypeId": "1234-1234-1234-1234",
-           |"operationId": "1234-1234-1234-1234",
-           |"themeId": "4321-4321-4321-4321",
-           |"country": "FR",
-           |"language": "fr",
-           |"display": "INHERIT"
-       }""".stripMargin
-
-      Post("/moderation/tags")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestFull))
         .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
@@ -388,9 +361,7 @@ class ModerationTagApiTest
       s"""{
          |"label": "$validTagText UPDATED",
          |"tagTypeId": "1234-1234-1234-1234",
-         |"operationId": "1234-1234-1234-1234",
-         |"country": "FR",
-         |"language": "fr",
+         |"questionId": "1234-1234-1234-1234",
          |"display": "INHERIT",
          |"weight": "0"
        }""".stripMargin

@@ -80,7 +80,8 @@ final case class ValidateProposalRequest(newContent: Option[String],
                                          similarProposals: Option[Seq[ProposalId]],
                                          idea: Option[IdeaId],
                                          theme: Option[ThemeId],
-                                         operation: Option[OperationId])
+                                         operation: Option[OperationId],
+                                         questionId: Option[QuestionId])
 
 object ValidateProposalRequest {
   implicit val decoder: Decoder[ValidateProposalRequest] = deriveDecoder[ValidateProposalRequest]
@@ -292,22 +293,10 @@ object PatchProposalsIdeaRequest {
 }
 
 final case class NextProposalToModerateRequest(questionId: Option[QuestionId],
-                                               operationId: Option[OperationId],
-                                               themeId: Option[ThemeId],
-                                               country: Country,
-                                               language: Language,
                                                toEnrich: Boolean,
                                                minVotesCount: Option[Int],
                                                minScore: Option[Float]) {
-  validate(
-    requirePresent(
-      "operationId",
-      questionId.orElse(operationId).orElse(themeId),
-      Some("Next proposal needs a question, a theme or an operation")
-    ),
-    mandatoryField("country", country, Some("country is mandatory")),
-    mandatoryField("language", language, Some("language is mandatory")),
-  )
+  validate(requirePresent("questionId", questionId, Some("Next proposal needs a question")))
 }
 
 object NextProposalToModerateRequest {

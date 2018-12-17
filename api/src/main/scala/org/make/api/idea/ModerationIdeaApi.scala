@@ -19,36 +19,30 @@
 
 package org.make.api.idea
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
-import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
-
-import scala.util.Try
+import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import scalaoauth2.provider.AuthInfo
+
+import scala.concurrent.Future
+import scala.util.Try
 
 @Api(value = "Moderation Idea")
 @Path(value = "/moderation/ideas")
-trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: IdeaServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with QuestionServiceComponent =>
+trait ModerationIdeaApi extends Directives {
 
   @ApiOperation(
     value = "list-ideas",
@@ -67,10 +61,6 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
@@ -79,55 +69,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
     )
   )
   @Path(value = "/")
-  def listIdeas: Route = {
-    get {
-      path("moderation" / "ideas") {
-        parameters(
-          (
-            'name.?,
-            'language.as[Language].?,
-            'country.as[Country].?,
-            'questionId.as[QuestionId].?,
-            'operationId.as[OperationId].?,
-            'themeId.as[ThemeId].?,
-            'limit.as[Int].?,
-            'skip.as[Int].?,
-            'sort.?,
-            'order.?
-          )
-        ) { (name, language, country, questionId, operationId, themeId, limit, skip, sort, order) =>
-          makeOperation("GetAllIdeas") { requestContext =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireAdminRole(userAuth.user) {
-                provideAsync(
-                  questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                    questionId,
-                    themeId,
-                    operationId,
-                    country.getOrElse(Country("FR")),
-                    language.getOrElse(Language("fr"))
-                  )
-                ) { question: Option[Question] =>
-                  val filters: IdeaFiltersRequest =
-                    IdeaFiltersRequest(
-                      name = name,
-                      questionId = question.map(_.questionId),
-                      limit = limit,
-                      skip = skip,
-                      sort = sort,
-                      order = order
-                    )
-                  provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
-                    complete(ideas)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def listIdeas: Route
 
   @ApiOperation(
     value = "get-idea",
@@ -143,21 +85,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "ideaId", paramType = "path", dataType = "string")))
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
   @Path(value = "/{ideaId}")
-  def getIdea: Route = {
-    get {
-      path("moderation" / "ideas" / ideaId) { ideaId =>
-        makeOperation("GetIdea") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
-              provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
-                complete(idea)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def getIdea: Route
 
   @ApiOperation(
     value = "create-idea",
@@ -176,83 +104,7 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
   @Path(value = "/")
-  def createIdea: Route = post {
-    path("moderation" / "ideas") {
-      makeOperation("CreateIdea") { requestContext =>
-        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          requireAdminRole(userAuth.user) {
-            decodeRequest {
-              entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
-                Validation.validate(
-                  Validation.requirePresent(
-                    fieldValue = request.language.orElse(request.questionId),
-                    fieldName = "Language",
-                    message = Some("Language is required")
-                  )
-                )
-                Validation.validate(
-                  Validation.requirePresent(
-                    fieldValue = request.country.orElse(request.questionId),
-                    fieldName = "Country",
-                    message = Some("Country is required")
-                  )
-                )
-                Validation.validate(
-                  Validation.requirePresent(
-                    fieldName = "operation/theme",
-                    fieldValue = request.operation.orElse(request.theme).orElse(request.questionId),
-                    message = Some("operation or theme should not be empty")
-                  )
-                )
-                if (request.operation.nonEmpty) {
-                  Validation.validate(
-                    Validation.requireNotPresent(
-                      fieldName = "theme",
-                      fieldValue = request.theme,
-                      message = Some("Idea can not have both operation and theme")
-                    )
-                  )
-                }
-                if (request.theme.nonEmpty) {
-                  Validation.validate(
-                    Validation.requireNotPresent(
-                      fieldName = "operation",
-                      fieldValue = request.operation,
-                      message = Some("Idea can not have both operation and theme")
-                    )
-                  )
-                }
-
-                provideAsyncOrNotFound(
-                  questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                    request.questionId,
-                    request.theme,
-                    request.operation,
-                    request.country.getOrElse(Country("FR")),
-                    request.language.getOrElse(Language("fr"))
-                  )
-                ) { question: Question =>
-                  provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { idea =>
-                    Validation.validate(
-                      Validation.requireNotPresent(
-                        fieldName = "name",
-                        fieldValue = idea,
-                        message = Some("idea already exist. Duplicates are not allowed")
-                      )
-                    )
-
-                    onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
-                      complete(StatusCodes.Created -> idea)
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def createIdea: Route
 
   @ApiOperation(
     value = "update-idea",
@@ -273,26 +125,144 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaId])))
   @Path(value = "/{ideaId}")
-  def updateIdea: Route = put {
-    path("moderation" / "ideas" / ideaId) { ideaId =>
-      makeOperation("UpdateIdea") { _ =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            decodeRequest {
-              entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
-                provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
-                  provideAsync(ideaService.fetchOneByName(idea.questionId.get, request.name)) { duplicateIdea =>
-                    if (!duplicateIdea.map(_.ideaId).contains(ideaId)) {
-                      Validation.validate(
-                        Validation.requireNotPresent(
-                          fieldName = "name",
-                          fieldValue = duplicateIdea,
-                          message = Some("idea already exist. Duplicates are not allowed")
+  def updateIdea: Route
+
+  def routes: Route = createIdea ~ updateIdea ~ listIdeas ~ getIdea
+}
+
+trait ModerationIdeaApiComponent {
+  def moderationIdeaApi: ModerationIdeaApi
+}
+
+trait DefaultModerationIdeaApiComponent
+    extends ModerationIdeaApiComponent
+    with MakeAuthenticationDirectives
+    with ParameterExtractors {
+  this: IdeaServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with QuestionServiceComponent =>
+
+  val ideaId: PathMatcher1[IdeaId] = Segment.flatMap(id => Try(IdeaId(id)).toOption)
+
+  override lazy val moderationIdeaApi: ModerationIdeaApi =
+    new ModerationIdeaApi {
+
+      override def listIdeas: Route = {
+        get {
+          path("moderation" / "ideas") {
+            parameters(('name.?, 'questionId.as[QuestionId].?, 'limit.as[Int].?, 'skip.as[Int].?, 'sort.?, 'order.?)) {
+              (name, questionId, limit, skip, sort, order) =>
+                makeOperation("GetAllIdeas") { requestContext =>
+                  makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                    requireAdminRole(userAuth.user) {
+                      val filters: IdeaFiltersRequest =
+                        IdeaFiltersRequest(
+                          name = name,
+                          questionId = questionId,
+                          limit = limit,
+                          skip = skip,
+                          sort = sort,
+                          order = order
                         )
-                      )
+                      provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
+                        complete(ideas)
+                      }
                     }
-                    onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
-                      complete(ideaId)
+                  }
+                }
+            }
+          }
+        }
+      }
+
+      override def getIdea: Route = {
+        get {
+          path("moderation" / "ideas" / ideaId) { ideaId =>
+            makeOperation("GetIdea") { _ =>
+              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                requireAdminRole(userAuth.user) {
+                  provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
+                    complete(idea)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      override def createIdea: Route = post {
+        path("moderation" / "ideas") {
+          makeOperation("CreateIdea") { requestContext =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
+                    Validation.validate(
+                      Validation.requirePresent(
+                        fieldName = "question",
+                        fieldValue = request.questionId,
+                        message = Some("question should not be empty")
+                      )
+                    )
+
+                    provideAsyncOrNotFound(
+                      request.questionId
+                        .map(questionId => questionService.getQuestion(questionId))
+                        .getOrElse(Future.successful(None))
+                    ) { question: Question =>
+                      provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { idea =>
+                        Validation.validate(
+                          Validation.requireNotPresent(
+                            fieldName = "name",
+                            fieldValue = idea,
+                            message = Some("idea already exist. Duplicates are not allowed")
+                          )
+                        )
+
+                        onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
+                          complete(StatusCodes.Created -> idea)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      override def updateIdea: Route = put {
+        path("moderation" / "ideas" / ideaId) { ideaId =>
+          makeOperation("UpdateIdea") { _ =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireAdminRole(auth.user) {
+                decodeRequest {
+                  entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
+                    provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
+                      provideAsyncOrNotFound(
+                        idea.questionId
+                          .map(questionId => questionService.getQuestion(questionId))
+                          .getOrElse(Future.successful(None))
+                      ) { question =>
+                        provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { duplicateIdea =>
+                          if (!duplicateIdea.map(_.ideaId).contains(ideaId)) {
+                            Validation.validate(
+                              Validation.requireNotPresent(
+                                fieldName = "name",
+                                fieldValue = duplicateIdea,
+                                message = Some("idea already exist. Duplicates are not allowed")
+                              )
+                            )
+                          }
+                          onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
+                            complete(ideaId)
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -302,21 +272,9 @@ trait ModerationIdeaApi extends MakeAuthenticationDirectives with ParameterExtra
         }
       }
     }
-  }
-
-  val ideaRoutes: Route = createIdea ~ updateIdea ~ listIdeas ~ getIdea
-
-  val ideaId: PathMatcher1[IdeaId] =
-    Segment.flatMap(id => Try(IdeaId(id)).toOption)
 }
 
-final case class CreateIdeaRequest(name: String,
-                                   questionId: Option[QuestionId],
-                                   language: Option[Language],
-                                   country: Option[Country],
-                                   operation: Option[OperationId],
-                                   theme: Option[ThemeId],
-                                   question: Option[String])
+final case class CreateIdeaRequest(name: String, questionId: Option[QuestionId])
 
 object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]

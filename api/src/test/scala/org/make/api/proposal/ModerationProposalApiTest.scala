@@ -209,7 +209,8 @@ class ModerationProposalApiTest
     tags = Seq(TagId("dragon"), TagId("sword")),
     similarProposals = None,
     idea = Some(IdeaId("becoming-king")),
-    operation = None
+    operation = None,
+    questionId = None
   ).asJson.toString
 
   val validateProposalEntityWithoutTagNorIdea: String = ValidateProposalRequest(
@@ -220,7 +221,8 @@ class ModerationProposalApiTest
     tags = Seq.empty,
     similarProposals = None,
     idea = None,
-    operation = None
+    operation = None,
+    questionId = None
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -932,14 +934,12 @@ class ModerationProposalApiTest
     val validPayload =
       """
         |{
-        |  "operationId": "vff",
-        |  "country": "FR",
-        |  "language": "fr",
+        |  "questionId": "question-vff",
         |  "toEnrich": false
         |}
       """.stripMargin
 
-    when(questionService.findQuestion(None, Some(OperationId("vff")), Country("FR"), Language("fr"))).thenReturn(
+    when(questionService.getQuestion(QuestionId("question-vff"))).thenReturn(
       Future.successful(
         Some(
           Question(
@@ -955,7 +955,7 @@ class ModerationProposalApiTest
       )
     )
 
-    when(questionService.findQuestion(None, Some(OperationId("mieux-vivre-ensemble")), Country("FR"), Language("fr")))
+    when(questionService.getQuestion(QuestionId("question-mieux-vivre-ensemble")))
       .thenReturn(
         Future.successful(
           Some(
@@ -1003,30 +1003,6 @@ class ModerationProposalApiTest
       Then("The return code should be 404")
 
       when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          matches(None),
-          matches(None),
-          matches(Some(OperationId("vff"))),
-          matches(Country("FR")),
-          matches(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-vff"),
-              slug = "question-vff",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = Some(OperationId("vff")),
-              themeId = None
-            )
-          )
-        )
-      )
-
-      when(
         proposalService.searchAndLockProposalToModerate(
           matches(QuestionId("question-vff")),
           matches(tyrion.userId),
@@ -1053,36 +1029,10 @@ class ModerationProposalApiTest
       val payload =
         """
           |{
-          |  "operationId": "mieux-vivre-ensemble",
-          |  "country": "FR",
-          |  "language": "fr",
+          |  "questionId": "question-mieux-vivre-ensemble",
           |  "toEnrich": false
           |}
         """.stripMargin
-
-      when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          matches(None),
-          matches(None),
-          matches(Some(OperationId("mieux-vivre-ensemble"))),
-          matches(Country("FR")),
-          matches(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-mieux-vivre-ensemble"),
-              slug = "question-mieux-vivre-ensemble",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = Some(OperationId("mieux-vivre-ensemble")),
-              themeId = None
-            )
-          )
-        )
-      )
 
       when(
         proposalService.searchAndLockProposalToModerate(
@@ -1111,8 +1061,7 @@ class ModerationProposalApiTest
       val payload =
         """
           |{
-          |  "country": "FR",
-          |  "language": "fr"
+          |  "toEnrich": false
           |}
         """.stripMargin
 

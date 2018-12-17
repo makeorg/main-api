@@ -30,12 +30,7 @@ import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingExceptio
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.extensions._
-import org.make.api.idea.{
-  DefaultIdeaSearchEngineComponent,
-  DefaultIdeaServiceComponent,
-  DefaultPersistentIdeaServiceComponent,
-  ModerationIdeaApi
-}
+import org.make.api.idea._
 import org.make.api.operation._
 import org.make.api.organisation.{
   DefaultOrganisationSearchEngineComponent,
@@ -52,7 +47,7 @@ import org.make.api.sessionhistory.{
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
 }
-import org.make.api.tag.{DefaultPersistentTagServiceComponent, DefaultTagServiceComponent, ModerationTagApi, TagApi}
+import org.make.api.tag._
 import org.make.api.tagtype.{
   DefaultPersistentTagTypeServiceComponent,
   DefaultTagTypeServiceComponent,
@@ -172,9 +167,9 @@ trait MakeApi
     with ConfigurationsApi
     with DefaultUserApiComponent
     with TagApi
-    with ModerationTagApi
+    with DefaultModerationTagApiComponent
     with ModerationTagTypeApi
-    with ModerationIdeaApi
+    with DefaultModerationIdeaApiComponent
     with TrackingApi
     with DefaultMigrationApiComponent
     with HealthCheckApi
@@ -290,7 +285,7 @@ trait MakeApi
       elasticsearchRoutes ~
       userApi.routes ~
       tagRoutes ~
-      moderationTagRoutes ~
+      moderationTagApi.routes ~
       moderationTagTypeRoutes ~
       proposalRoutes ~
       moderationProposalApi.routes ~
@@ -300,7 +295,7 @@ trait MakeApi
       crmRoutes ~
       authenticationRoutes ~
       businessConfigRoutes ~
-      ideaRoutes ~
+      moderationIdeaApi.routes ~
       operationApi.routes ~
       moderationOperationApi.routes ~
       trackingRoutes ~

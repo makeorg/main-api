@@ -708,23 +708,24 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[ValidateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveQuestion(None, proposalId, request.operation, request.theme)) {
-                    question =>
-                      provideAsyncOrNotFound(
-                        proposalService.validateProposal(
-                          proposalId = proposalId,
-                          moderator = auth.user.userId,
-                          requestContext = requestContext,
-                          question = question,
-                          newContent = request.newContent,
-                          sendNotificationEmail = request.sendNotificationEmail,
-                          idea = request.idea,
-                          labels = request.labels,
-                          tags = request.tags
-                        )
-                      ) { proposalResponse: ProposalResponse =>
-                        complete(proposalResponse)
-                      }
+                  provideAsyncOrNotFound(
+                    retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
+                  ) { question =>
+                    provideAsyncOrNotFound(
+                      proposalService.validateProposal(
+                        proposalId = proposalId,
+                        moderator = auth.user.userId,
+                        requestContext = requestContext,
+                        question = question,
+                        newContent = request.newContent,
+                        sendNotificationEmail = request.sendNotificationEmail,
+                        idea = request.idea,
+                        labels = request.labels,
+                        tags = request.tags
+                      )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
                   }
                 }
               }
@@ -894,13 +895,9 @@ trait DefaultModerationProposalApiComponent
               decodeRequest {
                 entity(as[NextProposalToModerateRequest]) { request =>
                   provideAsyncOrNotFound {
-                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                      request.questionId,
-                      request.themeId,
-                      request.operationId,
-                      request.country,
-                      request.language
-                    )
+                    request.questionId.map { questionId =>
+                      questionService.getQuestion(questionId)
+                    }.getOrElse(Future.successful(None))
                   } { question =>
                     provideAsyncOrNotFound(
                       proposalService.searchAndLockProposalToModerate(

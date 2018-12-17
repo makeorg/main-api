@@ -35,7 +35,7 @@ import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -47,7 +47,7 @@ import scala.concurrent.Future
 
 class ModerationIdeaApiTest
     extends MakeApiTestBase
-    with ModerationIdeaApi
+    with DefaultModerationIdeaApiComponent
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with QuestionServiceComponent
@@ -122,25 +122,7 @@ class ModerationIdeaApiTest
       updatedAt = Some(DateHelper.now())
     )
 
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language]
-    )
-  ).thenReturn(Future.successful(None))
-
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(Some(OperationId("vff"))),
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language]
-    )
-  ).thenReturn(
+  when(questionService.getQuestion(ArgumentMatchers.any[QuestionId])).thenReturn(
     Future.successful(
       Some(
         Question(
@@ -156,77 +138,6 @@ class ModerationIdeaApiTest
     )
   )
 
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language]
-    )
-  ).thenReturn(
-    Future.successful(
-      Some(
-        Question(
-          questionId = QuestionId("vff-fr-question"),
-          slug = "vff-fr-question",
-          country = Country("FR"),
-          language = Language("fr"),
-          question = "??",
-          operationId = None,
-          themeId = Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))
-        )
-      )
-    )
-  )
-
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      ArgumentMatchers.eq(Some(QuestionId("vff-fr-question"))),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language]
-    )
-  ).thenReturn(
-    Future.successful(
-      Some(
-        Question(
-          questionId = QuestionId("vff-fr-question"),
-          slug = "vff-fr-question",
-          country = Country("FR"),
-          language = Language("fr"),
-          question = "??",
-          operationId = None,
-          themeId = Some(ThemeId("706b277c-3db8-403c-b3c9-7f69939181df"))
-        )
-      )
-    )
-  )
-
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      ArgumentMatchers.eq(Some(QuestionId("my-question-id"))),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.eq(None),
-      ArgumentMatchers.any[Country],
-      ArgumentMatchers.any[Language]
-    )
-  ).thenReturn(
-    Future.successful(
-      Some(
-        Question(
-          questionId = QuestionId("my-question-id"),
-          slug = "my-question",
-          country = Country("FR"),
-          language = Language("fr"),
-          question = "to be or not to be ?",
-          operationId = None,
-          themeId = None
-        )
-      )
-    )
-  )
   when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
     .thenReturn(Future.successful(IdeaSearchResult.empty))
 
@@ -245,7 +156,7 @@ class ModerationIdeaApiTest
   when(ideaService.fetchOne(ArgumentMatchers.eq(fooIdeaId)))
     .thenReturn(Future.successful(Some(fooIdea)))
 
-  val routes: Route = sealRoute(ideaRoutes)
+  val routes: Route = sealRoute(moderationIdeaApi.routes)
 
   feature("create an idea") {
     scenario("unauthenticated") {
@@ -283,53 +194,15 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin without operationId") {
+    scenario("authenticated admin without questionId") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea without an operationId nor a themeId")
-      Then("he should get a bad request (400) return code")
+      Then("Then he should get a bad request (400) return code")
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("authenticated admin with operationId") {
-      Given("an authenticated user with the admin role")
-      When("the user wants to create an idea with an operationId, language and a country")
-      Then("the idea should be saved if valid")
-
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr", "country": "FR"}"""
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        val idea: Idea = entityAs[Idea]
-        idea.ideaId.value should be(fooIdeaId.value)
-      }
-    }
-
-    scenario("authenticated admin with themeId") {
-      Given("an authenticated user with the admin role")
-      When("the user wants to create an idea with a themeId, language and a country")
-      Then("the idea should be saved if valid")
-
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "language": "fr", "country": "FR"}"""
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.Created)
-        val idea: Idea = entityAs[Idea]
-        idea.ideaId.value should be(fooIdeaId.value)
       }
     }
 
@@ -340,7 +213,7 @@ class ModerationIdeaApiTest
 
       Post("/moderation/ideas")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "questionId": "my-question-id"}""")
+          HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "questionId": "vff-fr-question"}""")
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -349,61 +222,10 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin with operationId and themeId") {
-      Given("an authenticated user with the admin role")
-      When("the user wants to create an idea with a themeId and an operationId")
-      Then("he should get a bad request (400) return code")
-
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "theme": "706b277c-3db8-403c-b3c9-7f69939181df", "operation": "vff"}"""
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("authenticated admin without language") {
-      Given("an authenticated user with the admin role")
-      When("the user wants to create an idea without language")
-      Then("he should get a bad request (400) return code")
-
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "operation": "vff", "country": "FR"}"""
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("authenticated admin without country") {
-      Given("an authenticated user with the admin role")
-      When("the user wants to create an idea without country")
-      Then("he should get a bad request (400) return code")
-
-      Post("/moderation/ideas")
-        .withEntity(
-          HttpEntity(
-            ContentTypes.`application/json`,
-            s"""{"name": "$fooIdeaText", "operation": "vff", "language": "fr"}"""
-          )
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
     scenario("bad data in body") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea")
-      Then("the idea should be saved if valid")
+      Then("Then he should get a bad request (400) return code")
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"bibi": "$fooIdeaText"}"""))

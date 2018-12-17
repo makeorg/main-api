@@ -39,7 +39,6 @@ import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
-import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
@@ -187,17 +186,6 @@ class ProposalApiTest
   private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
   private val moderatorAccessToken =
     AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  val validateProposalEntity: String = ValidateProposalRequest(
-    newContent = None,
-    sendNotificationEmail = true,
-    theme = Some(ThemeId("fire and ice")),
-    labels = Seq(LabelId("sex"), LabelId("violence")),
-    tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = None,
-    idea = Some(IdeaId("becoming-king")),
-    operation = None
-  ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
     RefuseProposalRequest(sendNotificationEmail = true, refusalReason = Some("not allowed word")).asJson.toString
