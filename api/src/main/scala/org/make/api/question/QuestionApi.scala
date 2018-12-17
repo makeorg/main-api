@@ -87,7 +87,7 @@ trait QuestionApi extends Directives {
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
   )
-  @Path(value = "/questions/{questionId}/start-sequence")
+  @Path(value = "/{questionId}/start-sequence")
   def startSequenceByQuestionId: Route
 
   def routes: Route = listQuestions ~ startSequenceByQuestionId
