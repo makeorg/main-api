@@ -19,7 +19,6 @@
 
 package org.make.api.question
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
@@ -28,20 +27,20 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
+import org.make.api.operation.{
+  OperationOfQuestionServiceComponent,
+  OperationServiceComponent,
+  PersistentOperationOfQuestionServiceComponent
+}
 import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -51,26 +50,16 @@ trait QuestionApiComponent {
 @Path(value = "/questions")
 trait QuestionApi extends Directives {
 
-  @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "get-question-details", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
-    )
+    value = Array(new ApiImplicitParam(name = "questionSlugOrQuestionId", paramType = "path", dataType = "string"))
   )
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModerationQuestionResponse]]))
   )
-  @Path(value = "/")
-  def listQuestions: Route
+  @Path(value = "/{questionSlugOrQuestionId}/details")
+  def questionDetails: Route
 
   @ApiOperation(value = "start-sequence-by-question", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -90,8 +79,7 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/start-sequence")
   def startSequenceByQuestionId: Route
 
-  def routes: Route = listQuestions ~ startSequenceByQuestionId
-
+  def routes: Route = questionDetails ~ startSequenceByQuestionId
 }
 
 trait DefaultQuestionApiComponent
@@ -102,54 +90,29 @@ trait DefaultQuestionApiComponent
     with StrictLogging
     with ParameterExtractors {
 
-  this: QuestionServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: QuestionServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with OperationServiceComponent
+    with OperationOfQuestionServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new QuestionApi {
 
     private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
+    private val questionSlugOrQuestionId: PathMatcher1[String] = Segment
 
-    override def listQuestions: Route = get {
-      path("moderation" / "questions") {
-        makeOperation("ModerationSearchQuestion") { _ =>
-          parameters(
-            (
-              'slug.?,
-              'operationId.as[OperationId].?,
-              'themeId.as[ThemeId].?,
-              'country.as[Country].?,
-              'language.as[Language].?,
-              '_start.as[Int].?,
-              '_end.as[Int].?,
-              '_sort.?,
-              '_order.?
-            )
-          ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
-            val first = start.getOrElse(0)
-            val request = SearchQuestionRequest(
-              maybeThemeId = themeId,
-              maybeOperationId = operationId,
-              country = country,
-              language = language,
-              maybeSlug = maybeSlug,
-              skip = start,
-              limit = end.map(offset => offset - first),
-              sort = sort,
-              order = order
-            )
-            val searchResults =
-              questionService.countQuestion(request).flatMap { count =>
-                questionService.searchQuestion(request).map(results => count -> results)
-              }
-
-            onSuccess(searchResults) {
-              case (count, results) =>
-                complete(
-                  (
-                    StatusCodes.OK,
-                    scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
-                    results.map(ModerationQuestionResponse.apply)
-                  )
-                )
+    override def questionDetails: Route = get {
+      path("questions" / questionSlugOrQuestionId / "details") { questionSlugOrQuestionId =>
+        makeOperation("GetQuestionDetails") { _ =>
+          provideAsyncOrNotFound {
+            questionService.getQuestionByQuestionIdValueOrSlug(questionSlugOrQuestionId)
+          } { question =>
+            provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(question.questionId)) {
+              operationOfQuestion =>
+                provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
+                  complete(QuestionDetailsResponse(question, operation, operationOfQuestion))
+                }
             }
           }
         }
@@ -163,12 +126,12 @@ trait DefaultQuestionApiComponent
             decodeRequest {
               entity(as[StartSequenceByQuestionIdRequest]) { request: StartSequenceByQuestionIdRequest =>
                 provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) {
-                  operationOfquestion =>
+                  operationOfQuestion =>
                     provideAsyncOrNotFound(
                       sequenceService
                         .startNewSequence(
                           maybeUserId = userAuth.map(_.user.userId),
-                          sequenceId = operationOfquestion.landingSequenceId,
+                          sequenceId = operationOfQuestion.landingSequenceId,
                           includedProposals = request.include.getOrElse(Seq.empty),
                           tagsIds = None,
                           requestContext = requestContext
@@ -182,8 +145,8 @@ trait DefaultQuestionApiComponent
           }
         }
       }
-
     }
+
   }
 }
 

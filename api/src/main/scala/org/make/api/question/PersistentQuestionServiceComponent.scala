@@ -43,6 +43,7 @@ trait PersistentQuestionService {
   def find(request: SearchQuestionRequest): Future[Seq[Question]]
   def getById(questionId: QuestionId): Future[Option[Question]]
   def getByIds(questionIds: Seq[QuestionId]): Future[Seq[Question]]
+  def getByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]
   def persist(question: Question): Future[Question]
   def delete(question: QuestionId): Future[Unit]
 }
@@ -120,6 +121,21 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
           select
             .from(PersistentQuestion.as(questionAlias))
             .where(sqls.eq(questionAlias.questionId, questionId.value))
+        }.map(PersistentQuestion.apply()).single.apply()
+      }).map(_.map(_.toQuestion))
+    }
+
+    override def getByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentQuestion.as(questionAlias))
+            .where(
+              sqls
+                .eq(questionAlias.slug, questionIdValueOrSlug)
+                .or(sqls.eq(questionAlias.questionId, questionIdValueOrSlug))
+            )
         }.map(PersistentQuestion.apply()).single.apply()
       }).map(_.map(_.toQuestion))
     }

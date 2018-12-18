@@ -163,8 +163,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
     )
   )
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CreateOperationOfQuestionRequest]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationOfQuestionResponse]))
   )
   @ApiImplicitParams(
     value = Array(

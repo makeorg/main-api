@@ -70,7 +70,6 @@ object OperationId {
   }
 }
 
-@ApiModel
 final case class OperationOfQuestion(questionId: QuestionId,
                                      operationId: OperationId,
                                      startDate: Option[LocalDate],
