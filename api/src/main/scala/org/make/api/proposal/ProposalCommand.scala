@@ -40,7 +40,8 @@ final case class ProposeCommand(proposalId: ProposalId,
                                 user: User,
                                 createdAt: ZonedDateTime,
                                 content: String,
-                                question: Question)
+                                question: Question,
+                                initialProposal: Boolean)
     extends ProposalCommand
 
 final case class UpdateProposalCommand(moderator: UserId,

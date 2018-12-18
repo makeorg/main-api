@@ -451,7 +451,8 @@ class OrganisationServiceTest
           ideaId = None,
           operationId = None,
           questionId = None,
-          sequencePool = SequencePool.New
+          sequencePool = SequencePool.New,
+          initialProposal = false
         )
       }
 

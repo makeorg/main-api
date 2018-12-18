@@ -111,7 +111,8 @@ trait ProposalHelper {
           user = user,
           createdAt = DateHelper.now(),
           content = content,
-          question = question
+          question = question,
+          initialProposal = false
         )
       )
     }

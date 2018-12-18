@@ -25,4 +25,6 @@ object MakeSerializable {
   val V1: Int = 1
   val V2: Int = 2
   val V3: Int = 3
+  val V4: Int = 4
+  val V5: Int = 5
 }

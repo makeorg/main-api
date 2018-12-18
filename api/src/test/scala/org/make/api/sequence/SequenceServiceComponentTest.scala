@@ -74,7 +74,6 @@ class SequenceServiceComponentTest
   def fakeProposal(id: ProposalId,
                    votes: Map[VoteKey, Int],
                    ideaId: Option[IdeaId],
-                   duplicates: Seq[ProposalId],
                    createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
     proposal.Proposal(
       proposalId = id,
@@ -91,7 +90,6 @@ class SequenceServiceComponentTest
       theme = None,
       refusalReason = None,
       tags = Seq.empty,
-      similarProposals = duplicates,
       idea = ideaId,
       events = Nil,
       creationContext = RequestContext.empty,

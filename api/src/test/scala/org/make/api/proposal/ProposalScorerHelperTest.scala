@@ -93,7 +93,6 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     tags = Seq.empty,
     organisations = Seq.empty,
     creationContext = RequestContext.empty,
-    similarProposals = Seq.empty,
     idea = Some(IdeaId("idea-id")),
     operation = None,
     events = List.empty

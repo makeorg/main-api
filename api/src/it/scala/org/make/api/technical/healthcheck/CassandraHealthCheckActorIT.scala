@@ -76,7 +76,7 @@ class CassandraHealthCheckActorIT
       val proposalId = ProposalId("fake-proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
-        RequestContext.empty,
+        requestContext = RequestContext.empty,
         user = User(
           userId = UserId("fake-user"),
           email = "fake@user.com",
@@ -107,7 +107,8 @@ class CassandraHealthCheckActorIT
           question = "fake question",
           None,
           None
-        )
+        ),
+        initialProposal = false
       )
 
       expectMsgType[ProposalId](1.minute)

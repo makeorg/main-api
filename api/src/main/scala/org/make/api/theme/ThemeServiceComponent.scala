@@ -23,7 +23,6 @@ import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
-import org.make.core.proposal.{SearchFilters, SearchQuery, ThemeSearchFilter}
 import org.make.core.reference._
 import org.make.core.tag.Tag
 
@@ -50,16 +49,6 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>
         Future.traverse(themes) { theme =>
-          val maybeProposalsCount = elasticsearchProposalAPI
-            .countProposals(
-              SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
-            )
-
-          val votesCount = elasticsearchProposalAPI
-            .countVotedProposals(
-              SearchQuery(filters = Some(SearchFilters(theme = Some(ThemeSearchFilter(Seq(theme.themeId))))))
-            )
-
           val retrieveQuestion = questionService
             .findQuestion(
               Some(theme.themeId),
@@ -78,17 +67,9 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
               )
 
           for {
-            proposalsCount <- maybeProposalsCount
-            maybeQuestion  <- retrieveQuestion
-            votesCount     <- votesCount
-            tags           <- tags
-          } yield
-            theme.copy(
-              proposalsCount = proposalsCount,
-              votesCount = votesCount,
-              tags = tags,
-              questionId = maybeQuestion.map(_.questionId)
-            )
+            maybeQuestion <- retrieveQuestion
+            tags          <- tags
+          } yield theme.copy(tags = tags, questionId = maybeQuestion.map(_.questionId))
         }
       }
     }

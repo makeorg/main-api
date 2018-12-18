@@ -21,6 +21,7 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -41,6 +42,9 @@ sealed trait ProposalEvent extends MakeSerializable {
 }
 
 object ProposalEvent {
+
+  trait DeprecatedEvent
+
   private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
   // This event isn't published and so doesn't need to be in the coproduct
@@ -48,6 +52,7 @@ object ProposalEvent {
                                            eventDate: ZonedDateTime = defaultDate,
                                            requestContext: RequestContext = RequestContext.empty)
       extends ProposalEvent
+      with DeprecatedEvent
 
   object SimilarProposalsCleared {
 
@@ -61,6 +66,7 @@ object ProposalEvent {
                                           eventDate: ZonedDateTime = defaultDate,
                                           requestContext: RequestContext = RequestContext.empty)
       extends ProposalEvent
+      with DeprecatedEvent
 
   object SimilarProposalRemoved {
 
@@ -139,7 +145,7 @@ object PublishedProposalEvent {
                                    requestContext: RequestContext = RequestContext.empty,
                                    proposal: Proposal)
       extends PublishedProposalEvent {
-    override def version(): Int = MakeSerializable.V3
+    override def version(): Int = MakeSerializable.V4
   }
 
   object ProposalPatched {
@@ -159,16 +165,17 @@ object PublishedProposalEvent {
                                     theme: Option[ThemeId] = None,
                                     language: Option[Language] = None,
                                     country: Option[Country] = None,
-                                    question: Option[QuestionId] = None)
+                                    question: Option[QuestionId] = None,
+                                    initialProposal: Boolean = false)
       extends PublishedProposalEvent {
 
-    override def version(): Int = MakeSerializable.V2
+    override def version(): Int = MakeSerializable.V3
   }
 
   object ProposalProposed {
 
     implicit val formatter: RootJsonFormat[ProposalProposed] =
-      DefaultJsonProtocol.jsonFormat12(ProposalProposed.apply)
+      DefaultJsonProtocol.jsonFormat13(ProposalProposed.apply)
 
   }
 
@@ -386,7 +393,8 @@ object PublishedProposalEvent {
                                          similarProposals: Set[ProposalId],
                                          requestContext: RequestContext,
                                          eventDate: ZonedDateTime)
-      extends PublishedProposalEvent {
+      extends PublishedProposalEvent
+      with DeprecatedEvent {
 
     override def version(): Int = MakeSerializable.V1
   }

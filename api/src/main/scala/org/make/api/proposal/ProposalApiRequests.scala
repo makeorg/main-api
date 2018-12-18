@@ -110,7 +110,7 @@ object ContextFilterRequest {
 }
 
 final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
-                               themesIds: Option[Seq[ThemeId]] = None,
+                               initialProposal: Option[Boolean] = None,
                                tagsIds: Option[Seq[TagId]] = None,
                                labelsIds: Option[Seq[LabelId]] = None,
                                operationId: Option[OperationId] = None,
@@ -133,7 +133,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
-        themes = themesIds.map(ThemeSearchFilter.apply),
+        initialProposal = initialProposal.map(InitialProposalFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(OperationSearchFilter.apply),
@@ -175,7 +175,7 @@ object SearchRequest {
 }
 
 final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
-                                         themesIds: Option[Seq[ThemeId]] = None,
+                                         initialProposal: Option[Boolean] = None,
                                          tagsIds: Option[Seq[TagId]] = None,
                                          labelsIds: Option[Seq[LabelId]] = None,
                                          operationId: Option[OperationId] = None,
@@ -199,7 +199,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
-        themes = themesIds.map(ThemeSearchFilter.apply),
+        initialProposal = initialProposal.map(InitialProposalFilter.apply),
         tags = tagsIds.map(TagsSearchFilter.apply),
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(OperationSearchFilter.apply),

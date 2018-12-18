@@ -156,7 +156,8 @@ class WidgetApiTest
                   operationId = None,
                   country = Country("FR"),
                   language = Language("fr"),
-                  sequencePool = SequencePool.New
+                  sequencePool = SequencePool.New,
+                  initialProposal = false
                 ),
                 myProposal = false,
                 voteAndQualifications = None

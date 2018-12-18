@@ -74,6 +74,7 @@ object ProposalElasticsearchFieldNames {
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
   val sequencePool: String = "sequencePool"
+  val initialProposal: String = "initialProposal"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -99,7 +100,8 @@ case class IndexedProposal(id: ProposalId,
                            tags: Seq[IndexedTag],
                            ideaId: Option[IdeaId],
                            operationId: Option[OperationId],
-                           sequencePool: SequencePool)
+                           sequencePool: SequencePool,
+                           initialProposal: Boolean)
 
 object IndexedProposal extends CirceFormatters {
   implicit val encoder: Encoder[IndexedProposal] = deriveEncoder[IndexedProposal]
@@ -206,7 +208,8 @@ object SequencePool {
   case object Tested extends SequencePool { override val shortName: String = "tested" }
   case object Excluded extends SequencePool { override val shortName: String = "excluded" }
 
-  val sequencePools = Map(New.shortName -> New, Tested.shortName -> Tested, Excluded.shortName -> Excluded)
+  val sequencePools: Map[String, SequencePool] =
+    Map(New.shortName -> New, Tested.shortName -> Tested, Excluded.shortName -> Excluded)
 
   implicit lazy val sequencePoolEncoder: Encoder[SequencePool] =
     (sequencePool: SequencePool) => Json.fromString(sequencePool.shortName)

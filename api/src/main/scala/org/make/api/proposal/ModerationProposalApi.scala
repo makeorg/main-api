@@ -125,7 +125,7 @@ trait ModerationProposalApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
@@ -440,7 +440,6 @@ trait DefaultModerationProposalApiComponent
                   (
                     'format, // TODO Use Accept header to get the format
                     'filename,
-                    'theme.as[immutable.Seq[ThemeId]].?,
                     'tags.as[immutable.Seq[TagId]].?,
                     'content.?,
                     'operation.as[OperationId].?,
@@ -451,7 +450,6 @@ trait DefaultModerationProposalApiComponent
                 ) {
                   (_: String,
                    fileName: String,
-                   themeId: Option[Seq[ThemeId]],
                    tags: Option[Seq[TagId]],
                    content: Option[String],
                    operation: Option[OperationId],
@@ -466,7 +464,6 @@ trait DefaultModerationProposalApiComponent
                           proposalService.search(
                             userId = Some(auth.user.userId),
                             query = ExhaustiveSearchRequest(
-                              themesIds = themeId,
                               tagsIds = tags,
                               content = content,
                               context =
@@ -517,7 +514,7 @@ trait DefaultModerationProposalApiComponent
                   (
                     'proposalIds.as[immutable.Seq[ProposalId]].?,
                     'createdBefore.as[ZonedDateTime].?,
-                    'themesIds.as[immutable.Seq[ThemeId]].?,
+                    'initialProposal.as[Boolean].?,
                     'tagsIds.as[immutable.Seq[TagId]].?,
                     'operationId.as[OperationId].?,
                     'questionId.as[QuestionId].?,
@@ -541,7 +538,7 @@ trait DefaultModerationProposalApiComponent
                 ) {
                   (proposalIds: Option[Seq[ProposalId]],
                    createdBefore: Option[ZonedDateTime],
-                   themesIds: Option[Seq[ThemeId]],
+                   initialProposal: Option[Boolean],
                    tagsIds: Option[Seq[TagId]],
                    operationId: Option[OperationId],
                    questionId: Option[QuestionId],
@@ -610,7 +607,7 @@ trait DefaultModerationProposalApiComponent
                       }
                     val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
                       proposalIds = proposalIds,
-                      themesIds = themesIds,
+                      initialProposal = initialProposal,
                       tagsIds = tagsIds,
                       operationId = operationId,
                       questionId = questionId,

@@ -51,12 +51,12 @@ final case class Proposal(proposalId: ProposalId,
                           country: Option[Country] = None,
                           questionId: Option[QuestionId] = None,
                           creationContext: RequestContext,
-                          similarProposals: Seq[ProposalId] = Seq.empty,
                           idea: Option[IdeaId] = None,
                           operation: Option[OperationId] = None,
                           override val createdAt: Option[ZonedDateTime],
                           override val updatedAt: Option[ZonedDateTime],
-                          events: List[ProposalAction])
+                          events: List[ProposalAction],
+                          initialProposal: Boolean = false)
     extends Timestamped
 
 object Proposal {

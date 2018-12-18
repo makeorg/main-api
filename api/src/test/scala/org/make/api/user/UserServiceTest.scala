@@ -24,6 +24,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import com.github.t3hnar.bcrypt._
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -44,7 +45,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{times, verify}
 import org.mockito._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
+import org.mockito.ArgumentMatchers.{eq => isEqual}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -57,6 +58,7 @@ class UserServiceTest
     with PersistentUserServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
+    with TokenGeneratorComponent
     with EventBusServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -66,6 +68,7 @@ class UserServiceTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val crmService: CrmService = mock[CrmService]
   override val eventBusService: EventBusService = mock[EventBusService]
+  override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -837,6 +840,82 @@ class UserServiceTest
 
       whenReady(futureFollowOrganisation, Timeout(2.seconds)) { _ =>
         verify(eventBusService, times(1)).publish(any[UserUnfollowEvent])
+      }
+    }
+  }
+
+  feature("Create or retrieve virtual user") {
+    scenario("Existing user") {
+      val request: AuthorRequest =
+        AuthorRequest(
+          age = Some(20),
+          firstName = Some("who cares anyway"),
+          lastName = None,
+          postalCode = None,
+          profession = None
+        )
+
+      Mockito.when(tokenGenerator.tokenToHash(isEqual(request.toString))).thenReturn("some-hash")
+      val user = User(
+        userId = UserId("existing-user-id"),
+        email = "yopmail+some-hash@make.org",
+        firstName = request.firstName,
+        lastName = None,
+        lastIp = None,
+        hashedPassword = None,
+        enabled = false,
+        emailVerified = false,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq.empty,
+        country = Country("FR"),
+        language = Language("fr"),
+        profile = None,
+        createdAt = None,
+        updatedAt = None
+      )
+      Mockito
+        .when(persistentUserService.findByEmail("yopmail+some-hash@make.org"))
+        .thenReturn(Future.successful(Some(user)))
+
+      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
+
+      whenReady(result, Timeout(5.seconds)) { resultUser =>
+        resultUser should be(user)
+      }
+
+    }
+    scenario("New user") {
+      val request: AuthorRequest =
+        AuthorRequest(
+          age = Some(20),
+          firstName = Some("who cares anyway"),
+          lastName = None,
+          postalCode = None,
+          profession = None
+        )
+
+      Mockito.when(tokenGenerator.tokenToHash(isEqual(request.toString))).thenReturn("some-other-hash")
+
+      Mockito
+        .when(persistentUserService.findByEmail("yopmail+some-other-hash@make.org"))
+        .thenReturn(Future.successful(None))
+
+      Mockito
+        .when(persistentUserService.persist(any[User]))
+        .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+
+      Mockito
+        .when(persistentUserService.emailExists(isEqual("yopmail+some-other-hash@make.org")))
+        .thenReturn(Future.successful(false))
+
+      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
+
+      whenReady(result, Timeout(5.seconds)) { resultUser =>
+        resultUser.email should be("yopmail+some-other-hash@make.org")
       }
     }
   }

@@ -424,7 +424,8 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         theme = command.question.themeId,
         language = Some(command.question.language),
         country = Some(command.question.country),
-        question = Some(command.question.questionId)
+        question = Some(command.question.questionId),
+        initialProposal = command.initialProposal
       )
     ) { _ =>
       sender() ! proposalId
@@ -799,7 +800,6 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                 )
               )
             ),
-            similarProposals = Seq.empty,
             operation = e.operation,
             events = List(
               ProposalAction(
@@ -810,35 +810,22 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               )
             ),
             language = e.language,
-            country = e.country
+            country = e.country,
+            initialProposal = e.initialProposal
           )
         )
       )
-    case e: ProposalUpdated       => state.map(proposalState => applyProposalUpdated(proposalState, e))
-    case e: ProposalAccepted      => state.map(proposalState => applyProposalAccepted(proposalState, e))
-    case e: ProposalRefused       => state.map(proposalState => applyProposalRefused(proposalState, e))
-    case e: ProposalPostponed     => state.map(proposalState => applyProposalPostponed(proposalState, e))
-    case e: ProposalVoted         => state.map(proposalState => applyProposalVoted(proposalState, e))
-    case e: ProposalUnvoted       => state.map(proposalState => applyProposalUnvoted(proposalState, e))
-    case e: ProposalQualified     => state.map(proposalState => applyProposalQualified(proposalState, e))
-    case e: ProposalUnqualified   => state.map(proposalState => applyProposalUnqualified(proposalState, e))
-    case e: ProposalLocked        => state.map(proposalState => applyProposalLocked(proposalState, e))
-    case e: SimilarProposalsAdded => state.map(proposalState => applySimilarProposalsAdded(proposalState, e))
-    case _: SimilarProposalsCleared =>
-      state.map(
-        proposalState => proposalState.copy(proposal = proposalState.proposal.copy(similarProposals = Seq.empty))
-      )
-    case e: SimilarProposalRemoved =>
-      state.map(
-        proposalState =>
-          proposalState.copy(
-            proposal = proposalState.proposal
-              .copy(similarProposals = proposalState.proposal.similarProposals.filter(_ != e.proposalToRemove))
-        )
-      )
-
-    case e: ProposalPatched =>
-      state.map(_.copy(proposal = e.proposal))
+    case e: ProposalUpdated     => state.map(proposalState => applyProposalUpdated(proposalState, e))
+    case e: ProposalAccepted    => state.map(proposalState => applyProposalAccepted(proposalState, e))
+    case e: ProposalRefused     => state.map(proposalState => applyProposalRefused(proposalState, e))
+    case e: ProposalPostponed   => state.map(proposalState => applyProposalPostponed(proposalState, e))
+    case e: ProposalVoted       => state.map(proposalState => applyProposalVoted(proposalState, e))
+    case e: ProposalUnvoted     => state.map(proposalState => applyProposalUnvoted(proposalState, e))
+    case e: ProposalQualified   => state.map(proposalState => applyProposalQualified(proposalState, e))
+    case e: ProposalUnqualified => state.map(proposalState => applyProposalUnqualified(proposalState, e))
+    case e: ProposalLocked      => state.map(proposalState => applyProposalLocked(proposalState, e))
+    case e: ProposalPatched     => state.map(_.copy(proposal = e.proposal))
+    case _: DeprecatedEvent     => state
     case _: ProposalAnonymized =>
       state.map(
         state =>
@@ -904,7 +891,6 @@ object ProposalActor {
         labels = event.labels,
         events = action :: state.proposal.events,
         updatedAt = Some(event.eventDate),
-        similarProposals = event.similarProposals,
         idea = event.idea,
         operation = event.operation,
         questionId = event.question
@@ -946,7 +932,6 @@ object ProposalActor {
         events = action :: state.proposal.events,
         status = Accepted,
         updatedAt = Some(event.eventDate),
-        similarProposals = event.similarProposals,
         idea = event.idea,
         operation = event.operation,
         questionId = event.question
@@ -1099,10 +1084,6 @@ object ProposalActor {
           lock = Some(Lock(event.moderatorId, event.moderatorName.getOrElse("<unknown>")))
         )
     }
-  }
-
-  def applySimilarProposalsAdded(state: ProposalState, event: SimilarProposalsAdded): ProposalState = {
-    state.copy(proposal = state.proposal.copy(similarProposals = event.similarProposals.toSeq))
   }
 
 }

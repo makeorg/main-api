@@ -86,7 +86,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       tags = Seq.empty,
       ideaId = idea,
       operationId = None,
-      sequencePool = sequencePool
+      sequencePool = sequencePool,
+      initialProposal = false
     )
   }
 
@@ -124,7 +125,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       tags = Seq.empty,
       ideaId = idea,
       operationId = None,
-      sequencePool = sequencePool
+      sequencePool = sequencePool,
+      initialProposal = false
     )
   }
 

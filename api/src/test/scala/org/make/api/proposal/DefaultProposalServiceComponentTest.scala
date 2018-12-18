@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
-import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -40,13 +40,15 @@ import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import ArgumentMatchers.any
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -173,7 +175,8 @@ class DefaultProposalServiceComponentTest
       ideaId = None,
       operationId = None,
       questionId = None,
-      sequencePool = SequencePool.New
+      sequencePool = SequencePool.New,
+      initialProposal = false
     )
   }
 
@@ -228,7 +231,7 @@ class DefaultProposalServiceComponentTest
           language = Some(Language("fr")),
           country = Some(Country("FR")),
           creationContext = RequestContext.empty,
-          similarProposals = Seq.empty,
+          initialProposal = false,
           idea = None,
           operation = Some(OperationId("unlockable")),
           createdAt = None,
@@ -452,7 +455,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("unlockable")),
                 createdAt = None,
@@ -482,7 +485,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,
@@ -556,7 +559,7 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                similarProposals = Seq.empty,
+                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,
@@ -668,4 +671,48 @@ class DefaultProposalServiceComponentTest
     }
   }
 
+  feature("createInitialProposal") {
+    scenario("createInitialProposal") {
+
+      val question =
+        Question(
+          QuestionId("createInitialProposal"),
+          slug = "create-initial-proposal",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "how to create initial proposals?",
+          operationId = None,
+          themeId = None
+        )
+
+      Mockito
+        .when(userService.retrieveOrCreateVirtualUser(any[AuthorRequest], any[Country], any[Language]))
+        .thenReturn(Future.successful(user(UserId("user"))))
+
+      Mockito
+        .when(userService.getUser(any[UserId]))
+        .thenReturn(Future.successful(Some(user(UserId("user")))))
+
+      Mockito
+        .when(proposalCoordinatorService.propose(any[ProposeCommand]))
+        .thenReturn(Future.successful(ProposalId("my-proposal")))
+
+      Mockito
+        .when(proposalCoordinatorService.accept(any[AcceptProposalCommand]))
+        .thenReturn(Future.successful(None))
+
+      val result = proposalService.createInitialProposal(
+        "my content",
+        question,
+        Seq(TagId("my-tag")),
+        moderator = UserId("moderator"),
+        moderatorRequestContext = RequestContext.empty,
+        author = AuthorRequest(None, None, None, None, None)
+      )
+
+      whenReady(result, Timeout(5.seconds)) { proposalId =>
+        proposalId.value should be("my-proposal")
+      }
+    }
+  }
 }

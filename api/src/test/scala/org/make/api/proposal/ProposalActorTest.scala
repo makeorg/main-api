@@ -215,7 +215,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsg(proposalId)
@@ -266,7 +267,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an italian proposal",
-        question = questionOnNothingIT
+        question = questionOnNothingIT,
+        initialProposal = false
       )
 
       expectMsg(proposalItalyId)
@@ -332,7 +334,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsg(proposalId)
@@ -382,7 +385,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnTheme
+        question = questionOnTheme,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -430,7 +434,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -478,7 +483,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -525,7 +531,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -578,7 +585,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -640,7 +648,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -680,7 +689,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -720,7 +730,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -777,7 +788,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -814,7 +826,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -856,7 +869,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = DateHelper.now(),
         content = originalContent,
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -918,7 +932,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -978,7 +993,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1038,7 +1054,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1098,7 +1115,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1136,7 +1154,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1168,7 +1187,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1209,7 +1229,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1251,7 +1272,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1304,7 +1326,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is an unlocked proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1347,7 +1370,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsgPF[Unit]() {
@@ -1422,7 +1446,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsg(proposalId)
@@ -1490,7 +1515,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsg(proposalId)
@@ -1540,7 +1566,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         user = user,
         createdAt = mainCreatedAt.get,
         content = "This is a proposal",
-        question = questionOnNothingFr
+        question = questionOnNothingFr,
+        initialProposal = false
       )
 
       expectMsg(proposalId)
@@ -1593,7 +1620,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           question = "my question",
           operationId = None,
           themeId = None
-        )
+        ),
+        initialProposal = false
       )
 
       expectMsg(proposalId)

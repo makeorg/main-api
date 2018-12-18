@@ -377,7 +377,6 @@ class ModerationProposalApiTest
           createdAt = proposalSim123.createdAt,
           updatedAt = proposalSim123.updatedAt,
           events = Nil,
-          similarProposals = Seq(ProposalId("sim-456"), ProposalId("sim-789")),
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
@@ -427,7 +426,6 @@ class ModerationProposalApiTest
           createdAt = proposalSim124.createdAt,
           updatedAt = proposalSim124.updatedAt,
           events = Nil,
-          similarProposals = Seq(ProposalId("sim-111"), ProposalId("sim-222")),
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
@@ -514,7 +512,6 @@ class ModerationProposalApiTest
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
-      similarProposals = Seq.empty,
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
@@ -545,7 +542,6 @@ class ModerationProposalApiTest
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
-      similarProposals = Seq.empty,
       idea = None,
       operation = None,
       questionId = Some(QuestionId("some-question")),
@@ -799,9 +795,7 @@ class ModerationProposalApiTest
       Get("/moderation/proposals/sim-123")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val proposalResponse: ProposalResponse = entityAs[ProposalResponse]
-        proposalResponse.similarProposals.length should be(2)
-        proposalResponse.similarProposals should be(Seq(ProposalId("sim-456"), ProposalId("sim-789")))
+        entityAs[ProposalResponse]
       }
     }
 

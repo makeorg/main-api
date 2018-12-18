@@ -226,7 +226,6 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       operation = Some(OperationId("operation-id")),
       createdAt = Some(eventDate),
       updatedAt = Some(eventDate),
-      similarProposals = Seq(ProposalId("similar-1")),
       votes = Seq(
         Vote(
           key = VoteKey.Agree,

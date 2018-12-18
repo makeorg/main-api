@@ -226,7 +226,14 @@ class ProposalApiTest
 
   when(
     proposalService
-      .propose(any[User], any[RequestContext], any[ZonedDateTime], matches(validProposalText), any[Question])
+      .propose(
+        any[User],
+        any[RequestContext],
+        any[ZonedDateTime],
+        matches(validProposalText),
+        any[Question],
+        any[Boolean]
+      )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   val proposalResult: ProposalResult = ProposalResult(
