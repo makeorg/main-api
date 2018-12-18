@@ -122,7 +122,7 @@ trait ModerationQuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.CreateQuestionRequest")
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.question.CreateQuestionRequest")
     )
   )
   @ApiResponses(

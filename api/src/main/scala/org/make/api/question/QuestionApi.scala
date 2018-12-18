@@ -158,7 +158,7 @@ trait DefaultQuestionApiComponent
 
     override def startSequenceByQuestionId: Route = post {
       path("questions" / questionId / "start-sequence") { questionId =>
-        makeOperation("StartSequenceById") { requestContext =>
+        makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             decodeRequest {
               entity(as[StartSequenceByQuestionIdRequest]) { request: StartSequenceByQuestionIdRequest =>
