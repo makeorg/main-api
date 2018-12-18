@@ -87,7 +87,9 @@ class DatabaseConfiguration(override protected val configuration: Config)
   GlobalSettings.loggingSQLErrors = true
   GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
     enabled = true,
-    warningEnabled = false,
+    warningEnabled = true,
+    warningThresholdMillis = 3000,
+    warningLogLevel = 'warn,
     printUnprocessedStackTrace = false,
     logLevel = 'debug
   )
