@@ -82,7 +82,7 @@ trait ModerationQuestionApi extends Directives {
   def listQuestions: Route
 
   @ApiOperation(
-    value = "moderation-list-questions",
+    value = "moderation-create-initial-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -111,17 +111,43 @@ trait ModerationQuestionApi extends Directives {
   @Path(value = "/{questionId}/initial-proposals")
   def addInitialProposal: Route
 
-  @ApiOperation(value = "get-question", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "get-question",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationQuestionResponse]))
   )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string")))
   @Path(value = "/{questionId}")
   def getQuestion: Route
 
-  @ApiOperation(value = "post-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "post-question",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "admin", description = "BO Admin"),
+          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
+        )
+      )
+    )
+  )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "", paramType = "path", dataType = "string"),
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.question.CreateQuestionRequest")
     )
   )
@@ -131,7 +157,7 @@ trait ModerationQuestionApi extends Directives {
   @Path(value = "/")
   def createQuestion: Route
 
-  def routes: Route = listQuestions ~ getQuestion ~ createQuestion
+  def routes: Route = listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal
 
 }
 
