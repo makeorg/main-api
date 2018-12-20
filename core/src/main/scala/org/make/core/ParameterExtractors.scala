@@ -121,8 +121,8 @@ trait ParameterExtractors {
 
   implicit val sortOrderFromStringUnmarshaller: Unmarshaller[String, SortOrder] =
     Unmarshaller.strict[String, SortOrder] {
-      case "asc"  => Asc
-      case "desc" => Desc
+      case value if value.toLowerCase == "asc"  => Asc
+      case value if value.toLowerCase == "desc" => Desc
       case string =>
         throw ValidationFailedError(Seq(ValidationError("order", Some(s"$string is not a valid sort order"))))
     }
