@@ -353,6 +353,15 @@ class OrganisationApiTest
         proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-4")) shouldBe false
       }
     }
+
+    scenario("search ordered organisation proposals with uppercase order") {
+      Get("/organisations/make-org/proposals?sort=createdAt&order=DESC")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
+        proposalsResultSeededResponse.total shouldBe 2
+      }
+    }
   }
 
   feature("get votes of an organisation") {
