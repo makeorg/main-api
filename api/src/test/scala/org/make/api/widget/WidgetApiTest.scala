@@ -22,7 +22,7 @@ package org.make.api.widget
 import java.time.ZonedDateTime
 import java.util.Date
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
@@ -195,7 +195,7 @@ class WidgetApiTest
       when(persistentOperationOfQuestionService.getById(ArgumentMatchers.any[QuestionId]))
         .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
 
-      Post("/widget/questions/slug/start-sequence").withEntity(HttpEntity(ContentTypes.`application/json`, "{}")) ~> routes ~> check {
+      Get("/widget/questions/slug/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -204,7 +204,7 @@ class WidgetApiTest
       when(persistentQuestionService.find(ArgumentMatchers.any[SearchQuestionRequest]))
         .thenReturn(Future.successful(Seq()))
 
-      Post("/widget/questions/slug/start-sequence").withEntity(HttpEntity(ContentTypes.`application/json`, "{}")) ~> routes ~> check {
+      Get("/widget/questions/slug/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

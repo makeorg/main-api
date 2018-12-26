@@ -21,8 +21,8 @@ package org.make.api.widget
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
-import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.ObjectEncoder
+import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -66,7 +66,7 @@ trait WidgetApi extends Directives {
   def getWidgetSequence: Route
 
   @Path(value = "/questions/{questionSlug}/start-sequence")
-  @ApiOperation(value = "get-widget-sequence-by-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "get-widget-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
@@ -74,11 +74,9 @@ trait WidgetApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionSlug", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.widget.StartSequenceByQuestionSlugRequest"
-      )
+      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
     )
   )
   def startSequenceByQuestionSlug: Route
@@ -97,8 +95,9 @@ trait DefaultWidgetApiComponent
   override lazy val widgetApi: WidgetApi = new WidgetApi {
 
     private val widgetOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
-//    private val questionSlug: PathMatcher1[String] = Segment
+    private val questionSlug: PathMatcher1[String] = Segment
 
+    // @Deprecated
     override def getWidgetSequence: Route = get {
       path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
         makeOperation("GetWidgetSequence") { requestContext =>
@@ -123,12 +122,12 @@ trait DefaultWidgetApiComponent
       }
     }
 
-    override def startSequenceByQuestionSlug: Route = post {
-      path("widget" / "questions" / Segment / "start-sequence") { questionSlug =>
+    override def startSequenceByQuestionSlug: Route = get {
+      path("widget" / "questions" / questionSlug / "start-sequence") { questionSlug =>
         makeOperation("GetWidgetSequenceByQuestionSlug") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            decodeRequest {
-              entity(as[StartSequenceByQuestionSlugRequest]) { request: StartSequenceByQuestionSlugRequest =>
+            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?, 'country.as[Country].?)) {
+              (tagsIds: Option[Seq[TagId]], limit: Option[Int], country: Option[Country]) =>
                 provideAsyncOrNotFound(
                   persistentQuestionService
                     .find(SearchQuestionRequest(maybeSlug = Some(questionSlug)))
@@ -140,9 +139,9 @@ trait DefaultWidgetApiComponent
                         widgetService.startNewWidgetSequence(
                           maybeUserId = userAuth.map(_.user.userId),
                           widgetOperationId = operationOfQuestion.operationId,
-                          tagsIds = request.tagsIds,
-                          country = request.country,
-                          limit = request.limit,
+                          tagsIds = tagsIds,
+                          country = country,
+                          limit = limit,
                           requestContext = requestContext
                         )
                       ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
@@ -150,13 +149,11 @@ trait DefaultWidgetApiComponent
                       }
                   }
                 }
-              }
             }
           }
         }
       }
     }
-
   }
 }
 
@@ -164,12 +161,4 @@ final case class WidgetSequence(title: String, slug: String, proposals: Seq[Inde
 
 object WidgetSequence {
   implicit val encoder: ObjectEncoder[WidgetSequence] = deriveEncoder[WidgetSequence]
-}
-
-final case class StartSequenceByQuestionSlugRequest(tagsIds: Option[Seq[TagId]] = None,
-                                                    limit: Option[Int] = None,
-                                                    country: Option[Country] = None)
-
-object StartSequenceByQuestionSlugRequest {
-  implicit val decoder: Decoder[StartSequenceByQuestionSlugRequest] = deriveDecoder[StartSequenceByQuestionSlugRequest]
 }
