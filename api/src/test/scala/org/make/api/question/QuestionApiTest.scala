@@ -20,7 +20,7 @@
 package org.make.api.question
 
 import java.time.LocalDate
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
@@ -116,14 +116,14 @@ class QuestionApiTest
           requestContext = ArgumentMatchers.any[RequestContext]
         )
       ).thenReturn(Future.successful(Some(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty))))
-      Post("/questions/question-id/start-sequence").withEntity(HttpEntity(ContentTypes.`application/json`, "{}")) ~> routes ~> check {
+      Get("/questions/question-id/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
     scenario("invalid question") {
       when(persistentOperationOfQuestionService.getById(any[QuestionId]))
         .thenReturn(Future.successful(None))
-      Post("/questions/question-id/start-sequence").withEntity(HttpEntity(ContentTypes.`application/json`, "{}")) ~> routes ~> check {
+      Get("/questions/question-id/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

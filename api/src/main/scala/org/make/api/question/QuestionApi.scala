@@ -61,15 +61,11 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionSlugOrQuestionId}/details")
   def questionDetails: Route
 
-  @ApiOperation(value = "start-sequence-by-question", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "start-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.question.StartSequenceByQuestionIdRequest"
-      )
+      new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
     )
   )
   @ApiResponses(
@@ -119,26 +115,22 @@ trait DefaultQuestionApiComponent
       }
     }
 
-    override def startSequenceByQuestionId: Route = post {
+    override def startSequenceByQuestionId: Route = get {
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            decodeRequest {
-              entity(as[StartSequenceByQuestionIdRequest]) { request: StartSequenceByQuestionIdRequest =>
-                provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) {
-                  operationOfQuestion =>
-                    provideAsyncOrNotFound(
-                      sequenceService
-                        .startNewSequence(
-                          maybeUserId = userAuth.map(_.user.userId),
-                          sequenceId = operationOfQuestion.landingSequenceId,
-                          includedProposals = request.include.getOrElse(Seq.empty),
-                          tagsIds = None,
-                          requestContext = requestContext
-                        )
-                    ) { sequences =>
-                      complete(sequences)
-                    }
+            parameters('include.*) { includes =>
+              provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) { operationOfQuestion =>
+                provideAsyncOrNotFound(
+                  sequenceService
+                    .startNewSequence(
+                      maybeUserId = userAuth.map(_.user.userId),
+                      sequenceId = operationOfQuestion.landingSequenceId,
+                      includedProposals = includes.toSeq.map(ProposalId(_)),
+                      tagsIds = None,
+                      requestContext = requestContext
+                    )
+                ) { sequences => complete(sequences)
                 }
               }
             }
