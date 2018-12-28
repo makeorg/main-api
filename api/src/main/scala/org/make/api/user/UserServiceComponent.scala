@@ -593,7 +593,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def retrieveOrCreateVirtualUser(userInfo: AuthorRequest,
                                              country: Country,
                                              language: Language): Future[User] = {
-      val hash: String = tokenGenerator.tokenToHash(s"$userInfo")
+      // Take only 50 chars to avoid having values too large for the column
+      val fullHash: String = tokenGenerator.tokenToHash(s"$userInfo")
+      val hash = fullHash.substring(0, Math.min(50, fullHash.length))
       val email = s"yopmail+$hash@make.org"
       getUserByEmail(email).flatMap {
         case Some(user) => Future.successful(user)

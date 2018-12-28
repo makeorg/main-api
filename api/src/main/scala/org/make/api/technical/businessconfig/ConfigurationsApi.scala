@@ -46,9 +46,7 @@ trait ConfigurationsApi extends MakeDirectives with MakeAuthenticationDirectives
     get {
       path("configurations" / "front") {
         makeOperation("FrontConfiguration") { _ =>
-          onSuccess(themeService.findAll()) { themes =>
-            complete(FrontConfiguration.default(themes = themes))
-          }
+          complete(FrontConfiguration.default(themes = Seq.empty))
         }
       }
     }
