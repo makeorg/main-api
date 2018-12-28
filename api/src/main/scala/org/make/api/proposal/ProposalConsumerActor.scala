@@ -23,7 +23,6 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.semantic.{SemanticComponent, SemanticService}
@@ -94,7 +93,6 @@ object ProposalConsumerActor {
       with OrganisationServiceComponent
       with TagServiceComponent
       with SequenceServiceComponent
-      with OperationServiceComponent
       with SemanticComponent
       with ProposalSearchEngineComponent
       with ProposalIndexerServiceComponent
