@@ -173,7 +173,7 @@ trait DefaultModerationOperationApiComponent
           makeOperation("ModerationPutOperation") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsyncOrNotFound(operationService.findOne(operationId)) { _ =>
+                provideAsyncOrNotFound(operationService.findOneSimple(operationId)) { _ =>
                   decodeRequest {
                     entity(as[ModerationUpdateOperationRequest]) { request: ModerationUpdateOperationRequest =>
                       provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
@@ -209,18 +209,11 @@ trait DefaultModerationOperationApiComponent
     def moderationGetOperation: Route = {
       get {
         path("moderation" / "operations" / operationId) { operationId =>
-          makeOperation("ModerationGetOperation") { requestContext =>
+          makeOperation("ModerationGetOperation") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
-                  provideAsync(userService.getUsersByUserIds(operation.events.map(_.makeUserId))) { users =>
-                    provideAsync(tagService.findByQuestionIds(operation.questions.map(_.question.questionId))) { tags =>
-                      complete(
-                        ModerationOperationResponse
-                          .apply(operation = operation, operationActionUsers = users, tags)
-                      )
-                    }
-                  }
+                provideAsyncOrNotFound(operationService.findOneSimple(operationId)) { operation =>
+                  complete(ModerationOperationResponse.apply(operation = operation))
                 }
               }
             }
@@ -233,24 +226,17 @@ trait DefaultModerationOperationApiComponent
       get {
         path("moderation" / "operations") {
           parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
-            makeOperation("ModerationGetOperations") { requestContext =>
+            makeOperation("ModerationGetOperations") { _ =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireModerationRole(auth.user) {
                   provideAsync(
-                    operationService.find(slug = slug, country = country, maybeSource = None, openAt = openAt)
+                    operationService.findSimple(slug = slug, country = country, maybeSource = None, openAt = openAt)
                   ) { operations =>
-                    provideAsync(userService.getUsersByUserIds(operations.flatMap(_.events.map(_.makeUserId)).distinct)) {
-                      users =>
-                        provideAsync(
-                          tagService.findByQuestionIds(operations.flatMap(_.questions).map(_.question.questionId))
-                        ) { tags =>
-                          val operationResponses: Seq[ModerationOperationResponse] =
-                            operations.map(operation => ModerationOperationResponse(operation, users, tags))
-                          val result: ModerationOperationListResponse =
-                            ModerationOperationListResponse(operationResponses.length, operationResponses)
-                          complete(result)
-                        }
-                    }
+                    val operationResponses: Seq[ModerationOperationResponse] =
+                      operations.map(operation => ModerationOperationResponse(operation))
+                    val result: ModerationOperationListResponse =
+                      ModerationOperationListResponse(operationResponses.length, operationResponses)
+                    complete(result)
                   }
                 }
               }

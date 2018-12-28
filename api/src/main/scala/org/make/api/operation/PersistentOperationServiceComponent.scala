@@ -51,8 +51,11 @@ trait PersistentOperationService {
   def find(slug: Option[String] = None,
            country: Option[Country] = None,
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]]
+  def findSimple(slug: Option[String] = None,
+                 country: Option[Country] = None,
+                 openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
+  def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]]
   def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: SimpleOperation): Future[SimpleOperation]
   def modify(operation: SimpleOperation): Future[SimpleOperation]
@@ -81,6 +84,25 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         .on(operationAlias.uuid, operationActionAlias.operationUuid)
         .leftJoin(PersistentQuestion.as(questionAlias))
         .on(questionAlias.questionId, operationOfQuestionAlias.questionId)
+    private def operationWhereOpts(slug: Option[String],
+                                   country: Option[Country],
+                                   openAt: Option[LocalDate]): Option[SQLSyntax] =
+      sqls.toAndConditionOpt(
+        slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
+        country.map(country => sqls.eq(questionAlias.country, country.value)),
+        openAt.map(
+          openAt =>
+            sqls
+              .le(operationOfQuestionAlias.startDate, openAt)
+              .or(sqls.isNull(operationOfQuestionAlias.startDate))
+        ),
+        openAt.map(
+          openAt =>
+            sqls
+              .ge(operationOfQuestionAlias.endDate, openAt)
+              .or(sqls.isNull(operationOfQuestionAlias.endDate))
+        )
+      )
 
     override def find(slug: Option[String] = None,
                       country: Option[Country] = None,
@@ -89,25 +111,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL[PersistentOperation] {
-            selectOperation
-              .where(
-                sqls.toAndConditionOpt(
-                  slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
-                  country.map(country => sqls.eq(questionAlias.country, country.value)),
-                  openAt.map(
-                    openAt =>
-                      sqls
-                        .le(operationOfQuestionAlias.startDate, openAt)
-                        .or(sqls.isNull(operationOfQuestionAlias.startDate))
-                  ),
-                  openAt.map(
-                    openAt =>
-                      sqls
-                        .ge(operationOfQuestionAlias.endDate, openAt)
-                        .or(sqls.isNull(operationOfQuestionAlias.endDate))
-                  )
-                )
-              )
+            selectOperation.where(operationWhereOpts(slug, country, openAt))
           }.one(PersistentOperation.apply())
             .toManies(
               PersistentOperationAction.opt(operationActionAlias),
@@ -126,13 +130,16 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       futurePersistentOperations.map(_.map(_.toOperation))
     }
 
-    override def findSimpleOperation(slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
+    override def findSimple(slug: Option[String] = None,
+                            country: Option[Country] = None,
+                            openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
-          withSQL {
-            selectOperation
-              .where(sqls.toAndConditionOpt(slug.map(slug => sqls.eq(operationAlias.slug, slug))))
+          withSQL[PersistentOperation] {
+            select
+              .from(PersistentOperation.as(operationAlias))
+              .where(operationWhereOpts(slug, country, openAt))
           }.map(PersistentOperation.apply()).list.apply()
       })
 
@@ -183,6 +190,20 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       })
 
       futureMaybePersistentOperation.map(_.map(_.toOperation))
+    }
+
+    override def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]] = {
+      implicit val context: EC = readExecutionContext
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL[PersistentOperation] {
+            select
+              .from(PersistentOperation.as(operationAlias))
+              .where(sqls.eq(operationAlias.uuid, operationId.value))
+          }.map(PersistentOperation.apply()).single.apply()
+      })
+
+      futureMaybePersistentOperation.map(_.map(_.toSimpleOperation))
     }
 
     override def getBySlug(slug: String): Future[Option[Operation]] = {
