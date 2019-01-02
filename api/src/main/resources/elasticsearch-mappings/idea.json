@@ -37,14 +37,16 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "french_elision",
+            "lowercase",
             "icu_folding"
           ]
         },
         "english_std": {
-          "tokenizer":  "standard",
+          "tokenizer":  "icu_tokenizer",
           "filter": [
             "english_possessive_stemmer",
-            "lowercase"
+            "lowercase",
+            "icu_folding"
           ]
 
         },
@@ -52,6 +54,7 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "italian_elision",
+            "lowercase",
             "icu_folding"
           ]
         },
@@ -59,6 +62,13 @@
           "tokenizer":  "icu_tokenizer",
           "filter": [
             "german_normalization",
+            "lowercase",
+            "icu_folding"
+          ]
+        },
+        "std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
             "lowercase",
             "icu_folding"
           ]
@@ -104,6 +114,82 @@
             "de": {
               "type": "text",
               "analyzer": "german_std"
+            },
+            "bg": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "cs": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "da": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "nl": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "fi": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "el": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "hu": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "lv": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "lt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "pt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "ro": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "es": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sv": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "pl": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "hr": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "et": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "mt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sk": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sl": {
+              "type": "text",
+              "analyzer": "std"
             },
             "general": {
               "type": "text"

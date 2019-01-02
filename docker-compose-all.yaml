@@ -83,7 +83,7 @@ services:
       - makeapi
     restart: on-failure:2
   elasticsearch:
-    image: makeorg/make-elasticsearch:6.3.0
+    image: makeorg/make-elasticsearch:6.5.4
     hostname: elasticsearch
     ports:
       - 9200:9200
