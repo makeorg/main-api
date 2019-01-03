@@ -118,6 +118,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     val slugifiedName: String = SlugHelper(name)
 
     for {
+      _                    <- encodeResponse
       _                    <- operationName(slugifiedName)
       requestId            <- requestId
       startTime            <- startTime
