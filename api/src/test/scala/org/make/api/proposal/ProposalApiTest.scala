@@ -30,6 +30,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
@@ -50,6 +51,7 @@ import scala.concurrent.Future
 
 class ProposalApiTest
     extends MakeApiTestBase
+    with SessionHistoryCoordinatorServiceComponent
     with ProposalApi
     with IdeaServiceComponent
     with ProposalServiceComponent
