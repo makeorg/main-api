@@ -119,7 +119,8 @@ class ModerationProposalApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    lastMailingError = None
+    lastMailingError = None,
+    availableQuestions = Seq.empty
   )
 
   val daenerys = User(
@@ -141,7 +142,8 @@ class ModerationProposalApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
 
   val tyrion = User(
@@ -163,7 +165,8 @@ class ModerationProposalApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
 
   val arya = User(
@@ -185,7 +188,8 @@ class ModerationProposalApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
@@ -233,16 +237,46 @@ class ModerationProposalApiTest
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
   when(oauth2DataHandler.findAccessToken(userToken)).thenReturn(Future.successful(Some(userAccessToken)))
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(UserRights(john.userId, john.roles), None, Some("user"), None))))
+    .thenReturn(
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(john.userId, john.roles, availableQuestions = john.availableQuestions),
+            None,
+            Some("user"),
+            None
+          )
+        )
+      )
+    )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(userId = daenerys.userId, roles = daenerys.roles), None, None, None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = daenerys.userId,
+              roles = daenerys.roles,
+              availableQuestions = daenerys.availableQuestions
+            ),
+            None,
+            None,
+            None
+          )
+        )
+      )
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles, tyrion.availableQuestions), None, None, None))
+      )
+    )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(userAccessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(UserRights(arya.userId, arya.roles), None, None, None))))
+    .thenReturn(
+      Future.successful(Some(AuthInfo(UserRights(arya.userId, arya.roles, arya.availableQuestions), None, None, None)))
+    )
 
   when(
     proposalService

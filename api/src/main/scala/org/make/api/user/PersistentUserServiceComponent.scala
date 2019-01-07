@@ -87,7 +87,8 @@ object PersistentUserServiceComponent {
                             publicProfile: Boolean,
                             socioProfessionalCategory: String,
                             registerQuestionId: Option[String],
-                            optInPartner: Option[Boolean]) {
+                            optInPartner: Option[Boolean],
+                            availableQuestions: Array[String]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -117,12 +118,17 @@ object PersistentUserServiceComponent {
           }
         },
         organisationName = organisationName,
-        publicProfile = publicProfile
+        publicProfile = publicProfile,
+        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
       )
     }
 
     def toUserRights: UserRights = {
-      UserRights(userId = UserId(uuid), roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq))
+      UserRights(
+        userId = UserId(uuid),
+        roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq),
+        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
+      )
     }
 
     private def toRole: String                      => Option[Role] = Role.matchRole
@@ -199,7 +205,8 @@ object PersistentUserServiceComponent {
       "last_mailing_error_date",
       "last_mailing_error_message",
       "organisation_name",
-      "public_profile"
+      "public_profile",
+      "available_questions"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -252,7 +259,11 @@ object PersistentUserServiceComponent {
         publicProfile = resultSet.boolean(userResultName.publicProfile),
         socioProfessionalCategory = resultSet.string(userResultName.socioProfessionalCategory),
         registerQuestionId = resultSet.stringOpt(userResultName.registerQuestionId),
-        optInPartner = resultSet.booleanOpt(userResultName.optInPartner)
+        optInPartner = resultSet.booleanOpt(userResultName.optInPartner),
+        availableQuestions = resultSet
+          .arrayOpt(userResultName.availableQuestions)
+          .map(_.getArray.asInstanceOf[Array[String]])
+          .getOrElse(Array())
       )
     }
   }
@@ -689,7 +700,9 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.publicProfile -> user.publicProfile,
               column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
-              column.optInPartner -> user.profile.flatMap(_.optInPartner)
+              column.optInPartner -> user.profile.flatMap(_.optInPartner),
+              column.availableQuestions -> session.connection
+                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray)
             )
         }.execute().apply()
       }).map(_ => user)
@@ -767,7 +780,9 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               column.publicProfile -> user.publicProfile,
               column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
-              column.optInPartner -> user.profile.flatMap(_.optInPartner)
+              column.optInPartner -> user.profile.flatMap(_.optInPartner),
+              column.availableQuestions -> session.connection
+                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray)
             )
             .where(
               sqls

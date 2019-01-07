@@ -56,7 +56,8 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
       val token = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
-      val fakeAuthInfo: AuthInfo[UserRights] = AuthInfo(UserRights(UserId("ABCD"), Seq.empty), None, None, None)
+      val fakeAuthInfo: AuthInfo[UserRights] =
+        AuthInfo(UserRights(UserId("ABCD"), Seq.empty, Seq.empty), None, None, None)
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
         .thenReturn(Future.successful(Some(accessToken)))
       when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
@@ -65,7 +66,9 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
         .thenReturn(Future.successful(Some(accessToken)))
 
       When("access token is called")
-      val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes
+      val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(
+        Authorization(OAuth2BearerToken(token))
+      ) ~> routes
 
       Then("the service must return the access token")
       getAccessTokenRoute ~> check {
@@ -81,8 +84,9 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
       .thenReturn(Future.successful(None))
 
     When("access token is called")
-    val getAccessTokenRoute
-    : RouteTestResult = Get("/oauth/access_token").withHeaders(Authorization(OAuth2BearerToken(invalidToken))) ~> routes
+    val getAccessTokenRoute: RouteTestResult = Get("/oauth/access_token").withHeaders(
+      Authorization(OAuth2BearerToken(invalidToken))
+    ) ~> routes
 
     Then("the service must return unauthorized")
     getAccessTokenRoute ~> check {
@@ -96,7 +100,8 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
       val token = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
-      val fakeAuthInfo: AuthInfo[UserRights] = AuthInfo(UserRights(UserId("ABCD"), Seq.empty), None, None, None)
+      val fakeAuthInfo: AuthInfo[UserRights] =
+        AuthInfo(UserRights(UserId("ABCD"), Seq.empty, Seq.empty), None, None, None)
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
         .thenReturn(Future.successful(Some(accessToken)))
       when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))

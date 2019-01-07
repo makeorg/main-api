@@ -135,21 +135,46 @@ class SequenceApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen)), None, Some("user"), None))
+        Some(
+          AuthInfo(
+            UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            None,
+            Some("user"),
+            None
+          )
+        )
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(userId = UserId("the-mother-of-dragons"), roles = Seq(RoleAdmin)), None, None, None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = UserId("the-mother-of-dragons"),
+              roles = Seq(RoleAdmin),
+              availableQuestions = Seq.empty
+            ),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(userId = UserId("the-dwarf"), roles = Seq(RoleModerator)), None, None, None))
+        Some(
+          AuthInfo(
+            UserRights(userId = UserId("the-dwarf"), roles = Seq(RoleModerator), availableQuestions = Seq.empty),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 

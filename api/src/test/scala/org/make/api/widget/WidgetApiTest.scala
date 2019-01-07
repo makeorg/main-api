@@ -82,7 +82,14 @@ class WidgetApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen)), None, Some("user"), None))
+        Some(
+          AuthInfo(
+            UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            None,
+            Some("user"),
+            None
+          )
+        )
       )
     )
 

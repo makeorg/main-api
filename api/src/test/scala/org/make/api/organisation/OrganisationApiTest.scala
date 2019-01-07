@@ -68,7 +68,9 @@ class OrganisationApiTest
   Mockito
     .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen)), None, Some("user"), None)))
+      Future.successful(
+        Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen), Seq.empty), None, Some("user"), None))
+      )
     )
 
   val routes: Route = sealRoute(organisationRoutes)
@@ -97,7 +99,8 @@ class OrganisationApiTest
     createdAt = None,
     updatedAt = None,
     lastMailingError = None,
-    organisationName = Some("Make.org")
+    organisationName = Some("Make.org"),
+    availableQuestions = Seq.empty
   )
 
   Mockito

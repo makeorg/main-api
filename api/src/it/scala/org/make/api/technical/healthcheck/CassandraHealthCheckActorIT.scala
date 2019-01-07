@@ -95,7 +95,8 @@ class CassandraHealthCheckActorIT
           country = Country("FR"),
           language = Language("fr"),
           profile = None,
-          lastMailingError = None
+          lastMailingError = None,
+          availableQuestions = Seq.empty
         ),
         createdAt = DateHelper.now(),
         content = "This is a proposal",

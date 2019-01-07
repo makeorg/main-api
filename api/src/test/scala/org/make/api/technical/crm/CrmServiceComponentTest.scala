@@ -129,7 +129,8 @@ class CrmServiceComponentTest
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(fooProfile),
-    createdAt = Some(zonedDateTimeInThePast)
+    createdAt = Some(zonedDateTimeInThePast),
+    availableQuestions = Seq.empty
   )
 
   val registerCitizenEventEnvelope = EventEnvelope(

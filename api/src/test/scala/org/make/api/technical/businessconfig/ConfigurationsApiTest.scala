@@ -57,8 +57,8 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
   when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
     .thenReturn(Future.successful(Some(moderatorAccessToken)))
 
-  private val citizenUserRights = UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen))
-  private val moderatorUserRights = UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator))
+  private val citizenUserRights = UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty)
+  private val moderatorUserRights = UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator), Seq.empty)
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
     .thenReturn(Future.successful(Some(AuthInfo(citizenUserRights, None, Some("citizen"), None))))
@@ -80,7 +80,7 @@ class ConfigurationsApiTest extends MakeApiTestBase with ConfigurationsApi with 
   )
   val winterIsComingTags: Seq[Tag] = Seq(newTag("Stark"), newTag("Targaryen"), newTag("Lannister"))
   val winterIsHereTags: Seq[Tag] = Seq(newTag("White walker"))
-  val themesList = Seq(
+  val themesList: Seq[Theme] = Seq(
     Theme(
       themeId = ThemeId("winterIsComingId"),
       questionId = Some(QuestionId("who-died-yesterday?")),

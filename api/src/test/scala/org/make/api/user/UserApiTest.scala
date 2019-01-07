@@ -129,7 +129,8 @@ class UserApiTest
     roles = Seq.empty,
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val expiresInSecond = 1000
@@ -143,7 +144,7 @@ class UserApiTest
   val accessToken: AccessToken =
     AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS", None, None, None, Date.from(Instant.now))
   val fakeAuthInfo: AuthInfo[UserRights] =
-    AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen)), None, None, None)
+    AuthInfo(UserRights(sylvain.userId, Seq(Role.RoleCitizen), Seq.empty), None, None, None)
   when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
     .thenReturn(Future.successful(Some(sylvain)))
 
@@ -151,7 +152,7 @@ class UserApiTest
   val accessToken2: AccessToken =
     AccessToken("ACCESS_TOKEN_GET_USERS_PROPOSALS_2", None, None, None, Date.from(Instant.now))
   val fakeAuthInfo2: AuthInfo[UserRights] =
-    AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen)), None, None, None)
+    AuthInfo(UserRights(vincent.userId, Seq(Role.RoleCitizen), Seq.empty), None, None, None)
   when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
     .thenReturn(Future.successful(Some(vincent)))
 
@@ -572,7 +573,8 @@ class UserApiTest
       roles = Seq.empty,
       country = Country("FR"),
       language = Language("fr"),
-      profile = None
+      profile = None,
+      availableQuestions = Seq.empty
     )
     Mockito
       .when(persistentUserService.findByEmail("john.doe@example.com"))
@@ -609,7 +611,8 @@ class UserApiTest
       roles = Seq(Role.RoleCitizen),
       country = Country("FR"),
       language = Language("fr"),
-      profile = None
+      profile = None,
+      availableQuestions = Seq.empty
     )
 
     val notExpiredResetTokenUserId: UserId = UserId("not-expired-reset-token-user-id")
@@ -631,7 +634,8 @@ class UserApiTest
       roles = Seq(Role.RoleCitizen),
       country = Country("FR"),
       language = Language("fr"),
-      profile = None
+      profile = None,
+      availableQuestions = Seq.empty
     )
 
     Mockito
@@ -838,7 +842,7 @@ class UserApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[UserRights] =
-        AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen)), None, None, None)
+        AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
 
       when(userService.getUser(ArgumentMatchers.eq(UserId("user-id")))).thenReturn(
         Future.successful(
@@ -862,7 +866,8 @@ class UserApiTest
               language = Language("fr"),
               profile = None,
               createdAt = None,
-              updatedAt = None
+              updatedAt = None,
+              availableQuestions = Seq.empty
             )
           )
         )
@@ -893,7 +898,7 @@ class UserApiTest
     val accessToken: AccessToken =
       AccessToken("ACCESS_TOKEN_GET_USERS_VOTES", None, None, None, Date.from(Instant.now))
     val fakeAuthInfo: AuthInfo[UserRights] =
-      AuthInfo(UserRights(paul.userId, Seq(Role.RoleCitizen)), None, None, None)
+      AuthInfo(UserRights(paul.userId, Seq(Role.RoleCitizen), Seq.empty), None, None, None)
     when(userService.getUser(ArgumentMatchers.eq(paul.userId)))
       .thenReturn(Future.successful(Some(paul)))
 
@@ -901,7 +906,7 @@ class UserApiTest
     val accessToken2: AccessToken =
       AccessToken("ACCESS_TOKEN_GET_USERS_VOTES82", None, None, None, Date.from(Instant.now))
     val fakeAuthInfo2: AuthInfo[UserRights] =
-      AuthInfo(UserRights(gaston.userId, Seq(Role.RoleCitizen)), None, None, None)
+      AuthInfo(UserRights(gaston.userId, Seq(Role.RoleCitizen), Seq.empty), None, None, None)
     when(userService.getUser(ArgumentMatchers.eq(gaston.userId)))
       .thenReturn(Future.successful(Some(paul.copy(userId = gaston.userId))))
 
@@ -1222,7 +1227,7 @@ class UserApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[UserRights] =
-        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen)), None, None, None)
+        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
 
       when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
 
@@ -1286,7 +1291,7 @@ class UserApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[UserRights] =
-        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen)), None, None, None)
+        AuthInfo(UserRights(UserId("ABCD"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
 
       when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
 

@@ -104,8 +104,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
               request.requireParam("password")
             )
           futureClient.flatMap {
-            case Some(_) => futureFoundUser.map(_.map(user => UserRights(user.userId, user.roles)))
-            case _       => Future.successful(None)
+            case Some(_) =>
+              futureFoundUser.map(_.map(user => UserRights(user.userId, user.roles, user.availableQuestions)))
+            case _ => Future.successful(None)
           }
         case _ => Future.successful(None)
       }

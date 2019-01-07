@@ -103,7 +103,8 @@ case class UserRegisterData(email: String,
                             questionId: Option[QuestionId] = None,
                             optIn: Option[Boolean] = None,
                             optInPartner: Option[Boolean] = None,
-                            roles: Seq[Role] = Seq(Role.RoleCitizen))
+                            roles: Seq[Role] = Seq(Role.RoleCitizen),
+                            availableQuestions: Seq[QuestionId] = Seq.empty)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -170,7 +171,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         roles = userRegisterData.roles,
         country = country,
         language = language,
-        profile = profile
+        profile = profile,
+        availableQuestions = userRegisterData.availableQuestions
       )
 
       val futureUser: Future[User] = persistentUserService.persist(user)
@@ -295,7 +297,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         roles = getRolesFromSocial(userInfo),
         country = country,
         language = language,
-        profile = profile
+        profile = profile,
+        availableQuestions = Seq.empty
       )
 
       persistentUserService.persist(user).map { user =>
