@@ -105,8 +105,12 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
         userInfo <- futureUserInfo
         user     <- userService.createOrUpdateUserFromSocial(userInfo, clientIp, requestContext)
         accessToken <- oauth2DataHandler.createAccessToken(
-          authInfo =
-            AuthInfo(user = UserRights(user.userId, user.roles), clientId = None, scope = None, redirectUri = None)
+          authInfo = AuthInfo(
+            user = UserRights(user.userId, user.roles, user.availableQuestions),
+            clientId = None,
+            scope = None,
+            redirectUri = None
+          )
         )
       } yield {
         UserIdAndToken(

@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import org.make.core.profile.Profile
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.{MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
@@ -98,7 +99,8 @@ case class User(userId: UserId,
                 isHardBounce: Boolean = false,
                 lastMailingError: Option[MailingErrorLog] = None,
                 organisationName: Option[String] = None,
-                publicProfile: Boolean = false)
+                publicProfile: Boolean = false,
+                availableQuestions: Seq[QuestionId])
     extends MakeSerializable
     with Timestamped {
 

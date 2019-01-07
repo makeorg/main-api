@@ -85,7 +85,8 @@ class PersistentOperationServiceIT
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(profile)
+    profile = Some(profile),
+    availableQuestions = Seq.empty
   )
 
   def newTag(label: String): Tag = Tag(

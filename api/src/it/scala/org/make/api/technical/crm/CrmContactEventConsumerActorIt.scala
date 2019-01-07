@@ -111,7 +111,8 @@ class CrmContactEventConsumerActorIt
         roles = Seq.empty,
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(johnDoeUserProfile)
+        profile = Some(johnDoeUserProfile),
+        availableQuestions = Seq.empty
       )
 
       Given("a crm new contact event to consume with an opt out user")

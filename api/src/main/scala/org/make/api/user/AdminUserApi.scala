@@ -13,6 +13,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.{Role, User, UserId}
@@ -214,7 +215,8 @@ trait DefaultAdminUserApiComponent
                           optInPartner = Some(false),
                           roles = request.roles
                             .map(_.flatMap(Role.matchRole))
-                            .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen))
+                            .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
+                          availableQuestions = request.availableQuestions
                         ),
                         requestContext
                       )
@@ -263,7 +265,8 @@ trait DefaultAdminUserApiComponent
                                 lastName = request.lastName.orElse(user.lastName),
                                 country = request.country.getOrElse(user.country),
                                 language = request.language.getOrElse(user.language),
-                                roles = roles
+                                roles = roles,
+                                availableQuestions = request.availableQuestions
                               ),
                               requestContext
                             )
@@ -290,7 +293,8 @@ final case class CreateModeratorRequest(email: String,
                                         lastName: Option[String],
                                         roles: Option[Seq[String]],
                                         @(ApiModelProperty @field)(dataType = "string") country: Country,
-                                        @(ApiModelProperty @field)(dataType = "string") language: Language) {
+                                        @(ApiModelProperty @field)(dataType = "string") language: Language,
+                                        availableQuestions: Seq[QuestionId]) {
   validate(
     mandatoryField("firstName", firstName),
     mandatoryField("email", email),
@@ -314,7 +318,8 @@ final case class UpdateModeratorRequest(email: Option[String],
                                         lastName: Option[String],
                                         roles: Option[Seq[String]],
                                         country: Option[Country],
-                                        language: Option[Language]) {
+                                        language: Option[Language],
+                                        availableQuestions: Seq[QuestionId]) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
@@ -352,7 +357,8 @@ case class ModeratorResponse(id: UserId,
                              lastName: Option[String],
                              roles: Seq[Role],
                              country: Country,
-                             language: Language)
+                             language: Language,
+                             availableQuestions: Seq[QuestionId])
 
 object ModeratorResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModeratorResponse] = deriveEncoder[ModeratorResponse]
@@ -365,6 +371,7 @@ object ModeratorResponse extends CirceFormatters {
     lastName = user.lastName,
     roles = user.roles,
     country = user.country,
-    language = user.language
+    language = user.language,
+    availableQuestions = user.availableQuestions
   )
 }

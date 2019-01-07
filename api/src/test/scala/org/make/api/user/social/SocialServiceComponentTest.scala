@@ -104,7 +104,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        lastMailingError = None
+        lastMailingError = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(
@@ -203,7 +204,8 @@ class SocialServiceComponentTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(
@@ -302,7 +304,8 @@ class SocialServiceComponentTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(
@@ -386,7 +389,8 @@ class SocialServiceComponentTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(
@@ -480,7 +484,8 @@ class SocialServiceComponentTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(
@@ -578,7 +583,8 @@ class SocialServiceComponentTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
 
       val accessToken = AccessToken(

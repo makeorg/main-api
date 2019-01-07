@@ -169,7 +169,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             socioProfessionalCategory = None
           )
         ),
-        publicProfile = true
+        publicProfile = true,
+        availableQuestions = Seq.empty
       )
       persistentUserService.persist(user)
     }

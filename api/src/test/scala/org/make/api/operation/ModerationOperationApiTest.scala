@@ -84,7 +84,8 @@ class ModerationOperationApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
   val daenerys = User(
     userId = UserId("the-mother-of-dragons"),
@@ -105,7 +106,8 @@ class ModerationOperationApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
   val tyrion = User(
     userId = UserId("the-dwarf"),
@@ -126,7 +128,8 @@ class ModerationOperationApiTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
 
   val firstOperation: SimpleOperation = SimpleOperation(
@@ -253,15 +256,32 @@ class ModerationOperationApiTest
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(UserRights(john.userId, john.roles), None, Some("user"), None))))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(john.userId, john.roles, john.availableQuestions), None, Some("user"), None))
+      )
+    )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(userId = daenerys.userId, roles = daenerys.roles), None, None, None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(userId = daenerys.userId, roles = daenerys.roles, daenerys.availableQuestions),
+            None,
+            None,
+            None
+          )
+        )
+      )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
-    .thenReturn(Future.successful(Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles), None, None, None))))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles, tyrion.availableQuestions), None, None, None))
+      )
+    )
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 

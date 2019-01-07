@@ -75,16 +75,21 @@ class AdminUserApiTest
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(citizenId, Seq(Role.RoleCitizen)), None, Some("user"), None)))
+      Future
+        .successful(Some(AuthInfo(UserRights(citizenId, Seq(Role.RoleCitizen), Seq.empty), None, Some("user"), None)))
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future
-        .successful(Some(AuthInfo(UserRights(userId = moderatorId, roles = Seq(Role.RoleModerator)), None, None, None)))
+        .successful(
+          Some(AuthInfo(UserRights(userId = moderatorId, roles = Seq(Role.RoleModerator), Seq.empty), None, None, None))
+        )
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(userId = adminId, roles = Seq(Role.RoleAdmin)), None, None, None)))
+      Future.successful(
+        Some(AuthInfo(UserRights(userId = adminId, roles = Seq(Role.RoleAdmin), Seq.empty), None, None, None))
+      )
     )
 
   private val newModerator = User(
@@ -107,7 +112,8 @@ class AdminUserApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    lastMailingError = None
+    lastMailingError = None,
+    availableQuestions = Seq.empty
   )
 
   feature("get moderator") {
@@ -244,7 +250,8 @@ class AdminUserApiTest
           |  "lastName": "Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL"],
           |  "country": "FR",
-          |  "language": "fr"
+          |  "language": "fr",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -289,7 +296,8 @@ class AdminUserApiTest
           |  "lastName": "Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL"],
           |  "country": "FR",
-          |  "language": "fr"
+          |  "language": "fr",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -308,7 +316,8 @@ class AdminUserApiTest
           |  "email": "mod.erator@modo.com",
           |  "firstName": "Mod",
           |  "lastName": "Erator",
-          |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL"]
+          |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL"],
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -329,7 +338,8 @@ class AdminUserApiTest
           |  "lastName": "Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL"],
           |  "country": "FR",
-          |  "language": "fr"
+          |  "language": "fr",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -350,7 +360,8 @@ class AdminUserApiTest
           |  "lastName": "Erator",
           |  "roles": "foo",
           |  "country": "FR",
-          |  "language": "fr"
+          |  "language": "fr",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -399,7 +410,8 @@ class AdminUserApiTest
           |  "lastName": "New Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
-          |  "language": "en"
+          |  "language": "en",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -434,7 +446,8 @@ class AdminUserApiTest
           |  "lastName": "New Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
-          |  "language": "en"
+          |  "language": "en",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -457,7 +470,8 @@ class AdminUserApiTest
           |  "lastName": "New Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
-          |  "language": "en"
+          |  "language": "en",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -479,7 +493,8 @@ class AdminUserApiTest
           |  "lastName": "New Erator",
           |  "roles": ["ROLE_MODERATOR", "ROLE_CITIZEN", "ROLE_POLITICAL", "ROLE_ADMIN"],
           |  "country": "GB",
-          |  "language": "en"
+          |  "language": "en",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 
@@ -497,7 +512,8 @@ class AdminUserApiTest
           |  "lastName": "New Erator",
           |  "roles": "foo",
           |  "country": "GB",
-          |  "language": "en"
+          |  "language": "en",
+          |  "availableQuestions": []
           |}
         """.stripMargin
 

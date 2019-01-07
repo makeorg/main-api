@@ -110,7 +110,8 @@ class UserServiceTest
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(fooProfile),
-    createdAt = Some(zonedDateTimeInThePast)
+    createdAt = Some(zonedDateTimeInThePast),
+    availableQuestions = Seq.empty
   )
 
   Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
@@ -150,7 +151,8 @@ class UserServiceTest
     roles = Seq(RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(johnDoeProfile)
+    profile = Some(johnDoeProfile),
+    availableQuestions = Seq.empty
   )
 
   feature("register user") {
@@ -193,7 +195,8 @@ class UserServiceTest
         roles = Seq(RoleCitizen),
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(returnedProfile)
+        profile = Some(returnedProfile),
+        availableQuestions = Seq.empty
       )
 
       Mockito
@@ -285,7 +288,8 @@ class UserServiceTest
         roles = Seq(RoleCitizen),
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(returnedProfile)
+        profile = Some(returnedProfile),
+        availableQuestions = Seq.empty
       )
 
       Mockito
@@ -360,7 +364,8 @@ class UserServiceTest
         roles = Seq(RoleCitizen),
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(returnedProfileWithGender)
+        profile = Some(returnedProfileWithGender),
+        availableQuestions = Seq.empty
       )
 
       Mockito
@@ -440,7 +445,8 @@ class UserServiceTest
         roles = Seq(RoleCitizen),
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(returnedProfile)
+        profile = Some(returnedProfile),
+        availableQuestions = Seq.empty
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -509,7 +515,8 @@ class UserServiceTest
         roles = Seq(RoleCitizen),
         country = Country("FR"),
         language = Language("fr"),
-        profile = Some(returnedProfile)
+        profile = Some(returnedProfile),
+        availableQuestions = Seq.empty
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -566,7 +573,8 @@ class UserServiceTest
         roles = Seq(),
         country = Country("FR"),
         language = Language("fr"),
-        profile = None
+        profile = None,
+        availableQuestions = Seq.empty
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
@@ -875,7 +883,8 @@ class UserServiceTest
         language = Language("fr"),
         profile = None,
         createdAt = None,
-        updatedAt = None
+        updatedAt = None,
+        availableQuestions = Seq.empty
       )
       Mockito
         .when(persistentUserService.findByEmail("yopmail+some-hash@make.org"))

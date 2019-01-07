@@ -40,7 +40,6 @@ import scalikejdbc._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 trait PersistentOperationServiceComponent {
@@ -159,7 +158,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
               column.allowedSources -> session.connection
-                .createArrayOf("VARCHAR", operation.allowedSources.asJava.toArray()),
+                .createArrayOf("VARCHAR", operation.allowedSources.toArray),
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )

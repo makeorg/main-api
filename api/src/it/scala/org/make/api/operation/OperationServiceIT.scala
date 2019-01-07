@@ -87,7 +87,8 @@ class OperationServiceIT
     country = Country("FR"),
     language = languageFr,
     profile = Some(profile),
-    lastMailingError = None
+    lastMailingError = None,
+    availableQuestions = Seq.empty
   )
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
   val operationId: OperationId = OperationId(UUID.randomUUID().toString)

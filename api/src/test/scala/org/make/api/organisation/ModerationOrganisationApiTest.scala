@@ -70,7 +70,8 @@ class ModerationOrganisationApiTest
     roles = Seq(RoleActor),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val validAccessToken = "my-valid-access-token"
@@ -87,18 +88,45 @@ class ModerationOrganisationApiTest
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen)), None, Some("user"), None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(userId = UserId("user-citizen"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            None,
+            Some("user"),
+            None
+          )
+        )
+      )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(UserId("user-admin"), roles = Seq(RoleAdmin)), None, None, None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(UserId("user-admin"), roles = Seq(RoleAdmin), availableQuestions = Seq.empty),
+            None,
+            None,
+            None
+          )
+        )
+      )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future
-        .successful(Some(AuthInfo(UserRights(UserId("user-moderator"), roles = Seq(RoleModerator)), None, None, None)))
+        .successful(
+          Some(
+            AuthInfo(
+              UserRights(UserId("user-moderator"), roles = Seq(RoleModerator), availableQuestions = Seq.empty),
+              None,
+              None,
+              None
+            )
+          )
+        )
     )
 
   feature("register organisation") {

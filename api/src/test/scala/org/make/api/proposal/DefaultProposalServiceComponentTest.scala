@@ -111,7 +111,8 @@ class DefaultProposalServiceComponentTest
     language = Language("fr"),
     profile = None,
     createdAt = None,
-    updatedAt = None
+    updatedAt = None,
+    availableQuestions = Seq.empty
   )
 
   Mockito
@@ -139,7 +140,8 @@ class DefaultProposalServiceComponentTest
       language = Language("fr"),
       profile = None,
       createdAt = None,
-      updatedAt = None
+      updatedAt = None,
+      availableQuestions = Seq.empty
     )
   }
 

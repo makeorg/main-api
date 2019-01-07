@@ -57,7 +57,9 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent wi
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen)), None, Some("citizen"), None))
+        Some(
+          AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty), None, Some("citizen"), None)
+        )
       )
     )
 

@@ -109,7 +109,8 @@ class OrganisationServiceTest
     roles = Seq(RoleActor),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None, None))
+    profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None, None)),
+    availableQuestions = Seq.empty
   )
 
   val returnedOrganisation2 = User(
@@ -131,7 +132,8 @@ class OrganisationServiceTest
     roles = Seq(RoleActor),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   feature("Get organisation") {

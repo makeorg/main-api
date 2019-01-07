@@ -76,7 +76,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(profile)
+    profile = Some(profile),
+    availableQuestions = Seq.empty
   )
 
   val jennaDoo = User(
@@ -96,7 +97,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val janeDee = User(
@@ -116,7 +118,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val passwordUser = User(
@@ -136,7 +139,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val socialUser = User(
@@ -156,7 +160,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     roles = Seq(Role.RoleAdmin),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
 
   val userOrganisationDGSE = User(
@@ -178,7 +183,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    organisationName = Some("Direction Générale de la Sécurité Extérieure")
+    organisationName = Some("Direction Générale de la Sécurité Extérieure"),
+    availableQuestions = Seq.empty
   )
 
   val userOrganisationCSIS = User(
@@ -200,7 +206,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    organisationName = Some("Canadian Security Intelligence Service")
+    organisationName = Some("Canadian Security Intelligence Service"),
+    availableQuestions = Seq.empty
   )
 
   val userOrganisationFSB = User(
@@ -222,7 +229,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("RU"),
     language = Language("ru"),
     profile = None,
-    organisationName = Some("Federal Security Service")
+    organisationName = Some("Federal Security Service"),
+    availableQuestions = Seq.empty
   )
 
   val johnMailing: User = johnDoe.copy(
@@ -252,7 +260,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("US"),
     language = Language("en"),
     profile = None,
-    organisationName = Some("Central Intelligence Agency - CIA")
+    organisationName = Some("Central Intelligence Agency - CIA"),
+    availableQuestions = Seq.empty
   )
 
   val userOrganisationFBI = User(
@@ -274,7 +283,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("US"),
     language = Language("en"),
     profile = None,
-    organisationName = Some("Federal Bureau of Investigation - FBI")
+    organisationName = Some("Federal Bureau of Investigation - FBI"),
+    availableQuestions = Seq.empty
   )
 
   val userOrganisationMI5 = User(
@@ -296,7 +306,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("UK"),
     language = Language("en"),
     profile = None,
-    organisationName = Some("Military Intelligence, Section 5 - MI5")
+    organisationName = Some("Military Intelligence, Section 5 - MI5"),
+    availableQuestions = Seq.empty
   )
 
   val updateUser = User(
@@ -317,7 +328,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(profile),
-    createdAt = Some(DateHelper.now())
+    createdAt = Some(DateHelper.now()),
+    availableQuestions = Seq.empty
   )
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
@@ -926,6 +938,36 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           userFollowedIds.head shouldBe jennaDoo3.userId.value
           userUnfollowedIds.isEmpty shouldBe true
       }
+    }
+  }
+
+  feature("available questions") {
+    scenario("persist retrieve and update available questions") {
+
+      var user =
+        johnDoe.copy(
+          userId = UserId("available-questions"),
+          email = "available-questions@make.org",
+          availableQuestions = Seq(QuestionId("my-question"))
+        )
+
+      whenReady(
+        persistentUserService.persist(user).flatMap(u => persistentUserService.get(u.userId)),
+        Timeout(3.seconds)
+      ) { maybeUser =>
+        maybeUser.toSeq.flatMap(_.availableQuestions) should be(Seq(QuestionId("my-question")))
+        user = maybeUser.get
+      }
+
+      val modifiedUser = user.copy(availableQuestions = Seq(QuestionId("first"), QuestionId("second")))
+
+      whenReady(
+        persistentUserService.updateUser(modifiedUser).flatMap(u => persistentUserService.get(u.userId)),
+        Timeout(3.seconds)
+      ) { maybeUser =>
+        maybeUser.toSeq.flatMap(_.availableQuestions) should be(Seq(QuestionId("first"), QuestionId("second")))
+      }
+
     }
   }
 

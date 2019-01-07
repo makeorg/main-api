@@ -75,21 +75,32 @@ class ModerationTagApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen)), None, Some("citizen"), None))
+        Some(
+          AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty), None, Some("citizen"), None)
+        )
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator)), None, Some("moderator"), None))
+        Some(
+          AuthInfo(
+            UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator), Seq.empty),
+            None,
+            Some("moderator"),
+            None
+          )
+        )
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future
-        .successful(Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin)), None, Some("admin"), None)))
+        .successful(
+          Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin), Seq.empty), None, Some("admin"), None))
+        )
     )
 
   when(questionService.getQuestion(any[QuestionId])).thenReturn(

@@ -62,7 +62,8 @@ class PersistentTokenServiceIT
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
-    profile = None
+    profile = None,
+    availableQuestions = Seq.empty
   )
   val exampleClient = Client(
     clientId = ClientId("apiclient"),
@@ -76,7 +77,7 @@ class PersistentTokenServiceIT
     refreshToken = Some("REFRESH_TOKEN"),
     scope = Some("scope"),
     expiresIn = 42,
-    user = UserRights(exampleUser.userId, exampleUser.roles),
+    user = UserRights(exampleUser.userId, exampleUser.roles, exampleUser.availableQuestions),
     client = exampleClient
   )
 

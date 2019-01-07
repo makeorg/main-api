@@ -22,6 +22,7 @@ package org.make.core.auth
 import java.time.ZonedDateTime
 
 import org.make.core.Timestamped
+import org.make.core.question.QuestionId
 import org.make.core.user.{Role, UserId}
 
 case class Token(accessToken: String,
@@ -34,4 +35,4 @@ case class Token(accessToken: String,
                  override val updatedAt: Option[ZonedDateTime] = None)
     extends Timestamped
 
-case class UserRights(userId: UserId, roles: Seq[Role])
+case class UserRights(userId: UserId, roles: Seq[Role], availableQuestions: Seq[QuestionId])
