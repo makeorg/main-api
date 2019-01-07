@@ -57,6 +57,12 @@ trait UserService extends ShortenedNames {
   def getUserByEmail(email: String): Future[Option[User]]
   def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
+  def findModerators(start: Int,
+                     end: Option[Int],
+                     sort: Option[String],
+                     order: Option[String],
+                     email: Option[String],
+                     firstName: Option[String]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
@@ -78,8 +84,8 @@ trait UserService extends ShortenedNames {
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId]
-
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
+  def countModerators(email: Option[String], firstName: Option[String]): Future[Int]
 }
 
 case class UserRegisterData(email: String,
@@ -96,7 +102,8 @@ case class UserRegisterData(email: String,
                             language: Language,
                             questionId: Option[QuestionId] = None,
                             optIn: Option[Boolean] = None,
-                            optInPartner: Option[Boolean] = None)
+                            optInPartner: Option[Boolean] = None,
+                            roles: Seq[Role] = Seq(Role.RoleCitizen))
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -130,6 +137,15 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findAllByUserIds(ids)
     }
 
+    override def findModerators(start: Int,
+                                end: Option[Int],
+                                sort: Option[String],
+                                order: Option[String],
+                                email: Option[String],
+                                firstName: Option[String]): Future[Seq[User]] = {
+      persistentUserService.findModerators(start, end, sort, order, email, firstName)
+    }
+
     private def registerUser(userRegisterData: UserRegisterData,
                              lowerCasedEmail: String,
                              country: Country,
@@ -151,7 +167,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn)),
         resetToken = None,
         resetTokenExpiresAt = None,
-        roles = Seq(Role.RoleCitizen),
+        roles = userRegisterData.roles,
         country = country,
         language = language,
         profile = profile
@@ -590,6 +606,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         value
       }
     }
+
     override def retrieveOrCreateVirtualUser(userInfo: AuthorRequest,
                                              country: Country,
                                              language: Language): Future[User] = {
@@ -619,6 +636,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               RequestContext.empty
             )
       }
+    }
+
+    override def countModerators(email: Option[String], firstName: Option[String]): Future[Int] = {
+      persistentUserService.countModerators(email, firstName)
     }
   }
 }

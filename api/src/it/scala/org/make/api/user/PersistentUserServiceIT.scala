@@ -587,11 +587,30 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
     scenario("find organisations with params") {
       whenReady(
-        persistentUserService.findOrganisations(
-          start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"))) { organisations =>
+        persistentUserService
+          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"))
+      ) { organisations =>
         organisations.size should be(2)
         organisations.head.userId shouldBe UserId("CIA")
         organisations.last.userId shouldBe UserId("DGSE")
+      }
+    }
+  }
+
+  feature("find moderators") {
+    scenario("find all moderators") {
+      whenReady(persistentUserService.findModerators(0, None, None, None, None, None), Timeout(3.seconds)) {
+        moderators =>
+          moderators.size should be(7)
+      }
+    }
+
+    scenario("find moderators with email filter") {
+      whenReady(
+        persistentUserService.findModerators(0, None, None, None, Some("doe@example.com"), None),
+        Timeout(3.seconds)
+      ) { moderators =>
+        moderators.size should be(1)
       }
     }
   }

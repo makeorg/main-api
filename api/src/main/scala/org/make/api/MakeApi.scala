@@ -78,12 +78,7 @@ import org.make.api.technical.tracking.TrackingApi
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
-import org.make.api.user.{
-  DefaultPersistentUserServiceComponent,
-  DefaultUserApiComponent,
-  DefaultUserServiceComponent,
-  UserApi
-}
+import org.make.api.user._
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
   UserHistoryCoordinator,
@@ -109,6 +104,7 @@ trait MakeApi
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultUserServiceComponent
+    with DefaultAdminUserApiComponent
     with DefaultTagServiceComponent
     with DefaultTagTypeServiceComponent
     with DefaultIdeaServiceComponent
@@ -261,7 +257,8 @@ trait MakeApi
       classOf[ModerationTagApi],
       classOf[OrganisationApi],
       classOf[QuestionApi],
-      classOf[WidgetApi]
+      classOf[WidgetApi],
+      classOf[AdminUserApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -284,6 +281,7 @@ trait MakeApi
       optionsCors ~
       elasticsearchRoutes ~
       userApi.routes ~
+      adminUserApi.routes ~
       tagRoutes ~
       moderationTagApi.routes ~
       moderationTagTypeRoutes ~
