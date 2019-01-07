@@ -22,17 +22,18 @@ package org.make.api.technical.tracking
 import javax.ws.rs.Path
 import io.swagger.annotations._
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeAuthentication
+import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.core.{HttpCodes, RequestContext}
 
 @Api(value = "Tracking")
 @Path(value = "/tracking")
-trait TrackingApi extends MakeDirectives {
-  this: EventBusServiceComponent with IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
+trait TrackingApi extends Directives {
 
   @ApiOperation(value = "front-events", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
@@ -46,28 +47,104 @@ trait TrackingApi extends MakeDirectives {
     )
   )
   @Path(value = "/front")
-  def frontTracking: Route =
-    post {
-      path("tracking" / "front") {
-        makeOperation("TrackingFront") { requestContext: RequestContext =>
-          decodeRequest {
-            entity(as[FrontTrackingRequest]) { request: FrontTrackingRequest =>
-              eventBusService.publish(
-                TrackingEvent.eventfromFront(frontRequest = request, requestContext = requestContext)
-              )
-              complete(StatusCodes.NoContent)
+  def frontTracking: Route
+
+  @ApiOperation(value = "front-performance", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.tracking.FrontPerformanceRequest"
+      )
+    )
+  )
+  @Path(value = "/performance")
+  def trackFrontPerformances: Route
+
+  final lazy val routes: Route = frontTracking ~ trackFrontPerformances
+}
+
+trait TrackingApiComponent {
+  def trackingApi: TrackingApi
+}
+
+trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectives {
+  this: EventBusServiceComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with MonitoringServiceComponent =>
+
+  override lazy val trackingApi: TrackingApi = new TrackingApi {
+    def frontTracking: Route =
+      post {
+        path("tracking" / "front") {
+          makeOperation("TrackingFront") { requestContext: RequestContext =>
+            decodeRequest {
+              entity(as[FrontTrackingRequest]) { request: FrontTrackingRequest =>
+                eventBusService.publish(
+                  TrackingEvent.eventfromFront(frontRequest = request, requestContext = requestContext)
+                )
+                complete(StatusCodes.NoContent)
+              }
             }
           }
         }
       }
-    }
 
-  val trackingRoutes: Route = frontTracking
+    def trackFrontPerformances: Route =
+      post {
+        path("tracking" / "performance") {
+          makeOperation("PerformanceTracking") { _ =>
+            decodeRequest {
+              entity(as[FrontPerformanceRequest]) { request =>
+                monitoringService.monitorPerformance(request.applicationName, request.timings)
+                complete(StatusCodes.NoContent)
+              }
+            }
+          }
+        }
+      }
+
+  }
 }
 
 final case class FrontTrackingRequest(eventType: String,
                                       eventName: Option[String],
                                       eventParameters: Option[Map[String, String]])
+
+final case class FrontPerformanceRequest(applicationName: String, timings: FrontPerformanceTimings)
+
+object FrontPerformanceRequest {
+  implicit val decoder: Decoder[FrontPerformanceRequest] = deriveDecoder[FrontPerformanceRequest]
+}
+
+final case class FrontPerformanceTimings(connectStart: Long,
+                                         connectEnd: Long,
+                                         domComplete: Long,
+                                         domContentLoadedEventEnd: Long,
+                                         domContentLoadedEventStart: Long,
+                                         domInteractive: Long,
+                                         domLoading: Long,
+                                         domainLookupEnd: Long,
+                                         domainLookupStart: Long,
+                                         fetchStart: Long,
+                                         loadEventEnd: Long,
+                                         loadEventStart: Long,
+                                         navigationStart: Long,
+                                         redirectEnd: Long,
+                                         redirectStart: Long,
+                                         requestStart: Long,
+                                         responseEnd: Long,
+                                         responseStart: Long,
+                                         secureConnectionStart: Long,
+                                         unloadEventEnd: Long,
+                                         unloadEventStart: Long)
+object FrontPerformanceTimings {
+  implicit val decoder: Decoder[FrontPerformanceTimings] = deriveDecoder[FrontPerformanceTimings]
+}
 
 object FrontTrackingRequest {
   implicit val decoder: Decoder[FrontTrackingRequest] =

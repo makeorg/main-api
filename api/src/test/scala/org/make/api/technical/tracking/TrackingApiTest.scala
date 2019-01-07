@@ -24,12 +24,20 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeAuthentication
+import org.make.api.technical.monitoring.{MonitoringService, MonitoringServiceComponent}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 
-class TrackingApiTest extends MakeApiTestBase with TrackingApi with ShortenedNames with MakeAuthentication {
+class TrackingApiTest
+    extends MakeApiTestBase
+    with DefaultTrackingApiComponent
+    with ShortenedNames
+    with MakeAuthentication
+    with MonitoringServiceComponent {
 
-  val routes: Route = sealRoute(trackingRoutes)
+  override val monitoringService: MonitoringService = mock[MonitoringService]
+
+  val routes: Route = sealRoute(trackingApi.routes)
 
   val frontRequest: String =
     """
