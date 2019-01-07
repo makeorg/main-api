@@ -19,6 +19,7 @@
 
 package org.make.api.semantic
 
+import java.net.URL
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
@@ -26,23 +27,28 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api
+import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.EventBusServiceComponent
-import org.make.api.{semantic, ActorSystemComponent}
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
+import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 trait SemanticComponent {
   def semanticService: SemanticService
@@ -52,6 +58,7 @@ trait SemanticService {
   def indexProposal(indexedProposal: IndexedProposal): Future[Unit]
   def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit]
   def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]]
+  def getPredictedTagsForProposal(proposal: Proposal): Future[TagsWithModelResponse]
 }
 
 case class IndexProposalsWrapper(proposals: Seq[SemanticProposal])
@@ -66,11 +73,43 @@ trait DefaultSemanticComponent extends SemanticComponent {
     with IdeaServiceComponent
     with EventBusServiceComponent
     with CirceHttpSupport
-    with StrictLogging =>
+    with StrictLogging
+    with TagServiceComponent =>
 
   private val httpThreads = 5
   implicit private val executionContext: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
+
+  lazy val semanticUrl = new URL(semanticConfiguration.url)
+
+  lazy val semanticHttpFlow
+    : Flow[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse]), Http.HostConnectionPool] =
+    Http(actorSystem)
+      .cachedHostConnectionPool[Promise[HttpResponse]](host = semanticUrl.getHost, port = semanticUrl.getPort)
+
+  private lazy val semanticBufferSize = semanticConfiguration.httpBufferSize
+
+  lazy val semanticQueue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
+    .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = semanticBufferSize, OverflowStrategy.backpressure)
+    .via(semanticHttpFlow)
+    .withAttributes(ActorAttributes.dispatcher(api.semanticDispatcher))
+    .toMat(Sink.foreach {
+      case (Success(resp), p) => p.success(resp)
+      case (Failure(e), p)    => p.failure(e)
+    })(Keep.left)
+    .run()(ActorMaterializer()(actorSystem))
+
+  private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
+    val promise = Promise[HttpResponse]()
+    semanticQueue.offer((request, promise)).flatMap {
+      case QueueOfferResult.Enqueued    => promise.future
+      case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+      case QueueOfferResult.Failure(ex) => Future.failed(ex)
+      case QueueOfferResult.QueueClosed =>
+        Future
+          .failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
+    }
+  }
 
   override lazy val semanticService: SemanticService = new SemanticService {
     private implicit val system: ActorSystem = actorSystem
@@ -78,47 +117,38 @@ trait DefaultSemanticComponent extends SemanticComponent {
 
     override def indexProposal(indexedProposal: IndexedProposal): Future[Unit] = {
       Marshal(SemanticProposal(indexedProposal)).to[RequestEntity].flatMap { entity =>
-        logger.debug(s"Indexing in semantic API: {}", indexedProposal)
-        Http(actorSystem)
-          .singleRequest(
-            request = HttpRequest(
-              method = HttpMethods.POST,
-              uri = Uri(s"${semanticConfiguration.url}/similar/index-proposal"),
-              entity = entity
-            )
-          )
+        val request = HttpRequest(
+          method = HttpMethods.POST,
+          uri = Uri(s"${semanticConfiguration.url}/similar/index-proposal"),
+          entity = entity
+        )
+        doHttpCall(request)
           .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
       }
     }
 
     override def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit] = {
-      Marshal(semantic.IndexProposalsWrapper(indexedProposals.map(SemanticProposal.apply))).to[RequestEntity].flatMap {
+      Marshal(IndexProposalsWrapper(indexedProposals.map(SemanticProposal.apply))).to[RequestEntity].flatMap {
         entities =>
-          logger.debug(s"Indexing in semantic API: {}", indexedProposals)
-          Http(actorSystem)
-            .singleRequest(
-              request = HttpRequest(
-                method = HttpMethods.POST,
-                uri = Uri(s"${semanticConfiguration.url}/similar/index-proposals"),
-                entity = entities
-              )
-            )
+          val request = HttpRequest(
+            method = HttpMethods.POST,
+            uri = Uri(s"${semanticConfiguration.url}/similar/index-proposals"),
+            entity = entities
+          )
+          doHttpCall(request)
             .map((response: HttpMessage) => logger.debug(s"Indexing response: {}", response))
       }
     }
 
     override def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]] = {
       Marshal(SimilarIdeasRequest(SemanticProposal(indexedProposal), nSimilar)).to[RequestEntity].flatMap { entity =>
-        val response = Http(actorSystem)
-          .singleRequest(
-            request = HttpRequest(
-              method = HttpMethods.POST,
-              uri = Uri(s"${semanticConfiguration.url}/similar/get-similar-ideas"),
-              entity = entity
-            )
-          )
+        val request = HttpRequest(
+          method = HttpMethods.POST,
+          uri = Uri(s"${semanticConfiguration.url}/similar/get-similar-ideas"),
+          entity = entity
+        )
 
-        response.flatMap {
+        doHttpCall(request).flatMap {
           case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
             Unmarshal(responseEntity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
               logSimilarIdeas(indexedProposal, similarIdeas.similar, similarIdeas.algoLabel.getOrElse("Semantic API"))
@@ -127,6 +157,46 @@ trait DefaultSemanticComponent extends SemanticComponent {
 
           case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
         }
+      }
+    }
+
+    override def getPredictedTagsForProposal(proposal: Proposal): Future[TagsWithModelResponse] = {
+      (proposal.questionId, proposal.language) match {
+        case (Some(questionId), Some(language)) =>
+          val modelName = "auto"
+          Marshal(
+            GetPredictedTagsRequest(
+              GetPredictedTagsProposalRequest(
+                proposal.proposalId,
+                questionId,
+                language.value,
+                proposal.status,
+                proposal.content
+              ),
+              modelName = modelName
+            )
+          ).to[RequestEntity].flatMap { entity =>
+            val request = HttpRequest(
+              method = HttpMethods.POST,
+              uri = Uri(s"${semanticConfiguration.url}/tags/predict"),
+              entity = entity
+            )
+
+            doHttpCall(request).flatMap {
+              case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+                Unmarshal(responseEntity).to[GetPredictedTagsResponse].flatMap { predictedTagsResponse =>
+                  tagService
+                    .findByTagIds(predictedTagsResponse.tags.map(_.tagId))
+                    .map(tags => TagsWithModelResponse(tags = tags, modelName = predictedTagsResponse.modelName))
+                }
+              case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
+            }
+          }
+        case _ =>
+          logger.warn(
+            s"Cannot get predicted tags for proposal ${proposal.proposalId} because question or language is missing"
+          )
+          Future.successful(TagsWithModelResponse.empty)
       }
     }
   }
@@ -165,7 +235,6 @@ trait DefaultSemanticComponent extends SemanticComponent {
         )
       }
   }
-
 }
 
 final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: ProposalId,
@@ -230,4 +299,40 @@ final case class SimilarIdea(ideaId: IdeaId,
 object SimilarIdea {
   implicit val encoder: ObjectEncoder[SimilarIdea] = deriveEncoder[SimilarIdea]
   implicit val decoder: Decoder[SimilarIdea] = deriveDecoder[SimilarIdea]
+}
+
+case class GetPredictedTagsProposalRequest(id: ProposalId,
+                                           questionId: QuestionId,
+                                           language: String,
+                                           status: ProposalStatus,
+                                           content: String)
+
+object GetPredictedTagsProposalRequest {
+  implicit val encoder: Encoder[GetPredictedTagsProposalRequest] = deriveEncoder[GetPredictedTagsProposalRequest]
+}
+
+case class GetPredictedTagsRequest(proposal: GetPredictedTagsProposalRequest, modelName: String)
+
+object GetPredictedTagsRequest {
+  implicit val encoder: Encoder[GetPredictedTagsRequest] = deriveEncoder[GetPredictedTagsRequest]
+}
+
+case class PredictedTag(tagId: TagId, tagTypeId: TagTypeId, tagLabel: String, tagTypeLabel: String, score: Double)
+
+object PredictedTag {
+  implicit val decoder: Decoder[PredictedTag] = deriveDecoder[PredictedTag]
+}
+
+case class GetPredictedTagsResponse(tags: Seq[PredictedTag], modelName: String)
+
+object GetPredictedTagsResponse {
+  implicit val decoder: Decoder[GetPredictedTagsResponse] = deriveDecoder[GetPredictedTagsResponse]
+}
+
+case class TagsWithModelResponse(tags: Seq[Tag], modelName: String)
+
+object TagsWithModelResponse {
+  implicit val decoder: Decoder[TagsWithModelResponse] = deriveDecoder[TagsWithModelResponse]
+
+  val empty = TagsWithModelResponse(tags = Seq.empty, modelName = "")
 }

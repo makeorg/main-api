@@ -41,7 +41,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
-import org.make.core.tag.TagId
+import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
@@ -1208,6 +1208,7 @@ class ModerationProposalApiTest
       }
     }
   }
+
   feature("get proposals") {
     scenario("get proposals by created at date") {
       Given("an authenticated user with the moderator role")
@@ -1245,4 +1246,80 @@ class ModerationProposalApiTest
     }
   }
 
+  feature("get predicted tags for proposal") {
+    scenario("unauthorized user") {
+      Get("/moderation/proposals/123456/predicted-tags") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+    scenario("forbidden citizen") {
+      Get("/moderation/proposals/123456/predicted-tags")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("allowed moderator") {
+      when(proposalService.getTagsForProposal(any[Proposal]))
+        .thenReturn(
+          Future.successful(
+            TagsForProposalResponse(
+              tags = Seq(
+                TagForProposalResponse(
+                  id = TagId("tag-id"),
+                  label = "label",
+                  tagTypeId = TagTypeId("tag-type-id"),
+                  weight = 1.0F,
+                  questionId = Some(QuestionId("question-id")),
+                  checked = true,
+                  predicted = true
+                )
+              ),
+              modelName = "auto"
+            )
+          )
+        )
+      Get("/moderation/proposals/123456/predicted-tags")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val results: TagsForProposalResponse = entityAs[TagsForProposalResponse]
+        results.tags.length should be(1)
+        results.tags.head.id should be(TagId("tag-id"))
+
+      }
+    }
+    scenario("not allowed moderator") {
+      when(proposalService.getTagsForProposal(any[Proposal]))
+        .thenReturn(
+          Future.successful(
+            TagsForProposalResponse(
+              tags = Seq(
+                TagForProposalResponse(
+                  id = TagId("tag-id"),
+                  label = "label",
+                  tagTypeId = TagTypeId("tag-type-id"),
+                  weight = 1.0F,
+                  questionId = Some(QuestionId("question-id")),
+                  checked = true,
+                  predicted = true
+                )
+              ),
+              modelName = "auto"
+            )
+          )
+        )
+      Get("/moderation/proposals/123456/predicted-tags")
+        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("proposal not found") {
+      when(proposalCoordinatorService.getProposal(any[ProposalId]))
+        .thenReturn(Future.successful(None))
+
+      Get("/moderation/proposals/invalid/predicted-tags")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+  }
 }
