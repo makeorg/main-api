@@ -36,7 +36,7 @@ object MIPIMGbOperation extends CreateOperation {
       slug = operationSlug,
       title = "How can we plan the city of tomorrow ?",
       question = "How can we plan the city of tomorrow ?",
-      startDate = LocalDate.parse("2018-11-29"),
+      startDate = Some(LocalDate.parse("2018-11-29")),
       endDate = Some(LocalDate.parse("2018-12-31"))
     )
   )

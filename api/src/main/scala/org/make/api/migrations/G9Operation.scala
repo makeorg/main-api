@@ -35,7 +35,7 @@ object G9Operation extends CreateOperation {
       slug = operationSlug,
       title = "Comment faire émerger des champions européens du numérique ? ",
       question = "Comment faire émerger des champions européens du numérique ? ",
-      startDate = LocalDate.parse("2018-10-18"),
+      startDate = Some(LocalDate.parse("2018-10-18")),
       endDate = Some(LocalDate.parse("2019-01-14"))
     )
   )

@@ -39,7 +39,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "politique-huffpost",
       question = "politique-huffpost",
       title = "Politique",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "economie-huffpost" -> QuestionConfiguration(
@@ -48,7 +48,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "economie-huffpost",
       title = "Économie",
       question = "Économie",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "international-huffpost" -> QuestionConfiguration(
@@ -57,7 +57,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "international-huffpost",
       title = "International",
       question = "International",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "culture-huffpost" -> QuestionConfiguration(
@@ -66,7 +66,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "culture-huffpost",
       title = "Culture",
       question = "Culture",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "ecologie-huffpost" -> QuestionConfiguration(
@@ -75,7 +75,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "ecologie-huffpost",
       title = "Écologie",
       question = "Écologie",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "societe-huffpost" -> QuestionConfiguration(
@@ -84,7 +84,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "societe-huffpost",
       title = "Société",
       question = "Société",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     ),
     "education-huffpost" -> QuestionConfiguration(
@@ -93,7 +93,7 @@ object HuffingPostOperations extends OperationHelper with Migration {
       slug = "education-huffpost",
       title = "Éducation",
       question = "Éducation",
-      startDate = LocalDate.parse("2018-08-06"),
+      startDate = Some(LocalDate.parse("2018-08-06")),
       endDate = Some(LocalDate.parse("2020-08-06"))
     )
   )

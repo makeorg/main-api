@@ -36,7 +36,7 @@ object HdfOperation extends CreateOperation {
       slug = operationSlug,
       title = "Comment vous aider à construire votre avenir en Hauts-de-France ?",
       question = "Comment vous aider à construire votre avenir en Hauts-de-France ?",
-      startDate = LocalDate.parse("2018-10-07"),
+      startDate = Some(LocalDate.parse("2018-10-07")),
       endDate = Some(LocalDate.parse("2019-01-03"))
     )
   )

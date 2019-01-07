@@ -19,8 +19,6 @@
 
 package org.make.api.migrations
 
-import java.time.LocalDate
-
 import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
@@ -36,7 +34,7 @@ object MVEOperation extends CreateOperation {
       slug = operationSlug,
       title = "Comment mieux vivre ensemble ?",
       question = "Comment mieux vivre ensemble ?",
-      startDate = LocalDate.parse("2018-03-12"),
+      startDate = None,
       endDate = None
     )
   )

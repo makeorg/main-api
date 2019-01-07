@@ -61,7 +61,7 @@ trait OperationHelper {
           OperationOfQuestion(
             questionId = questionId,
             operationId = operation.operationId,
-            startDate = Some(configuration.startDate),
+            startDate = configuration.startDate,
             endDate = configuration.endDate,
             operationTitle = configuration.title,
             landingSequenceId = sequenceId

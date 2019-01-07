@@ -36,7 +36,7 @@ object AinesOperation extends CreateOperation {
       slug = operationSlug,
       title = "Comment mieux prendre soin de nos aînés ?",
       question = "Comment mieux prendre soin de nos aînés ?",
-      startDate = LocalDate.parse("2018-09-19"),
+      startDate = Some(LocalDate.parse("2018-09-19")),
       endDate = Some(LocalDate.parse("2018-12-10"))
     )
   )

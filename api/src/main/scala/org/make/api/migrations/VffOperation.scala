@@ -35,7 +35,7 @@ object VffOperation extends CreateOperation {
       title = "comment-lutter-contre-les-violences-faites-aux-femmes",
       question = "comment-lutter-contre-les-violences-faites-aux-femmes",
       endDate = Some(LocalDate.parse("2018-03-01")),
-      startDate = LocalDate.parse("2018-01-01")
+      startDate = Some(LocalDate.parse("2018-01-01"))
     ),
     QuestionConfiguration(
       Country("IT"),
@@ -44,7 +44,7 @@ object VffOperation extends CreateOperation {
       title = "Come far fronte alla violenza sulle donne?",
       question = "Come far fronte alla violenza sulle donne?",
       endDate = Some(LocalDate.parse("2018-05-30")),
-      startDate = LocalDate.parse("2018-03-01")
+      startDate = Some(LocalDate.parse("2018-03-01"))
     ),
     QuestionConfiguration(
       Country("GB"),
@@ -53,7 +53,7 @@ object VffOperation extends CreateOperation {
       title = "How to combat violence against women?",
       question = "How to combat violence against women?",
       endDate = Some(LocalDate.parse("2018-05-30")),
-      startDate = LocalDate.parse("2018-03-01")
+      startDate = Some(LocalDate.parse("2018-03-01"))
     )
   )
 

@@ -36,7 +36,7 @@ object CultureOperation extends CreateOperation {
       slug = operationSlug,
       title = "Comment rendre la culture accessible à tous?",
       question = "Comment rendre la culture accessible à tous?",
-      startDate = LocalDate.parse("2018-06-18"),
+      startDate = Some(LocalDate.parse("2018-06-18")),
       endDate = Some(LocalDate.parse("2018-09-30"))
     )
   )
