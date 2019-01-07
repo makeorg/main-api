@@ -19,8 +19,6 @@
 
 package org.make.api.migrations
 
-import java.time.LocalDate
-
 import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.reference.{Country, Language}
 
@@ -36,7 +34,7 @@ object LpaeOperation extends CreateOperation {
       slug = operationSlug,
       title = "Vous avez les clés du monde, que changez-vous ?",
       question = "Vous avez les clés du monde, que changez-vous ?",
-      startDate = LocalDate.parse("2018-01-01"),
+      startDate = None,
       endDate = None
     )
   )

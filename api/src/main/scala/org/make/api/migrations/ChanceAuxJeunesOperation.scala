@@ -36,7 +36,7 @@ object ChanceAuxJeunesOperation extends CreateOperation {
       slug = operationSlug,
       title = "Comment donner une chance à chaque jeune ?",
       question = "Comment donner une chance à chaque jeune ?",
-      startDate = LocalDate.parse("2018-04-04"),
+      startDate = Some(LocalDate.parse("2018-04-04")),
       endDate = Some(LocalDate.parse("2018-07-02"))
     )
   )

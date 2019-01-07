@@ -35,7 +35,7 @@ object MIPIMOperation extends CreateOperation {
       slug = operationSlug,
       title = "La ville de demain",
       question = "La ville de demain",
-      startDate = LocalDate.parse("2018-10-21"),
+      startDate = Some(LocalDate.parse("2018-10-21")),
       endDate = Some(LocalDate.parse("2018-12-31"))
     )
   )

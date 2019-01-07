@@ -53,7 +53,7 @@ object CreateOperation {
                                          slug: String,
                                          question: String,
                                          title: String,
-                                         startDate: LocalDate,
+                                         startDate: Option[LocalDate],
                                          endDate: Option[LocalDate],
                                          sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default)
 

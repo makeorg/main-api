@@ -35,7 +35,7 @@ object NiceMatinOperation extends CreateOperation {
       slug = operationSlug,
       title = "#MaSolutionPourLeClimat",
       question = "#MaSolutionPourLeClimat",
-      startDate = LocalDate.parse("2018-10-18"),
+      startDate = Some(LocalDate.parse("2018-10-18")),
       endDate = Some(LocalDate.parse("2018-12-06"))
     )
   )
