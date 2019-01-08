@@ -831,8 +831,9 @@ trait DefaultModerationProposalApiComponent
             makeOAuth2 { auth =>
               requireModerationRole(auth.user) {
                 provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-                  val proposals = proposalService.getSimilar(auth.user.userId, proposal, requestContext)
-                  onSuccess(proposals)(complete(_))
+                  provideAsync(proposalService.getSimilar(auth.user.userId, proposal, requestContext)) { proposals =>
+                    complete(proposals)
+                  }
                 }
               }
             }

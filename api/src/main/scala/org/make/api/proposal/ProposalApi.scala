@@ -28,6 +28,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -50,6 +51,7 @@ import scala.util.Try
 @Path(value = "/proposals")
 trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
   this: ProposalServiceComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -68,7 +70,12 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
       path("proposals" / proposalId) { proposalId =>
         makeOperation("GetProposal") { requestContext =>
           provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-            complete(proposal)
+            provideAsync(
+              sessionHistoryCoordinatorService
+                .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
+            ) { votes =>
+              complete(ProposalResult(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId)))
+            }
           }
         }
       }
