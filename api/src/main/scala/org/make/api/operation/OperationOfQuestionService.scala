@@ -68,7 +68,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            language: Language,
                                            question: String)
 
-final case class SearchOperationsOfQuestions(questionId: Option[QuestionId],
+final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
                                              openAt: Option[LocalDate])
 
@@ -85,7 +85,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
   override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
 
     override def search(request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = {
-      persistentOperationOfQuestionService.search(request.questionId, request.operationId, request.openAt)
+      persistentOperationOfQuestionService.search(request.questionIds, request.operationId, request.openAt)
     }
 
     override def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]] = {

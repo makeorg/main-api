@@ -183,7 +183,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       for {
         user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
-        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, true)
+        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, initialProposal = true)
         _ <- validateProposal(
           proposalId = proposalId,
           moderator = moderator,
@@ -733,7 +733,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                  minScore: Option[Float]): SearchFilters = {
       if (toEnrich) {
         SearchFilters(
-          question = Some(QuestionSearchFilter(questionId)),
+          question = Some(QuestionSearchFilter(Seq(questionId))),
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Accepted))),
           toEnrich = Some(ToEnrichSearchFilter(toEnrich)),
           minVotesCount = minVotesCount.map(MinVotesCountSearchFilter.apply),
@@ -741,7 +741,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         )
       } else {
         SearchFilters(
-          question = Some(QuestionSearchFilter(questionId)),
+          question = Some(QuestionSearchFilter(Seq(questionId))),
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
         )
       }

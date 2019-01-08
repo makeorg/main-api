@@ -35,7 +35,7 @@ import scalikejdbc._
 import scala.concurrent.Future
 
 trait PersistentOperationOfQuestionService {
-  def search(questionId: Option[QuestionId],
+  def search(questionIds: Option[Seq[QuestionId]],
              operationId: Option[OperationId],
              openAt: Option[LocalDate]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -55,7 +55,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
   override lazy val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
     new PersistentOperationOfQuestionService with ShortenedNames with StrictLogging {
 
-      override def search(questionId: Option[QuestionId],
+      override def search(questionIds: Option[Seq[QuestionId]],
                           operationId: Option[OperationId],
                           openAt: Option[LocalDate]): Future[scala.Seq[OperationOfQuestion]] = {
         implicit val context: EC = readExecutionContext
@@ -67,7 +67,9 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 sqls.toAndConditionOpt(
                   operationId
                     .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value)),
-                  questionId.map(q => sqls.eq(PersistentOperationOfQuestion.column.questionId, q.value)),
+                  questionIds.map(
+                    questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
+                  ),
                   openAt.map(
                     openAt =>
                       sqls

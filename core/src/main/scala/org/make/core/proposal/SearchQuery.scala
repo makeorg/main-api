@@ -241,8 +241,10 @@ object SearchFilters extends ElasticDsl {
   def buildQuestionSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
       _.question match {
-        case Some(QuestionSearchFilter(questionId)) =>
+        case Some(QuestionSearchFilter(Seq(questionId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionId, questionId.value))
+        case Some(QuestionSearchFilter(questionIds)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.questionId, questionIds.map(_.value)))
         case _ => None
       }
     }
@@ -548,7 +550,7 @@ case class UserSearchFilter(userId: UserId)
 
 case class InitialProposalFilter(isInitialProposal: Boolean)
 
-case class QuestionSearchFilter(questionId: QuestionId)
+case class QuestionSearchFilter(questionIds: Seq[QuestionId])
 
 case class TagsSearchFilter(tagIds: Seq[TagId]) {
   validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))

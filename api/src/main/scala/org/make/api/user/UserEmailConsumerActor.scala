@@ -142,7 +142,7 @@ class UserEmailConsumerActor(userService: UserService,
             } else {
               operationOfQuestionService
                 .search(
-                  SearchOperationsOfQuestions(questionId = None, operationId = None, openAt = Some(LocalDate.now()))
+                  SearchOperationsOfQuestions(questionIds = None, operationId = None, openAt = Some(LocalDate.now()))
                 )
                 .flatMap { opOfQuestion =>
                   questionService

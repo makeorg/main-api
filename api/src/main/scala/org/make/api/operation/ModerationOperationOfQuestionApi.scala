@@ -37,8 +37,11 @@ import org.make.core.operation.{OperationId, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.user.Role.RoleAdmin
 import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
+
+import scala.collection.immutable
 
 @Api(value = "Moderation Operation of question")
 @Path(value = "/moderation/operations-of-questions")
@@ -213,25 +216,36 @@ trait DefaultModerationOperationOfQuestionApiComponent
           makeOperation("ListOperationsOfQuestions") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                parameters(('questionId.as[QuestionId].?, 'operationId.as[OperationId].?, 'openAt.as[LocalDate].?)) {
-                  (questionId, operationId, openAt) =>
-                    provideAsync(
-                      operationOfQuestionService.search(SearchOperationsOfQuestions(questionId, operationId, openAt))
-                    ) { result: Seq[OperationOfQuestion] =>
-                      provideAsync(questionService.getQuestions(result.map(_.questionId))) { questions: Seq[Question] =>
-                        val questionsAsMap = questions.map(q => q.questionId -> q).toMap
-                        complete(
-                          StatusCodes.OK -> result
-                            .map(
-                              operationOfQuestion =>
-                                OperationOfQuestionResponse(
-                                  operationOfQuestion,
-                                  questionsAsMap(operationOfQuestion.questionId)
-                              )
-                            )
-                        )
-                      }
+                parameters(
+                  ('questionId.as[immutable.Seq[QuestionId]].?, 'operationId.as[OperationId].?, 'openAt.as[LocalDate].?)
+                ) { (questionIds, operationId, openAt) =>
+                  val resolvedQuestions: Option[Seq[QuestionId]] = {
+                    if (auth.user.roles.contains(RoleAdmin)) {
+                      questionIds
+                    } else {
+                      questionIds.map { questions =>
+                        questions.filter(id => auth.user.availableQuestions.contains(id))
+                      }.orElse(Some(auth.user.availableQuestions))
                     }
+                  }
+                  provideAsync(
+                    operationOfQuestionService
+                      .search(SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt))
+                  ) { result: Seq[OperationOfQuestion] =>
+                    provideAsync(questionService.getQuestions(result.map(_.questionId))) { questions: Seq[Question] =>
+                      val questionsAsMap = questions.map(q => q.questionId -> q).toMap
+                      complete(
+                        StatusCodes.OK -> result
+                          .map(
+                            operationOfQuestion =>
+                              OperationOfQuestionResponse(
+                                operationOfQuestion,
+                                questionsAsMap(operationOfQuestion.questionId)
+                            )
+                          )
+                      )
+                    }
+                  }
                 }
               }
             }

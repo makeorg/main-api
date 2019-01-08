@@ -120,7 +120,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
             parameters(
               (
                 'proposalIds.as[immutable.Seq[ProposalId]].?,
-                'questionId.as[QuestionId].?,
+                'questionId.as[immutable.Seq[QuestionId]].?,
                 'tagsIds.as[immutable.Seq[TagId]].?,
                 'labelsIds.as[immutable.Seq[LabelId]].?,
                 'operationId.as[OperationId].?,
@@ -142,7 +142,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
               )
             ) {
               (proposalIds: Option[Seq[ProposalId]],
-               questionId: Option[QuestionId],
+               questionIds: Option[Seq[QuestionId]],
                tagsIds: Option[Seq[TagId]],
                labelsIds: Option[Seq[LabelId]],
                operationId: Option[OperationId],
@@ -206,7 +206,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
                   }
                 val searchRequest: SearchRequest = SearchRequest(
                   proposalIds = proposalIds,
-                  questionId = questionId,
+                  questionIds = questionIds,
                   tagsIds = tagsIds,
                   labelsIds = labelsIds,
                   operationId = operationId,

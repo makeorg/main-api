@@ -37,6 +37,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
+import org.make.core.user.Role.RoleAdmin
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
@@ -249,8 +250,14 @@ trait DefaultModerationQuestionComponent
           ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
+                val questionIds: Option[Seq[QuestionId]] = if (userAuth.user.roles.contains(RoleAdmin)) {
+                  None
+                } else {
+                  Some(userAuth.user.availableQuestions)
+                }
                 val first: Int = start.getOrElse(0)
                 val request: SearchQuestionRequest = SearchQuestionRequest(
+                  maybeQuestionIds = questionIds,
                   maybeThemeId = themeId,
                   maybeOperationId = operationId,
                   country = country,
