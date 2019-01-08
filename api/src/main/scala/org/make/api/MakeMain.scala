@@ -173,6 +173,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       MIPIMGbOperation,
       MIPIMGbImportTagsData,
       MIPIMGbData,
+      WeEuropeansOperation,
       CreateSequenceConfigurations,
       // ReloadSequences should always be the last in this list
       ReloadSequences
