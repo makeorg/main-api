@@ -5,7 +5,7 @@ import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import io.swagger.annotations._
+import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -39,6 +39,7 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
   @Path(value = "/{moderatorId}")
   def getModerator: Route
 
@@ -108,6 +109,7 @@ trait AdminUserApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateModeratorRequest"),
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")
     )
   )
   @ApiResponses(
