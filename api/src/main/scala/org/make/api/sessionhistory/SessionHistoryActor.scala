@@ -112,7 +112,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
       }
       sender() ! LogAcknowledged
     case command: TransferableToUser[_]  => userHistoryCoordinator.forward(command.toUserHistoryEvent(userId))
-    case RequestSessionVotedProposals(_) => RequestUserVotedProposals(userId)
+    case RequestSessionVotedProposals(_) => userHistoryCoordinator.forward(RequestUserVotedProposals(userId))
     case RequestSessionVoteValues(_, proposalIds) =>
       userHistoryCoordinator.forward(RequestVoteValues(userId, proposalIds))
     case command: SessionHistoryAction =>
