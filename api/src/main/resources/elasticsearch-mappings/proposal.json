@@ -38,6 +38,67 @@
           "type":       "stemmer",
           "language":   "light_german"
         },
+        "bulgarian_stemmer": {
+          "type":       "stemmer",
+          "language":   "bulgarian"
+        },
+        "czech_stemmer": {
+          "type":       "stemmer",
+          "language":   "czech"
+        },
+        "danish_stemmer": {
+          "type":       "stemmer",
+          "language":   "danish"
+        },
+        "dutch_stemmer": {
+          "type":       "stemmer",
+          "language":   "dutch"
+        },
+        "dutch_override": {
+          "type":       "stemmer_override",
+          "rules": [
+            "fiets=>fiets",
+            "bromfiets=>bromfiets",
+            "ei=>eier",
+            "kind=>kinder"
+          ]
+        },
+        "finnish_stemmer": {
+          "type":       "stemmer",
+          "language":   "finnish"
+        },
+        "greek_stemmer": {
+          "type":       "stemmer",
+          "language":   "greek"
+        },
+        "hungarian_stemmer": {
+          "type":       "stemmer",
+          "language":   "hungarian"
+        },
+        "latvian_stemmer": {
+          "type":       "stemmer",
+          "language":   "latvian"
+        },
+        "lithuanian_stemmer": {
+          "type":       "stemmer",
+          "language":   "lithuanian"
+        },
+        "portuguese_stemmer": {
+          "type":       "stemmer",
+          "language":   "light_portuguese"
+        },
+        "romanian_stemmer": {
+          "type":       "stemmer",
+          "language":   "romanian"
+        },
+        "spanish_stemmer": {
+          "type":       "stemmer",
+          "language":   "light_spanish"
+        },
+        "swedish_stemmer": {
+          "type":       "stemmer",
+          "language":   "swedish"
+        },
         "trigrams_filter": {
           "type":     "ngram",
           "min_gram": 3,
@@ -49,7 +110,8 @@
           "tokenizer": "icu_tokenizer",
           "filter": [
             "french_elision",
-            "icu_folding"
+            "icu_folding",
+            "lowercase"
           ],
           "char_filter": [
             "make_char_filter-fr"
@@ -60,6 +122,7 @@
           "filter": [
             "french_elision",
             "icu_folding",
+            "lowercase",
             "french_stemmer"
           ],
           "char_filter": [
@@ -70,6 +133,7 @@
           "tokenizer":  "standard",
           "filter": [
             "english_possessive_stemmer",
+            "icu_folding",
             "lowercase"
           ],
           "char_filter": [
@@ -136,6 +200,345 @@
             "make_char_filter-de"
           ]
         },
+        "bulgarian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-bg"
+          ]
+        },
+        "bulgarian_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "bulgarian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-bg"
+          ]
+        },
+        "czech_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-cs"
+          ]
+        },
+        "czech_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "czech_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-cs"
+          ]
+        },
+        "danish_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-da"
+          ]
+        },
+        "danish_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "danish_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-da"
+          ]
+        },
+        "dutch_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-nl"
+          ]
+        },
+        "dutch_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "dutch_override",
+            "dutch_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-nl"
+          ]
+        },
+        "finnish_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-fi"
+          ]
+        },
+        "finnish_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "finnish_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-fi"
+          ]
+        },
+        "greek_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-el"
+          ]
+        },
+        "greek_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "greek_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-el"
+          ]
+        },
+        "hungarian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-hu"
+          ]
+        },
+        "hungarian_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "hungarian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-hu"
+          ]
+        },
+        "latvian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-lv"
+          ]
+        },
+        "latvian_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "latvian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-lv"
+          ]
+        },
+        "lithuanian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-lt"
+          ]
+        },
+        "lithuanian_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "lithuanian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-lt"
+          ]
+        },
+        "portuguese_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-pt"
+          ]
+        },
+        "portuguese_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "portuguese_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-pt"
+          ]
+        },
+        "romanian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-ro"
+          ]
+        },
+        "romanian_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "romanian_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-ro"
+          ]
+        },
+        "spanish_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-es"
+          ]
+        },
+        "spanish_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "spanish_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-es"
+          ]
+        },
+        "swedish_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-sv"
+          ]
+        },
+        "swedish_full": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "swedish_stemmer"
+          ],
+          "char_filter": [
+            "make_char_filter-sv"
+          ]
+        },
+        "polish_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ],
+          "char_filter": [
+            "make_char_filter-pl"
+          ]
+        },
+        "croatian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "trigrams_filter"
+          ],
+          "char_filter": [
+            "make_char_filter-hr"
+          ]
+        },
+        "estonian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "trigrams_filter"
+          ],
+          "char_filter": [
+            "make_char_filter-et"
+          ]
+        },
+        "maltese_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "trigrams_filter"
+          ],
+          "char_filter": [
+            "make_char_filter-mt"
+          ]
+        },
+        "slovak_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "trigrams_filter"
+          ],
+          "char_filter": [
+            "make_char_filter-sk"
+          ]
+        },
+        "slovenian_std": {
+          "tokenizer":  "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "trigrams_filter"
+          ],
+          "char_filter": [
+            "make_char_filter-sl"
+          ]
+        },
         "trigrams": {
           "type":      "custom",
           "tokenizer": "icu_tokenizer",
@@ -164,6 +567,101 @@
         "make_char_filter-de": {
           "type": "pattern_replace",
           "pattern": "^Wir müssen",
+          "replacement": ""
+        },
+        "make_char_filter-bg": {
+          "type": "pattern_replace",
+          "pattern": "^Трябва",
+          "replacement": ""
+        },
+        "make_char_filter-cs": {
+          "type": "pattern_replace",
+          "pattern": "^Трябва",
+          "replacement": ""
+        },
+        "make_char_filter-da": {
+          "type": "pattern_replace",
+          "pattern": "^Det er nødvendigt",
+          "replacement": ""
+        },
+        "make_char_filter-nl": {
+          "type": "pattern_replace",
+          "pattern": "^Er moet",
+          "replacement": ""
+        },
+        "make_char_filter-fi": {
+          "type": "pattern_replace",
+          "pattern": "^Meidän tulisi",
+          "replacement": ""
+        },
+        "make_char_filter-el": {
+          "type": "pattern_replace",
+          "pattern": "^Πρέπει να",
+          "replacement": ""
+        },
+        "make_char_filter-hu": {
+          "type": "pattern_replace",
+          "pattern": "^Muszáj",
+          "replacement": ""
+        },
+        "make_char_filter-lv": {
+          "type": "pattern_replace",
+          "pattern": "^Nepieciešams",
+          "replacement": ""
+        },
+        "make_char_filter-lt": {
+          "type": "pattern_replace",
+          "pattern": "^Būtina",
+          "replacement": ""
+        },
+        "make_char_filter-pt": {
+          "type": "pattern_replace",
+          "pattern": "^É necessário",
+          "replacement": ""
+        },
+        "make_char_filter-ro": {
+          "type": "pattern_replace",
+          "pattern": "^Trebuie",
+          "replacement": ""
+        },
+        "make_char_filter-es": {
+          "type": "pattern_replace",
+          "pattern": "^Haría falta",
+          "replacement": ""
+        },
+        "make_char_filter-sv": {
+          "type": "pattern_replace",
+          "pattern": "^Vi måste",
+          "replacement": ""
+        },
+        "make_char_filter-pl": {
+          "type": "pattern_replace",
+          "pattern": "^Należy",
+          "replacement": ""
+        },
+        "make_char_filter-hr": {
+          "type": "pattern_replace",
+          "pattern": "^Potrebno je",
+          "replacement": ""
+        },
+        "make_char_filter-et": {
+          "type": "pattern_replace",
+          "pattern": "^On vaja",
+          "replacement": ""
+        },
+        "make_char_filter-mt": {
+          "type": "pattern_replace",
+          "pattern": "^Jenħtieġ",
+          "replacement": ""
+        },
+        "make_char_filter-sk": {
+          "type": "pattern_replace",
+          "pattern": "^Je potrebné",
+          "replacement": ""
+        },
+        "make_char_filter-sl": {
+          "type": "pattern_replace",
+          "pattern": "^Moramo",
           "replacement": ""
         }
       }
@@ -220,6 +718,138 @@
             "stemmed-de": {
               "type": "text",
               "analyzer": "german_full"
+            },
+            "bg": {
+              "type": "text",
+              "analyzer": "bulgarian_std"
+            },
+            "stemmed-bg": {
+              "type": "text",
+              "analyzer": "bulgarian_full"
+            },
+            "cs": {
+              "type": "text",
+              "analyzer": "czech_std"
+            },
+            "stemmed-cs": {
+              "type": "text",
+              "analyzer": "czech_full"
+            },
+            "da": {
+              "type": "text",
+              "analyzer": "danish_std"
+            },
+            "stemmed-da": {
+              "type": "text",
+              "analyzer": "danish_full"
+            },
+            "nl": {
+              "type": "text",
+              "analyzer": "dutch_std"
+            },
+            "stemmed-nl": {
+              "type": "text",
+              "analyzer": "dutch_full"
+            },
+            "fi": {
+              "type": "text",
+              "analyzer": "finnish_std"
+            },
+            "stemmed-fi": {
+              "type": "text",
+              "analyzer": "finnish_full"
+            },
+            "el": {
+              "type": "text",
+              "analyzer": "greek_std"
+            },
+            "stemmed-el": {
+              "type": "text",
+              "analyzer": "greek_full"
+            },
+            "hu": {
+              "type": "text",
+              "analyzer": "hungarian_std"
+            },
+            "stemmed-hu": {
+              "type": "text",
+              "analyzer": "hungarian_full"
+            },
+            "lv": {
+              "type": "text",
+              "analyzer": "latvian_std"
+            },
+            "stemmed-lv": {
+              "type": "text",
+              "analyzer": "latvian_full"
+            },
+            "lt": {
+              "type": "text",
+              "analyzer": "lithuanian_std"
+            },
+            "stemmed-lt": {
+              "type": "text",
+              "analyzer": "lithuanian_full"
+            },
+            "pt": {
+              "type": "text",
+              "analyzer": "portuguese_std"
+            },
+            "stemmed-pt": {
+              "type": "text",
+              "analyzer": "portuguese_full"
+            },
+            "ro": {
+              "type": "text",
+              "analyzer": "romanian_std"
+            },
+            "stemmed-ro": {
+              "type": "text",
+              "analyzer": "romanian_full"
+            },
+            "es": {
+              "type": "text",
+              "analyzer": "spanish_std"
+            },
+            "stemmed-es": {
+              "type": "text",
+              "analyzer": "spanish_full"
+            },
+            "sv": {
+              "type": "text",
+              "analyzer": "swedish_std"
+            },
+            "stemmed-sv": {
+              "type": "text",
+              "analyzer": "swedish_full"
+            },
+            "pl": {
+              "type": "text",
+              "analyzer": "polish_std"
+            },
+            "stemmed-pl": {
+              "type": "text",
+              "analyzer": "polish"
+            },
+            "hr": {
+              "type": "text",
+              "analyzer": "croatian_std"
+            },
+            "et": {
+              "type": "text",
+              "analyzer": "estonian_std"
+            },
+            "mt": {
+              "type": "text",
+              "analyzer": "maltese_std"
+            },
+            "sk": {
+              "type": "text",
+              "analyzer": "slovak_std"
+            },
+            "sl": {
+              "type": "text",
+              "analyzer": "slovenian_std"
             },
             "general": {
               "type": "text"

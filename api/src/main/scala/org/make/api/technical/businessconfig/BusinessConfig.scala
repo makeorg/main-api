@@ -53,7 +53,7 @@ case class FrontConfiguration(proposalMinLength: Int,
 object BusinessConfig {
   val defaultProposalMaxLength: Int = 140
   val themes: Seq[Theme] = Seq.empty
-  val supportedCountries = Seq(
+  val supportedCountries: Seq[CountryConfiguration] = Seq(
     CountryConfiguration(
       countryCode = Country("FR"),
       defaultLanguage = Language("fr"),
@@ -76,6 +76,150 @@ object BusinessConfig {
       countryCode = Country("DE"),
       defaultLanguage = Language("de"),
       supportedLanguages = Seq(Language("de")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("AT"),
+      defaultLanguage = Language("de"),
+      supportedLanguages = Seq(Language("de")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("BE"),
+      defaultLanguage = Language("nl"),
+      supportedLanguages = Seq(Language("fr"), Language("nl")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("BG"),
+      defaultLanguage = Language("bg"),
+      supportedLanguages = Seq(Language("bg")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("CY"),
+      defaultLanguage = Language("el"),
+      supportedLanguages = Seq(Language("el")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("CZ"),
+      defaultLanguage = Language("cs"),
+      supportedLanguages = Seq(Language("cs")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("DK"),
+      defaultLanguage = Language("da"),
+      supportedLanguages = Seq(Language("da")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("EE"),
+      defaultLanguage = Language("et"),
+      supportedLanguages = Seq(Language("et")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("ES"),
+      defaultLanguage = Language("es"),
+      supportedLanguages = Seq(Language("es")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("FI"),
+      defaultLanguage = Language("fi"),
+      supportedLanguages = Seq(Language("fi")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("GR"),
+      defaultLanguage = Language("el"),
+      supportedLanguages = Seq(Language("el")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("HR"),
+      defaultLanguage = Language("hr"),
+      supportedLanguages = Seq(Language("hr")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("HU"),
+      defaultLanguage = Language("hu"),
+      supportedLanguages = Seq(Language("hu")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("IE"),
+      defaultLanguage = Language("en"),
+      supportedLanguages = Seq(Language("en")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("LT"),
+      defaultLanguage = Language("lt"),
+      supportedLanguages = Seq(Language("lt")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("LU"),
+      defaultLanguage = Language("fr"),
+      supportedLanguages = Seq(Language("fr"), Language("de")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("LV"),
+      defaultLanguage = Language("lv"),
+      supportedLanguages = Seq(Language("lv")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("MT"),
+      defaultLanguage = Language("mt"),
+      supportedLanguages = Seq(Language("mt")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("NL"),
+      defaultLanguage = Language("nl"),
+      supportedLanguages = Seq(Language("nl")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("PL"),
+      defaultLanguage = Language("pl"),
+      supportedLanguages = Seq(Language("pl")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("PT"),
+      defaultLanguage = Language("pt"),
+      supportedLanguages = Seq(Language("pt")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("RO"),
+      defaultLanguage = Language("ro"),
+      supportedLanguages = Seq(Language("ro")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("SE"),
+      defaultLanguage = Language("sv"),
+      supportedLanguages = Seq(Language("sv")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("SI"),
+      defaultLanguage = Language("sl"),
+      supportedLanguages = Seq(Language("sl")),
+      coreIsAvailable = false
+    ),
+    CountryConfiguration(
+      countryCode = Country("SK"),
+      defaultLanguage = Language("sk"),
+      supportedLanguages = Seq(Language("sk")),
       coreIsAvailable = false
     )
   )

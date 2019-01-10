@@ -66,7 +66,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "isOpen", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
     )
   )
   @Path(value = "/")
