@@ -237,6 +237,18 @@ class ModerationTagApiTest
     scenario("authenticated moderator") {
       Given("an authenticated user with the moderator role")
       When("the user wants to create a tag")
+      Then("he should get an forbidden (403) return code")
+
+      Post("/moderation/tags")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("authenticated admin") {
+      Given("an authenticated user with the admin role")
+      When("the user wants to create a tag")
       Then("the tag should be saved if valid")
       val tagRequest =
         s"""{
@@ -248,11 +260,11 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
 
-      Given("an authenticated user with the moderator role")
+      Given("an authenticated user with the admin role")
       When("the user wants to create a tag with duplicate label into context")
       Then("the status should be BadRequest")
       val tagRequestDuplicate =
@@ -265,11 +277,11 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestDuplicate))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
-      Given("an authenticated user with the moderator role")
+      Given("an authenticated user with the admin role")
       When("the user wants to create a tag without question")
       Then("the status should be BadRequest")
       val tagRequestEmpty =
@@ -281,7 +293,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -396,13 +408,23 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update non existing tag as moderator") {
-      Given("an authenticated user with role moderator")
+    scenario("update tag with admin user") {
+      Given("an authenticated user with role admin")
+      When(s"I update tag from id '$fakeTag")
+      Then("I get a forbidden response")
+      Put(s"/moderation/tags/$fakeTag")
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("update non existing tag as admin") {
+      Given("an authenticated user with role admin")
       When("I update non existing tag")
       Then("I get a not found response")
       Put(s"/moderation/tags/$fakeTagText")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -412,7 +434,7 @@ class ModerationTagApiTest
       When("I update tag with an invalid body")
       Then("I get a bad request response")
       Put(s"/moderation/tags/$fakeTagText")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -423,7 +445,7 @@ class ModerationTagApiTest
       Then("I get an OK response")
       Put(s"/moderation/tags/$helloWorldTagId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tag: TagResponse = entityAs[TagResponse]
         tag.id.value should be(helloWorldTagId)

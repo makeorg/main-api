@@ -179,7 +179,7 @@ trait DefaultModerationTagApiComponent
         path("moderation" / "tags") {
           makeOperation("ModerationRegisterTag") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireModerationRole(userAuth.user) {
+              requireAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[CreateTagRequest]) { request: CreateTagRequest =>
                     provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
@@ -292,7 +292,7 @@ trait DefaultModerationTagApiComponent
         path("moderation" / "tags" / moderationTagId) { tagId =>
           makeOperation("ModerationUpdateTag") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
                     provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>

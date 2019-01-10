@@ -334,6 +334,18 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
 
     scenario("admin-only endpoints") {
+      Post("/moderation/operations-of-questions")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.Forbidden)
+      }
+
+      Put("/moderation/operations-of-questions/some-question")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.Forbidden)
+      }
+
       Delete("/moderation/operations-of-questions/some-question")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
 
@@ -346,7 +358,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("create operationOfQuestion") {
     scenario("create as moderator") {
       Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
         .withEntity(
           ContentTypes.`application/json`,
           CreateOperationOfQuestionRequest(
@@ -369,7 +381,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("update operationOfQuestion") {
     scenario("update as moderator") {
       Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
         .withEntity(
           ContentTypes.`application/json`,
           ModifyOperationOfQuestionRequest(

@@ -206,7 +206,7 @@ trait DefaultModerationQuestionComponent
       path("moderation" / "questions" / questionId / "initial-proposals") { questionId =>
         makeOperation("ModerationAddInitialProposalToQuestion") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
+            requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[CreateInitialProposalRequest]) { request =>
                   provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
@@ -302,7 +302,7 @@ trait DefaultModerationQuestionComponent
         path("moderation" / "questions") {
           makeOperation("ModerationCreateQuestion") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireModerationRole(userAuth.user) {
+              requireAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[CreateQuestionRequest]) { request =>
                     provideAsync(
