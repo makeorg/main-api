@@ -25,8 +25,6 @@ import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceCom
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.RequestContext
-import org.make.core.operation.OperationId
-import org.make.core.reference.Country
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -40,9 +38,8 @@ trait WidgetServiceComponent {
 
 trait WidgetService {
   def startNewWidgetSequence(maybeUserId: Option[UserId],
-                             widgetOperationId: OperationId,
+                             sequenceId: SequenceId,
                              tagsIds: Option[Seq[TagId]],
-                             country: Option[Country],
                              limit: Option[Int],
                              requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 }
@@ -61,32 +58,12 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
   override lazy val widgetService: WidgetService = new WidgetService {
 
     override def startNewWidgetSequence(maybeUserId: Option[UserId],
-                                        widgetOperationId: OperationId,
+                                        sequenceId: SequenceId,
                                         tagsIds: Option[Seq[TagId]],
-                                        country: Option[Country],
                                         limit: Option[Int],
                                         requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
-      def getSequenceId: Future[SequenceId] =
-        persistentOperationService
-          .getById(widgetOperationId)
-          .map(
-            _.map(
-              operation =>
-                operation.questions
-                  .find(
-                    countryConfiguration =>
-                      country.orElse(requestContext.country).contains(countryConfiguration.question.country)
-                  )
-                  .getOrElse(operation.questions.head)
-                  .details
-                  .landingSequenceId
-            ).getOrElse(SequenceId(requestContext.source.getOrElse("widget")))
-          )
-
       for {
-        sequenceId <- getSequenceId
-        _          <- sequenceConfigurationService.getSequenceConfiguration(sequenceId)
         selectedProposals <- sequenceService.startNewSequence(
           maybeUserId = maybeUserId,
           sequenceId = sequenceId,

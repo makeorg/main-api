@@ -32,9 +32,7 @@ import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestion
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.reference.Country
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -49,21 +47,6 @@ trait WidgetApiComponent {
 @Api(value = "Widget")
 @Path(value = "/widget")
 trait WidgetApi extends Directives {
-
-  @Path(value = "/operations/{operationId}/start-sequence")
-  @ApiOperation(value = "get-widget-sequence", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
-    )
-  )
-  def getWidgetSequence: Route
 
   @Path(value = "/questions/{questionSlug}/start-sequence")
   @ApiOperation(value = "get-widget-sequence-by-question", httpMethod = "GET", code = HttpCodes.OK)
@@ -81,7 +64,7 @@ trait WidgetApi extends Directives {
   )
   def startSequenceByQuestionSlug: Route
 
-  def routes: Route = getWidgetSequence ~ startSequenceByQuestionSlug
+  def routes: Route = startSequenceByQuestionSlug
 }
 
 trait DefaultWidgetApiComponent
@@ -94,40 +77,14 @@ trait DefaultWidgetApiComponent
 
   override lazy val widgetApi: WidgetApi = new WidgetApi {
 
-    private val widgetOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
     private val questionSlug: PathMatcher1[String] = Segment
-
-    // @Deprecated
-    override def getWidgetSequence: Route = get {
-      path("widget" / "operations" / widgetOperationId / "start-sequence") { widgetOperationId =>
-        makeOperation("GetWidgetSequence") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?, 'country.as[Country].?)) {
-              (tagsIds: Option[Seq[TagId]], limit: Option[Int], country: Option[Country]) =>
-                provideAsync(
-                  widgetService.startNewWidgetSequence(
-                    maybeUserId = userAuth.map(_.user.userId),
-                    widgetOperationId = widgetOperationId,
-                    tagsIds = tagsIds,
-                    country = country,
-                    limit = limit,
-                    requestContext = requestContext
-                  )
-                ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
-                  complete(proposalsResultSeededResponse)
-                }
-            }
-          }
-        }
-      }
-    }
 
     override def startSequenceByQuestionSlug: Route = get {
       path("widget" / "questions" / questionSlug / "start-sequence") { questionSlug =>
         makeOperation("GetWidgetSequenceByQuestionSlug") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?, 'country.as[Country].?)) {
-              (tagsIds: Option[Seq[TagId]], limit: Option[Int], country: Option[Country]) =>
+            parameters(('tagsIds.as[immutable.Seq[TagId]].?, 'limit.as[Int].?)) {
+              (tagsIds: Option[Seq[TagId]], limit: Option[Int]) =>
                 provideAsyncOrNotFound(
                   persistentQuestionService
                     .find(SearchQuestionRequest(maybeSlug = Some(questionSlug)))
@@ -138,9 +95,8 @@ trait DefaultWidgetApiComponent
                       provideAsync(
                         widgetService.startNewWidgetSequence(
                           maybeUserId = userAuth.map(_.user.userId),
-                          widgetOperationId = operationOfQuestion.operationId,
+                          sequenceId = operationOfQuestion.landingSequenceId,
                           tagsIds = tagsIds,
-                          country = country,
                           limit = limit,
                           requestContext = requestContext
                         )
