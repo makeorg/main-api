@@ -178,12 +178,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
   override lazy val proposalService: ProposalService = new ProposalService {
 
-    def createInitialProposal(content: String,
-                              question: Question,
-                              tags: Seq[TagId],
-                              author: AuthorRequest,
-                              moderator: UserId,
-                              moderatorRequestContext: RequestContext): Future[ProposalId] = {
+    override def createInitialProposal(content: String,
+                                       question: Question,
+                                       tags: Seq[TagId],
+                                       author: AuthorRequest,
+                                       moderator: UserId,
+                                       moderatorRequestContext: RequestContext): Future[ProposalId] = {
 
       for {
         user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
@@ -249,47 +249,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       elasticsearchProposalAPI.findProposalById(proposalId)
     }
 
-    private def proposalResponse(proposal: Proposal, author: User): Future[Option[ProposalResponse]] = {
-      val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
-      val futureEventsUsers: Future[Seq[UserResponse]] =
-        userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
-
-      futureEventsUsers.map { eventsUsers =>
-        val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
-          ProposalActionResponse(
-            date = action.date,
-            user = eventsUsers.find(_.userId.value == action.user.value),
-            actionType = action.actionType,
-            arguments = action.arguments
-          )
-        }
-        Some(
-          ProposalResponse(
-            proposalId = proposal.proposalId,
-            slug = proposal.slug,
-            content = proposal.content,
-            author = UserResponse(author),
-            labels = proposal.labels,
-            theme = proposal.theme,
-            status = proposal.status,
-            refusalReason = proposal.refusalReason,
-            tags = proposal.tags,
-            votes = proposal.votes,
-            context = proposal.creationContext,
-            createdAt = proposal.createdAt,
-            updatedAt = proposal.updatedAt,
-            events = events,
-            idea = proposal.idea,
-            ideaProposals = Seq.empty,
-            operationId = proposal.operation,
-            language = proposal.language,
-            country = proposal.country,
-            questionId = proposal.questionId
-          )
-        )
-      }
-    }
-
     override def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]] = {
       toProposalResponse(proposalCoordinatorService.getProposal(proposalId))
     }
@@ -329,9 +288,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       elasticsearchProposalAPI.searchProposals(query)
     }
 
-    def mergeVoteResults(maybeUserId: Option[UserId],
-                         searchResult: ProposalsSearchResult,
-                         votes: Map[ProposalId, VoteAndQualifications]): ProposalsResultResponse = {
+    private def mergeVoteResults(maybeUserId: Option[UserId],
+                                 searchResult: ProposalsSearchResult,
+                                 votes: Map[ProposalId, VoteAndQualifications]): ProposalsResultResponse = {
       val proposals = searchResult.results.map { indexedProposal =>
         ProposalResult.apply(
           indexedProposal,
@@ -413,6 +372,26 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     }
 
+    private def findIdea(proposalId: ProposalId,
+                         tags: Seq[TagId],
+                         idea: Option[IdeaId],
+                         questionId: QuestionId): Future[Option[IdeaId]] = {
+
+      proposalCoordinatorService.getProposal(proposalId).flatMap {
+        case None => Future.successful(None)
+        case Some(proposal) =>
+          (idea.orElse(proposal.idea), tags) match {
+            case (ideaId @ Some(_), _) => Future.successful(ideaId)
+            case (_, Seq())            => Future.successful(None)
+            case _ =>
+              findStakeSolutionTuple(tags).flatMap {
+                case (stake, solution) =>
+                  ideaMappingService.getOrCreateMapping(questionId, stake, solution).map(_.ideaId.some)
+              }
+          }
+      }
+    }
+
     override def update(proposalId: ProposalId,
                         moderator: UserId,
                         requestContext: RequestContext,
@@ -422,51 +401,74 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         tags: Seq[TagId],
                         idea: Option[IdeaId]): Future[Option[ProposalResponse]] = {
 
-      def findIdea(proposal: Proposal, tags: Seq[TagId]): Future[IdeaId] = {
-        idea.orElse(proposal.idea) match {
-          case Some(ideaId) => Future.successful(ideaId)
-          case None =>
-            findStakeSolutionTuple(tags).flatMap {
-              case (stake, solution) =>
-                ideaMappingService.getOrCreateMapping(question.questionId, stake, solution).map(_.ideaId)
-            }
-        }
-      }
-
-      proposalCoordinatorService.getProposal(proposalId).flatMap {
-        case None => Future.successful(None)
-        case Some(proposal) =>
-          findIdea(proposal, tags).flatMap { ideaId =>
-            toProposalResponse(
-              proposalCoordinatorService.update(
-                UpdateProposalCommand(
-                  moderator = moderator,
-                  proposalId = proposalId,
-                  requestContext = requestContext,
-                  updatedAt = updatedAt,
-                  newContent = newContent,
-                  question = question,
-                  labels = Seq.empty,
-                  tags = tags,
-                  idea = Some(ideaId)
-                )
-              )
+      findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
+        toProposalResponse(
+          proposalCoordinatorService.update(
+            UpdateProposalCommand(
+              moderator = moderator,
+              proposalId = proposalId,
+              requestContext = requestContext,
+              updatedAt = updatedAt,
+              newContent = newContent,
+              question = question,
+              labels = Seq.empty,
+              tags = tags,
+              idea = ideaId
             )
-          }
+          )
+        )
       }
     }
 
-    private def toProposalResponse(proposal: Future[Option[Proposal]]): Future[Option[ProposalResponse]] = {
+    private def toProposalResponse(futureProposal: Future[Option[Proposal]]): Future[Option[ProposalResponse]] = {
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
-          proposal <- OptionT(proposal)
+          proposal <- OptionT(futureProposal)
           author   <- OptionT(userService.getUser(proposal.author))
         } yield (proposal, author)
       ).value
 
       futureMaybeProposalAuthor.flatMap {
-        case Some((p, author)) => proposalResponse(p, author)
-        case None              => Future.successful(None)
+        case None => Future.successful(None)
+        case Some((proposal, author)) =>
+          val eventsUserIds: Seq[UserId] = proposal.events.map(_.user).distinct
+          val futureEventsUsers: Future[Seq[UserResponse]] =
+            userService.getUsersByUserIds(eventsUserIds).map(_.map(UserResponse.apply))
+
+          futureEventsUsers.map { eventsUsers =>
+            val events: Seq[ProposalActionResponse] = proposal.events.map { action =>
+              ProposalActionResponse(
+                date = action.date,
+                user = eventsUsers.find(_.userId.value == action.user.value),
+                actionType = action.actionType,
+                arguments = action.arguments
+              )
+            }
+            Some(
+              ProposalResponse(
+                proposalId = proposal.proposalId,
+                slug = proposal.slug,
+                content = proposal.content,
+                author = UserResponse(author),
+                labels = proposal.labels,
+                theme = proposal.theme,
+                status = proposal.status,
+                refusalReason = proposal.refusalReason,
+                tags = proposal.tags,
+                votes = proposal.votes,
+                context = proposal.creationContext,
+                createdAt = proposal.createdAt,
+                updatedAt = proposal.updatedAt,
+                events = events,
+                idea = proposal.idea,
+                ideaProposals = Seq.empty,
+                operationId = proposal.operation,
+                language = proposal.language,
+                country = proposal.country,
+                questionId = proposal.questionId
+              )
+            )
+          }
       }
     }
 
@@ -479,21 +481,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                   idea: Option[IdeaId],
                                   tags: Seq[TagId]): Future[Option[ProposalResponse]] = {
 
-      toProposalResponse(
-        proposalCoordinatorService.accept(
-          AcceptProposalCommand(
-            proposalId = proposalId,
-            moderator = moderator,
-            requestContext = requestContext,
-            sendNotificationEmail = sendNotificationEmail,
-            newContent = newContent,
-            question = question,
-            labels = Seq.empty,
-            tags = tags,
-            idea = idea
+      findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
+        toProposalResponse(
+          proposalCoordinatorService.accept(
+            AcceptProposalCommand(
+              proposalId = proposalId,
+              moderator = moderator,
+              requestContext = requestContext,
+              sendNotificationEmail = sendNotificationEmail,
+              newContent = newContent,
+              question = question,
+              labels = Seq.empty,
+              tags = tags,
+              idea = ideaId
+            )
           )
         )
-      )
+      }
 
     }
 
@@ -525,7 +529,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
     }
 
-    //noinspection ScalaStyle
     override def getSimilar(userId: UserId,
                             proposal: IndexedProposal,
                             requestContext: RequestContext): Future[Seq[SimilarIdea]] = {
@@ -536,12 +539,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           UserAction(DateHelper.now(), LogGetProposalDuplicatesEvent.action, proposal.id)
         )
       )
-      semanticService.getSimilarIdeas(proposal, 10)
+      val similarIdeas = 10
+      semanticService.getSimilarIdeas(proposal, similarIdeas)
     }
 
     private def retrieveVoteHistory(proposalId: ProposalId,
                                     maybeUserId: Option[UserId],
-                                    requestContext: RequestContext) = {
+                                    requestContext: RequestContext): Future[Map[ProposalId, VoteAndQualifications]] = {
       val votesHistory = maybeUserId match {
         case Some(userId) =>
           userHistoryCoordinatorService
@@ -730,13 +734,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                                  minScore: Option[Float]): Future[Option[ProposalResponse]] = {
 
       userService.getUser(moderator).flatMap { user =>
+        val defaultNumberOfProposals = 50
         search(
           maybeUserId = Some(moderator),
           requestContext = requestContext,
           query = SearchQuery(
             filters = Some(getSearchFilters(questionId, toEnrich, minVotesCount, minScore)),
             sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
-            limit = Some(50),
+            limit = Some(defaultNumberOfProposals),
             language = None
           )
         ).flatMap { results =>

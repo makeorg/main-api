@@ -72,18 +72,18 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
     override def getOrCreateMapping(questionId: QuestionId,
                                     stakeTagId: Option[TagId],
                                     solutionTypeTagId: Option[TagId]): Future[IdeaMapping] = {
-      val stakeParameter = optionToTagIdOrNone(stakeTagId)
-      val solutionParameter = optionToTagIdOrNone(solutionTypeTagId)
 
-      persistentIdeaMappingService.find(Some(questionId), stakeParameter, solutionParameter, None).flatMap {
-        case Seq()        => createMapping(questionId, stakeTagId, solutionTypeTagId)
-        case Seq(mapping) => Future.successful(mapping)
-        case other        => Future.successful(other.head)
-      }
+      persistentIdeaMappingService
+        .find(Some(questionId), optionToTagIdOrNone(stakeTagId), optionToTagIdOrNone(solutionTypeTagId), None)
+        .flatMap {
+          case Seq()        => createMapping(questionId, stakeTagId, solutionTypeTagId)
+          case Seq(mapping) => Future.successful(mapping)
+          case other        => Future.successful(other.head)
+        }
     }
 
-    private def optionToTagIdOrNone(stakeTagId: Option[TagId]): Option[TagIdOrNone] = {
-      stakeTagId match {
+    private def optionToTagIdOrNone(maybeTagId: Option[TagId]): Option[TagIdOrNone] = {
+      maybeTagId match {
         case Some(tagId) => Some(Right(tagId))
         case None        => Some(Left(None))
       }
@@ -107,7 +107,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
         .findByTagIds(tags)
         .map { tags =>
           val tagMap = tags.map(tag => Some(tag.tagId) -> tag.label).toMap[Option[TagId], String]
-          s"${tagMap.getOrElse(stake, "None")} / ${tagMap.getOrElse(solution, s"None ($questionSlug)")}"
+          s"${tagMap.getOrElse(stake, "None")} / ${tagMap.getOrElse(solution, s"None")} ($questionSlug)"
         }
     }
     private def retrieveQuestionOrFail(questionId: QuestionId): Future[Question] = {

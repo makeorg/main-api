@@ -47,18 +47,11 @@ class PersistentIdeaMappingServiceIT
 
   def waitForCompletion(f: Future[_]): Unit = whenReady(f, Timeout(5.seconds))(_ => ())
 
-  def createTag(id: TagId, questionId: QuestionId): Tag = Tag(
-    id,
-    id.value,
-    TagDisplay.Displayed,
-    TagTypeId("c0d8d858-8b04-4dd9-add6-fa65443b622b"),
-    0.0F,
-    None,
-    Some(questionId),
-    None,
-    Country("FR"),
-    Language("fr")
-  )
+  val stake: TagTypeId = TagTypeId("c0d8d858-8b04-4dd9-add6-fa65443b622b")
+
+  def createTag(id: TagId, questionId: QuestionId): Tag = {
+    Tag(id, id.value, TagDisplay.Displayed, stake, 0.0F, None, Some(questionId), None, Country("FR"), Language("fr"))
+  }
 
   def createQuestion(id: QuestionId): Question = Question(
     questionId = id,

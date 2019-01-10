@@ -98,6 +98,22 @@ class DefaultProposalServiceComponentTest
     .when(userService.getUsersByUserIds(Seq.empty))
     .thenReturn(Future.successful(Seq.empty))
 
+  Mockito
+    .when(tagTypeService.findAll())
+    .thenReturn(
+      Future.successful(
+        Seq(
+          TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
+          TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
+          TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
+        )
+      )
+    )
+
+  Mockito
+    .when(tagService.findByTagIds(Seq.empty))
+    .thenReturn(Future.successful(Seq.empty))
+
   val moderatorId = UserId("moderator-id")
 
   private val moderator = User(
@@ -730,8 +746,22 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(ProposalId("my-proposal")))
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
+        .thenReturn(Future.successful(Some(proposal(ProposalId("my-proposal")))))
+
+      Mockito
         .when(proposalCoordinatorService.accept(any[AcceptProposalCommand]))
         .thenReturn(Future.successful(None))
+
+      Mockito
+        .when(tagService.findByTagIds(Seq(TagId("my-tag"))))
+        .thenReturn(Future.successful(Seq.empty))
+
+      Mockito
+        .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
+        .thenReturn(
+          Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
+        )
 
       val result = proposalService.createInitialProposal(
         "my content",
