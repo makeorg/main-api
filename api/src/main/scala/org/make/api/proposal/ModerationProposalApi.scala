@@ -50,6 +50,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
+import org.make.core.user.Role.RoleAdmin
 import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -420,7 +421,9 @@ trait DefaultModerationProposalApiComponent
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
                 provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) { proposalResponse =>
-                  complete(proposalResponse)
+                  requireRightsOnQuestion(auth.user, proposalResponse.questionId) {
+                    complete(proposalResponse)
+                  }
                 }
               }
             }
@@ -435,7 +438,7 @@ trait DefaultModerationProposalApiComponent
         path("moderation" / "proposals" / "export") {
           makeOperation("ExportProposal") { requestContext =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 parameters(
                   (
                     'format, // TODO Use Accept header to get the format
@@ -597,6 +600,17 @@ trait DefaultModerationProposalApiComponent
                       )
                     }).flatten: _*)
 
+                    val resolvedQuestions: Seq[QuestionId] = {
+                      if (userAuth.user.roles.contains(RoleAdmin)) {
+                        questionId.toSeq
+                      } else {
+                        questionId
+                          .filter(id => userAuth.user.availableQuestions.contains(id))
+                          .map(Seq(_))
+                          .getOrElse(userAuth.user.availableQuestions)
+                      }
+                    }
+
                     val contextFilterRequest: Option[ContextFilterRequest] =
                       operationId.orElse(source).orElse(location).orElse(question).map { _ =>
                         ContextFilterRequest(operationId, source, location, question)
@@ -610,7 +624,7 @@ trait DefaultModerationProposalApiComponent
                       initialProposal = initialProposal,
                       tagsIds = tagsIds,
                       operationId = operationId,
-                      questionId = questionId,
+                      questionId = resolvedQuestions.headOption, // TODO: use the whole list
                       ideaId = ideaId,
                       trending = trending,
                       content = content,
@@ -651,20 +665,22 @@ trait DefaultModerationProposalApiComponent
                   provideAsyncOrNotFound(
                     retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
                   ) { question =>
-                    provideAsyncOrNotFound(
-                      proposalService.update(
-                        proposalId = proposalId,
-                        moderator = userAuth.user.userId,
-                        requestContext = requestContext,
-                        updatedAt = DateHelper.now(),
-                        question = question,
-                        newContent = request.newContent,
-                        labels = request.labels,
-                        tags = request.tags,
-                        idea = request.idea
-                      )
-                    ) { proposalResponse: ProposalResponse =>
-                      complete(proposalResponse)
+                    requireRightsOnQuestion(userAuth.user, Some(question.questionId)) {
+                      provideAsyncOrNotFound(
+                        proposalService.update(
+                          proposalId = proposalId,
+                          moderator = userAuth.user.userId,
+                          requestContext = requestContext,
+                          updatedAt = DateHelper.now(),
+                          question = question,
+                          newContent = request.newContent,
+                          labels = request.labels,
+                          tags = request.tags,
+                          idea = request.idea
+                        )
+                      ) { proposalResponse: ProposalResponse =>
+                        complete(proposalResponse)
+                      }
                     }
                   }
                 }
@@ -711,20 +727,22 @@ trait DefaultModerationProposalApiComponent
                   provideAsyncOrNotFound(
                     retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
                   ) { question =>
-                    provideAsyncOrNotFound(
-                      proposalService.validateProposal(
-                        proposalId = proposalId,
-                        moderator = auth.user.userId,
-                        requestContext = requestContext,
-                        question = question,
-                        newContent = request.newContent,
-                        sendNotificationEmail = request.sendNotificationEmail,
-                        idea = request.idea,
-                        labels = request.labels,
-                        tags = request.tags
-                      )
-                    ) { proposalResponse: ProposalResponse =>
-                      complete(proposalResponse)
+                    requireRightsOnQuestion(auth.user, Some(question.questionId)) {
+                      provideAsyncOrNotFound(
+                        proposalService.validateProposal(
+                          proposalId = proposalId,
+                          moderator = auth.user.userId,
+                          requestContext = requestContext,
+                          question = question,
+                          newContent = request.newContent,
+                          sendNotificationEmail = request.sendNotificationEmail,
+                          idea = request.idea,
+                          labels = request.labels,
+                          tags = request.tags
+                        )
+                      ) { proposalResponse: ProposalResponse =>
+                        complete(proposalResponse)
+                      }
                     }
                   }
                 }
@@ -740,17 +758,21 @@ trait DefaultModerationProposalApiComponent
         makeOperation("RefuseProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
-              decodeRequest {
-                entity(as[RefuseProposalRequest]) { refuseProposalRequest =>
-                  provideAsyncOrNotFound(
-                    proposalService.refuseProposal(
-                      proposalId = proposalId,
-                      moderator = auth.user.userId,
-                      requestContext = requestContext,
-                      request = refuseProposalRequest
-                    )
-                  ) { proposalResponse: ProposalResponse =>
-                    complete(proposalResponse)
+              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                requireRightsOnQuestion(auth.user, proposal.questionId) {
+                  decodeRequest {
+                    entity(as[RefuseProposalRequest]) { refuseProposalRequest =>
+                      provideAsyncOrNotFound(
+                        proposalService.refuseProposal(
+                          proposalId = proposalId,
+                          moderator = auth.user.userId,
+                          requestContext = requestContext,
+                          request = refuseProposalRequest
+                        )
+                      ) { proposalResponse: ProposalResponse =>
+                        complete(proposalResponse)
+                      }
+                    }
                   }
                 }
               }
@@ -765,15 +787,20 @@ trait DefaultModerationProposalApiComponent
         makeOperation("PostponeProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
-              decodeRequest {
-                provideAsyncOrNotFound(
-                  proposalService.postponeProposal(
-                    proposalId = proposalId,
-                    moderator = auth.user.userId,
-                    requestContext = requestContext
-                  )
-                ) { proposalResponse: ProposalResponse =>
-                  complete(proposalResponse)
+              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                requireRightsOnQuestion(auth.user, proposal.questionId) {
+                  decodeRequest {
+                    provideAsyncOrNotFound(
+                      proposalService
+                        .postponeProposal(
+                          proposalId = proposalId,
+                          moderator = auth.user.userId,
+                          requestContext = requestContext
+                        )
+                    ) { proposalResponse: ProposalResponse =>
+                      complete(proposalResponse)
+                    }
+                  }
                 }
               }
             }
@@ -787,15 +814,19 @@ trait DefaultModerationProposalApiComponent
         makeOperation("LockProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
-              provideAsyncOrNotFound(
-                proposalService
-                  .lockProposal(
-                    proposalId = proposalId,
-                    moderatorId = auth.user.userId,
-                    requestContext = requestContext
-                  )
-              ) { _ =>
-                complete(StatusCodes.NoContent)
+              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(proposalId)) { proposal =>
+                requireRightsOnQuestion(auth.user, proposal.questionId) {
+                  provideAsyncOrNotFound(
+                    proposalService
+                      .lockProposal(
+                        proposalId = proposalId,
+                        moderatorId = auth.user.userId,
+                        requestContext = requestContext
+                      )
+                  ) { _ =>
+                    complete(StatusCodes.NoContent)
+                  }
+                }
               }
             }
           }
@@ -831,8 +862,10 @@ trait DefaultModerationProposalApiComponent
             makeOAuth2 { auth =>
               requireModerationRole(auth.user) {
                 provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-                  provideAsync(proposalService.getSimilar(auth.user.userId, proposal, requestContext)) { proposals =>
-                    complete(proposals)
+                  requireRightsOnQuestion(auth.user, proposal.questionId) {
+                    provideAsync(proposalService.getSimilar(auth.user.userId, proposal, requestContext)) { proposals =>
+                      complete(proposals)
+                    }
                   }
                 }
               }
@@ -846,7 +879,7 @@ trait DefaultModerationProposalApiComponent
       path("moderation" / "proposals" / "change-idea") {
         makeOperation("ChangeProposalsIdea") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireModerationRole(auth.user) {
+            requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[PatchProposalsIdeaRequest]) { changes =>
                   provideAsync(ideaService.fetchOne(changes.ideaId)) { maybeIdea =>
@@ -900,17 +933,19 @@ trait DefaultModerationProposalApiComponent
                       questionService.getQuestion(questionId)
                     }.getOrElse(Future.successful(None))
                   } { question =>
-                    provideAsyncOrNotFound(
-                      proposalService.searchAndLockProposalToModerate(
-                        question.questionId,
-                        user.user.userId,
-                        context,
-                        request.toEnrich,
-                        request.minVotesCount,
-                        request.minScore
-                      )
-                    ) { proposal =>
-                      complete(proposal)
+                    requireRightsOnQuestion(user.user, Some(question.questionId)) {
+                      provideAsyncOrNotFound(
+                        proposalService.searchAndLockProposalToModerate(
+                          question.questionId,
+                          user.user.userId,
+                          context,
+                          request.toEnrich,
+                          request.minVotesCount,
+                          request.minScore
+                        )
+                      ) { proposal =>
+                        complete(proposal)
+                      }
                     }
                   }
                 }

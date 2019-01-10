@@ -166,7 +166,13 @@ class ModerationProposalApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq(
+      QuestionId("my-question"),
+      QuestionId("question-fire-and-ice"),
+      QuestionId("some-question"),
+      QuestionId("question-mieux-vivre-ensemble"),
+      QuestionId("question-vff")
+    )
   )
 
   val arya = User(
@@ -198,12 +204,15 @@ class ModerationProposalApiTest
   val adminToken = "my-admin-access-token"
   val userToken = "my-user-access-token"
   val moderatorToken = "my-moderator-access-token"
+  val moderator2Token = "my-moderator-access-token2"
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
   private val userAccessToken = AccessToken(userToken, None, None, Some(1234567890L), tokenCreationDate)
   private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
   private val moderatorAccessToken =
     AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
+  private val moderator2AccessToken =
+    AccessToken(moderator2Token, None, None, Some(1234567890L), tokenCreationDate)
 
   val validateProposalEntity: String = ValidateProposalRequest(
     newContent = None,
@@ -235,6 +244,7 @@ class ModerationProposalApiTest
   when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
   when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
   when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
+  when(oauth2DataHandler.findAccessToken(moderator2Token)).thenReturn(Future.successful(Some(moderator2AccessToken)))
   when(oauth2DataHandler.findAccessToken(userToken)).thenReturn(Future.successful(Some(userAccessToken)))
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
@@ -270,6 +280,24 @@ class ModerationProposalApiTest
     .thenReturn(
       Future.successful(
         Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles, tyrion.availableQuestions), None, None, None))
+      )
+    )
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderator2AccessToken)))
+    .thenReturn(
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(
+              UserId("no-right-moderator"),
+              Seq(RoleModerator),
+              Seq(QuestionId("some-question-without-answer"))
+            ),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 
@@ -353,7 +381,8 @@ class ModerationProposalApiTest
     updatedAt = Some(DateHelper.now()),
     events = Nil,
     language = Some(Language("fr")),
-    country = Some(Country("FR"))
+    country = Some(Country("FR")),
+    questionId = Some(QuestionId("question-fire-and-ice"))
   )
 
   val proposalSim124: Proposal = Proposal(
@@ -418,7 +447,7 @@ class ModerationProposalApiTest
           operationId = None,
           language = Some(Language("fr")),
           country = Some(Country("FR")),
-          questionId = None
+          questionId = Some(QuestionId("question-fire-and-ice"))
         )
       )
     )
@@ -553,7 +582,7 @@ class ModerationProposalApiTest
       operationId = None,
       language = Some(Language("fr")),
       country = Some(Country("FR")),
-      questionId = None
+      questionId = Some(QuestionId("my-question"))
     )
   }
 
@@ -628,8 +657,11 @@ class ModerationProposalApiTest
       )
     )
 
+  val indexedProposal: IndexedProposal = mock[IndexedProposal]
+  when(indexedProposal.questionId).thenReturn(Some(QuestionId("question-fire-and-ice")))
+
   when(proposalService.getProposalById(matches(ProposalId("123456")), any[RequestContext]))
-    .thenReturn(Future.successful(Some(mock[IndexedProposal])))
+    .thenReturn(Future.successful(Some(indexedProposal)))
 
   when(proposalService.getSimilar(any[UserId], any[IndexedProposal], any[RequestContext]))
     .thenReturn(
@@ -662,6 +694,33 @@ class ModerationProposalApiTest
     scenario("validation with user role") {
       Post("/moderation/proposals/123456/accept")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("validation with moderation role without right on question") {
+
+      when(
+        questionService.findQuestion(matches(Some(ThemeId("fire and ice"))), matches(None), any[Country], any[Language])
+      ).thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              questionId = QuestionId("question-fire-and-ice"),
+              slug = "question-fire-and-ice",
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "",
+              operationId = None,
+              themeId = Some(ThemeId("fire and ice"))
+            )
+          )
+        )
+      )
+
+      Post("/moderation/proposals/123456/accept")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -835,6 +894,20 @@ class ModerationProposalApiTest
       }
     }
 
+    scenario("moderator get proposal by id without right") {
+      Get("/moderation/proposals/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("moderator get proposal as admin") {
+      Get("/moderation/proposals/sim-123")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
     scenario("get new proposal without history") {}
     scenario("get validated proposal gives history with moderator") {}
   }
@@ -867,6 +940,12 @@ class ModerationProposalApiTest
   }
 
   feature("get duplicates") {
+    scenario("moderator without right") {
+      Get("/moderation/proposals/123456/duplicates")
+        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
     scenario("moderator can fetch duplicate ideas") {
       Get("/moderation/proposals/123456/duplicates")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
@@ -909,7 +988,7 @@ class ModerationProposalApiTest
     }
 
     scenario("change success") {
-      Given("an authenticated user with moderator role")
+      Given("an authenticated user with admin role")
       When("the user change idea of proposals")
       Then("he should get an success (201) return code")
 
@@ -917,13 +996,13 @@ class ModerationProposalApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
     scenario("invalid idea id") {
-      Given("an authenticated user with moderator role")
+      Given("an authenticated user with admin role")
       And("an invalid ideaId")
       When("the user change idea of proposals using invalid ideaId")
       Then("he should get a bad request (400) return code")
@@ -932,7 +1011,7 @@ class ModerationProposalApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"fake" }""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "ideaId")
@@ -941,7 +1020,7 @@ class ModerationProposalApiTest
     }
 
     scenario("invalid proposal id") {
-      Given("an authenticated user with moderator role")
+      Given("an authenticated user with admin role")
       And("an invalid ideaId")
       When("the user change idea of proposals using invalid ideaId")
       Then("he should get a bad request (400) return code")
@@ -953,7 +1032,7 @@ class ModerationProposalApiTest
             """{"proposalIds": ["sim-123", "sim-124", "fake", "fake2"], "ideaId":"Idea 3" }"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "proposalIds")
@@ -1026,6 +1105,18 @@ class ModerationProposalApiTest
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
         .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("calling without right on question") {
+      Given("an authenticated user with the moderator role, without rights")
+      When("the user requests the next proposal to moderate")
+      Then("The return code should be 403")
+
+      Post("/moderation/proposals/next")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
+        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -1132,8 +1223,12 @@ class ModerationProposalApiTest
           any[Option[UserId]],
           matches(
             SearchQuery(
-              filters =
-                Some(SearchFilters(createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None))))
+              filters = Some(
+                SearchFilters(
+                  createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
+                  question = Some(QuestionSearchFilter(tyrion.availableQuestions.head))
+                )
+              )
             )
           ),
           any[RequestContext]
