@@ -89,10 +89,7 @@ trait ModerationQuestionApi extends Directives {
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
       )
     )
   )

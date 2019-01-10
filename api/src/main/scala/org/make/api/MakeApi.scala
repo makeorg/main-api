@@ -154,7 +154,8 @@ trait MakeApi
     with ElasticSearchApi
     with DefaultOperationApiComponent
     with ProposalApi
-    with SequenceApi
+    with DefaultSequenceApiComponent
+    with DefaultModerationSequenceApiComponent
     with CrmApi
     with AuthenticationApi
     with ConfigurationsApi
@@ -240,6 +241,7 @@ trait MakeApi
       classOf[OperationApi],
       classOf[ConfigurationsApi],
       classOf[SequenceApi],
+      classOf[ModerationSequenceApi],
       classOf[ModerationIdeaApi],
       classOf[ElasticSearchApi],
       classOf[TrackingApi],
@@ -284,7 +286,8 @@ trait MakeApi
       moderationTagTypeRoutes ~
       proposalRoutes ~
       moderationProposalApi.routes ~
-      sequenceRoutes ~
+      sequenceApi.routes ~
+      moderationSequenceApi.routes ~
       optionsAuthorized ~
       buildRoutes ~
       crmRoutes ~
