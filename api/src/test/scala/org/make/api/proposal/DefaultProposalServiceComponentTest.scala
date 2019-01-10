@@ -23,11 +23,12 @@ import java.time.ZonedDateTime
 
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import org.make.api.idea.{IdeaService, IdeaServiceComponent}
+import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService, TagsWithModelResponse}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
+import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -36,6 +37,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal.VoteKey.Agree
@@ -43,7 +45,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.tag._
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -69,7 +71,9 @@ class DefaultProposalServiceComponentTest
     with ActorSystemComponent
     with UserServiceComponent
     with QuestionServiceComponent
-    with IdeaServiceComponent {
+    with IdeaServiceComponent
+    with IdeaMappingServiceComponent
+    with TagTypeServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
@@ -87,6 +91,8 @@ class DefaultProposalServiceComponentTest
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val tagService: TagService = mock[TagService]
+  override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
+  override val tagTypeService: TagTypeService = mock[TagTypeService]
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
@@ -184,6 +190,32 @@ class DefaultProposalServiceComponentTest
     )
   }
 
+  def proposal(id: ProposalId): Proposal = {
+    Proposal(
+      proposalId = id,
+      author = UserId(s"user-${id.value}"),
+      content = s"proposal with id ${id.value}",
+      slug = s"proposal-with-id-${id.value}",
+      status = ProposalStatus.Pending,
+      createdAt = Some(DateHelper.now()),
+      updatedAt = None,
+      votes = Seq.empty,
+      country = Some(Country("FR")),
+      language = Some(Language("fr")),
+      tags = Seq.empty,
+      theme = None,
+      idea = None,
+      operation = None,
+      questionId = None,
+      labels = Seq.empty,
+      refusalReason = None,
+      organisations = Seq.empty,
+      organisationIds = Seq.empty,
+      creationContext = RequestContext.empty,
+      events = Nil
+    )
+  }
+
   feature("next proposal to moderate") {
 
     def searchQuery(question: String): SearchQuery = SearchQuery(
@@ -235,7 +267,6 @@ class DefaultProposalServiceComponentTest
           language = Some(Language("fr")),
           country = Some(Country("FR")),
           creationContext = RequestContext.empty,
-          initialProposal = false,
           idea = None,
           operation = Some(OperationId("unlockable")),
           createdAt = None,
@@ -459,7 +490,6 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("unlockable")),
                 createdAt = None,
@@ -489,7 +519,6 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,
@@ -563,7 +592,6 @@ class DefaultProposalServiceComponentTest
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
                 creationContext = RequestContext.empty,
-                initialProposal = false,
                 idea = None,
                 operation = Some(OperationId("lock-second")),
                 createdAt = None,
@@ -830,4 +858,425 @@ class DefaultProposalServiceComponentTest
       }
     }
   }
+
+  feature("update proposal") {
+    scenario("update proposal with both tags") {
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal")))
+        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-update-proposal")))
+        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal")))))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(
+          Future.successful(
+            Seq(
+              TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
+              TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
+              TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
+            )
+          )
+        )
+
+      val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
+
+      Mockito
+        .when(tagService.findByTagIds(tagIds))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              Tag(
+                TagId("stake-1"),
+                "stake 1",
+                TagDisplay.Inherit,
+                TagTypeId("stake"),
+                50.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("stake-2"),
+                "stake 2",
+                TagDisplay.Inherit,
+                TagTypeId("stake"),
+                80.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("solution-1"),
+                "solution 1",
+                TagDisplay.Inherit,
+                TagTypeId("solution-type"),
+                50.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("solution-2"),
+                "solution type 2",
+                TagDisplay.Inherit,
+                TagTypeId("solution-type"),
+                20.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("other"),
+                "other",
+                TagDisplay.Inherit,
+                TagTypeId("other"),
+                50.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(
+          ideaMappingService
+            .getOrCreateMapping(QuestionId("update-proposal"), Some(TagId("stake-2")), Some(TagId("solution-1")))
+        )
+        .thenReturn(
+          Future.successful(
+            IdeaMapping(
+              IdeaMappingId("result"),
+              QuestionId("update-proposal"),
+              Some(TagId("stake-2")),
+              Some(TagId("solution-1")),
+              IdeaId("update-idea")
+            )
+          )
+        )
+
+      val question = Question(
+        QuestionId("update-proposal"),
+        "update-proposal",
+        Country("FR"),
+        Language("fr"),
+        "how to update a proposal?",
+        None,
+        None
+      )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.update(
+            UpdateProposalCommand(
+              moderatorId,
+              ProposalId("update-proposal"),
+              RequestContext.empty,
+              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+              None,
+              Seq.empty,
+              tagIds,
+              Some(IdeaId("update-idea")),
+              question
+            )
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(proposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
+          )
+        )
+
+      val update = proposalService.update(
+        ProposalId("update-proposal"),
+        moderatorId,
+        RequestContext.empty,
+        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+        newContent = None,
+        question = question,
+        tags = tagIds,
+        idea = None
+      )
+
+      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
+        maybeProposal.flatMap(_.idea) should contain(IdeaId("update-idea"))
+      }
+
+    }
+
+    scenario("update proposal when it already has an idea, it stays on it") {
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-2")))
+        .thenReturn(
+          Future.successful(Some(proposal(ProposalId("update-proposal-2")).copy(idea = Some(IdeaId("original-idea")))))
+        )
+
+      Mockito
+        .when(userService.getUser(UserId("user-update-proposal-2")))
+        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-2")))))
+
+      val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
+
+      val question = Question(
+        QuestionId("update-proposal"),
+        "update-proposal",
+        Country("FR"),
+        Language("fr"),
+        "how to update a proposal?",
+        None,
+        None
+      )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.update(
+            UpdateProposalCommand(
+              moderatorId,
+              ProposalId("update-proposal-2"),
+              RequestContext.empty,
+              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+              None,
+              Seq.empty,
+              tagIds,
+              Some(IdeaId("original-idea")),
+              question
+            )
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(proposal(ProposalId("update-proposal-2")).copy(tags = tagIds, idea = Some(IdeaId("original-idea"))))
+          )
+        )
+
+      val update = proposalService.update(
+        ProposalId("update-proposal-2"),
+        moderatorId,
+        RequestContext.empty,
+        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+        newContent = None,
+        question = question,
+        tags = tagIds,
+        idea = None
+      )
+
+      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
+        maybeProposal.flatMap(_.idea) should contain(IdeaId("original-idea"))
+      }
+
+    }
+
+    scenario("update proposal when the moderator provides an idea, use it") {
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-3")))
+        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal-3")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-update-proposal-3")))
+        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-3")))))
+
+      val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
+
+      val question = Question(
+        QuestionId("update-proposal"),
+        "update-proposal",
+        Country("FR"),
+        Language("fr"),
+        "how to update a proposal?",
+        None,
+        None
+      )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.update(
+            UpdateProposalCommand(
+              moderatorId,
+              ProposalId("update-proposal-3"),
+              RequestContext.empty,
+              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+              None,
+              Seq.empty,
+              tagIds,
+              Some(IdeaId("moderator-idea")),
+              question
+            )
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(proposal(ProposalId("update-proposal-3")).copy(tags = tagIds, idea = Some(IdeaId("moderator-idea"))))
+          )
+        )
+
+      val update = proposalService.update(
+        ProposalId("update-proposal-3"),
+        moderatorId,
+        RequestContext.empty,
+        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+        newContent = None,
+        question = question,
+        tags = tagIds,
+        idea = Some(IdeaId("moderator-idea"))
+      )
+
+      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
+        maybeProposal.flatMap(_.idea) should contain(IdeaId("moderator-idea"))
+      }
+
+    }
+
+    scenario("update proposal with no stake tags") {
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-4")))
+        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal-4")))))
+
+      Mockito
+        .when(userService.getUser(UserId("user-update-proposal-4")))
+        .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-4")))))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(
+          Future.successful(
+            Seq(
+              TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
+              TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
+              TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
+            )
+          )
+        )
+
+      val tagIds = Seq(TagId("solution-1"), TagId("solution-2"), TagId("other"))
+
+      Mockito
+        .when(tagService.findByTagIds(tagIds))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              Tag(
+                TagId("solution-1"),
+                "solution 1",
+                TagDisplay.Inherit,
+                TagTypeId("solution-type"),
+                50.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("solution-2"),
+                "solution type 2",
+                TagDisplay.Inherit,
+                TagTypeId("solution-type"),
+                20.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              ),
+              Tag(
+                TagId("other"),
+                "other",
+                TagDisplay.Inherit,
+                TagTypeId("other"),
+                50.0F,
+                None,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(
+          ideaMappingService
+            .getOrCreateMapping(QuestionId("update-proposal"), None, Some(TagId("solution-1")))
+        )
+        .thenReturn(
+          Future.successful(
+            IdeaMapping(
+              IdeaMappingId("result-2"),
+              QuestionId("update-proposal"),
+              None,
+              Some(TagId("solution-1")),
+              IdeaId("update-idea-2")
+            )
+          )
+        )
+
+      val question = Question(
+        QuestionId("update-proposal"),
+        "update-proposal",
+        Country("FR"),
+        Language("fr"),
+        "how to update a proposal?",
+        None,
+        None
+      )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.update(
+            UpdateProposalCommand(
+              moderatorId,
+              ProposalId("update-proposal-4"),
+              RequestContext.empty,
+              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+              None,
+              Seq.empty,
+              tagIds,
+              Some(IdeaId("update-idea-2")),
+              question
+            )
+          )
+        )
+        .thenReturn(
+          Future.successful(
+            Some(proposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2"))))
+          )
+        )
+
+      val update = proposalService.update(
+        ProposalId("update-proposal-4"),
+        moderatorId,
+        RequestContext.empty,
+        ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+        newContent = None,
+        question = question,
+        tags = tagIds,
+        idea = None
+      )
+
+      whenReady(update, Timeout(5.seconds)) { maybeProposal =>
+        maybeProposal.flatMap(_.idea) should contain(IdeaId("update-idea-2"))
+      }
+
+    }
+  }
+
 }

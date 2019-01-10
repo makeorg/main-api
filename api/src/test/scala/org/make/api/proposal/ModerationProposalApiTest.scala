@@ -316,7 +316,6 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[LabelId]],
         any[Seq[TagId]]
       )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
@@ -330,7 +329,6 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[LabelId]],
         any[Seq[TagId]]
       )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
@@ -344,7 +342,6 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[LabelId]],
         any[Seq[TagId]]
       )
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
