@@ -19,11 +19,9 @@
 
 package org.make.api.widget
 
-import java.time.ZonedDateTime
 import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
@@ -37,16 +35,14 @@ import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.operation.{OperationId, OperationOfQuestion}
-import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.UserId
-import org.mockito.Mockito.when
 import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
@@ -96,94 +92,12 @@ class WidgetApiTest
   when(
     widgetService.startNewWidgetSequence(
       ArgumentMatchers.any[Option[UserId]],
-      ArgumentMatchers.eq(OperationId("foo-operation-id")),
+      ArgumentMatchers.any[SequenceId],
       ArgumentMatchers.any[Option[Seq[TagId]]],
-      ArgumentMatchers.any[Option[Country]],
       ArgumentMatchers.any[Option[Int]],
       ArgumentMatchers.any[RequestContext]
     )
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
-
-  feature("get widget sequence of an operation") {
-    scenario("Get proposal of an operation successfully") {
-
-      Get("/widget/operations/foo-operation-id/start-sequence")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val result = entityAs[ProposalsSearchResult]
-        result.total should be(0)
-        result.results should be(Seq.empty)
-      }
-    }
-
-    scenario("Get proposal of an operation filtred by tag successfully") {
-      when(
-        widgetService.startNewWidgetSequence(
-          ArgumentMatchers.eq(Some(UserId("my-user-id"))),
-          ArgumentMatchers.eq(OperationId("foo-operation-id")),
-          ArgumentMatchers.eq(Some(Seq(TagId("foo-tag-id"), TagId("bar-tag-id")))),
-          ArgumentMatchers.any[Option[Country]],
-          ArgumentMatchers.any[Option[Int]],
-          ArgumentMatchers.any[RequestContext]
-        )
-      ).thenReturn(
-        Future.successful(
-          ProposalsResultSeededResponse(
-            total = 1,
-            results = Seq(
-              ProposalResult(
-                indexedProposal = IndexedProposal(
-                  id = ProposalId("foo-proposal-id"),
-                  userId = UserId("foo-user-id"),
-                  content = "il faut proposer sur le widget",
-                  slug = "il-faut-proposer-sur-le-widget",
-                  status = ProposalStatus.Accepted,
-                  createdAt = ZonedDateTime.now,
-                  updatedAt = Some(ZonedDateTime.now),
-                  votesCount = 0,
-                  toEnrich = false,
-                  votes = Seq.empty,
-                  scores = IndexedScores.empty,
-                  context = None,
-                  trending = None,
-                  labels = Seq.empty,
-                  author = Author(
-                    firstName = Some("Foo Foo"),
-                    organisationName = None,
-                    organisationSlug = None,
-                    postalCode = None,
-                    age = None,
-                    avatarUrl = None
-                  ),
-                  organisations = Seq.empty,
-                  themeId = None,
-                  questionId = None,
-                  tags = Seq.empty,
-                  ideaId = None,
-                  operationId = None,
-                  country = Country("FR"),
-                  language = Language("fr"),
-                  sequencePool = SequencePool.New,
-                  initialProposal = false
-                ),
-                myProposal = false,
-                voteAndQualifications = None
-              )
-            ),
-            seed = None
-          )
-        )
-      )
-
-      Get("/widget/operations/foo-operation-id/start-sequence?tagsIds=foo-tag-id,bar-tag-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-        val result = entityAs[ProposalsResultSeededResponse]
-        result.total should be(1)
-        result.results.head shouldBe a[ProposalResult]
-      }
-    }
-  }
 
   feature("start sequence by question slug") {
     val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None, None)
