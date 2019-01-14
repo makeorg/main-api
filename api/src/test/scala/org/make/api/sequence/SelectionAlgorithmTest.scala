@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit
 import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeUnitTest
 import org.make.api.proposal._
-import org.make.core.DateHelper
+import org.make.api.technical.MakeRandom
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -33,6 +33,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
+import org.make.core.DateHelper
 
 import scala.collection.mutable
 import scala.util.Random
@@ -158,7 +159,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       )
 
       val proposals: Seq[IndexedProposal] =
-        proposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested, Some(IdeaId(Random.nextString(5)))))
+        proposalIds.map(
+          id => fakeProposal(id, Map.empty, SequencePool.Tested, Some(IdeaId(MakeRandom.random.nextString(5))))
+        )
 
       val sequenceProposals = selectionAlgorithm.selectProposalsForSequence(
         sequenceConfiguration = sequenceConfiguration,
@@ -546,7 +549,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
             )
         }
 
-      val newProposalsRandom = Random.shuffle(newProposals)
+      val newProposalsRandom = MakeRandom.random.shuffle(newProposals)
 
       val testedProposals: Seq[IndexedProposal] =
         testedProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), SequencePool.Tested))
@@ -595,7 +598,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
             )
         }
 
-      val testedProposalsRandom = Random.shuffle(testedProposals)
+      val testedProposalsRandom = MakeRandom.random.shuffle(testedProposals)
 
       val sequenceProposals =
         selectionAlgorithm.selectProposalsForSequence(

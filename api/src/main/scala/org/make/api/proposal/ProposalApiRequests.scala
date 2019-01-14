@@ -25,6 +25,7 @@ import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.technical.MakeRandom
 import org.make.api.technical.businessconfig.{BusinessConfig, FrontConfiguration}
 import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
@@ -39,7 +40,6 @@ import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, RequestContext, Validation}
 
 import scala.annotation.meta.field
-import scala.util.Random
 
 final case class ProposeProposalRequest(content: String,
                                         operationId: Option[OperationId],
@@ -149,7 +149,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         country = country.map(CountrySearchFilter.apply)
       )
 
-    val randomSeed: Int = seed.getOrElse(Random.nextInt())
+    val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
       .select(sortAlgorithm, randomSeed)
       // Once the Deprecated field `isRandom` is deleted, replace following code by `None`

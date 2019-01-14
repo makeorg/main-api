@@ -21,6 +21,8 @@ package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.sequence.SequenceConfiguration
+import org.make.api.technical.MakeRandom
+import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
@@ -28,7 +30,6 @@ import org.make.core.proposal.indexed.IndexedProposal
 import scala.annotation.tailrec
 import scala.math.ceil
 import scala.util.Random
-import org.make.core.DateHelper._
 
 trait ProposalChooser {
   def choose(proposals: Seq[IndexedProposal]): IndexedProposal
@@ -41,7 +42,7 @@ object OldestProposalChooser extends ProposalChooser {
 }
 
 trait RandomProposalChooser extends ProposalChooser {
-  var random: Random = Random
+  var random: Random = MakeRandom.random
 
   protected def proposalWeight(proposal: IndexedProposal): Double
 
@@ -77,7 +78,7 @@ object SoftMinRandom extends RandomProposalChooser {
 }
 
 object UniformRandom extends ProposalChooser with StrictLogging {
-  var random: Random = Random
+  var random: Random = MakeRandom.random
 
   def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals(random.nextInt(proposals.length))
@@ -90,7 +91,7 @@ trait SelectionAlgorithmComponent {
 }
 
 trait SelectionAlgorithm {
-  var random: Random = Random
+  var random: Random = MakeRandom.random
 
   def selectProposalsForSequence(sequenceConfiguration: SequenceConfiguration,
                                  includedProposals: Seq[IndexedProposal],
@@ -214,11 +215,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         // pick most engaging
         val sortedTestedProposal: Seq[IndexedProposal] =
           testedIncludedProposals.sortBy(p => -1 * ProposalScorerHelper.engagement(p.votes))
-        Seq(sortedTestedProposal.head) ++ Random.shuffle(newIncludedProposals ++ sortedTestedProposal.tail)
+        Seq(sortedTestedProposal.head) ++ MakeRandom.random.shuffle(newIncludedProposals ++ sortedTestedProposal.tail)
       } else if (includedProposals.nonEmpty && testedIncludedProposals.nonEmpty) {
-        includedProposals ++ Random.shuffle(newIncludedProposals ++ testedIncludedProposals)
+        includedProposals ++ MakeRandom.random.shuffle(newIncludedProposals ++ testedIncludedProposals)
       } else {
-        includedProposals ++ Random.shuffle(newIncludedProposals)
+        includedProposals ++ MakeRandom.random.shuffle(newIncludedProposals)
       }
     }
 

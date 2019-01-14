@@ -21,6 +21,7 @@ package org.make.api.migrations
 import org.make.api.MakeApi
 import org.make.api.migrations.ProposalHelper.{FixtureDataLine, UserInfo}
 import org.make.api.proposal.{AcceptProposalCommand, ProposeCommand}
+import org.make.api.technical.MakeRandom
 import org.make.api.user.UserRegisterData
 import org.make.core.idea.Idea
 import org.make.core.operation.OperationId
@@ -34,7 +35,6 @@ import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Random
 import scala.util.matching.Regex
 
 trait ProposalHelper {
@@ -47,7 +47,6 @@ trait ProposalHelper {
   val moderatorId = UserId("11111111-1111-1111-1111-111111111111")
 
   implicit def executor: ExecutionContext
-  val random = new Random(System.nanoTime())
 
   def extractFirstNameFromEmail(email: String): String = {
     email match {
@@ -93,7 +92,7 @@ trait ProposalHelper {
                 requestContext = emptyContext
             )
           )
-          .getOrElse(getUser(api, users(random.nextInt(users.size)).email))
+          .getOrElse(getUser(api, users(MakeRandom.random.nextInt(users.size)).email))
     }
   }
 
