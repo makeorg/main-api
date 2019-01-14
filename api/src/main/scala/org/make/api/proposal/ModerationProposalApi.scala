@@ -692,7 +692,9 @@ trait DefaultModerationProposalApiComponent
                           question = question,
                           newContent = request.newContent,
                           tags = request.tags,
-                          idea = request.idea
+                          idea = request.idea,
+                          predictedTags = request.predictedTags,
+                          predictedTagsModelName = request.predictedTagsModelName
                         )
                       ) { moderationProposalResponse: ModerationProposalResponse =>
                         complete(moderationProposalResponse)
@@ -751,7 +753,9 @@ trait DefaultModerationProposalApiComponent
                           newContent = request.newContent,
                           sendNotificationEmail = request.sendNotificationEmail,
                           idea = request.idea,
-                          tags = request.tags
+                          tags = request.tags,
+                          predictedTags = request.predictedTags,
+                          predictedTagsModelName = request.predictedTagsModelName
                         )
                       ) { moderationProposalResponse: ModerationProposalResponse =>
                         complete(moderationProposalResponse)

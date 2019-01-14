@@ -1264,7 +1264,10 @@ object ResetPasswordRequest {
 
 final case class ResetPassword(resetToken: String, password: String) {
   validate(mandatoryField("resetToken", resetToken))
-  validate(mandatoryField("password", password))
+  validate(
+    mandatoryField("password", password),
+    validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters")
+  )
 }
 
 object ResetPassword {
