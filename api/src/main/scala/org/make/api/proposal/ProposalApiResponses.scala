@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.user.UserResponse
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.idea.IdeaId
@@ -31,9 +32,11 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference._
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, RequestContext}
+
+import scala.annotation.meta.field
 
 final case class ModerationProposalResponse(indexedProposal: IndexedProposal, ideaProposals: Seq[IndexedProposal])
 
@@ -240,4 +243,38 @@ final case class DuplicateResponse(ideaId: IdeaId,
 object DuplicateResponse {
   implicit val encoder: ObjectEncoder[DuplicateResponse] = deriveEncoder[DuplicateResponse]
   implicit val decoder: Decoder[DuplicateResponse] = deriveDecoder[DuplicateResponse]
+}
+
+@ApiModel
+final case class TagForProposalResponse(@(ApiModelProperty @field)(dataType = "string", example = "tag-slug") id: TagId,
+                                        label: String,
+                                        @(ApiModelProperty @field)(dataType = "string") tagTypeId: TagTypeId,
+                                        weight: Float,
+                                        @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
+                                        checked: Boolean,
+                                        predicted: Boolean)
+
+object TagForProposalResponse {
+  implicit val encoder: ObjectEncoder[TagForProposalResponse] = deriveEncoder[TagForProposalResponse]
+  implicit val decoder: Decoder[TagForProposalResponse] = deriveDecoder[TagForProposalResponse]
+
+  def apply(tag: Tag, checked: Boolean, predicted: Boolean): TagForProposalResponse =
+    TagForProposalResponse(
+      id = tag.tagId,
+      label = tag.label,
+      tagTypeId = tag.tagTypeId,
+      weight = tag.weight,
+      questionId = tag.questionId,
+      checked = checked,
+      predicted = predicted
+    )
+}
+
+final case class TagsForProposalResponse(tags: Seq[TagForProposalResponse], modelName: String)
+
+object TagsForProposalResponse {
+  implicit val encoder: ObjectEncoder[TagsForProposalResponse] = deriveEncoder[TagsForProposalResponse]
+  implicit val decoder: Decoder[TagsForProposalResponse] = deriveDecoder[TagsForProposalResponse]
+
+  val empty = TagsForProposalResponse(tags = Seq.empty, modelName = "")
 }

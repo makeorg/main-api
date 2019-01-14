@@ -28,8 +28,9 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SimilarIdea}
+import org.make.api.semantic.{SemanticComponent, SimilarIdea, TagsWithModelResponse}
 import org.make.api.sessionhistory._
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
@@ -42,7 +43,7 @@ import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFie
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.LabelId
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 
@@ -156,6 +157,8 @@ trait ProposalService {
                             author: AuthorRequest,
                             moderator: UserId,
                             moderatorRequestContext: RequestContext): Future[ProposalId]
+
+  def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -170,7 +173,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with ActorSystemComponent
     with UserServiceComponent
     with IdeaServiceComponent
-    with QuestionServiceComponent =>
+    with QuestionServiceComponent
+    with TagServiceComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
 
@@ -797,6 +801,22 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       })
     }
 
+    override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
+      proposal.questionId.map { questionId =>
+        val futureTags: Future[(Seq[Tag], TagsWithModelResponse)] = for {
+          questionTags  <- tagService.findByQuestionId(questionId)
+          predictedTags <- semanticService.getPredictedTagsForProposal(proposal)
+        } yield (questionTags, predictedTags)
+        futureTags.map {
+          case (questionTags, predictedTags) =>
+            val tags = questionTags.map { tag =>
+              val predicted = predictedTags.tags.map(_.tagId).contains(tag.tagId)
+              val checked = proposal.tags.contains(tag.tagId) || (proposal.tags.isEmpty && predicted)
+              TagForProposalResponse(tag = tag, checked = checked, predicted = predicted)
+            }
+            TagsForProposalResponse(tags = tags, modelName = predictedTags.modelName)
+        }
+      }.getOrElse(Future.successful(TagsForProposalResponse.empty))
+    }
   }
-
 }

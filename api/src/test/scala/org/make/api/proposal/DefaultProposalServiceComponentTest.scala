@@ -25,8 +25,9 @@ import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SemanticService}
+import org.make.api.semantic.{SemanticComponent, SemanticService, TagsWithModelResponse}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -42,13 +43,12 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
-import org.mockito.ArgumentMatchers.{eq => matches}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import ArgumentMatchers.any
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -56,6 +56,7 @@ import scala.concurrent.duration.DurationInt
 class DefaultProposalServiceComponentTest
     extends MakeUnitTest
     with DefaultProposalServiceComponent
+    with TagServiceComponent
     with IdGeneratorComponent
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
@@ -85,6 +86,7 @@ class DefaultProposalServiceComponentTest
   override val userService: UserService = mock[UserService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
+  override val tagService: TagService = mock[TagService]
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
@@ -714,6 +716,117 @@ class DefaultProposalServiceComponentTest
 
       whenReady(result, Timeout(5.seconds)) { proposalId =>
         proposalId.value should be("my-proposal")
+      }
+    }
+  }
+
+  feature("get tags for proposal") {
+    def tag(id: String) = Tag(
+      tagId = TagId(id),
+      label = "label",
+      display = TagDisplay.Inherit,
+      tagTypeId = TagTypeId("tag-type-id"),
+      weight = 1.0F,
+      operationId = None,
+      questionId = Some(QuestionId("question-id")),
+      themeId = None,
+      country = Country("FR"),
+      language = Language("fr")
+    )
+    def proposal(questionId: Option[QuestionId], tags: Seq[TagId]) = Proposal(
+      proposalId = ProposalId("proposal-id"),
+      slug = "proposal",
+      content = "proposal",
+      author = UserId("author"),
+      labels = Seq.empty,
+      tags = tags,
+      votes = Seq.empty,
+      questionId = questionId,
+      creationContext = RequestContext.empty,
+      createdAt = None,
+      updatedAt = None,
+      events = List.empty
+    )
+
+    scenario("proposal without tags") {
+      Mockito
+        .when(tagService.findByQuestionId(any[QuestionId]))
+        .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
+      Mockito
+        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+        .thenReturn(Future.successful(TagsWithModelResponse(tags = Seq(tag("id-3")), modelName = "auto")))
+
+      val result: Future[TagsForProposalResponse] =
+        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq.empty))
+      whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
+        val tagsForProposal = tagsWithModel.tags
+        tagsForProposal.size should be(3)
+        tagsForProposal.exists(_.id == TagId("id-1")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-2")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-3")) shouldBe true
+
+        val tag1 = tagsForProposal.find(_.id == TagId("id-1")).get
+        val tag2 = tagsForProposal.find(_.id == TagId("id-2")).get
+        val tag3 = tagsForProposal.find(_.id == TagId("id-3")).get
+
+        tag1.checked shouldBe false
+        tag2.checked shouldBe false
+        tag3.checked shouldBe true
+
+        tag1.predicted shouldBe false
+        tag2.predicted shouldBe false
+        tag3.predicted shouldBe true
+      }
+    }
+    scenario("proposal with tags") {
+      Mockito
+        .when(tagService.findByQuestionId(any[QuestionId]))
+        .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
+      Mockito
+        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+        .thenReturn(Future.successful(TagsWithModelResponse(tags = Seq(tag("id-3")), modelName = "auto")))
+
+      val result: Future[TagsForProposalResponse] =
+        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
+      whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
+        val tagsForProposal = tagsWithModel.tags
+        tagsForProposal.size should be(3)
+        tagsForProposal.exists(_.id == TagId("id-1")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-2")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-3")) shouldBe true
+
+        val tag1 = tagsForProposal.find(_.id == TagId("id-1")).get
+        val tag2 = tagsForProposal.find(_.id == TagId("id-2")).get
+        val tag3 = tagsForProposal.find(_.id == TagId("id-3")).get
+
+        tag1.checked shouldBe false
+        tag2.checked shouldBe true
+        tag3.checked shouldBe false
+
+        tag1.predicted shouldBe false
+        tag2.predicted shouldBe false
+        tag3.predicted shouldBe true
+      }
+    }
+    scenario("proposal without question") {
+      val result: Future[TagsForProposalResponse] =
+        proposalService.getTagsForProposal(proposal(None, Seq.empty))
+      whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
+        tagsForProposal.tags.isEmpty shouldBe true
+      }
+    }
+    scenario("proposal without tags in question") {
+      Mockito
+        .when(tagService.findByQuestionId(any[QuestionId]))
+        .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+        .thenReturn(Future.successful(TagsWithModelResponse.empty))
+
+      val result: Future[TagsForProposalResponse] =
+        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
+      whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
+        tagsForProposal.tags.isEmpty shouldBe true
       }
     }
   }

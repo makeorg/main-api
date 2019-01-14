@@ -24,6 +24,7 @@ import org.make.api.ActorSystemComponent
 
 class SemanticConfiguration(config: Config) {
   val url: String = config.getString("url")
+  val httpBufferSize: Int = config.getInt("http-buffer-size")
 }
 
 trait SemanticConfigurationComponent {

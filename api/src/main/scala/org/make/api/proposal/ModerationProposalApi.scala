@@ -372,6 +372,24 @@ trait ModerationProposalApi extends Directives {
   @Path(value = "/next")
   def nextProposalToModerate: Route
 
+  @ApiOperation(
+    value = "get-predicted-tags-for-proposal",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "moderator", description = "BO Moderator"))
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagsForProposalResponse]))
+  )
+  @Path(value = "/{proposalId}/predicted-tags")
+  def getPredictedTagsForProposal: Route
+
   def routes: Route =
     searchAllProposals ~
       updateProposal ~
@@ -384,7 +402,8 @@ trait ModerationProposalApi extends Directives {
       getDuplicates ~
       changeProposalsIdea ~
       getModerationProposal ~
-      nextProposalToModerate
+      nextProposalToModerate ~
+      getPredictedTagsForProposal
 
 }
 
@@ -946,6 +965,24 @@ trait DefaultModerationProposalApiComponent
                         complete(proposal)
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getPredictedTagsForProposal: Route = get {
+      path("moderation" / "proposals" / moderationProposalId / "predicted-tags") { moderationProposalId =>
+        makeOperation("GetPredictedTagsForProposal") { _ =>
+          makeOAuth2 { user =>
+            requireModerationRole(user.user) {
+              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(moderationProposalId)) { proposal =>
+                requireRightsOnQuestion(user.user, proposal.questionId) {
+                  provideAsync(proposalService.getTagsForProposal(proposal)) { tagsForProposalResponse =>
+                    complete(tagsForProposalResponse)
                   }
                 }
               }
