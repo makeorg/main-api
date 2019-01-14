@@ -51,11 +51,7 @@ import scalaoauth2.provider.AuthInfo
   )
 )
 @Path(value = "/moderation/organisations")
-trait ModerationOrganisationApi extends MakeAuthenticationDirectives with StrictLogging {
-  this: OrganisationServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent =>
+trait ModerationOrganisationApi extends Directives {
 
   @ApiOperation(value = "post-organisation", httpMethod = "POST", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserId])))
@@ -69,39 +65,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
     )
   )
   @Path(value = "/")
-  def moderationPostOrganisation: Route = {
-    post {
-      path("moderation" / "organisations") {
-        makeOperation("ModerationPostOrganisation") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireAdminRole(auth.user) {
-              decodeRequest {
-                entity(as[ModerationCreateOrganisationRequest]) { request: ModerationCreateOrganisationRequest =>
-                  onSuccess(
-                    organisationService
-                      .register(
-                        OrganisationRegisterData(
-                          name = request.organisationName,
-                          email = request.email,
-                          password = request.password,
-                          avatar = request.avatarUrl,
-                          description = request.description,
-                          country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                          language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
-                        ),
-                        requestContext
-                      )
-                  ) { result =>
-                    complete(StatusCodes.Created -> UserResponse(result))
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def moderationPostOrganisation: Route
 
   @ApiOperation(value = "put-organisation", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserId])))
@@ -116,43 +80,7 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
     )
   )
   @Path(value = "/{organisationId}")
-  def moderationPutOrganisation: Route = {
-    put {
-      path("moderation" / "organisations" / organisationId) { organisationId =>
-        makeOperation("ModerationUpdateOrganisation") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireAdminRole(auth.user) {
-              decodeRequest {
-                entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
-                  provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-                    val maybeEmail = request.email match {
-                      case Some(email) if email == organisation.email => None
-                      case email                                      => email
-                    }
-                    onSuccess(
-                      organisationService
-                        .update(
-                          organisationId,
-                          OrganisationUpdateData(
-                            name = request.organisationName,
-                            email = maybeEmail,
-                            avatar = request.profile.flatMap(_.avatarUrl),
-                            description = request.profile.flatMap(_.description)
-                          ),
-                          requestContext
-                        )
-                    ) { organisationId =>
-                      complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def moderationPutOrganisation: Route
 
   @ApiOperation(value = "get-organisation", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -160,14 +88,64 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @Path(value = "/{organisationId}")
-  def moderationGetOrganisation: Route =
-    get {
-      path("moderation" / "organisations" / organisationId) { organisationId =>
-        makeOperation("ModerationGetOrganisation") { _ =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            requireModerationRole(auth.user) {
-              provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
-                complete(OrganisationResponse(user))
+  def moderationGetOrganisation: Route
+
+  @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
+  )
+  @Path(value = "/")
+  def moderationGetOrganisations: Route
+
+  def routes: Route =
+    moderationPostOrganisation ~ moderationPutOrganisation ~ moderationGetOrganisation ~ moderationGetOrganisations
+
+}
+
+trait ModerationOrganisationApiComponent {
+  def moderationOrganisationApi: ModerationOrganisationApi
+}
+
+trait DefaultModerationOrganisationApiComponent
+    extends ModerationOrganisationApiComponent
+    with MakeAuthenticationDirectives
+    with StrictLogging {
+  this: OrganisationServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent =>
+
+  override val moderationOrganisationApi: ModerationOrganisationApi = new ModerationOrganisationApi {
+
+    private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
+
+    def moderationPostOrganisation: Route = {
+      post {
+        path("moderation" / "organisations") {
+          makeOperation("ModerationPostOrganisation") { requestContext =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireAdminRole(auth.user) {
+                decodeRequest {
+                  entity(as[ModerationCreateOrganisationRequest]) { request: ModerationCreateOrganisationRequest =>
+                    onSuccess(
+                      organisationService
+                        .register(
+                          OrganisationRegisterData(
+                            name = request.organisationName,
+                            email = request.email,
+                            password = request.password,
+                            avatar = request.avatarUrl,
+                            description = request.description,
+                            country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
+                            language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                          ),
+                          requestContext
+                        )
+                    ) { result =>
+                      complete(StatusCodes.Created -> UserResponse(result))
+                    }
+                  }
+                }
               }
             }
           }
@@ -175,43 +153,97 @@ trait ModerationOrganisationApi extends MakeAuthenticationDirectives with Strict
       }
     }
 
-  @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
-  )
-  @Path(value = "/")
-  def moderationGetOrganisations: Route =
-    get {
-      path("moderation" / "organisations") {
-        makeOperation("ModerationGetOrganisations") { _ =>
-          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?)) {
-            (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
-              makeOAuth2 { auth: AuthInfo[UserRights] =>
-                requireModerationRole(auth.user) {
-                  order.foreach { orderValue =>
-                    Validation.validate(
-                      Validation
-                        .validChoices("_order", Some("Invalid order"), Seq(orderValue.toLowerCase), Seq("desc", "asc"))
-                    )
-                  }
-                  provideAsync(organisationService.count()) { count =>
-                    provideAsync(organisationService.find(start.getOrElse(0), end, sort, order)) { result =>
-                      complete(
-                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), result.map(OrganisationResponse.apply))
-                      )
+    def moderationPutOrganisation: Route = {
+      put {
+        path("moderation" / "organisations" / organisationId) { organisationId =>
+          makeOperation("ModerationUpdateOrganisation") { requestContext =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireAdminRole(auth.user) {
+                decodeRequest {
+                  entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
+                    provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+                      val maybeEmail = request.email match {
+                        case Some(email) if email == organisation.email => None
+                        case email                                      => email
+                      }
+                      onSuccess(
+                        organisationService
+                          .update(
+                            organisationId,
+                            OrganisationUpdateData(
+                              name = request.organisationName,
+                              email = maybeEmail,
+                              avatar = request.profile.flatMap(_.avatarUrl),
+                              description = request.profile.flatMap(_.description)
+                            ),
+                            requestContext
+                          )
+                      ) { organisationId =>
+                        complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
+                      }
                     }
                   }
                 }
               }
+            }
           }
         }
+
       }
     }
 
-  val moderationOrganisationRoutes
-    : Route = moderationPostOrganisation ~ moderationPutOrganisation ~ moderationGetOrganisation ~ moderationGetOrganisations
+    def moderationGetOrganisation: Route =
+      get {
+        path("moderation" / "organisations" / organisationId) { organisationId =>
+          makeOperation("ModerationGetOrganisation") { _ =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireModerationRole(auth.user) {
+                provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
+                  complete(OrganisationResponse(user))
+                }
+              }
+            }
+          }
+        }
+      }
 
-  private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
+    def moderationGetOrganisations: Route =
+      get {
+        path("moderation" / "organisations") {
+          makeOperation("ModerationGetOrganisations") { _ =>
+            parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?)) {
+              (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
+                makeOAuth2 { auth: AuthInfo[UserRights] =>
+                  requireModerationRole(auth.user) {
+                    order.foreach { orderValue =>
+                      Validation.validate(
+                        Validation
+                          .validChoices(
+                            "_order",
+                            Some("Invalid order"),
+                            Seq(orderValue.toLowerCase),
+                            Seq("desc", "asc")
+                          )
+                      )
+                    }
+                    provideAsync(organisationService.count()) { count =>
+                      provideAsync(organisationService.find(start.getOrElse(0), end, sort, order)) { result =>
+                        complete(
+                          (
+                            StatusCodes.OK,
+                            List(TotalCountHeader(count.toString)),
+                            result.map(OrganisationResponse.apply)
+                          )
+                        )
+                      }
+                    }
+                  }
+                }
+            }
+          }
+        }
+      }
+  }
 }
 
 @ApiModel

@@ -260,7 +260,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
         path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
           makeOperation("ModifyOperationsOfQuestions") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[ModifyOperationOfQuestionRequest]) { request =>
                     provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
@@ -306,7 +306,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
         path("moderation" / "operations-of-questions") {
           makeOperation("CreateOperationsOfQuestions") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[CreateOperationOfQuestionRequest]) { body =>
                     provideAsync(

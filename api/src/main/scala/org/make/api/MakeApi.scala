@@ -30,12 +30,7 @@ import io.circe.syntax._
 import org.make.api.extensions._
 import org.make.api.idea._
 import org.make.api.operation._
-import org.make.api.organisation.{
-  DefaultOrganisationSearchEngineComponent,
-  DefaultOrganisationServiceComponent,
-  ModerationOrganisationApi,
-  OrganisationApi
-}
+import org.make.api.organisation._
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
@@ -172,7 +167,7 @@ trait MakeApi
     with DefaultMigrationApiComponent
     with HealthCheckApi
     with DefaultModerationOperationApiComponent
-    with ModerationOrganisationApi
+    with DefaultModerationOrganisationApiComponent
     with OrganisationApi
     with DefaultModerationProposalApiComponent
     with DefaultWidgetApiComponent
@@ -301,7 +296,7 @@ trait MakeApi
       trackingApi.routes ~
       migrationApi.routes ~
       healthCheckRoutes ~
-      moderationOrganisationRoutes ~
+      moderationOrganisationApi.routes ~
       organisationRoutes ~
       widgetApi.routes ~
       questionApi.routes ~

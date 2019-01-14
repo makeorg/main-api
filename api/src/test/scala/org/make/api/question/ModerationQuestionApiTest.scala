@@ -31,7 +31,7 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.core.auth.UserRights
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.{RoleCitizen, RoleModerator}
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
@@ -59,17 +59,22 @@ class ModerationQuestionApiTest
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
+  val validAdminAccessToken = "my-valid-admin-access-token"
 
   val tokenCreationDate = new Date()
   private val citizenAccessToken =
     AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
   private val moderatorAccessToken =
     AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
+  private val adminAccessToken =
+    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
 
   when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
     .thenReturn(Future.successful(Some(citizenAccessToken)))
   when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
     .thenReturn(Future.successful(Some(moderatorAccessToken)))
+  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
+    .thenReturn(Future.successful(Some(adminAccessToken)))
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
     .thenReturn(
@@ -90,6 +95,13 @@ class ModerationQuestionApiTest
             None
           )
         )
+      )
+    )
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
+    .thenReturn(
+      Future.successful(
+        Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin), Seq.empty), None, Some("admin"), None))
       )
     )
 
@@ -173,7 +185,7 @@ class ModerationQuestionApiTest
 
     scenario("authenticated create question") {
       Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
@@ -184,15 +196,22 @@ class ModerationQuestionApiTest
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("forbidden create question") {
+    scenario("forbidden create question (citizen)") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
+    scenario("forbidden create question (moderator)") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
     scenario("bad request create question") {
-      Post(uri).withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+      Post(uri).withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }

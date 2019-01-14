@@ -41,7 +41,7 @@ import scala.concurrent.Future
 
 class ModerationOrganisationApiTest
     extends MakeApiTestBase
-    with ModerationOrganisationApi
+    with DefaultModerationOrganisationApiComponent
     with OrganisationServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -49,7 +49,7 @@ class ModerationOrganisationApiTest
 
   override val organisationService: OrganisationService = mock[OrganisationService]
 
-  val routes: Route = sealRoute(moderationOrganisationRoutes)
+  val routes: Route = sealRoute(moderationOrganisationApi.routes)
 
   val fakeOrganisation = User(
     userId = UserId("ABCD"),

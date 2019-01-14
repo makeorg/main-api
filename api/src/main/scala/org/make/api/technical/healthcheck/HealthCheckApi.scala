@@ -25,8 +25,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
-import org.make.core.auth.UserRights
-import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Health Check")
 @Path(value = "/")
@@ -36,29 +34,15 @@ trait HealthCheckApi extends MakeAuthenticationDirectives {
     with IdGeneratorComponent
     with HealthCheckServiceComponent =>
 
-  @ApiOperation(
-    value = "healthcheck",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
+  @ApiOperation(value = "healthcheck", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Map[String, String]]))
   )
   @Path(value = "/healthcheck")
   def healthCheck: Route = get {
     path("healthcheck") {
-      makeOAuth2 { auth: AuthInfo[UserRights] =>
-        requireAdminRole(auth.user) {
-          makeOperation("HealthCheck") { _ =>
-            provideAsync(healthCheckService.runAllHealthChecks())(result => complete(result))
-          }
-        }
+      makeOperation("HealthCheck") { _ =>
+        provideAsync(healthCheckService.runAllHealthChecks())(result => complete(result))
       }
     }
   }
