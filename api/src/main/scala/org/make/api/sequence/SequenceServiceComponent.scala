@@ -100,7 +100,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               filters = Some(
                 proposal.SearchFilters(
                   sequencePool = Some(SequencePoolSearchFilter("new")),
-                  question = Some(QuestionSearchFilter(sequenceConfiguration.questionId)),
+                  question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))),
                   tags = tagsIds.map(proposal.TagsSearchFilter.apply)
                 )
               ),
@@ -117,7 +117,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               filters = Some(
                 proposal.SearchFilters(
                   sequencePool = Some(SequencePoolSearchFilter("tested")),
-                  question = Some(QuestionSearchFilter(sequenceConfiguration.questionId)),
+                  question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))),
                   tags = tagsIds.map(proposal.TagsSearchFilter.apply)
                 )
               ),

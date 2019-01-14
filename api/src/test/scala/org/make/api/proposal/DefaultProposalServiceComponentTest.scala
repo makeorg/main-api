@@ -187,7 +187,7 @@ class DefaultProposalServiceComponentTest
     def searchQuery(question: String): SearchQuery = SearchQuery(
       filters = Some(
         SearchFilters(
-          question = Some(QuestionSearchFilter(QuestionId(question))),
+          question = Some(QuestionSearchFilter(Seq(QuestionId(question)))),
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
         )
       ),

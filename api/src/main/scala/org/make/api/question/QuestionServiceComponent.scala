@@ -46,7 +46,8 @@ trait QuestionService {
   def createQuestion(country: Country, language: Language, question: String, slug: String): Future[Question]
 }
 
-case class SearchQuestionRequest(maybeThemeId: Option[ThemeId] = None,
+case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
+                                 maybeThemeId: Option[ThemeId] = None,
                                  maybeOperationId: Option[OperationId] = None,
                                  country: Option[Country] = None,
                                  language: Option[Language] = None,

@@ -92,7 +92,7 @@ object NiceMatinData extends InsertOperationFixtureData {
           SearchQuery(
             filters = Some(
               SearchFilters(
-                question = Some(QuestionSearchFilter(question.questionId)),
+                question = Some(QuestionSearchFilter(Seq(question.questionId))),
                 slug = Some(SlugSearchFilter(SlugHelper(proposal.content)))
               )
             )

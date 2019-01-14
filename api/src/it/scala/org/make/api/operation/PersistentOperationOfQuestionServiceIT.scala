@@ -104,6 +104,36 @@ class PersistentOperationOfQuestionServiceIT
     }
   }
 
+  feature("search operation of question") {
+    scenario("no filter") {
+      val operationOfQuestion1 = generateOperationOfQuestion
+      val operationOfQuestion2 = generateOperationOfQuestion
+
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
+        _      <- createOperationOfQuestion(operationOfQuestion1)
+        _      <- createOperationOfQuestion(operationOfQuestion2)
+        result <- persistentOperationOfQuestionService.search(None, None, None)
+      } yield result
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.size shouldBe 3
+      }
+    }
+
+    scenario("questionIds filter") {
+      val operationOfQuestion3 = generateOperationOfQuestion.copy(questionId = QuestionId("toBeFiltered"))
+
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
+        _      <- createOperationOfQuestion(operationOfQuestion3)
+        result <- persistentOperationOfQuestionService.search(Some(Seq(QuestionId("toBeFiltered"))), None, None)
+      } yield result
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.size shouldBe 1
+      }
+    }
+  }
+
   feature("Find an operationOfQuestion by operation") {
     scenario("Persist an operationOfQuestion and find it by its operationId") {
       val baseOperationOfQuestion = generateOperationOfQuestion

@@ -71,6 +71,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
                 request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
                 request.maybeSlug.map(slug               => sqls.eq(questionAlias.slug, slug)),
+                request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
 
@@ -108,6 +109,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
                 request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
+                request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)

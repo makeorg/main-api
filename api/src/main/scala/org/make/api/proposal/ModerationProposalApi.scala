@@ -520,7 +520,7 @@ trait DefaultModerationProposalApiComponent
                     'initialProposal.as[Boolean].?,
                     'tagsIds.as[immutable.Seq[TagId]].?,
                     'operationId.as[OperationId].?,
-                    'questionId.as[QuestionId].?,
+                    'questionId.as[immutable.Seq[QuestionId]].?,
                     'ideaId.as[IdeaId].?,
                     'trending.?,
                     'content.?,
@@ -544,7 +544,7 @@ trait DefaultModerationProposalApiComponent
                    initialProposal: Option[Boolean],
                    tagsIds: Option[Seq[TagId]],
                    operationId: Option[OperationId],
-                   questionId: Option[QuestionId],
+                   questionIds: Option[Seq[QuestionId]],
                    ideaId: Option[IdeaId],
                    trending: Option[String],
                    content: Option[String],
@@ -600,14 +600,13 @@ trait DefaultModerationProposalApiComponent
                       )
                     }).flatten: _*)
 
-                    val resolvedQuestions: Seq[QuestionId] = {
+                    val resolvedQuestions: Option[Seq[QuestionId]] = {
                       if (userAuth.user.roles.contains(RoleAdmin)) {
-                        questionId.toSeq
+                        questionIds
                       } else {
-                        questionId
-                          .filter(id => userAuth.user.availableQuestions.contains(id))
-                          .map(Seq(_))
-                          .getOrElse(userAuth.user.availableQuestions)
+                        questionIds.map { questions =>
+                          questions.filter(id => userAuth.user.availableQuestions.contains(id))
+                        }.orElse(Some(userAuth.user.availableQuestions))
                       }
                     }
 
@@ -624,7 +623,7 @@ trait DefaultModerationProposalApiComponent
                       initialProposal = initialProposal,
                       tagsIds = tagsIds,
                       operationId = operationId,
-                      questionId = resolvedQuestions.headOption, // TODO: use the whole list
+                      questionIds = resolvedQuestions,
                       ideaId = ideaId,
                       trending = trending,
                       content = content,

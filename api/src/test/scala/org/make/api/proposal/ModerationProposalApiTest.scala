@@ -1226,7 +1226,7 @@ class ModerationProposalApiTest
               filters = Some(
                 SearchFilters(
                   createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
-                  question = Some(QuestionSearchFilter(tyrion.availableQuestions.head))
+                  question = Some(QuestionSearchFilter(tyrion.availableQuestions))
                 )
               )
             )
