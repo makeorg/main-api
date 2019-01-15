@@ -20,14 +20,59 @@
 package org.make.core
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+
+sealed trait ApplicationName {
+  def shortName: String
+}
+
+object ApplicationName {
+  case object MainFrontend extends ApplicationName {
+    val shortName: String = "main-front"
+  }
+  case object LegacyFrontend extends ApplicationName {
+    val shortName: String = "deprecated-front"
+  }
+  case object Widget extends ApplicationName {
+    val shortName: String = "widget"
+  }
+  case object Dial extends ApplicationName {
+    val shortName: String = "dial"
+  }
+  case object BiBatch extends ApplicationName {
+    val shortName: String = "bi-batch"
+  }
+  val applicationMap: Map[String, ApplicationName] =
+    Map(MainFrontend.shortName -> MainFrontend, LegacyFrontend.shortName -> LegacyFrontend, Widget.shortName -> Widget)
+
+  implicit lazy val encoder: Encoder[ApplicationName] = (applicationName: ApplicationName) =>
+    Json.fromString(applicationName.shortName)
+  implicit lazy val decoder: Decoder[ApplicationName] =
+    Decoder.decodeString.emap { value: String =>
+      applicationMap.get(value) match {
+        case Some(application) => Right(application)
+        case None              => Left(s"$value is not an application name")
+      }
+    }
+
+  implicit val applicationNameFormatter: JsonFormat[ApplicationName] = new JsonFormat[ApplicationName] {
+    override def read(json: JsValue): ApplicationName = json match {
+      case JsString(s) => applicationMap(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: ApplicationName): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+}
 
 final case class RequestContext(currentTheme: Option[ThemeId],
                                 userId: Option[UserId] = None,
@@ -46,7 +91,8 @@ final case class RequestContext(currentTheme: Option[ThemeId],
                                 ipAddress: Option[String] = None,
                                 getParameters: Option[Map[String, String]] = None,
                                 userAgent: Option[String] = None,
-                                questionId: Option[QuestionId] = None)
+                                questionId: Option[QuestionId] = None,
+                                applicationName: Option[ApplicationName] = None)
 
 object RequestContext {
   implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]
@@ -71,10 +117,11 @@ object RequestContext {
       ipAddress = None,
       getParameters = None,
       userAgent = None,
-      questionId = None
+      questionId = None,
+      applicationName = None
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat18(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat19(RequestContext.apply)
 
 }

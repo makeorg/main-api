@@ -25,6 +25,7 @@ import com.sksamuel.avro4s._
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.make.api.technical.crm.MailJetError
+import org.make.core.ApplicationName
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
@@ -164,6 +165,20 @@ trait AvroSerializers {
 
   implicit object MailJetErrorToSchema extends ToSchema[MailJetError] {
     override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object ApplicationNameToSchema extends ToSchema[ApplicationName] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object ApplicationNameToValue extends ToValue[ApplicationName] {
+    override def apply(value: ApplicationName): String = value.shortName
+  }
+
+  implicit object ApplicationNameFromValue extends FromValue[ApplicationName] {
+    override def apply(value: Any, field: Field): ApplicationName =
+      ApplicationName.applicationMap
+        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not an application name"))
   }
 
 }
