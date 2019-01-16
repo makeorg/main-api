@@ -1503,7 +1503,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           hostname = Some("my-hostname"),
           ipAddress = Some("1.2.3.4"),
           getParameters = Some(Map("parameter" -> "value")),
-          userAgent = Some("my-user-agent")
+          userAgent = Some("my-user-agent"),
+          applicationName = None
         )
       )
     }
@@ -1604,7 +1605,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("anonymize propsals") {
+  feature("anonymize proposals") {
     scenario("anonymize proposal") {
       val proposalId = ProposalId("anonymized-context")
       coordinator ! ProposeCommand(

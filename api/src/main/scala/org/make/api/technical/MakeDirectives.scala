@@ -34,9 +34,8 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.{reference, CirceFormatters, RequestContext, SlugHelper}
+import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -144,6 +143,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeUser            <- optionalMakeOAuth2
       maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
+      maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
     } yield {
       RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -171,7 +171,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             .toMap
         ),
         userAgent = maybeUserAgent.map(_.toString),
-        questionId = maybeQuestionId.map(QuestionId.apply)
+        questionId = maybeQuestionId.map(QuestionId.apply),
+        applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get)
       )
     }
   }
@@ -495,4 +496,15 @@ final case class QuestionIdHeader(override val value: String) extends ModeledCus
 object QuestionIdHeader extends ModeledCustomHeaderCompanion[QuestionIdHeader] {
   override val name: String = "x-make-question-id"
   override def parse(value: String): Try[QuestionIdHeader] = Success(new QuestionIdHeader(value))
+}
+
+final case class ApplicationNameHeader(override val value: String) extends ModeledCustomHeader[ApplicationNameHeader] {
+  override def companion: ModeledCustomHeaderCompanion[ApplicationNameHeader] = ApplicationNameHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object ApplicationNameHeader extends ModeledCustomHeaderCompanion[ApplicationNameHeader] {
+  override val name: String = "x-make-app-name"
+  override def parse(value: String): Try[ApplicationNameHeader] = Success(new ApplicationNameHeader(value))
 }

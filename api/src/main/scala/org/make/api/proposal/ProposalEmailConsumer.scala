@@ -30,6 +30,8 @@ import org.make.api.question.QuestionService
 import org.make.api.technical.crm.{Recipient, SendEmail}
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.user.UserService
+import org.make.core.ApplicationName.{MainFrontend, Widget}
+import org.make.core.proposal.Proposal
 import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -70,7 +72,22 @@ class ProposalEmailConsumer(userService: UserService,
       case event: ProposalRemovedFromOperation => doNothing(event)
       case event: ProposalAnonymized           => doNothing(event)
     }
+  }
 
+  private def getProposalUrl(proposal: Proposal, questionSlug: String): String = {
+    val utmParams = "utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=publication&utm_content=cta_share"
+    val country: String = proposal.country.map(_.value).getOrElse("FR")
+    val language: String = proposal.language.map(_.value).getOrElse("fr")
+
+    if (proposal.creationContext.applicationName.contains(MainFrontend) || proposal.creationContext.applicationName
+          .contains(Widget)) {
+      val appPath =
+        s"$country-$language/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}"
+      s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$utmParams"
+    } else {
+      val appPath = s"/$country/proposal/${proposal.proposalId.value}/${proposal.slug}"
+      s"${mailJetTemplateConfiguration.getLegacyFrontendUrl()}?$utmParams#$appPath"
+    }
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
@@ -108,8 +125,7 @@ class ProposalEmailConsumer(userService: UserService,
                 ),
                 variables = Some(
                   Map(
-                    "proposal_url" -> s"${mailJetTemplateConfiguration.getFrontUrl()}?utm_source=crm&utm_medium=email&utm_campaign=core&utm_term=publication&utm_content=cta_share#/${proposal.country
-                      .getOrElse("FR")}/proposal/${proposal.proposalId.value}/${proposal.slug}",
+                    "proposal_url" -> getProposalUrl(proposal, questionSlug),
                     "proposal_text" -> proposal.content,
                     "firstname" -> user.fullName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
