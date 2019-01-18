@@ -23,6 +23,8 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, ObjectEncoder}
+import org.jsoup.Jsoup
+import org.jsoup.safety.{Cleaner, Whitelist}
 
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
@@ -124,6 +126,13 @@ object Validation extends StrictLogging {
 
   def requirePresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
     validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+  }
+
+  def validateUserInput(fieldName: String, fieldValue: => String, message: Option[String]): Requirement = {
+    val condition: () => Boolean = () => {
+      new Cleaner(Whitelist.none()).isValid(Jsoup.parse(fieldValue))
+    }
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
   def requireValidSlug(fieldName: String,

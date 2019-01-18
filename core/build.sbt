@@ -28,7 +28,8 @@ libraryDependencies ++= Seq(
   Dependencies.avro4s,
   Dependencies.circeGeneric,
   Dependencies.stamina,
-  Dependencies.slugify
+  Dependencies.slugify,
+  Dependencies.jsoup
 )
 
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")

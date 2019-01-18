@@ -101,6 +101,8 @@ object Dependencies {
 
   val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.2"
 
+  val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.11.3"
+
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.3"
