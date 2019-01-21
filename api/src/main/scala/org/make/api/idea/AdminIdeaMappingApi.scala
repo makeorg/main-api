@@ -175,6 +175,7 @@ object AdminIdeaMappingApi {
     }
   }
 
+  @ApiModel
   final case class IdeaMappingIdResponse(
     @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2")
     ideaMappingId: IdeaMappingId
@@ -183,6 +184,7 @@ object AdminIdeaMappingApi {
     implicit val encoder: Encoder[IdeaMappingIdResponse] = deriveEncoder[IdeaMappingIdResponse]
   }
 
+  @ApiModel
   final case class CreateIdeaMappingRequest(@(ApiModelProperty @field)(
                                               dataType = "string",
                                               example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2"
@@ -203,10 +205,12 @@ object AdminIdeaMappingApi {
     implicit val decoder: Decoder[CreateIdeaMappingRequest] = deriveDecoder[CreateIdeaMappingRequest]
   }
 
+  @ApiModel
   final case class UpdateIdeaMappingRequest(
     @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId,
     migrateProposals: Boolean
   )
+
   object UpdateIdeaMappingRequest {
     implicit val decoder: Decoder[UpdateIdeaMappingRequest] = deriveDecoder[UpdateIdeaMappingRequest]
   }
