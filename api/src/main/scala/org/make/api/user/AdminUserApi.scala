@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.user
 
 import akka.http.scaladsl.model._
@@ -22,7 +41,7 @@ import scalaoauth2.provider.AuthInfo
 import scala.annotation.meta.field
 
 @Api(value = "Admin Moderator")
-@Path(value = "/admin/moderators")
+@Path(value = "/admin")
 trait AdminUserApi extends Directives {
 
   @ApiOperation(
@@ -40,7 +59,7 @@ trait AdminUserApi extends Directives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
-  @Path(value = "/{moderatorId}")
+  @Path(value = "/moderators/{moderatorId}")
   def getModerator: Route
 
   @ApiOperation(
@@ -67,7 +86,7 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModeratorResponse]]))
   )
-  @Path(value = "/")
+  @Path(value = "/moderators")
   def getModerators: Route
 
   @ApiOperation(
@@ -89,7 +108,7 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
-  @Path(value = "/")
+  @Path(value = "/moderators")
   def createModerator: Route
 
   @ApiOperation(
@@ -115,11 +134,29 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
-  @Path(value = "/{moderatorId}")
+  @Path(value = "/moderators/{moderatorId}")
   def updateModerator: Route
 
+  @ApiOperation(
+    value = "admin-anonymize-user",
+    httpMethod = "DELETE",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
+  )
+  @Path(value = "/users/{userId}")
+  def anonymizeUser: Route
+
   def routes: Route =
-    getModerator ~ getModerators ~ createModerator ~ updateModerator
+    getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser
 }
 
 trait AdminUserApiComponent {
@@ -287,6 +324,23 @@ trait DefaultAdminUserApiComponent
         }
       }
 
+    override def anonymizeUser: Route = delete {
+      path("admin" / "users" / moderatorId) { userId: UserId =>
+        makeOperation("adminDeleteUser") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                provideAsync(userService.anonymize(user)) { _ =>
+                  provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
+                    complete(StatusCodes.OK)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
