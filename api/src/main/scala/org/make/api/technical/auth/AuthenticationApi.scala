@@ -23,7 +23,7 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.ObjectEncoder
 import io.circe.generic.semiauto.deriveEncoder
@@ -42,7 +42,96 @@ import scalaoauth2.provider._
 
 @Api(value = "Authentication")
 @Path(value = "/")
-trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives with StrictLogging {
+trait AuthenticationApi extends Directives {
+
+  @ApiOperation(value = "oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @Path(value = "/oauth/access_token")
+  def accessTokenRoute: Route
+
+  @ApiOperation(
+    value = "make-oauth-access_token",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "application/x-www-form-urlencoded"
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "username", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(name = "grant_type", paramType = "form", dataType = "string", defaultValue = "password")
+    )
+  )
+  @Path(value = "/oauth/make_access_token")
+  def makeAccessTokenRoute: Route
+
+  @ApiOperation(
+    value = "oauth-get_access_token",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @Path(value = "/oauth/access_token")
+  def getAccessTokenRoute: Route
+
+  @ApiOperation(
+    value = "logout",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "text/plain",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
+  @Path(value = "/logout")
+  def logoutRoute: Route
+
+  val routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
+}
+
+object AuthenticationApi {
+  def grantResultToTokenResponse(grantResult: GrantHandlerResult[UserRights]): TokenResponse =
+    TokenResponse(
+      grantResult.tokenType,
+      grantResult.accessToken,
+      grantResult.expiresIn.getOrElse(1L),
+      grantResult.refreshToken.getOrElse("")
+    )
+
+  case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
+
+  object TokenResponse {
+    implicit val encoder: ObjectEncoder[TokenResponse] = deriveEncoder[TokenResponse]
+  }
+
+}
+
+trait AuthenticationApiComponent {
+  def authenticationApi: AuthenticationApi
+}
+
+trait DefaultAuthenticationApiComponent
+    extends AuthenticationApiComponent
+    with MakeDirectives
+    with MakeAuthenticationDirectives
+    with StrictLogging {
   self: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -50,11 +139,9 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
 
   val tokenEndpoint: TokenEndpoint
 
-  @ApiOperation(value = "oauth-access_token", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @Path(value = "/oauth/access_token")
-  def accessTokenRoute: Route =
-    pathPrefix("oauth") {
+  override def authenticationApi: AuthenticationApi = new AuthenticationApi {
+
+    override def accessTokenRoute: Route = pathPrefix("oauth") {
       path("access_token") {
         makeOperation("OauthAccessToken") { _ =>
           post {
@@ -78,23 +165,7 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  @ApiOperation(
-    value = "make-oauth-access_token",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    consumes = "application/x-www-form-urlencoded"
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "username", paramType = "form", dataType = "string"),
-      new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
-      new ApiImplicitParam(name = "grant_type", paramType = "form", dataType = "string", defaultValue = "password")
-    )
-  )
-  @Path(value = "/oauth/make_access_token")
-  def makeAccessTokenRoute: Route =
-    pathPrefix("oauth") {
+    override def makeAccessTokenRoute: Route = pathPrefix("oauth") {
       path("make_access_token") {
         makeOperation("OauthMakeAccessToken") { requestContext =>
           post {
@@ -127,24 +198,8 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
         }
       }
     }
-  @ApiOperation(
-    value = "oauth-get_access_token",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @Path(value = "/oauth/access_token")
-  def getAccessTokenRoute: Route =
-    pathPrefix("oauth") {
+
+    override def getAccessTokenRoute: Route = pathPrefix("oauth") {
       get {
         path("access_token") {
           makeOperation("OauthGetAccessToken") { _ =>
@@ -165,50 +220,35 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
-    fields.get("redirect_uri") match {
-      case Some(redirectUri) =>
-        redirect(s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}", Found)
-      case None =>
-        mapResponseHeaders(
-          _ ++ Seq(
-            `Set-Cookie`(
-              HttpCookie(
-                name = makeSettings.SessionCookie.name,
-                value = grantResult.accessToken,
-                secure = makeSettings.SessionCookie.isSecure,
-                httpOnly = true,
-                maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                path = Some("/"),
-                domain = Some(makeSettings.SessionCookie.domain)
+    private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
+      fields.get("redirect_uri") match {
+        case Some(redirectUri) =>
+          redirect(
+            s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}",
+            Found
+          )
+        case None =>
+          mapResponseHeaders(
+            _ ++ Seq(
+              `Set-Cookie`(
+                HttpCookie(
+                  name = makeSettings.SessionCookie.name,
+                  value = grantResult.accessToken,
+                  secure = makeSettings.SessionCookie.isSecure,
+                  httpOnly = true,
+                  maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                  path = Some("/"),
+                  domain = Some(makeSettings.SessionCookie.domain)
+                )
               )
             )
-          )
-        ) {
-          complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
-        }
+          ) {
+            complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+          }
+      }
     }
-  }
 
-  @ApiOperation(
-    value = "logout",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    consumes = "text/plain",
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/logout")
-  def logoutRoute: Route =
-    post {
+    override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { _ =>
           makeOAuth2 { userAuth =>
@@ -250,22 +290,5 @@ trait AuthenticationApi extends MakeDirectives with MakeAuthenticationDirectives
       }
     }
 
-  val authenticationRoutes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
-}
-
-object AuthenticationApi {
-  def grantResultToTokenResponse(grantResult: GrantHandlerResult[UserRights]): TokenResponse =
-    TokenResponse(
-      grantResult.tokenType,
-      grantResult.accessToken,
-      grantResult.expiresIn.getOrElse(1L),
-      grantResult.refreshToken.getOrElse("")
-    )
-
-  case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
-
-  object TokenResponse {
-    implicit val encoder: ObjectEncoder[TokenResponse] = deriveEncoder[TokenResponse]
   }
-
 }
