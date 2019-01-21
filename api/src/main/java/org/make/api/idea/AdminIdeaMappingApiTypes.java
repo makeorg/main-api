@@ -17,25 +17,14 @@
  *
  */
 
-package org.make.api.idea
+package org.make.api.idea;
 
-import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
-import org.make.core.idea.IdeaId
-import org.make.core.question.QuestionId
-import org.make.core.tag.TagId
+public final class AdminIdeaMappingApiTypes {
 
-final case class IdeaMapping(id: IdeaMappingId,
-                             questionId: QuestionId,
-                             stakeTagId: Option[TagId],
-                             solutionTypeTagId: Option[TagId],
-                             ideaId: IdeaId)
+    public static final String CreateIdeaMappingRequestType =
+            "org.make.api.idea.AdminIdeaMappingApi$CreateIdeaMappingRequest";
 
-final case class IdeaMappingId(value: String) extends StringValue
+    public static final String UpdateIdeaMappingRequestType =
+            "org.make.api.idea.AdminIdeaMappingApi$UpdateIdeaMappingRequest";
 
-object IdeaMappingId {
-
-  implicit val encoder: Encoder[IdeaMappingId] = (a: IdeaMappingId) => Json.fromString(a.value)
-
-  implicit val decoder: Decoder[IdeaMappingId] = Decoder.decodeString.map(IdeaMappingId(_))
 }

@@ -146,6 +146,7 @@ trait MakeApi
     with DefaultModerationOperationOfQuestionApiComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultIdeaMappingServiceComponent
+    with DefaultAdminIdeaMappingApiComponent
     with ProposalCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent
@@ -259,7 +260,8 @@ trait MakeApi
       classOf[OrganisationApi],
       classOf[QuestionApi],
       classOf[WidgetApi],
-      classOf[AdminUserApi]
+      classOf[AdminUserApi],
+      classOf[AdminIdeaMappingApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -306,7 +308,8 @@ trait MakeApi
       widgetApi.routes ~
       questionApi.routes ~
       moderationQuestionApi.routes ~
-      moderationOperationOfQuestionApi.routes
+      moderationOperationOfQuestionApi.routes ~
+      adminIdeaMappingApi.routes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
