@@ -144,6 +144,8 @@ trait MakeApi
     with DefaultModerationQuestionComponent
     with DefaultMonitoringService
     with DefaultModerationOperationOfQuestionApiComponent
+    with DefaultPersistentIdeaMappingServiceComponent
+    with DefaultIdeaMappingServiceComponent
     with ProposalCoordinatorComponent
     with UserHistoryCoordinatorComponent
     with SessionHistoryCoordinatorComponent

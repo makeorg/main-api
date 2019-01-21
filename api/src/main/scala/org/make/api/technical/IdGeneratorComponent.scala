@@ -21,6 +21,7 @@ package org.make.api.technical
 
 import java.util.UUID
 
+import org.make.api.idea.IdeaMappingId
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -44,13 +45,12 @@ trait IdGenerator {
   def nextQuestionId(): QuestionId = QuestionId(nextId())
   def nextTagId(): TagId = TagId(nextId())
   def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
+  def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
   def nextId(): String
 }
 
 trait DefaultIdGeneratorComponent extends IdGeneratorComponent {
-  override lazy val idGenerator: IdGenerator = new IdGenerator {
-    override def nextId(): String = {
-      UUID.randomUUID().toString
-    }
+  override lazy val idGenerator: IdGenerator = () => {
+    UUID.randomUUID().toString
   }
 }

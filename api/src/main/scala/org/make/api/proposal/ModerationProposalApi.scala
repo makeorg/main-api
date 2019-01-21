@@ -692,7 +692,6 @@ trait DefaultModerationProposalApiComponent
                           updatedAt = DateHelper.now(),
                           question = question,
                           newContent = request.newContent,
-                          labels = request.labels,
                           tags = request.tags,
                           idea = request.idea
                         )
@@ -755,7 +754,6 @@ trait DefaultModerationProposalApiComponent
                           newContent = request.newContent,
                           sendNotificationEmail = request.sendNotificationEmail,
                           idea = request.idea,
-                          labels = request.labels,
                           tags = request.tags
                         )
                       ) { proposalResponse: ProposalResponse =>
