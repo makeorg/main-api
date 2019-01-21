@@ -44,4 +44,29 @@ class ValidationTest extends FeatureSpec {
       an[ValidationFailedError] should be thrownBy validation()
     }
   }
+
+  feature("user input validation") {
+    val fieldName = "userInput"
+
+    scenario("valid input") {
+      val inputValue = "valid input"
+      def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
+
+      Matchers.noException should be thrownBy validation()
+    }
+
+    scenario("invalid input") {
+      val inputValue = "<a>invalid input</a>"
+      def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
+
+      a[ValidationFailedError] should be thrownBy validation()
+    }
+
+    scenario("valid input with < / >") {
+      val inputValue = "< & >"
+      def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
+
+      Matchers.noException should be thrownBy validation()
+    }
+  }
 }
