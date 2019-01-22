@@ -24,8 +24,11 @@ import java.time.LocalDate
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.question.QuestionId
 import org.make.core.{CirceFormatters, MakeSerializable}
+
+import scala.annotation.meta.field
 
 sealed trait Gender {
   def shortName: String
@@ -144,24 +147,29 @@ object SocioProfessionalCategory extends StrictLogging {
   }
 }
 
-case class Profile(dateOfBirth: Option[LocalDate],
-                   avatarUrl: Option[String],
-                   profession: Option[String],
-                   phoneNumber: Option[String],
-                   description: Option[String],
-                   twitterId: Option[String],
-                   facebookId: Option[String],
-                   googleId: Option[String],
-                   gender: Option[Gender],
-                   genderName: Option[String],
-                   postalCode: Option[String],
-                   karmaLevel: Option[Int],
-                   locale: Option[String],
-                   optInNewsletter: Boolean = true,
-                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                   registerQuestionId: Option[QuestionId] = None,
-                   optInPartner: Option[Boolean] = None)
-    extends MakeSerializable
+case class Profile(
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  avatarUrl: Option[String],
+  profession: Option[String],
+  phoneNumber: Option[String],
+  description: Option[String],
+  twitterId: Option[String],
+  facebookId: Option[String],
+  googleId: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
+  genderName: Option[String],
+  postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "integer") karmaLevel: Option[Int],
+  locale: Option[String],
+  optInNewsletter: Boolean = true,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
+    SocioProfessionalCategory
+  ] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") registerQuestionId: Option[
+    QuestionId
+  ] = None,
+  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None
+) extends MakeSerializable
 
 object Profile extends CirceFormatters {
   implicit val encoder: ObjectEncoder[Profile] = deriveEncoder[Profile]

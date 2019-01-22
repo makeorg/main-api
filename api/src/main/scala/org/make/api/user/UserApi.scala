@@ -78,7 +78,6 @@ trait UserApi extends Directives {
   @ApiOperation(
     value = "get-user",
     httpMethod = "GET",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -90,14 +89,22 @@ trait UserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
   def getUser: Route
 
   @Path(value = "/me")
   @ApiOperation(
     value = "get-me",
     httpMethod = "GET",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -121,10 +128,15 @@ trait UserApi extends Directives {
   def socialLogin: Route
 
   @Path(value = "/{userId}/votes")
-  @ApiOperation(value = "voted-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "voted-proposals", httpMethod = "GET")
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      ),
       new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string")
     )
@@ -134,7 +146,7 @@ trait UserApi extends Directives {
   )
   def getVotedProposalsByUser: Route
 
-  @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.Created)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest"),
@@ -146,17 +158,29 @@ trait UserApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[UserResponse]))
+  )
   def register: Route
 
-  @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/{userId}/validate/:verificationToken")
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      ),
+      new ApiImplicitParam(name = "verificationToken", paramType = "path", dataType = "string")
+    )
+  )
   def validateAccountRoute: Route
 
-  @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/request-reset")
   @ApiImplicitParams(
     value = Array(
@@ -165,36 +189,60 @@ trait UserApi extends Directives {
   )
   def resetPasswordRequestRoute: Route
 
-  @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/check-validity/:userId/:resetToken")
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      ),
+      new ApiImplicitParam(name = "resetToken", paramType = "path", dataType = "string")
+    )
+  )
   def resetPasswordCheckRoute: Route
 
-  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/change-password/:userId")
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.user.ResetPassword"),
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
     )
   )
   def resetPasswordRoute: Route
 
-  @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/{userId}/resend-validation-email")
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
   def resendValidationEmail: Route
 
-  @ApiOperation(value = "subscribe-newsletter", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "subscribe-newsletter", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SubscribeToNewsLetter")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/newsletter")
   def subscribeToNewsLetter: Route
 
@@ -212,8 +260,17 @@ trait UserApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok", response = classOf[Unit])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/{userId}/reload-history")
   def rebuildUserHistory: Route
 
@@ -231,13 +288,34 @@ trait UserApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok", response = classOf[Unit])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reload-history")
   def rebuildAllUsersHistory: Route
 
   @Path(value = "/{userId}/proposals")
-  @ApiOperation(value = "user-proposals", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiOperation(
+    value = "user-proposals",
+    httpMethod = "GET",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
@@ -247,14 +325,10 @@ trait UserApi extends Directives {
   @ApiOperation(
     value = "user-update",
     httpMethod = "PATCH",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
       )
     )
   )
@@ -269,86 +343,98 @@ trait UserApi extends Directives {
   @ApiOperation(
     value = "change-password",
     httpMethod = "POST",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
       )
     )
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      ),
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.ChangePasswordRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "{userId}/change-password")
   def changePassword: Route
 
   @ApiOperation(
     value = "delete-user",
     httpMethod = "POST",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
       )
     )
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      ),
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.DeleteUserRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Unit])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "{userId}/delete")
   def deleteUser: Route
 
   @ApiOperation(
     value = "follow-user",
     httpMethod = "POST",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
       )
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
   @Path(value = "/{userId}/follow")
   def followUser: Route
 
   @ApiOperation(
     value = "unfollow-user",
     httpMethod = "POST",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "user", description = "application user"),
-          new AuthorizationScope(scope = "admin", description = "BO Admin")
-        )
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
       )
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
   @Path(value = "/{userId}/unfollow")
   def unfollowUser: Route
 
@@ -1034,11 +1120,10 @@ trait DefaultUserApiComponent
   }
 }
 
-@ApiModel
 case class RegisterUserRequest(
   email: String,
   password: String,
-  dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
   firstName: Option[String],
   lastName: Option[String],
   profession: Option[String],
@@ -1046,20 +1131,31 @@ case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "boolean") optIn: Option[Boolean],
-  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[SocioProfessionalCategory],
-  @(ApiModelProperty @field)(dataType = "string") operationId: Option[OperationId],
-  @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
+    SocioProfessionalCategory
+  ],
+  @(ApiModelProperty @field)(dataType = "string", example = "618e22f9-9f3b-4b25-9788-cd4eb44f016d") operationId: Option[
+    OperationId
+  ],
+  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") questionId: Option[
+    QuestionId
+  ],
   @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean]
 ) {
 
   validate(
     mandatoryField("firstName", firstName),
+    validateOptionalUserInput("firstName", firstName, None),
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None),
     mandatoryField("password", password),
     validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters"),
+    validateOptionalUserInput("lastName", lastName, None),
+    validateOptionalUserInput("profession", profession, None),
     validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
+    validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
     mandatoryField("country", country)
   )
@@ -1069,9 +1165,8 @@ object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
 }
 
-@ApiModel
 case class UpdateUserRequest(
-  dateOfBirth: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[String],
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
@@ -1079,12 +1174,12 @@ case class UpdateUserRequest(
   postalCode: Option[String],
   phoneNumber: Option[String],
   description: Option[String],
-  optInNewsletter: Option[Boolean],
-  @(ApiModelProperty @field)(dataType = "string") gender: Option[String],
+  @(ApiModelProperty @field)(dataType = "boolean") optInNewsletter: Option[Boolean],
+  gender: Option[String],
   genderName: Option[String],
   @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string") socioProfessionalCategory: Option[String]
+  socioProfessionalCategory: Option[String]
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
@@ -1093,9 +1188,11 @@ case class UpdateUserRequest(
 
   validate(
     firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    Some(validateOptionalUserInput("firstName", firstName, None)),
     organisationName.map(
       value => requireNonEmpty("organisationName", value, Some("organisationName should not be an empty string"))
     ),
+    Some(validateOptionalUserInput("organisationName", organisationName, None)),
     postalCode.map(
       value =>
         maxLength(
@@ -1123,7 +1220,9 @@ case class UpdateUserRequest(
           s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
       )
     ),
-    description.map(value => maxLength("description", maxDescriptionLength, value))
+    description.map(value => maxLength("description", maxDescriptionLength, value)),
+    Some(validateOptionalUserInput("phoneNumber", phoneNumber, None)),
+    Some(validateOptionalUserInput("description", description, None))
   )
 }
 
@@ -1139,7 +1238,10 @@ object UpdateUserRequest extends CirceFormatters {
   }
 }
 
-case class SocialLoginRequest(provider: String, token: String, country: Option[Country], language: Option[Language]) {
+case class SocialLoginRequest(provider: String,
+                              token: String,
+                              @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
+                              @(ApiModelProperty @field)(dataType = "string") language: Option[Language]) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
 }
 
@@ -1148,7 +1250,11 @@ object SocialLoginRequest {
 }
 
 final case class ResetPasswordRequest(email: String) {
-  validate(mandatoryField("email", email), validateEmail("email", email.toLowerCase))
+  validate(
+    mandatoryField("email", email),
+    validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None)
+  )
 }
 
 object ResetPasswordRequest {
@@ -1182,14 +1288,22 @@ object DeleteUserRequest {
 }
 
 final case class SubscribeToNewsLetter(email: String) {
-  validate(mandatoryField("email", email), validateEmail("email", email.toLowerCase))
+  validate(
+    mandatoryField("email", email),
+    validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None)
+  )
 }
 
 object SubscribeToNewsLetter {
   implicit val decoder: Decoder[SubscribeToNewsLetter] = deriveDecoder[SubscribeToNewsLetter]
 }
 
-case class MailingErrorLogResponse(error: String, date: ZonedDateTime)
+case class MailingErrorLogResponse(error: String,
+                                   @(ApiModelProperty @field)(
+                                     dataType = "string",
+                                     example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]"
+                                   ) date: ZonedDateTime)
 object MailingErrorLogResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
   implicit val decoder: Decoder[MailingErrorLogResponse] = deriveDecoder[MailingErrorLogResponse]
@@ -1198,23 +1312,30 @@ object MailingErrorLogResponse extends CirceFormatters {
     MailingErrorLogResponse(error = mailingErrorLog.error, date = mailingErrorLog.date)
 }
 
-case class UserResponse(userId: UserId,
-                        email: String,
-                        firstName: Option[String],
-                        lastName: Option[String],
-                        organisationName: Option[String],
-                        enabled: Boolean,
-                        emailVerified: Boolean,
-                        isOrganisation: Boolean,
-                        lastConnection: ZonedDateTime,
-                        roles: Seq[Role],
-                        profile: Option[Profile],
-                        country: Country,
-                        language: Language,
-                        isHardBounce: Boolean,
-                        lastMailingError: Option[MailingErrorLogResponse],
-                        hasPassword: Boolean,
-                        followedUsers: Seq[UserId] = Seq.empty)
+case class UserResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  organisationName: Option[String],
+  enabled: Boolean,
+  emailVerified: Boolean,
+  isOrganisation: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]") lastConnection: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "string", example = "ROLE_CITIZEN,ROLE_MODERATOR") roles: Seq[Role],
+  profile: Option[Profile],
+  @(ApiModelProperty @field)(dataType = "string") country: Country,
+  @(ApiModelProperty @field)(dataType = "string") language: Language,
+  isHardBounce: Boolean,
+  @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse") lastMailingError: Option[
+    MailingErrorLogResponse
+  ],
+  hasPassword: Boolean,
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55,65500ec1-175b-4488-a595-91968e990a31"
+  ) followedUsers: Seq[UserId] = Seq.empty
+)
 
 object UserResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]

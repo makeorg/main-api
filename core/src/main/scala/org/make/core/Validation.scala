@@ -135,6 +135,15 @@ object Validation extends StrictLogging {
     validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
+  def validateOptionalUserInput(fieldName: String,
+                                fieldValue: => Option[String],
+                                message: Option[String]): Requirement = {
+    val condition: () => Boolean = () => {
+      fieldValue.forall(value => new Cleaner(Whitelist.none()).isValid(Jsoup.parse(value)))
+    }
+    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid user input"))
+  }
+
   def requireValidSlug(fieldName: String,
                        fieldValue: => Option[String],
                        message: Option[String] = None): Requirement = {
