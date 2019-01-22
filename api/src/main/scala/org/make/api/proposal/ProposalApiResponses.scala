@@ -38,32 +38,30 @@ import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.annotation.meta.field
 
-final case class ModerationProposalResponse(indexedProposal: IndexedProposal, ideaProposals: Seq[IndexedProposal])
+final case class ModerationProposalResponse(proposalId: ProposalId,
+                                            slug: String,
+                                            content: String,
+                                            author: UserResponse,
+                                            labels: Seq[LabelId],
+                                            theme: Option[ThemeId] = None,
+                                            status: ProposalStatus,
+                                            refusalReason: Option[String] = None,
+                                            tags: Seq[TagId] = Seq.empty,
+                                            votes: Seq[Vote],
+                                            context: RequestContext,
+                                            createdAt: Option[ZonedDateTime],
+                                            updatedAt: Option[ZonedDateTime],
+                                            events: Seq[ProposalActionResponse],
+                                            idea: Option[IdeaId],
+                                            ideaProposals: Seq[IndexedProposal],
+                                            questionId: Option[QuestionId],
+                                            operationId: Option[OperationId],
+                                            language: Option[Language],
+                                            country: Option[Country])
 
-final case class ProposalResponse(proposalId: ProposalId,
-                                  slug: String,
-                                  content: String,
-                                  author: UserResponse,
-                                  labels: Seq[LabelId],
-                                  theme: Option[ThemeId] = None,
-                                  status: ProposalStatus,
-                                  refusalReason: Option[String] = None,
-                                  tags: Seq[TagId] = Seq.empty,
-                                  votes: Seq[Vote],
-                                  context: RequestContext,
-                                  createdAt: Option[ZonedDateTime],
-                                  updatedAt: Option[ZonedDateTime],
-                                  events: Seq[ProposalActionResponse],
-                                  idea: Option[IdeaId],
-                                  ideaProposals: Seq[IndexedProposal],
-                                  questionId: Option[QuestionId],
-                                  operationId: Option[OperationId],
-                                  language: Option[Language],
-                                  country: Option[Country])
-
-object ProposalResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
-  implicit val decoder: Decoder[ProposalResponse] = deriveDecoder[ProposalResponse]
+object ModerationProposalResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[ModerationProposalResponse] = deriveEncoder[ModerationProposalResponse]
+  implicit val decoder: Decoder[ModerationProposalResponse] = deriveDecoder[ModerationProposalResponse]
 }
 
 final case class ProposalActionResponse(date: ZonedDateTime,
@@ -82,36 +80,36 @@ object ProposeProposalResponse {
   implicit val encoder: ObjectEncoder[ProposeProposalResponse] = deriveEncoder[ProposeProposalResponse]
 }
 
-final case class ProposalResult(id: ProposalId,
-                                userId: UserId,
-                                content: String,
-                                slug: String,
-                                status: ProposalStatus,
-                                createdAt: ZonedDateTime,
-                                updatedAt: Option[ZonedDateTime],
-                                votes: Seq[VoteResponse],
-                                context: Option[Context],
-                                trending: Option[String],
-                                labels: Seq[String],
-                                author: Author,
-                                organisations: Seq[IndexedOrganisationInfo],
-                                country: Country,
-                                language: Language,
-                                themeId: Option[ThemeId],
-                                tags: Seq[IndexedTag],
-                                myProposal: Boolean,
-                                idea: Option[IdeaId],
-                                questionId: Option[QuestionId],
-                                operationId: Option[OperationId])
+final case class ProposalResponse(id: ProposalId,
+                                  userId: UserId,
+                                  content: String,
+                                  slug: String,
+                                  status: ProposalStatus,
+                                  createdAt: ZonedDateTime,
+                                  updatedAt: Option[ZonedDateTime],
+                                  votes: Seq[VoteResponse],
+                                  context: Option[Context],
+                                  trending: Option[String],
+                                  labels: Seq[String],
+                                  author: Author,
+                                  organisations: Seq[IndexedOrganisationInfo],
+                                  country: Country,
+                                  language: Language,
+                                  themeId: Option[ThemeId],
+                                  tags: Seq[IndexedTag],
+                                  myProposal: Boolean,
+                                  idea: Option[IdeaId],
+                                  questionId: Option[QuestionId],
+                                  operationId: Option[OperationId])
 
-object ProposalResult extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[ProposalResult] = deriveEncoder[ProposalResult]
-  implicit val decoder: Decoder[ProposalResult] = deriveDecoder[ProposalResult]
+object ProposalResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
+  implicit val decoder: Decoder[ProposalResponse] = deriveDecoder[ProposalResponse]
 
   def apply(indexedProposal: IndexedProposal,
             myProposal: Boolean,
-            voteAndQualifications: Option[VoteAndQualifications]): ProposalResult =
-    ProposalResult(
+            voteAndQualifications: Option[VoteAndQualifications]): ProposalResponse =
+    ProposalResponse(
       id = indexedProposal.id,
       userId = indexedProposal.userId,
       content = indexedProposal.content,
@@ -142,21 +140,21 @@ object ProposalResult extends CirceFormatters {
     )
 }
 
-final case class ProposalsResultResponse(total: Long, results: Seq[ProposalResult])
+final case class ProposalsResultResponse(total: Long, results: Seq[ProposalResponse])
 
 object ProposalsResultResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultResponse] = deriveEncoder[ProposalsResultResponse]
   implicit val decoder: Decoder[ProposalsResultResponse] = deriveDecoder[ProposalsResultResponse]
 }
 
-final case class ProposalsResultSeededResponse(total: Long, results: Seq[ProposalResult], seed: Option[Int])
+final case class ProposalsResultSeededResponse(total: Long, results: Seq[ProposalResponse], seed: Option[Int])
 
 object ProposalsResultSeededResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
-final case class ProposalResultWithUserVote(proposal: ProposalResult, vote: VoteKey, voteDate: ZonedDateTime)
+final case class ProposalResultWithUserVote(proposal: ProposalResponse, vote: VoteKey, voteDate: ZonedDateTime)
 object ProposalResultWithUserVote extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
   implicit val decoder: Decoder[ProposalResultWithUserVote] = deriveDecoder[ProposalResultWithUserVote]

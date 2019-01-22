@@ -78,7 +78,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
@@ -175,7 +175,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @Path(value = "/{proposalId}")
   def updateProposal: Route
@@ -205,7 +205,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @Path(value = "/{proposalId}/accept")
   def acceptProposal: Route
@@ -235,7 +235,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @Path(value = "/{proposalId}/refuse")
   def refuseProposal: Route
@@ -255,7 +255,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}/postpone")
@@ -292,7 +292,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -358,7 +358,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -439,10 +439,11 @@ trait DefaultModerationProposalApiComponent
           makeOperation("GetModerationProposal") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
-                provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) { proposalResponse =>
-                  requireRightsOnQuestion(auth.user, proposalResponse.questionId) {
-                    complete(proposalResponse)
-                  }
+                provideAsyncOrNotFound(proposalService.getModerationProposalById(proposalId)) {
+                  moderationProposalResponse =>
+                    requireRightsOnQuestion(auth.user, moderationProposalResponse.questionId) {
+                      complete(moderationProposalResponse)
+                    }
                 }
               }
             }
@@ -695,8 +696,8 @@ trait DefaultModerationProposalApiComponent
                           tags = request.tags,
                           idea = request.idea
                         )
-                      ) { proposalResponse: ProposalResponse =>
-                        complete(proposalResponse)
+                      ) { moderationProposalResponse: ModerationProposalResponse =>
+                        complete(moderationProposalResponse)
                       }
                     }
                   }
@@ -756,8 +757,8 @@ trait DefaultModerationProposalApiComponent
                           idea = request.idea,
                           tags = request.tags
                         )
-                      ) { proposalResponse: ProposalResponse =>
-                        complete(proposalResponse)
+                      ) { moderationProposalResponse: ModerationProposalResponse =>
+                        complete(moderationProposalResponse)
                       }
                     }
                   }
@@ -785,8 +786,8 @@ trait DefaultModerationProposalApiComponent
                           requestContext = requestContext,
                           request = refuseProposalRequest
                         )
-                      ) { proposalResponse: ProposalResponse =>
-                        complete(proposalResponse)
+                      ) { moderationProposalResponse: ModerationProposalResponse =>
+                        complete(moderationProposalResponse)
                       }
                     }
                   }
@@ -813,8 +814,8 @@ trait DefaultModerationProposalApiComponent
                           moderator = auth.user.userId,
                           requestContext = requestContext
                         )
-                    ) { proposalResponse: ProposalResponse =>
-                      complete(proposalResponse)
+                    ) { moderationProposalResponse: ModerationProposalResponse =>
+                      complete(moderationProposalResponse)
                     }
                   }
                 }

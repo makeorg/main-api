@@ -30,7 +30,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{
-  ProposalResult,
+  ProposalResponse,
   ProposalService,
   ProposalServiceComponent,
   ProposalsResultSeededResponse,
@@ -948,11 +948,11 @@ class UserApiTest
       indexedProposal1.copy(id = ProposalId("proposal-2"), operationId = Some(OperationId("operation2")))
     val indexedProposal3 =
       indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None, themeId = Some(ThemeId("theme1")))
-    val proposalsResult: Seq[ProposalResult] =
+    val proposalsResult: Seq[ProposalResponse] =
       Seq(
-        ProposalResult(indexedProposal = indexedProposal1, myProposal = false, voteAndQualifications = None),
-        ProposalResult(indexedProposal = indexedProposal2, myProposal = false, voteAndQualifications = None),
-        ProposalResult(indexedProposal = indexedProposal3, myProposal = false, voteAndQualifications = None)
+        ProposalResponse(indexedProposal = indexedProposal1, myProposal = false, voteAndQualifications = None),
+        ProposalResponse(indexedProposal = indexedProposal2, myProposal = false, voteAndQualifications = None),
+        ProposalResponse(indexedProposal = indexedProposal3, myProposal = false, voteAndQualifications = None)
       )
 
     Mockito
@@ -1088,11 +1088,11 @@ class UserApiTest
     )
     val indexedProposal2 = indexedProposal1.copy(operationId = Some(OperationId("operation2")))
     val indexedProposal3 = indexedProposal1.copy(operationId = None, themeId = Some(ThemeId("theme1")))
-    val proposalsResult: Seq[ProposalResult] =
+    val proposalsResult: Seq[ProposalResponse] =
       Seq(
-        ProposalResult(indexedProposal = indexedProposal1, myProposal = true, voteAndQualifications = None),
-        ProposalResult(indexedProposal = indexedProposal2, myProposal = true, voteAndQualifications = None),
-        ProposalResult(indexedProposal = indexedProposal3, myProposal = true, voteAndQualifications = None)
+        ProposalResponse(indexedProposal = indexedProposal1, myProposal = true, voteAndQualifications = None),
+        ProposalResponse(indexedProposal = indexedProposal2, myProposal = true, voteAndQualifications = None),
+        ProposalResponse(indexedProposal = indexedProposal3, myProposal = true, voteAndQualifications = None)
       )
 
     Mockito

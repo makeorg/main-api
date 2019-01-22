@@ -74,7 +74,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
               sessionHistoryCoordinatorService
                 .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
             ) { votes =>
-              complete(ProposalResult(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId)))
+              complete(
+                ProposalResponse(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId))
+              )
             }
           }
         }

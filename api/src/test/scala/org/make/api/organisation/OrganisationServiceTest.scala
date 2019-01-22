@@ -23,7 +23,12 @@ import java.time.ZonedDateTime
 
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeUnitTest
-import org.make.api.proposal.{ProposalResult, ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.{
+  ProposalResponse,
+  ProposalService,
+  ProposalServiceComponent,
+  ProposalsResultSeededResponse
+}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -493,8 +498,8 @@ class OrganisationServiceTest
             ProposalsResultSeededResponse(
               total = 2,
               results = Seq(
-                ProposalResult(indexedProposal(ProposalId("proposal2")), myProposal = false, None),
-                ProposalResult(indexedProposal(ProposalId("proposal1")), myProposal = false, None)
+                ProposalResponse(indexedProposal(ProposalId("proposal2")), myProposal = false, None),
+                ProposalResponse(indexedProposal(ProposalId("proposal1")), myProposal = false, None)
               ),
               seed = None
             )

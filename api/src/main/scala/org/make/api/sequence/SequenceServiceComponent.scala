@@ -154,7 +154,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             slug = "deprecated",
             proposals = selectedProposals
               .map(
-                indexed => ProposalResult(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id))
+                indexed =>
+                  ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id))
               )
           )
         )

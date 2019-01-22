@@ -407,7 +407,7 @@ class ModerationProposalApiTest
   ).thenReturn(
     Future.successful(
       Some(
-        ProposalResponse(
+        ModerationProposalResponse(
           proposalId = proposalSim123.proposalId,
           slug = proposalSim123.slug,
           content = proposalSim123.content,
@@ -456,7 +456,7 @@ class ModerationProposalApiTest
   ).thenReturn(
     Future.successful(
       Some(
-        ProposalResponse(
+        ModerationProposalResponse(
           proposalId = proposalSim124.proposalId,
           slug = proposalSim124.slug,
           content = proposalSim124.content,
@@ -508,7 +508,7 @@ class ModerationProposalApiTest
       .getModerationProposalById(matches(ProposalId("fake2")))
   ).thenReturn(Future.successful(None))
 
-  val proposalResult: ProposalResult = ProposalResult(
+  val proposalResult: ProposalResponse = ProposalResponse(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
     content = "il faut fou",
@@ -537,8 +537,8 @@ class ModerationProposalApiTest
       .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(1, Seq(proposalResult), Some(42))))
 
-  private def proposal(id: ProposalId): ProposalResponse = {
-    ProposalResponse(
+  private def proposal(id: ProposalId): ModerationProposalResponse = {
+    ModerationProposalResponse(
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
       content = "A song of fire and ice",
@@ -887,7 +887,7 @@ class ModerationProposalApiTest
       Get("/moderation/proposals/sim-123")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        entityAs[ProposalResponse]
+        entityAs[ModerationProposalResponse]
       }
     }
 
