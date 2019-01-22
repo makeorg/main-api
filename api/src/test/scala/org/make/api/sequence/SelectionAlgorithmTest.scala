@@ -88,7 +88,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideaId = idea,
       operationId = None,
       sequencePool = sequencePool,
-      initialProposal = false
+      initialProposal = false,
+      refusalReason = None
     )
   }
 
@@ -127,7 +128,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideaId = idea,
       operationId = None,
       sequencePool = sequencePool,
-      initialProposal = false
+      initialProposal = false,
+      refusalReason = None
     )
   }
 

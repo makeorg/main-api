@@ -224,7 +224,8 @@ trait ProposalIndexationStream
         operationId = proposal.operation,
         questionId = proposal.questionId,
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
-        initialProposal = proposal.initialProposal
+        initialProposal = proposal.initialProposal,
+        refusalReason = proposal.refusalReason
       )
     }
 

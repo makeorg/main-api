@@ -942,7 +942,8 @@ class UserApiTest
       operationId = Some(OperationId("operation1")),
       questionId = None,
       sequencePool = SequencePool.New,
-      initialProposal = false
+      initialProposal = false,
+      refusalReason = None
     )
     val indexedProposal2 =
       indexedProposal1.copy(id = ProposalId("proposal-2"), operationId = Some(OperationId("operation2")))
@@ -1084,7 +1085,8 @@ class UserApiTest
       operationId = Some(OperationId("operation1")),
       questionId = None,
       sequencePool = SequencePool.New,
-      initialProposal = false
+      initialProposal = false,
+      refusalReason = None
     )
     val indexedProposal2 = indexedProposal1.copy(operationId = Some(OperationId("operation2")))
     val indexedProposal3 = indexedProposal1.copy(operationId = None, themeId = Some(ThemeId("theme1")))
