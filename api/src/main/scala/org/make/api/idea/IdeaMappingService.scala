@@ -30,6 +30,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait IdeaMappingService {
+  def create(questionId: QuestionId,
+             stakeTagId: Option[TagId],
+             solutionTypeTagId: Option[TagId],
+             ideaId: IdeaId): Future[IdeaMapping]
+  def getById(ideaMappingId: IdeaMappingId): Future[Option[IdeaMapping]]
   def changeIdea(IdeaMappingId: IdeaMappingId, newIdea: IdeaId, migrateProposals: Boolean): Future[Option[IdeaMapping]]
   def search(questionId: Option[QuestionId],
              stakeTagId: Option[TagIdOrNone],
@@ -51,6 +56,20 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
     with PersistentQuestionServiceComponent
     with IdGeneratorComponent =>
   override val ideaMappingService: IdeaMappingService = new IdeaMappingService {
+
+    override def create(questionId: QuestionId,
+                        stakeTagId: Option[TagId],
+                        solutionTypeTagId: Option[TagId],
+                        ideaId: IdeaId): Future[IdeaMapping] = {
+      persistentIdeaMappingService.persist(
+        IdeaMapping(idGenerator.nextIdeaMappingId(), questionId, stakeTagId, solutionTypeTagId, ideaId)
+      )
+    }
+
+    override def getById(ideaMappingId: IdeaMappingId): Future[Option[IdeaMapping]] = {
+      persistentIdeaMappingService.get(ideaMappingId)
+    }
+
     override def changeIdea(ideaMappingId: IdeaMappingId,
                             newIdea: IdeaId,
                             migrateProposals: Boolean): Future[Option[IdeaMapping]] = {

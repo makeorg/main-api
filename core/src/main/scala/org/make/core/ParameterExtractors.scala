@@ -22,6 +22,7 @@ package org.make.core
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.stream.Materializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
@@ -31,7 +32,22 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
 
+import scala.concurrent.{ExecutionContext, Future}
+
 trait ParameterExtractors {
+
+  implicit def eitherNoneOrT[T](
+    implicit unmarshaller: Unmarshaller[String, T]
+  ): Unmarshaller[String, Either[None.type, T]] = {
+
+    Unmarshaller.identityUnmarshaller.transform {
+      implicit executionContext: ExecutionContext => implicit materializer: Materializer =>
+        _.flatMap {
+          case "None" => Future.successful(Left(None))
+          case other  => unmarshaller(other).map(Right(_))
+        }
+    }
+  }
 
   implicit val localDateFromStringUnmarshaller: Unmarshaller[String, LocalDate] =
     Unmarshaller.strict[String, LocalDate] { string ⇒
