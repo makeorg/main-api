@@ -20,7 +20,7 @@
 package org.make.api.technical.crm
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
 import com.typesafe.scalalogging.StrictLogging
@@ -30,29 +30,14 @@ import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsCompo
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.crm.PublishedCrmContactEvent.CrmContactListSync
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.{DateHelper, HttpCodes}
 import org.make.core.auth.UserRights
+import org.make.core.{DateHelper, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "CRM")
 @Path(value = "/")
-trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
-  this: MakeDataHandlerComponent
-    with EventBusServiceComponent
-    with MailJetConfigurationComponent
-    with EventBusServiceComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with MakeAuthentication =>
+trait CrmApi extends Directives {
 
-  private def authenticate(credentials: Credentials): Option[String] = {
-    val login = mailJetConfiguration.basicAuthLogin
-    val password = mailJetConfiguration.basicAuthPassword
-    credentials match {
-      case c @ Provided(`login`) if c.verify(password, _.trim) => Some("OK")
-      case _                                                   => None
-    }
-  }
   @ApiOperation(
     value = "consume-mailjet-event",
     httpMethod = "POST",
@@ -66,29 +51,7 @@ trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.technical.crm.MailJetEvent")
     )
   )
-  def webHook: Route = {
-    post {
-      path("technical" / "mailjet") {
-        makeOperation("mailjet-webhook") { _ =>
-          authenticateBasic[String]("make-mailjet", authenticate).apply { _ =>
-            decodeRequest {
-
-              entity(as[Seq[MailJetEvent]]) { events: Seq[MailJetEvent] =>
-                // Send all events to event bus
-                events.foreach(eventBusService.publish)
-                complete(StatusCodes.OK)
-              } ~
-                entity(as[MailJetEvent]) { event: MailJetEvent =>
-                  eventBusService.publish(event)
-                  complete(StatusCodes.OK)
-                }
-
-            }
-          }
-        }
-      }
-    }
-  }
+  def webHook: Route
 
   @ApiOperation(
     value = "sync-crm-data",
@@ -103,18 +66,106 @@ trait CrmApi extends MakeAuthenticationDirectives with StrictLogging {
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
   @Path(value = "/technical/crm/synchronize")
-  def syncCrmData: Route = post {
-    path("technical" / "crm" / "synchronize") {
-      makeOAuth2 { auth: AuthInfo[UserRights] =>
-        requireAdminRole(auth.user) {
-          makeOperation("SyncCrmData") { _ =>
-            eventBusService.publish(CrmContactListSync(id = auth.user.userId, eventDate = DateHelper.now()))
-            complete(StatusCodes.NoContent)
+  def syncCrmData: Route
+
+  val routes: Route = webHook ~ syncCrmData
+}
+
+trait CrmApiComponent {
+  def crmApi: CrmApi
+}
+
+trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDirectives with StrictLogging {
+  this: MakeDataHandlerComponent
+    with EventBusServiceComponent
+    with MailJetConfigurationComponent
+    with EventBusServiceComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication =>
+
+  override val crmApi: CrmApi = new CrmApi {
+
+    private def authenticate(credentials: Credentials): Option[String] = {
+      val login = mailJetConfiguration.basicAuthLogin
+      val password = mailJetConfiguration.basicAuthPassword
+      credentials match {
+        case c @ Provided(`login`) if c.verify(password, _.trim) => Some("OK")
+        case _                                                   => None
+      }
+    }
+
+    override def webHook: Route = {
+      post {
+        path("technical" / "mailjet") {
+          makeOperation("mailjet-webhook") { _ =>
+            authenticateBasic[String]("make-mailjet", authenticate).apply { _ =>
+              decodeRequest {
+
+                entity(as[Seq[MailJetEvent]]) { events: Seq[MailJetEvent] =>
+                  // Send all events to event bus
+                  events.foreach { event =>
+                    Validation.validate(
+                      Some(
+                        Validation.validateUserInput(
+                          fieldValue = event.email,
+                          fieldName = "email",
+                          message = Some("Invalid email")
+                        )
+                      ),
+                      event.customCampaign.map(
+                        customCampaign =>
+                          Validation.validateUserInput(
+                            fieldValue = customCampaign,
+                            fieldName = "customCampaign",
+                            message = Some("Invalid customCampaign")
+                        )
+                      ),
+                      event.customId.map(
+                        customId =>
+                          Validation.validateUserInput(
+                            fieldValue = customId,
+                            fieldName = "customId",
+                            message = Some("Invalid customId")
+                        )
+                      ),
+                      event.payload.map(
+                        payload =>
+                          Validation.validateUserInput(
+                            fieldValue = payload,
+                            fieldName = "payload",
+                            message = Some("Invalid payload")
+                        )
+                      ),
+                    )
+                    eventBusService.publish(event)
+                  }
+                  complete(StatusCodes.OK)
+                } ~
+                  entity(as[MailJetEvent]) { event: MailJetEvent =>
+                    eventBusService.publish(event)
+                    complete(StatusCodes.OK)
+                  }
+
+              }
+            }
           }
         }
       }
     }
-  }
 
-  val crmRoutes: Route = webHook ~ syncCrmData
+    override def syncCrmData: Route = post {
+      path("technical" / "crm" / "synchronize") {
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            makeOperation("SyncCrmData") { _ =>
+              eventBusService.publish(CrmContactListSync(id = auth.user.userId, eventDate = DateHelper.now()))
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+      }
+    }
+
+  }
 }

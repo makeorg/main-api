@@ -37,7 +37,10 @@ import scalaoauth2.provider.{AccessToken, AuthInfo, TokenEndpoint}
 
 import scala.concurrent.Future
 
-class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirectives with AuthenticationApi {
+class AuthenticationApiTest
+    extends MakeApiTestBase
+    with MakeAuthenticationDirectives
+    with DefaultAuthenticationApiComponent {
 
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
 
@@ -49,7 +52,7 @@ class AuthenticationApiTest extends MakeApiTestBase with MakeAuthenticationDirec
   when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
     .thenReturn(Future.successful(0))
 
-  val routes: Route = sealRoute(authenticationRoutes)
+  val routes: Route = sealRoute(authenticationApi.routes)
 
   feature("get a token user") {
     scenario("successful get token") {

@@ -49,7 +49,7 @@ import org.make.api.tagtype.{
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.ConfigurationsApi
-import org.make.api.technical.crm.{CrmApi, DefaultCrmServiceComponent}
+import org.make.api.technical.crm.{CrmApi, DefaultCrmApiComponent, DefaultCrmServiceComponent}
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
@@ -71,8 +71,8 @@ import org.make.api.technical.storage.{
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user._
+import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
   UserHistoryCoordinator,
@@ -159,8 +159,8 @@ trait MakeApi
     with ProposalApi
     with DefaultSequenceApiComponent
     with DefaultModerationSequenceApiComponent
-    with CrmApi
-    with AuthenticationApi
+    with DefaultCrmApiComponent
+    with DefaultAuthenticationApiComponent
     with ConfigurationsApi
     with DefaultUserApiComponent
     with TagApi
@@ -294,8 +294,8 @@ trait MakeApi
       moderationSequenceApi.routes ~
       optionsAuthorized ~
       buildRoutes ~
-      crmRoutes ~
-      authenticationRoutes ~
+      crmApi.routes ~
+      authenticationApi.routes ~
       businessConfigRoutes ~
       moderationIdeaApi.routes ~
       operationApi.routes ~

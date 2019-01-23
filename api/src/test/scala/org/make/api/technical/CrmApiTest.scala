@@ -26,14 +26,14 @@ import io.circe._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.auth._
-import org.make.api.technical.crm.{CrmApi, MailJetBaseEvent, MailJetEvent}
+import org.make.api.technical.crm.{DefaultCrmApiComponent, MailJetBaseEvent, MailJetEvent}
 import org.make.core.session.VisitorId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 
 class CrmApiTest
     extends MakeApiTestBase
-    with CrmApi
+    with DefaultCrmApiComponent
     with MailJetConfigurationComponent
     with ShortenedNames
     with MakeAuthentication {
@@ -52,7 +52,7 @@ class CrmApiTest
   when(idGenerator.nextId()).thenReturn("some-id")
   when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 
-  val routes: Route = sealRoute(crmRoutes)
+  val routes: Route = sealRoute(crmApi.routes)
 
   val requestMultipleEvents: String =
     """
