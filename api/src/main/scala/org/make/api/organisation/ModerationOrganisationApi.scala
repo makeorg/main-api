@@ -163,8 +163,8 @@ trait DefaultModerationOrganisationApiComponent
                   entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
                     provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
                       val maybeEmail = request.email match {
-                        case Some(email) if email == organisation.email => None
-                        case email                                      => email
+                        case Some(email) if email.toLowerCase == organisation.email => None
+                        case email                                                  => email
                       }
                       onSuccess(
                         organisationService

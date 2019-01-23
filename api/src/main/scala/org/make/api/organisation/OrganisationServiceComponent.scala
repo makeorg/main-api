@@ -270,7 +270,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             val updateOrganisation =
               registeredOrganisation.copy(
                 organisationName = organisationUpdateData.name.orElse(registeredOrganisation.organisationName),
-                email = organisationUpdateData.email.getOrElse(registeredOrganisation.email),
+                email = organisationUpdateData.email.getOrElse(registeredOrganisation.email).toLowerCase,
                 profile = registeredOrganisation.profile.map(
                   _.copy(
                     avatarUrl =

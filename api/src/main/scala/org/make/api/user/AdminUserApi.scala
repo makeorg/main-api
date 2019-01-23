@@ -354,7 +354,7 @@ final case class CreateModeratorRequest(email: String,
   validate(
     mandatoryField("firstName", firstName),
     mandatoryField("email", email),
-    validateEmail("email", email),
+    validateEmail("email", email.toLowerCase),
     mandatoryField("language", language),
     mandatoryField("country", country),
     validateField(
@@ -380,7 +380,7 @@ final case class UpdateModeratorRequest(email: Option[String],
   private val maxCountryLength = 3
 
   validate(
-    email.map(email       => validateEmail(fieldName = "email", fieldValue = email)),
+    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
     firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
     country.map(country   => maxLength("country", maxCountryLength, country.value)),
     language.map(language => maxLength("language", maxLanguageLength, language.value)),

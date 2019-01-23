@@ -636,7 +636,7 @@ trait DefaultUserApiComponent
           makeOperation("ResetPasswordRequest") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest(entity(as[ResetPasswordRequest]) { request =>
-                provideAsyncOrNotFound(persistentUserService.findByEmail(request.email)) { user =>
+                provideAsyncOrNotFound(persistentUserService.findByEmail(request.email.toLowerCase)) { user =>
                   onSuccess(userService.requestPasswordReset(user.userId).map { result =>
                     eventBusService.publish(
                       ResetPasswordEvent(
@@ -738,7 +738,7 @@ trait DefaultUserApiComponent
               logger.info(s"inscribing ${request.email} to newsletter")
 
               val encodedEmailFieldName = URLEncoder.encode("fields[Email]", "UTF-8")
-              val encodedEmail = URLEncoder.encode(request.email, "UTF-8")
+              val encodedEmail = URLEncoder.encode(request.email.toLowerCase, "UTF-8")
               val encodedName = URLEncoder.encode("VFF Séquence Test", "UTF-8")
 
               val httpRequest = HttpRequest(
@@ -1056,7 +1056,7 @@ case class RegisterUserRequest(
   validate(
     mandatoryField("firstName", firstName),
     mandatoryField("email", email),
-    validateEmail("email", email),
+    validateEmail("email", email.toLowerCase),
     mandatoryField("password", password),
     validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters"),
     validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
@@ -1148,7 +1148,7 @@ object SocialLoginRequest {
 }
 
 final case class ResetPasswordRequest(email: String) {
-  validate(mandatoryField("email", email), validateEmail("email", email))
+  validate(mandatoryField("email", email), validateEmail("email", email.toLowerCase))
 }
 
 object ResetPasswordRequest {
@@ -1182,7 +1182,7 @@ object DeleteUserRequest {
 }
 
 final case class SubscribeToNewsLetter(email: String) {
-  validate(mandatoryField("email", email), validateEmail("email", email))
+  validate(mandatoryField("email", email), validateEmail("email", email.toLowerCase))
 }
 
 object SubscribeToNewsLetter {
