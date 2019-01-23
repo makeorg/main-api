@@ -41,17 +41,27 @@ import org.make.core.{CirceFormatters, RequestContext, Validation}
 
 import scala.annotation.meta.field
 
-final case class ProposeProposalRequest(content: String,
-                                        operationId: Option[OperationId],
-                                        questionId: Option[QuestionId],
-                                        language: Language,
-                                        country: Country) {
+@ApiModel
+final case class ProposeProposalRequest(
+  content: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country
+) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = FrontConfiguration.defaultProposalMinLength
-  validate(maxLength("content", maxProposalLength, content))
-  validate(minLength("content", minProposalLength, content))
-  validate(mandatoryField("language", language))
-  validate(mandatoryField("country", country))
+  validate(
+    maxLength("content", maxProposalLength, content),
+    minLength("content", minProposalLength, content),
+    mandatoryField("language", language),
+    mandatoryField("country", country),
+    validateUserInput("content", content, None)
+  )
 }
 
 object ProposeProposalRequest {
@@ -232,13 +242,21 @@ object ExhaustiveSearchRequest extends CirceFormatters {
   implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
 }
 
-final case class VoteProposalRequest(voteKey: VoteKey)
+@ApiModel
+final case class VoteProposalRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  voteKey: VoteKey
+)
 
 object VoteProposalRequest {
   implicit val decoder: Decoder[VoteProposalRequest] = deriveDecoder[VoteProposalRequest]
 }
 
-final case class QualificationProposalRequest(qualificationKey: QualificationKey, voteKey: VoteKey)
+@ApiModel
+final case class QualificationProposalRequest(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
+                                              qualificationKey: QualificationKey,
+                                              @(ApiModelProperty @field)(dataType = "string", example = "agree")
+                                              voteKey: VoteKey)
 
 object QualificationProposalRequest {
   implicit val decoder: Decoder[QualificationProposalRequest] = deriveDecoder[QualificationProposalRequest]

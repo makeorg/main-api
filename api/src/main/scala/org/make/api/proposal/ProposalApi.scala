@@ -37,7 +37,6 @@ import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
@@ -49,40 +48,15 @@ import scala.util.Try
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
-trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
-  this: ProposalServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with UserServiceComponent
-    with OperationServiceComponent
-    with QuestionServiceComponent =>
+trait ProposalApi extends Directives {
 
   @ApiOperation(value = "get-proposal", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IndexedProposal]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalResponse]))
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
-  def getProposal: Route = {
-    get {
-      path("proposals" / proposalId) { proposalId =>
-        makeOperation("GetProposal") { requestContext =>
-          provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-            provideAsync(
-              sessionHistoryCoordinatorService
-                .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
-            ) { votes =>
-              complete(
-                ProposalResponse(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId))
-              )
-            }
-          }
-        }
-      }
-    }
-  }
+  def getProposal: Route
 
   @ApiOperation(value = "search-proposals", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
@@ -114,141 +88,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
       new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string")
     )
   )
-  def search: Route = {
-    get {
-      path("proposals") {
-        makeOperation("Search") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(
-              (
-                'proposalIds.as[immutable.Seq[ProposalId]].?,
-                'questionId.as[immutable.Seq[QuestionId]].?,
-                'tagsIds.as[immutable.Seq[TagId]].?,
-                'labelsIds.as[immutable.Seq[LabelId]].?,
-                'operationId.as[OperationId].?,
-                'trending.?,
-                'content.?,
-                'slug.?,
-                'seed.as[Int].?,
-                'source.?,
-                'location.?,
-                'question.?,
-                'language.as[Language].?,
-                'country.as[Country].?,
-                'sort.?,
-                'order.?,
-                'limit.as[Int].?,
-                'skip.as[Int].?,
-                'isRandom.as[Boolean].?,
-                'sortAlgorithm.?
-              )
-            ) {
-              (proposalIds: Option[Seq[ProposalId]],
-               questionIds: Option[Seq[QuestionId]],
-               tagsIds: Option[Seq[TagId]],
-               labelsIds: Option[Seq[LabelId]],
-               operationId: Option[OperationId],
-               trending: Option[String],
-               content: Option[String],
-               slug: Option[String],
-               seed: Option[Int],
-               source: Option[String],
-               location: Option[String],
-               question: Option[String],
-               language: Option[Language],
-               country: Option[Country],
-               sort: Option[String],
-               order: Option[String],
-               limit: Option[Int],
-               skip: Option[Int],
-               isRandom: Option[Boolean],
-               sortAlgorithm: Option[String]) =>
-                Validation.validate(Seq(country.map { countryValue =>
-                  Validation.validChoices(
-                    fieldName = "country",
-                    message =
-                      Some(s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"),
-                    Seq(countryValue),
-                    BusinessConfig.supportedCountries.map(_.countryCode)
-                  )
-                }, sort.map { sortValue =>
-                  val choices =
-                    Seq("content", "slug", "createdAt", "updatedAt", "trending", "labels", "country", "language")
-                  Validation.validChoices(
-                    fieldName = "sort",
-                    message = Some(
-                      s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                    ),
-                    Seq(sortValue),
-                    choices
-                  )
-                }, order.map { orderValue =>
-                  Validation.validChoices(
-                    fieldName = "order",
-                    message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
-                    Seq(orderValue),
-                    Order.orders.keys.toSeq
-                  )
-                }, sortAlgorithm.map { sortAlgo =>
-                  Validation.validChoices(
-                    fieldName = "sortAlgorithm",
-                    message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.sortAlgorithmsName}"),
-                    Seq(sortAlgo),
-                    AlgorithmSelector.sortAlgorithmsName
-                  )
-                }).flatten: _*)
-
-                val contextFilterRequest: Option[ContextFilterRequest] =
-                  operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-                    ContextFilterRequest(operationId, source, location, question)
-                  }
-                val sortRequest: Option[SortRequest] =
-                  sort.orElse(order).map { _ =>
-                    SortRequest(sort, order.flatMap(Order.matchOrder))
-                  }
-                val searchRequest: SearchRequest = SearchRequest(
-                  proposalIds = proposalIds,
-                  questionIds = questionIds,
-                  tagsIds = tagsIds,
-                  labelsIds = labelsIds,
-                  operationId = operationId,
-                  trending = trending,
-                  content = content,
-                  slug = slug,
-                  seed = seed,
-                  context = contextFilterRequest,
-                  language = language,
-                  country = country,
-                  sort = sortRequest,
-                  limit = limit,
-                  skip = skip,
-                  isRandom = isRandom,
-                  sortAlgorithm = sortAlgorithm
-                )
-                provideAsync(
-                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-                ) { operations =>
-                  provideAsync(
-                    proposalService
-                      .searchForUser(
-                        userId = userAuth.map(_.user.userId),
-                        query = searchRequest.toSearchQuery(requestContext),
-                        requestContext = requestContext
-                      )
-                  ) { proposals =>
-                    proposals.copy(results = proposals.results.filterNot { proposal =>
-                      proposal.operationId
-                        .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                    })
-                    complete(proposals)
-                  }
-                }
-            }
-          }
-        }
-      }
-    }
-  }
+  def search: Route
 
   @ApiOperation(
     value = "propose-proposal",
@@ -274,51 +114,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposeProposalResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalIdResponse]))
   )
-  def postProposal: Route =
-    post {
-      path("proposals") {
-        makeOperation("PostProposal") { requestContext =>
-          makeOAuth2 { auth: AuthInfo[UserRights] =>
-            decodeRequest {
-              entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
-                provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                  provideAsync(
-                    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                      request.questionId,
-                      requestContext.currentTheme,
-                      request.operationId,
-                      request.country,
-                      request.language
-                    )
-                  ) { maybeQuestion =>
-                    Validation.validate(
-                      Validation
-                        .requirePresent("question", maybeQuestion, Some("This proposal refers to no known question"))
-                    )
-
-                    onSuccess(
-                      proposalService
-                        .propose(
-                          user = user,
-                          requestContext = requestContext,
-                          createdAt = DateHelper.now(),
-                          content = request.content,
-                          question = maybeQuestion.get,
-                          initialProposal = false
-                        )
-                    ) { proposalId =>
-                      complete(StatusCodes.Created -> ProposeProposalResponse(proposalId))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  def postProposal: Route
 
   @ApiOperation(value = "vote-proposal", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -329,28 +127,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[VoteResponse])))
   @Path(value = "/{proposalId}/vote")
-  def vote: Route = post {
-    path("proposals" / proposalId / "vote") { proposalId =>
-      makeOperation("VoteProposal") { requestContext =>
-        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
-          decodeRequest {
-            entity(as[VoteProposalRequest]) { request =>
-              provideAsyncOrNotFound(
-                proposalService.voteProposal(
-                  proposalId = proposalId,
-                  maybeUserId = maybeAuth.map(_.user.userId),
-                  requestContext = requestContext,
-                  voteKey = request.voteKey
-                )
-              ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote = vote, hasVoted = true, None))
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def vote: Route
 
   @ApiOperation(value = "unvote-proposal", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -361,28 +138,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[VoteResponse])))
   @Path(value = "/{proposalId}/unvote")
-  def unvote: Route = post {
-    path("proposals" / proposalId / "unvote") { proposalId =>
-      makeOperation("UnvoteProposal") { requestContext =>
-        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
-          decodeRequest {
-            entity(as[VoteProposalRequest]) { request =>
-              provideAsyncOrNotFound(
-                proposalService.unvoteProposal(
-                  proposalId = proposalId,
-                  maybeUserId = maybeAuth.map(_.user.userId),
-                  requestContext = requestContext,
-                  voteKey = request.voteKey
-                )
-              ) { vote: Vote =>
-                complete(VoteResponse.parseVote(vote = vote, hasVoted = false, None))
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def unvote: Route
 
   @ApiOperation(value = "qualification-vote", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -399,29 +155,7 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QualificationResponse]))
   )
   @Path(value = "/{proposalId}/qualification")
-  def qualification: Route = post {
-    path("proposals" / proposalId / "qualification") { proposalId =>
-      makeOperation("QualificationProposal") { requestContext =>
-        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
-          decodeRequest {
-            entity(as[QualificationProposalRequest]) { request =>
-              provideAsyncOrNotFound(
-                proposalService.qualifyVote(
-                  proposalId = proposalId,
-                  maybeUserId = maybeAuth.map(_.user.userId),
-                  requestContext = requestContext,
-                  voteKey = request.voteKey,
-                  qualificationKey = request.qualificationKey
-                )
-              ) { qualification: Qualification =>
-                complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = true))
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def qualification: Route
 
   @ApiOperation(value = "unqualification-vote", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -438,31 +172,9 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QualificationResponse]))
   )
   @Path(value = "/{proposalId}/unqualification")
-  def unqualification: Route = post {
-    path("proposals" / proposalId / "unqualification") { proposalId =>
-      makeOperation("UnqualificationProposal") { requestContext =>
-        optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
-          decodeRequest {
-            entity(as[QualificationProposalRequest]) { request =>
-              provideAsyncOrNotFound(
-                proposalService.unqualifyVote(
-                  proposalId = proposalId,
-                  maybeUserId = maybeAuth.map(_.user.userId),
-                  requestContext = requestContext,
-                  voteKey = request.voteKey,
-                  qualificationKey = request.qualificationKey
-                )
-              ) { qualification: Qualification =>
-                complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = false))
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def unqualification: Route
 
-  val proposalRoutes: Route =
+  def routes: Route =
     postProposal ~
       getProposal ~
       search ~
@@ -471,6 +183,327 @@ trait ProposalApi extends MakeAuthenticationDirectives with StrictLogging with P
       qualification ~
       unqualification
 
-  val proposalId: PathMatcher1[ProposalId] =
-    Segment.flatMap(id => Try(ProposalId(id)).toOption)
+}
+
+trait ProposalApiComponent {
+  def proposalApi: ProposalApi
+}
+
+trait DefaultProposalApiComponent
+    extends ProposalApiComponent
+    with MakeAuthenticationDirectives
+    with StrictLogging
+    with ParameterExtractors {
+
+  this: ProposalServiceComponent
+    with SessionHistoryCoordinatorServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with UserServiceComponent
+    with OperationServiceComponent
+    with QuestionServiceComponent =>
+
+  override lazy val proposalApi: ProposalApi = new ProposalApi {
+
+    val proposalId: PathMatcher1[ProposalId] =
+      Segment.flatMap(id => Try(ProposalId(id)).toOption)
+
+    def getProposal: Route = {
+      get {
+        path("proposals" / proposalId) { proposalId =>
+          makeOperation("GetProposal") { requestContext =>
+            provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
+              provideAsync(
+                sessionHistoryCoordinatorService
+                  .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
+              ) { votes =>
+                complete(
+                  ProposalResponse(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId))
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def search: Route = {
+      get {
+        path("proposals") {
+          makeOperation("Search") { requestContext =>
+            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+              parameters(
+                (
+                  'proposalIds.as[immutable.Seq[ProposalId]].?,
+                  'questionId.as[immutable.Seq[QuestionId]].?,
+                  'tagsIds.as[immutable.Seq[TagId]].?,
+                  'labelsIds.as[immutable.Seq[LabelId]].?,
+                  'operationId.as[OperationId].?,
+                  'trending.?,
+                  'content.?,
+                  'slug.?,
+                  'seed.as[Int].?,
+                  'source.?,
+                  'location.?,
+                  'question.?,
+                  'language.as[Language].?,
+                  'country.as[Country].?,
+                  'sort.?,
+                  'order.?,
+                  'limit.as[Int].?,
+                  'skip.as[Int].?,
+                  'isRandom.as[Boolean].?,
+                  'sortAlgorithm.?
+                )
+              ) {
+                (proposalIds: Option[Seq[ProposalId]],
+                 questionIds: Option[Seq[QuestionId]],
+                 tagsIds: Option[Seq[TagId]],
+                 labelsIds: Option[Seq[LabelId]],
+                 operationId: Option[OperationId],
+                 trending: Option[String],
+                 content: Option[String],
+                 slug: Option[String],
+                 seed: Option[Int],
+                 source: Option[String],
+                 location: Option[String],
+                 question: Option[String],
+                 language: Option[Language],
+                 country: Option[Country],
+                 sort: Option[String],
+                 order: Option[String],
+                 limit: Option[Int],
+                 skip: Option[Int],
+                 isRandom: Option[Boolean],
+                 sortAlgorithm: Option[String]) =>
+                  Validation.validate(Seq(country.map { countryValue =>
+                    Validation.validChoices(
+                      fieldName = "country",
+                      message = Some(
+                        s"Invalid country. Expected one of ${BusinessConfig.supportedCountries.map(_.countryCode)}"
+                      ),
+                      Seq(countryValue),
+                      BusinessConfig.supportedCountries.map(_.countryCode)
+                    )
+                  }, sort.map { sortValue =>
+                    val choices =
+                      Seq("content", "slug", "createdAt", "updatedAt", "trending", "labels", "country", "language")
+                    Validation.validChoices(
+                      fieldName = "sort",
+                      message = Some(
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                      ),
+                      Seq(sortValue),
+                      choices
+                    )
+                  }, order.map { orderValue =>
+                    Validation.validChoices(
+                      fieldName = "order",
+                      message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                      Seq(orderValue),
+                      Order.orders.keys.toSeq
+                    )
+                  }, sortAlgorithm.map { sortAlgo =>
+                    Validation.validChoices(
+                      fieldName = "sortAlgorithm",
+                      message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.sortAlgorithmsName}"),
+                      Seq(sortAlgo),
+                      AlgorithmSelector.sortAlgorithmsName
+                    )
+                  }).flatten: _*)
+
+                  val contextFilterRequest: Option[ContextFilterRequest] =
+                    operationId.orElse(source).orElse(location).orElse(question).map { _ =>
+                      ContextFilterRequest(operationId, source, location, question)
+                    }
+                  val sortRequest: Option[SortRequest] =
+                    sort.orElse(order).map { _ =>
+                      SortRequest(sort, order.flatMap(Order.matchOrder))
+                    }
+                  val searchRequest: SearchRequest = SearchRequest(
+                    proposalIds = proposalIds,
+                    questionIds = questionIds,
+                    tagsIds = tagsIds,
+                    labelsIds = labelsIds,
+                    operationId = operationId,
+                    trending = trending,
+                    content = content,
+                    slug = slug,
+                    seed = seed,
+                    context = contextFilterRequest,
+                    language = language,
+                    country = country,
+                    sort = sortRequest,
+                    limit = limit,
+                    skip = skip,
+                    isRandom = isRandom,
+                    sortAlgorithm = sortAlgorithm
+                  )
+                  provideAsync(
+                    operationService
+                      .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                  ) { operations =>
+                    provideAsync(
+                      proposalService
+                        .searchForUser(
+                          userId = userAuth.map(_.user.userId),
+                          query = searchRequest.toSearchQuery(requestContext),
+                          requestContext = requestContext
+                        )
+                    ) { proposals =>
+                      proposals.copy(results = proposals.results.filterNot { proposal =>
+                        proposal.operationId
+                          .exists(operationId => !operations.map(_.operationId).contains(operationId))
+                      })
+                      complete(proposals)
+                    }
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def postProposal: Route =
+      post {
+        path("proposals") {
+          makeOperation("PostProposal") { requestContext =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              decodeRequest {
+                entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
+                  provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
+                    provideAsync(
+                      questionService.findQuestionByQuestionIdOrThemeOrOperation(
+                        request.questionId,
+                        requestContext.currentTheme,
+                        request.operationId,
+                        request.country,
+                        request.language
+                      )
+                    ) { maybeQuestion =>
+                      Validation.validate(
+                        Validation
+                          .requirePresent("question", maybeQuestion, Some("This proposal refers to no known question"))
+                      )
+
+                      onSuccess(
+                        proposalService
+                          .propose(
+                            user = user,
+                            requestContext = requestContext,
+                            createdAt = DateHelper.now(),
+                            content = request.content,
+                            question = maybeQuestion.get,
+                            initialProposal = false
+                          )
+                      ) { proposalId =>
+                        complete(StatusCodes.Created -> ProposalIdResponse(proposalId))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+    def vote: Route = post {
+      path("proposals" / proposalId / "vote") { proposalId =>
+        makeOperation("VoteProposal") { requestContext =>
+          optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[VoteProposalRequest]) { request =>
+                provideAsyncOrNotFound(
+                  proposalService.voteProposal(
+                    proposalId = proposalId,
+                    maybeUserId = maybeAuth.map(_.user.userId),
+                    requestContext = requestContext,
+                    voteKey = request.voteKey
+                  )
+                ) { vote: Vote =>
+                  complete(VoteResponse.parseVote(vote = vote, hasVoted = true, None))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def unvote: Route = post {
+      path("proposals" / proposalId / "unvote") { proposalId =>
+        makeOperation("UnvoteProposal") { requestContext =>
+          optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[VoteProposalRequest]) { request =>
+                provideAsyncOrNotFound(
+                  proposalService.unvoteProposal(
+                    proposalId = proposalId,
+                    maybeUserId = maybeAuth.map(_.user.userId),
+                    requestContext = requestContext,
+                    voteKey = request.voteKey
+                  )
+                ) { vote: Vote =>
+                  complete(VoteResponse.parseVote(vote = vote, hasVoted = false, None))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def qualification: Route = post {
+      path("proposals" / proposalId / "qualification") { proposalId =>
+        makeOperation("QualificationProposal") { requestContext =>
+          optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[QualificationProposalRequest]) { request =>
+                provideAsyncOrNotFound(
+                  proposalService.qualifyVote(
+                    proposalId = proposalId,
+                    maybeUserId = maybeAuth.map(_.user.userId),
+                    requestContext = requestContext,
+                    voteKey = request.voteKey,
+                    qualificationKey = request.qualificationKey
+                  )
+                ) { qualification: Qualification =>
+                  complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = true))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def unqualification: Route = post {
+      path("proposals" / proposalId / "unqualification") { proposalId =>
+        makeOperation("UnqualificationProposal") { requestContext =>
+          optionalMakeOAuth2 { maybeAuth: Option[AuthInfo[UserRights]] =>
+            decodeRequest {
+              entity(as[QualificationProposalRequest]) { request =>
+                provideAsyncOrNotFound(
+                  proposalService.unqualifyVote(
+                    proposalId = proposalId,
+                    maybeUserId = maybeAuth.map(_.user.userId),
+                    requestContext = requestContext,
+                    voteKey = request.voteKey,
+                    qualificationKey = request.qualificationKey
+                  )
+                ) { qualification: Qualification =>
+                  complete(
+                    QualificationResponse.parseQualification(qualification = qualification, hasQualified = false)
+                  )
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
