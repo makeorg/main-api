@@ -32,6 +32,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.Validation.{validate, validateUserInput}
 import org.make.core.auth.UserRights
 import org.make.core.operation.{OperationId, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
@@ -41,6 +42,7 @@ import org.make.core.user.Role.RoleAdmin
 import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.collection.immutable
 
 @Api(value = "Moderation Operation of question")
@@ -62,8 +64,9 @@ trait ModerationOperationOfQuestionApi extends Directives {
     )
   )
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[OperationOfQuestionResponse]]))
+    value = Array(
+      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[OperationOfQuestionResponse]])
+    )
   )
   @ApiImplicitParams(
     value = Array(
@@ -351,38 +354,68 @@ trait DefaultModerationOperationOfQuestionApiComponent
     }
 }
 
-final case class ModifyOperationOfQuestionRequest(startDate: Option[LocalDate],
+@ApiModel
+final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(example = "2019-01-23")
+                                                  startDate: Option[LocalDate],
+                                                  @(ApiModelProperty @field)(example = "2019-03-23")
                                                   endDate: Option[LocalDate],
-                                                  operationTitle: String)
+                                                  operationTitle: String) {
+  validate(validateUserInput("operationTitle", operationTitle, None))
+}
+
 object ModifyOperationOfQuestionRequest extends CirceFormatters {
   implicit val decoder: Decoder[ModifyOperationOfQuestionRequest] = deriveDecoder[ModifyOperationOfQuestionRequest]
   implicit val encoder: Encoder[ModifyOperationOfQuestionRequest] = deriveEncoder[ModifyOperationOfQuestionRequest]
 }
 
-final case class CreateOperationOfQuestionRequest(operationId: OperationId,
-                                                  startDate: Option[LocalDate],
-                                                  endDate: Option[LocalDate],
-                                                  operationTitle: String,
-                                                  country: Country,
-                                                  language: Language,
-                                                  question: String,
-                                                  questionSlug: String)
+@ApiModel
+final case class CreateOperationOfQuestionRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId,
+  @(ApiModelProperty @field)(example = "2019-01-23")
+  startDate: Option[LocalDate],
+  @(ApiModelProperty @field)(example = "2019-03-23")
+  endDate: Option[LocalDate],
+  operationTitle: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  question: String,
+  questionSlug: String
+) {
+  validate(
+    validateUserInput("operationTitle", operationTitle, None),
+    validateUserInput("question", question, None),
+    validateUserInput("questionSlug", questionSlug, None)
+  )
+}
 
 object CreateOperationOfQuestionRequest extends CirceFormatters {
   implicit val decoder: Decoder[CreateOperationOfQuestionRequest] = deriveDecoder[CreateOperationOfQuestionRequest]
   implicit val encoder: Encoder[CreateOperationOfQuestionRequest] = deriveEncoder[CreateOperationOfQuestionRequest]
 }
 
-final case class OperationOfQuestionResponse(questionId: QuestionId,
-                                             operationId: OperationId,
-                                             startDate: Option[LocalDate],
-                                             endDate: Option[LocalDate],
-                                             landingSequenceId: SequenceId,
-                                             operationTitle: String,
-                                             questionSlug: String,
-                                             question: String,
-                                             country: Country,
-                                             language: Language)
+@ApiModel
+final case class OperationOfQuestionResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId,
+  @(ApiModelProperty @field)(example = "2019-01-23")
+  startDate: Option[LocalDate],
+  @(ApiModelProperty @field)(example = "2019-03-23")
+  endDate: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  landingSequenceId: SequenceId,
+  operationTitle: String,
+  questionSlug: String,
+  question: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language
+)
 
 object OperationOfQuestionResponse extends CirceFormatters {
   implicit val encoder: Encoder[OperationOfQuestionResponse] = deriveEncoder[OperationOfQuestionResponse]

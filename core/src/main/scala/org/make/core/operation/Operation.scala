@@ -78,19 +78,28 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      landingSequenceId: SequenceId)
 
 @ApiModel
-final case class OperationCountryConfiguration(countryCode: Country,
-                                               @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
-                                               landingSequenceId: SequenceId,
-                                               startDate: Option[LocalDate],
-                                               questionId: Option[QuestionId],
-                                               endDate: Option[LocalDate])
+final case class OperationCountryConfiguration(
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  countryCode: Country,
+  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  landingSequenceId: SequenceId,
+  startDate: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  questionId: Option[QuestionId],
+  endDate: Option[LocalDate]
+)
 
 object OperationCountryConfiguration extends CirceFormatters {
   implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
 }
 
-final case class OperationTranslation(title: String, language: Language) extends MakeSerializable
+@ApiModel
+final case class OperationTranslation(title: String,
+                                      @(ApiModelProperty @field)(dataType = "string", example = "fr")
+                                      language: Language)
+    extends MakeSerializable
 
 object OperationTranslation {
   implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =

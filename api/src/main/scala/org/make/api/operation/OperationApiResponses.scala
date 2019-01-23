@@ -23,21 +23,31 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import org.make.api.user.UserResponse
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
 import org.make.core.operation._
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
 import org.make.core.tag.TagId
 
-final case class OperationResponse(operationId: OperationId,
-                                   status: OperationStatus,
-                                   slug: String,
-                                   translations: Seq[OperationTranslation] = Seq.empty,
-                                   defaultLanguage: Language,
-                                   createdAt: Option[ZonedDateTime],
-                                   updatedAt: Option[ZonedDateTime],
-                                   countriesConfiguration: Seq[OperationCountryConfiguration])
+import scala.annotation.meta.field
+
+@ApiModel
+final case class OperationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId,
+  @(ApiModelProperty @field)(dataType = "string", example = "Active")
+  status: OperationStatus,
+  slug: String,
+  translations: Seq[OperationTranslation] = Seq.empty,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  defaultLanguage: Language,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  createdAt: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  updatedAt: Option[ZonedDateTime],
+  countriesConfiguration: Seq[OperationCountryConfiguration]
+)
 
 object OperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[OperationResponse] = deriveEncoder[OperationResponse]
@@ -68,13 +78,21 @@ object OperationResponse extends CirceFormatters {
   }
 }
 
-final case class ModerationOperationResponse(operationId: OperationId,
-                                             status: OperationStatus,
-                                             slug: String,
-                                             defaultLanguage: Language,
-                                             createdAt: Option[ZonedDateTime],
-                                             updatedAt: Option[ZonedDateTime],
-                                             allowedSources: Seq[String])
+@ApiModel
+final case class ModerationOperationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId,
+  @(ApiModelProperty @field)(dataType = "string", example = "Active")
+  status: OperationStatus,
+  slug: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  defaultLanguage: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T11:20:00.000Z")
+  createdAt: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T11:20:00.000Z")
+  updatedAt: Option[ZonedDateTime],
+  allowedSources: Seq[String]
+)
 
 object ModerationOperationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
@@ -93,19 +111,10 @@ object ModerationOperationResponse extends CirceFormatters {
   }
 }
 
+@ApiModel
 final case class ModerationOperationListResponse(total: Int, results: Seq[ModerationOperationResponse])
 
 object ModerationOperationListResponse {
   implicit val encoder: ObjectEncoder[ModerationOperationListResponse] = deriveEncoder[ModerationOperationListResponse]
   implicit val decoder: Decoder[ModerationOperationListResponse] = deriveDecoder[ModerationOperationListResponse]
-}
-
-final case class OperationActionResponse(date: ZonedDateTime,
-                                         user: Option[UserResponse],
-                                         actionType: String,
-                                         arguments: Map[String, String])
-
-object OperationActionResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[OperationActionResponse] = deriveEncoder[OperationActionResponse]
-  implicit val decoder: Decoder[OperationActionResponse] = deriveDecoder[OperationActionResponse]
 }
