@@ -108,6 +108,7 @@ object ProposalElasticsearchFieldNames {
   val scoreUpperBound: String = "scores.scoreUpperBound"
   val sequencePool: String = "sequencePool"
   val initialProposal: String = "initialProposal"
+  val refusalReason: String = "refusalReason"
 }
 
 case class IndexedProposal(id: ProposalId,
@@ -134,7 +135,8 @@ case class IndexedProposal(id: ProposalId,
                            ideaId: Option[IdeaId],
                            operationId: Option[OperationId],
                            sequencePool: SequencePool,
-                           initialProposal: Boolean)
+                           initialProposal: Boolean,
+                           refusalReason: Option[String])
 
 object IndexedProposal extends CirceFormatters {
   implicit val encoder: Encoder[IndexedProposal] = deriveEncoder[IndexedProposal]

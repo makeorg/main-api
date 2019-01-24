@@ -202,7 +202,8 @@ class DefaultProposalServiceComponentTest
       operationId = None,
       questionId = None,
       sequencePool = SequencePool.New,
-      initialProposal = false
+      initialProposal = false,
+      refusalReason = None
     )
   }
 

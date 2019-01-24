@@ -246,7 +246,7 @@ class ProposalApiTest
       )
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
-  val proposalResult: ProposalResult = ProposalResult(
+  val proposalResult: ProposalResponse = ProposalResponse(
     id = ProposalId("aaa-bbb-ccc"),
     userId = UserId("foo-bar"),
     content = "il faut fou",

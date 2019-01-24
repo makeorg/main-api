@@ -58,7 +58,7 @@ trait ProposalService {
 
   def getProposalById(proposalId: ProposalId, requestContext: RequestContext): Future[Option[IndexedProposal]]
 
-  def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]]
+  def getModerationProposalById(proposalId: ProposalId): Future[Option[ModerationProposalResponse]]
 
   def getEventSourcingProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
 
@@ -89,7 +89,7 @@ trait ProposalService {
              newContent: Option[String],
              question: Question,
              tags: Seq[TagId],
-             idea: Option[IdeaId]): Future[Option[ProposalResponse]]
+             idea: Option[IdeaId]): Future[Option[ModerationProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
@@ -98,16 +98,16 @@ trait ProposalService {
                        newContent: Option[String],
                        sendNotificationEmail: Boolean,
                        idea: Option[IdeaId],
-                       tags: Seq[TagId]): Future[Option[ProposalResponse]]
+                       tags: Seq[TagId]): Future[Option[ModerationProposalResponse]]
 
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
                      requestContext: RequestContext,
-                     request: RefuseProposalRequest): Future[Option[ProposalResponse]]
+                     request: RefuseProposalRequest): Future[Option[ModerationProposalResponse]]
 
   def postponeProposal(proposalId: ProposalId,
                        moderator: UserId,
-                       requestContext: RequestContext): Future[Option[ProposalResponse]]
+                       requestContext: RequestContext): Future[Option[ModerationProposalResponse]]
 
   def voteProposal(proposalId: ProposalId,
                    maybeUserId: Option[UserId],
@@ -136,7 +136,7 @@ trait ProposalService {
   def patchProposal(proposalId: ProposalId,
                     userId: UserId,
                     requestContext: RequestContext,
-                    changes: PatchProposalRequest): Future[Option[ProposalResponse]]
+                    changes: PatchProposalRequest): Future[Option[ModerationProposalResponse]]
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 
@@ -145,7 +145,7 @@ trait ProposalService {
                                       requestContext: RequestContext,
                                       toEnrich: Boolean,
                                       minVotesCount: Option[Int],
-                                      minScore: Option[Float]): Future[Option[ProposalResponse]]
+                                      minScore: Option[Float]): Future[Option[ModerationProposalResponse]]
 
   def anonymizeByUserId(userId: UserId): Future[Unit]
 
@@ -249,8 +249,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       elasticsearchProposalAPI.findProposalById(proposalId)
     }
 
-    override def getModerationProposalById(proposalId: ProposalId): Future[Option[ProposalResponse]] = {
-      toProposalResponse(proposalCoordinatorService.getProposal(proposalId))
+    override def getModerationProposalById(proposalId: ProposalId): Future[Option[ModerationProposalResponse]] = {
+      toModerationProposalResponse(proposalCoordinatorService.getProposal(proposalId))
     }
 
     override def getEventSourcingProposal(proposalId: ProposalId,
@@ -292,7 +292,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                  searchResult: ProposalsSearchResult,
                                  votes: Map[ProposalId, VoteAndQualifications]): ProposalsResultResponse = {
       val proposals = searchResult.results.map { indexedProposal =>
-        ProposalResult.apply(
+        ProposalResponse.apply(
           indexedProposal,
           myProposal = maybeUserId.contains(indexedProposal.userId),
           votes.get(indexedProposal.id)
@@ -399,10 +399,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         newContent: Option[String],
                         question: Question,
                         tags: Seq[TagId],
-                        idea: Option[IdeaId]): Future[Option[ProposalResponse]] = {
+                        idea: Option[IdeaId]): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
-        toProposalResponse(
+        toModerationProposalResponse(
           proposalCoordinatorService.update(
             UpdateProposalCommand(
               moderator = moderator,
@@ -420,7 +420,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    private def toProposalResponse(futureProposal: Future[Option[Proposal]]): Future[Option[ProposalResponse]] = {
+    private def toModerationProposalResponse(
+      futureProposal: Future[Option[Proposal]]
+    ): Future[Option[ModerationProposalResponse]] = {
       val futureMaybeProposalAuthor: Future[Option[(Proposal, User)]] = (
         for {
           proposal <- OptionT(futureProposal)
@@ -445,7 +447,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               )
             }
             Some(
-              ProposalResponse(
+              ModerationProposalResponse(
                 proposalId = proposal.proposalId,
                 slug = proposal.slug,
                 content = proposal.content,
@@ -479,10 +481,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                   newContent: Option[String],
                                   sendNotificationEmail: Boolean,
                                   idea: Option[IdeaId],
-                                  tags: Seq[TagId]): Future[Option[ProposalResponse]] = {
+                                  tags: Seq[TagId]): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
-        toProposalResponse(
+        toModerationProposalResponse(
           proposalCoordinatorService.accept(
             AcceptProposalCommand(
               proposalId = proposalId,
@@ -504,8 +506,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def refuseProposal(proposalId: ProposalId,
                                 moderator: UserId,
                                 requestContext: RequestContext,
-                                request: RefuseProposalRequest): Future[Option[ProposalResponse]] = {
-      toProposalResponse(
+                                request: RefuseProposalRequest): Future[Option[ModerationProposalResponse]] = {
+      toModerationProposalResponse(
         proposalCoordinatorService.refuse(
           RefuseProposalCommand(
             proposalId = proposalId,
@@ -520,9 +522,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def postponeProposal(proposalId: ProposalId,
                                   moderator: UserId,
-                                  requestContext: RequestContext): Future[Option[ProposalResponse]] = {
+                                  requestContext: RequestContext): Future[Option[ModerationProposalResponse]] = {
 
-      toProposalResponse(
+      toModerationProposalResponse(
         proposalCoordinatorService.postpone(
           PostponeProposalCommand(proposalId = proposalId, moderator = moderator, requestContext = requestContext)
         )
@@ -675,8 +677,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def patchProposal(proposalId: ProposalId,
                                userId: UserId,
                                requestContext: RequestContext,
-                               changes: PatchProposalRequest): Future[Option[ProposalResponse]] = {
-      toProposalResponse(
+                               changes: PatchProposalRequest): Future[Option[ModerationProposalResponse]] = {
+      toModerationProposalResponse(
         proposalCoordinatorService
           .patch(
             PatchProposalCommand(
@@ -726,12 +728,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def searchAndLockProposalToModerate(questionId: QuestionId,
-                                                 moderator: UserId,
-                                                 requestContext: RequestContext,
-                                                 toEnrich: Boolean,
-                                                 minVotesCount: Option[Int],
-                                                 minScore: Option[Float]): Future[Option[ProposalResponse]] = {
+    override def searchAndLockProposalToModerate(
+      questionId: QuestionId,
+      moderator: UserId,
+      requestContext: RequestContext,
+      toEnrich: Boolean,
+      minVotesCount: Option[Int],
+      minScore: Option[Float]
+    ): Future[Option[ModerationProposalResponse]] = {
 
       userService.getUser(moderator).flatMap { user =>
         val defaultNumberOfProposals = 50
@@ -745,7 +749,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             language = None
           )
         ).flatMap { results =>
-          def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ProposalResponse]] = {
+          def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {
             availableProposals match {
               case Nil => Future.successful(None)
               case head :: tail =>

@@ -118,7 +118,7 @@ class OrganisationApiTest
   val proposalsList = ProposalsResultSeededResponse(
     total = 2,
     results = Seq(
-      ProposalResult(
+      ProposalResponse(
         id = ProposalId("proposal-1"),
         country = Country("FR"),
         language = Language("fr"),
@@ -148,7 +148,7 @@ class OrganisationApiTest
         myProposal = false,
         questionId = None
       ),
-      ProposalResult(
+      ProposalResponse(
         id = ProposalId("proposal-2"),
         country = Country("FR"),
         language = Language("fr"),
@@ -178,7 +178,7 @@ class OrganisationApiTest
         myProposal = false,
         questionId = None
       ),
-      ProposalResult(
+      ProposalResponse(
         id = ProposalId("proposal-3"),
         country = Country("FR"),
         language = Language("fr"),
@@ -208,7 +208,7 @@ class OrganisationApiTest
         myProposal = false,
         questionId = None
       ),
-      ProposalResult(
+      ProposalResponse(
         id = ProposalId("proposal-4"),
         country = Country("FR"),
         language = Language("fr"),

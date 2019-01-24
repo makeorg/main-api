@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import io.circe.ObjectEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.api.proposal.ProposalResult
+import org.make.api.proposal.ProposalResponse
 import org.make.api.user.UserResponse
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions
@@ -66,7 +66,7 @@ object SequenceActionResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
 }
 
-final case class SequenceResult(id: SequenceId, title: String, slug: String, proposals: Seq[ProposalResult])
+final case class SequenceResult(id: SequenceId, title: String, slug: String, proposals: Seq[ProposalResponse])
 
 object SequenceResult {
   implicit val encoder: ObjectEncoder[SequenceResult] = deriveEncoder[SequenceResult]
@@ -80,7 +80,7 @@ object SequenceResult {
       slug = sequence.slug,
       proposals = sequence.proposals.map(
         p =>
-          ProposalResult(
+          ProposalResponse(
             indexedProposal = p,
             myProposal = user.contains(p.userId),
             voteAndQualifications = votesAndQualifications
