@@ -18,16 +18,28 @@
  */
 
 package org.make.api.idea
+import java.util.concurrent.Executors
+
+import org.make.api.proposal.{
+  ModerationProposalResponse,
+  PatchProposalRequest,
+  ProposalSearchEngineComponent,
+  ProposalServiceComponent
+}
 import org.make.api.question.PersistentQuestionServiceComponent
-import org.make.api.tag.TagServiceComponent
+import org.make.api.tag.{PersistentTagServiceComponent, TagServiceComponent}
+import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.{DateHelper, ValidationError, ValidationFailedError}
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
+import org.make.core.proposal.{IdeaSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagId, TagTypeId}
+import org.make.core.user.UserId
+import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait IdeaMappingService {
   def create(questionId: QuestionId,
@@ -35,7 +47,10 @@ trait IdeaMappingService {
              solutionTypeTagId: Option[TagId],
              ideaId: IdeaId): Future[IdeaMapping]
   def getById(ideaMappingId: IdeaMappingId): Future[Option[IdeaMapping]]
-  def changeIdea(IdeaMappingId: IdeaMappingId, newIdea: IdeaId, migrateProposals: Boolean): Future[Option[IdeaMapping]]
+  def changeIdea(adminId: UserId,
+                 IdeaMappingId: IdeaMappingId,
+                 newIdea: IdeaId,
+                 migrateProposals: Boolean): Future[Option[IdeaMapping]]
   def search(questionId: Option[QuestionId],
              stakeTagId: Option[TagIdOrNone],
              solutionTypeTagId: Option[TagIdOrNone],
@@ -53,7 +68,11 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
   self: PersistentIdeaMappingServiceComponent
     with PersistentIdeaServiceComponent
     with TagServiceComponent
+    with ProposalServiceComponent
+    with ProposalSearchEngineComponent
     with PersistentQuestionServiceComponent
+    with PersistentTagServiceComponent
+    with PersistentTagTypeServiceComponent
     with IdGeneratorComponent =>
   override val ideaMappingService: IdeaMappingService = new IdeaMappingService {
 
@@ -70,15 +89,100 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       persistentIdeaMappingService.get(ideaMappingId)
     }
 
-    override def changeIdea(ideaMappingId: IdeaMappingId,
+    override def changeIdea(adminId: UserId,
+                            ideaMappingId: IdeaMappingId,
                             newIdea: IdeaId,
                             migrateProposals: Boolean): Future[Option[IdeaMapping]] = {
       persistentIdeaMappingService.get(ideaMappingId).flatMap {
         case None => Future.successful(None)
         case Some(mapping) =>
-          persistentIdeaMappingService.updateMapping(mapping.copy(ideaId = newIdea))
+          persistentIdeaMappingService.updateMapping(mapping.copy(ideaId = newIdea)).flatMap { result =>
+            if (migrateProposals) {
+              updateProposalsIdea(adminId, newIdea, mapping).map(_ => result)
+            } else {
+              Future.successful(result)
+            }
+          }
       }
 
+    }
+
+    private def updateProposalsIdea(adminId: UserId,
+                                    newIdea: IdeaId,
+                                    mapping: IdeaMapping): Future[Seq[ModerationProposalResponse]] = {
+
+      val stakeLabel = "Stake"
+      val solutionTypeLabel = "Solution type"
+
+      val tagsFromMapping = Seq(mapping.stakeTagId, mapping.solutionTypeTagId).flatten
+
+      val stakeAndSolutionTagTypeIds = persistentTagTypeService.findAll().map { tagTypes =>
+        tagTypes
+          .filter(tagType => tagType.label == stakeLabel || tagType.label == solutionTypeLabel)
+          .map(tagType => tagType.label -> tagType.tagTypeId)
+          .toMap
+      }
+
+      val searchQuery = SearchQuery(
+        filters = Some(
+          SearchFilters(idea = Some(IdeaSearchFilter(mapping.ideaId)), tags = Some(TagsSearchFilter(tagsFromMapping)))
+        )
+      )
+
+      stakeAndSolutionTagTypeIds.flatMap { tagTypeMap =>
+        elasticsearchProposalAPI
+          .searchProposals(searchQuery)
+          .flatMap { proposals =>
+            val tagIdsFromProposals = proposals.results.flatMap(_.tags.map(_.tagId)).distinct
+            persistentTagService
+              .findAllFromIds(tagIdsFromProposals)
+              .flatMap { tags =>
+                val tagMap = tags.map(tag => tag.tagId -> tag).toMap
+                val proposalsToMigrate =
+                  proposalsFilter(stakeLabel, solutionTypeLabel, proposals, tagMap, mapping, tagTypeMap)
+                Future
+                  .traverse(proposalsToMigrate) { proposal =>
+                    proposalService.patchProposal(
+                      proposal.id,
+                      adminId,
+                      RequestContext.empty,
+                      PatchProposalRequest(ideaId = Some(newIdea))
+                    )
+                  }(
+                    cbf = implicitly,
+                    executor =
+                      implicitly[ExecutionContext](ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1)))
+                  )
+                  .map(_.flatten)
+              }
+          }
+      }
+    }
+
+    private def proposalsFilter(stakeLabel: String,
+                                solutionTypeLabel: String,
+                                proposals: ProposalsSearchResult,
+                                tagMap: Map[TagId, Tag],
+                                mapping: IdeaMapping,
+                                tagTypeMap: Map[String, TagTypeId]): Seq[IndexedProposal] = {
+      proposals.results.filter { proposal =>
+        val proposalTags = proposal.tags.map(tag => tagMap(tag.tagId))
+        val stakeTagTypeId: Option[TagTypeId] = tagTypeMap.get(stakeLabel)
+        val heaviestStakeTag =
+          proposalTags
+            .filter(tag => stakeTagTypeId.contains(tag.tagTypeId))
+            .sortBy(_.weight * -1)
+            .headOption
+            .map(_.tagId)
+        val solutionTagTypeId: Option[TagTypeId] = tagTypeMap.get(solutionTypeLabel)
+        val heaviestSolutionTag =
+          proposalTags
+            .filter(tag => solutionTagTypeId.contains(tag.tagTypeId))
+            .sortBy(_.weight * -1)
+            .headOption
+            .map(_.tagId)
+        mapping.stakeTagId == heaviestStakeTag && mapping.solutionTypeTagId == heaviestSolutionTag
+      }
     }
 
     override def search(questionId: Option[QuestionId],
@@ -129,6 +233,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
           s"${tagMap.getOrElse(stake, "None")} / ${tagMap.getOrElse(solution, s"None")} ($questionSlug)"
         }
     }
+
     private def retrieveQuestionOrFail(questionId: QuestionId): Future[Question] = {
       persistentQuestionService
         .getById(questionId)
