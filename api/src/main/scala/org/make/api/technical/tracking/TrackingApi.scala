@@ -31,12 +31,14 @@ import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.core.{HttpCodes, RequestContext}
 
+import scala.annotation.meta.field
+
 @Api(value = "Tracking")
 @Path(value = "/tracking")
 trait TrackingApi extends Directives {
 
-  @ApiOperation(value = "front-events", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiOperation(value = "front-events", httpMethod = "POST")
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -49,8 +51,8 @@ trait TrackingApi extends Directives {
   @Path(value = "/front")
   def frontTracking: Route
 
-  @ApiOperation(value = "front-performance", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiOperation(value = "front-performance", httpMethod = "POST")
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -111,9 +113,11 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
   }
 }
 
-final case class FrontTrackingRequest(eventType: String,
-                                      eventName: Option[String],
-                                      eventParameters: Option[Map[String, String]])
+final case class FrontTrackingRequest(
+  eventType: String,
+  eventName: Option[String],
+  @(ApiModelProperty @field)(dataType = "map[string]") eventParameters: Option[Map[String, String]]
+)
 
 final case class FrontPerformanceRequest(applicationName: String, timings: FrontPerformanceTimings)
 

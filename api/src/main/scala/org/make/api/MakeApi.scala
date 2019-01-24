@@ -48,20 +48,16 @@ import org.make.api.tagtype.{
 }
 import org.make.api.technical._
 import org.make.api.technical.auth._
-import org.make.api.technical.businessconfig.ConfigurationsApi
+import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
 import org.make.api.technical.crm.{CrmApi, DefaultCrmApiComponent, DefaultCrmServiceComponent}
 import org.make.api.technical.elasticsearch.{
+  DefaultElasticSearchApiComponent,
   DefaultElasticsearchClientComponent,
   DefaultElasticsearchConfigurationComponent,
   DefaultIndexationComponent,
   ElasticSearchApi
 }
-import org.make.api.technical.healthcheck.{
-  DefaultHealthCheckServiceComponent,
-  HealthCheckApi,
-  HealthCheckComponent,
-  HealthCheckSupervisor
-}
+import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.storage.{
   DefaultStorageConfigurationComponent,
@@ -154,14 +150,14 @@ trait MakeApi
     with DefaultPersistentTagTypeServiceComponent
     with HealthCheckComponent
     with MakeDBExecutionContextComponent
-    with ElasticSearchApi
+    with DefaultElasticSearchApiComponent
     with DefaultOperationApiComponent
     with DefaultProposalApiComponent
     with DefaultSequenceApiComponent
     with DefaultModerationSequenceApiComponent
     with DefaultCrmApiComponent
     with DefaultAuthenticationApiComponent
-    with ConfigurationsApi
+    with DefaultConfigurationsApiComponent
     with DefaultUserApiComponent
     with TagApi
     with DefaultModerationTagApiComponent
@@ -169,7 +165,7 @@ trait MakeApi
     with DefaultModerationIdeaApiComponent
     with DefaultTrackingApiComponent
     with DefaultMigrationApiComponent
-    with HealthCheckApi
+    with DefaultHealthCheckApiComponent
     with DefaultModerationOperationApiComponent
     with DefaultModerationOrganisationApiComponent
     with OrganisationApi
@@ -282,7 +278,7 @@ trait MakeApi
     documentation ~
       swagger ~
       optionsCors ~
-      elasticsearchRoutes ~
+      elasticSearchApi.routes ~
       userApi.routes ~
       adminUserApi.routes ~
       tagRoutes ~
@@ -296,13 +292,13 @@ trait MakeApi
       buildRoutes ~
       crmApi.routes ~
       authenticationApi.routes ~
-      businessConfigRoutes ~
+      configurationsApi.routes ~
       moderationIdeaApi.routes ~
       operationApi.routes ~
       moderationOperationApi.routes ~
       trackingApi.routes ~
       migrationApi.routes ~
-      healthCheckRoutes ~
+      healthCheckApi.routes ~
       moderationOrganisationApi.routes ~
       organisationRoutes ~
       widgetApi.routes ~
