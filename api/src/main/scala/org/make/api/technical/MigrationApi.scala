@@ -43,6 +43,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with StrictLogg
 
   override lazy val migrationApi: MigrationApi = new MigrationApi {
     override def emptyRoute: Route =
-      complete(StatusCodes.OK)
+      get {
+        path("migrations") {
+          complete(StatusCodes.OK)
+        }
+      }
   }
 }
