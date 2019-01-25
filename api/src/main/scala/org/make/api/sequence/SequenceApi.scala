@@ -30,7 +30,6 @@ import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.sequence._
-import org.make.core.sequence.indexed.IndexedStartSequence
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Sequence")
@@ -38,10 +37,7 @@ import scalaoauth2.provider.AuthInfo
 trait SequenceApi extends Directives {
 
   @ApiOperation(value = "start-sequence-by-id", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "id", paramType = "path", dataType = "string"),

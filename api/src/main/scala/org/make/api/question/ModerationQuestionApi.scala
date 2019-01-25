@@ -23,14 +23,15 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.core.Validation.{requireValidSlug, validate, validateOptionalUserInput, validateUserInput}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -41,6 +42,7 @@ import org.make.core.user.Role.RoleAdmin
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -77,7 +79,7 @@ trait ModerationQuestionApi extends Directives {
   )
   @ApiResponses(
     value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModerationQuestionResponse]]))
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ModerationQuestionResponse]]))
   )
   @Path(value = "/")
   def listQuestions: Route
@@ -163,22 +165,37 @@ trait ModerationQuestionComponent {
   def moderationQuestionApi: ModerationQuestionApi
 }
 
-final case class ProposalIdResponse(proposalId: ProposalId)
+final case class ProposalIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  proposalId: ProposalId
+)
 
 object ProposalIdResponse {
   implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
 }
 
-final case class AuthorRequest(age: Option[Int],
+final case class AuthorRequest(@(ApiModelProperty @field)(dataType = "integer", example = "23")
+                               age: Option[Int],
                                firstName: Option[String],
                                lastName: Option[String],
                                postalCode: Option[String],
-                               profession: Option[String])
+                               profession: Option[String]) {
+  validate(
+    validateOptionalUserInput("firstName", firstName, None),
+    validateOptionalUserInput("lastName", lastName, None),
+    validateOptionalUserInput("postalCode", postalCode, None),
+    validateOptionalUserInput("profession", profession, None)
+  )
+}
 object AuthorRequest {
   implicit val decoder: Decoder[AuthorRequest] = deriveDecoder[AuthorRequest]
 }
 
-final case class CreateInitialProposalRequest(content: String, author: AuthorRequest, tags: Seq[TagId])
+final case class CreateInitialProposalRequest(content: String,
+                                              author: AuthorRequest,
+                                              @(ApiModelProperty @field)(dataType = "list[string]") tags: Seq[TagId]) {
+  validate(validateUserInput("content", content, None))
+}
 
 object CreateInitialProposalRequest {
   implicit val decoder: Decoder[CreateInitialProposalRequest] = deriveDecoder[CreateInitialProposalRequest]
@@ -331,7 +348,14 @@ trait DefaultModerationQuestionComponent
   }
 }
 
-final case class CreateQuestionRequest(country: Country, language: Language, question: String, slug: String)
+final case class CreateQuestionRequest(@(ApiModelProperty @field)(dataType = "string", example = "FR")
+                                       country: Country,
+                                       @(ApiModelProperty @field)(dataType = "string", example = "fr")
+                                       language: Language,
+                                       question: String,
+                                       slug: String) {
+  validate(validateUserInput("question", question, None), requireValidSlug("slug", Some(slug), None))
+}
 
 object CreateQuestionRequest {
   implicit val decoder: Decoder[CreateQuestionRequest] = deriveDecoder[CreateQuestionRequest]

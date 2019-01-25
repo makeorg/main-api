@@ -32,13 +32,12 @@ import org.make.api.operation.{
   OperationServiceComponent,
   PersistentOperationOfQuestionServiceComponent
 }
-import org.make.api.sequence.SequenceServiceComponent
+import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
@@ -55,8 +54,7 @@ trait QuestionApi extends Directives {
     value = Array(new ApiImplicitParam(name = "questionSlugOrQuestionId", paramType = "path", dataType = "string"))
   )
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModerationQuestionResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionDetailsResponse]))
   )
   @Path(value = "/{questionSlugOrQuestionId}/details")
   def questionDetails: Route
@@ -68,10 +66,7 @@ trait QuestionApi extends Directives {
       new ApiImplicitParam(name = "include", paramType = "query", dataType = "string", allowMultiple = true)
     )
   )
-  @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Option[IndexedStartSequence]]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceResult])))
   @Path(value = "/{questionId}/start-sequence")
   def startSequenceByQuestionId: Route
 
@@ -130,7 +125,8 @@ trait DefaultQuestionApiComponent
                       tagsIds = None,
                       requestContext = requestContext
                     )
-                ) { sequences => complete(sequences)
+                ) { sequences =>
+                  complete(sequences)
                 }
               }
             }
