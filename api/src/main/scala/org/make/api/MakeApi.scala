@@ -168,7 +168,7 @@ trait MakeApi
     with DefaultHealthCheckApiComponent
     with DefaultModerationOperationApiComponent
     with DefaultModerationOrganisationApiComponent
-    with OrganisationApi
+    with DefaultOrganisationApiComponent
     with DefaultModerationProposalApiComponent
     with DefaultWidgetApiComponent
     with DefaultWidgetServiceComponent
@@ -300,7 +300,7 @@ trait MakeApi
       migrationApi.routes ~
       healthCheckApi.routes ~
       moderationOrganisationApi.routes ~
-      organisationRoutes ~
+      organisationApi.routes ~
       widgetApi.routes ~
       questionApi.routes ~
       moderationQuestionApi.routes ~

@@ -19,7 +19,7 @@
 
 package org.make.api.organisation
 
-import akka.http.scaladsl.server.{PathMatcher1, Route}
+import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
@@ -44,17 +44,10 @@ import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
-import scala.util.Try
 
 @Api(value = "Organisations")
 @Path(value = "/organisations")
-trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging with ParameterExtractors {
-  this: OrganisationServiceComponent
-    with ProposalServiceComponent
-    with OperationServiceComponent
-    with IdGeneratorComponent
-    with MakeDataHandlerComponent
-    with MakeSettingsComponent =>
+trait OrganisationApi extends Directives {
 
   @ApiOperation(value = "get-organisation", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -62,16 +55,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @Path(value = "/{organisationId}")
-  def getOrganisation: Route =
-    get {
-      path("organisations" / organisationId) { organisationId =>
-        makeOperation("GetOrganisation") { _ =>
-          provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
-            complete(UserResponse(user))
-          }
-        }
-      }
-    }
+  def getOrganisation: Route
 
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -83,19 +67,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationSearchResult]))
   )
-  def getOrganisations: Route =
-    get {
-      path("organisations") {
-        makeOperation("GetOrganisations") { _ =>
-          parameters(('organisationName.as[String].?, 'slug.as[String].?)) {
-            (organisationName: Option[String], slug: Option[String]) =>
-              provideAsync(organisationService.search(organisationName, slug)) { results =>
-                complete(results)
-              }
-          }
-        }
-      }
-    }
+  def getOrganisations: Route
 
   @ApiOperation(value = "get-organisation-proposals", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -106,42 +78,7 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
       Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultSeededResponse]))
   )
   @Path(value = "/{organisationId}/proposals")
-  def getOrganisationProposals: Route =
-    get {
-      path("organisations" / organisationId / "proposals") { organisationId =>
-        makeOperation("GetOrganisationProposals") { requestContext =>
-          optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-            parameters(('sort.?, 'order.as[SortOrder].?)) { (sort: Option[String], order: Option[SortOrder]) =>
-              provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-                provideAsync(
-                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-                ) { operations =>
-                  val defaultSort = Some("createdAt")
-                  val defaultOrder = Some(Desc)
-                  provideAsync(
-                    proposalService.searchForUser(
-                      optionalUserAuth.map(_.user.userId),
-                      SearchQuery(
-                        filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId)))),
-                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder)))
-                      ),
-                      requestContext
-                    )
-                  ) { listProposals =>
-                    val proposalListFiltered = listProposals.results.filter { proposal =>
-                      proposal.operationId
-                        .exists(operationId => operations.map(_.operationId).contains(operationId))
-                    }
-                    val result = listProposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
-                    complete(result)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  def getOrganisationProposals: Route
 
   @ApiOperation(value = "get-organisation-votes", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -161,44 +98,129 @@ trait OrganisationApi extends MakeAuthenticationDirectives with StrictLogging wi
     )
   )
   @Path(value = "/{organisationId}/votes")
-  def getOrganisationVotes: Route =
-    get {
-      path("organisations" / organisationId / "votes") { organisationId =>
-        makeOperation("GetOrganisationVotes") { requestContext =>
-          optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-              parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
-                (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
+  def getOrganisationVotes: Route
+
+  def routes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
+
+}
+
+trait OrganisationApiComponent {
+  def organisationApi: OrganisationApi
+}
+
+trait DefaultOrganisationApiComponent
+    extends OrganisationApiComponent
+    with MakeAuthenticationDirectives
+    with StrictLogging
+    with ParameterExtractors {
+
+  this: OrganisationServiceComponent
+    with ProposalServiceComponent
+    with OperationServiceComponent
+    with IdGeneratorComponent
+    with MakeDataHandlerComponent
+    with MakeSettingsComponent =>
+
+  override lazy val organisationApi: OrganisationApi = new OrganisationApi {
+    val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
+
+    override def getOrganisation: Route =
+      get {
+        path("organisations" / organisationId) { organisationId =>
+          makeOperation("GetOrganisation") { _ =>
+            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
+              complete(UserResponse(user))
+            }
+          }
+        }
+      }
+
+    override def getOrganisations: Route =
+      get {
+        path("organisations") {
+          makeOperation("GetOrganisations") { _ =>
+            parameters(('organisationName.as[String].?, 'slug.as[String].?)) {
+              (organisationName: Option[String], slug: Option[String]) =>
+                provideAsync(organisationService.search(organisationName, slug)) { results =>
+                  complete(results)
+                }
+            }
+          }
+        }
+      }
+
+    override def getOrganisationProposals: Route =
+      get {
+        path("organisations" / organisationId / "proposals") { organisationId =>
+          makeOperation("GetOrganisationProposals") { requestContext =>
+            optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
+              parameters(('sort.?, 'order.as[SortOrder].?)) { (sort: Option[String], order: Option[SortOrder]) =>
+                provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                   provideAsync(
                     operationService
                       .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
                   ) { operations =>
-                    onSuccess(
-                      organisationService.getVotedProposals(
-                        organisationId = organisationId,
-                        maybeUserId = userAuth.map(_.user.userId),
-                        filterVotes = votes,
-                        filterQualifications = qualifications,
-                        requestContext = requestContext
+                    val defaultSort = Some("createdAt")
+                    val defaultOrder = Some(Desc)
+                    provideAsync(
+                      proposalService.searchForUser(
+                        optionalUserAuth.map(_.user.userId),
+                        SearchQuery(
+                          filters = Some(SearchFilters(user = Some(UserSearchFilter(organisationId)))),
+                          sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder)))
+                        ),
+                        requestContext
                       )
-                    ) { proposals =>
-                      val proposalListFiltered = proposals.results.filter { proposalWithVote =>
-                        proposalWithVote.proposal.operationId
+                    ) { listProposals =>
+                      val proposalListFiltered = listProposals.results.filter { proposal =>
+                        proposal.operationId
                           .exists(operationId => operations.map(_.operationId).contains(operationId))
                       }
-                      val result = proposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                      val result = listProposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
                       complete(result)
                     }
                   }
+                }
               }
             }
           }
         }
       }
-    }
 
-  val organisationRoutes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
-
-  val organisationId: PathMatcher1[UserId] = Segment.flatMap(id => Try(UserId(id)).toOption)
-
+    override def getOrganisationVotes: Route =
+      get {
+        path("organisations" / organisationId / "votes") { organisationId =>
+          makeOperation("GetOrganisationVotes") { requestContext =>
+            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+              provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
+                parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
+                  (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
+                    provideAsync(
+                      operationService
+                        .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
+                    ) { operations =>
+                      onSuccess(
+                        organisationService.getVotedProposals(
+                          organisationId = organisationId,
+                          maybeUserId = userAuth.map(_.user.userId),
+                          filterVotes = votes,
+                          filterQualifications = qualifications,
+                          requestContext = requestContext
+                        )
+                      ) { proposals =>
+                        val proposalListFiltered = proposals.results.filter { proposalWithVote =>
+                          proposalWithVote.proposal.operationId
+                            .exists(operationId => operations.map(_.operationId).contains(operationId))
+                        }
+                        val result = proposals.copy(total = proposalListFiltered.size, results = proposalListFiltered)
+                        complete(result)
+                      }
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+  }
 }
