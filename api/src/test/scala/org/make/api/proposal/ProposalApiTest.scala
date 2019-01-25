@@ -52,7 +52,7 @@ import scala.concurrent.Future
 class ProposalApiTest
     extends MakeApiTestBase
     with SessionHistoryCoordinatorServiceComponent
-    with ProposalApi
+    with DefaultProposalApiComponent
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
@@ -288,7 +288,7 @@ class ProposalApiTest
       )
     )
 
-  val routes: Route = sealRoute(proposalRoutes)
+  val routes: Route = sealRoute(proposalApi.routes)
 
   when(
     questionService

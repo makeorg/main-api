@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -31,6 +32,8 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
+
+import scala.annotation.meta.field
 
 object ProposalElasticsearchFieldNames {
   val id: String = "id"
@@ -143,10 +146,14 @@ object IndexedProposal extends CirceFormatters {
   implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
 }
 
-final case class Context(operation: Option[OperationId],
-                         source: Option[String],
-                         location: Option[String],
-                         question: Option[String])
+@ApiModel
+final case class Context(
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  operation: Option[OperationId],
+  source: Option[String],
+  location: Option[String],
+  question: Option[String]
+)
 
 object Context {
   implicit val encoder: Encoder[Context] = deriveEncoder[Context]
@@ -157,6 +164,7 @@ final case class Author(firstName: Option[String],
                         organisationName: Option[String],
                         organisationSlug: Option[String],
                         postalCode: Option[String],
+                        @(ApiModelProperty @field)(example = "21", dataType = "int")
                         age: Option[Int],
                         avatarUrl: Option[String])
 
@@ -165,9 +173,13 @@ object Author {
   implicit val decoder: Decoder[Author] = deriveDecoder[Author]
 }
 
-final case class IndexedOrganisationInfo(organisationId: UserId,
-                                         organisationName: Option[String],
-                                         organisationSlug: Option[String])
+@ApiModel
+final case class IndexedOrganisationInfo(
+  @(ApiModelProperty)(dataType = "string", example = "b0ae05b3-fa4e-4555-ae71-34b1bea5b21a")
+  organisationId: UserId,
+  organisationName: Option[String],
+  organisationSlug: Option[String]
+)
 
 object IndexedOrganisationInfo {
   implicit val encoder: Encoder[IndexedOrganisationInfo] = deriveEncoder[IndexedOrganisationInfo]
@@ -227,7 +239,13 @@ object ProposalsSearchResult {
   def empty: ProposalsSearchResult = ProposalsSearchResult(0, Seq.empty)
 }
 
-final case class IndexedTag(tagId: TagId, label: String, display: Boolean)
+@ApiModel
+final case class IndexedTag(
+  @(ApiModelProperty @field)(dataType = "string", example = "78187c0f-7e9b-4229-8638-2a1ec37416d3")
+  tagId: TagId,
+  label: String,
+  display: Boolean
+)
 
 object IndexedTag {
   implicit val encoder: Encoder[IndexedTag] = deriveEncoder[IndexedTag]

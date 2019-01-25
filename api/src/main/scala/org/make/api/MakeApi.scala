@@ -156,7 +156,7 @@ trait MakeApi
     with MakeDBExecutionContextComponent
     with ElasticSearchApi
     with DefaultOperationApiComponent
-    with ProposalApi
+    with DefaultProposalApiComponent
     with DefaultSequenceApiComponent
     with DefaultModerationSequenceApiComponent
     with DefaultCrmApiComponent
@@ -288,7 +288,7 @@ trait MakeApi
       tagRoutes ~
       moderationTagApi.routes ~
       moderationTagTypeRoutes ~
-      proposalRoutes ~
+      proposalApi.routes ~
       moderationProposalApi.routes ~
       sequenceApi.routes ~
       moderationSequenceApi.routes ~
