@@ -54,7 +54,9 @@ import scalaoauth2.provider.AuthInfo
 trait ModerationOperationApi extends Directives {
 
   @ApiOperation(value = "post-operation", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationId])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationIdResponse]))
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -67,7 +69,9 @@ trait ModerationOperationApi extends Directives {
   @Path(value = "/")
   def moderationPostOperation: Route
   @ApiOperation(value = "put-operation", httpMethod = "PUT", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationId])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationIdResponse]))
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -155,7 +159,7 @@ trait DefaultModerationOperationApiComponent
                           allowedSources = request.allowedSources
                         )
                       ) { operationId =>
-                        complete(StatusCodes.Created -> Map("operationId" -> operationId))
+                        complete(StatusCodes.Created -> OperationIdResponse(operationId))
                       }
                     }
                   }
@@ -192,7 +196,7 @@ trait DefaultModerationOperationApiComponent
                             allowedSources = Some(request.allowedSources)
                           )
                         ) {
-                          case Some(id) => complete(StatusCodes.OK -> Map("operationId" -> id))
+                          case Some(id) => complete(StatusCodes.OK -> OperationIdResponse(id))
                           case None     => complete(StatusCodes.NotFound)
                         }
                       }

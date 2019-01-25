@@ -39,7 +39,7 @@ trait OperationApi extends Directives {
 
   @ApiOperation(value = "get-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[OperationResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[OperationResponse]]))
   )
   @ApiImplicitParams(
     value = Array(

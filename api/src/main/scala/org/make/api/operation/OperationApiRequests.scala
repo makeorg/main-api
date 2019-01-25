@@ -19,17 +19,20 @@
 
 package org.make.api.operation
 
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
-import io.swagger.annotations.ApiModel
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.Validation
-import org.make.core.Validation.{maxLength, requireValidSlug, validChoices, validate}
-import org.make.core.operation.{OperationStatus, OperationTranslation}
+import org.make.core.Validation.{validateUserInput, _}
+import org.make.core.operation.{OperationId, OperationStatus, OperationTranslation}
 import org.make.core.reference.Language
+
+import scala.annotation.meta.field
 
 @ApiModel
 final case class ModerationCreateOperationRequest(slug: String,
                                                   translations: Seq[OperationTranslation],
+                                                  @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                                   defaultLanguage: Language,
                                                   allowedSources: Seq[String]) {
   OperationValidation.validateCreate(
@@ -47,6 +50,7 @@ object ModerationCreateOperationRequest {
 final case class ModerationUpdateOperationRequest(status: String,
                                                   slug: String,
                                                   translations: Seq[OperationTranslation],
+                                                  @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                                   defaultLanguage: Language,
                                                   allowedSources: Seq[String]) {
   OperationValidation.validateUpdate(
@@ -62,6 +66,16 @@ object ModerationUpdateOperationRequest {
   implicit val decoder: Decoder[ModerationUpdateOperationRequest] = deriveDecoder[ModerationUpdateOperationRequest]
 }
 
+@ApiModel
+final case class OperationIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId
+)
+
+object OperationIdResponse {
+  implicit val encoder: Encoder[OperationIdResponse] = deriveEncoder[OperationIdResponse]
+}
+
 private object OperationValidation {
   private val maxTitleLength = 256
   private val maxLanguageLength = 3
@@ -73,13 +87,18 @@ private object OperationValidation {
     translations.foreach { translation =>
       validate(
         maxLength(s"translation.title[${translation.language}]", maxTitleLength, translation.title),
-        maxLength("translation.language", maxLanguageLength, translation.language.value)
+        maxLength("translation.language", maxLanguageLength, translation.language.value),
+        validateUserInput("translation.title", translation.title, None)
       )
+    }
+    allowedSources.foreach { source =>
+      validate(validateUserInput("allowedSources", source, None))
     }
     validate(
       maxLength("defaultLanguage", maxLanguageLength, defaultLanguage.value),
       maxLength("countryConfiguration", maxLanguageLength, defaultLanguage.value),
-      requireValidSlug("slug", Some(slug), Some("Invalid slug"))
+      requireValidSlug("slug", Some(slug), Some("Invalid slug")),
+      validateUserInput("slug", slug, None)
     )
     validate(Validation.requireNonEmpty("allowedSources", allowedSources))
   }
