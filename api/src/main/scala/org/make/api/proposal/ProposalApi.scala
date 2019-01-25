@@ -206,8 +206,9 @@ trait DefaultProposalApiComponent
     with QuestionServiceComponent
     with SecurityConfigurationComponent =>
 
-  override lazy val proposalApi: ProposalApi = new ProposalApi {
+  override lazy val proposalApi: DefualtProposalApi = new DefualtProposalApi
 
+  class DefualtProposalApi extends ProposalApi {
     val proposalId: PathMatcher1[ProposalId] =
       Segment.flatMap(id => Try(ProposalId(id)).toOption)
 
@@ -435,7 +436,8 @@ trait DefaultProposalApiComponent
                     proposalId = proposalId,
                     maybeUserId = maybeAuth.map(_.user.userId),
                     requestContext = requestContext,
-                    voteKey = request.voteKey
+                    voteKey = request.voteKey,
+                    proposalKey = request.proposalKey
                   )
                 ) { vote: Vote =>
                   complete(VoteResponse.parseVote(vote = vote, hasVoted = true, None))
@@ -458,7 +460,8 @@ trait DefaultProposalApiComponent
                     proposalId = proposalId,
                     maybeUserId = maybeAuth.map(_.user.userId),
                     requestContext = requestContext,
-                    voteKey = request.voteKey
+                    voteKey = request.voteKey,
+                    proposalKey = request.proposalKey
                   )
                 ) { vote: Vote =>
                   complete(VoteResponse.parseVote(vote = vote, hasVoted = false, None))
@@ -482,7 +485,8 @@ trait DefaultProposalApiComponent
                     maybeUserId = maybeAuth.map(_.user.userId),
                     requestContext = requestContext,
                     voteKey = request.voteKey,
-                    qualificationKey = request.qualificationKey
+                    qualificationKey = request.qualificationKey,
+                    proposalKey = request.proposalKey
                   )
                 ) { qualification: Qualification =>
                   complete(QualificationResponse.parseQualification(qualification = qualification, hasQualified = true))
@@ -506,7 +510,8 @@ trait DefaultProposalApiComponent
                     maybeUserId = maybeAuth.map(_.user.userId),
                     requestContext = requestContext,
                     voteKey = request.voteKey,
-                    qualificationKey = request.qualificationKey
+                    qualificationKey = request.qualificationKey,
+                    proposalKey = request.proposalKey
                   )
                 ) { qualification: Qualification =>
                   complete(

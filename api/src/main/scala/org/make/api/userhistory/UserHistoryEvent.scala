@@ -28,6 +28,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalRefused
 }
 import org.make.core.SprayJsonFormatters._
+import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -157,35 +158,35 @@ object UserProposal {
 
 }
 
-final case class UserVote(proposalId: ProposalId, voteKey: VoteKey)
+final case class UserVote(proposalId: ProposalId, voteKey: VoteKey, trust: VoteTrust)
 
 object UserVote {
   implicit val userVoteFormatted: RootJsonFormat[UserVote] =
-    DefaultJsonProtocol.jsonFormat2(UserVote.apply)
+    DefaultJsonProtocol.jsonFormat3(UserVote.apply)
 
 }
 
-final case class UserUnvote(proposalId: ProposalId, voteKey: VoteKey)
+final case class UserUnvote(proposalId: ProposalId, voteKey: VoteKey, trust: VoteTrust)
 
 object UserUnvote {
   implicit val userUnvoteFormatted: RootJsonFormat[UserUnvote] =
-    DefaultJsonProtocol.jsonFormat2(UserUnvote.apply)
+    DefaultJsonProtocol.jsonFormat3(UserUnvote.apply)
 
 }
 
-final case class UserQualification(proposalId: ProposalId, qualificationKey: QualificationKey)
+final case class UserQualification(proposalId: ProposalId, qualificationKey: QualificationKey, trust: VoteTrust)
 
 object UserQualification {
   implicit val userQualificationFormatted: RootJsonFormat[UserQualification] =
-    DefaultJsonProtocol.jsonFormat2(UserQualification.apply)
+    DefaultJsonProtocol.jsonFormat3(UserQualification.apply)
 
 }
 
-final case class UserUnqualification(proposalId: ProposalId, qualificationKey: QualificationKey)
+final case class UserUnqualification(proposalId: ProposalId, qualificationKey: QualificationKey, trust: VoteTrust)
 
 object UserUnqualification {
-  implicit val userQualifFormatted: RootJsonFormat[UserUnqualification] =
-    DefaultJsonProtocol.jsonFormat2(UserUnqualification.apply)
+  implicit val userUnqualificationFormatted: RootJsonFormat[UserUnqualification] =
+    DefaultJsonProtocol.jsonFormat3(UserUnqualification.apply)
 
 }
 

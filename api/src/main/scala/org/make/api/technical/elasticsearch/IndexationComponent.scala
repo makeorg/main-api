@@ -117,9 +117,9 @@ trait DefaultIndexationComponent
       }
     }
 
-    override def reindexData(forceIdeas: Boolean = false,
-                             forceOrganisations: Boolean = false,
-                             forceProposals: Boolean = false): Future[Done] = {
+    override def reindexData(forceIdeas: Boolean,
+                             forceOrganisations: Boolean,
+                             forceProposals: Boolean): Future[Done] = {
       logger.info(s"Elasticsearch Reindexation")
       indicesToReindex(forceIdeas, forceOrganisations, forceProposals).map { indicesNotUpToDate =>
         val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
@@ -128,7 +128,7 @@ trait DefaultIndexationComponent
         for {
           _ <- futureIdeasIndexation
           _ <- futureProposalsIndexation
-          // !mandatory: lauch organisation indexation after proposals and not in parallel
+          // !mandatory: run organisation indexation after proposals and not in parallel
           _ <- reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
         } yield Done
       }.flatMap { _ =>

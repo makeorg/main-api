@@ -54,8 +54,10 @@ trait PersistentIdeaMappingServiceComponent {
 
 trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMappingServiceComponent with ShortenedNames {
   this: MakeDBExecutionContextComponent =>
-  override val persistentIdeaMappingService: PersistentIdeaMappingService = new PersistentIdeaMappingService
-  with StrictLogging {
+
+  override val persistentIdeaMappingService: PersistentIdeaMappingService = new DefaultPersistentIdeaMappingService
+
+  class DefaultPersistentIdeaMappingService extends PersistentIdeaMappingService with StrictLogging {
     override def persist(mapping: IdeaMapping): Future[IdeaMapping] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>

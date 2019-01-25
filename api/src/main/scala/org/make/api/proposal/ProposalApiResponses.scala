@@ -157,8 +157,8 @@ object ProposalResponse extends CirceFormatters {
       votes = indexedProposal.votes.map { indexedVote =>
         VoteResponse
           .parseVote(indexedVote, hasVoted = voteAndQualifications match {
-            case Some(VoteAndQualifications(indexedVote.key, _, _)) => true
-            case _                                                  => false
+            case Some(VoteAndQualifications(indexedVote.key, _, _, _)) => true
+            case _                                                     => false
           }, voteAndQualifications)
       },
       context = indexedProposal.context,
@@ -242,12 +242,13 @@ object VoteResponse {
         .map(
           qualification =>
             QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
-              case Some(VoteAndQualifications(_, keys, _)) if keys.contains(qualification.key) => true
-              case _                                                                           => false
+              case Some(VoteAndQualifications(_, keys, _, _)) if keys.contains(qualification.key) => true
+              case _                                                                              => false
             })
         ),
       hasVoted = hasVoted
     )
+
   def parseVote(vote: IndexedVote,
                 hasVoted: Boolean,
                 voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
@@ -258,8 +259,8 @@ object VoteResponse {
         .map(
           qualification =>
             QualificationResponse.parseQualification(qualification, hasQualified = voteAndQualifications match {
-              case Some(VoteAndQualifications(_, keys, _)) if keys.contains(qualification.key) => true
-              case _                                                                           => false
+              case Some(VoteAndQualifications(_, keys, _, _)) if keys.contains(qualification.key) => true
+              case _                                                                              => false
             })
         ),
       hasVoted = hasVoted
@@ -270,6 +271,7 @@ object VoteResponse {
 final case class QualificationResponse(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
                                        qualificationKey: QualificationKey,
                                        count: Int,
+                                       countVerified: Int,
                                        hasQualified: Boolean)
 
 object QualificationResponse {
@@ -280,12 +282,14 @@ object QualificationResponse {
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,
+      countVerified = qualification.countVerified,
       hasQualified = hasQualified
     )
   def parseQualification(qualification: IndexedQualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,
+      countVerified = qualification.countVerified,
       hasQualified = hasQualified
     )
 }

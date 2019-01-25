@@ -27,10 +27,9 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
-
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
@@ -73,7 +72,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = ProposalUnvoteAction.name,
-        arguments = UserUnvote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Neutral)
+        arguments = UserUnvote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     )
     val userStartSequenceEvent = LogUserStartSequenceEvent(
@@ -123,8 +122,11 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = ProposalQualifyAction.name,
-        arguments =
-          UserQualification(proposalId = ProposalId("proposal-id"), qualificationKey = QualificationKey.Doable)
+        arguments = UserQualification(
+          proposalId = ProposalId("proposal-id"),
+          qualificationKey = QualificationKey.Doable,
+          trust = Trusted
+        )
       )
     )
 
@@ -175,7 +177,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = ProposalVoteAction.name,
-        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Neutral)
+        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     )
 
@@ -213,8 +215,11 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = ProposalUnqualifyAction.name,
-        arguments =
-          UserUnqualification(proposalId = ProposalId("proposal-id"), qualificationKey = QualificationKey.LikeIt)
+        arguments = UserUnqualification(
+          proposalId = ProposalId("proposal-id"),
+          qualificationKey = QualificationKey.LikeIt,
+          trust = Trusted
+        )
       )
     )
 
@@ -344,8 +349,9 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       Map(
         ProposalId("some-proposal") -> VoteAndQualifications(
           VoteKey.Agree,
-          Seq(QualificationKey.LikeIt, QualificationKey.Doable),
-          defaultDate
+          Map(QualificationKey.LikeIt -> Trusted, QualificationKey.Doable -> Trusted),
+          defaultDate,
+          Trusted
         )
       )
     )
@@ -355,23 +361,27 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
         Map(
           ProposalId("df9c3bac-ca5d-43dc-87fb-c4980c711297") -> VoteAndQualifications(
             VoteKey.Neutral,
-            Seq.empty,
-            defaultDate
+            Map.empty,
+            defaultDate,
+            Trusted
           ),
           ProposalId("9c2dfbcd-1a52-4337-9378-47c5ef1e94a6") -> VoteAndQualifications(
             VoteKey.Neutral,
-            Seq.empty,
-            defaultDate
+            Map.empty,
+            defaultDate,
+            Trusted
           ),
           ProposalId("17f40d57-f510-4049-bb1a-9637193107d6") -> VoteAndQualifications(
             VoteKey.Neutral,
-            Seq.empty,
-            defaultDate
+            Map.empty,
+            defaultDate,
+            Trusted
           ),
           ProposalId("857a9689-9e97-4811-b18e-3f4e8f993b0d") -> VoteAndQualifications(
             VoteKey.Neutral,
-            Seq.empty,
-            defaultDate
+            Map.empty,
+            defaultDate,
+            Trusted
           )
         )
       )

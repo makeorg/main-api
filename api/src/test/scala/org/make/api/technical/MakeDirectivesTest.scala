@@ -70,7 +70,7 @@ class MakeDirectivesTest
 
   val routeMakeTrace: Route = sealRoute(get {
     path("testMakeTrace") {
-      makeOperation("test Make trace!") { requestContext: RequestContext =>
+      makeOperation("test Make trace!") { _: RequestContext =>
         complete(StatusCodes.OK)
       }
     }

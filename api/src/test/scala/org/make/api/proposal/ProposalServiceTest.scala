@@ -36,13 +36,13 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
-import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.QualificationKey.LikeIt
@@ -63,7 +63,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class DefaultProposalServiceComponentTest
+class ProposalServiceTest
     extends MakeUnitTest
     with DefaultProposalServiceComponent
     with TagServiceComponent
@@ -103,6 +103,17 @@ class DefaultProposalServiceComponentTest
   override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
+
+  Mockito.when(securityConfiguration.secureHashSalt).thenReturn("some-hashed-supposed-to-be-secure")
+
+  def generateHash(proposalId: ProposalId, requestContext: RequestContext): String = {
+    SecurityHelper.generateProposalKeyHash(
+      proposalId,
+      requestContext.sessionId,
+      requestContext.location,
+      securityConfiguration.secureVoteSalt
+    )
+  }
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
@@ -190,6 +201,7 @@ class DefaultProposalServiceComponentTest
       updatedAt = None,
       votes = Seq.empty,
       votesCount = 0,
+      votesVerifiedCount = 0,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -716,13 +728,15 @@ class DefaultProposalServiceComponentTest
             Map(
               gilProposal2.id -> VoteAndQualifications(
                 Agree,
-                Seq(LikeIt),
-                ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
+                Map(LikeIt -> Trusted),
+                ZonedDateTime.parse("2018-03-01T16:09:30.441Z"),
+                Trusted
               ),
               gilProposal1.id -> VoteAndQualifications(
                 Agree,
-                Seq(LikeIt),
-                ZonedDateTime.parse("2018-03-02T16:09:30.441Z")
+                Map(LikeIt -> Trusted),
+                ZonedDateTime.parse("2018-03-02T16:09:30.441Z"),
+                Trusted
               )
             )
           )
@@ -1483,13 +1497,17 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None))
+            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
 
-      whenReady(proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree), Timeout(5.seconds)) {
-        _ =>
-          verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
+      val hash = generateHash(proposalId, requestContext)
+
+      whenReady(
+        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, Some(hash)),
+        Timeout(5.seconds)
+      ) { _ =>
+        verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
       }
     }
 
@@ -1497,7 +1515,7 @@ class DefaultProposalServiceComponentTest
       val sessionId = SessionId("already-voted")
       val proposalId = ProposalId("already-voted")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
-      val votes = VoteAndQualifications(VoteKey.Agree, Seq.empty, DateHelper.now())
+      val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1512,13 +1530,17 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes)))
+            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
 
-      whenReady(proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree), Timeout(5.seconds)) {
-        _ =>
-          verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
+      val hash = generateHash(proposalId, requestContext)
+
+      whenReady(
+        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, Some(hash)),
+        Timeout(5.seconds)
+      ) { _ =>
+        verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
       }
 
     }
@@ -1540,12 +1562,12 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None))
+            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
         .thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
-        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree).failed,
+        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
@@ -1562,7 +1584,7 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
       whenReady(
-        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree).failed,
+        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never()).unlockSessionForVote(sessionId, proposalId)
@@ -1573,9 +1595,39 @@ class DefaultProposalServiceComponentTest
             requestContext = requestContext,
             voteKey = VoteKey.Agree,
             maybeOrganisationId = None,
-            vote = None
+            vote = None,
+            voteTrust = Trusted
           )
         )
+      }
+    }
+
+    scenario("vote with bad proposal key") {
+      val sessionId = SessionId("vote-with-bad-vote-key")
+      val proposalId = ProposalId("vote-with-bad-vote-key")
+      val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+        .thenReturn(Future.successful {})
+      Mockito
+        .when(
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+        )
+        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      Mockito
+        .when(
+          proposalCoordinatorService
+            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll))
+        )
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, Seq.empty))))
+
+      whenReady(
+        proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, Some("fake")),
+        Timeout(5.seconds)
+      ) { _ =>
+        verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
       }
     }
   }
@@ -1598,13 +1650,17 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None))
+            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
 
-      whenReady(proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree), Timeout(5.seconds)) {
-        _ =>
-          verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
+      val hash = generateHash(proposalId, requestContext)
+
+      whenReady(
+        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, Some(hash)),
+        Timeout(5.seconds)
+      ) { _ =>
+        verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
       }
     }
 
@@ -1612,7 +1668,7 @@ class DefaultProposalServiceComponentTest
       val sessionId = SessionId("already-unvoted")
       val proposalId = ProposalId("already-unvoted")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
-      val votes = VoteAndQualifications(VoteKey.Agree, Seq.empty, DateHelper.now())
+      val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1627,13 +1683,17 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes)))
+            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
 
-      whenReady(proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree), Timeout(5.seconds)) {
-        _ =>
-          verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
+      val hash = generateHash(proposalId, requestContext)
+
+      whenReady(
+        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, Some(hash)),
+        Timeout(5.seconds)
+      ) { _ =>
+        verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
       }
 
     }
@@ -1655,12 +1715,12 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(
           proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None))
+            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
         .thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
-        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree).failed,
+        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForVote(sessionId, proposalId)
@@ -1677,7 +1737,7 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
       whenReady(
-        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree).failed,
+        proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never()).unlockSessionForVote(sessionId, proposalId)
@@ -1688,7 +1748,8 @@ class DefaultProposalServiceComponentTest
             requestContext = requestContext,
             voteKey = VoteKey.Agree,
             maybeOrganisationId = None,
-            vote = None
+            vote = None,
+            voteTrust = Trusted
           )
         )
       }
@@ -1723,14 +1784,18 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
         )
         .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1))))
 
+      val hash = generateHash(proposalId, requestContext)
+
       whenReady(
-        proposalService.qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt),
+        proposalService
+          .qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, Some(hash)),
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForQualification(
@@ -1768,14 +1833,17 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
         )
         .thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
       whenReady(
-        proposalService.qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt).failed,
+        proposalService
+          .qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, None)
+          .failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForQualification(
@@ -1798,7 +1866,9 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.failed(ConcurrentModification("Try again later")))
 
       whenReady(
-        proposalService.qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt).failed,
+        proposalService
+          .qualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, None)
+          .failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never())
@@ -1812,7 +1882,8 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
       }
@@ -1847,14 +1918,18 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
         )
         .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1))))
 
+      val hash = generateHash(proposalId, requestContext)
+
       whenReady(
-        proposalService.unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt),
+        proposalService
+          .unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, Some(hash)),
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForQualification(
@@ -1892,14 +1967,17 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
         )
         .thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
       whenReady(
-        proposalService.unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt).failed,
+        proposalService
+          .unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, None)
+          .failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService).unlockSessionForQualification(
@@ -1922,7 +2000,9 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.failed(ConcurrentModification("Try again later")))
 
       whenReady(
-        proposalService.unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt).failed,
+        proposalService
+          .unqualifyVote(proposalId, None, requestContext, VoteKey.Agree, QualificationKey.LikeIt, None)
+          .failed,
         Timeout(5.seconds)
       ) { _ =>
         verify(sessionHistoryCoordinatorService, never())
@@ -1936,7 +2016,8 @@ class DefaultProposalServiceComponentTest
               requestContext = requestContext,
               voteKey = VoteKey.Agree,
               qualificationKey = QualificationKey.LikeIt,
-              vote = None
+              vote = None,
+              voteTrust = Trusted
             )
           )
       }

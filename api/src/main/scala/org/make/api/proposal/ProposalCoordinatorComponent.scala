@@ -55,6 +55,7 @@ trait ProposalCoordinatorService {
   def viewProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
   def propose(command: ProposeCommand): Future[ProposalId]
   def update(command: UpdateProposalCommand): Future[Option[Proposal]]
+  def updateVotesVerified(command: UpdateProposalVotesVerifiedCommand): Future[Option[Proposal]]
   def accept(command: AcceptProposalCommand): Future[Option[Proposal]]
   def refuse(command: RefuseProposalCommand): Future[Option[Proposal]]
   def postpone(command: PostponeProposalCommand): Future[Option[Proposal]]
@@ -74,7 +75,9 @@ trait ProposalCoordinatorServiceComponent {
 trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServiceComponent with StrictLogging {
   self: ProposalCoordinatorComponent =>
 
-  override lazy val proposalCoordinatorService: ProposalCoordinatorService = new ProposalCoordinatorService {
+  override lazy val proposalCoordinatorService: ProposalCoordinatorService = new DefaultProposalCoordinatorService
+
+  class DefaultProposalCoordinatorService extends ProposalCoordinatorService {
 
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
@@ -98,6 +101,18 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
     }
 
     override def update(command: UpdateProposalCommand): Future[Option[Proposal]] = {
+      (proposalCoordinator ? command)
+        .flatMap[Option[Proposal]] {
+          case error: ValidationFailedError => Future.failed(error)
+          case None                         => Future.successful(None)
+          case Some(proposal) =>
+            Future.successful(Some(proposal.asInstanceOf[Proposal]))
+          case _ => Future.successful(None)
+        }
+        .recoverWith(recover(command))
+    }
+
+    override def updateVotesVerified(command: UpdateProposalVotesVerifiedCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command)
         .flatMap[Option[Proposal]] {
           case error: ValidationFailedError => Future.failed(error)

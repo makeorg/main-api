@@ -26,6 +26,7 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.make.api.technical.crm.MailJetError
 import org.make.core.ApplicationName
+import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
@@ -179,6 +180,20 @@ trait AvroSerializers {
     override def apply(value: Any, field: Field): ApplicationName =
       ApplicationName.applicationMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not an application name"))
+  }
+
+  implicit object VoteTrustToSchema extends ToSchema[VoteTrust] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
+
+  implicit object VoteTrustToValue extends ToValue[VoteTrust] {
+    override def apply(value: VoteTrust): String = value.shortName
+  }
+
+  implicit object VoteTrustFromValue extends FromValue[VoteTrust] {
+    override def apply(value: Any, field: Field): VoteTrust =
+      VoteTrust.trustValue
+        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a vote trust"))
   }
 
 }

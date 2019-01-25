@@ -28,7 +28,7 @@ import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.userhistory.StartSequenceParameters
 import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
@@ -60,7 +60,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree))
+        SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree, Trusted))
       )
 
       expectMsg(LogAcknowledged)
@@ -68,7 +68,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq.empty
+      response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
     scenario("vote then unvote proposal") {
@@ -77,7 +77,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
+        SessionAction(
+          DateHelper.now().minus(10, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Agree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -85,7 +89,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionUnvoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now(), "unvote", SessionUnvote(proposalId, VoteKey.Agree))
+        SessionAction(DateHelper.now(), "unvote", SessionUnvote(proposalId, VoteKey.Agree, Trusted))
       )
 
       expectMsg(LogAcknowledged)
@@ -100,7 +104,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Disagree))
+        SessionAction(
+          DateHelper.now().minus(10, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Disagree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -111,7 +119,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(5, ChronoUnit.SECONDS),
           "unvote",
-          SessionUnvote(proposalId, VoteKey.Disagree)
+          SessionUnvote(proposalId, VoteKey.Disagree, Trusted)
         )
       )
 
@@ -120,7 +128,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree))
+        SessionAction(DateHelper.now(), "vote", SessionVote(proposalId, VoteKey.Agree, Trusted))
       )
 
       expectMsg(LogAcknowledged)
@@ -128,7 +136,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq.empty
+      response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
     scenario("vote then one qualification proposal") {
@@ -137,43 +145,10 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
-      )
-
-      expectMsg(LogAcknowledged)
-
-      coordinator ! LogSessionQualificationEvent(
-        sessionId,
-        RequestContext.empty,
-        SessionAction(DateHelper.now(), "qualification", SessionQualification(proposalId, QualificationKey.LikeIt))
-      )
-
-      expectMsg(LogAcknowledged)
-
-      coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
-      response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.LikeIt)
-    }
-
-    scenario("vote then two qualifications proposal") {
-      val sessionId = SessionId("vote-then-two-qualification-proposal")
-      val proposalId = ProposalId("proposal1")
-      coordinator ! LogSessionVoteEvent(
-        sessionId,
-        RequestContext.empty,
-        SessionAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
-      )
-
-      expectMsg(LogAcknowledged)
-
-      coordinator ! LogSessionQualificationEvent(
-        sessionId,
-        RequestContext.empty,
         SessionAction(
-          DateHelper.now().minus(5, ChronoUnit.SECONDS),
-          "qualification",
-          SessionQualification(proposalId, QualificationKey.LikeIt)
+          DateHelper.now().minus(10, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Agree, Trusted)
         )
       )
 
@@ -185,7 +160,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now(),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
+          SessionQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
 
@@ -194,7 +169,55 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.LikeIt, QualificationKey.PlatitudeAgree)
+      response(proposalId).qualificationKeys shouldBe Map(QualificationKey.LikeIt -> Trusted)
+    }
+
+    scenario("vote then two qualifications proposal") {
+      val sessionId = SessionId("vote-then-two-qualification-proposal")
+      val proposalId = ProposalId("proposal1")
+      coordinator ! LogSessionVoteEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now().minus(10, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Agree, Trusted)
+        )
+      )
+
+      expectMsg(LogAcknowledged)
+
+      coordinator ! LogSessionQualificationEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now().minus(5, ChronoUnit.SECONDS),
+          "qualification",
+          SessionQualification(proposalId, QualificationKey.LikeIt, Trusted)
+        )
+      )
+
+      expectMsg(LogAcknowledged)
+
+      coordinator ! LogSessionQualificationEvent(
+        sessionId,
+        RequestContext.empty,
+        SessionAction(
+          DateHelper.now(),
+          "qualification",
+          SessionQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
+        )
+      )
+
+      expectMsg(LogAcknowledged)
+
+      coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
+      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      response(proposalId).voteKey shouldBe VoteKey.Agree
+      response(proposalId).qualificationKeys shouldBe Map(
+        QualificationKey.LikeIt -> Trusted,
+        QualificationKey.PlatitudeAgree -> Trusted
+      )
     }
 
     scenario("vote then three qualification proposal") {
@@ -203,7 +226,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
+        SessionAction(
+          DateHelper.now().minus(15, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Agree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -214,7 +241,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(10, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.LikeIt)
+          SessionQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
 
@@ -226,7 +253,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(5, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.Doable)
+          SessionQualification(proposalId, QualificationKey.Doable, Trusted)
         )
       )
 
@@ -238,7 +265,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now(),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
+          SessionQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
         )
       )
 
@@ -247,10 +274,10 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq(
-        QualificationKey.Doable,
-        QualificationKey.LikeIt,
-        QualificationKey.PlatitudeAgree
+      response(proposalId).qualificationKeys shouldBe Map(
+        QualificationKey.Doable -> Trusted,
+        QualificationKey.LikeIt -> Trusted,
+        QualificationKey.PlatitudeAgree -> Trusted
       )
     }
 
@@ -260,7 +287,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId, VoteKey.Agree))
+        SessionAction(
+          DateHelper.now().minus(15, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId, VoteKey.Agree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -271,7 +302,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(12, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.LikeIt)
+          SessionQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
 
@@ -283,7 +314,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(10, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.Doable)
+          SessionQualification(proposalId, QualificationKey.Doable, Trusted)
         )
       )
 
@@ -295,7 +326,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(8, ChronoUnit.SECONDS),
           "unqualification",
-          SessionUnqualification(proposalId, QualificationKey.LikeIt)
+          SessionUnqualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
 
@@ -307,7 +338,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(5, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId, QualificationKey.PlatitudeAgree)
+          SessionQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
         )
       )
 
@@ -316,7 +347,10 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId).voteKey shouldBe VoteKey.Agree
-      response(proposalId).qualificationKeys shouldBe Seq(QualificationKey.Doable, QualificationKey.PlatitudeAgree)
+      response(proposalId).qualificationKeys shouldBe Map(
+        QualificationKey.Doable -> Trusted,
+        QualificationKey.PlatitudeAgree -> Trusted
+      )
     }
 
     scenario("vote on many proposal") {
@@ -327,7 +361,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId1, VoteKey.Agree))
+        SessionAction(
+          DateHelper.now().minus(15, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId1, VoteKey.Agree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -338,7 +376,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(10, ChronoUnit.SECONDS),
           "vote",
-          SessionVote(proposalId2, VoteKey.Disagree)
+          SessionVote(proposalId2, VoteKey.Disagree, Trusted)
         )
       )
 
@@ -347,7 +385,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", SessionVote(proposalId3, VoteKey.Neutral))
+        SessionAction(
+          DateHelper.now().minus(5, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId3, VoteKey.Neutral, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -355,11 +397,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId1).voteKey shouldBe VoteKey.Agree
-      response(proposalId1).qualificationKeys shouldBe Seq.empty
+      response(proposalId1).qualificationKeys shouldBe Map.empty
       response(proposalId2).voteKey shouldBe VoteKey.Disagree
-      response(proposalId2).qualificationKeys shouldBe Seq.empty
+      response(proposalId2).qualificationKeys shouldBe Map.empty
       response(proposalId3).voteKey shouldBe VoteKey.Neutral
-      response(proposalId3).qualificationKeys shouldBe Seq.empty
+      response(proposalId3).qualificationKeys shouldBe Map.empty
     }
 
     scenario("vote and qualif on many proposal") {
@@ -370,7 +412,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", SessionVote(proposalId1, VoteKey.Agree))
+        SessionAction(
+          DateHelper.now().minus(15, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId1, VoteKey.Agree, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -381,7 +427,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(14, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId1, QualificationKey.Doable)
+          SessionQualification(proposalId1, QualificationKey.Doable, Trusted)
         )
       )
 
@@ -393,7 +439,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(10, ChronoUnit.SECONDS),
           "vote",
-          SessionVote(proposalId2, VoteKey.Disagree)
+          SessionVote(proposalId2, VoteKey.Disagree, Trusted)
         )
       )
 
@@ -405,7 +451,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(9, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId2, QualificationKey.Impossible)
+          SessionQualification(proposalId2, QualificationKey.Impossible, Trusted)
         )
       )
 
@@ -417,7 +463,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().minus(8, ChronoUnit.SECONDS),
           "qualification",
-          SessionQualification(proposalId2, QualificationKey.NoWay)
+          SessionQualification(proposalId2, QualificationKey.NoWay, Trusted)
         )
       )
 
@@ -426,7 +472,11 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! LogSessionVoteEvent(
         sessionId,
         RequestContext.empty,
-        SessionAction(DateHelper.now().minus(5, ChronoUnit.SECONDS), "vote", SessionVote(proposalId3, VoteKey.Neutral))
+        SessionAction(
+          DateHelper.now().minus(5, ChronoUnit.SECONDS),
+          "vote",
+          SessionVote(proposalId3, VoteKey.Neutral, Trusted)
+        )
       )
 
       expectMsg(LogAcknowledged)
@@ -434,11 +484,14 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       coordinator ! RequestSessionVoteValues(sessionId, Seq(proposalId1, proposalId2, proposalId3))
       val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
       response(proposalId1).voteKey shouldBe VoteKey.Agree
-      response(proposalId1).qualificationKeys shouldBe Seq(QualificationKey.Doable)
+      response(proposalId1).qualificationKeys shouldBe Map(QualificationKey.Doable -> Trusted)
       response(proposalId2).voteKey shouldBe VoteKey.Disagree
-      response(proposalId2).qualificationKeys shouldBe Seq(QualificationKey.Impossible, QualificationKey.NoWay)
+      response(proposalId2).qualificationKeys shouldBe Map(
+        QualificationKey.Impossible -> Trusted,
+        QualificationKey.NoWay -> Trusted
+      )
       response(proposalId3).voteKey shouldBe VoteKey.Neutral
-      response(proposalId3).qualificationKeys shouldBe Seq.empty
+      response(proposalId3).qualificationKeys shouldBe Map.empty
     }
   }
 

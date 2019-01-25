@@ -129,6 +129,7 @@ case class IndexedProposal(
   updatedAt: Option[ZonedDateTime],
   votes: Seq[IndexedVote],
   votesCount: Int,
+  votesVerifiedCount: Int,
   toEnrich: Boolean,
   scores: IndexedScores,
   context: Option[Context],
@@ -203,6 +204,7 @@ object IndexedOrganisationInfo {
 final case class IndexedVote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
                              override val key: VoteKey,
                              override val count: Int = 0,
+                             override val countVerified: Int = 0,
                              override val qualifications: Seq[IndexedQualification])
     extends BaseVote
 
@@ -214,13 +216,15 @@ object IndexedVote {
     IndexedVote(
       key = vote.key,
       count = vote.count,
+      countVerified = vote.countVerified,
       qualifications = vote.qualifications.map(IndexedQualification.apply)
     )
 }
 
 final case class IndexedQualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                       override val key: QualificationKey,
-                                      override val count: Int = 0)
+                                      override val count: Int = 0,
+                                      override val countVerified: Int = 0)
     extends BaseQualification
 
 object IndexedQualification {
@@ -228,19 +232,23 @@ object IndexedQualification {
   implicit val decoder: Decoder[IndexedQualification] = deriveDecoder[IndexedQualification]
 
   def apply(qualification: Qualification): IndexedQualification =
-    IndexedQualification(key = qualification.key, count = qualification.count)
+    IndexedQualification(
+      key = qualification.key,
+      count = qualification.count,
+      countVerified = qualification.countVerified
+    )
 }
 
 final case class IndexedScores(boost: Double = 0,
                                engagement: Double,
+                               agreement: Double,
                                adhesion: Double,
                                realistic: Double,
+                               platitude: Double,
                                topScore: Double,
                                controversy: Double,
                                rejection: Double,
-                               scoreUpperBound: Double,
-                               platitude: Double,
-                               agreement: Double)
+                               scoreUpperBound: Double)
 
 object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]

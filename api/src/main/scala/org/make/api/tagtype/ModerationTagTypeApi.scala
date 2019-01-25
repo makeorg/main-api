@@ -219,7 +219,7 @@ trait DefaultModerationTagTypeApiComponent
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
           parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'label.?)) {
-            (start, end, sort, order, label_filter) =>
+            (start, end, _, _, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
                   onSuccess(tagTypeService.findAll()) { tagTypes =>

@@ -182,6 +182,33 @@ trait ModerationProposalApi extends Directives {
   def updateProposal: Route
 
   @ApiOperation(
+    value = "update-proposal-votes-verified",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.proposal.UpdateProposalVotesVerifiedRequest"
+      ),
+      new ApiImplicitParam(name = "proposalId", paramType = "path", required = true, value = "", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
+  )
+  @Path(value = "/{proposalId}/votes-verified")
+  def updateProposalVotesVerified: Route
+
+  @ApiOperation(
     value = "validate-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -404,8 +431,8 @@ trait ModerationProposalApi extends Directives {
       changeProposalsIdea ~
       getModerationProposal ~
       nextProposalToModerate ~
-      getPredictedTagsForProposal
-
+      getPredictedTagsForProposal ~
+      updateProposalVotesVerified
 }
 
 trait ModerationProposalApiComponent {
@@ -431,7 +458,9 @@ trait DefaultModerationProposalApiComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
 
-  override lazy val moderationProposalApi: ModerationProposalApi = new ModerationProposalApi {
+  override lazy val moderationProposalApi: DefaultModerationProposalApi = new DefaultModerationProposalApi
+
+  class DefaultModerationProposalApi extends ModerationProposalApi {
 
     val moderationProposalId: PathMatcher1[ProposalId] = Segment.flatMap(id => Try(ProposalId(id)).toOption)
 
@@ -734,7 +763,45 @@ trait DefaultModerationProposalApiComponent
             Future.successful(None)
         }
       }
+    }
 
+    private def retrieveProposalQuestion(proposalId: ProposalId): Future[Option[Question]] = {
+      proposalCoordinatorService.getProposal(proposalId).flatMap {
+        case Some(proposal) =>
+          proposal.questionId
+            .map(questionService.getQuestion)
+            .getOrElse(Future.successful(None))
+        case None =>
+          Future.successful(None)
+      }
+    }
+
+    def updateProposalVotesVerified: Route = put {
+      path("moderation" / "proposals" / moderationProposalId / "votes-verified") { proposalId =>
+        makeOperation("EditProposalVotesVerified") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[UpdateProposalVotesVerifiedRequest]) { request =>
+                  provideAsyncOrNotFound(retrieveProposalQuestion(proposalId)) { _ =>
+                    provideAsyncOrNotFound(
+                      proposalService.updateVotesVerified(
+                        proposalId = proposalId,
+                        moderator = userAuth.user.userId,
+                        requestContext = requestContext,
+                        updatedAt = DateHelper.now(),
+                        votesVerified = request.votesVerified
+                      )
+                    ) { moderationProposalResponse: ModerationProposalResponse =>
+                      complete(moderationProposalResponse)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
     def acceptProposal: Route = post {

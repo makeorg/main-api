@@ -109,7 +109,7 @@ trait DefaultOperationApiComponent
     override def getOperation: Route = {
       get {
         path("operations" / operationId) { operationId =>
-          makeOperation("GetOperation") { requestContext =>
+          makeOperation("GetOperation") { _ =>
             provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
               provideAsync(tagService.findByQuestionIds(operation.questions.map(_.question.questionId))) { tags =>
                 complete(OperationResponse(operation, tags))

@@ -74,13 +74,13 @@ trait RandomProposalChooser extends ProposalChooser {
 
 object InverseWeightedRandom extends RandomProposalChooser {
   override def proposalWeight(proposal: IndexedProposal): Double = {
-    1 / (proposal.votes.map(_.count).sum + 1).toDouble
+    1 / (proposal.votes.map(_.countVerified).sum + 1).toDouble
   }
 }
 
 object SoftMinRandom extends RandomProposalChooser {
   override def proposalWeight(proposal: IndexedProposal): Double = {
-    Math.exp(-1 * proposal.votes.map(_.count).sum)
+    Math.exp(-1 * proposal.votes.map(_.countVerified).sum)
   }
 }
 

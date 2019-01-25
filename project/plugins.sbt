@@ -24,7 +24,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-aspectj"            % "0.11.0")
 addSbtPlugin("org.scalastyle"    %% "scalastyle-sbt-plugin" % "1.0.0")
 addSbtPlugin("com.geirsson"      % "sbt-scalafmt"           % "1.2.0")
 addSbtPlugin("org.scoverage"     % "sbt-scoverage"          % "1.5.1")
-addSbtPlugin("org.make"          % "git-hooks-plugin"       % "1.0.4")
+addSbtPlugin("org.make"          % "git-hooks-plugin"       % "1.0.5")
 addSbtPlugin("org.make"          % "sbt-swift-plugin"       % "1.0.3")
 
 classpathTypes += "maven-plugin"

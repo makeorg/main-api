@@ -21,7 +21,7 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.17"
+  private val akkaVersion = "2.5.19"
   private val akkaHttpVersion = "10.1.5"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
@@ -62,7 +62,7 @@ object Dependencies {
   val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
   val akkaPersistenceQuesry: ModuleID = "com.typesafe.akka" %% "akka-persistence"       % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.89")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.92")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka"          %% "akka-slf4j"              % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"                 % "javax.ws.rs-api"          % "2.0.1"
@@ -126,9 +126,9 @@ object Dependencies {
   val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
   val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.5"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.13.0"        % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.6"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.6" % "it")
+  val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"
+  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.8"         % "it"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.8" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
   val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.14.0" % "test"

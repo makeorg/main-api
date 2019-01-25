@@ -207,23 +207,19 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
   }
 
   def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extract(_ => provider).flatMap { fa ⇒
-        onComplete(fa).flatMap {
-          case Success(value) ⇒ provide(value)
-          case Failure(e) ⇒ failWith(e)
-        }
+    extract(_ => provider).flatMap { fa ⇒
+      onComplete(fa).flatMap {
+        case Success(value) ⇒ provide(value)
+        case Failure(e) ⇒ failWith(e)
       }
     }
 
   def provideAsyncOrNotFound[T](provider: ⇒ Future[Option[T]]): Directive1[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extract(_ => provider).flatMap { fa ⇒
-        onComplete(fa).flatMap {
-          case Success(Some(value)) ⇒ provide(value)
-          case Success(None) ⇒ complete(StatusCodes.NotFound)
-          case Failure(e) ⇒ failWith(e)
-        }
+    extract(_ => provider).flatMap { fa ⇒
+      onComplete(fa).flatMap {
+        case Success(Some(value)) ⇒ provide(value)
+        case Success(None) ⇒ complete(StatusCodes.NotFound)
+        case Failure(e) ⇒ failWith(e)
       }
     }
 

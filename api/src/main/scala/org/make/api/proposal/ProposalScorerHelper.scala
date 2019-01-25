@@ -33,7 +33,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   case class ScoreComponent(name: String, weight: Double, mean: Double, std: Double)
 
-  val topScoreComponents = Seq(
+  val topScoreComponents: Seq[ScoreComponent] = Seq(
     ScoreComponent("engagement", 1, 0.8, 0.1),
     ScoreComponent("agreement", 1, 0.75, 0.1),
     ScoreComponent("adhesion", 1, 0.075, 0.07),
@@ -41,7 +41,7 @@ object ProposalScorerHelper extends StrictLogging {
     ScoreComponent("platitude", -2, 0.05, 0.05)
   )
 
-  val combinedStd = math.sqrt(topScoreComponents.map(sc => math.pow(sc.weight, 2)).sum)
+  val combinedStd: Double = math.sqrt(topScoreComponents.map(sc => math.pow(sc.weight, 2)).sum)
 
   case class ScoreCounts(votes: Int,
                          agreeCount: Int,
@@ -54,40 +54,48 @@ object ProposalScorerHelper extends StrictLogging {
                          doableCount: Int,
                          impossibleCount: Int)
 
-  def voteCounts(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
+  def totalVoteCount(votes: Seq[BaseVote]): Int = {
+    votes.map(_.count).sum
+  }
+
+  def voteCount(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
     votes.filter(_.key == voteKey).map(_.count).sum
   }
 
-  def qualificationCounts(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
+  def qualificationCount(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
     votes
       .filter(_.key == voteKey)
       .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.count))
       .sum
   }
 
-  def scoreCounts(votes: Seq[BaseVote]): ScoreCounts = {
-    val votesCount: Int = votes.map(_.count).sum
-    val agreeCount: Int = voteCounts(votes, Agree)
-    val disagreeCount: Int = voteCounts(votes, Disagree)
-    val neutralCount: Int = voteCounts(votes, Neutral)
-    val platitudeAgreeCount: Int = qualificationCounts(votes, Agree, PlatitudeAgree)
-    val platitudeDisagreeCount: Int = qualificationCounts(votes, Disagree, PlatitudeDisagree)
-    val loveCount: Int = qualificationCounts(votes, Agree, LikeIt)
-    val hateCount: Int = qualificationCounts(votes, Disagree, NoWay)
-    val doableCount: Int = qualificationCounts(votes, Agree, Doable)
-    val impossibleCount: Int = qualificationCounts(votes, Agree, Impossible)
+  def verifiedTotalVoteCount(votes: Seq[BaseVote]): Int = {
+    votes.map(_.countVerified).sum
+  }
 
+  def verifiedVoteCount(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
+    votes.filter(_.key == voteKey).map(_.countVerified).sum
+  }
+
+  def verifiedQualificationCount(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
+    votes
+      .filter(_.key == voteKey)
+      .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.countVerified))
+      .sum
+  }
+
+  def scoreCounts(votes: Seq[BaseVote]): ScoreCounts = {
     ScoreCounts(
-      votesCount,
-      agreeCount,
-      disagreeCount,
-      neutralCount,
-      platitudeAgreeCount,
-      platitudeDisagreeCount,
-      loveCount,
-      hateCount,
-      doableCount,
-      impossibleCount
+      votes = verifiedTotalVoteCount(votes),
+      agreeCount = verifiedVoteCount(votes, Agree),
+      disagreeCount = verifiedVoteCount(votes, Disagree),
+      neutralCount = verifiedVoteCount(votes, Neutral),
+      platitudeAgreeCount = verifiedQualificationCount(votes, Agree, PlatitudeAgree),
+      platitudeDisagreeCount = verifiedQualificationCount(votes, Disagree, PlatitudeDisagree),
+      loveCount = verifiedQualificationCount(votes, Agree, LikeIt),
+      hateCount = verifiedQualificationCount(votes, Disagree, NoWay),
+      doableCount = verifiedQualificationCount(votes, Agree, Doable),
+      impossibleCount = verifiedQualificationCount(votes, Agree, Impossible)
     )
   }
 
@@ -367,7 +375,7 @@ object ProposalScorerHelper extends StrictLogging {
   def sequencePool(sequenceConfiguration: SequenceConfiguration,
                    votes: Seq[BaseVote],
                    status: ProposalStatus): SequencePool = {
-    val votesCount: Int = votes.map(_.count).sum
+    val votesCount: Int = votes.map(_.countVerified).sum
     val engagementRate: Double = ProposalScorerHelper.engagementUpperBound(votes)
     val scoreRate: Double = ProposalScorerHelper.topScoreUpperBound(votes)
     val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(votes)

@@ -39,6 +39,7 @@ trait SessionHistoryCoordinatorComponent {
 trait SessionHistoryCoordinatorService {
   def sessionHistory(sessionId: SessionId): Future[SessionHistory]
   def logHistory(command: SessionHistoryEvent[_]): Unit
+  def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit]
   def convertSession(sessionId: SessionId, userId: UserId): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]]
@@ -66,8 +67,12 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
         (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).mapTo[SessionHistory]
       }
 
+      override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
+        (sessionHistoryCoordinator ? command).map(_ => ())
+      }
+
       override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-        sessionHistoryCoordinator ! command
+        (sessionHistoryCoordinator ? command).map(_ => ())
       }
 
       override def retrieveVoteAndQualifications(

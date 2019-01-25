@@ -142,6 +142,7 @@ class SortAlgorithmIT
       IndexedVote(key = VoteKey.Neutral, qualifications = Seq.empty)
     ),
     votesCount = 3,
+    votesVerifiedCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
     context = None,

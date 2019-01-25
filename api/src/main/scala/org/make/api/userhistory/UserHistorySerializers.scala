@@ -24,8 +24,8 @@ import java.time.ZonedDateTime
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.{RequestContext, SprayJsonFormatters}
 import spray.json.DefaultJsonProtocol._
-import spray.json.JsValue
 import spray.json.lenses.JsonLenses._
+import spray.json.{JsArray, JsObject, JsString, JsValue}
 import stamina._
 import stamina.json._
 
@@ -91,20 +91,32 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserProposalEventSerializer: JsonPersister[LogUserProposalEvent, V1] =
     json.persister[LogUserProposalEvent]("user-history-sent-proposal")
 
-  private val logUserVoteEventSerializer: JsonPersister[LogUserVoteEvent, V1] =
-    json.persister[LogUserVoteEvent]("user-history-vote-proposal")
+  private val logUserVoteEventSerializer: JsonPersister[LogUserVoteEvent, V2] =
+    json.persister[LogUserVoteEvent, V2](
+      "user-history-vote-proposal",
+      from[V1].to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
+    )
 
-  private val logUserUnvoteEventSerializer: JsonPersister[LogUserUnvoteEvent, V1] =
-    json.persister[LogUserUnvoteEvent]("user-history-unvote-proposal")
+  private val logUserUnvoteEventSerializer: JsonPersister[LogUserUnvoteEvent, V2] =
+    json.persister[LogUserUnvoteEvent, V2](
+      "user-history-unvote-proposal",
+      from[V1].to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
+    )
 
-  private val logUserQualificationEventSerializer: JsonPersister[LogUserQualificationEvent, V1] =
-    json.persister[LogUserQualificationEvent]("user-history-qualification-vote")
+  private val logUserQualificationEventSerializer: JsonPersister[LogUserQualificationEvent, V2] =
+    json.persister[LogUserQualificationEvent, V2](
+      "user-history-qualification-vote",
+      from[V1].to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
+    )
 
-  private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V1] =
-    json.persister[LogUserUnqualificationEvent]("user-history-unqualification-vote")
+  private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V2] =
+    json.persister[LogUserUnqualificationEvent, V2](
+      "user-history-unqualification-vote",
+      from[V1].to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
+    )
 
-  private val userHistorySerializer: JsonPersister[UserHistory, V4] =
-    json.persister[UserHistory, V4](
+  private val userHistorySerializer: JsonPersister[UserHistory, V5] =
+    json.persister[UserHistory, V5](
       "user-history",
       from[V1]
         .to[V2](
@@ -149,6 +161,18 @@ object UserHistorySerializers extends SprayJsonFormatters {
               }
           })
         }
+        .to[V5] { json =>
+          val migratedEvents =
+            Set("LogUserVoteEvent", "LogUserUnvoteEvent", "LogUserQualificationEvent", "LogUserUnqualificationEvent")
+          json.update(
+            'events /
+              filter("type".is[String](event => migratedEvents.contains(event))) /
+              'action /
+              'arguments /
+              'trust !
+              set[String]("trusted")
+          )
+        }
     )
 
   private val logUserCreateSequenceEventSerializer: JsonPersister[LogUserCreateSequenceEvent, V1] =
@@ -176,15 +200,30 @@ object UserHistorySerializers extends SprayJsonFormatters {
     )
 
   val defaultVoteDate: ZonedDateTime = ZonedDateTime.parse("2018-10-10T00:00:00Z")
-  private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V2] =
-    json.persister[UserVotesAndQualifications, V2](
+  private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V3] =
+    json.persister[UserVotesAndQualifications, V3](
       "user-votes-and-qualifications",
-      from[V1].to[V2](_.update('votesAndQualifications ! modify[Map[String, JsValue]] { voteAndQualifications =>
-        voteAndQualifications.map {
-          case (k, v) =>
-            k -> v.update('date ! set[ZonedDateTime](defaultVoteDate))
-        }
-      }))
+      from[V1]
+        .to[V2](_.update('votesAndQualifications ! modify[Map[String, JsValue]] { voteAndQualifications =>
+          voteAndQualifications.mapValues {
+            _.update('date ! set[ZonedDateTime](defaultVoteDate))
+          }
+        }))
+        .to[V3](_.update('votesAndQualifications ! modify[Map[String, JsObject]] {
+          voteAndQualifications =>
+            voteAndQualifications
+              .mapValues[JsObject] {
+                proposalVotes =>
+                  val fields: Map[String, JsValue] = proposalVotes.fields
+                  val qualifications =
+                    fields("qualificationKeys").asInstanceOf[JsArray].elements.map(_.asInstanceOf[JsString])
+                  val newQualifications: Map[String, JsValue] = qualifications.map(_.value -> JsString("trusted")).toMap
+                  val modifiedFields: Map[String, JsValue] = fields + ("qualificationKeys" -> JsObject(
+                    newQualifications
+                  )) + ("trust" -> JsString("trusted"))
+                  JsObject(modifiedFields)
+              }
+        }))
     )
 
   val serializers: Seq[JsonPersister[_, _]] =

@@ -37,6 +37,7 @@ import org.make.api.question.AuthorRequest
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.UserServiceComponent
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import org.make.core.auth.UserRights
@@ -128,7 +129,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with SequenceServiceComponent
     with SequenceConfigurationComponent
     with ProposalServiceComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with SecurityConfigurationComponent =>
 
   override lazy val migrationApi: MigrationApi = new MigrationApi {
     override def emptyRoute: Route =
@@ -213,7 +215,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       }
     }
 
-    def generateSequencesAndVotes(nbSequences: Int, sequenceId: SequenceId): Future[Int] = {
+    private def generateSequencesAndVotes(nbSequences: Int, sequenceId: SequenceId): Future[Int] = {
       val inclusive: immutable.Seq[Int] = 0.to(nbSequences)
       Future
         .traverse(inclusive) { _ =>
@@ -228,7 +230,13 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                 logger.warn(s"[NewSequence] sequenceResult $sequenceId, $context")
                 Future
                   .traverse(sequenceResult.proposals) { proposal =>
-                    proposalService.voteProposal(proposal.id, None, context, VoteKey.Agree).map {
+                    val hash = SecurityHelper.generateProposalKeyHash(
+                      proposal.id,
+                      newContext.sessionId,
+                      newContext.location,
+                      securityConfiguration.secureVoteSalt
+                    )
+                    proposalService.voteProposal(proposal.id, None, context, VoteKey.Agree, Some(hash)).map {
                       case None =>
                         logger.warn(s"[0] voteProposal ${proposal.id} $context")
                         0

@@ -111,6 +111,9 @@ object ProposalAction {
 sealed trait ProposalActionType { val name: String }
 case object ProposalProposeAction extends ProposalActionType { override val name: String = "propose" }
 case object ProposalUpdateAction extends ProposalActionType { override val name: String = "update" }
+case object ProposalUpdateVoteVerifiedAction extends ProposalActionType {
+  override val name: String = "update-votes-verified"
+}
 case object ProposalAcceptAction extends ProposalActionType { override val name: String = "accept" }
 case object ProposalVoteAction extends ProposalActionType { override val name: String = "vote" }
 case object ProposalUnvoteAction extends ProposalActionType { override val name: String = "unvote" }
@@ -177,11 +180,13 @@ object QualificationKey extends StrictLogging {
 trait BaseQualification {
   def key: QualificationKey
   def count: Int
+  def countVerified: Int
 }
 
 final case class Qualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                override val key: QualificationKey,
-                               override val count: Int = 0)
+                               override val count: Int = 0,
+                               override val countVerified: Int = 0)
     extends BaseQualification
 
 object Qualification {
@@ -189,19 +194,21 @@ object Qualification {
   implicit val decoder: Decoder[Qualification] = deriveDecoder[Qualification]
 
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
-    DefaultJsonProtocol.jsonFormat2(Qualification.apply)
+    DefaultJsonProtocol.jsonFormat3(Qualification.apply)
 
 }
 
 trait BaseVote {
   def key: VoteKey
   def count: Int = 0
+  def countVerified: Int = 0
   def qualifications: Seq[BaseQualification]
 }
 
 final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
                       override val key: VoteKey,
                       override val count: Int = 0,
+                      override val countVerified: Int = 0,
                       override val qualifications: Seq[Qualification])
     extends BaseVote
 
@@ -210,7 +217,7 @@ object Vote {
   implicit val decoder: Decoder[Vote] = deriveDecoder[Vote]
 
   implicit val voteFormatter: RootJsonFormat[Vote] =
-    DefaultJsonProtocol.jsonFormat3(Vote.apply)
+    DefaultJsonProtocol.jsonFormat4(Vote.apply)
 }
 
 sealed trait VoteKey { val shortName: String }

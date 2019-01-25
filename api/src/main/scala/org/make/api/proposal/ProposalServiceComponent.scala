@@ -38,7 +38,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
@@ -94,6 +94,12 @@ trait ProposalService {
              predictedTags: Option[Seq[TagId]],
              predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
 
+  def updateVotesVerified(proposalId: ProposalId,
+                          moderator: UserId,
+                          requestContext: RequestContext,
+                          updatedAt: ZonedDateTime,
+                          votesVerified: Seq[Vote]): Future[Option[ModerationProposalResponse]]
+
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
                        requestContext: RequestContext,
@@ -117,24 +123,28 @@ trait ProposalService {
   def voteProposal(proposalId: ProposalId,
                    maybeUserId: Option[UserId],
                    requestContext: RequestContext,
-                   voteKey: VoteKey): Future[Option[Vote]]
+                   voteKey: VoteKey,
+                   proposalKey: Option[String]): Future[Option[Vote]]
 
   def unvoteProposal(proposalId: ProposalId,
                      maybeUserId: Option[UserId],
                      requestContext: RequestContext,
-                     voteKey: VoteKey): Future[Option[Vote]]
+                     voteKey: VoteKey,
+                     proposalKey: Option[String]): Future[Option[Vote]]
 
   def qualifyVote(proposalId: ProposalId,
                   maybeUserId: Option[UserId],
                   requestContext: RequestContext,
                   voteKey: VoteKey,
-                  qualificationKey: QualificationKey): Future[Option[Qualification]]
+                  qualificationKey: QualificationKey,
+                  proposalKey: Option[String]): Future[Option[Qualification]]
 
   def unqualifyVote(proposalId: ProposalId,
                     maybeUserId: Option[UserId],
                     requestContext: RequestContext,
                     voteKey: VoteKey,
-                    qualificationKey: QualificationKey): Future[Option[Qualification]]
+                    qualificationKey: QualificationKey,
+                    proposalKey: Option[String]): Future[Option[Qualification]]
 
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 
@@ -182,7 +192,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with TagTypeServiceComponent
     with SecurityConfigurationComponent =>
 
-  override lazy val proposalService: ProposalService = new ProposalService {
+  override lazy val proposalService: DefaultProposalService = new DefaultProposalService
+
+  class DefaultProposalService extends ProposalService {
 
     override def createInitialProposal(content: String,
                                        question: Question,
@@ -235,11 +247,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           }
           proposalService
             .searchForUser(
-              userId = Some(userId),
-              query = SearchQuery(
+              Some(userId),
+              SearchQuery(
                 filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
               ),
-              requestContext = requestContext
+              requestContext
             )
             .map { proposalResultSeededResponse =>
               proposalResultSeededResponse.results.sortWith {
@@ -498,6 +510,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
+    override def updateVotesVerified(proposalId: ProposalId,
+                                     moderator: UserId,
+                                     requestContext: RequestContext,
+                                     updatedAt: ZonedDateTime,
+                                     votesVerified: Seq[Vote]): Future[Option[ModerationProposalResponse]] = {
+      toModerationProposalResponse(
+        proposalCoordinatorService.updateVotesVerified(
+          UpdateProposalVotesVerifiedCommand(
+            moderator = moderator,
+            proposalId = proposalId,
+            requestContext = requestContext,
+            updatedAt = updatedAt,
+            votesVerified = votesVerified
+          )
+        )
+      )
+    }
+
     override def validateProposal(
       proposalId: ProposalId,
       moderator: UserId,
@@ -603,10 +633,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }.getOrElse(Future.successful(None))
     }
 
+    private def isVoteTrusted(proposalKey: Option[String],
+                              proposalId: ProposalId,
+                              requestContext: RequestContext): VoteTrust = {
+      proposalKey.map { key =>
+        val newHash =
+          SecurityHelper.generateProposalKeyHash(
+            proposalId,
+            requestContext.sessionId,
+            requestContext.location,
+            securityConfiguration.secureVoteSalt
+          )
+        if (newHash == key) {
+          Trusted
+        } else {
+          Troll
+        }
+      }.getOrElse(Troll)
+    }
+
     override def voteProposal(proposalId: ProposalId,
                               maybeUserId: Option[UserId],
                               requestContext: RequestContext,
-                              voteKey: VoteKey): Future[Option[Vote]] = {
+                              voteKey: VoteKey,
+                              proposalKey: Option[String]): Future[Option[Vote]] = {
 
       val result = for {
         _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
@@ -619,7 +669,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             requestContext = requestContext,
             voteKey = voteKey,
             maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
-            vote = votes.get(proposalId)
+            vote = votes.get(proposalId),
+            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
@@ -638,7 +689,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def unvoteProposal(proposalId: ProposalId,
                                 maybeUserId: Option[UserId],
                                 requestContext: RequestContext,
-                                voteKey: VoteKey): Future[Option[Vote]] = {
+                                voteKey: VoteKey,
+                                proposalKey: Option[String]): Future[Option[Vote]] = {
 
       val result = for {
         _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
@@ -651,7 +703,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             requestContext = requestContext,
             voteKey = voteKey,
             maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
-            vote = votes.get(proposalId)
+            vote = votes.get(proposalId),
+            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
@@ -670,7 +723,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                              maybeUserId: Option[UserId],
                              requestContext: RequestContext,
                              voteKey: VoteKey,
-                             qualificationKey: QualificationKey): Future[Option[Qualification]] = {
+                             qualificationKey: QualificationKey,
+                             proposalKey: Option[String]): Future[Option[Qualification]] = {
 
       val result = for {
         _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
@@ -686,7 +740,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             requestContext = requestContext,
             voteKey = voteKey,
             qualificationKey = qualificationKey,
-            vote = votes.get(proposalId)
+            vote = votes.get(proposalId),
+            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
@@ -712,7 +767,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                maybeUserId: Option[UserId],
                                requestContext: RequestContext,
                                voteKey: VoteKey,
-                               qualificationKey: QualificationKey): Future[Option[Qualification]] = {
+                               qualificationKey: QualificationKey,
+                               proposalKey: Option[String]): Future[Option[Qualification]] = {
 
       val result = for {
         _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
@@ -728,7 +784,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             requestContext = requestContext,
             voteKey = voteKey,
             qualificationKey = qualificationKey,
-            vote = votes.get(proposalId)
+            vote = votes.get(proposalId),
+            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
