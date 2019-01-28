@@ -58,7 +58,16 @@ trait AdminUserApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
+    )
+  )
   @Path(value = "/moderators/{moderatorId}")
   def getModerator: Route
 
@@ -84,7 +93,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[ModeratorResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ModeratorResponse]]))
   )
   @Path(value = "/moderators")
   def getModerators: Route
@@ -128,7 +137,12 @@ trait AdminUserApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateModeratorRequest"),
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
     )
   )
   @ApiResponses(
@@ -148,7 +162,16 @@ trait AdminUserApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
   )
@@ -344,17 +367,23 @@ trait DefaultAdminUserApiComponent
   }
 }
 
-final case class CreateModeratorRequest(email: String,
-                                        firstName: Option[String],
-                                        lastName: Option[String],
-                                        roles: Option[Seq[String]],
-                                        @(ApiModelProperty @field)(dataType = "string") country: Country,
-                                        @(ApiModelProperty @field)(dataType = "string") language: Language,
-                                        availableQuestions: Seq[QuestionId]) {
+final case class CreateModeratorRequest(
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  roles: Option[Seq[String]],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
+  availableQuestions: Seq[QuestionId]
+) {
   validate(
     mandatoryField("firstName", firstName),
+    validateOptionalUserInput("firstName", firstName, None),
+    validateOptionalUserInput("lastName", lastName, None),
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None),
     mandatoryField("language", language),
     mandatoryField("country", country),
     validateField(
@@ -369,19 +398,25 @@ object CreateModeratorRequest {
   implicit val decoder: Decoder[CreateModeratorRequest] = deriveDecoder[CreateModeratorRequest]
 }
 
-final case class UpdateModeratorRequest(email: Option[String],
-                                        firstName: Option[String],
-                                        lastName: Option[String],
-                                        roles: Option[Seq[String]],
-                                        country: Option[Country],
-                                        language: Option[Language],
-                                        availableQuestions: Seq[QuestionId]) {
+final case class UpdateModeratorRequest(
+  email: Option[String],
+  firstName: Option[String],
+  lastName: Option[String],
+  roles: Option[Seq[String]],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
+  availableQuestions: Seq[QuestionId]
+) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
   validate(
     email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email       => validateUserInput("email", email, None)),
     firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    firstName.map(value   => validateUserInput("firstName", value, None)),
+    lastName.map(value    => validateUserInput("lastName", value, None)),
     country.map(country   => maxLength("country", maxCountryLength, country.value)),
     language.map(language => maxLength("language", maxLanguageLength, language.value)),
     roles.map(
@@ -407,14 +442,23 @@ object UpdateModeratorRequest {
   }
 }
 
-case class ModeratorResponse(id: UserId,
-                             email: String,
-                             firstName: Option[String],
-                             lastName: Option[String],
-                             roles: Seq[Role],
-                             country: Country,
-                             language: Language,
-                             availableQuestions: Seq[QuestionId])
+case class ModeratorResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "ROLE_CITIZEN,ROLE_MODERATOR") roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
+  availableQuestions: Seq[QuestionId]
+) {
+  validate(
+    validateUserInput("email", email, None),
+    validateOptionalUserInput("firstName", firstName, None),
+    validateOptionalUserInput("lastName", lastName, None)
+  )
+}
 
 object ModeratorResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModeratorResponse] = deriveEncoder[ModeratorResponse]
