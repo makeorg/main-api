@@ -21,8 +21,6 @@ package org.make.api.widget
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
-import io.circe.ObjectEncoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -32,7 +30,6 @@ import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestion
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -57,9 +54,14 @@ trait WidgetApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionSlug", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string", allowMultiple = true),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "integer"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer")
+      new ApiImplicitParam(
+        name = "tagsIds",
+        paramType = "query",
+        dataType = "string",
+        example = "ad0065ec-8c80-4f88-b298-bc0956dbc495,4caac845-f219-4455-ae78-8dd2fd5515ce"
+      ),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string", example = "FR"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer", example = "12")
     )
   )
   def startSequenceByQuestionSlug: Route
@@ -111,10 +113,4 @@ trait DefaultWidgetApiComponent
       }
     }
   }
-}
-
-final case class WidgetSequence(title: String, slug: String, proposals: Seq[IndexedProposal])
-
-object WidgetSequence {
-  implicit val encoder: ObjectEncoder[WidgetSequence] = deriveEncoder[WidgetSequence]
 }

@@ -111,9 +111,9 @@ final case class ProposalResponse(
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: ProposalStatus,
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
   createdAt: ZonedDateTime,
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
   updatedAt: Option[ZonedDateTime],
   votes: Seq[VoteResponse],
   context: Option[Context],

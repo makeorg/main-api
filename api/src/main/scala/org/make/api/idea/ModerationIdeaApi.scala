@@ -24,6 +24,7 @@ import akka.http.scaladsl.server._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
+import org.make.core.Validation._
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -37,6 +38,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -56,14 +58,19 @@ trait ModerationIdeaApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[IdeaSearchResult]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[IdeaSearchResult]]))
   )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "questionId",
+        paramType = "query",
+        dataType = "string",
+        example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d"
+      ),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "int", example = "10"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "int", example = "0"),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
     )
@@ -82,7 +89,16 @@ trait ModerationIdeaApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "ideaId", paramType = "path", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "ideaId",
+        paramType = "path",
+        dataType = "string",
+        example = "a10086bb-4312-4486-8f57-91b5e92b3eb9"
+      )
+    )
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
   @Path(value = "/{ideaId}")
   def getIdea: Route
@@ -90,7 +106,7 @@ trait ModerationIdeaApi extends Directives {
   @ApiOperation(
     value = "create-idea",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.Created,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -102,7 +118,7 @@ trait ModerationIdeaApi extends Directives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.idea.CreateIdeaRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[Idea])))
   @Path(value = "/")
   def createIdea: Route
 
@@ -156,7 +172,7 @@ trait DefaultModerationIdeaApiComponent
               (name, questionId, limit, skip, sort, order) =>
                 makeOperation("GetAllIdeas") { requestContext =>
                   makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                    requireAdminRole(userAuth.user) {
+                    requireModerationRole(userAuth.user) {
                       val filters: IdeaFiltersRequest =
                         IdeaFiltersRequest(
                           name = name,
@@ -182,7 +198,7 @@ trait DefaultModerationIdeaApiComponent
           path("moderation" / "ideas" / ideaId) { ideaId =>
             makeOperation("GetIdea") { _ =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                requireAdminRole(userAuth.user) {
+                requireModerationRole(userAuth.user) {
                   provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
                     complete(idea)
                   }
@@ -274,13 +290,21 @@ trait DefaultModerationIdeaApiComponent
     }
 }
 
-final case class CreateIdeaRequest(name: String, questionId: Option[QuestionId])
+final case class CreateIdeaRequest(name: String,
+                                   @(ApiModelProperty @field)(
+                                     dataType = "string",
+                                     example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d"
+                                   ) questionId: Option[QuestionId]) {
+  validate(Validation.validateUserInput("name", name, None))
+}
 
 object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]
 }
 
-final case class UpdateIdeaRequest(name: String)
+final case class UpdateIdeaRequest(name: String) {
+  validate(Validation.validateUserInput("name", name, None))
+}
 
 object UpdateIdeaRequest {
   implicit val decoder: Decoder[UpdateIdeaRequest] = deriveDecoder[UpdateIdeaRequest]
