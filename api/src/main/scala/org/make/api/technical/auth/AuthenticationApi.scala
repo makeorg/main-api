@@ -103,7 +103,7 @@ trait AuthenticationApi extends Directives {
   @Path(value = "/logout")
   def logoutRoute: Route
 
-  val routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
+  def routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
 }
 
 object AuthenticationApi {
@@ -137,9 +137,9 @@ trait DefaultAuthenticationApiComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  val tokenEndpoint: TokenEndpoint
+  def tokenEndpoint: TokenEndpoint
 
-  override def authenticationApi: AuthenticationApi = new AuthenticationApi {
+  override lazy val authenticationApi: AuthenticationApi = new AuthenticationApi {
 
     override def accessTokenRoute: Route = pathPrefix("oauth") {
       path("access_token") {

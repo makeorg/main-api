@@ -21,9 +21,12 @@ package org.make.core.user.indexed
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import org.make.core.{CirceFormatters, SlugHelper}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
+import org.make.core.{CirceFormatters, SlugHelper}
+
+import scala.annotation.meta.field
 
 object OrganisationElasticsearchFieldNames {
   val organisationId = "organisationId"
@@ -40,16 +43,21 @@ object OrganisationElasticsearchFieldNames {
   val country = "country"
 }
 
-case class IndexedOrganisation(organisationId: UserId,
-                               organisationName: Option[String],
-                               slug: Option[String],
-                               avatarUrl: Option[String],
-                               description: Option[String],
-                               publicProfile: Boolean,
-                               proposalsCount: Option[Int],
-                               votesCount: Option[Int],
-                               language: Language,
-                               country: Country)
+case class IndexedOrganisation(
+  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
+  organisationId: UserId,
+  organisationName: Option[String],
+  slug: Option[String],
+  avatarUrl: Option[String],
+  description: Option[String],
+  publicProfile: Boolean,
+  proposalsCount: Option[Int],
+  votesCount: Option[Int],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country
+)
 
 object IndexedOrganisation extends CirceFormatters {
   implicit val encoder: ObjectEncoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]

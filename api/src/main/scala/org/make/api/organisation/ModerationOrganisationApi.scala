@@ -38,6 +38,8 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{CirceFormatters, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
+
 @Api(
   value = "Moderation Organisation",
   authorizations = Array(
@@ -92,7 +94,7 @@ trait ModerationOrganisationApi extends Directives {
 
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[UserResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[UserResponse]]))
   )
   @Path(value = "/")
   def moderationGetOrganisations: Route
@@ -249,10 +251,15 @@ trait DefaultModerationOrganisationApiComponent
 @ApiModel
 final case class ModerationCreateOrganisationRequest(organisationName: String,
                                                      email: String,
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      password: Option[String],
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      description: Option[String],
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      avatarUrl: Option[String],
+                                                     @(ApiModelProperty @field)(dataType = "string", example = "FR")
                                                      country: Option[Country],
+                                                     @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                                      language: Option[Language]) {
   OrganisationValidation.validateCreate(organisationName = organisationName, email = email, description = description)
 }
@@ -262,12 +269,16 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(organisationName: Option[String] = None,
+final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
+                                                     organisationName: Option[String] = None,
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      email: Option[String] = None,
                                                      profile: Option[Profile]) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName,
-    description = profile.flatMap(_.description)
+    email = email,
+    description = profile.flatMap(_.description),
+    profile
   )
 }
 
@@ -285,15 +296,28 @@ private object OrganisationValidation {
       Some(mandatoryField("email", email)),
       Some(mandatoryField("name", organisationName)),
       Some(maxLength("name", maxNameLength, organisationName)),
-      description.map(value => maxLength("description", maxDescriptionLength, value))
+      description.map(value => maxLength("description", maxDescriptionLength, value)),
+      Some(validateUserInput("organisationName", organisationName, None)),
+      Some(validateUserInput("email", email, None)),
+      Some(validateEmail("email", email, None)),
+      description.map(value => validateUserInput("description", value, None))
     )
   }
 
-  def validateUpdate(organisationName: Option[String], description: Option[String]): Unit = {
+  def validateUpdate(organisationName: Option[String],
+                     email: Option[String],
+                     description: Option[String],
+                     profile: Option[Profile]): Unit = {
     validate(
       organisationName.map(value => maxLength("organisationName", maxNameLength, value)),
-      description.map(value      => maxLength("description", maxDescriptionLength, value))
+      organisationName.map(value => validateUserInput("organisationName", value, None)),
+      description.map(value      => maxLength("description", maxDescriptionLength, value)),
+      description.map(value      => validateUserInput("description", value, None)),
+      email.map(value            => validateUserInput("email", value, None))
     )
+
+    validate(email.map(value => validateEmail("email", value, None)))
+    profile.foreach(Profile.validateProfile)
   }
 }
 

@@ -171,13 +171,22 @@ object ProposalsResultSeededResponse {
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
-final case class ProposalResultWithUserVote(proposal: ProposalResponse, vote: VoteKey, voteDate: ZonedDateTime)
+final case class ProposalResultWithUserVote(
+  proposal: ProposalResponse,
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  vote: VoteKey,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  voteDate: ZonedDateTime
+)
 object ProposalResultWithUserVote extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
   implicit val decoder: Decoder[ProposalResultWithUserVote] = deriveDecoder[ProposalResultWithUserVote]
 }
+
+@ApiModel
 final case class ProposalsResultWithUserVoteSeededResponse(total: Long,
                                                            results: Seq[ProposalResultWithUserVote],
+                                                           @(ApiModelProperty @field)(dataType = "int", example = "42")
                                                            seed: Option[Int])
 
 object ProposalsResultWithUserVoteSeededResponse {

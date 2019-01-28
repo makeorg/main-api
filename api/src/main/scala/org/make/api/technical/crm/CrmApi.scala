@@ -68,7 +68,7 @@ trait CrmApi extends Directives {
   @Path(value = "/technical/crm/synchronize")
   def syncCrmData: Route
 
-  val routes: Route = webHook ~ syncCrmData
+  def routes: Route = webHook ~ syncCrmData
 }
 
 trait CrmApiComponent {

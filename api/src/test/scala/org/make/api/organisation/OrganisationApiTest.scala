@@ -49,7 +49,7 @@ import scala.concurrent.Future
 
 class OrganisationApiTest
     extends MakeApiTestBase
-    with OrganisationApi
+    with DefaultOrganisationApiComponent
     with ProposalServiceComponent
     with OperationServiceComponent
     with OrganisationServiceComponent
@@ -73,7 +73,7 @@ class OrganisationApiTest
       )
     )
 
-  val routes: Route = sealRoute(organisationRoutes)
+  val routes: Route = sealRoute(organisationApi.routes)
 
   val now: ZonedDateTime = DateHelper.now()
 
