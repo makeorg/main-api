@@ -681,9 +681,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(
-                    retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
-                  ) { question =>
+                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None, None)) { question =>
                     requireRightsOnQuestion(userAuth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.update(
@@ -742,9 +740,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[ValidateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(
-                    retrieveQuestion(request.questionId, proposalId, request.operation, request.theme)
-                  ) { question =>
+                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None, None)) { question =>
                     requireRightsOnQuestion(auth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.validateProposal(

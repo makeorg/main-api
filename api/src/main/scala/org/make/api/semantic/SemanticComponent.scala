@@ -47,6 +47,7 @@ import org.make.core.reference.Language
 import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
+import scala.annotation.meta.field
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -290,11 +291,15 @@ object SimilarIdeasResponse {
   implicit val decoder: Decoder[SimilarIdeasResponse] = deriveDecoder[SimilarIdeasResponse]
 }
 
-final case class SimilarIdea(ideaId: IdeaId,
-                             ideaName: String,
-                             proposalId: ProposalId,
-                             proposalContent: String,
-                             score: Double)
+final case class SimilarIdea(
+  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
+  ideaId: IdeaId,
+  ideaName: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  proposalId: ProposalId,
+  proposalContent: String,
+  score: Double
+)
 
 object SimilarIdea {
   implicit val encoder: ObjectEncoder[SimilarIdea] = deriveEncoder[SimilarIdea]
