@@ -39,7 +39,7 @@ trait ConfigurationsApi extends Directives {
   )
   def businessConfigurationFront: Route
 
-  final lazy val routes: Route = businessConfigurationFront
+  final def routes: Route = businessConfigurationFront
 
 }
 

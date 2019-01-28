@@ -447,10 +447,10 @@ case class ModeratorResponse(
   email: String,
   firstName: Option[String],
   lastName: Option[String],
-  @(ApiModelProperty @field)(dataType = "list[string]", example = "ROLE_CITIZEN,ROLE_MODERATOR") roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
-  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
+  @(ApiModelProperty @field)(dataType = "list[string]")
   availableQuestions: Seq[QuestionId]
 ) {
   validate(

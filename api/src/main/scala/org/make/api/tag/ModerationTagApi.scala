@@ -35,6 +35,7 @@ import org.make.core.tag.{TagDisplay, TagId, TagTypeId}
 import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -109,7 +110,7 @@ trait ModerationTagApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[TagResponse]]))
   )
   @Path(value = "/")
   def moderationlistTags: Route
@@ -337,11 +338,17 @@ trait DefaultModerationTagApiComponent
     }
 }
 
-case class CreateTagRequest(label: String,
-                            tagTypeId: TagTypeId,
-                            questionId: Option[QuestionId],
-                            display: Option[TagDisplay],
-                            weight: Option[Float]) {
+case class CreateTagRequest(
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fba4d844-af12-454f-b39b-f360561a46fa")
+  tagTypeId: TagTypeId,
+  @(ApiModelProperty @field)(dataType = "string", example = "1f3757ca-9813-4557-a3b4-295f832b0fd0")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
+  display: Option[TagDisplay],
+  @(ApiModelProperty @field)(dataType = "float")
+  weight: Option[Float]
+) {
   Validation.validate(
     Validation
       .requirePresent(fieldName = "question", fieldValue = questionId, message = Some("question should not be empty"))
@@ -352,11 +359,16 @@ object CreateTagRequest {
   implicit val decoder: Decoder[CreateTagRequest] = deriveDecoder[CreateTagRequest]
 }
 
-case class UpdateTagRequest(label: String,
-                            tagTypeId: TagTypeId,
-                            questionId: Option[QuestionId],
-                            display: TagDisplay,
-                            weight: Float) {
+case class UpdateTagRequest(
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fba4d844-af12-454f-b39b-f360561a46fa")
+  tagTypeId: TagTypeId,
+  @(ApiModelProperty @field)(dataType = "string", example = "1f3757ca-9813-4557-a3b4-295f832b0fd0")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
+  display: TagDisplay,
+  weight: Float
+) {
   Validation.validate(
     Validation
       .requirePresent(fieldName = "question", fieldValue = questionId, message = Some("question should not be empty"))

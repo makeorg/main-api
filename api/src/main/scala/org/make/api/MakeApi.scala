@@ -279,6 +279,7 @@ trait MakeApi
     documentation ~
       swagger ~
       optionsCors ~
+      buildRoutes ~
       elasticSearchApi.routes ~
       userApi.routes ~
       adminUserApi.routes ~
@@ -290,7 +291,6 @@ trait MakeApi
       sequenceApi.routes ~
       moderationSequenceApi.routes ~
       optionsAuthorized ~
-      buildRoutes ~
       crmApi.routes ~
       authenticationApi.routes ~
       configurationsApi.routes ~

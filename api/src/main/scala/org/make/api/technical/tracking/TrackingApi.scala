@@ -65,7 +65,7 @@ trait TrackingApi extends Directives {
   @Path(value = "/performance")
   def trackFrontPerformances: Route
 
-  final lazy val routes: Route = frontTracking ~ trackFrontPerformances
+  final def routes: Route = frontTracking ~ trackFrontPerformances
 }
 
 trait TrackingApiComponent {

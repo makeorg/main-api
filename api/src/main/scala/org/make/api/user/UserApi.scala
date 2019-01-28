@@ -40,6 +40,7 @@ import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
   EventBusServiceComponent,
@@ -124,7 +125,7 @@ trait UserApi extends Directives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
   def socialLogin: Route
 
   @Path(value = "/{userId}/votes")
@@ -1321,20 +1322,18 @@ case class UserResponse(
   enabled: Boolean,
   emailVerified: Boolean,
   isOrganisation: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]") lastConnection: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "string", example = "ROLE_CITIZEN,ROLE_MODERATOR") roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]")
+  lastConnection: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN")
+  roles: Seq[Role],
   profile: Option[Profile],
   @(ApiModelProperty @field)(dataType = "string") country: Country,
   @(ApiModelProperty @field)(dataType = "string") language: Language,
   isHardBounce: Boolean,
-  @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse") lastMailingError: Option[
-    MailingErrorLogResponse
-  ],
+  @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
+  lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
-  @(ApiModelProperty @field)(
-    dataType = "string",
-    example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55,65500ec1-175b-4488-a595-91968e990a31"
-  ) followedUsers: Seq[UserId] = Seq.empty
+  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty
 )
 
 object UserResponse extends CirceFormatters {

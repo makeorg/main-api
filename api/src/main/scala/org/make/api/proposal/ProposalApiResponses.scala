@@ -183,7 +183,11 @@ object ProposalsResultResponse {
   implicit val decoder: Decoder[ProposalsResultResponse] = deriveDecoder[ProposalsResultResponse]
 }
 
-final case class ProposalsResultSeededResponse(total: Long, results: Seq[ProposalResponse], seed: Option[Int])
+final case class ProposalsResultSeededResponse(
+  total: Long,
+  results: Seq[ProposalResponse],
+  @(ApiModelProperty @field)(dataType = "int", example = "42") seed: Option[Int]
+)
 
 object ProposalsResultSeededResponse {
   implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]

@@ -35,7 +35,7 @@ sealed trait BusinessConfig {
 case class CountryConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "BE") countryCode: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") defaultLanguage: Language,
-  @(ApiModelProperty @field)(dataType = "list[string]", example = "[\"fr\",\"nl\"]") supportedLanguages: Seq[Language],
+  @(ApiModelProperty @field)(dataType = "list[string]") supportedLanguages: Seq[Language],
   @(ApiModelProperty @field)(dataType = "boolean") coreIsAvailable: Boolean
 )
 object CountryConfiguration {

@@ -57,11 +57,11 @@ trait TagApi extends Directives {
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[tag.Tag]])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[tag.Tag]])))
   @Path(value = "/")
   def listTags: Route
 
-  val routes: Route = getTag ~ listTags
+  final def routes: Route = getTag ~ listTags
 
   val tagId: PathMatcher1[TagId] =
     Segment.flatMap(id => Try(TagId(id)).toOption)
@@ -77,7 +77,7 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     with IdGeneratorComponent
     with MakeSettingsComponent
     with QuestionServiceComponent =>
-  override def tagApi: TagApi = new TagApi {
+  override lazy val tagApi: TagApi = new TagApi {
     override def getTag: Route = get {
       path("tags" / tagId) { tagId =>
         makeOperation("GetTag") { _ =>

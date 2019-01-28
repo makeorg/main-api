@@ -61,7 +61,7 @@ trait ElasticSearchApi extends Directives {
   @Path(value = "/technical/elasticsearch/reindex")
   def reindex: Route
 
-  final lazy val routes: Route = reindex
+  final def routes: Route = reindex
 }
 
 trait ElasticSearchApiComponent {

@@ -56,7 +56,7 @@ import scala.annotation.meta.field
 trait ModerationOrganisationApi extends Directives {
 
   @ApiOperation(value = "post-organisation", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserId])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(

@@ -51,7 +51,9 @@ case class IndexedOrganisation(
   avatarUrl: Option[String],
   description: Option[String],
   publicProfile: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "42")
   proposalsCount: Option[Int],
+  @(ApiModelProperty @field)(dataType = "int", example = "42")
   votesCount: Option[Int],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,

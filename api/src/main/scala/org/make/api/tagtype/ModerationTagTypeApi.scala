@@ -33,6 +33,7 @@ import org.make.core.tag.{TagTypeDisplay, TagTypeId}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.annotation.meta.field
 import scala.util.Try
 
 @Api(value = "Moderation Tag Types")
@@ -135,7 +136,7 @@ trait ModerationTagTypeApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagTypeResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[TagTypeResponse]]))
   )
   @Path(value = "/")
   def moderationListTagTypes: Route
@@ -154,7 +155,7 @@ trait DefaultModerationTagTypeApiComponent
     with ParameterExtractors {
   this: TagTypeServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
-  override def moderationTagTypeApi: ModerationTagTypeApi = new ModerationTagTypeApi {
+  override lazy val moderationTagTypeApi: ModerationTagTypeApi = new ModerationTagTypeApi {
     override def moderationGetTagType: Route = get {
       path("moderation" / "tag-types" / moderationTagTypeId) { tagTypeId =>
         makeOperation("ModerationGetTagType") { _ =>
@@ -240,13 +241,23 @@ trait DefaultModerationTagTypeApiComponent
     Segment.flatMap(id => Try(TagTypeId(id)).toOption)
 }
 
-case class CreateTagTypeRequest(label: String, display: TagTypeDisplay, weight: Int)
+case class CreateTagTypeRequest(
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
+  display: TagTypeDisplay,
+  weight: Int
+)
 
 object CreateTagTypeRequest {
   implicit val decoder: Decoder[CreateTagTypeRequest] = deriveDecoder[CreateTagTypeRequest]
 }
 
-case class UpdateTagTypeRequest(label: String, display: TagTypeDisplay, weight: Int)
+case class UpdateTagTypeRequest(
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
+  display: TagTypeDisplay,
+  weight: Int
+)
 
 object UpdateTagTypeRequest {
   implicit val decoder: Decoder[UpdateTagTypeRequest] = deriveDecoder[UpdateTagTypeRequest]

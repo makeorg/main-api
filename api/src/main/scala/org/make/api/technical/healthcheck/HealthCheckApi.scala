@@ -37,7 +37,7 @@ trait HealthCheckApi extends Directives {
   @Path(value = "/healthcheck")
   def healthCheck: Route
 
-  final lazy val routes: Route = healthCheck
+  final def routes: Route = healthCheck
 }
 
 trait HealthCheckApiComponent {
