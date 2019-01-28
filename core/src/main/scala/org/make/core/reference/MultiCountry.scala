@@ -21,10 +21,13 @@ package org.make.core.reference
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
+import org.make.core.Validation.{maxLength, validate}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 case class Country(value: String) extends StringValue {
   override def toString: String = value
+
+  validate(maxLength("country", 3, value))
 }
 
 object Country {
@@ -48,6 +51,8 @@ object Country {
 
 case class Language(value: String) extends StringValue {
   override def toString: String = value
+
+  validate(maxLength("country", 3, value))
 }
 
 object Language {
