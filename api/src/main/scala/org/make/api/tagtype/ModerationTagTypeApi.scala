@@ -30,15 +30,14 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.tag.{TagTypeDisplay, TagTypeId}
-import org.make.core.{tag, HttpCodes}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.util.Try
 
 @Api(value = "Moderation Tag Types")
 @Path(value = "/moderation/tag-types")
-trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
-  this: TagTypeServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+trait ModerationTagTypeApi extends Directives {
 
   @Path(value = "/{tagTypeId}")
   @ApiOperation(
@@ -55,23 +54,11 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.TagType])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagTypeResponse]))
+  )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string")))
-  def moderationGetTagType: Route = {
-    get {
-      path("moderation" / "tag-types" / moderationTagTypeId) { tagTypeId =>
-        makeOperation("ModerationGetTagType") { _ =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireModerationRole(userAuth.user) {
-              provideAsyncOrNotFound(tagTypeService.getTagType(tagTypeId)) { tagType =>
-                complete(TagTypeResponse(tagType))
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def moderationGetTagType: Route
 
   @ApiOperation(
     value = "create-tag-type",
@@ -92,25 +79,11 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tagtype.CreateTagTypeRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.TagType])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagTypeResponse]))
+  )
   @Path(value = "/")
-  def moderationCreateTagType: Route = post {
-    path("moderation" / "tag-types") {
-      makeOperation("ModerationCreateTagType") { _ =>
-        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          requireModerationRole(userAuth.user) {
-            decodeRequest {
-              entity(as[CreateTagTypeRequest]) { request: CreateTagTypeRequest =>
-                onSuccess(tagTypeService.createTagType(request.label, request.display, request.weight)) { tagType =>
-                  complete(StatusCodes.Created -> TagTypeResponse(tagType))
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def moderationCreateTagType: Route
 
   @ApiOperation(
     value = "update-tag-type",
@@ -132,27 +105,11 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
       new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.TagType])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagTypeResponse]))
+  )
   @Path(value = "/{tagTypeId}")
-  def moderationUpdateTagType: Route = put {
-    path("moderation" / "tag-types" / moderationTagTypeId) { moderationTagTypeId =>
-      makeOperation("ModerationRegisterTagType") { _ =>
-        makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-          requireModerationRole(userAuth.user) {
-            decodeRequest {
-              entity(as[UpdateTagTypeRequest]) { request: UpdateTagTypeRequest =>
-                provideAsyncOrNotFound(
-                  tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display, request.weight)
-                ) { tagType =>
-                  complete(TagTypeResponse(tagType))
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  def moderationUpdateTagType: Route
 
   @ApiOperation(
     value = "list-tag-types",
@@ -181,8 +138,78 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[TagTypeResponse]]))
   )
   @Path(value = "/")
-  def moderationListTagTypes: Route = {
-    get {
+  def moderationListTagTypes: Route
+
+  def routes: Route =
+    moderationGetTagType ~ moderationCreateTagType ~ moderationUpdateTagType ~ moderationListTagTypes
+}
+
+trait ModerationTagTypeApiComponent {
+  def moderationTagTypeApi: ModerationTagTypeApi
+}
+
+trait DefaultModerationTagTypeApiComponent
+    extends ModerationTagTypeApiComponent
+    with MakeAuthenticationDirectives
+    with ParameterExtractors {
+  this: TagTypeServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+
+  override def moderationTagTypeApi: ModerationTagTypeApi = new ModerationTagTypeApi {
+    override def moderationGetTagType: Route = get {
+      path("moderation" / "tag-types" / moderationTagTypeId) { tagTypeId =>
+        makeOperation("ModerationGetTagType") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              provideAsyncOrNotFound(tagTypeService.getTagType(tagTypeId)) { tagType =>
+                complete(TagTypeResponse(tagType))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def moderationCreateTagType: Route = post {
+      path("moderation" / "tag-types") {
+        makeOperation("ModerationCreateTagType") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[CreateTagTypeRequest]) { request: CreateTagTypeRequest =>
+                  Validation.validate(Validation.validateUserInput("label", request.label, None))
+                  onSuccess(tagTypeService.createTagType(request.label, request.display, request.weight)) { tagType =>
+                    complete(StatusCodes.Created -> TagTypeResponse(tagType))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def moderationUpdateTagType: Route = put {
+      path("moderation" / "tag-types" / moderationTagTypeId) { moderationTagTypeId =>
+        makeOperation("ModerationRegisterTagType") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireModerationRole(userAuth.user) {
+              decodeRequest {
+                entity(as[UpdateTagTypeRequest]) { request: UpdateTagTypeRequest =>
+                  Validation.validate(Validation.validateUserInput("label", request.label, None))
+                  provideAsyncOrNotFound(
+                    tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display, request.weight)
+                  ) { tagType =>
+                    complete(TagTypeResponse(tagType))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def moderationListTagTypes: Route = get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
           parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'label.?)) {
@@ -206,10 +233,8 @@ trait ModerationTagTypeApi extends MakeAuthenticationDirectives {
         }
       }
     }
-  }
 
-  val moderationTagTypeRoutes
-    : Route = moderationGetTagType ~ moderationCreateTagType ~ moderationUpdateTagType ~ moderationListTagTypes
+  }
 
   val moderationTagTypeId: PathMatcher1[TagTypeId] =
     Segment.flatMap(id => Try(TagTypeId(id)).toOption)

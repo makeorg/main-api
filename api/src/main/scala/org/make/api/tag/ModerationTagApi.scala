@@ -31,7 +31,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
-import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.tag.{TagDisplay, TagId, TagTypeId}
 import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -57,7 +57,7 @@ trait ModerationTagApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Tag])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagResponse])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
   def moderationGetTag: Route
 
@@ -191,7 +191,8 @@ trait DefaultModerationTagApiComponent
                           fieldName = "label",
                           fieldValue = duplicateLabel,
                           message = Some("Tag label already exist in this context. Duplicates are not allowed")
-                        )
+                        ),
+                        Validation.validateUserInput("label", request.label, None)
                       )
                       provideAsyncOrNotFound {
                         request.questionId.map { questionId =>

@@ -42,6 +42,7 @@ import org.make.api.sessionhistory.{
 }
 import org.make.api.tag._
 import org.make.api.tagtype.{
+  DefaultModerationTagTypeApiComponent,
   DefaultPersistentTagTypeServiceComponent,
   DefaultTagTypeServiceComponent,
   ModerationTagTypeApi
@@ -159,9 +160,9 @@ trait MakeApi
     with DefaultAuthenticationApiComponent
     with DefaultConfigurationsApiComponent
     with DefaultUserApiComponent
-    with TagApi
+    with DefaultTagApiComponent
     with DefaultModerationTagApiComponent
-    with ModerationTagTypeApi
+    with DefaultModerationTagTypeApiComponent
     with DefaultModerationIdeaApiComponent
     with DefaultTrackingApiComponent
     with DefaultMigrationApiComponent
@@ -281,9 +282,9 @@ trait MakeApi
       elasticSearchApi.routes ~
       userApi.routes ~
       adminUserApi.routes ~
-      tagRoutes ~
+      tagApi.routes ~
       moderationTagApi.routes ~
-      moderationTagTypeRoutes ~
+      moderationTagTypeApi.routes ~
       proposalApi.routes ~
       moderationProposalApi.routes ~
       sequenceApi.routes ~

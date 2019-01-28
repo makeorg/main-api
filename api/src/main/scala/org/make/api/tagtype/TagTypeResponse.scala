@@ -30,7 +30,7 @@ import scala.annotation.meta.field
 final case class TagTypeResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "12345678-90ab-cdef-1234-567890abcdef") id: TagTypeId,
   label: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED or HIDDEN") display: TagTypeDisplay,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "DISPLAYED,HIDDEN") display: TagTypeDisplay,
   weight: Int
 )
 
