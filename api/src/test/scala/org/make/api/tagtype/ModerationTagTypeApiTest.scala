@@ -36,7 +36,10 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
-class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi with TagTypeServiceComponent {
+class ModerationTagTypeApiTest
+    extends MakeApiTestBase
+    with DefaultModerationTagTypeApiComponent
+    with TagTypeServiceComponent {
 
   override val tagTypeService: TagTypeService = mock[TagTypeService]
 
@@ -90,7 +93,7 @@ class ModerationTagTypeApiTest extends MakeApiTestBase with ModerationTagTypeApi
         )
     )
 
-  val routes: Route = sealRoute(moderationTagTypeRoutes)
+  val routes: Route = sealRoute(moderationTagTypeApi.routes)
 
   feature("create a tagType") {
     val validTagType = TagType(TagTypeId("valid-tag-type"), "valid TagType", TagTypeDisplay.Hidden)

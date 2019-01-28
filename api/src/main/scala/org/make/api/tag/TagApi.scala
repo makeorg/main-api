@@ -37,19 +37,48 @@ import scala.util.Try
 
 @Api(value = "Tags")
 @Path(value = "/tags")
-trait TagApi extends MakeAuthenticationDirectives with ParameterExtractors {
-  this: TagServiceComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with MakeSettingsComponent
-    with QuestionServiceComponent =>
+trait TagApi extends Directives {
 
   @Path(value = "/{tagId}")
   @ApiOperation(value = "get-tag", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[tag.Tag])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "tagId", paramType = "path", dataType = "string")))
-  def getTag: Route = {
-    get {
+  def getTag: Route
+
+  @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[tag.Tag]])))
+  @Path(value = "/")
+  def listTags: Route
+
+  val routes: Route = getTag ~ listTags
+
+  val tagId: PathMatcher1[TagId] =
+    Segment.flatMap(id => Try(TagId(id)).toOption)
+}
+
+trait TagApiComponent {
+  def tagApi: TagApi
+}
+
+trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDirectives with ParameterExtractors {
+  this: TagServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with QuestionServiceComponent =>
+  override def tagApi: TagApi = new TagApi {
+    override def getTag: Route = get {
       path("tags" / tagId) { tagId =>
         makeOperation("GetTag") { _ =>
           provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
@@ -58,23 +87,8 @@ trait TagApi extends MakeAuthenticationDirectives with ParameterExtractors {
         }
       }
     }
-  }
 
-  @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "end", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[tag.Tag]])))
-  @Path(value = "/")
-  def listTags: Route = {
-    get {
+    override def listTags: Route = get {
       path("tags") {
         makeOperation("Search") { _ =>
           parameters(
@@ -127,10 +141,6 @@ trait TagApi extends MakeAuthenticationDirectives with ParameterExtractors {
         }
       }
     }
+
   }
-
-  val tagRoutes: Route = getTag ~ listTags
-
-  val tagId: PathMatcher1[TagId] =
-    Segment.flatMap(id => Try(TagId(id)).toOption)
 }

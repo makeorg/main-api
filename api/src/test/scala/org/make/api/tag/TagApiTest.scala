@@ -40,7 +40,11 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
-class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent with QuestionServiceComponent {
+class TagApiTest
+    extends MakeApiTestBase
+    with DefaultTagApiComponent
+    with TagServiceComponent
+    with QuestionServiceComponent {
 
   override val tagService: TagService = mock[TagService]
   override val questionService: QuestionService = mock[QuestionService]
@@ -85,7 +89,7 @@ class TagApiTest extends MakeApiTestBase with TagApi with TagServiceComponent wi
   when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagId))))
     .thenReturn(Future.successful(Some(newTag(helloWorldTagText, Some(helloWorldTagId)))))
 
-  val routes: Route = sealRoute(tagRoutes)
+  val routes: Route = sealRoute(tagApi.routes)
 
   feature("get a tag") {
 

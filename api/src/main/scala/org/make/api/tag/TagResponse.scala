@@ -30,16 +30,21 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scala.annotation.meta.field
 
 @ApiModel
-case class TagResponse(@(ApiModelProperty @field)(dataType = "string", example = "tag-slug") id: TagId,
-                       label: String,
-                       @(ApiModelProperty @field)(dataType = "string", example = "INHERIT") display: TagDisplay,
-                       @(ApiModelProperty @field)(dataType = "string") tagTypeId: TagTypeId,
-                       weight: Float,
-                       @(ApiModelProperty @field)(dataType = "string") operationId: Option[OperationId],
-                       @(ApiModelProperty @field)(dataType = "string") themeId: Option[ThemeId],
-                       @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
-                       country: Country,
-                       language: Language)
+case class TagResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "cb46cea0-e6a0-430a-a4e4-cc05860eea5d") id: TagId,
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "DISPLAYED,HIDDEN,INHERIT") display: TagDisplay,
+  @(ApiModelProperty @field)(dataType = "string", example = "fba4d844-af12-454f-b39b-f360561a46fa") tagTypeId: TagTypeId,
+  weight: Float,
+  @(ApiModelProperty @field)(dataType = "string", example = "2392f734-b965-4293-ad45-1073bf1f62c5")
+  operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string", example = "e5e29c5a-817d-4983-85d5-f7b2b86d514d")
+  themeId: Option[ThemeId],
+  @(ApiModelProperty @field)(dataType = "string", example = "1f3757ca-9813-4557-a3b4-295f832b0fd0")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language
+)
 
 object TagResponse {
   implicit val encoder: ObjectEncoder[TagResponse] = deriveEncoder[TagResponse]
