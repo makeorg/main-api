@@ -24,33 +24,57 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.api.technical.TimeSettings
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.annotation.meta.field
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class SequenceConfiguration(sequenceId: SequenceId,
-                                 questionId: QuestionId,
-                                 maxAvailableProposals: Int = 1000,
-                                 newProposalsRatio: Double = 0.5,
-                                 newProposalsVoteThreshold: Int = 100,
-                                 testedProposalsEngagementThreshold: Double = 0.0,
-                                 testedProposalsScoreThreshold: Double = 0.0,
-                                 testedProposalsControversyThreshold: Double = 0.0,
-                                 testedProposalsMaxVotesThreshold: Int = 1500,
-                                 banditEnabled: Boolean = false,
-                                 banditMinCount: Int = 1,
-                                 banditProposalsRatio: Double = 0.0,
-                                 ideaCompetitionEnabled: Boolean = false,
-                                 ideaCompetitionTargetCount: Int = 50,
-                                 ideaCompetitionControversialRatio: Double = 0.0,
-                                 ideaCompetitionControversialCount: Int = 0,
-                                 maxTestedProposalCount: Int = 1000,
-                                 sequenceSize: Int = 12,
-                                 maxVotes: Int = 1500)
+@ApiModel
+case class SequenceConfiguration(
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  sequenceId: SequenceId,
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxAvailableProposals: Int = 1000,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newProposalsRatio: Double = 0.5,
+  @(ApiModelProperty @field)(dataType = "int", example = "100")
+  newProposalsVoteThreshold: Int = 100,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  testedProposalsEngagementThreshold: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  testedProposalsScoreThreshold: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  testedProposalsControversyThreshold: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "int", example = "1500")
+  testedProposalsMaxVotesThreshold: Int = 1500,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  banditEnabled: Boolean = false,
+  @(ApiModelProperty @field)(dataType = "int", example = "1")
+  banditMinCount: Int = 1,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  banditProposalsRatio: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false")
+  ideaCompetitionEnabled: Boolean = false,
+  @(ApiModelProperty @field)(dataType = "int", example = "50")
+  ideaCompetitionTargetCount: Int = 50,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  ideaCompetitionControversialRatio: Double = 0.0,
+  @(ApiModelProperty @field)(dataType = "int", example = "0")
+  ideaCompetitionControversialCount: Int = 0,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000")
+  maxTestedProposalCount: Int = 1000,
+  @(ApiModelProperty @field)(dataType = "int", example = "12")
+  sequenceSize: Int = 12,
+  @(ApiModelProperty @field)(dataType = "int", example = "1500")
+  maxVotes: Int = 1500
+)
 
 object SequenceConfiguration {
   implicit val decoder: Decoder[SequenceConfiguration] = deriveDecoder[SequenceConfiguration]

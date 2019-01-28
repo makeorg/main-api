@@ -22,17 +22,25 @@ import java.time.LocalDate
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 
-case class ModerationQuestionResponse(id: QuestionId,
-                                      slug: String,
-                                      question: String,
-                                      country: Country,
-                                      language: Language)
+import scala.annotation.meta.field
+
+case class ModerationQuestionResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  id: QuestionId,
+  slug: String,
+  question: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language
+)
 object ModerationQuestionResponse {
 
   def apply(question: Question): ModerationQuestionResponse = ModerationQuestionResponse(
@@ -47,17 +55,26 @@ object ModerationQuestionResponse {
   implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
 }
 
-case class QuestionDetailsResponse(questionId: QuestionId,
-                                   operationId: OperationId,
-                                   slug: String,
-                                   question: String,
-                                   country: Country,
-                                   language: Language,
-                                   allowedSources: Seq[String],
-                                   startDate: Option[LocalDate],
-                                   endDate: Option[LocalDate],
-                                   landingSequenceId: SequenceId,
-                                   operationTitle: String)
+case class QuestionDetailsResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
+  questionId: QuestionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId,
+  slug: String,
+  question: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  allowedSources: Seq[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
+  startDate: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
+  endDate: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
+  landingSequenceId: SequenceId,
+  operationTitle: String
+)
 
 object QuestionDetailsResponse extends CirceFormatters {
   def apply(question: Question,
