@@ -38,35 +38,52 @@ import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.annotation.meta.field
 
-final case class ModerationProposalResponse(proposalId: ProposalId,
-                                            slug: String,
-                                            content: String,
-                                            author: UserResponse,
-                                            labels: Seq[LabelId],
-                                            theme: Option[ThemeId] = None,
-                                            status: ProposalStatus,
-                                            refusalReason: Option[String] = None,
-                                            tags: Seq[TagId] = Seq.empty,
-                                            votes: Seq[Vote],
-                                            context: RequestContext,
-                                            createdAt: Option[ZonedDateTime],
-                                            updatedAt: Option[ZonedDateTime],
-                                            events: Seq[ProposalActionResponse],
-                                            idea: Option[IdeaId],
-                                            ideaProposals: Seq[IndexedProposal],
-                                            questionId: Option[QuestionId],
-                                            operationId: Option[OperationId],
-                                            language: Option[Language],
-                                            country: Option[Country])
+final case class ModerationProposalResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  proposalId: ProposalId,
+  slug: String,
+  content: String,
+  author: UserResponse,
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  labels: Seq[LabelId],
+  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
+  theme: Option[ThemeId] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
+  status: ProposalStatus,
+  refusalReason: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  tags: Seq[TagId] = Seq.empty,
+  votes: Seq[Vote],
+  context: RequestContext,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  createdAt: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  updatedAt: Option[ZonedDateTime],
+  events: Seq[ProposalActionResponse],
+  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
+  idea: Option[IdeaId],
+  @(ApiModelProperty @field)(hidden = true)
+  ideaProposals: Seq[IndexedProposal],
+  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Option[Country]
+)
 
 object ModerationProposalResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ModerationProposalResponse] = deriveEncoder[ModerationProposalResponse]
   implicit val decoder: Decoder[ModerationProposalResponse] = deriveDecoder[ModerationProposalResponse]
 }
 
-final case class ProposalActionResponse(date: ZonedDateTime,
+final case class ProposalActionResponse(@(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+                                        date: ZonedDateTime,
                                         user: Option[UserResponse],
                                         actionType: String,
+                                        @(ApiModelProperty @field)(dataType = "java.util.Map")
                                         arguments: Map[String, String])
 
 object ProposalActionResponse extends CirceFormatters {
@@ -94,7 +111,9 @@ final case class ProposalResponse(
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: ProposalStatus,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   createdAt: ZonedDateTime,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   updatedAt: Option[ZonedDateTime],
   votes: Seq[VoteResponse],
   context: Option[Context],

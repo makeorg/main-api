@@ -217,25 +217,19 @@ class ModerationProposalApiTest
   val validateProposalEntity: String = ValidateProposalRequest(
     newContent = None,
     sendNotificationEmail = true,
-    theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
-    similarProposals = None,
     idea = Some(IdeaId("becoming-king")),
-    operation = None,
-    questionId = None
+    questionId = Some(QuestionId("question-fire-and-ice"))
   ).asJson.toString
 
   val validateProposalEntityWithoutTagNorIdea: String = ValidateProposalRequest(
     newContent = None,
     sendNotificationEmail = true,
-    theme = Some(ThemeId("fire and ice")),
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq.empty,
-    similarProposals = None,
     idea = None,
-    operation = None,
-    questionId = None
+    questionId = Some(QuestionId("question-fire-and-ice"))
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -697,9 +691,7 @@ class ModerationProposalApiTest
 
     scenario("validation with moderation role without right on question") {
 
-      when(
-        questionService.findQuestion(matches(Some(ThemeId("fire and ice"))), matches(None), any[Country], any[Language])
-      ).thenReturn(
+      when(questionService.getQuestion(QuestionId("question-fire-and-ice"))).thenReturn(
         Future.successful(
           Some(
             Question(
@@ -817,8 +809,8 @@ class ModerationProposalApiTest
     scenario("validation of proposal without Tag nor Idea") {
       when(
         questionService.findQuestionByQuestionIdOrThemeOrOperation(
+          matches(Some(QuestionId("question-fire-and-ice"))),
           matches(None),
-          matches(Some(ThemeId("fire and ice"))),
           matches(None),
           matches(Country("FR")),
           matches(Language("fr"))

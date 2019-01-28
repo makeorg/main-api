@@ -21,6 +21,7 @@ package org.make.core
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -28,6 +29,8 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+
+import scala.annotation.meta.field
 
 sealed trait ApplicationName {
   def shortName: String
@@ -74,25 +77,37 @@ object ApplicationName {
   }
 }
 
-final case class RequestContext(currentTheme: Option[ThemeId],
-                                userId: Option[UserId] = None,
-                                requestId: String,
-                                sessionId: SessionId,
-                                visitorId: Option[VisitorId] = None,
-                                externalId: String,
-                                country: Option[Country],
-                                detectedCountry: Option[Country] = None,
-                                language: Option[Language],
-                                operationId: Option[OperationId] = None,
-                                source: Option[String],
-                                location: Option[String],
-                                question: Option[String],
-                                hostname: Option[String] = None,
-                                ipAddress: Option[String] = None,
-                                getParameters: Option[Map[String, String]] = None,
-                                userAgent: Option[String] = None,
-                                questionId: Option[QuestionId] = None,
-                                applicationName: Option[ApplicationName] = None)
+final case class RequestContext(
+  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
+  currentTheme: Option[ThemeId],
+  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
+  userId: Option[UserId] = None,
+  requestId: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "af938667-a15a-482b-bd0f-681f09c83e51")
+  sessionId: SessionId,
+  @(ApiModelProperty @field)(dataType = "string", example = "e52d2ac3-a929-43ec-acfa-fb1f486a8c75")
+  visitorId: Option[VisitorId] = None,
+  externalId: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  detectedCountry: Option[Country] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  operationId: Option[OperationId] = None,
+  source: Option[String],
+  location: Option[String],
+  question: Option[String],
+  hostname: Option[String] = None,
+  ipAddress: Option[String] = None,
+  getParameters: Option[Map[String, String]] = None,
+  userAgent: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
+  questionId: Option[QuestionId] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "main-front")
+  applicationName: Option[ApplicationName] = None
+)
 
 object RequestContext {
   implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]

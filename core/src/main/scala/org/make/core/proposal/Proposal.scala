@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.circe.generic.semiauto._
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
@@ -34,6 +35,8 @@ import org.make.core.user.UserId
 import org.make.core.{RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+
+import scala.annotation.meta.field
 
 final case class Proposal(proposalId: ProposalId,
                           slug: String,
@@ -176,7 +179,9 @@ trait BaseQualification {
   def count: Int
 }
 
-final case class Qualification(override val key: QualificationKey, override val count: Int = 0)
+final case class Qualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+                               override val key: QualificationKey,
+                               override val count: Int = 0)
     extends BaseQualification
 
 object Qualification {
@@ -194,7 +199,8 @@ trait BaseVote {
   def qualifications: Seq[BaseQualification]
 }
 
-final case class Vote(override val key: VoteKey,
+final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
+                      override val key: VoteKey,
                       override val count: Int = 0,
                       override val qualifications: Seq[Qualification])
     extends BaseVote

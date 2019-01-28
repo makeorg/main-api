@@ -114,32 +114,46 @@ object ProposalElasticsearchFieldNames {
   val refusalReason: String = "refusalReason"
 }
 
-case class IndexedProposal(id: ProposalId,
-                           userId: UserId,
-                           content: String,
-                           slug: String,
-                           status: ProposalStatus,
-                           createdAt: ZonedDateTime,
-                           updatedAt: Option[ZonedDateTime],
-                           votes: Seq[IndexedVote],
-                           votesCount: Int,
-                           toEnrich: Boolean,
-                           scores: IndexedScores,
-                           context: Option[Context],
-                           trending: Option[String],
-                           labels: Seq[String],
-                           author: Author,
-                           organisations: Seq[IndexedOrganisationInfo],
-                           country: Country,
-                           language: Language,
-                           themeId: Option[ThemeId],
-                           questionId: Option[QuestionId],
-                           tags: Seq[IndexedTag],
-                           ideaId: Option[IdeaId],
-                           operationId: Option[OperationId],
-                           sequencePool: SequencePool,
-                           initialProposal: Boolean,
-                           refusalReason: Option[String])
+case class IndexedProposal(
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  id: ProposalId,
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  userId: UserId,
+  content: String,
+  slug: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
+  status: ProposalStatus,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  createdAt: ZonedDateTime,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  updatedAt: Option[ZonedDateTime],
+  votes: Seq[IndexedVote],
+  votesCount: Int,
+  toEnrich: Boolean,
+  scores: IndexedScores,
+  context: Option[Context],
+  trending: Option[String],
+  labels: Seq[String],
+  author: Author,
+  organisations: Seq[IndexedOrganisationInfo],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
+  themeId: Option[ThemeId],
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  questionId: Option[QuestionId],
+  tags: Seq[IndexedTag],
+  @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
+  ideaId: Option[IdeaId],
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string", example = "tested")
+  sequencePool: SequencePool,
+  initialProposal: Boolean,
+  refusalReason: Option[String]
+)
 
 object IndexedProposal extends CirceFormatters {
   implicit val encoder: Encoder[IndexedProposal] = deriveEncoder[IndexedProposal]
@@ -186,7 +200,8 @@ object IndexedOrganisationInfo {
   implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
 }
 
-final case class IndexedVote(override val key: VoteKey,
+final case class IndexedVote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
+                             override val key: VoteKey,
                              override val count: Int = 0,
                              override val qualifications: Seq[IndexedQualification])
     extends BaseVote
@@ -203,7 +218,9 @@ object IndexedVote {
     )
 }
 
-final case class IndexedQualification(override val key: QualificationKey, override val count: Int = 0)
+final case class IndexedQualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+                                      override val key: QualificationKey,
+                                      override val count: Int = 0)
     extends BaseQualification
 
 object IndexedQualification {
