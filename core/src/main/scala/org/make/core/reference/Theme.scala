@@ -21,10 +21,13 @@ package org.make.core.reference
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.question.QuestionId
 import org.make.core.tag.Tag
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
+
+import scala.annotation.meta.field
 
 final case class GradientColor(from: String, to: String) extends MakeSerializable
 
@@ -33,24 +36,30 @@ object GradientColor {
   implicit val decoder: Decoder[GradientColor] = deriveDecoder[GradientColor]
 }
 
-final case class ThemeTranslation(slug: String, title: String, language: Language) extends MakeSerializable
+final case class ThemeTranslation(slug: String,
+                                  title: String,
+                                  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language)
+    extends MakeSerializable
 
 object ThemeTranslation {
   implicit val encoder: ObjectEncoder[ThemeTranslation] = deriveEncoder[ThemeTranslation]
   implicit val decoder: Decoder[ThemeTranslation] = deriveDecoder[ThemeTranslation]
 }
 
-final case class Theme(themeId: ThemeId,
-                       questionId: Option[QuestionId],
-                       translations: Seq[ThemeTranslation],
-                       actionsCount: Int,
-                       proposalsCount: Long,
-                       votesCount: Int,
-                       country: Country,
-                       color: String,
-                       gradient: Option[GradientColor] = None,
-                       tags: Seq[Tag] = Seq.empty)
-    extends MakeSerializable
+final case class Theme(
+  @(ApiModelProperty @field)(dataType = "string", example = "d0ba60f6-07c8-4493-9be2-1fffa23d27fb") themeId: ThemeId,
+  @(ApiModelProperty @field)(dataType = "string", example = "bb59193e-4d17-44a1-8b0a-6f85e3de7e90") questionId: Option[
+    QuestionId
+  ],
+  translations: Seq[ThemeTranslation],
+  @(ApiModelProperty @field)(dataType = "integer", example = "5") actionsCount: Int,
+  @(ApiModelProperty @field)(dataType = "integer", example = "1200") proposalsCount: Long,
+  @(ApiModelProperty @field)(dataType = "integer", example = "15000") votesCount: Int,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  color: String,
+  gradient: Option[GradientColor] = None,
+  tags: Seq[Tag] = Seq.empty
+) extends MakeSerializable
 
 object Theme {
   implicit val encoder: ObjectEncoder[Theme] = deriveEncoder[Theme]

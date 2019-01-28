@@ -22,12 +22,8 @@ package org.make.api.technical
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
-import io.swagger.annotations._
-import javax.ws.rs.Path
 import org.make.core.tag.{Tag => _}
 
-@Path("/migrations")
-@Api(value = "Migrations")
 trait MigrationApi extends Directives {
 
   def emptyRoute: Route

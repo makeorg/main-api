@@ -20,7 +20,7 @@
 package org.make.api.technical.elasticsearch
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{Api, _}
@@ -36,13 +36,11 @@ import scala.annotation.meta.field
 
 @Api(value = "Elasticsearch")
 @Path(value = "/")
-trait ElasticSearchApi extends MakeAuthenticationDirectives {
-  this: DefaultIndexationComponent with MakeSettingsComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
+trait ElasticSearchApi extends Directives {
 
   @ApiOperation(
     value = "reindex",
     httpMethod = "POST",
-    code = HttpCodes.OK,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -59,23 +57,37 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/technical/elasticsearch/reindex")
-  def reindex: Route = post {
-    path("technical" / "elasticsearch" / "reindex") {
-      makeOAuth2 { auth: AuthInfo[UserRights] =>
-        requireAdminRole(auth.user) {
-          decodeRequest {
-            entity(as[ReindexRequest]) { request: ReindexRequest =>
-              makeOperation("ReindexingData") { _ =>
-                provideAsync(
-                  indexationService.reindexData(
-                    Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                    Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                    Seq(request.forceAll, request.forceProposals).flatten.contains(true)
-                  )
-                ) { _ =>
-                  complete(StatusCodes.NoContent)
+  def reindex: Route
+
+  final lazy val routes: Route = reindex
+}
+
+trait ElasticSearchApiComponent {
+  def elasticSearchApi: ElasticSearchApi
+}
+
+trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with MakeAuthenticationDirectives {
+  this: DefaultIndexationComponent with MakeSettingsComponent with MakeDataHandlerComponent with IdGeneratorComponent =>
+
+  override lazy val elasticSearchApi: ElasticSearchApi = new ElasticSearchApi {
+    def reindex: Route = post {
+      path("technical" / "elasticsearch" / "reindex") {
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            decodeRequest {
+              entity(as[ReindexRequest]) { request: ReindexRequest =>
+                makeOperation("ReindexingData") { _ =>
+                  provideAsync(
+                    indexationService.reindexData(
+                      Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
+                      Seq(request.forceAll, request.forceProposals).flatten.contains(true)
+                    )
+                  ) { _ =>
+                    complete(StatusCodes.NoContent)
+                  }
                 }
               }
             }
@@ -84,8 +96,6 @@ trait ElasticSearchApi extends MakeAuthenticationDirectives {
       }
     }
   }
-
-  val elasticsearchRoutes: Route = reindex
 }
 
 @ApiModel

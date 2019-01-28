@@ -18,7 +18,7 @@
  */
 
 package org.make.api.technical.healthcheck
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import io.swagger.annotations.{Api, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -28,24 +28,36 @@ import org.make.core.HttpCodes
 
 @Api(value = "Health Check")
 @Path(value = "/")
-trait HealthCheckApi extends MakeAuthenticationDirectives {
-  this: MakeSettingsComponent
-    with MakeDataHandlerComponent
-    with IdGeneratorComponent
-    with HealthCheckServiceComponent =>
+trait HealthCheckApi extends Directives {
 
   @ApiOperation(value = "healthcheck", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Map[String, String]]))
   )
   @Path(value = "/healthcheck")
-  def healthCheck: Route = get {
-    path("healthcheck") {
-      makeOperation("HealthCheck") { _ =>
-        provideAsync(healthCheckService.runAllHealthChecks())(result => complete(result))
+  def healthCheck: Route
+
+  final lazy val routes: Route = healthCheck
+}
+
+trait HealthCheckApiComponent {
+  def healthCheckApi: HealthCheckApi
+}
+
+trait DefaultHealthCheckApiComponent extends HealthCheckApiComponent with MakeAuthenticationDirectives {
+  this: MakeSettingsComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with HealthCheckServiceComponent =>
+
+  override lazy val healthCheckApi: HealthCheckApi = new HealthCheckApi {
+    def healthCheck: Route = get {
+      path("healthcheck") {
+        makeOperation("HealthCheck") { _ =>
+          provideAsync(healthCheckService.runAllHealthChecks())(result => complete(result))
+        }
       }
     }
   }
 
-  val healthCheckRoutes: Route = healthCheck
 }

@@ -22,11 +22,14 @@ package org.make.core.tag
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
+
+import scala.annotation.meta.field
 
 final case class TagId(value: String) extends StringValue
 
@@ -91,17 +94,24 @@ object TagDisplay extends StrictLogging {
   case object Inherit extends TagDisplay { override val shortName: String = "INHERIT" }
 }
 
-final case class Tag(tagId: TagId,
-                     label: String,
-                     display: TagDisplay,
-                     tagTypeId: TagTypeId,
-                     weight: Float,
-                     operationId: Option[OperationId],
-                     questionId: Option[QuestionId],
-                     themeId: Option[ThemeId],
-                     country: Country,
-                     language: Language)
-    extends MakeSerializable
+final case class Tag(
+  @(ApiModelProperty @field)(dataType = "string", example = "85a11cad-bb00-4418-9fe4-592154918312") tagId: TagId,
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "DISPLAYED,HIDDEN,INHERIT") display: TagDisplay,
+  @(ApiModelProperty @field)(dataType = "string", example = "419fa418-b16d-4cd8-a371-38f78e75d25f") tagTypeId: TagTypeId,
+  @(ApiModelProperty @field)(dataType = "float", example = "50") weight: Float,
+  @(ApiModelProperty @field)(dataType = "string", example = "7509a527-45ef-464f-9c24-ca7e076c77fb") operationId: Option[
+    OperationId
+  ],
+  @(ApiModelProperty @field)(dataType = "string", example = "bb59193e-4d17-44a1-8b0a-6f85e3de7e90") questionId: Option[
+    QuestionId
+  ],
+  @(ApiModelProperty @field)(dataType = "string", example = "d0ba60f6-07c8-4493-9be2-1fffa23d27fb") themeId: Option[
+    ThemeId
+  ],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language
+) extends MakeSerializable
 
 object Tag {
   implicit val encoder: ObjectEncoder[Tag] = deriveEncoder[Tag]

@@ -21,7 +21,10 @@ package org.make.api.technical.businessconfig
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language, Theme}
+
+import scala.annotation.meta.field
 
 sealed trait BusinessConfig {
   val proposalMaxLength: Int
@@ -29,20 +32,16 @@ sealed trait BusinessConfig {
   val supportedCountries: Seq[CountryConfiguration]
 }
 
-case class CountryConfiguration(countryCode: Country,
-                                defaultLanguage: Language,
-                                supportedLanguages: Seq[Language],
-                                coreIsAvailable: Boolean)
+case class CountryConfiguration(
+  @(ApiModelProperty @field)(dataType = "string", example = "BE") countryCode: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") defaultLanguage: Language,
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "[\"fr\",\"nl\"]") supportedLanguages: Seq[Language],
+  @(ApiModelProperty @field)(dataType = "boolean") coreIsAvailable: Boolean
+)
 object CountryConfiguration {
   implicit val encoder: ObjectEncoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
-
-case class BackofficeConfiguration(override val proposalMaxLength: Int,
-                                   override val themes: Seq[Theme],
-                                   override val supportedCountries: Seq[CountryConfiguration],
-                                   reasonsForRefusal: Seq[String])
-    extends BusinessConfig
 
 case class FrontConfiguration(proposalMinLength: Int,
                               override val proposalMaxLength: Int,
@@ -257,39 +256,6 @@ object FrontConfiguration {
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
       themes = themes,
-      supportedCountries = supportedCountries
-    )
-}
-
-object BackofficeConfiguration {
-  implicit val encoder: ObjectEncoder[BackofficeConfiguration] = deriveEncoder[BackofficeConfiguration]
-  implicit val decoder: Decoder[BackofficeConfiguration] = deriveDecoder[BackofficeConfiguration]
-
-  val defaultMaxProposalsPerSequence: Int = 12
-  val defaultReasonsForRefusal: Seq[String] =
-    Seq(
-      "Incomprehensible",
-      "Off-topic",
-      "Partisan",
-      "Legal",
-      "Advertising",
-      "MultipleIdeas",
-      "InvalidLanguage",
-      "Rudeness",
-      "Test",
-      "Other"
-    )
-
-  def default(
-    proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
-    themes: Seq[Theme] = BusinessConfig.themes,
-    reasonsForRefusal: Seq[String] = defaultReasonsForRefusal,
-    supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries
-  ): BackofficeConfiguration =
-    BackofficeConfiguration(
-      proposalMaxLength = proposalMaxLength,
-      themes = themes,
-      reasonsForRefusal = reasonsForRefusal,
       supportedCountries = supportedCountries
     )
 }
