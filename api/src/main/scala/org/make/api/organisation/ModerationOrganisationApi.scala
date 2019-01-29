@@ -56,7 +56,9 @@ import scala.annotation.meta.field
 trait ModerationOrganisationApi extends Directives {
 
   @ApiOperation(value = "post-organisation", httpMethod = "POST", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationIdResponse]))
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -70,7 +72,9 @@ trait ModerationOrganisationApi extends Directives {
   def moderationPostOrganisation: Route
 
   @ApiOperation(value = "put-organisation", httpMethod = "PUT", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserId])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationIdResponse]))
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -144,7 +148,7 @@ trait DefaultModerationOrganisationApiComponent
                           requestContext
                         )
                     ) { result =>
-                      complete(StatusCodes.Created -> UserResponse(result))
+                      complete(StatusCodes.Created -> OrganisationIdResponse(result.userId))
                     }
                   }
                 }
@@ -171,17 +175,25 @@ trait DefaultModerationOrganisationApiComponent
                       onSuccess(
                         organisationService
                           .update(
-                            organisationId,
-                            OrganisationUpdateData(
-                              name = request.organisationName,
-                              email = maybeEmail,
-                              avatar = request.profile.flatMap(_.avatarUrl),
-                              description = request.profile.flatMap(_.description)
+                            organisation.copy(
+                              organisationName = request.organisationName.orElse(organisation.organisationName),
+                              email = maybeEmail.getOrElse(organisation.email).toLowerCase,
+                              profile = organisation.profile.map(
+                                _.copy(
+                                  avatarUrl = request.profile
+                                    .flatMap(_.avatarUrl)
+                                    .orElse(organisation.profile.flatMap(_.avatarUrl)),
+                                  description = request.profile
+                                    .flatMap(_.description)
+                                    .orElse(organisation.profile.flatMap(_.description))
+                                )
+                              )
                             ),
+                            maybeEmail,
                             requestContext
                           )
                       ) { organisationId =>
-                        complete(StatusCodes.OK -> Map("organisationId" -> organisationId))
+                        complete(StatusCodes.OK -> OrganisationIdResponse(organisationId))
                       }
                     }
                   }
@@ -190,7 +202,6 @@ trait DefaultModerationOrganisationApiComponent
             }
           }
         }
-
       }
     }
 
@@ -199,7 +210,7 @@ trait DefaultModerationOrganisationApiComponent
         path("moderation" / "organisations" / organisationId) { organisationId =>
           makeOperation("ModerationGetOrganisation") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
+              requireAdminRole(auth.user) {
                 provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { user =>
                   complete(OrganisationResponse(user))
                 }
@@ -216,7 +227,7 @@ trait DefaultModerationOrganisationApiComponent
             parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?)) {
               (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
-                  requireModerationRole(auth.user) {
+                  requireAdminRole(auth.user) {
                     order.foreach { orderValue =>
                       Validation.validate(
                         Validation
@@ -340,4 +351,12 @@ object OrganisationResponse extends CirceFormatters {
     country = user.country,
     language = user.language,
   )
+}
+
+final case class OrganisationIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") userId: UserId
+)
+
+object OrganisationIdResponse {
+  implicit val encoder: ObjectEncoder[OrganisationIdResponse] = deriveEncoder[OrganisationIdResponse]
 }
