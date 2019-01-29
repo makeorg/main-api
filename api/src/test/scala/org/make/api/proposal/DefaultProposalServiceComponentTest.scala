@@ -916,6 +916,20 @@ class DefaultProposalServiceComponentTest
         tagsForProposal.tags.isEmpty shouldBe true
       }
     }
+    scenario("semantic fails to return a result") {
+      Mockito
+        .when(tagService.findByQuestionId(any[QuestionId]))
+        .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+        .thenReturn(Future.failed(new RuntimeException("This is an expected exception.")))
+
+      val result: Future[TagsForProposalResponse] =
+        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
+      whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
+        tagsForProposal.tags.isEmpty shouldBe true
+      }
+    }
   }
 
   feature("validate proposal") {
