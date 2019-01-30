@@ -41,7 +41,7 @@ tests-coverage:
     - docker login "https://$NEXUS_URL" --username "$NEXUS_USER" --password "$NEXUS_PASSWORD"
     - docker pull bouncestorage/swift-aio
     - export IMAGE_VERSION=`git rev-parse --short=10 HEAD`
-    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=$IMAGE&version=$IMAGE_VERSION"`
+    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/v1/search/assets/download?docker.imageName=$IMAGE&docker.imageTag=$IMAGE_VERSION"`
     - mkdir -p /var/run/secrets/
     - echo "$SWIFT_REPORTS_CONFIGURATION" > /var/run/secrets/main-api.conf
   script:
@@ -87,10 +87,8 @@ push-image:
     - if [ ! -e /var/run/docker.sock ]; then DOCKER_DRIVER=overlay2 dockerd & fi
     - until docker ps; do echo "waiting for docker to be up..."; sleep 0.5; done
     - docker login "https://${NEXUS_URL}" --username "${NEXUS_USER}" --password "${NEXUS_PASSWORD}"
-    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/beta/search/assets/download?name=$IMAGE&version=$IMAGE_VERSION"`
+    - export SEARCH_CODE=`curl -s -w '%{http_code}' -u $NEXUS_USER:$NEXUS_PASSWORD -o /dev/null "https://$NEXUS_URL/service/rest/v1/search/assets/download?docker.imageName=$IMAGE&docker.imageTag=$IMAGE_VERSION"`
   script:
-    - ls -lah
-    - ls -lah ./dist/
     - docker load -i dist/image.tar.gz
     - >
       if [[ $SEARCH_CODE == "404" ]];then
