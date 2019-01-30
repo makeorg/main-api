@@ -22,15 +22,15 @@ package org.make.api.idea
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
-import org.make.core.Validation._
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.idea._
 import org.make.core.idea.indexed.IdeaSearchResult
@@ -139,7 +139,7 @@ trait ModerationIdeaApi extends Directives {
       new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.idea.UpdateIdeaRequest")
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaId])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaIdResponse])))
   @Path(value = "/{ideaId}")
   def updateIdea: Route
 
@@ -211,7 +211,7 @@ trait DefaultModerationIdeaApiComponent
 
       override def createIdea: Route = post {
         path("moderation" / "ideas") {
-          makeOperation("CreateIdea") { requestContext =>
+          makeOperation("CreateIdea") { _ =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 decodeRequest {
@@ -275,7 +275,7 @@ trait DefaultModerationIdeaApiComponent
                             )
                           }
                           onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
-                            complete(ideaId)
+                            complete(IdeaIdResponse(ideaId))
                           }
                         }
                       }
@@ -337,4 +337,13 @@ final case class IdeaFiltersRequest(name: Option[String],
 
 object IdeaFiltersRequest {
   val empty: IdeaFiltersRequest = IdeaFiltersRequest(None, None, None, None, None, None)
+}
+
+final case class IdeaIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") ideaId: IdeaId
+)
+
+object IdeaIdResponse {
+  implicit val encoder: ObjectEncoder[IdeaIdResponse] = deriveEncoder[IdeaIdResponse]
+  implicit val decoder: Decoder[IdeaIdResponse] = deriveDecoder[IdeaIdResponse]
 }

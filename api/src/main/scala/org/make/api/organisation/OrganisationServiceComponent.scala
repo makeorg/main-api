@@ -56,9 +56,7 @@ trait OrganisationService extends ShortenedNames {
   def count(): Future[Int]
   def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
-  def update(organisationId: UserId,
-             organisationUpdateDate: OrganisationUpdateData,
-             requestContext: RequestContext): Future[Option[UserId]]
+  def update(organisation: User, mayebEmail: Option[String], requestContext: RequestContext): Future[UserId]
   def getVotedProposals(organisationId: UserId,
                         maybeUserId: Option[UserId],
                         filterVotes: Option[Seq[VoteKey]],
@@ -258,45 +256,29 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       } yield {}
     }
 
-    override def update(organisationId: UserId,
-                        organisationUpdateData: OrganisationUpdateData,
-                        requestContext: RequestContext): Future[Option[UserId]] = {
+    override def update(organisation: User,
+                        maybeEmail: Option[String],
+                        requestContext: RequestContext): Future[UserId] = {
       for {
-        emailExists <- updateMailExists(organisationUpdateData.email.map(_.toLowerCase))
-        _           <- verifyEmail(organisationUpdateData.email.map(_.toLowerCase).getOrElse(""), emailExists)
-        update <- persistentUserService
-          .get(organisationId)
-          .flatMap(_.map { registeredOrganisation =>
-            val updateOrganisation =
-              registeredOrganisation.copy(
-                organisationName = organisationUpdateData.name.orElse(registeredOrganisation.organisationName),
-                email = organisationUpdateData.email.getOrElse(registeredOrganisation.email).toLowerCase,
-                profile = registeredOrganisation.profile.map(
-                  _.copy(
-                    avatarUrl =
-                      organisationUpdateData.avatar.orElse(registeredOrganisation.profile.flatMap(_.avatarUrl)),
-                    description =
-                      organisationUpdateData.description.orElse(registeredOrganisation.profile.flatMap(_.description))
-                  )
+        emailExists <- updateMailExists(maybeEmail.map(_.toLowerCase))
+        _           <- verifyEmail(organisation.email.toLowerCase, emailExists)
+        update <- persistentUserService.modify(organisation).flatMap {
+          case Right(orga) =>
+            updateProposalsFromOrganisation(orga.userId).flatMap { _ =>
+              eventBusService.publish(
+                OrganisationUpdatedEvent(
+                  connectedUserId = Some(orga.userId),
+                  userId = orga.userId,
+                  requestContext = requestContext,
+                  country = orga.country,
+                  language = orga.language,
+                  eventDate = DateHelper.now()
                 )
               )
-            persistentUserService.modify(updateOrganisation).flatMap {
-              case Right(organisation) =>
-                eventBusService.publish(
-                  OrganisationUpdatedEvent(
-                    connectedUserId = Some(organisation.userId),
-                    userId = organisation.userId,
-                    requestContext = requestContext,
-                    country = organisation.country,
-                    language = organisation.language,
-                    eventDate = DateHelper.now()
-                  )
-                )
-                updateProposalsFromOrganisation(organisationId)
-                  .flatMap(_ => Future.successful(Some(organisation.userId)))
-              case Left(_) => Future.successful(None)
+              Future.successful(orga.userId)
             }
-          }.getOrElse(Future.successful(None)))
+          case Left(e) => Future.failed(e)
+        }
       } yield update
     }
 

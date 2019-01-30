@@ -303,8 +303,8 @@ class ModerationIdeaApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val ideaId: IdeaId = entityAs[IdeaId]
-        ideaId should be(fooIdeaId)
+        val ideaId: IdeaIdResponse = entityAs[IdeaIdResponse]
+        ideaId.ideaId should be(fooIdeaId)
       }
     }
   }

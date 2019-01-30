@@ -1061,5 +1061,5 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
 }
 
 object DefaultPersistentUserServiceComponent {
-  case class UpdateFailed()
+  case class UpdateFailed() extends Exception
 }

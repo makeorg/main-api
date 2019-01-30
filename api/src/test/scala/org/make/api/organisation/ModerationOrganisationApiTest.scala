@@ -260,8 +260,8 @@ class ModerationOrganisationApiTest
       When("I want to update an organisation")
       Then("I should get a OK status")
       when(organisationService.getOrganisation(any[UserId])).thenReturn(Future.successful(Some(fakeOrganisation)))
-      when(organisationService.update(any[UserId], any[OrganisationUpdateData], any[RequestContext]))
-        .thenReturn(Future.successful(Some(UserId("ABCD"))))
+      when(organisationService.update(any[User], any[Option[String]], any[RequestContext]))
+        .thenReturn(Future.successful(fakeOrganisation.userId))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
@@ -322,11 +322,26 @@ class ModerationOrganisationApiTest
 
       Given("a moderator")
       When("I want to get organisations")
-      Then("I should get an OK status")
+      Then("I should get a forbidden status")
       when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
         .thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    scenario("get organisations with admin role") {
+
+      when(organisationService.count()).thenReturn(Future.successful(1))
+
+      Given("a moderator")
+      When("I want to get organisations")
+      Then("I should get an OK status")
+      when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
+        .thenReturn(Future.successful(Seq(fakeOrganisation)))
+      Get("/moderation/organisations")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }

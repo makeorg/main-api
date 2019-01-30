@@ -266,7 +266,7 @@ class OrganisationServiceTest
   feature("update organisation") {
     scenario("successfully update an organisation by changing the name and avatar") {
       Mockito.reset(eventBusService)
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
+      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
       Mockito
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
@@ -278,79 +278,44 @@ class OrganisationServiceTest
         .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
-      val futureOrganisation = organisationService.update(
-        UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(
-          name = Some("Jeanne Done Corp."),
-          email = None,
-          avatar = Some("anotherAvatarUrl"),
-          description = None
-        ),
-        RequestContext.empty
-      )
+      val futureOrganisation =
+        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
 
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
-        organisationId.isDefined shouldBe true
+      whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
+        organisation shouldBe a[UserId]
       }
       verify(eventBusService, times(1))
         .publish(ArgumentMatchers.any[OrganisationUpdatedEvent])
     }
 
     scenario("successfully update an organisation without changing anything") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
+      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
 
-      val futureOrganisation = organisationService.update(
-        UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
-        RequestContext.empty
-      )
+      val futureOrganisation =
+        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
 
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
-        organisationId.isDefined shouldBe true
+      whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
+        organisation shouldBe a[UserId]
       }
     }
 
     scenario("try to update with mail already exists") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
-      val futureOrganisation = organisationService.update(
-        UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = Some("any@mail.com"), avatar = None, description = None),
-        RequestContext.empty
-      )
+      val futureOrganisation =
+        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
 
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
     }
 
     scenario("Fail update") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Left(UpdateFailed())))
 
-      val futureOrganisation = organisationService.update(
-        UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
-        RequestContext.empty
-      )
+      val futureOrganisation =
+        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
 
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
-        organisationId.isDefined shouldBe false
-      }
-    }
-
-    scenario("Organisation not found") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(None))
-
-      val futureOrganisation = organisationService.update(
-        UserId("AAA-BBB-CCC"),
-        OrganisationUpdateData(name = None, email = None, avatar = None, description = None),
-        RequestContext.empty
-      )
-
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisationId =>
-        organisationId.isDefined shouldBe false
-      }
+      RecoverMethods.recoverToSucceededIf[UpdateFailed](futureOrganisation)
     }
   }
 
