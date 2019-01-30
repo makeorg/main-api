@@ -469,7 +469,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               query.orderBy(userAlias.field(field)).asc.offset(start)
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
-              query.asc.offset(start)
+              query.orderBy(userAlias.email).asc.offset(start)
             case (_, _) => query.orderBy(userAlias.email).asc.offset(start)
           }
           end match {
@@ -515,7 +515,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
               query.orderBy(userAlias.field(field)).asc.offset(start)
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
-              query.asc.offset(start)
+              query.orderBy(userAlias.email).asc.offset(start)
             case (_, _) => query.asc.offset(start)
           }
           end match {
