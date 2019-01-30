@@ -28,7 +28,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SimilarIdea, TagsWithModelResponse}
+import org.make.api.semantic.{PredictedTagsEvent, SemanticComponent, SimilarIdea, TagsWithModelResponse}
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
@@ -89,7 +89,9 @@ trait ProposalService {
              newContent: Option[String],
              question: Question,
              tags: Seq[TagId],
-             idea: Option[IdeaId]): Future[Option[ModerationProposalResponse]]
+             idea: Option[IdeaId],
+             predictedTags: Option[Seq[TagId]],
+             predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
@@ -98,7 +100,9 @@ trait ProposalService {
                        newContent: Option[String],
                        sendNotificationEmail: Boolean,
                        idea: Option[IdeaId],
-                       tags: Seq[TagId]): Future[Option[ModerationProposalResponse]]
+                       tags: Seq[TagId],
+                       predictedTags: Option[Seq[TagId]],
+                       predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
 
   def refuseProposal(proposalId: ProposalId,
                      moderator: UserId,
@@ -196,7 +200,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           newContent = None,
           sendNotificationEmail = false,
           idea = None,
-          tags = tags
+          tags = tags,
+          predictedTags = None,
+          predictedTagsModelName = None
         )
       } yield proposalId
     }
@@ -399,9 +405,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         newContent: Option[String],
                         question: Question,
                         tags: Seq[TagId],
-                        idea: Option[IdeaId]): Future[Option[ModerationProposalResponse]] = {
+                        idea: Option[IdeaId],
+                        predictedTags: Option[Seq[TagId]],
+                        predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
+        (predictedTags, predictedTagsModelName) match {
+          case (Some(pTags), Some(modelName)) =>
+            eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
+          case _ =>
+        }
         toModerationProposalResponse(
           proposalCoordinatorService.update(
             UpdateProposalCommand(
@@ -481,9 +494,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                   newContent: Option[String],
                                   sendNotificationEmail: Boolean,
                                   idea: Option[IdeaId],
-                                  tags: Seq[TagId]): Future[Option[ModerationProposalResponse]] = {
+                                  tags: Seq[TagId],
+                                  predictedTags: Option[Seq[TagId]],
+                                  predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
+        (predictedTags, predictedTagsModelName) match {
+          case (Some(pTags), Some(modelName)) =>
+            eventBusService.publish(PredictedTagsEvent(proposalId, pTags, tags, modelName))
+          case _ =>
+        }
         toModerationProposalResponse(
           proposalCoordinatorService.accept(
             AcceptProposalCommand(
@@ -500,7 +520,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           )
         )
       }
-
     }
 
     override def refuseProposal(proposalId: ProposalId,

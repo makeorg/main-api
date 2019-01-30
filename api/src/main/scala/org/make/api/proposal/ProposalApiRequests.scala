@@ -78,6 +78,13 @@ final case class UpdateProposalRequest(
   tags: Seq[TagId],
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    example = "4e3696a0-0e42-4f1b-be3b-9d851a4839ff,a3daca21-28d2-4748-a9d8-6e7c332812de"
+  )
+  predictedTags: Option[Seq[TagId]],
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  predictedTagsModelName: Option[String]
 ) {
   validate(newContent.map(value => validateUserInput("newContent", value, None)))
 }
@@ -96,7 +103,14 @@ final case class ValidateProposalRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
   idea: Option[IdeaId],
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
-  questionId: Option[QuestionId]
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    example = "4e3696a0-0e42-4f1b-be3b-9d851a4839ff,a3daca21-28d2-4748-a9d8-6e7c332812de"
+  )
+  predictedTags: Option[Seq[TagId]],
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  predictedTagsModelName: Option[String]
 ) {
   validate(newContent.map(value => validateUserInput("newContent", value, None)))
 }

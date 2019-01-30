@@ -25,7 +25,7 @@ import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SemanticService, TagsWithModelResponse}
+import org.make.api.semantic.{PredictedTagsEvent, SemanticComponent, SemanticService, TagsWithModelResponse}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
@@ -49,6 +49,7 @@ import org.make.core.tag._
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
+import org.mockito.Mockito.{times, verify}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -210,26 +211,21 @@ class DefaultProposalServiceComponentTest
   def proposal(id: ProposalId): Proposal = {
     Proposal(
       proposalId = id,
-      author = UserId(s"user-${id.value}"),
-      content = s"proposal with id ${id.value}",
       slug = s"proposal-with-id-${id.value}",
+      content = s"proposal with id ${id.value}",
+      author = UserId(s"user-${id.value}"),
       status = ProposalStatus.Pending,
       createdAt = Some(DateHelper.now()),
       updatedAt = None,
       votes = Seq.empty,
+      labels = Seq.empty,
       country = Some(Country("FR")),
       language = Some(Language("fr")),
-      tags = Seq.empty,
       theme = None,
-      idea = None,
-      operation = None,
+      tags = Seq.empty,
       questionId = None,
-      labels = Seq.empty,
-      refusalReason = None,
-      organisations = Seq.empty,
-      organisationIds = Seq.empty,
-      creationContext = RequestContext.empty,
-      events = Nil
+      events = List.empty,
+      creationContext = RequestContext.empty
     )
   }
 
@@ -418,6 +414,10 @@ class DefaultProposalServiceComponentTest
         )
 
       Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      Mockito
         .when(userService.getUser(UserId("user-unlockable-1")))
         .thenReturn(Future.successful(Some(user(UserId("user-unlockable-1")))))
 
@@ -547,6 +547,10 @@ class DefaultProposalServiceComponentTest
         )
 
       Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      Mockito
         .when(userService.getUser(UserId("user-unlockable")))
         .thenReturn(Future.successful(Some(user(UserId("user-unlockable")))))
 
@@ -618,6 +622,10 @@ class DefaultProposalServiceComponentTest
             )
           )
         )
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
 
       Mockito
         .when(userService.getUser(UserId("user-lockable")))
@@ -751,24 +759,44 @@ class DefaultProposalServiceComponentTest
         .thenReturn(Future.successful(Some(proposal(ProposalId("my-proposal")))))
 
       Mockito
-        .when(proposalCoordinatorService.accept(any[AcceptProposalCommand]))
-        .thenReturn(Future.successful(None))
+        .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
+        .thenReturn(
+          Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
+        )
 
       Mockito
         .when(tagService.findByTagIds(Seq(TagId("my-tag"))))
         .thenReturn(Future.successful(Seq.empty))
 
       Mockito
-        .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
-        .thenReturn(
-          Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
+        .when(
+          proposalCoordinatorService.accept(
+            matches(
+              AcceptProposalCommand(
+                proposalId = ProposalId("my-proposal"),
+                moderator = moderatorId,
+                requestContext = RequestContext.empty,
+                sendNotificationEmail = false,
+                newContent = None,
+                question = question,
+                labels = Seq.empty,
+                tags = Seq(TagId("my-tag")),
+                idea = Some(IdeaId("my-idea"))
+              )
+            )
+          )
         )
+        .thenReturn(Future.successful(None))
+
+      Mockito
+        .when(tagService.findByTagIds(Seq(TagId("my-tag"))))
+        .thenReturn(Future.successful(Seq.empty))
 
       val result = proposalService.createInitialProposal(
         "my content",
         question,
         Seq(TagId("my-tag")),
-        moderator = UserId("moderator"),
+        moderator = moderatorId,
         moderatorRequestContext = RequestContext.empty,
         author = AuthorRequest(None, None, None, None, None)
       )
@@ -890,6 +918,96 @@ class DefaultProposalServiceComponentTest
     }
   }
 
+  feature("validate proposal") {
+    val proposalId = ProposalId("validate-proposal")
+
+    val question = Question(
+      questionId = QuestionId("question-id"),
+      slug = "question",
+      country = Country("FR"),
+      language = Language("fr"),
+      question = "question",
+      operationId = None,
+      themeId = None
+    )
+
+    val validatedProposal = proposal(proposalId)
+
+    Mockito
+      .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
+      .thenReturn(
+        Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
+      )
+
+    Mockito
+      .when(proposalCoordinatorService.getProposal(proposalId))
+      .thenReturn(Future.successful(Some(validatedProposal)))
+
+    Mockito
+      .when(
+        proposalCoordinatorService.accept(
+          matches(
+            AcceptProposalCommand(
+              proposalId = proposalId,
+              moderator = moderatorId,
+              requestContext = RequestContext.empty,
+              sendNotificationEmail = false,
+              newContent = None,
+              question = question,
+              labels = Seq.empty,
+              tags = Seq.empty,
+              idea = None
+            )
+          )
+        )
+      )
+      .thenReturn(Future.successful(Some(validatedProposal)))
+
+    scenario("validate without predicted tags") {
+      whenReady(
+        proposalService.validateProposal(
+          proposalId = proposalId,
+          moderator = moderatorId,
+          requestContext = RequestContext.empty,
+          question = question,
+          newContent = None,
+          sendNotificationEmail = false,
+          idea = None,
+          tags = Seq.empty,
+          predictedTags = None,
+          predictedTagsModelName = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal.isDefined should be(true)
+        maybeProposal.map(_.proposalId) should be(Some(proposalId))
+      }
+    }
+
+    scenario("validate with predicted tags") {
+      whenReady(
+        proposalService.validateProposal(
+          proposalId = proposalId,
+          moderator = moderatorId,
+          requestContext = RequestContext.empty,
+          question = question,
+          newContent = None,
+          sendNotificationEmail = false,
+          idea = None,
+          tags = Seq.empty,
+          predictedTags = Some(Seq(TagId("predicted-tag-id"))),
+          predictedTagsModelName = Some("auto")
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        verify(eventBusService, times(1))
+          .publish(matches(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
+        maybeProposal.isDefined should be(true)
+        maybeProposal.map(_.proposalId) should be(Some(proposalId))
+      }
+    }
+  }
+
   feature("update proposal") {
     scenario("update proposal with both tags") {
 
@@ -900,18 +1018,6 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(userService.getUser(UserId("user-update-proposal")))
         .thenReturn(Future.successful(Some(user(UserId("user-update-proposal")))))
-
-      Mockito
-        .when(tagTypeService.findAll())
-        .thenReturn(
-          Future.successful(
-            Seq(
-              TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
-              TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
-              TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
-            )
-          )
-        )
 
       val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
 
@@ -1041,7 +1147,9 @@ class DefaultProposalServiceComponentTest
         newContent = None,
         question = question,
         tags = tagIds,
-        idea = None
+        idea = None,
+        predictedTags = None,
+        predictedTagsModelName = None
       )
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
@@ -1104,7 +1212,9 @@ class DefaultProposalServiceComponentTest
         newContent = None,
         question = question,
         tags = tagIds,
-        idea = None
+        idea = None,
+        predictedTags = None,
+        predictedTagsModelName = None
       )
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
@@ -1165,7 +1275,9 @@ class DefaultProposalServiceComponentTest
         newContent = None,
         question = question,
         tags = tagIds,
-        idea = Some(IdeaId("moderator-idea"))
+        idea = Some(IdeaId("moderator-idea")),
+        predictedTags = None,
+        predictedTagsModelName = None
       )
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
@@ -1183,18 +1295,6 @@ class DefaultProposalServiceComponentTest
       Mockito
         .when(userService.getUser(UserId("user-update-proposal-4")))
         .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-4")))))
-
-      Mockito
-        .when(tagTypeService.findAll())
-        .thenReturn(
-          Future.successful(
-            Seq(
-              TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
-              TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
-              TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
-            )
-          )
-        )
 
       val tagIds = Seq(TagId("solution-1"), TagId("solution-2"), TagId("other"))
 
@@ -1300,13 +1400,99 @@ class DefaultProposalServiceComponentTest
         newContent = None,
         question = question,
         tags = tagIds,
-        idea = None
+        idea = None,
+        predictedTags = None,
+        predictedTagsModelName = None
       )
 
       whenReady(update, Timeout(5.seconds)) { maybeProposal =>
         maybeProposal.flatMap(_.idea) should contain(IdeaId("update-idea-2"))
       }
 
+    }
+
+    val proposalId = ProposalId("update-proposal")
+
+    val question = Question(
+      questionId = QuestionId("question-id"),
+      slug = "question",
+      country = Country("FR"),
+      language = Language("fr"),
+      question = "question",
+      operationId = None,
+      themeId = None
+    )
+
+    val now = DateHelper.now()
+
+    val updatedProposal = proposal(proposalId)
+
+    Mockito
+      .when(proposalCoordinatorService.update(any[UpdateProposalCommand]))
+      .thenReturn(Future.successful(Some(updatedProposal)))
+
+    Mockito
+      .when(
+        proposalCoordinatorService.update(
+          matches(
+            UpdateProposalCommand(
+              proposalId = proposalId,
+              moderator = moderatorId,
+              requestContext = RequestContext.empty,
+              updatedAt = now,
+              newContent = None,
+              question = question,
+              labels = Seq.empty,
+              tags = Seq.empty,
+              idea = None
+            )
+          )
+        )
+      )
+      .thenReturn(Future.successful(Some(updatedProposal)))
+
+    scenario("update without predicted tags") {
+      whenReady(
+        proposalService.update(
+          proposalId = proposalId,
+          moderator = moderatorId,
+          requestContext = RequestContext.empty,
+          updatedAt = now,
+          newContent = None,
+          question = question,
+          idea = None,
+          tags = Seq.empty,
+          predictedTags = None,
+          predictedTagsModelName = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal.isDefined should be(true)
+        maybeProposal.map(_.proposalId) should be(Some(proposalId))
+      }
+    }
+
+    scenario("update with predicted tags") {
+      whenReady(
+        proposalService.update(
+          proposalId = proposalId,
+          moderator = moderatorId,
+          requestContext = RequestContext.empty,
+          updatedAt = DateHelper.now(),
+          newContent = None,
+          question = question,
+          idea = None,
+          tags = Seq.empty,
+          predictedTags = Some(Seq(TagId("predicted-tag-id"))),
+          predictedTagsModelName = Some("auto")
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        verify(eventBusService, times(1))
+          .publish(matches(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
+        maybeProposal.isDefined should be(true)
+        maybeProposal.map(_.proposalId) should be(Some(proposalId))
+      }
     }
   }
 

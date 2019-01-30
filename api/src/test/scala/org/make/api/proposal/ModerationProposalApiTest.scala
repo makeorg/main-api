@@ -220,7 +220,9 @@ class ModerationProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq(TagId("dragon"), TagId("sword")),
     idea = Some(IdeaId("becoming-king")),
-    questionId = Some(QuestionId("question-fire-and-ice"))
+    questionId = Some(QuestionId("question-fire-and-ice")),
+    predictedTags = None,
+    predictedTagsModelName = None
   ).asJson.toString
 
   val validateProposalEntityWithoutTagNorIdea: String = ValidateProposalRequest(
@@ -229,7 +231,9 @@ class ModerationProposalApiTest
     labels = Seq(LabelId("sex"), LabelId("violence")),
     tags = Seq.empty,
     idea = None,
-    questionId = Some(QuestionId("question-fire-and-ice"))
+    questionId = Some(QuestionId("question-fire-and-ice")),
+    predictedTags = None,
+    predictedTagsModelName = None
   ).asJson.toString
 
   val refuseProposalWithReasonEntity: String =
@@ -310,7 +314,9 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[TagId]]
+        any[Seq[TagId]],
+        any[Option[Seq[TagId]]],
+        any[Option[String]]
       )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
   when(
@@ -323,7 +329,9 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[TagId]]
+        any[Seq[TagId]],
+        any[Option[Seq[TagId]]],
+        any[Option[String]]
       )
   ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
   when(
@@ -336,7 +344,9 @@ class ModerationProposalApiTest
         any[Option[String]],
         any[Boolean],
         any[Option[IdeaId]],
-        any[Seq[TagId]]
+        any[Seq[TagId]],
+        any[Option[Seq[TagId]]],
+        any[Option[String]]
       )
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
   when(

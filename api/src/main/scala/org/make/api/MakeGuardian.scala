@@ -23,7 +23,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.MakeGuardian.{Ping, Pong}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
 import org.make.api.proposal.ProposalSupervisor
-import org.make.api.semantic.SemanticProducerActor
+import org.make.api.semantic.{SemanticPredictionsProducerActor, SemanticProducerActor}
 import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
@@ -69,6 +69,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     context.watch(context.actorOf(CrmContactProducerActor.props, CrmContactProducerActor.name))
 
     context.watch(context.actorOf(SemanticProducerActor.props, SemanticProducerActor.name))
+    context.watch(context.actorOf(SemanticPredictionsProducerActor.props, SemanticPredictionsProducerActor.name))
 
     context.watch {
       val (props, name) =
