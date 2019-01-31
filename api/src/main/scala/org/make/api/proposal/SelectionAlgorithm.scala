@@ -252,7 +252,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                              proposals: Seq[IndexedProposal]): IndexedProposal = {
 
       val proposalsScored: Seq[ScoredProposal] =
-        proposals.map(p => ScoredProposal(p, ProposalScorerHelper.sampleScore(p.votes)))
+        proposals.map(p => ScoredProposal(p, ProposalScorerHelper.sampleTopScore(p.votes)))
 
       val shortList = if (proposals.length < sequenceConfiguration.banditMinCount) {
         proposals
@@ -277,7 +277,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
     def selectIdeasWithChampions(champions: Map[IdeaId, IndexedProposal], count: Int): Seq[IdeaId] = {
       val scoredIdea: Seq[ScoredIdeaId] =
-        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorerHelper.sampleScore(p.votes)) }
+        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorerHelper.sampleTopScore(p.votes)) }
       scoredIdea.sortBy(-_.score).take(count).map(_.ideaId)
     }
 

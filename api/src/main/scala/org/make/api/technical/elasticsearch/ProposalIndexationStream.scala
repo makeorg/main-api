@@ -182,7 +182,7 @@ trait ProposalIndexationStream
           topScore = ProposalScorerHelper.topScore(proposal.votes),
           controversy = ProposalScorerHelper.controversy(proposal.votes),
           rejection = ProposalScorerHelper.rejection(proposal.votes),
-          scoreUpperBound = ProposalScorerHelper.scoreUpperBound(proposal.votes)
+          scoreUpperBound = ProposalScorerHelper.topScoreUpperBound(proposal.votes)
         ),
         context = Some(
           ProposalContext(
