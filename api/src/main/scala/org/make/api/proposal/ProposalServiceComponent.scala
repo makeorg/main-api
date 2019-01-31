@@ -32,6 +32,7 @@ import org.make.api.semantic.{PredictedTagsEvent, SemanticComponent, SimilarIdea
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
@@ -178,7 +179,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with QuestionServiceComponent
     with IdeaMappingServiceComponent
     with TagServiceComponent
-    with TagTypeServiceComponent =>
+    with TagTypeServiceComponent
+    with SecurityConfigurationComponent =>
 
   override lazy val proposalService: ProposalService = new ProposalService {
 
@@ -296,12 +298,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     private def mergeVoteResults(maybeUserId: Option[UserId],
                                  searchResult: ProposalsSearchResult,
-                                 votes: Map[ProposalId, VoteAndQualifications]): ProposalsResultResponse = {
+                                 votes: Map[ProposalId, VoteAndQualifications],
+                                 requestContext: RequestContext): ProposalsResultResponse = {
       val proposals = searchResult.results.map { indexedProposal =>
+        val proposalKey =
+          SecurityHelper.generateProposalKeyHash(
+            indexedProposal.id,
+            requestContext.sessionId,
+            requestContext.location,
+            securityConfiguration.secureVoteSalt
+          )
         ProposalResponse.apply(
           indexedProposal,
           myProposal = maybeUserId.contains(indexedProposal.userId),
-          votes.get(indexedProposal.id)
+          votes.get(indexedProposal.id),
+          proposalKey
         )
       }
       ProposalsResultResponse(searchResult.total, proposals)
@@ -316,13 +327,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           case Some(userId) =>
             userHistoryCoordinatorService
               .retrieveVoteAndQualifications(RequestVoteValues(userId, searchResult.results.map(_.id)))
-              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
+              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
           case None =>
             sessionHistoryCoordinatorService
               .retrieveVoteAndQualifications(
                 RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
               )
-              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes))
+              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
         }
       }.map { proposalResultResponse =>
         ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)

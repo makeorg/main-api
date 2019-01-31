@@ -533,7 +533,8 @@ class ModerationProposalApiTest
     myProposal = false,
     idea = None,
     operationId = None,
-    questionId = None
+    questionId = None,
+    proposalKey = "pr0p0541k3y"
   )
 
   when(

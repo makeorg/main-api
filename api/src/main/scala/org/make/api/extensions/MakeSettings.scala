@@ -80,7 +80,7 @@ object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
 
 trait MakeSettingsExtension { self: Actor =>
 
-  val settings = MakeSettings(context.system)
+  val settings: MakeSettings = MakeSettings(context.system)
 }
 
 trait MakeSettingsComponent {

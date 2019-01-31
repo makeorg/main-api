@@ -26,14 +26,10 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResponse
 import org.make.api.user.UserResponse
-import org.make.core.RequestContext
-import org.make.core.history.HistoryActions
+import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.ThemeId
-import org.make.core.sequence.indexed.IndexedStartSequence
 import org.make.core.sequence.{SequenceId, SequenceStatus, SequenceTranslation}
-import org.make.core.user.UserId
-import org.make.core.CirceFormatters
 import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
@@ -76,22 +72,4 @@ final case class SequenceResult(
 
 object SequenceResult {
   implicit val encoder: ObjectEncoder[SequenceResult] = deriveEncoder[SequenceResult]
-
-  def apply(sequence: IndexedStartSequence,
-            user: Option[UserId],
-            votesAndQualifications: Option[HistoryActions.VoteAndQualifications]): SequenceResult = {
-    SequenceResult(
-      id = sequence.id,
-      title = sequence.title,
-      slug = sequence.slug,
-      proposals = sequence.proposals.map(
-        p =>
-          ProposalResponse(
-            indexedProposal = p,
-            myProposal = user.contains(p.userId),
-            voteAndQualifications = votesAndQualifications
-        )
-      )
-    )
-  }
 }

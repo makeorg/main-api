@@ -134,7 +134,8 @@ final case class ProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
-  operationId: Option[OperationId]
+  operationId: Option[OperationId],
+  proposalKey: String
 )
 
 object ProposalResponse extends CirceFormatters {
@@ -143,7 +144,8 @@ object ProposalResponse extends CirceFormatters {
 
   def apply(indexedProposal: IndexedProposal,
             myProposal: Boolean,
-            voteAndQualifications: Option[VoteAndQualifications]): ProposalResponse =
+            voteAndQualifications: Option[VoteAndQualifications],
+            proposalKey: String): ProposalResponse =
     ProposalResponse(
       id = indexedProposal.id,
       userId = indexedProposal.userId,
@@ -171,7 +173,8 @@ object ProposalResponse extends CirceFormatters {
       myProposal = myProposal,
       idea = indexedProposal.ideaId,
       questionId = indexedProposal.questionId,
-      operationId = indexedProposal.operationId
+      operationId = indexedProposal.operationId,
+      proposalKey = proposalKey
     )
 }
 

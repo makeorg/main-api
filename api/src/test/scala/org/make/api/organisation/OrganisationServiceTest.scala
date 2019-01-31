@@ -464,8 +464,18 @@ class OrganisationServiceTest
             ProposalsResultSeededResponse(
               total = 2,
               results = Seq(
-                ProposalResponse(indexedProposal(ProposalId("proposal2")), myProposal = false, None),
-                ProposalResponse(indexedProposal(ProposalId("proposal1")), myProposal = false, None)
+                ProposalResponse(
+                  indexedProposal(ProposalId("proposal2")),
+                  myProposal = false,
+                  None,
+                  proposalKey = "pr0p0541k3y"
+                ),
+                ProposalResponse(
+                  indexedProposal(ProposalId("proposal1")),
+                  myProposal = false,
+                  None,
+                  proposalKey = "pr0p0541k3y"
+                )
               ),
               seed = None
             )

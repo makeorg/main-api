@@ -31,6 +31,7 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
@@ -202,7 +203,8 @@ trait DefaultProposalApiComponent
     with MakeSettingsComponent
     with UserServiceComponent
     with OperationServiceComponent
-    with QuestionServiceComponent =>
+    with QuestionServiceComponent
+    with SecurityConfigurationComponent =>
 
   override lazy val proposalApi: ProposalApi = new ProposalApi {
 
@@ -218,8 +220,20 @@ trait DefaultProposalApiComponent
                 sessionHistoryCoordinatorService
                   .retrieveVoteAndQualifications(RequestSessionVoteValues(requestContext.sessionId, Seq(proposalId)))
               ) { votes =>
+                val proposalKey =
+                  SecurityHelper.generateProposalKeyHash(
+                    proposalId,
+                    requestContext.sessionId,
+                    requestContext.location,
+                    securityConfiguration.secureVoteSalt
+                  )
                 complete(
-                  ProposalResponse(proposal, requestContext.userId.contains(proposal.userId), votes.get(proposalId))
+                  ProposalResponse(
+                    proposal,
+                    requestContext.userId.contains(proposal.userId),
+                    votes.get(proposalId),
+                    proposalKey
+                  )
                 )
               }
             }

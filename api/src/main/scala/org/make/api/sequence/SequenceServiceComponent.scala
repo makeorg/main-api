@@ -24,6 +24,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
 import org.make.api.sessionhistory._
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
@@ -65,6 +66,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with MakeSettingsComponent
     with SelectionAlgorithmComponent
     with SequenceConfigurationComponent
+    with SecurityConfigurationComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new SequenceService {
@@ -153,10 +155,21 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             title = "deprecated",
             slug = "deprecated",
             proposals = selectedProposals
-              .map(
-                indexed =>
-                  ProposalResponse(indexed, maybeUserId.contains(indexed.userId), sequenceVotes.get(indexed.id))
-              )
+              .map(indexed => {
+                val proposalKey =
+                  SecurityHelper.generateProposalKeyHash(
+                    indexed.id,
+                    requestContext.sessionId,
+                    requestContext.location,
+                    securityConfiguration.secureVoteSalt
+                  )
+                ProposalResponse(
+                  indexed,
+                  maybeUserId.contains(indexed.userId),
+                  sequenceVotes.get(indexed.id),
+                  proposalKey
+                )
+              })
           )
         )
       }

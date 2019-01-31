@@ -951,9 +951,24 @@ class UserApiTest
       indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None, themeId = Some(ThemeId("theme1")))
     val proposalsResult: Seq[ProposalResponse] =
       Seq(
-        ProposalResponse(indexedProposal = indexedProposal1, myProposal = false, voteAndQualifications = None),
-        ProposalResponse(indexedProposal = indexedProposal2, myProposal = false, voteAndQualifications = None),
-        ProposalResponse(indexedProposal = indexedProposal3, myProposal = false, voteAndQualifications = None)
+        ProposalResponse(
+          indexedProposal = indexedProposal1,
+          myProposal = false,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        ),
+        ProposalResponse(
+          indexedProposal = indexedProposal2,
+          myProposal = false,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        ),
+        ProposalResponse(
+          indexedProposal = indexedProposal3,
+          myProposal = false,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        )
       )
 
     Mockito
@@ -1092,9 +1107,24 @@ class UserApiTest
     val indexedProposal3 = indexedProposal1.copy(operationId = None, themeId = Some(ThemeId("theme1")))
     val proposalsResult: Seq[ProposalResponse] =
       Seq(
-        ProposalResponse(indexedProposal = indexedProposal1, myProposal = true, voteAndQualifications = None),
-        ProposalResponse(indexedProposal = indexedProposal2, myProposal = true, voteAndQualifications = None),
-        ProposalResponse(indexedProposal = indexedProposal3, myProposal = true, voteAndQualifications = None)
+        ProposalResponse(
+          indexedProposal = indexedProposal1,
+          myProposal = true,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        ),
+        ProposalResponse(
+          indexedProposal = indexedProposal2,
+          myProposal = true,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        ),
+        ProposalResponse(
+          indexedProposal = indexedProposal3,
+          myProposal = true,
+          voteAndQualifications = None,
+          proposalKey = "pr0p0541k3y"
+        )
       )
 
     Mockito
