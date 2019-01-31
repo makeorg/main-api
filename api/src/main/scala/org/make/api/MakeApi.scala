@@ -60,6 +60,7 @@ import org.make.api.technical.elasticsearch.{
 }
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
+import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage.{
   DefaultStorageConfigurationComponent,
   DefaultStorageServiceComponent,
@@ -171,6 +172,8 @@ trait MakeApi
     with DefaultModerationOrganisationApiComponent
     with DefaultOrganisationApiComponent
     with DefaultModerationProposalApiComponent
+    with DefaultSecurityApiComponent
+    with DefaultSecurityConfigurationComponent
     with DefaultWidgetApiComponent
     with DefaultWidgetServiceComponent
     with BuildInfoRoutes
@@ -258,7 +261,8 @@ trait MakeApi
       classOf[QuestionApi],
       classOf[WidgetApi],
       classOf[AdminUserApi],
-      classOf[AdminIdeaMappingApi]
+      classOf[AdminIdeaMappingApi],
+      classOf[SecurityApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -306,7 +310,8 @@ trait MakeApi
       questionApi.routes ~
       moderationQuestionApi.routes ~
       moderationOperationOfQuestionApi.routes ~
-      adminIdeaMappingApi.routes
+      adminIdeaMappingApi.routes ~
+      securityApi.routes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

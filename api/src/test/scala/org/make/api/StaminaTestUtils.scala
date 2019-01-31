@@ -20,11 +20,23 @@
 package org.make.api
 import java.nio.ByteOrder
 
-import javax.xml.bind.DatatypeConverter
 import org.make.api.technical.MakeEventSerializer
 import stamina.ByteString
 
 object StaminaTestUtils {
+
+//  copied from org.apache.logging.log4j.core.config.plugins.convert.HexConverter
+  private def parseHexBinary(s: String): Array[Byte] = {
+    val len = s.length
+    val data = new Array[Byte](len / 2)
+    var i = 0
+    while ({ i < len }) {
+      data(i / 2) = ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16)).toByte
+      i += 2
+    }
+    data
+  }
+
   private val initialCharactersToSkip: Int = 2
 
   def deserializeEventFromJson[A](eventKey: String, eventAsJsonString: String): A = {
@@ -44,13 +56,13 @@ object StaminaTestUtils {
   def deserializeEventFromHexa[A](serialized: String): A = {
     val makeEventSerializer: MakeEventSerializer = new MakeEventSerializer()
 
-    val bytes: Array[Byte] = DatatypeConverter.parseHexBinary(serialized.substring(initialCharactersToSkip))
+    val bytes: Array[Byte] = parseHexBinary(serialized.substring(initialCharactersToSkip))
 
     makeEventSerializer.fromBinary(bytes).asInstanceOf[A]
   }
 
   def getVersionFromHexa(serialized: String): Int = {
-    val bytes: Array[Byte] = DatatypeConverter.parseHexBinary(serialized.substring(initialCharactersToSkip))
+    val bytes: Array[Byte] = parseHexBinary(serialized.substring(initialCharactersToSkip))
     val start = bytes.take(4)
     val skip = start.map(_.toInt).sum
 
@@ -58,7 +70,7 @@ object StaminaTestUtils {
   }
 
   def getEventNameFromHexa(serialized: String): String = {
-    val bytes: Array[Byte] = DatatypeConverter.parseHexBinary(serialized.substring(initialCharactersToSkip))
+    val bytes: Array[Byte] = parseHexBinary(serialized.substring(initialCharactersToSkip))
     val start = bytes.take(4)
     val skip = start.map(_.toInt).sum
     new String(bytes.slice(4, skip + 4), "UTF-8")
