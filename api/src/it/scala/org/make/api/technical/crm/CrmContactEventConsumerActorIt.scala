@@ -391,6 +391,7 @@ object CrmContactEventConsumerActorIt {
       |      ideas = "ideas"
       |      crm-contact = "crm-contact"
       |      users-update = "users-update"
+      |      predictions = "predictions"
       |    }
       |  }
       |}

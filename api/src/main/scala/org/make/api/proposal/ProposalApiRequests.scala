@@ -103,7 +103,7 @@ final case class ValidateProposalRequest(
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "list[string]")
   predictedTags: Option[Seq[TagId]],
-  @(ApiModelProperty @field)(dataType = "list[string]")
+  @(ApiModelProperty @field)(dataType = "string")
   predictedTagsModelName: Option[String]
 ) {
   validate(newContent.map(value => validateUserInput("newContent", value, None)))

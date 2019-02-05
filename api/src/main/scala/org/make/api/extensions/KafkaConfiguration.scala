@@ -35,7 +35,8 @@ class KafkaConfiguration(override protected val configuration: Config) extends E
     "tracking-events" -> configuration.getString("topics.tracking-events"),
     "ideas" -> configuration.getString("topics.ideas"),
     "crm-contact" -> configuration.getString("topics.crm-contact"),
-    "users-update" -> configuration.getString("topics.users-update")
+    "users-update" -> configuration.getString("topics.users-update"),
+    "predictions" -> configuration.getString("topics.predictions")
   )
 
   val pollTimeout: Long = configuration.getLong("poll-timeout")
