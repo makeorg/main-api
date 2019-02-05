@@ -487,16 +487,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def validateProposal(proposalId: ProposalId,
-                                  moderator: UserId,
-                                  requestContext: RequestContext,
-                                  question: Question,
-                                  newContent: Option[String],
-                                  sendNotificationEmail: Boolean,
-                                  idea: Option[IdeaId],
-                                  tags: Seq[TagId],
-                                  predictedTags: Option[Seq[TagId]],
-                                  predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]] = {
+    override def validateProposal(
+      proposalId: ProposalId,
+      moderator: UserId,
+      requestContext: RequestContext,
+      question: Question,
+      newContent: Option[String],
+      sendNotificationEmail: Boolean,
+      idea: Option[IdeaId],
+      tags: Seq[TagId],
+      predictedTags: Option[Seq[TagId]],
+      predictedTagsModelName: Option[String]
+    ): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
         (predictedTags, predictedTagsModelName) match {
@@ -561,7 +563,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         )
       )
       val similarIdeas = 10
-      semanticService.getSimilarIdeas(proposal, similarIdeas)
+      semanticService.getSimilarIdeas(proposal, similarIdeas).recover {
+        case error: Exception =>
+          logger.error("", error)
+          Seq.empty
+      }
     }
 
     private def retrieveVoteHistory(proposalId: ProposalId,
@@ -802,9 +808,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
       proposal.questionId.map { questionId =>
+        def futurePredictedTags: Future[TagsWithModelResponse] =
+          semanticService.getPredictedTagsForProposal(proposal).recover {
+            case error: Exception =>
+              logger.error("", error)
+              TagsWithModelResponse(Seq.empty, "")
+          }
         val futureTags: Future[(Seq[Tag], TagsWithModelResponse)] = for {
           questionTags  <- tagService.findByQuestionId(questionId)
-          predictedTags <- semanticService.getPredictedTagsForProposal(proposal)
+          predictedTags <- futurePredictedTags
         } yield (questionTags, predictedTags)
         futureTags.map {
           case (questionTags, predictedTags) =>
