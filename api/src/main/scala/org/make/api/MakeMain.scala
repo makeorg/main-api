@@ -49,6 +49,10 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
+  Thread.setDefaultUncaughtExceptionHandler { (thread, exception) =>
+    logger.error(s"Error in thread ${thread.getName}:", exception)
+  }
+
   val envName: Option[String] = Option(System.getenv("ENV_NAME"))
 
   val resourceName = envName match {
