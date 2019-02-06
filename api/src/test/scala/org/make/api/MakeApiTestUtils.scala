@@ -66,7 +66,7 @@ trait MakeApiTestBase
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
-  override lazy val actorSystem: ActorSystem = ActorSystem()
+  override val actorSystem: ActorSystem = ActorSystem()
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)

@@ -19,9 +19,9 @@
 
 package org.make.api.technical.auth
 
-import java.security.MessageDigest
 import java.util.UUID
-import javax.xml.bind.annotation.adapters.HexBinaryAdapter
+
+import org.make.api.technical.security.SecurityHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -33,7 +33,7 @@ trait TokenGeneratorComponent {
 trait TokenGenerator {
   val MAX_RETRY = 3
 
-  def tokenToHash(s: String): String
+  def tokenToHash(token: String): String
   def generateToken(tokenExistsFunction: (String) => Future[Boolean], depth: Int = MAX_RETRY): Future[(String, String)]
   def newRandomToken(): (String, String)
 }
@@ -41,10 +41,8 @@ trait TokenGenerator {
 trait DefaultTokenGeneratorComponent extends TokenGeneratorComponent {
   override val tokenGenerator = new TokenGenerator {
 
-    override def tokenToHash(s: String): String = {
-      val digest = MessageDigest.getInstance("SHA-1").digest(s.getBytes)
-      new HexBinaryAdapter().marshal(digest)
-    }
+    override def tokenToHash(token: String): String =
+      SecurityHelper.sha1(token).toUpperCase()
 
     override def generateToken(tokenExistsFunction: (String) => Future[Boolean],
                                depth: Int = MAX_RETRY): Future[(String, String)] = {

@@ -18,13 +18,13 @@
  */
 
 package org.make.api.technical.elasticsearch
-import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.http.ElasticDsl.{addAlias, aliasExists, aliases, createIndex, getAliases, _}
 import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.technical.security.SecurityHelper
 import org.make.core.DateHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -79,13 +79,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
 
     override def hashForAlias(aliasName: String): String = {
       val localMapping: String = mappingForAlias(aliasName)
-      MessageDigest
-        .getInstance("SHA-1")
-        .digest(localMapping.getBytes)
-        .map("%02X".format(_))
-        .mkString
-        .take(12)
-        .toLowerCase()
+      SecurityHelper.sha1(localMapping).take(12).toLowerCase()
     }
 
     override def createIndexName(aliasName: String): String = {
