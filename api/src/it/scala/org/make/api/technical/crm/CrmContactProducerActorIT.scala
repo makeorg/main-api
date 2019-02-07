@@ -179,6 +179,7 @@ object CrmContactProducerActorIT {
       |      ideas = "ideas"
       |      crm-contact = "crm-contact"
       |      users-update = "users-update"
+      |      predictions = "predictions"
       |    }
       |  }
       |}

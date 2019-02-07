@@ -119,6 +119,7 @@ object ProposalProducerActorIT {
       |      sequences = "sequences"
       |      tracking-events = "tracking-events"
       |      ideas = "ideas"
+      |      predictions = "predictions"
       |    }
       |  }
       |}
