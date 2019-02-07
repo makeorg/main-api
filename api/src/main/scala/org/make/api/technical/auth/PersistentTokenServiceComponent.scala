@@ -48,7 +48,6 @@ trait PersistentTokenService {
   def get(accessToken: String): Future[Option[Token]]
   def findByUserId(userId: UserId): Future[Option[Token]]
   def persist(token: Token): Future[Token]
-  def deleteByRefreshToken(refreshToken: String): Future[Int]
   def deleteByAccessToken(accessToken: String): Future[Int]
   def deleteByUserId(userId: UserId): Future[Int]
 }
@@ -227,18 +226,6 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
             )
         }.execute().apply()
       }).map(_ => token)
-    }
-
-    override def deleteByRefreshToken(refreshToken: String): Future[Int] = {
-      implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
-        withSQL {
-          delete
-            .from(PersistentToken.as(tokenAlias))
-            .where
-            .eq(tokenAlias.refreshToken, refreshToken)
-        }.update().apply()
-      })
     }
 
     override def deleteByAccessToken(accessToken: String): Future[Int] = {
