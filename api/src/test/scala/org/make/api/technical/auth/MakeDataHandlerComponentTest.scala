@@ -308,8 +308,14 @@ class MakeDataHandlerComponentTest
         """.stripMargin)
 
       When("I call method refreshAccessToken")
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(exampleToken.accessToken)))
         .thenReturn(Future.successful(1))
+
+      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.same(refreshToken)))
+        .thenReturn(Future.successful(Some(exampleToken)))
+
+      when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
+        .thenReturn(Future.successful(exampleToken))
 
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
       val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
@@ -337,14 +343,19 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Refresh an AccessToken when deletion failed") {
+    scenario("Refresh an AccessToken corresponding to nothing") {
       Given("a valid AuthInfo")
       And("a refreshToken: \"MYREFRESHTOKEN\"")
-      And("no rows affected by method deleteByRefreshToken")
-      when(oauthTokenGenerator.getHashFromToken(ArgumentMatchers.same(refreshToken)))
-        .thenReturn(refreshToken)
-      when(persistentTokenService.deleteByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      And("no token corresponds to the refresh token")
+
+      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.same(refreshToken)))
+        .thenReturn(Future.successful(None))
+
+      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(accessTokenExample.token)))
         .thenReturn(Future.successful(0))
+
+      when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
+        .thenReturn(Future.successful(exampleToken))
 
       When("I call method refreshAccessToken")
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler

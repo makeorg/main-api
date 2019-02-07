@@ -150,15 +150,17 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def refreshAccessToken(authInfo: AuthInfo[UserRights], refreshToken: String): Future[AccessToken] = {
-      val futureAccessToken = for {
-        affectedRows <- persistentTokenService.deleteByRefreshToken(refreshToken)
-        accessToken  <- createAccessToken(authInfo) if affectedRows == 1
-      } yield accessToken
+      def findByRefreshTokenOrFail(refreshToken: String): Future[Token] =
+        persistentTokenService.findByRefreshToken(refreshToken).flatMap {
+          case Some(token) => Future.successful(token)
+          case None        => Future.failed(new NoSuchElementException(s"Refresh token $refreshToken not found"))
+        }
 
-      futureAccessToken.recoverWith {
-        case e: NoSuchElementException =>
-          Future.failed(new NoSuchElementException("Refresh token not found: " + e.getMessage))
-      }
+      for {
+        token       <- findByRefreshTokenOrFail(refreshToken)
+        _           <- persistentTokenService.deleteByAccessToken(token.accessToken)
+        accessToken <- createAccessToken(authInfo)
+      } yield accessToken
     }
 
     override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[UserRights]]] = {
