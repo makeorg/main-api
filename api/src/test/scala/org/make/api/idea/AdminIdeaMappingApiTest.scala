@@ -174,7 +174,12 @@ class AdminIdeaMappingApiTest
 
       when(
         ideaMappingService
-          .changeIdea(IdeaMappingId = IdeaMappingId("456"), newIdea = IdeaId("idea-id"), migrateProposals = false)
+          .changeIdea(
+            adminId = UserId("my-admin-user-id"),
+            IdeaMappingId = IdeaMappingId("456"),
+            newIdea = IdeaId("idea-id"),
+            migrateProposals = false
+          )
       ).thenReturn(
         Future.successful(
           Some(IdeaMapping(IdeaMappingId("idea-mapping-id"), QuestionId("question-id"), None, None, IdeaId("idea-id")))
@@ -197,6 +202,34 @@ class AdminIdeaMappingApiTest
           status should be(StatusCodes.OK)
         }
 
+    }
+
+    scenario("No mapping found") {
+      when(
+        ideaMappingService
+          .changeIdea(
+            adminId = UserId("my-admin-user-id"),
+            IdeaMappingId = IdeaMappingId("456"),
+            newIdea = IdeaId("idea-id"),
+            migrateProposals = false
+          )
+      ).thenReturn(Future.successful(None))
+
+      val entity =
+        """
+          |{
+          |  "ideaId": "idea-id",
+          |  "migrateProposals": false
+          |}
+        """.stripMargin
+
+      Put("/admin/idea-mappings/456")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.NotFound)
+        }
     }
 
   }

@@ -300,7 +300,8 @@ trait DefaultAdminIdeaMappingApiComponent
               decodeRequest {
                 entity(as[UpdateIdeaMappingRequest]) { request =>
                   provideAsyncOrNotFound(
-                    ideaMappingService.changeIdea(ideaMappingId, request.ideaId, request.migrateProposals)
+                    ideaMappingService
+                      .changeIdea(auth.user.userId, ideaMappingId, request.ideaId, request.migrateProposals)
                   ) { mapping =>
                     complete(StatusCodes.OK -> IdeaMappingResponse.fromIdeaMapping(mapping))
                   }
