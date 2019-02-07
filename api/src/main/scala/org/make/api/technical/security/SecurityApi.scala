@@ -33,7 +33,15 @@ trait SecurityApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SecureHashResponse]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "value", paramType = "body", dataType = "string")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.security.SecureHashRequest"
+      )
+    )
+  )
   def adminCreateSecureHash: Route
 
   @Path(value = "/security/secure-hash")
@@ -41,8 +49,8 @@ trait SecurityApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "hash", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "value", paramType = "path", dataType = "string")
+      new ApiImplicitParam(name = "hash", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "value", paramType = "query", dataType = "string")
     )
   )
   def validateSecureHash: Route
