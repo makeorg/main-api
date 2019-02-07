@@ -31,6 +31,7 @@ import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
@@ -58,7 +59,8 @@ class ProposalApiTest
     with UserServiceComponent
     with ThemeServiceComponent
     with OperationServiceComponent
-    with QuestionServiceComponent {
+    with QuestionServiceComponent
+    with SecurityConfigurationComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
 
@@ -67,6 +69,7 @@ class ProposalApiTest
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
+  override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 
   when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
     .thenAnswer(
@@ -267,7 +270,8 @@ class ProposalApiTest
     myProposal = false,
     idea = None,
     operationId = None,
-    questionId = None
+    questionId = None,
+    proposalKey = "pr0p0541k3y"
   )
   when(
     proposalService

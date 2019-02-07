@@ -26,6 +26,7 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal._
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
@@ -52,6 +53,7 @@ class SequenceServiceComponentTest
     with UserServiceComponent
     with MakeSettingsComponent
     with SelectionAlgorithmComponent
+    with SecurityConfigurationComponent
     with StrictLogging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -67,6 +69,7 @@ class SequenceServiceComponentTest
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val selectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
+  override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))

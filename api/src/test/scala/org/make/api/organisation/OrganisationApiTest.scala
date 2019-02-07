@@ -146,7 +146,8 @@ class OrganisationApiTest
         idea = Some(IdeaId("idea-id")),
         operationId = Some(OperationId("operation1")),
         myProposal = false,
-        questionId = None
+        questionId = None,
+        proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
         id = ProposalId("proposal-2"),
@@ -176,7 +177,8 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = Some(OperationId("operation1")),
         myProposal = false,
-        questionId = None
+        questionId = None,
+        proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
         id = ProposalId("proposal-3"),
@@ -206,7 +208,8 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = Some(OperationId("operation2")),
         myProposal = false,
-        questionId = None
+        questionId = None,
+        proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
         id = ProposalId("proposal-4"),
@@ -236,7 +239,8 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = None,
         myProposal = false,
-        questionId = None
+        questionId = None,
+        proposalKey = "pr0p0541k3y"
       )
     ),
     None

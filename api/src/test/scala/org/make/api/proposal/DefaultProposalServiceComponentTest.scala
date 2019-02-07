@@ -31,6 +31,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
+import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
@@ -74,7 +75,8 @@ class DefaultProposalServiceComponentTest
     with QuestionServiceComponent
     with IdeaServiceComponent
     with IdeaMappingServiceComponent
-    with TagTypeServiceComponent {
+    with TagTypeServiceComponent
+    with SecurityConfigurationComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
@@ -94,6 +96,7 @@ class DefaultProposalServiceComponentTest
   override val tagService: TagService = mock[TagService]
   override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
+  override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 
   Mockito
     .when(userService.getUsersByUserIds(Seq.empty))
