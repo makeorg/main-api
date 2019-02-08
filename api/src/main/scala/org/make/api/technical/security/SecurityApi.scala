@@ -57,19 +57,22 @@ trait SecurityApi extends Directives {
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
-        dataType = "org.make.api.technical.security.SecureHashRequest"
+        dataType = "org.make.api.technical.security.CreateSecureHashRequest"
       )
     )
   )
   def adminCreateSecureHash: Route
 
   @Path(value = "/security/secure-hash")
-  @ApiOperation(value = "validate-secure-hash", httpMethod = "GET", code = HttpCodes.NoContent)
+  @ApiOperation(value = "validate-secure-hash", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "hash", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "value", paramType = "query", dataType = "string")
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.security.ValidateSecureHashRequest"
+      )
     )
   )
   def validateSecureHash: Route
@@ -96,7 +99,7 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 decodeRequest {
-                  entity(as[SecureHashRequest]) { request: SecureHashRequest =>
+                  entity(as[CreateSecureHashRequest]) { request: CreateSecureHashRequest =>
                     complete(
                       SecureHashResponse(
                         hash = SecurityHelper.createSecureHash(request.value, securityConfiguration.secureHashSalt)
@@ -111,14 +114,17 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
       }
 
     override def validateSecureHash: Route =
-      get {
+      post {
         path("security" / "secure-hash") {
           makeOperation("ValidateSecureHash") { _ =>
-            parameters(('hash, 'value)) { (hash, value) =>
-              if (SecurityHelper.validateSecureHash(hash, value, securityConfiguration.secureHashSalt)) {
-                complete(StatusCodes.NoContent)
-              } else {
-                complete(StatusCodes.BadRequest)
+            decodeRequest {
+              entity(as[ValidateSecureHashRequest]) { request: ValidateSecureHashRequest =>
+                if (SecurityHelper
+                      .validateSecureHash(request.hash, request.value, securityConfiguration.secureHashSalt)) {
+                  complete(StatusCodes.NoContent)
+                } else {
+                  complete(StatusCodes.BadRequest)
+                }
               }
             }
           }
@@ -127,10 +133,16 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
   }
 }
 
-final case class SecureHashRequest(value: String)
+final case class CreateSecureHashRequest(value: String)
 
-object SecureHashRequest {
-  implicit val decoder: Decoder[SecureHashRequest] = deriveDecoder[SecureHashRequest]
+object CreateSecureHashRequest {
+  implicit val decoder: Decoder[CreateSecureHashRequest] = deriveDecoder[CreateSecureHashRequest]
+}
+
+final case class ValidateSecureHashRequest(hash: String, value: String)
+
+object ValidateSecureHashRequest {
+  implicit val decoder: Decoder[ValidateSecureHashRequest] = deriveDecoder[ValidateSecureHashRequest]
 }
 
 final case class SecureHashResponse(hash: String)
