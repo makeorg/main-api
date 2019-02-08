@@ -469,6 +469,30 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
       }
     }
+
+    scenario("validation failed for invalid date of birth") {
+      val request =
+        """
+          |{
+          | "email": "foo@baz.fr",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "-1069916-12-23",
+          | "country": "FR",
+          | "language": "fr"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val dateOfBirthError = errors.find(_.field == "dateOfBirth")
+        dateOfBirthError should be(
+          Some(ValidationError("dateOfBirth", Some("Invalid date: age must be between 13 and 120")))
+        )
+      }
+    }
   }
 
   feature("login user from social") {

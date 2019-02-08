@@ -69,7 +69,7 @@ import scala.annotation.meta.field
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Success, Try}
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -1158,7 +1158,8 @@ case class RegisterUserRequest(
     validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
-    mandatoryField("country", country)
+    mandatoryField("country", country),
+    validateAge("dateOfBirth", dateOfBirth)
   )
 }
 
@@ -1223,7 +1224,17 @@ case class UpdateUserRequest(
     ),
     description.map(value => maxLength("description", maxDescriptionLength, value)),
     Some(validateOptionalUserInput("phoneNumber", phoneNumber, None)),
-    Some(validateOptionalUserInput("description", description, None))
+    Some(validateOptionalUserInput("description", description, None)),
+    dateOfBirth match {
+      case Some("") => None
+      case None     => None
+      case Some(date) =>
+        val localDate = Try(LocalDate.parse(date)) match {
+          case Success(parsedDate) => Some(parsedDate)
+          case _                   => None
+        }
+        Some(validateAge("dateOfBirth", localDate))
+    }
   )
 }
 

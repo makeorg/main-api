@@ -18,6 +18,8 @@
  */
 
 package org.make.core
+import java.time.LocalDate
+
 import org.scalatest.Matchers._
 import org.scalatest.{FeatureSpec, _}
 
@@ -69,4 +71,41 @@ class ValidationTest extends FeatureSpec {
       Matchers.noException should be thrownBy validation()
     }
   }
+
+  feature("age validation") {
+    val fieldName = "dateOfBirth"
+
+    scenario("valid datesOfBirth") {
+      val aged13 = LocalDate.now.minusYears(13)
+      def validation13(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged13)))
+      Matchers.noException should be thrownBy validation13()
+
+      val aged14 = LocalDate.now.minusYears(14)
+      def validation14(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged14)))
+      Matchers.noException should be thrownBy validation14()
+
+      val aged119 = LocalDate.now.minusYears(119)
+      def validation119(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged119)))
+      Matchers.noException should be thrownBy validation119()
+
+      def validationNone(): Unit = Validation.validate(Validation.validateAge(fieldName, None))
+      Matchers.noException should be thrownBy validationNone()
+    }
+
+    scenario("invalid datesOfBirth") {
+      val aged12 = LocalDate.now.minusYears(12)
+      def validation12(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged12)))
+      an[ValidationFailedError] should be thrownBy validation12()
+
+      val aged120 = LocalDate.now.minusYears(120)
+      def validation120(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged120)))
+      an[ValidationFailedError] should be thrownBy validation120()
+
+      val aged121 = LocalDate.now.minusYears(121)
+      def validation121(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged121)))
+      an[ValidationFailedError] should be thrownBy validation121()
+    }
+
+  }
+
 }

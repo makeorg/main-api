@@ -19,6 +19,8 @@
 
 package org.make.core
 
+import java.time.LocalDate
+
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
@@ -197,6 +199,15 @@ object Validation extends StrictLogging {
                      message: Option[String] = None,
                      userValue: Option[MakeSerializable]): Requirement = {
     validateField(fieldName, userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
+  }
+
+  def validateAge(fieldName: String, userDateInput: Option[LocalDate], message: Option[String] = None): Requirement = {
+    val condition: Boolean = userDateInput.forall(
+      date =>
+        LocalDate.now().minusYears(120).isBefore(date) &&
+          LocalDate.now().minusYears(13).plusDays(1).isAfter(date)
+    )
+    validateField(fieldName, condition, message.getOrElse("Invalid date: age must be between 13 and 120"))
   }
 
   private def exists(value: Any): Boolean = {
