@@ -129,23 +129,24 @@ class SecurityApiTest
 
   feature("validate secure hash") {
     scenario("same hash value") {
-      Get(
-        s"/security/secure-hash?hash=${SecurityHelper.createSecureHash("toto", securityConfiguration.secureHashSalt)}&value=toto"
-      ) ~> routes ~> check {
+      val hash = SecurityHelper.createSecureHash("toto", securityConfiguration.secureHashSalt)
+      Post("/security/secure-hash")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"value": "toto", "hash": "$hash"}""")) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
     scenario("not the same hash value") {
-      Get("/security/secure-hash?hash=ABCDE&value=toto") ~> routes ~> check {
+      Post("/security/secure-hash")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"value": "toto", "hash": "ABCDE"}""")) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
     }
 
     scenario("missing argument") {
-      Get("/security/secure-hash") ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
+      Post("/security/secure-hash") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
   }
