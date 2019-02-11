@@ -150,7 +150,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
     command.vote match {
       case None =>
-        persistAndPublishEvent(
+        persistAndPublishEventAsync(
           ProposalVoted(
             id = proposalId,
             maybeUserId = command.maybeUserId,
@@ -187,7 +187,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           requestContext = command.requestContext,
           voteKey = command.voteKey
         )
-        persistAndPublishEvents(immutable.Seq(unvoteEvent, voteEvent)) {
+        persistAndPublishEventsAsync(immutable.Seq(unvoteEvent, voteEvent)) {
           case _: ProposalVoted =>
             val originalSender = sender()
             logUnvoteEvent(unvoteEvent).flatMap(_ => logVoteEvent(voteEvent)).onComplete {
@@ -251,7 +251,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     command.vote match {
       case None => sender() ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
       case Some(vote) =>
-        persistAndPublishEvent(
+        persistAndPublishEventAsync(
           ProposalUnvoted(
             id = proposalId,
             maybeUserId = command.maybeUserId,
@@ -328,7 +328,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         }
         sender() ! Right(maybeQualification)
       case _ =>
-        persistAndPublishEvent(
+        persistAndPublishEventAsync(
           ProposalQualified(
             id = proposalId,
             maybeUserId = command.maybeUserId,
@@ -363,7 +363,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             .flatMap(_.qualifications.find(_.key == command.qualificationKey))
         )
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
-        persistAndPublishEvent(
+        persistAndPublishEventAsync(
           ProposalUnqualified(
             id = proposalId,
             maybeUserId = command.maybeUserId,
