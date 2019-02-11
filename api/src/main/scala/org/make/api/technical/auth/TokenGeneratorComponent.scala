@@ -34,17 +34,17 @@ trait TokenGenerator {
   val MAX_RETRY = 3
 
   def tokenToHash(token: String): String
-  def generateToken(tokenExistsFunction: (String) => Future[Boolean], depth: Int = MAX_RETRY): Future[(String, String)]
+  def generateToken(tokenExistsFunction: String => Future[Boolean], depth: Int = MAX_RETRY): Future[(String, String)]
   def newRandomToken(): (String, String)
 }
 
 trait DefaultTokenGeneratorComponent extends TokenGeneratorComponent {
-  override val tokenGenerator = new TokenGenerator {
+  override val tokenGenerator: TokenGenerator = new TokenGenerator {
 
     override def tokenToHash(token: String): String =
-      SecurityHelper.sha1(token).toUpperCase()
+      SecurityHelper.defaultHash(token).toUpperCase()
 
-    override def generateToken(tokenExistsFunction: (String) => Future[Boolean],
+    override def generateToken(tokenExistsFunction: String => Future[Boolean],
                                depth: Int = MAX_RETRY): Future[(String, String)] = {
       if (depth <= 0) {
         Future.failed(new RuntimeException("Token generation failed due to max retries reached."))

@@ -78,8 +78,9 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
     }
 
     override def hashForAlias(aliasName: String): String = {
+      val shortHashLength = 12
       val localMapping: String = mappingForAlias(aliasName)
-      SecurityHelper.sha1(localMapping).take(12).toLowerCase()
+      SecurityHelper.defaultHash(localMapping).take(shortHashLength).toLowerCase()
     }
 
     override def createIndexName(aliasName: String): String = {

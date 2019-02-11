@@ -602,10 +602,13 @@ class UserServiceTest
   feature("password recovery") {
     scenario("successfully reset password") {
 
-      val userId = UserId("AAA-BBB-CCC-DDD-EEE")
+      val userId = UserId("user-reset-password-successfully")
 
       Mockito
-        .when(persistentUserService.requestResetPassword(any[UserId], any[String], any[Option[ZonedDateTime]]))
+        .when(
+          persistentUserService
+            .requestResetPassword(ArgumentMatchers.eq(userId), any[String], any[Option[ZonedDateTime]])
+        )
         .thenReturn(Future.successful(true))
 
       val futureResetPassword = userService.requestPasswordReset(userId)

@@ -22,21 +22,21 @@ package org.make.api.technical.security
 import java.security.MessageDigest
 import java.util.Base64
 
+import com.typesafe.scalalogging.StrictLogging
 import org.make.core.DateHelper
 import org.make.core.proposal.ProposalId
 import org.make.core.session.SessionId
 
-object SecurityHelper {
+object SecurityHelper extends StrictLogging {
 
   val HASH_SEPARATOR = "-"
 
-  def sha1(value: String): String =
-    MessageDigest.getInstance("SHA-1").digest(value.getBytes("UTF-8")).map("%02x".format(_)).mkString
-
+  @Deprecated
+//  This hash method is used for backward compatibility only. Use `defaultHash` instead.
   def sha256(value: String): String =
     MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8")).map("%02x".format(_)).mkString
 
-  def hash(value: String): String =
+  def defaultHash(value: String): String =
     MessageDigest.getInstance("SHA-512").digest(value.getBytes("UTF-8")).map("%02x".format(_)).mkString
 
   def base64Encode(value: String): String =
@@ -45,30 +45,32 @@ object SecurityHelper {
   def base64Decode(value: String): String =
     new String(Base64.getDecoder.decode(value), "UTF-8")
 
-  def generateHash(value: String, date: String, salt: String): String =
-    sha256(s"${sha256(value)}$date$salt")
+  def generateHash(value: String, salt: String): String =
+    defaultHash(s"${defaultHash(value)}$salt")
 
   def createSecureHash(value: String, salt: String): String = {
     val date = DateHelper.now().toString
 
-    s"${base64Encode(date)}$HASH_SEPARATOR${generateHash(value, date, salt)}"
+    s"${base64Encode(date)}$HASH_SEPARATOR${generateHash(s"$value$date", salt)}"
   }
 
-  def saltedHash(value: String, salt: String): String =
-    hash(s"$value$salt")
+  def validateSecureHash(hash: String, value: String, salt: String): Boolean = {
+    hash.split(HASH_SEPARATOR) match {
+      case Array(base64Date, hashedValue) =>
+        val deprecatedCheck = sha256(s"${sha256(s"$value${base64Decode(base64Date)}")}$salt") == hashedValue
+        if (deprecatedCheck) {
+          logger.warn(s"Use of deprecated hash function (sha256) on value $value")
+        }
+        generateHash(s"$value${base64Decode(base64Date)}", salt) == hashedValue || deprecatedCheck
+      case _ => false
+    }
+  }
 
   def generateProposalKeyHash(proposalId: ProposalId,
                               sessionId: SessionId,
                               location: Option[String],
                               salt: String): String = {
-    val rowString: String = s"${proposalId.value}${sessionId.value}${location.getOrElse("")}"
-    saltedHash(hash(rowString), salt)
-  }
-
-  def validateSecureHash(hash: String, value: String, salt: String): Boolean = {
-    hash.split(HASH_SEPARATOR) match {
-      case Array(base64Date, hashedValue) => generateHash(value, base64Decode(base64Date), salt) == hashedValue
-      case _                              => false
-    }
+    val rawString: String = s"${proposalId.value}${sessionId.value}${location.getOrElse("")}"
+    generateHash(value = rawString, salt = salt)
   }
 }
