@@ -23,6 +23,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
+import kamon.Kamon
 import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
 import org.make.api.Predef._
@@ -36,6 +37,7 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -113,6 +115,19 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     }
   }
 
+  private def logRequest(context: RequestContext, origin: Option[String]): Unit = {
+    Kamon
+      .counter("api-requests")
+      .refine(
+        "source" -> context.source.getOrElse("unknown"),
+        "origin" -> origin.getOrElse("unknown"),
+        "application" -> context.applicationName.map(_.shortName).getOrElse("unknown"),
+        "location" -> context.location.getOrElse("unknown"),
+        "question" -> context.questionId.map(_.value).getOrElse("unknown")
+      )
+      .increment()
+  }
+
   def makeOperation(name: String): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
 
@@ -145,7 +160,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
       maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
     } yield {
-      RequestContext(
+      val requestContext = RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
         userId = maybeUser.map(_.user.userId),
         requestId = requestId,
@@ -174,6 +189,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         questionId = maybeQuestionId.map(QuestionId.apply),
         applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get)
       )
+      logRequest(requestContext, origin)
+      requestContext
     }
   }
 
