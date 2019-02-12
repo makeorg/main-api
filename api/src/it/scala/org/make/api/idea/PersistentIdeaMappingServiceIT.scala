@@ -41,8 +41,14 @@ class PersistentIdeaMappingServiceIT
 
   def persistMapping(mapping: IdeaMapping): Future[IdeaMapping] = persistentIdeaMappingService.persist(mapping)
 
-  val findMapping
-    : (Option[QuestionId], Option[TagIdOrNone], Option[TagIdOrNone], Option[IdeaId]) => Future[Seq[IdeaMapping]] =
+  val findMapping: (Int,
+                    Option[Int],
+                    Option[String],
+                    Option[String],
+                    Option[QuestionId],
+                    Option[TagIdOrNone],
+                    Option[TagIdOrNone],
+                    Option[IdeaId]) => Future[Seq[IdeaMapping]] =
     persistentIdeaMappingService.find
 
   def waitForCompletion(f: Future[_]): Unit = whenReady(f, Timeout(5.seconds))(_ => ())
@@ -187,32 +193,68 @@ class PersistentIdeaMappingServiceIT
 
       waitForCompletion(insertDependencies)
 
-      whenReady(findMapping(None, Some(Right(tag1)), None, None), Timeout(5.seconds)) { results =>
+      whenReady(findMapping(0, None, None, None, None, Some(Right(tag1)), None, None), Timeout(5.seconds)) { results =>
         results.map(_.id.value).sorted should be(Seq("find-1", "find-2", "find-6"))
       }
 
-      whenReady(findMapping(None, None, Some(Right(tag1)), None), Timeout(5.seconds)) { results =>
+      whenReady(findMapping(0, None, None, None, None, None, Some(Right(tag1)), None), Timeout(5.seconds)) { results =>
         results should be(empty)
       }
 
-      whenReady(findMapping(None, None, None, Some(idea2)), Timeout(5.seconds)) { results =>
+      whenReady(findMapping(0, None, None, None, None, None, None, Some(idea2)), Timeout(5.seconds)) { results =>
         results.map(_.id.value).sorted should be(Seq("find-3", "find-5", "find-6"))
       }
 
-      whenReady(findMapping(None, Some(Left(None)), None, None), Timeout(5.seconds)) { results =>
+      whenReady(findMapping(0, None, None, None, None, Some(Left(None)), None, None), Timeout(5.seconds)) { results =>
         results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-5", "find-7", "find-8"))
       }
 
-      whenReady(findMapping(None, None, Some(Left(None)), None), Timeout(5.seconds)) { results =>
+      whenReady(findMapping(0, None, None, None, None, None, Some(Left(None)), None), Timeout(5.seconds)) { results =>
         results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-6", "find-7", "find-8"))
       }
 
-      whenReady(findMapping(Some(questionId1), None, Some(Left(None)), None), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).sorted should be(Seq("find-6", "find-7"))
+      whenReady(findMapping(0, None, None, None, Some(questionId1), None, Some(Left(None)), None), Timeout(5.seconds)) {
+        results =>
+          results.map(_.id.value).sorted should be(Seq("find-6", "find-7"))
       }
 
-      whenReady(findMapping(Some(questionId2), None, Some(Left(None)), None), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).sorted should be(Seq("find-8"))
+      whenReady(findMapping(0, None, None, None, Some(questionId2), None, Some(Left(None)), None), Timeout(5.seconds)) {
+        results =>
+          results.map(_.id.value).sorted should be(Seq("find-8"))
+      }
+    }
+
+    scenario("count mappings") {
+      val questionId = QuestionId("count-mappings-1")
+      val idea = IdeaId("count-1")
+      val tag1 = TagId("count-1")
+      val tag2 = TagId("count-2")
+
+      val insertDependencies = for {
+        _ <- persistentQuestionService.persist(createQuestion(questionId))
+        _ <- persistentTagService.persist(createTag(tag1, questionId))
+        _ <- persistentTagService.persist(createTag(tag2, questionId))
+        _ <- persistentIdeaService.persist(Idea(idea, "Count", createdAt = None, updatedAt = None))
+        _ <- persistMapping(IdeaMapping(IdeaMappingId("count-1"), questionId, Some(tag1), Some(tag2), idea))
+        _ <- persistMapping(IdeaMapping(IdeaMappingId("count-2"), questionId, None, Some(tag2), idea))
+      } yield ()
+
+      waitForCompletion(insertDependencies)
+
+      whenReady(persistentIdeaMappingService.count(None, Some(Right(tag1)), None, None), Timeout(5.seconds)) {
+        _ shouldBe 1
+      }
+
+      whenReady(persistentIdeaMappingService.count(None, None, Some(Right(tag1)), None), Timeout(5.seconds)) {
+        _ shouldBe 0
+      }
+
+      whenReady(persistentIdeaMappingService.count(Some(questionId), Some(Left(None)), None, None), Timeout(5.seconds)) {
+        _ shouldBe 1
+      }
+
+      whenReady(persistentIdeaMappingService.count(Some(questionId), None, Some(Left(None)), None), Timeout(5.seconds)) {
+        _ shouldBe 0
       }
     }
   }

@@ -21,6 +21,7 @@ package org.make.api.idea
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, _}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -31,12 +32,11 @@ import org.make.api.idea.AdminIdeaMappingApi.{
   UpdateIdeaMappingRequest
 }
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.idea.IdeaId
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
-import io.circe.generic.semiauto._
+import org.make.core.{HttpCodes, ParameterExtractors}
 
 import scala.annotation.meta.field
 
@@ -61,6 +61,10 @@ trait AdminIdeaMappingApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "stakeTagId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "solutionTypeTagId", paramType = "query", dataType = "string"),
@@ -238,21 +242,44 @@ trait DefaultAdminIdeaMappingApiComponent
       path("admin" / "idea-mappings") {
         parameters(
           (
+            '_start.as[Int].?,
+            '_end.as[Int].?,
+            '_sort.?,
+            '_order.?,
             'questionId.as[QuestionId].?,
             'stakeTagId.as[TagIdOrNone].?,
             'solutionTypeTagId.as[TagIdOrNone].?,
             'ideaId.as[IdeaId].?,
           )
-        ) { (questionId, stakeTagId, solutionTypeTagId, ideaId) =>
-          makeOperation("searchIdeaMapping") { _ =>
-            makeOAuth2 { auth =>
-              requireAdminRole(auth.user) {
-                provideAsync(ideaMappingService.search(questionId, stakeTagId, solutionTypeTagId, ideaId)) { mappings =>
-                  complete(StatusCodes.OK -> mappings.map(IdeaMappingResponse.fromIdeaMapping))
+        ) {
+          (start: Option[Int],
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           questionId: Option[QuestionId],
+           stakeTagId: Option[TagIdOrNone],
+           solutionTypeTagId: Option[TagIdOrNone],
+           ideaId: Option[IdeaId]) =>
+            makeOperation("searchIdeaMapping") { _ =>
+              makeOAuth2 { auth =>
+                requireAdminRole(auth.user) {
+                  provideAsync(ideaMappingService.count(questionId, stakeTagId, solutionTypeTagId, ideaId)) { count =>
+                    provideAsync(
+                      ideaMappingService
+                        .search(start.getOrElse(0), end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
+                    ) { mappings =>
+                      complete(
+                        (
+                          StatusCodes.OK,
+                          List(TotalCountHeader(count.toString)),
+                          mappings.map(IdeaMappingResponse.fromIdeaMapping)
+                        )
+                      )
+                    }
+                  }
                 }
               }
             }
-          }
         }
       }
     }

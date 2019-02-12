@@ -298,7 +298,21 @@ class AdminIdeaMappingApiTest
 
       when(
         ideaMappingService
-          .search(Some(QuestionId("question-id")), Some(Left(None)), Some(Right(TagId("solution-tag"))), None)
+          .count(Some(QuestionId("question-id")), Some(Left(None)), Some(Right(TagId("solution-tag"))), None)
+      ).thenReturn(Future.successful(0))
+
+      when(
+        ideaMappingService
+          .search(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("question-id")),
+            stakeTagId = Some(Left(None)),
+            solutionTypeTagId = Some(Right(TagId("solution-tag"))),
+            ideaId = None
+          )
       ).thenReturn(Future.successful(Seq.empty))
 
       Get("/admin/idea-mappings?stakeTagId=None&solutionTypeTagId=solution-tag&questionId=question-id")

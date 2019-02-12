@@ -32,12 +32,20 @@ import scala.concurrent.Future
 trait PersistentIdeaMappingService {
 
   def persist(mapping: IdeaMapping): Future[IdeaMapping]
-  def find(questionId: Option[QuestionId],
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           questionId: Option[QuestionId],
            stakeTagId: Option[TagIdOrNone],
            solutionTypeTagId: Option[TagIdOrNone],
            ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]]
   def get(id: IdeaMappingId): Future[Option[IdeaMapping]]
   def updateMapping(mapping: IdeaMapping): Future[Option[IdeaMapping]]
+  def count(questionId: Option[QuestionId],
+            stakeTagId: Option[TagIdOrNone],
+            solutionTypeTagId: Option[TagIdOrNone],
+            ideaId: Option[IdeaId]): Future[Int]
 }
 
 trait PersistentIdeaMappingServiceComponent {
@@ -46,7 +54,8 @@ trait PersistentIdeaMappingServiceComponent {
 
 trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMappingServiceComponent with ShortenedNames {
   this: MakeDBExecutionContextComponent =>
-  override val persistentIdeaMappingService: PersistentIdeaMappingService = new PersistentIdeaMappingService {
+  override val persistentIdeaMappingService: PersistentIdeaMappingService = new PersistentIdeaMappingService
+  with StrictLogging {
     override def persist(mapping: IdeaMapping): Future[IdeaMapping] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
@@ -64,30 +73,51 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
       }).map(_ => mapping)
     }
 
-    def find(questionId: Option[QuestionId],
-             stakeTagId: Option[TagIdOrNone],
-             solutionTypeTagId: Option[TagIdOrNone],
-             ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
+    override def find(start: Int,
+                      end: Option[Int],
+                      sort: Option[String],
+                      order: Option[String],
+                      questionId: Option[QuestionId],
+                      stakeTagId: Option[TagIdOrNone],
+                      solutionTypeTagId: Option[TagIdOrNone],
+                      ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL[PersistentIdeaMapping] {
-          select
-            .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
-            .where(
-              sqls.toAndConditionOpt(
-                questionId.map(question => sqls.eq(PersistentIdeaMapping.column.questionId, question.value)),
-                stakeTagId.map {
-                  case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.stakeTagId)
-                  case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.stakeTagId, tagId)
-                },
-                solutionTypeTagId.map {
-                  case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.solutionTypeTagId)
-                  case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.solutionTypeTagId, tagId)
-                },
-                ideaId.map(idea => sqls.eq(PersistentIdeaMapping.column.ideaId, idea.value))
+        withSQL {
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            select
+              .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
+              .where(
+                sqls.toAndConditionOpt(
+                  questionId.map(question => sqls.eq(PersistentIdeaMapping.column.questionId, question.value)),
+                  stakeTagId.map {
+                    case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.stakeTagId)
+                    case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.stakeTagId, tagId)
+                  },
+                  solutionTypeTagId.map {
+                    case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.solutionTypeTagId)
+                    case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.solutionTypeTagId, tagId)
+                  },
+                  ideaId.map(idea => sqls.eq(PersistentIdeaMapping.column.ideaId, idea.value))
+                )
               )
-            )
-        }.map(PersistentIdeaMapping(PersistentIdeaMapping.alias.resultName)).list().apply()
+
+          val queryOrdered = (sort, order) match {
+            case (Some(field), Some("DESC")) if PersistentIdeaMapping.columnNames.contains(field) =>
+              query.orderBy(PersistentIdeaMapping.alias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentIdeaMapping.columnNames.contains(field) =>
+              query.orderBy(PersistentIdeaMapping.alias.field(field)).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.orderBy(PersistentIdeaMapping.alias.questionId, PersistentIdeaMapping.alias.id).asc.offset(start)
+            case (_, _) =>
+              query.orderBy(PersistentIdeaMapping.alias.questionId, PersistentIdeaMapping.alias.id).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered
+          }
+        }.map(PersistentIdeaMapping.apply()).list().apply()
       }).map(_.map(_.toIdeaMapping))
     }
 
@@ -118,6 +148,34 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
         }.execute().apply()
       }).flatMap(_ => get(mapping.id))
     }
+
+    override def count(questionId: Option[QuestionId],
+                       stakeTagId: Option[TagIdOrNone],
+                       solutionTypeTagId: Option[TagIdOrNone],
+                       ideaId: Option[IdeaId]): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentIdeaMapping] {
+          select(sqls.count)
+            .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
+            .where(
+              sqls.toAndConditionOpt(
+                questionId.map(question => sqls.eq(PersistentIdeaMapping.column.questionId, question.value)),
+                stakeTagId.map {
+                  case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.stakeTagId)
+                  case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.stakeTagId, tagId)
+                },
+                solutionTypeTagId.map {
+                  case Left(None)          => sqls.isNull(PersistentIdeaMapping.column.solutionTypeTagId)
+                  case Right(TagId(tagId)) => sqls.eq(PersistentIdeaMapping.column.solutionTypeTagId, tagId)
+                },
+                ideaId.map(idea => sqls.eq(PersistentIdeaMapping.column.ideaId, idea.value))
+              )
+            )
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
+    }
+
   }
 }
 

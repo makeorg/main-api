@@ -51,13 +51,21 @@ trait IdeaMappingService {
                  IdeaMappingId: IdeaMappingId,
                  newIdea: IdeaId,
                  migrateProposals: Boolean): Future[Option[IdeaMapping]]
-  def search(questionId: Option[QuestionId],
+  def search(start: Int = 0,
+             end: Option[Int] = None,
+             sort: Option[String] = None,
+             order: Option[String] = None,
+             questionId: Option[QuestionId],
              stakeTagId: Option[TagIdOrNone],
              solutionTypeTagId: Option[TagIdOrNone],
              ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]]
   def getOrCreateMapping(questionId: QuestionId,
                          stakeTagId: Option[TagId],
                          solutionTypeTagId: Option[TagId]): Future[IdeaMapping]
+  def count(questionId: Option[QuestionId],
+            stakeTagId: Option[TagIdOrNone],
+            solutionTypeTagId: Option[TagIdOrNone],
+            ideaId: Option[IdeaId]): Future[Int]
 }
 
 trait IdeaMappingServiceComponent {
@@ -185,11 +193,15 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       }
     }
 
-    override def search(questionId: Option[QuestionId],
+    override def search(start: Int = 0,
+                        end: Option[Int] = None,
+                        sort: Option[String] = None,
+                        order: Option[String] = None,
+                        questionId: Option[QuestionId],
                         stakeTagId: Option[TagIdOrNone],
                         solutionTypeTagId: Option[TagIdOrNone],
                         ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
-      persistentIdeaMappingService.find(questionId, stakeTagId, solutionTypeTagId, ideaId)
+      persistentIdeaMappingService.find(start, end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
     }
 
     override def getOrCreateMapping(questionId: QuestionId,
@@ -197,7 +209,16 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
                                     solutionTypeTagId: Option[TagId]): Future[IdeaMapping] = {
 
       persistentIdeaMappingService
-        .find(Some(questionId), optionToTagIdOrNone(stakeTagId), optionToTagIdOrNone(solutionTypeTagId), None)
+        .find(
+          start = 0,
+          end = None,
+          sort = None,
+          order = None,
+          questionId = Some(questionId),
+          stakeTagId = optionToTagIdOrNone(stakeTagId),
+          solutionTypeTagId = optionToTagIdOrNone(solutionTypeTagId),
+          ideaId = None
+        )
         .flatMap {
           case Seq()        => createMapping(questionId, stakeTagId, solutionTypeTagId)
           case Seq(mapping) => Future.successful(mapping)
@@ -248,6 +269,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
             Future.successful(question)
         }
     }
+
     private def createIdea(questionId: QuestionId, question: Question, label: String): Future[Idea] = {
       persistentIdeaService.persist(
         Idea(
@@ -264,6 +286,13 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
           Some(DateHelper.now())
         )
       )
+    }
+
+    override def count(questionId: Option[QuestionId],
+                       stakeTagId: Option[TagIdOrNone],
+                       solutionTypeTagId: Option[TagIdOrNone],
+                       ideaId: Option[IdeaId]): Future[Int] = {
+      persistentIdeaMappingService.count(questionId, stakeTagId, solutionTypeTagId, ideaId)
     }
   }
 }
