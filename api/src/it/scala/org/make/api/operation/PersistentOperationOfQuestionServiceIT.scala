@@ -57,7 +57,8 @@ class PersistentOperationOfQuestionServiceIT
     startDate = None,
     endDate = None,
     operationTitle = "title",
-    landingSequenceId = sequenceIdFR
+    landingSequenceId = sequenceIdFR,
+    canPropose = true
   )
 
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
@@ -159,7 +160,8 @@ class PersistentOperationOfQuestionServiceIT
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(baseOperationOfQuestion)
         _ <- persistentOperationOfQuestionService.modify(
-          baseOperationOfQuestion.copy(operationTitle = s"${baseOperationOfQuestion.operationTitle} modified")
+          baseOperationOfQuestion
+            .copy(operationTitle = s"${baseOperationOfQuestion.operationTitle} modified", canPropose = false)
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
       } yield result
@@ -169,6 +171,7 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.map(_.questionId) shouldBe Some(baseOperationOfQuestion.questionId)
         operationOfQuestion.map(_.operationId) shouldBe Some(baseOperationOfQuestion.operationId)
         operationOfQuestion.map(_.operationTitle) shouldBe Some(s"${baseOperationOfQuestion.operationTitle} modified")
+        operationOfQuestion.map(_.canPropose) shouldBe Some(false)
       }
     }
   }

@@ -75,7 +75,8 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      startDate: Option[LocalDate],
                                      endDate: Option[LocalDate],
                                      operationTitle: String,
-                                     landingSequenceId: SequenceId)
+                                     landingSequenceId: SequenceId,
+                                     canPropose: Boolean)
 
 @ApiModel
 final case class OperationCountryConfiguration(

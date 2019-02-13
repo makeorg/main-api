@@ -175,7 +175,8 @@ class ModerationOperationApiTest
           startDate = Some(LocalDate.parse("2018-02-02")),
           endDate = None,
           operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id")
+          landingSequenceId = SequenceId("first-sequence-id"),
+          canPropose = true
         )
       )
     )

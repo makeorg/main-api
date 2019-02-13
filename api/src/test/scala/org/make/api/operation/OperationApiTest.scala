@@ -88,7 +88,8 @@ class OperationApiTest
           startDate = None,
           endDate = None,
           operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id-BR")
+          landingSequenceId = SequenceId("first-sequence-id-BR"),
+          canPropose = true
         )
       ),
       QuestionWithDetails(
@@ -107,7 +108,8 @@ class OperationApiTest
           startDate = None,
           endDate = None,
           operationTitle = "first operation",
-          landingSequenceId = SequenceId("first-sequence-id-BR")
+          landingSequenceId = SequenceId("first-sequence-id-BR"),
+          canPropose = true
         )
       )
     )
@@ -146,7 +148,8 @@ class OperationApiTest
           startDate = None,
           endDate = None,
           operationTitle = "secondo operazione",
-          landingSequenceId = SequenceId("second-sequence-id")
+          landingSequenceId = SequenceId("second-sequence-id"),
+          canPropose = true
         )
       )
     )

@@ -64,7 +64,8 @@ trait OperationHelper {
             startDate = configuration.startDate,
             endDate = configuration.endDate,
             operationTitle = configuration.title,
-            landingSequenceId = sequenceId
+            landingSequenceId = sequenceId,
+            canPropose = configuration.canPropose
           )
         )
       }

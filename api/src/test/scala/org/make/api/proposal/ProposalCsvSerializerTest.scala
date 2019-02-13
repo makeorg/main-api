@@ -71,7 +71,8 @@ class ProposalCsvSerializerTest extends MakeApiTestBase with MakeAuthentication 
           startDate = None,
           endDate = None,
           operationTitle = "Bar Operation",
-          landingSequenceId = SequenceId("bar")
+          landingSequenceId = SequenceId("bar"),
+          canPropose = true
         )
       )
     ),

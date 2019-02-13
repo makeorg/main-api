@@ -144,7 +144,8 @@ class PersistentOperationServiceIT
           startDate = None,
           endDate = None,
           operationTitle = "bonjour operation",
-          landingSequenceId = sequenceIdFR
+          landingSequenceId = sequenceIdFR,
+          canPropose = true
         )
       ),
       QuestionWithDetails(
@@ -163,7 +164,8 @@ class PersistentOperationServiceIT
           startDate = None,
           endDate = None,
           operationTitle = "hello operation",
-          landingSequenceId = sequenceIdGB
+          landingSequenceId = sequenceIdGB,
+          canPropose = true
         )
       )
     )
