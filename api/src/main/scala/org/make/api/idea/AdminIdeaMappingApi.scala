@@ -20,8 +20,8 @@
 package org.make.api.idea
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, _}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent

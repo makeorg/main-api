@@ -45,7 +45,7 @@ trait PersistentIdeaService {
   def findAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]]
   def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]]
   def persist(idea: Idea): Future[Idea]
-  def modify(ideaId: IdeaId, name: String): Future[Int]
+  def modify(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int]
   def updateIdea(idea: Idea): Future[Int]
 }
 
@@ -130,6 +130,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
                 column.questionId -> idea.questionId.map(_.value),
                 column.operationId -> idea.operationId.map(_.value),
                 column.themeId -> idea.themeId.map(_.value),
+                column.status -> idea.status.shortName,
                 column.createdAt -> DateHelper.now,
                 column.updatedAt -> DateHelper.now
               )
@@ -137,12 +138,12 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
         }).map(_ => idea)
       }
 
-      override def modify(ideaId: IdeaId, name: String): Future[Int] = {
+      override def modify(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int] = {
         implicit val context: EC = writeExecutionContext
         Future(NamedDB('WRITE).retryableTx { implicit session =>
           withSQL {
             update(PersistentIdea)
-              .set(column.name -> name, column.updatedAt -> DateHelper.now)
+              .set(column.name -> name, column.updatedAt -> DateHelper.now, column.status -> status.shortName)
               .where(
                 sqls
                   .eq(column.id, ideaId.value)

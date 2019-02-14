@@ -24,7 +24,7 @@ import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnot
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
-import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
+import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.question.{Question, QuestionId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,7 +40,7 @@ trait IdeaService extends ShortenedNames {
   def fetchOne(ideaId: IdeaId): Future[Option[Idea]]
   def fetchOneByName(questionId: QuestionId, name: String): Future[Option[Idea]]
   def insert(name: String, question: Question): Future[Idea]
-  def update(ideaId: IdeaId, name: String): Future[Int]
+  def update(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int]
 }
 
 trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
@@ -94,12 +94,12 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNam
       }
     }
 
-    override def update(ideaId: IdeaId, name: String): Future[Int] = {
+    override def update(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int] = {
       persistentIdeaService.findOne(ideaId).flatMap { result =>
         if (result.isEmpty) {
           Future.failed(IdeaDoesnotExistsException(ideaId.value))
         } else {
-          persistentIdeaService.modify(ideaId = ideaId, name = name).map { idea =>
+          persistentIdeaService.modify(ideaId = ideaId, name = name, status = status).map { idea =>
             eventBusService.publish(IdeaUpdatedEvent(ideaId = ideaId, eventDate = DateHelper.now()))
             idea
           }
