@@ -127,7 +127,7 @@ class ProposalEmailConsumer(userService: UserService,
                   Map(
                     "proposal_url" -> getProposalUrl(proposal, questionSlug),
                     "proposal_text" -> proposal.content,
-                    "firstname" -> user.fullName.getOrElse(""),
+                    "firstname" -> user.firstName.getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
                     "question" -> event.requestContext.question.getOrElse(""),
                     "location" -> event.requestContext.location.getOrElse(""),
@@ -188,7 +188,7 @@ class ProposalEmailConsumer(userService: UserService,
                 variables = Some(
                   Map(
                     "proposal_text" -> proposal.content,
-                    "firstname" -> user.fullName.getOrElse(""),
+                    "firstname" -> user.firstName.getOrElse(""),
                     "refusal_reason" -> proposal.refusalReason.getOrElse(""),
                     "registration_context" -> event.requestContext.operationId.map(_.value).getOrElse(""),
                     "operation" -> event.operation.map(_.value).getOrElse(""),
