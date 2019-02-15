@@ -41,7 +41,6 @@ trait MakeDataHandlerComponent {
 }
 
 trait MakeDataHandler extends DataHandler[UserRights] {
-  def removeTokenByAccessToken(token: String): Future[Int]
   def removeTokenByUserId(userId: UserId): Future[Int]
 }
 
@@ -218,11 +217,6 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         }
         future
       }
-    }
-
-    override def removeTokenByAccessToken(token: String): Future[Int] = {
-      accessTokenCache.invalidate(token)
-      persistentTokenService.deleteByAccessToken(token)
     }
 
     override def removeTokenByUserId(userId: UserId): Future[Int] = {

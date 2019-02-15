@@ -41,7 +41,10 @@ object ApplicationName {
     val shortName: String = "main-front"
   }
   case object LegacyFrontend extends ApplicationName {
-    val shortName: String = "deprecated-front"
+    val shortName: String = "legacy-front"
+  }
+  case object Backoffice extends ApplicationName {
+    val shortName: String = "backoffice"
   }
   case object Widget extends ApplicationName {
     val shortName: String = "widget"
@@ -53,7 +56,14 @@ object ApplicationName {
     val shortName: String = "bi-batch"
   }
   val applicationMap: Map[String, ApplicationName] =
-    Map(MainFrontend.shortName -> MainFrontend, LegacyFrontend.shortName -> LegacyFrontend, Widget.shortName -> Widget)
+    Map(
+      MainFrontend.shortName -> MainFrontend,
+      LegacyFrontend.shortName -> LegacyFrontend,
+      Backoffice.shortName -> Backoffice,
+      Widget.shortName -> Widget,
+      Dial.shortName -> Dial,
+      BiBatch.shortName -> BiBatch
+    )
 
   implicit lazy val encoder: Encoder[ApplicationName] = (applicationName: ApplicationName) =>
     Json.fromString(applicationName.shortName)
