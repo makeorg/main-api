@@ -25,7 +25,7 @@ import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.TimeSettings
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.ProposalId
+import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
 
@@ -42,16 +42,22 @@ trait SessionHistoryCoordinatorService {
   def convertSession(sessionId: SessionId, userId: UserId): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]]
+  def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit]
+  def lockSessionForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey): Future[Unit]
+  def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit]
+  def unlockSessionForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey): Future[Unit]
 }
 
 trait SessionHistoryCoordinatorServiceComponent {
   def sessionHistoryCoordinatorService: SessionHistoryCoordinatorService
 }
 
+case class ConcurrentModification(message: String) extends Exception(message)
+
 trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoordinatorServiceComponent {
   self: SessionHistoryCoordinatorComponent =>
 
-  override def sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
+  override lazy val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     new SessionHistoryCoordinatorService {
 
       implicit val timeout: Timeout = TimeSettings.defaultTimeout
@@ -77,7 +83,33 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
         (sessionHistoryCoordinator ? request).mapTo[Seq[ProposalId]]
       }
+      override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
+        (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
+          case LockAcquired => Future.successful {}
+          case LockAlreadyAcquired =>
+            Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
+        }
+      }
+      override def lockSessionForQualification(sessionId: SessionId,
+                                               proposalId: ProposalId,
+                                               key: QualificationKey): Future[Unit] = {
+        (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
+          case LockAcquired => Future.successful {}
+          case LockAlreadyAcquired =>
+            Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
+        }
+      }
+      override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
+        sessionHistoryCoordinator ! ReleaseProposalForVote(sessionId, proposalId)
+        Future.successful {}
+      }
 
+      override def unlockSessionForQualification(sessionId: SessionId,
+                                                 proposalId: ProposalId,
+                                                 key: QualificationKey): Future[Unit] = {
+        sessionHistoryCoordinator ! ReleaseProposalForQualification(sessionId, proposalId, key)
+        Future.successful {}
+      }
     }
 
 }

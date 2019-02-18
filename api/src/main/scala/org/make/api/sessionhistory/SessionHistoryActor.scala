@@ -42,16 +42,29 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.util.{Failure, Success}
 
-class SessionHistoryActor(userHistoryCoordinator: ActorRef)
+class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
     extends MakePersistentActor(classOf[SessionHistory], classOf[SessionHistoryEvent[_]])
     with MakeSettingsExtension {
 
   implicit val timeout: Timeout = defaultTimeout
   private val maxEvents: Int = settings.maxUserHistoryEvents
+  private var locks: Map[ProposalId, LockVoteAction] = Map.empty
+  private var deadline = Deadline.now
 
   def sessionId: SessionId = SessionId(self.path.name)
+
+  private def removeLocksIfExpired(): Unit = {
+    if (deadline.isOverdue()) {
+      locks = Map.empty
+    }
+  }
+
+  private def prorogateDeadline(): Unit = {
+    deadline = Deadline.now + lockDuration
+  }
 
   override def receiveCommand: Receive = {
     case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
@@ -68,6 +81,62 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
     case UserConnected(_, userId)                 => transformSession(userId)
     case Snapshot                                 => saveSnapshot()
     case StopSession(_)                           => self ! PoisonPill
+    case LockProposalForVote(_, proposalId)       => acquireLockForVotesIfPossible(proposalId)
+    case LockProposalForQualification(_, proposalId, qualification) =>
+      acquireLockForQualificationIfPossible(proposalId, qualification)
+    case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
+    case ReleaseProposalForQualification(_, proposalId, qualification) =>
+      releaseLockForQualification(proposalId, qualification)
+  }
+
+  private def releaseLockForQualification(proposalId: ProposalId, key: QualificationKey): Unit = {
+    locks.get(proposalId) match {
+      case Some(ChangeQualifications(keys)) =>
+        val remainingLocks = keys.filter(_ != key)
+        if (remainingLocks.isEmpty) {
+          locks -= proposalId
+        } else {
+          locks += proposalId -> ChangeQualifications(remainingLocks)
+        }
+      case _ =>
+    }
+  }
+
+  private def acquireLockForVotesIfPossible(proposalId: ProposalId): Unit = {
+    removeLocksIfExpired()
+    locks.get(proposalId) match {
+      case None =>
+        locks += proposalId -> Vote
+        prorogateDeadline()
+        sender() ! LockAcquired
+      case Some(_) =>
+        log.warning("Trying to vote on a locked proposal {} for session {}", proposalId.value, persistenceId)
+        sender() ! LockAlreadyAcquired
+    }
+  }
+
+  private def acquireLockForQualificationIfPossible(proposalId: ProposalId, key: QualificationKey): Unit = {
+    removeLocksIfExpired()
+    locks.get(proposalId) match {
+      case None =>
+        locks += proposalId -> ChangeQualifications(Seq(key))
+        prorogateDeadline()
+        sender() ! LockAcquired
+      case Some(Vote) =>
+        log.warning("Trying to qualify on a locked proposal {} for session {} (vote)", proposalId.value, persistenceId)
+        sender() ! LockAlreadyAcquired
+      case Some(ChangeQualifications(keys)) if keys.contains(key) =>
+        log.warning(
+          "Trying to qualify on a locked proposal {} for session {} (same qualification)",
+          proposalId.value,
+          persistenceId
+        )
+        sender() ! LockAlreadyAcquired
+      case Some(ChangeQualifications(keys)) =>
+        locks += proposalId -> ChangeQualifications(keys ++ Seq(key))
+        prorogateDeadline()
+        sender() ! LockAcquired
+    }
   }
 
   override def onRecoveryCompleted(): Unit = {
@@ -117,8 +186,14 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
       userHistoryCoordinator.forward(RequestVoteValues(userId, proposalIds))
     case command: SessionHistoryAction =>
       log.warning("closed session {} with userId {} received command {}", persistenceId, userId.value, command.toString)
-    case Snapshot       => saveSnapshot()
-    case StopSession(_) => self ! PoisonPill
+    case Snapshot                           => saveSnapshot()
+    case StopSession(_)                     => self ! PoisonPill
+    case LockProposalForVote(_, proposalId) => acquireLockForVotesIfPossible(proposalId)
+    case LockProposalForQualification(_, proposalId, qualification) =>
+      acquireLockForQualificationIfPossible(proposalId, qualification)
+    case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
+    case ReleaseProposalForQualification(_, proposalId, qualification) =>
+      releaseLockForQualification(proposalId, qualification)
   }
 
   def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)]): Receive = {
@@ -138,8 +213,14 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef)
           case (messageSender, e) => self.tell(e, messageSender)
         }
       }
-    case Snapshot => saveSnapshot()
-    case event    => context.become(transforming(userId, pendingEvents :+ sender() -> event))
+    case Snapshot                           => saveSnapshot()
+    case LockProposalForVote(_, proposalId) => acquireLockForVotesIfPossible(proposalId)
+    case LockProposalForQualification(_, proposalId, qualification) =>
+      acquireLockForQualificationIfPossible(proposalId, qualification)
+    case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
+    case ReleaseProposalForQualification(_, proposalId, qualification) =>
+      releaseLockForQualification(proposalId, qualification)
+    case event => context.become(transforming(userId, pendingEvents :+ sender() -> event))
   }
 
   private def retrieveVotedProposals(): Unit = {

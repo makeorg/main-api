@@ -117,7 +117,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   // Initialize journals
   actorSystem.actorOf(ShardedProposal.props(sessionHistoryCoordinator), "fake-proposal") ! PoisonPill
   actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
-  actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator), "fake-session") ! PoisonPill
+  actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second), "fake-session") ! PoisonPill
 
   // Ensure database stuff is initialized
   Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)

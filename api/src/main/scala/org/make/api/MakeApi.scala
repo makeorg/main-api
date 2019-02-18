@@ -36,6 +36,7 @@ import org.make.api.question._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
+  ConcurrentModification,
   DefaultSessionHistoryCoordinatorServiceComponent,
   SessionHistoryCoordinator,
   SessionHistoryCoordinatorComponent
@@ -333,6 +334,8 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
           entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
         )
       )
+    case ConcurrentModification(message) =>
+      complete(StatusCodes.Conflict -> message)
     case e =>
       logger.error(s"Error on request $routeName with id $requestId", e)
       complete(
