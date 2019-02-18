@@ -47,11 +47,6 @@ class AuthenticationApiTest
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId]))
     .thenReturn(Future.successful {})
 
-  when(oauth2DataHandler.removeTokenByAccessToken(any[String]))
-    .thenReturn(Future.successful(1))
-  when(oauth2DataHandler.removeTokenByAccessToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
-    .thenReturn(Future.successful(0))
-
   val routes: Route = sealRoute(authenticationApi.routes)
 
   feature("get a token user") {
