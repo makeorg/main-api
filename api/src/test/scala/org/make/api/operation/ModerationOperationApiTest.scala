@@ -289,16 +289,12 @@ class ModerationOperationApiTest
   when(operationService.findOneSimple(OperationId("firstOperation")))
     .thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOneSimple(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.findSimple(slug = Some("second-operation"), country = None, maybeSource = None, openAt = None))
+  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = Some("second-operation")))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.findSimple(slug = None, country = Some(Country("IT")), maybeSource = None, openAt = None))
-    .thenReturn(Future.successful(Seq(secondOperation)))
-  when(
-    operationService
-      .findSimple(slug = None, country = None, maybeSource = None, openAt = Some(LocalDate.parse("2018-02-02")))
-  ).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.findSimple(slug = None, country = None, maybeSource = None, openAt = None))
+  when(operationService.count(slug = Some("second-operation"))).thenReturn(Future.successful(1))
+  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.count(slug = None)).thenReturn(Future.successful(2))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
     Future.successful(
       Seq(
@@ -391,6 +387,7 @@ class ModerationOperationApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
+        header("x-total-count").map(_.value) should be(Some("2"))
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
         moderationOperationListResponse.total should be(2)
@@ -416,46 +413,7 @@ class ModerationOperationApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
-        val moderationOperationListResponse: ModerationOperationListResponse =
-          entityAs[ModerationOperationListResponse]
-        moderationOperationListResponse.total should be(1)
-        moderationOperationListResponse.results.head shouldBe a[ModerationOperationResponse]
-
-        val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
-        secondOperationResult.slug should be("second-operation")
-        secondOperationResult.defaultLanguage should be(Language("it"))
-      }
-    }
-
-    scenario("get an operation by country") {
-      Given("2 registered operations")
-      When("I get all proposals with a filter by country")
-      Then("I get a list of 1 operation")
-      And("the operation match the country")
-      Get("/moderation/operations?country=IT")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.OK)
-        val moderationOperationListResponse: ModerationOperationListResponse =
-          entityAs[ModerationOperationListResponse]
-        moderationOperationListResponse.total should be(1)
-        moderationOperationListResponse.results.head shouldBe a[ModerationOperationResponse]
-
-        val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
-        secondOperationResult.slug should be("second-operation")
-        secondOperationResult.defaultLanguage should be(Language("it"))
-      }
-    }
-
-    scenario("get an operation by openAt") {
-      Given("2 registered operations")
-      When("I get all proposals with a filter by openAt")
-      Then("I get a list of 1 operation")
-      And("the operation match the openAt")
-      Get("/moderation/operations?openAt=2018-02-02")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
-        status should be(StatusCodes.OK)
+        header("x-total-count").map(_.value) should be(Some("1"))
         val moderationOperationListResponse: ModerationOperationListResponse =
           entityAs[ModerationOperationListResponse]
         moderationOperationListResponse.total should be(1)

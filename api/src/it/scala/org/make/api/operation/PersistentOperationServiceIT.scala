@@ -343,5 +343,39 @@ class PersistentOperationServiceIT
         simpleOperation.map(_.operationId) shouldBe Some(operationId)
       }
     }
+
+    scenario("sorted simple operations") {
+
+      def simpleOperation(operationId: OperationId) = SimpleOperation(
+        operationId = operationId,
+        status = OperationStatus.Active,
+        slug = s"${operationId.value}-sorted-slug",
+        allowedSources = Seq.empty,
+        defaultLanguage = Language("fr"),
+        createdAt = None,
+        updatedAt = None
+      )
+
+//    The pipe "|" symbol is used here because it has a high ascii code thus allowing us to be determinist in the order.
+      val futureSortedSimpleOperations: Future[Seq[SimpleOperation]] = for {
+        _ <- persistentOperationService.persist(simpleOperation(OperationId("|BBB operation")))
+        _ <- persistentOperationService.persist(simpleOperation(OperationId("|AAA operation")))
+        _ <- persistentOperationService.persist(simpleOperation(OperationId("|CCC operation")))
+        results <- persistentOperationService.findSimple(
+          start = 1,
+          end = Some(2),
+          sort = Some("uuid"),
+          order = Some("DESC")
+        )
+      } yield results
+
+      whenReady(futureSortedSimpleOperations, Timeout(3.seconds)) { sortedSimpleOperations =>
+        sortedSimpleOperations.size shouldBe 2
+        sortedSimpleOperations.map(_.operationId) shouldBe Seq(
+          OperationId("|BBB operation"),
+          OperationId("|AAA operation")
+        )
+      }
+    }
   }
 }
