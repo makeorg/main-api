@@ -94,7 +94,8 @@ class OperationServiceTest
           startDate = None,
           endDate = None,
           operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id-BR")
+          landingSequenceId = SequenceId("first-sequence-id-BR"),
+          canPropose = true
         )
       ),
       QuestionWithDetails(
@@ -113,7 +114,8 @@ class OperationServiceTest
           startDate = None,
           endDate = None,
           operationTitle = "first operation",
-          landingSequenceId = SequenceId("first-sequence-id-GB")
+          landingSequenceId = SequenceId("first-sequence-id-GB"),
+          canPropose = true
         )
       )
     )

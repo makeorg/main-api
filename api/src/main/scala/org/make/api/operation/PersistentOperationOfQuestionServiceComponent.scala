@@ -102,7 +102,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
                 PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId.value,
                 PersistentOperationOfQuestion.column.createdAt -> now,
-                PersistentOperationOfQuestion.column.updatedAt -> now
+                PersistentOperationOfQuestion.column.updatedAt -> now,
+                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose
               )
           }.execute().apply()
         }).map(_ => operationOfQuestion)
@@ -118,7 +119,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
                 PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
                 PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
-                PersistentOperationOfQuestion.column.updatedAt -> now
+                PersistentOperationOfQuestion.column.updatedAt -> now,
+                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose
               )
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
           }.execute().apply()
@@ -172,14 +174,16 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                operationTitle: String,
                                                landingSequenceId: String,
                                                createdAt: ZonedDateTime,
-                                               updatedAt: ZonedDateTime) {
+                                               updatedAt: ZonedDateTime,
+                                               canPropose: Boolean) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
     startDate = this.startDate,
     endDate = this.endDate,
     operationTitle = this.operationTitle,
-    landingSequenceId = SequenceId(this.landingSequenceId)
+    landingSequenceId = SequenceId(this.landingSequenceId),
+    canPropose = this.canPropose
   )
 }
 
@@ -197,7 +201,8 @@ object PersistentOperationOfQuestion
                                            startDate: Option[LocalDate],
                                            endDate: Option[LocalDate],
                                            operationTitle: String,
-                                           landingSequenceId: String) {
+                                           landingSequenceId: String,
+                                           canPropose: Boolean) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -215,7 +220,8 @@ object PersistentOperationOfQuestion
           startDate = startDate,
           endDate = endDate,
           operationTitle = operationTitle,
-          landingSequenceId = SequenceId(landingSequenceId)
+          landingSequenceId = SequenceId(landingSequenceId),
+          canPropose = canPropose
         )
       )
 
@@ -247,7 +253,8 @@ object PersistentOperationOfQuestion
         startDate = resultSet.localDateOpt(operationOfQuestionAlias.startDate),
         endDate = resultSet.localDateOpt(operationOfQuestionAlias.endDate),
         operationTitle = operationTitle,
-        landingSequenceId = landingSequenceId
+        landingSequenceId = landingSequenceId,
+        canPropose = resultSet.boolean(operationOfQuestionAlias.canPropose)
       )
   }
 
@@ -260,7 +267,8 @@ object PersistentOperationOfQuestion
       "operation_title",
       "landing_sequence_id",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "can_propose"
     )
 
   override val tableName: String = "operation_of_question"
@@ -278,7 +286,8 @@ object PersistentOperationOfQuestion
       operationTitle = resultSet.string(resultName.operationTitle),
       landingSequenceId = resultSet.string(resultName.landingSequenceId),
       createdAt = resultSet.zonedDateTime(resultName.createdAt),
-      updatedAt = resultSet.zonedDateTime(resultName.updatedAt)
+      updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
+      canPropose = resultSet.boolean(resultName.canPropose)
     )
   }
 }

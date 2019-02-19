@@ -108,7 +108,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         startDate = request.startDate,
         endDate = request.endDate,
         operationTitle = request.operationTitle,
-        landingSequenceId = SequenceId("some-sequence")
+        landingSequenceId = SequenceId("some-sequence"),
+        canPropose = true
       )
     )
   }
@@ -123,7 +124,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           startDate = None,
           endDate = None,
           operationTitle = "some title",
-          landingSequenceId = SequenceId("some-sequence")
+          landingSequenceId = SequenceId("some-sequence"),
+          canPropose = true
         )
       )
     )
@@ -163,7 +165,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           startDate = None,
           endDate = None,
           operationTitle = "opération en Français",
-          landingSequenceId = SequenceId("landing-1")
+          landingSequenceId = SequenceId("landing-1"),
+          canPropose = true
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -171,7 +174,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           startDate = None,
           endDate = None,
           operationTitle = "Operation in English",
-          landingSequenceId = SequenceId("landing-2")
+          landingSequenceId = SequenceId("landing-2"),
+          canPropose = true
         )
       )
     )
@@ -228,7 +232,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             startDate = None,
             endDate = None,
             operationTitle = "some title",
-            landingSequenceId = SequenceId("sequence-1")
+            landingSequenceId = SequenceId("sequence-1"),
+            canPropose = true
           ),
           OperationOfQuestion(
             questionId = QuestionId("question-2"),
@@ -236,7 +241,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             startDate = None,
             endDate = None,
             operationTitle = "some title",
-            landingSequenceId = SequenceId("sequence-2")
+            landingSequenceId = SequenceId("sequence-2"),
+            canPropose = true
           )
         )
       )
@@ -369,11 +375,14 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             country = Country("FR"),
             language = Language("fr"),
             question = "how to save the world?",
-            questionSlug = "make-the-world-great-again"
+            questionSlug = "make-the-world-great-again",
+            canPropose = true
           ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.Created)
+        val operationOfQuestion = entityAs[OperationOfQuestionResponse]
+        operationOfQuestion.canPropose shouldBe true
       }
     }
   }
@@ -387,7 +396,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           ModifyOperationOfQuestionRequest(
             startDate = Some(LocalDate.parse("2018-12-01")),
             endDate = None,
-            operationTitle = "my-operation"
+            operationTitle = "my-operation",
+            canPropose = true
           ).asJson.toString()
         ) ~> routes ~> check {
 

@@ -55,7 +55,8 @@ object CreateOperation {
                                          title: String,
                                          startDate: Option[LocalDate],
                                          endDate: Option[LocalDate],
-                                         sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default)
+                                         sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
+                                         canPropose: Boolean = true)
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 

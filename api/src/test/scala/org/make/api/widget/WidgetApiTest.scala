@@ -107,7 +107,8 @@ class WidgetApiTest
       None,
       None,
       "Foo operation",
-      SequenceId("sequence-id")
+      SequenceId("sequence-id"),
+      canPropose = true
     )
 
     scenario("valid question") {

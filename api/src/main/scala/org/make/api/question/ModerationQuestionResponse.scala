@@ -73,7 +73,8 @@ case class QuestionDetailsResponse(
   endDate: Option[LocalDate],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
-  operationTitle: String
+  operationTitle: String,
+  canPropose: Boolean
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -90,7 +91,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     startDate = operationOfQuestion.startDate,
     endDate = operationOfQuestion.endDate,
     landingSequenceId = operationOfQuestion.landingSequenceId,
-    operationTitle = operationOfQuestion.operationTitle
+    operationTitle = operationOfQuestion.operationTitle,
+    canPropose = operationOfQuestion.canPropose
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]

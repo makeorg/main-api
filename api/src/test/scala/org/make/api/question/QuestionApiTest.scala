@@ -92,7 +92,8 @@ class QuestionApiTest
     startDate = Some(LocalDate.parse("2018-10-21")),
     endDate = None,
     operationTitle = "operation title",
-    landingSequenceId = SequenceId("sequenceId")
+    landingSequenceId = SequenceId("sequenceId"),
+    canPropose = true
   )
 
   feature("start sequence by question id") {
@@ -102,7 +103,8 @@ class QuestionApiTest
       None,
       None,
       "Foo operation",
-      SequenceId("sequence-id")
+      SequenceId("sequence-id"),
+      canPropose = true
     )
     scenario("valid question") {
       when(persistentOperationOfQuestionService.getById(any[QuestionId]))

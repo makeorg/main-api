@@ -66,7 +66,8 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            slug: String,
                                            country: Country,
                                            language: Language,
-                                           question: String)
+                                           question: String,
+                                           canPropose: Boolean)
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
@@ -155,7 +156,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         startDate = parameters.startDate,
         endDate = parameters.endDate,
         operationTitle = parameters.operationTitle,
-        landingSequenceId = sequenceId
+        landingSequenceId = sequenceId,
+        canPropose = parameters.canPropose
       )
 
       val sequenceConfiguration = SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)

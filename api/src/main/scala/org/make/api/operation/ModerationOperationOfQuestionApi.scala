@@ -289,7 +289,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 .copy(
                                   startDate = request.startDate,
                                   endDate = request.endDate,
-                                  operationTitle = request.operationTitle
+                                  operationTitle = request.operationTitle,
+                                  canPropose = request.canPropose
                                 )
                             )
                           ) { result =>
@@ -336,7 +337,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           slug = body.questionSlug,
                           country = body.country,
                           language = body.language,
-                          question = body.question
+                          question = body.question,
+                          canPropose = body.canPropose
                         )
                       )
                     ) { operationOfQuestion =>
@@ -359,7 +361,8 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   startDate: Option[LocalDate],
                                                   @(ApiModelProperty @field)(example = "2019-03-23")
                                                   endDate: Option[LocalDate],
-                                                  operationTitle: String) {
+                                                  operationTitle: String,
+                                                  canPropose: Boolean) {
   validate(validateUserInput("operationTitle", operationTitle, None))
 }
 
@@ -382,7 +385,9 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
-  questionSlug: String
+  questionSlug: String,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
+  canPropose: Boolean
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
@@ -414,10 +419,12 @@ final case class OperationOfQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language
+  language: Language,
+  canPropose: Boolean
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
+  implicit val decoder: Decoder[OperationOfQuestionResponse] = deriveDecoder[OperationOfQuestionResponse]
   implicit val encoder: Encoder[OperationOfQuestionResponse] = deriveEncoder[OperationOfQuestionResponse]
 
   def apply(operationOfQuestion: OperationOfQuestion, question: Question): OperationOfQuestionResponse = {
@@ -431,7 +438,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       questionSlug = question.slug,
       question = question.question,
       country = question.country,
-      language = question.language
+      language = question.language,
+      canPropose = operationOfQuestion.canPropose
     )
   }
 }
