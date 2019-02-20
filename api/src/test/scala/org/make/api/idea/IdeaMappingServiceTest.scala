@@ -273,7 +273,16 @@ class IdeaMappingServiceTest
     scenario("existing mapping") {
       when(
         persistentIdeaMappingService
-          .find(Some(QuestionId("my-question")), Some(Right(TagId("tag-1"))), Some(Right(TagId("tag-2"))), None)
+          .find(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("my-question")),
+            stakeTagId = Some(Right(TagId("tag-1"))),
+            solutionTypeTagId = Some(Right(TagId("tag-2"))),
+            ideaId = None
+          )
       ).thenReturn(
         Future.successful(
           Seq(
@@ -299,7 +308,16 @@ class IdeaMappingServiceTest
     scenario("multiple mappings") {
       when(
         persistentIdeaMappingService
-          .find(Some(QuestionId("my-question")), Some(Right(TagId("tag-3"))), Some(Right(TagId("tag-4"))), None)
+          .find(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("my-question")),
+            stakeTagId = Some(Right(TagId("tag-3"))),
+            solutionTypeTagId = Some(Right(TagId("tag-4"))),
+            ideaId = None
+          )
       ).thenReturn(
         Future.successful(
           Seq(
@@ -333,7 +351,16 @@ class IdeaMappingServiceTest
 
       when(
         persistentIdeaMappingService
-          .find(Some(QuestionId("my-question")), Some(Right(TagId("tag-5"))), Some(Right(TagId("tag-6"))), None)
+          .find(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("my-question")),
+            stakeTagId = Some(Right(TagId("tag-5"))),
+            solutionTypeTagId = Some(Right(TagId("tag-6"))),
+            ideaId = None
+          )
       ).thenReturn(Future.successful(Seq.empty))
 
       when(persistentQuestionService.getById(QuestionId("my-question"))).thenReturn(
@@ -380,7 +407,16 @@ class IdeaMappingServiceTest
 
       when(
         persistentIdeaMappingService
-          .find(Some(QuestionId("my-question")), Some(Left(None)), Some(Left(None)), None)
+          .find(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("my-question")),
+            stakeTagId = Some(Left(None)),
+            solutionTypeTagId = Some(Left(None)),
+            ideaId = None
+          )
       ).thenReturn(Future.successful(Seq.empty))
 
       when(persistentQuestionService.getById(QuestionId("my-question"))).thenReturn(
@@ -416,7 +452,28 @@ class IdeaMappingServiceTest
         ideaMapping.id should be(IdeaMappingId("mapping-3"))
       }
     }
+  }
 
+  feature("count mappings") {
+    scenario("count mappings") {
+      when(
+        persistentIdeaMappingService
+          .count(Some(QuestionId("my-question")), Some(Right(TagId("tag-1"))), Some(Right(TagId("tag-2"))), None)
+      ).thenReturn(Future.successful(42))
+
+      val countMapping =
+        ideaMappingService.count(
+          Some(QuestionId("my-question")),
+          Some(Right(TagId("tag-1"))),
+          Some(Right(TagId("tag-2"))),
+          None
+        )
+
+      whenReady(countMapping, Timeout(5.seconds)) {
+        _ shouldBe 42
+      }
+
+    }
   }
 
 }
