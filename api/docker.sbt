@@ -30,7 +30,9 @@ dockerRepository := Some("nexus.prod.makeorg.tech")
 daemonUser in Docker := "user"
 packageName in Docker := "make-api"
 
-dockerCommands += Cmd("HEALTHCHECK", "CMD curl --fail http://localhost:9000/version || exit 1")
+dockerCommands += Cmd(
+  "HEALTHCHECK", "CMD curl --fail http://localhost:9000/version -H 'x-make-app-name: infra' || exit 1"
+)
 
 dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",

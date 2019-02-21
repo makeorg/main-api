@@ -49,6 +49,9 @@ object ApplicationName {
   case object Widget extends ApplicationName {
     val shortName: String = "widget"
   }
+  case object WidgetManager extends ApplicationName {
+    val shortName: String = "widget-manager"
+  }
   case object Dial extends ApplicationName {
     val shortName: String = "dial"
   }
@@ -58,15 +61,20 @@ object ApplicationName {
   case object DialBatchs extends ApplicationName {
     val shortName: String = "dial-batchs"
   }
+  case object Infrastructure extends ApplicationName {
+    val shortName: String = "infra"
+  }
   val applicationMap: Map[String, ApplicationName] =
     Map(
       MainFrontend.shortName -> MainFrontend,
       LegacyFrontend.shortName -> LegacyFrontend,
       Backoffice.shortName -> Backoffice,
       Widget.shortName -> Widget,
+      WidgetManager.shortName -> WidgetManager,
       Dial.shortName -> Dial,
       BiBatchs.shortName -> BiBatchs,
-      DialBatchs.shortName -> DialBatchs
+      DialBatchs.shortName -> DialBatchs,
+      Infrastructure.shortName -> Infrastructure
     )
 
   implicit lazy val encoder: Encoder[ApplicationName] = (applicationName: ApplicationName) =>
