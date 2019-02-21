@@ -43,7 +43,10 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
   val userCoordinatorProbe: TestProbe = TestProbe()(system)
 
   val coordinator: ActorRef =
-    system.actorOf(SessionHistoryCoordinator.props(userCoordinatorProbe.ref), SessionHistoryCoordinator.name)
+    system.actorOf(
+      SessionHistoryCoordinator.props(userCoordinatorProbe.ref, 500.milliseconds),
+      SessionHistoryCoordinator.name
+    )
 
   feature("Vote retrieval") {
     scenario("no vote history") {
@@ -505,4 +508,72 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
     }
 
   }
+
+  feature("locking for votes") {
+    scenario("locking for vote") {
+      val sessionId = SessionId("locking-for-vote")
+      val proposalId = ProposalId("locking-for-vote")
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAcquired)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAlreadyAcquired)
+
+      coordinator ! LockProposalForQualification(sessionId, proposalId, QualificationKey.Doable)
+      expectMsg(LockAlreadyAcquired)
+
+      coordinator ! ReleaseProposalForVote(sessionId, proposalId)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAcquired)
+    }
+
+    scenario("deadline security") {
+      val sessionId = SessionId("deadline-security")
+      val proposalId = ProposalId("deadline-security")
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAcquired)
+
+      Thread.sleep(600)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAcquired)
+    }
+  }
+
+  feature("locking qualifications") {
+    scenario("multiple qualifications") {
+      val sessionId = SessionId("locking-for-qualification")
+      val proposalId = ProposalId("locking-for-qualification")
+
+      val qualification1 = QualificationKey.LikeIt
+      val qualification2 = QualificationKey.Doable
+
+      coordinator ! LockProposalForQualification(sessionId, proposalId, qualification1)
+      expectMsg(LockAcquired)
+
+      coordinator ! LockProposalForQualification(sessionId, proposalId, qualification1)
+      expectMsg(LockAlreadyAcquired)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAlreadyAcquired)
+
+      coordinator ! LockProposalForQualification(sessionId, proposalId, qualification2)
+      expectMsg(LockAcquired)
+
+      coordinator ! ReleaseProposalForQualification(sessionId, proposalId, qualification1)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAlreadyAcquired)
+
+      coordinator ! ReleaseProposalForQualification(sessionId, proposalId, qualification2)
+
+      coordinator ! LockProposalForVote(sessionId, proposalId)
+      expectMsg(LockAcquired)
+
+    }
+  }
+
 }

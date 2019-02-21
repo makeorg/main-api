@@ -262,6 +262,23 @@ object SessionTransformed {
     DefaultJsonProtocol.jsonFormat(SessionTransformed.apply, "sessionId", "context", "action")
 }
 
+case class ProposalLockValue(voteKey: Option[VoteKey], qualifications: Seq[QualificationKey])
+
+sealed trait LockVoteAction
+
+case object Vote extends LockVoteAction
+case class ChangeQualifications(key: Seq[QualificationKey]) extends LockVoteAction
+
+case class LockProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
+case class LockProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
+    extends SessionRelatedEvent
+case class ReleaseProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
+case class ReleaseProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
+    extends SessionRelatedEvent
+
+case object LockAcquired
+case object LockAlreadyAcquired
+
 sealed trait SessionHistoryAction extends SessionRelatedEvent
 
 final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryAction

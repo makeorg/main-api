@@ -26,10 +26,10 @@ import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.sessionhistory.ShardedSessionHistory.StopSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ShardedSessionHistory(userHistoryCoordinator: ActorRef)
-    extends SessionHistoryActor(userHistoryCoordinator)
+class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
+    extends SessionHistoryActor(userHistoryCoordinator, lockDuration)
     with ActorLogging {
 
   context.setReceiveTimeout(20.minutes)
@@ -50,7 +50,8 @@ object ShardedSessionHistory {
   val snapshotStore: String = "make-api.event-sourcing.sessions.snapshot-store"
   val queryJournal: String = "make-api.event-sourcing.sessions.query-journal"
 
-  def props(userHistoryCoordinator: ActorRef): Props = Props(new ShardedSessionHistory(userHistoryCoordinator))
+  def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration): Props =
+    Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration))
   val shardName: String = "session-history"
 
   case object StopSessionHistory

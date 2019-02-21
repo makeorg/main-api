@@ -608,22 +608,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                               requestContext: RequestContext,
                               voteKey: VoteKey): Future[Option[Vote]] = {
 
-      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
-        votes =>
-          retrieveUser(maybeUserId).flatMap(
-            user =>
-              proposalCoordinatorService.vote(
-                VoteProposalCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
-                  vote = votes.get(proposalId)
-                )
-            )
+      val result = for {
+        _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
+        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        user  <- retrieveUser(maybeUserId)
+        vote <- proposalCoordinatorService.vote(
+          VoteProposalCommand(
+            proposalId = proposalId,
+            maybeUserId = maybeUserId,
+            requestContext = requestContext,
+            voteKey = voteKey,
+            maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
+            vote = votes.get(proposalId)
+          )
         )
-      )
+        _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
+      } yield vote
+
+      result.recoverWith {
+        case e: ConcurrentModification => Future.failed(e)
+        case other =>
+          sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId).flatMap { _ =>
+            Future.failed(other)
+          }
+      }
 
     }
 
@@ -632,22 +640,30 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                 requestContext: RequestContext,
                                 voteKey: VoteKey): Future[Option[Vote]] = {
 
-      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
-        votes =>
-          retrieveUser(maybeUserId).flatMap(
-            user =>
-              proposalCoordinatorService.unvote(
-                UnvoteProposalCommand(
-                  proposalId = proposalId,
-                  maybeUserId = maybeUserId,
-                  requestContext = requestContext,
-                  voteKey = voteKey,
-                  maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
-                  vote = votes.get(proposalId)
-                )
-            )
+      val result = for {
+        _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
+        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        user  <- retrieveUser(maybeUserId)
+        unvote <- proposalCoordinatorService.unvote(
+          UnvoteProposalCommand(
+            proposalId = proposalId,
+            maybeUserId = maybeUserId,
+            requestContext = requestContext,
+            voteKey = voteKey,
+            maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
+            vote = votes.get(proposalId)
+          )
         )
-      )
+        _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
+      } yield unvote
+
+      result.recoverWith {
+        case e: ConcurrentModification => Future.failed(e)
+        case other =>
+          sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId).flatMap { _ =>
+            Future.failed(other)
+          }
+      }
     }
 
     override def qualifyVote(proposalId: ProposalId,
@@ -656,19 +672,39 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                              voteKey: VoteKey,
                              qualificationKey: QualificationKey): Future[Option[Qualification]] = {
 
-      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
-        votes =>
-          proposalCoordinatorService.qualification(
-            QualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              qualificationKey = qualificationKey,
-              vote = votes.get(proposalId)
-            )
+      val result = for {
+        _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
+          requestContext.sessionId,
+          proposalId,
+          qualificationKey
         )
-      )
+        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        qualify <- proposalCoordinatorService.qualification(
+          QualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = maybeUserId,
+            requestContext = requestContext,
+            voteKey = voteKey,
+            qualificationKey = qualificationKey,
+            vote = votes.get(proposalId)
+          )
+        )
+        _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
+          requestContext.sessionId,
+          proposalId,
+          qualificationKey
+        )
+      } yield qualify
+
+      result.recoverWith {
+        case e: ConcurrentModification => Future.failed(e)
+        case other =>
+          sessionHistoryCoordinatorService
+            .unlockSessionForQualification(requestContext.sessionId, proposalId, qualificationKey)
+            .flatMap { _ =>
+              Future.failed(other)
+            }
+      }
 
     }
 
@@ -678,19 +714,40 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                voteKey: VoteKey,
                                qualificationKey: QualificationKey): Future[Option[Qualification]] = {
 
-      retrieveVoteHistory(proposalId, maybeUserId, requestContext).flatMap(
-        votes =>
-          proposalCoordinatorService.unqualification(
-            UnqualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = maybeUserId,
-              requestContext = requestContext,
-              voteKey = voteKey,
-              qualificationKey = qualificationKey,
-              vote = votes.get(proposalId)
-            )
+      val result = for {
+        _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
+          requestContext.sessionId,
+          proposalId,
+          qualificationKey
         )
-      )
+        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        removeQualification <- proposalCoordinatorService.unqualification(
+          UnqualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = maybeUserId,
+            requestContext = requestContext,
+            voteKey = voteKey,
+            qualificationKey = qualificationKey,
+            vote = votes.get(proposalId)
+          )
+        )
+        _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
+          requestContext.sessionId,
+          proposalId,
+          qualificationKey
+        )
+      } yield removeQualification
+
+      result.recoverWith {
+        case e: ConcurrentModification => Future.failed(e)
+        case other =>
+          sessionHistoryCoordinatorService
+            .unlockSessionForQualification(requestContext.sessionId, proposalId, qualificationKey)
+            .flatMap { _ =>
+              Future.failed(other)
+            }
+      }
+
     }
 
     override def lockProposal(proposalId: ProposalId,
