@@ -32,7 +32,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation.{validate, validateUserInput}
 import org.make.core.auth.UserRights
 import org.make.core.operation.{OperationId, OperationOfQuestion}
@@ -40,7 +40,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
+import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -71,6 +71,10 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
@@ -222,35 +226,77 @@ trait DefaultModerationOperationOfQuestionApiComponent
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireModerationRole(auth.user) {
                 parameters(
-                  ('questionId.as[immutable.Seq[QuestionId]].?, 'operationId.as[OperationId].?, 'openAt.as[LocalDate].?)
-                ) { (questionIds, operationId, openAt) =>
-                  val resolvedQuestions: Option[Seq[QuestionId]] = {
-                    if (auth.user.roles.contains(RoleAdmin)) {
-                      questionIds
-                    } else {
-                      questionIds.map { questions =>
-                        questions.filter(id => auth.user.availableQuestions.contains(id))
-                      }.orElse(Some(auth.user.availableQuestions))
-                    }
-                  }
-                  provideAsync(
-                    operationOfQuestionService
-                      .search(SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt))
-                  ) { result: Seq[OperationOfQuestion] =>
-                    provideAsync(questionService.getQuestions(result.map(_.questionId))) { questions: Seq[Question] =>
-                      val questionsAsMap = questions.map(q => q.questionId -> q).toMap
-                      complete(
-                        StatusCodes.OK -> result
-                          .map(
-                            operationOfQuestion =>
-                              OperationOfQuestionResponse(
-                                operationOfQuestion,
-                                questionsAsMap(operationOfQuestion.questionId)
-                            )
+                  (
+                    '_start.as[Int].?,
+                    '_end.as[Int].?,
+                    '_sort.?,
+                    '_order.?,
+                    'questionId.as[immutable.Seq[QuestionId]].?,
+                    'operationId.as[OperationId].?,
+                    'openAt.as[LocalDate].?
+                  )
+                ) {
+                  (start: Option[Int],
+                   end: Option[Int],
+                   sort: Option[String],
+                   order: Option[String],
+                   questionIds,
+                   operationId,
+                   openAt) =>
+                    order.foreach { orderValue =>
+                      Validation.validate(
+                        Validation
+                          .validChoices(
+                            "_order",
+                            Some("Invalid order"),
+                            Seq(orderValue.toLowerCase),
+                            Seq("desc", "asc")
                           )
                       )
                     }
-                  }
+                    val resolvedQuestions: Option[Seq[QuestionId]] = {
+                      if (auth.user.roles.contains(RoleAdmin)) {
+                        questionIds
+                      } else {
+                        questionIds.map { questions =>
+                          questions.filter(id => auth.user.availableQuestions.contains(id))
+                        }.orElse(Some(auth.user.availableQuestions))
+                      }
+                    }
+                    provideAsync(
+                      operationOfQuestionService
+                        .search(
+                          start.getOrElse(0),
+                          end,
+                          sort,
+                          order,
+                          SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt)
+                        )
+                    ) { result: Seq[OperationOfQuestion] =>
+                      provideAsync(
+                        operationOfQuestionService
+                          .count(SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt))
+                      ) { count =>
+                        provideAsync(questionService.getQuestions(result.map(_.questionId))) {
+                          questions: Seq[Question] =>
+                            val questionsAsMap = questions.map(q => q.questionId -> q).toMap
+                            complete(
+                              (
+                                StatusCodes.OK,
+                                List(TotalCountHeader(count.toString)),
+                                result
+                                  .map(
+                                    operationOfQuestion =>
+                                      OperationOfQuestionResponse(
+                                        operationOfQuestion,
+                                        questionsAsMap(operationOfQuestion.questionId)
+                                    )
+                                  )
+                              )
+                            )
+                        }
+                      }
+                    }
                 }
               }
             }

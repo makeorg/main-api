@@ -222,31 +222,35 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     })
   }
 
-  when(operationOfQuestionService.search(any[SearchOperationsOfQuestions]))
-    .thenReturn(
-      Future.successful(
-        Seq(
-          OperationOfQuestion(
-            questionId = QuestionId("question-1"),
-            operationId = OperationId("operation-1"),
-            startDate = None,
-            endDate = None,
-            operationTitle = "some title",
-            landingSequenceId = SequenceId("sequence-1"),
-            canPropose = true
-          ),
-          OperationOfQuestion(
-            questionId = QuestionId("question-2"),
-            operationId = OperationId("operation-2"),
-            startDate = None,
-            endDate = None,
-            operationTitle = "some title",
-            landingSequenceId = SequenceId("sequence-2"),
-            canPropose = true
-          )
+  when(
+    operationOfQuestionService
+      .search(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[SearchOperationsOfQuestions])
+  ).thenReturn(
+    Future.successful(
+      Seq(
+        OperationOfQuestion(
+          questionId = QuestionId("question-1"),
+          operationId = OperationId("operation-1"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "some title",
+          landingSequenceId = SequenceId("sequence-1"),
+          canPropose = true
+        ),
+        OperationOfQuestion(
+          questionId = QuestionId("question-2"),
+          operationId = OperationId("operation-2"),
+          startDate = None,
+          endDate = None,
+          operationTitle = "some title",
+          landingSequenceId = SequenceId("sequence-2"),
+          canPropose = true
         )
       )
     )
+  )
+
+  when(operationOfQuestionService.count(any[SearchOperationsOfQuestions])).thenReturn(Future.successful(2))
 
   val routes: Route = sealRoute(moderationOperationOfQuestionApi.routes)
 

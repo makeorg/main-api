@@ -119,7 +119,13 @@ class UserEmailConsumerActor(userService: UserService,
           Future.successful(None)
         } else {
           operationOfQuestionService
-            .search(SearchOperationsOfQuestions(questionIds = None, operationId = None, openAt = Some(LocalDate.now())))
+            .search(
+              0,
+              None,
+              None,
+              None,
+              SearchOperationsOfQuestions(questionIds = None, operationId = None, openAt = Some(LocalDate.now()))
+            )
             .flatMap { opOfQuestion =>
               questionService
                 .searchQuestion(SearchQuestionRequest(country = Some(country), language = Some(language)))

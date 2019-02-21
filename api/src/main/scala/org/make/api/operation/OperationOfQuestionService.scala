@@ -35,9 +35,13 @@ trait OperationOfQuestionService {
   def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]]
   def findByOperationId(operationId: OperationId): Future[Seq[OperationOfQuestion]]
   def findByQuestionSlug(slug: String): Future[Option[OperationOfQuestion]]
-  def search(request: SearchOperationsOfQuestions): Future[Seq[OperationOfQuestion]]
-
+  def search(start: Int,
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             request: SearchOperationsOfQuestions): Future[Seq[OperationOfQuestion]]
   def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
+  def count(request: SearchOperationsOfQuestions): Future[Int]
 
   /**
     * Deletes an OperationOfQuestion and all its associated objects:
@@ -85,8 +89,20 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
 
-    override def search(request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = {
-      persistentOperationOfQuestionService.search(request.questionIds, request.operationId, request.openAt)
+    override def search(start: Int,
+                        end: Option[Int],
+                        sort: Option[String],
+                        order: Option[String],
+                        request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = {
+      persistentOperationOfQuestionService.search(
+        start,
+        end,
+        sort,
+        order,
+        request.questionIds,
+        request.operationId,
+        request.openAt
+      )
     }
 
     override def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]] = {
@@ -167,6 +183,10 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         _         <- persistentSequenceConfigurationService.persist(sequenceConfiguration)
         persisted <- persistentOperationOfQuestionService.persist(operationOfQuestion)
       } yield persisted
+    }
+
+    override def count(request: SearchOperationsOfQuestions): Future[Int] = {
+      persistentOperationOfQuestionService.count(request.questionIds, request.operationId, request.openAt)
     }
   }
 }

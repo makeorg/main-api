@@ -113,7 +113,7 @@ class PersistentOperationOfQuestionServiceIT
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(operationOfQuestion1)
         _      <- createOperationOfQuestion(operationOfQuestion2)
-        result <- persistentOperationOfQuestionService.search(None, None, None)
+        result <- persistentOperationOfQuestionService.search(0, None, None, None, None, None, None)
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
@@ -125,8 +125,16 @@ class PersistentOperationOfQuestionServiceIT
       val operationOfQuestion3 = generateOperationOfQuestion.copy(questionId = QuestionId("toBeFiltered"))
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
-        _      <- createOperationOfQuestion(operationOfQuestion3)
-        result <- persistentOperationOfQuestionService.search(Some(Seq(QuestionId("toBeFiltered"))), None, None)
+        _ <- createOperationOfQuestion(operationOfQuestion3)
+        result <- persistentOperationOfQuestionService.search(
+          0,
+          None,
+          None,
+          None,
+          Some(Seq(QuestionId("toBeFiltered"))),
+          None,
+          None
+        )
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>

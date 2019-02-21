@@ -196,12 +196,6 @@ class ModerationOperationApiTest
     """
       |{
       |  "slug": "my-create-operation",
-      |  "translations": [
-      |    {
-      |      "title": "first create operation",
-      |      "language": "fr"
-      |    }
-      |  ],
       |  "defaultLanguage": "fr",
       |  "countriesConfiguration": [
       |    {
@@ -221,12 +215,6 @@ class ModerationOperationApiTest
       |{
       |  "status": "Active",
       |  "slug": "my-update-operation",
-      |  "translations": [
-      |    {
-      |      "title": "first update operation",
-      |      "language": "fr"
-      |    }
-      |  ],
       |  "defaultLanguage": "fr",
       |  "countriesConfiguration": [
       |    {
@@ -291,7 +279,8 @@ class ModerationOperationApiTest
   when(operationService.findOneSimple(OperationId("fakeid"))).thenReturn(Future.successful(None))
   when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = Some("second-operation")))
     .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.count(slug = Some("second-operation"))).thenReturn(Future.successful(1))
+  when(operationService.count(slug = Some("second-operation")))
+    .thenReturn(Future.successful(1))
   when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(operationService.count(slug = None)).thenReturn(Future.successful(2))
@@ -388,17 +377,15 @@ class ModerationOperationApiTest
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
-        val moderationOperationListResponse: ModerationOperationListResponse =
-          entityAs[ModerationOperationListResponse]
-        moderationOperationListResponse.total should be(2)
-        moderationOperationListResponse.results.map { moderationOperationResponse =>
+        val moderationOperationsResponse: Seq[ModerationOperationResponse] =
+          entityAs[Seq[ModerationOperationResponse]]
+        moderationOperationsResponse.map { moderationOperationResponse =>
           moderationOperationResponse shouldBe a[ModerationOperationResponse]
         }
 
-        moderationOperationListResponse.results.count(_.operationId.value == "secondOperation") should be(1)
-        moderationOperationListResponse.results.count(_.operationId.value == "firstOperation") should be(1)
+        moderationOperationsResponse.count(_.id.value == "firstOperation") should be(1)
         val firstOperationResult: ModerationOperationResponse =
-          moderationOperationListResponse.results.filter(_.operationId.value == "firstOperation").head
+          moderationOperationsResponse.filter(_.id.value == "firstOperation").head
         firstOperationResult.slug should be("first-operation")
         firstOperationResult.defaultLanguage should be(Language("fr"))
       }
@@ -414,12 +401,11 @@ class ModerationOperationApiTest
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("1"))
-        val moderationOperationListResponse: ModerationOperationListResponse =
-          entityAs[ModerationOperationListResponse]
-        moderationOperationListResponse.total should be(1)
-        moderationOperationListResponse.results.head shouldBe a[ModerationOperationResponse]
+        val moderationOperationsResponse: Seq[ModerationOperationResponse] =
+          entityAs[Seq[ModerationOperationResponse]]
+        moderationOperationsResponse.head shouldBe a[ModerationOperationResponse]
 
-        val secondOperationResult: ModerationOperationResponse = moderationOperationListResponse.results.head
+        val secondOperationResult: ModerationOperationResponse = moderationOperationsResponse.head
         secondOperationResult.slug should be("second-operation")
         secondOperationResult.defaultLanguage should be(Language("it"))
       }

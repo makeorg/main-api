@@ -94,8 +94,9 @@ trait ModerationOperationApi extends Directives {
 
   @ApiOperation(value = "get-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationOperationListResponse]))
+    value = Array(
+      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[ModerationOperationResponse]])
+    )
   )
   @ApiImplicitParams(
     value = Array(
@@ -103,9 +104,7 @@ trait ModerationOperationApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "date")
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
     )
   )
   @Path(value = "/")
@@ -262,9 +261,7 @@ trait DefaultModerationOperationApiComponent
                       ) { operations =>
                         val operationResponses: Seq[ModerationOperationResponse] =
                           operations.map(operation => ModerationOperationResponse(operation))
-                        val result: ModerationOperationListResponse =
-                          ModerationOperationListResponse(operationResponses.length, operationResponses)
-                        complete((StatusCodes.OK, List(TotalCountHeader(count.toString)), result))
+                        complete((StatusCodes.OK, List(TotalCountHeader(count.toString)), operationResponses))
                       }
                     }
                   }

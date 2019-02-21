@@ -24,23 +24,17 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.Validation
 import org.make.core.Validation.{validateUserInput, _}
-import org.make.core.operation.{OperationId, OperationStatus, OperationTranslation}
+import org.make.core.operation.{OperationId, OperationStatus}
 import org.make.core.reference.Language
 
 import scala.annotation.meta.field
 
 @ApiModel
 final case class ModerationCreateOperationRequest(slug: String,
-                                                  translations: Seq[OperationTranslation],
                                                   @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                                   defaultLanguage: Language,
                                                   allowedSources: Seq[String]) {
-  OperationValidation.validateCreate(
-    translations = translations,
-    defaultLanguage = defaultLanguage,
-    slug = slug,
-    allowedSources = allowedSources
-  )
+  OperationValidation.validateCreate(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
 }
 
 object ModerationCreateOperationRequest {
@@ -49,12 +43,10 @@ object ModerationCreateOperationRequest {
 @ApiModel
 final case class ModerationUpdateOperationRequest(status: String,
                                                   slug: String,
-                                                  translations: Seq[OperationTranslation],
                                                   @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                                   defaultLanguage: Language,
                                                   allowedSources: Seq[String]) {
   OperationValidation.validateUpdate(
-    translations = translations,
     defaultLanguage = defaultLanguage,
     status = status,
     slug = slug,
@@ -77,20 +69,9 @@ object OperationIdResponse {
 }
 
 private object OperationValidation {
-  private val maxTitleLength = 256
   private val maxLanguageLength = 3
 
-  def validateCreate(translations: Seq[OperationTranslation],
-                     defaultLanguage: Language,
-                     slug: String,
-                     allowedSources: Seq[String]): Unit = {
-    translations.foreach { translation =>
-      validate(
-        maxLength(s"translation.title[${translation.language}]", maxTitleLength, translation.title),
-        maxLength("translation.language", maxLanguageLength, translation.language.value),
-        validateUserInput("translation.title", translation.title, None)
-      )
-    }
+  def validateCreate(defaultLanguage: Language, slug: String, allowedSources: Seq[String]): Unit = {
     allowedSources.foreach { source =>
       validate(validateUserInput("allowedSources", source, None))
     }
@@ -103,12 +84,8 @@ private object OperationValidation {
     validate(Validation.requireNonEmpty("allowedSources", allowedSources))
   }
 
-  def validateUpdate(translations: Seq[OperationTranslation],
-                     defaultLanguage: Language,
-                     status: String,
-                     slug: String,
-                     allowedSources: Seq[String]): Unit = {
-    validateCreate(translations, defaultLanguage, slug, allowedSources)
+  def validateUpdate(defaultLanguage: Language, status: String, slug: String, allowedSources: Seq[String]): Unit = {
+    validateCreate(defaultLanguage, slug, allowedSources)
     val validStatusChoices: Seq[String] = OperationStatus.statusMap.toSeq.map {
       case (name, _) => name
     }
