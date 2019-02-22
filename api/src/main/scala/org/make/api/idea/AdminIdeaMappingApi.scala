@@ -31,6 +31,7 @@ import org.make.api.idea.AdminIdeaMappingApi.{
   IdeaMappingResponse,
   UpdateIdeaMappingRequest
 }
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.idea.IdeaId
@@ -231,6 +232,7 @@ trait DefaultAdminIdeaMappingApiComponent
 
   self: MakeDataHandlerComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with IdeaMappingServiceComponent =>
 

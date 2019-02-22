@@ -28,6 +28,7 @@ import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
@@ -35,6 +36,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.user.UserId
 import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
@@ -44,7 +46,10 @@ import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
 trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
-  this: IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
+  this: IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with SessionHistoryCoordinatorServiceComponent =>
 
   val sessionIdKey: String = "make-session-id"
   val visitorIdKey: String = "make-visitor-id"
@@ -115,17 +120,22 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     }
   }
 
-  private def logRequest(context: RequestContext, origin: Option[String]): Unit = {
+  private def logRequest(operationName: String, context: RequestContext, origin: Option[String]): Unit = {
     Kamon
       .counter("api-requests")
       .refine(
         "source" -> context.source.getOrElse("unknown"),
+        "operation" -> operationName,
         "origin" -> origin.getOrElse("unknown"),
         "application" -> context.applicationName.map(_.shortName).getOrElse("unknown"),
         "location" -> context.location.getOrElse("unknown"),
         "question" -> context.questionId.map(_.value).getOrElse("unknown")
       )
       .increment()
+  }
+
+  private def connectIfNecessary(sessionId: SessionId, maybeUserId: Option[UserId]): Unit = {
+    maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId))
   }
 
   def makeOperation(name: String): Directive1[RequestContext] = {
@@ -189,7 +199,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         questionId = maybeQuestionId.map(QuestionId.apply),
         applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get)
       )
-      logRequest(requestContext, origin)
+      logRequest(name, requestContext, origin)
+      connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId))
       requestContext
     }
   }
@@ -343,7 +354,10 @@ object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
 }
 
 trait MakeAuthenticationDirectives extends MakeAuthentication {
-  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent =>
 
   def requireModerationRole(user: UserRights): Directive0 = {
     authorize(user.roles.contains(RoleModerator) || user.roles.contains(RoleAdmin))

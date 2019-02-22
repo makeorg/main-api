@@ -32,6 +32,7 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse,
   ProposalsResultWithUserVoteSeededResponse
 }
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserResponse
@@ -118,6 +119,7 @@ trait DefaultOrganisationApiComponent
     with ProposalServiceComponent
     with OperationServiceComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeDataHandlerComponent
     with MakeSettingsComponent =>
 

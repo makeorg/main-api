@@ -27,6 +27,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
@@ -75,7 +76,11 @@ trait DefaultWidgetApiComponent
     with ParameterExtractors
     with PersistentQuestionServiceComponent
     with PersistentOperationOfQuestionServiceComponent {
-  this: MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent with WidgetServiceComponent =>
+  this: MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with WidgetServiceComponent
+    with SessionHistoryCoordinatorServiceComponent =>
 
   override lazy val widgetApi: WidgetApi = new WidgetApi {
 

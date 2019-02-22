@@ -24,6 +24,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.operation.OperationId
@@ -76,6 +77,7 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent
     with QuestionServiceComponent =>
   override lazy val tagApi: TagApi = new TagApi {
     override def getTag: Route = get {

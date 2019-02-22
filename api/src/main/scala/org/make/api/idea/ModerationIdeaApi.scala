@@ -28,6 +28,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
@@ -156,6 +157,7 @@ trait DefaultModerationIdeaApiComponent
     with ParameterExtractors {
   this: IdeaServiceComponent
     with MakeDataHandlerComponent
+    with SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
     with QuestionServiceComponent =>

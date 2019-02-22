@@ -26,6 +26,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.monitoring.MonitoringServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
@@ -77,6 +78,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     with IdGeneratorComponent
     with MakeSettingsComponent
     with MakeAuthentication
+    with SessionHistoryCoordinatorServiceComponent
     with MonitoringServiceComponent =>
 
   override lazy val trackingApi: TrackingApi = new TrackingApi {
