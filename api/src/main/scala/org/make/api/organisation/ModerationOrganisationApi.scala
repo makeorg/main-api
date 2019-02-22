@@ -27,6 +27,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.api.user._
@@ -118,6 +119,7 @@ trait DefaultModerationOrganisationApiComponent
     with StrictLogging {
   this: OrganisationServiceComponent
     with MakeDataHandlerComponent
+    with SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 

@@ -27,6 +27,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
@@ -195,6 +196,7 @@ trait DefaultAdminUserApiComponent
   this: UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with PersistentUserServiceComponent =>
 

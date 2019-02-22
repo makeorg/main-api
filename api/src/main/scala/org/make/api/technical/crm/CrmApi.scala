@@ -27,6 +27,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.crm.PublishedCrmContactEvent.CrmContactListSync
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -81,6 +82,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
     with MailJetConfigurationComponent
     with EventBusServiceComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with MakeAuthentication =>
 

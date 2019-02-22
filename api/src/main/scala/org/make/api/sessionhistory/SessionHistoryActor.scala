@@ -177,6 +177,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
     case UserConnected(_, newUserId) =>
       if (newUserId != userId) {
+        log.warning("Session {} has moved from user {} to user {}", persistenceId, userId.value, newUserId.value)
         context.become(closed(newUserId))
       }
       sender() ! LogAcknowledged

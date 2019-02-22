@@ -26,6 +26,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.auth.UserRights
@@ -153,7 +154,11 @@ trait DefaultModerationTagTypeApiComponent
     extends ModerationTagTypeApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: TagTypeServiceComponent with MakeDataHandlerComponent with IdGeneratorComponent with MakeSettingsComponent =>
+  this: TagTypeServiceComponent
+    with MakeDataHandlerComponent
+    with IdGeneratorComponent
+    with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent =>
 
   override lazy val moderationTagTypeApi: ModerationTagTypeApi = new ModerationTagTypeApi {
     override def moderationGetTagType: Route = get {

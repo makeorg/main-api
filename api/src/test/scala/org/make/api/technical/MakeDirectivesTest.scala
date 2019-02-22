@@ -25,6 +25,7 @@ import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestBase
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth._
 import org.make.core.RequestContext
 import org.mockito.Mockito.when
@@ -36,7 +37,8 @@ class MakeDirectivesTest
     with ScalatestRouteTest
     with OauthTokenGeneratorComponent
     with ShortenedNames
-    with MakeAuthentication {
+    with MakeAuthentication
+    with SessionHistoryCoordinatorServiceComponent {
 
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 

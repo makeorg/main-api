@@ -26,6 +26,7 @@ import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -76,6 +77,7 @@ trait DefaultOperationApiComponent
   this: OperationServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with OperationServiceComponent
     with TagServiceComponent =>

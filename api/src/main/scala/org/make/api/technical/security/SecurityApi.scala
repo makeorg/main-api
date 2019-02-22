@@ -27,6 +27,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
@@ -89,6 +90,7 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
     with ActorSystemComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent =>
 
   override def securityApi: SecurityApi = new SecurityApi {

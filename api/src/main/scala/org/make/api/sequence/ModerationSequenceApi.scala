@@ -23,6 +23,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
@@ -97,6 +98,7 @@ trait DefaultModerationSequenceApiComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent
     with SequenceConfigurationComponent =>
 
   override lazy val moderationSequenceApi: ModerationSequenceApi = new ModerationSequenceApi {

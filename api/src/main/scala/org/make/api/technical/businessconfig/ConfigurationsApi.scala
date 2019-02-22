@@ -23,6 +23,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
 import org.make.api.theme.ThemeServiceComponent
@@ -51,7 +52,8 @@ trait DefaultConfigurationsApiComponent
     extends ConfigurationsApiComponent
     with MakeDirectives
     with MakeAuthenticationDirectives
-    with ShortenedNames {
+    with ShortenedNames
+    with SessionHistoryCoordinatorServiceComponent {
   self: MakeDataHandlerComponent with IdGeneratorComponent with ThemeServiceComponent with MakeSettingsComponent =>
 
   override lazy val configurationsApi: ConfigurationsApi = new ConfigurationsApi {

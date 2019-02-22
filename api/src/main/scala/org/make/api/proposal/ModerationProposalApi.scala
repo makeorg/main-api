@@ -35,6 +35,7 @@ import org.make.api.idea.IdeaServiceComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.semantic.SimilarIdea
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
@@ -420,6 +421,7 @@ trait DefaultModerationProposalApiComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
+    with SessionHistoryCoordinatorServiceComponent
     with UserServiceComponent
     with IdeaServiceComponent
     with QuestionServiceComponent

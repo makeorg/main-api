@@ -33,6 +33,7 @@ import org.make.api.operation.{
   PersistentOperationOfQuestionServiceComponent
 }
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
@@ -84,6 +85,7 @@ trait DefaultQuestionApiComponent
   this: QuestionServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
+    with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with OperationServiceComponent
     with OperationOfQuestionServiceComponent =>

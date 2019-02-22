@@ -38,7 +38,10 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
 trait MakeApiTestUtils extends MakeUnitTest with ScalatestRouteTest with MakeDirectives {
-  this: IdGeneratorComponent with MakeSettingsComponent with MakeAuthentication =>
+  this: IdGeneratorComponent
+    with MakeSettingsComponent
+    with MakeAuthentication
+    with SessionHistoryCoordinatorServiceComponent =>
 
   def sealRoute(route: Route): Route =
     Route.seal(handleRejections(MakeApi.rejectionHandler)(route))
