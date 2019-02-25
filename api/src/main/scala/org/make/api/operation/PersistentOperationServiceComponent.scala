@@ -50,15 +50,18 @@ trait PersistentOperationService {
   def find(slug: Option[String] = None,
            country: Option[Country] = None,
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimple(slug: Option[String] = None,
-                 country: Option[Country] = None,
-                 openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]]
+  def findSimple(start: Int,
+                 end: Option[Int],
+                 sort: Option[String],
+                 order: Option[String],
+                 slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]]
   def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: SimpleOperation): Future[SimpleOperation]
   def modify(operation: SimpleOperation): Future[SimpleOperation]
   def addActionToOperation(action: OperationAction, operationId: OperationId): Future[Boolean]
+  def count(slug: Option[String] = None): Future[Int]
 }
 
 trait DefaultPersistentOperationServiceComponent extends PersistentOperationServiceComponent {
@@ -129,16 +132,35 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       futurePersistentOperations.map(_.map(_.toOperation))
     }
 
-    override def findSimple(slug: Option[String] = None,
-                            country: Option[Country] = None,
-                            openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]] = {
+    override def findSimple(start: Int,
+                            end: Option[Int],
+                            sort: Option[String],
+                            order: Option[String],
+                            slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
-          withSQL[PersistentOperation] {
-            select
-              .from(PersistentOperation.as(operationAlias))
-              .where(operationWhereOpts(slug, country, openAt))
+          withSQL {
+            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+              select
+                .from(PersistentOperation.as(operationAlias))
+                .where(operationWhereOpts(slug, None, None))
+
+            val queryOrdered = (sort, order.map(_.toUpperCase)) match {
+              case (Some(field), Some("DESC")) if PersistentOperation.columnNames.contains(field) =>
+                query.orderBy(operationAlias.field(field)).desc.offset(start)
+              case (Some(field), _) if PersistentOperation.columnNames.contains(field) =>
+                query.orderBy(operationAlias.field(field)).asc.offset(start)
+              case (Some(field), _) =>
+                logger.warn(s"Unsupported filter '$field'")
+                query.orderBy(operationAlias.slug).asc.offset(start)
+              case (_, _) => query.orderBy(operationAlias.slug).asc.offset(start)
+            }
+            end match {
+              case Some(limit) => queryOrdered.limit(limit)
+              case None        => queryOrdered
+            }
+
           }.map(PersistentOperation.apply()).list.apply()
       })
 
@@ -267,6 +289,18 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         }.execute().apply()
       })
     }
+
+    override def count(slug: Option[String] = None): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentOperation] {
+          select(sqls.count)
+            .from(PersistentOperation.as(operationAlias))
+            .where(operationWhereOpts(slug, None, None))
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
+    }
+
   }
 }
 

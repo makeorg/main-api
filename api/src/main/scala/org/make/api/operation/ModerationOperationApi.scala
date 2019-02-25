@@ -19,8 +19,6 @@
 
 package org.make.api.operation
 
-import java.time.LocalDate
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
@@ -31,11 +29,10 @@ import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
-import org.make.core.reference.Country
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -69,6 +66,7 @@ trait ModerationOperationApi extends Directives {
   )
   @Path(value = "/")
   def moderationPostOperation: Route
+
   @ApiOperation(value = "put-operation", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationIdResponse]))
@@ -85,6 +83,7 @@ trait ModerationOperationApi extends Directives {
   )
   @Path(value = "/{operationId}")
   def moderationPutOperation: Route
+
   @ApiOperation(value = "get-operation", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationOperationResponse]))
@@ -92,6 +91,7 @@ trait ModerationOperationApi extends Directives {
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "operationId", paramType = "path", dataType = "string")))
   @Path(value = "/{operationId}")
   def moderationGetOperation: Route
+
   @ApiOperation(value = "get-operations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value =
@@ -99,6 +99,10 @@ trait ModerationOperationApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "date")
@@ -231,21 +235,40 @@ trait DefaultModerationOperationApiComponent
     def moderationGetOperations: Route = {
       get {
         path("moderation" / "operations") {
-          parameters(('slug.?, 'country.as[Country].?, 'openAt.as[LocalDate].?)) { (slug, country, openAt) =>
-            makeOperation("ModerationGetOperations") { _ =>
-              makeOAuth2 { auth: AuthInfo[UserRights] =>
-                requireModerationRole(auth.user) {
-                  provideAsync(
-                    operationService.findSimple(slug = slug, country = country, maybeSource = None, openAt = openAt)
-                  ) { operations =>
-                    val operationResponses: Seq[ModerationOperationResponse] =
-                      operations.map(operation => ModerationOperationResponse(operation))
-                    val result: ModerationOperationListResponse =
-                      ModerationOperationListResponse(operationResponses.length, operationResponses)
-                    complete(result)
+          makeOperation("ModerationGetOperations") { _ =>
+            parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'slug.?)) {
+              (start: Option[Int],
+               end: Option[Int],
+               sort: Option[String],
+               order: Option[String],
+               slug: Option[String]) =>
+                makeOAuth2 { auth: AuthInfo[UserRights] =>
+                  requireModerationRole(auth.user) {
+                    order.foreach { orderValue =>
+                      Validation.validate(
+                        Validation
+                          .validChoices(
+                            "_order",
+                            Some("Invalid order"),
+                            Seq(orderValue.toLowerCase),
+                            Seq("desc", "asc")
+                          )
+                      )
+                    }
+                    provideAsync(operationService.count(slug = slug)) { count =>
+                      provideAsync(
+                        operationService
+                          .findSimple(start = start.getOrElse(0), end = end, sort = sort, order = order, slug = slug)
+                      ) { operations =>
+                        val operationResponses: Seq[ModerationOperationResponse] =
+                          operations.map(operation => ModerationOperationResponse(operation))
+                        val result: ModerationOperationListResponse =
+                          ModerationOperationListResponse(operationResponses.length, operationResponses)
+                        complete((StatusCodes.OK, List(TotalCountHeader(count.toString)), result))
+                      }
+                    }
                   }
                 }
-              }
             }
           }
         }

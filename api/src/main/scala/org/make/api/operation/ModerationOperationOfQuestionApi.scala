@@ -406,7 +406,7 @@ object CreateOperationOfQuestionRequest extends CirceFormatters {
 @ApiModel
 final case class OperationOfQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
-  questionId: QuestionId,
+  id: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
   @(ApiModelProperty @field)(example = "2019-01-23")
@@ -416,7 +416,7 @@ final case class OperationOfQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   operationTitle: String,
-  questionSlug: String,
+  slug: String,
   question: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -431,13 +431,13 @@ object OperationOfQuestionResponse extends CirceFormatters {
 
   def apply(operationOfQuestion: OperationOfQuestion, question: Question): OperationOfQuestionResponse = {
     OperationOfQuestionResponse(
-      questionId = operationOfQuestion.questionId,
+      id = operationOfQuestion.questionId,
       operationId = operationOfQuestion.operationId,
       operationTitle = operationOfQuestion.operationTitle,
       startDate = operationOfQuestion.startDate,
       endDate = operationOfQuestion.endDate,
       landingSequenceId = operationOfQuestion.landingSequenceId,
-      questionSlug = question.slug,
+      slug = question.slug,
       question = question.question,
       country = question.country,
       language = question.language,

@@ -42,10 +42,11 @@ trait OperationService extends ShortenedNames {
            country: Option[Country] = None,
            maybeSource: Option[String],
            openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimple(slug: Option[String] = None,
-                 country: Option[Country] = None,
-                 maybeSource: Option[String],
-                 openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]]
+  def findSimple(start: Int = 0,
+                 end: Option[Int] = None,
+                 sort: Option[String] = None,
+                 order: Option[String] = None,
+                 slug: Option[String] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
@@ -56,6 +57,7 @@ trait OperationService extends ShortenedNames {
              defaultLanguage: Option[Language] = None,
              status: Option[OperationStatus] = None,
              allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]]
+  def count(slug: Option[String] = None): Future[Int]
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
@@ -74,12 +76,13 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       persistentOperationService.find(slug = slug, country = country, openAt = openAt)
     }
 
-    override def findSimple(slug: Option[String] = None,
-                            country: Option[Country] = None,
-                            maybeSource: Option[String],
-                            openAt: Option[LocalDate] = None): Future[Seq[SimpleOperation]] = {
+    override def findSimple(start: Int = 0,
+                            end: Option[Int] = None,
+                            sort: Option[String] = None,
+                            order: Option[String] = None,
+                            slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
 
-      persistentOperationService.findSimple(slug = slug, country = country, openAt = openAt)
+      persistentOperationService.findSimple(start = start, end = end, sort = sort, order = order, slug = slug)
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {
@@ -170,5 +173,10 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         .asJson
         .toString
     }
+
+    override def count(slug: Option[String] = None): Future[Int] = {
+      persistentOperationService.count(slug = slug)
+    }
+
   }
 }
