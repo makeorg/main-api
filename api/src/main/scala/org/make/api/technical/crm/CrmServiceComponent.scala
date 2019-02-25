@@ -411,7 +411,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationCountry = Some(user.country.value),
         lastLanguageActivity = Some(user.language.value),
         lastCountryActivity = Some(user.country.value),
-        countriesActivity = Seq(user.country.value)
+        countriesActivity = Seq(user.country.value),
+        accountCreationOperation = user.profile.flatMap(_.registerQuestionId.map(_.value))
       )
     }
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
@@ -579,7 +580,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationOrigin = event.requestContext.getParameters.map { parameters =>
           parameters.getOrElse("utm_source", "unknown")
         },
-        accountCreationOperation = event.requestContext.operationId.map(_.value),
+        accountCreationOperation =
+          accumulator.accountCreationOperation.orElse(event.requestContext.operationId.map(_.value)),
         accountCreationCountry = event.requestContext.country.map(_.value),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         operationActivity = accumulator.operationActivity ++ event.requestContext.operationId.map(_.value),
@@ -655,9 +657,8 @@ final case class UserProperties(userId: UserId,
       .map(
         operationIdOrSlug =>
           operations
-            .find(operation => operation.operationId.value == operationIdOrSlug)
+            .find(operation => operation.operationId.value == operationIdOrSlug || operation.slug == operationIdOrSlug)
             .map(_.operationId.value)
-            .orElse(operations.find(_.slug == operationIdOrSlug).map(_.operationId.value))
             .getOrElse(operationIdOrSlug)
       )
       .distinct
