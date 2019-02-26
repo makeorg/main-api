@@ -81,7 +81,7 @@ object OperationResponse extends CirceFormatters {
 @ApiModel
 final case class ModerationOperationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
-  operationId: OperationId,
+  id: OperationId,
   @(ApiModelProperty @field)(dataType = "string", example = "Active")
   status: OperationStatus,
   slug: String,
@@ -100,7 +100,7 @@ object ModerationOperationResponse extends CirceFormatters {
 
   def apply(operation: SimpleOperation): ModerationOperationResponse = {
     ModerationOperationResponse(
-      operationId = operation.operationId,
+      id = operation.operationId,
       status = operation.status,
       slug = operation.slug,
       defaultLanguage = operation.defaultLanguage,
@@ -109,12 +109,4 @@ object ModerationOperationResponse extends CirceFormatters {
       allowedSources = operation.allowedSources
     )
   }
-}
-
-@ApiModel
-final case class ModerationOperationListResponse(total: Int, results: Seq[ModerationOperationResponse])
-
-object ModerationOperationListResponse {
-  implicit val encoder: ObjectEncoder[ModerationOperationListResponse] = deriveEncoder[ModerationOperationListResponse]
-  implicit val decoder: Decoder[ModerationOperationListResponse] = deriveDecoder[ModerationOperationListResponse]
 }

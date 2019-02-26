@@ -35,7 +35,11 @@ import scalikejdbc._
 import scala.concurrent.Future
 
 trait PersistentOperationOfQuestionService {
-  def search(questionIds: Option[Seq[QuestionId]],
+  def search(start: Int,
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             questionIds: Option[Seq[QuestionId]],
              operationId: Option[OperationId],
              openAt: Option[LocalDate]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -43,6 +47,9 @@ trait PersistentOperationOfQuestionService {
   def getById(id: QuestionId): Future[Option[OperationOfQuestion]]
   def find(operationId: Option[OperationId] = None): Future[Seq[OperationOfQuestion]]
   def delete(questionId: QuestionId): Future[Unit]
+  def count(questionIds: Option[Seq[QuestionId]],
+            operationId: Option[OperationId],
+            openAt: Option[LocalDate]): Future[Int]
 }
 
 trait PersistentOperationOfQuestionServiceComponent {
@@ -55,13 +62,19 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
   override lazy val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
     new PersistentOperationOfQuestionService with ShortenedNames with StrictLogging {
 
-      override def search(questionIds: Option[Seq[QuestionId]],
+      private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
+
+      override def search(start: Int,
+                          end: Option[Int],
+                          sort: Option[String],
+                          order: Option[String],
+                          questionIds: Option[Seq[QuestionId]],
                           operationId: Option[OperationId],
                           openAt: Option[LocalDate]): Future[scala.Seq[OperationOfQuestion]] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
-            select
+            val query: scalikejdbc.PagingSQLBuilder[PersistentOperationOfQuestion] = select
               .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
               .where(
                 sqls.toAndConditionOpt(
@@ -83,7 +96,22 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                   )
                 )
               )
-          }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)).list().apply()
+
+            val queryOrdered = (sort, order.map(_.toUpperCase)) match {
+              case (Some(field), Some("DESC")) if PersistentOperationOfQuestion.columnNames.contains(field) =>
+                query.orderBy(operationOfQuestionAlias.field(field)).desc.offset(start)
+              case (Some(field), _) if PersistentOperationOfQuestion.columnNames.contains(field) =>
+                query.orderBy(operationOfQuestionAlias.field(field)).asc.offset(start)
+              case (Some(field), _) =>
+                logger.warn(s"Unsupported filter '$field'")
+                query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
+              case (_, _) => query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
+            }
+            end match {
+              case Some(limit) => queryOrdered.limit(limit)
+              case None        => queryOrdered
+            }
+          }.map(PersistentOperationOfQuestion(operationOfQuestionAlias.resultName)).list().apply()
         }).map(_.map(_.toOperationOfQuestion))
       }
 
@@ -163,6 +191,40 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
           }.execute().apply()
         }).map(_ => ())
       }
+
+      override def count(questionIds: Option[Seq[QuestionId]],
+                         operationId: Option[OperationId],
+                         openAt: Option[LocalDate]): Future[Int] = {
+        implicit val context: EC = readExecutionContext
+        Future(NamedDB('READ).retryableTx { implicit session =>
+          withSQL[PersistentOperationOfQuestion] {
+            select(sqls.count)
+              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+              .where(
+                sqls.toAndConditionOpt(
+                  operationId
+                    .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value)),
+                  questionIds
+                    .map(
+                      questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
+                    ),
+                  openAt.map(
+                    openAt =>
+                      sqls
+                        .isNull(PersistentOperationOfQuestion.column.startDate)
+                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
+                        .and(
+                          sqls
+                            .isNull(PersistentOperationOfQuestion.column.endDate)
+                            .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                      )
+                  )
+                )
+              )
+          }.map(_.int(1)).single.apply().getOrElse(0)
+        })
+      }
+
     }
 
 }

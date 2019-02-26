@@ -57,7 +57,7 @@ trait OperationService extends ShortenedNames {
              defaultLanguage: Option[Language] = None,
              status: Option[OperationStatus] = None,
              allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]]
-  def count(slug: Option[String] = None): Future[Int]
+  def count(slug: Option[String]): Future[Int]
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
@@ -174,7 +174,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         .toString
     }
 
-    override def count(slug: Option[String] = None): Future[Int] = {
+    override def count(slug: Option[String]): Future[Int] = {
       persistentOperationService.count(slug = slug)
     }
 
