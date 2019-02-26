@@ -633,8 +633,8 @@ trait DefaultUserApiComponent
 
               val futureMaybeQuestion: Future[Option[Question]] =
                 questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                  maybeOperationId = request.operationId,
-                  maybeQuestionId = request.questionId,
+                  maybeOperationId = request.operationId.orElse(requestContext.operationId),
+                  maybeQuestionId = request.questionId.orElse(requestContext.questionId),
                   maybeThemeId = None,
                   country = country,
                   language = language
