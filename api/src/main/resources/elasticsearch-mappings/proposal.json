@@ -946,6 +946,14 @@
             "scoreUpperBound": {
               "type": "double",
               "index": true
+            },
+            "platitude": {
+              "type": "double",
+              "index": true
+            },
+            "agreement": {
+              "type": "double",
+              "index": true
             }
           }
         },

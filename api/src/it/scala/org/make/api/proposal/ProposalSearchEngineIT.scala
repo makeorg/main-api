@@ -234,7 +234,7 @@ class ProposalSearchEngineIT
       ),
       votesCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 84),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 84, 0, 0),
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
