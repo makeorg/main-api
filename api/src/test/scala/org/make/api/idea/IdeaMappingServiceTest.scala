@@ -134,7 +134,7 @@ class IdeaMappingServiceTest
           votes = Seq.empty,
           votesCount = 0,
           toEnrich = false,
-          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0),
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
           context = None,
           trending = None,
           labels = Seq.empty,
