@@ -257,7 +257,6 @@ trait MakeApi
       classOf[ModerationOrganisationApi],
       classOf[ModerationProposalApi],
       classOf[ModerationQuestionApi],
-      classOf[ModerationTagApi],
       classOf[OrganisationApi],
       classOf[QuestionApi],
       classOf[WidgetApi],
