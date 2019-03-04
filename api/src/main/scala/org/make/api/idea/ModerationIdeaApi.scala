@@ -30,12 +30,14 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.idea._
-import org.make.core.idea.indexed.IdeaSearchResult
+import org.make.core.idea.indexed.{IdeaSearchResult, IndexedIdea}
+import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -70,10 +72,10 @@ trait ModerationIdeaApi extends Directives {
         dataType = "string",
         example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d"
       ),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "int", example = "10"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "int", example = "0"),
-      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "int", example = "10"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "int", example = "0"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")
@@ -170,7 +172,7 @@ trait DefaultModerationIdeaApiComponent
       override def listIdeas: Route = {
         get {
           path("moderation" / "ideas") {
-            parameters(('name.?, 'questionId.as[QuestionId].?, 'limit.as[Int].?, 'skip.as[Int].?, 'sort.?, 'order.?)) {
+            parameters(('name.?, 'questionId.as[QuestionId].?, '_end.as[Int].?, '_start.as[Int].?, '_sort.?, '_order.?)) {
               (name, questionId, limit, skip, sort, order) =>
                 makeOperation("GetAllIdeas") { requestContext =>
                   makeOAuth2 { userAuth: AuthInfo[UserRights] =>
@@ -185,7 +187,13 @@ trait DefaultModerationIdeaApiComponent
                           order = order
                         )
                       provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
-                        complete(ideas)
+                        complete(
+                          (
+                            StatusCodes.OK,
+                            List(TotalCountHeader(ideas.total.toString)),
+                            ideas.results.map(IdeaResponse.apply)
+                          )
+                        )
                       }
                     }
                   }
@@ -202,7 +210,7 @@ trait DefaultModerationIdeaApiComponent
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
                   provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
-                    complete(idea)
+                    complete(IdeaResponse(idea))
                   }
                 }
               }
@@ -241,7 +249,7 @@ trait DefaultModerationIdeaApiComponent
                         )
 
                         onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
-                          complete(StatusCodes.Created -> idea)
+                          complete(StatusCodes.Created -> IdeaResponse(idea))
                         }
                       }
                     }
@@ -276,8 +284,9 @@ trait DefaultModerationIdeaApiComponent
                               )
                             )
                           }
-                          onSuccess(ideaService.update(ideaId = ideaId, name = request.name)) { _ =>
-                            complete(IdeaIdResponse(ideaId))
+                          onSuccess(ideaService.update(ideaId = ideaId, name = request.name, status = request.status)) {
+                            _ =>
+                              complete(IdeaIdResponse(ideaId))
                           }
                         }
                       }
@@ -304,7 +313,7 @@ object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]
 }
 
-final case class UpdateIdeaRequest(name: String) {
+final case class UpdateIdeaRequest(name: String, status: IdeaStatus) {
   validate(Validation.validateUserInput("name", name, None))
 }
 
@@ -348,4 +357,49 @@ final case class IdeaIdResponse(
 object IdeaIdResponse {
   implicit val encoder: ObjectEncoder[IdeaIdResponse] = deriveEncoder[IdeaIdResponse]
   implicit val decoder: Decoder[IdeaIdResponse] = deriveDecoder[IdeaIdResponse]
+}
+
+final case class IdeaResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") id: IdeaId,
+  name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "f4767b7b-06c1-479d-8bc1-6e2a2de97f22")
+  operationId: Option[OperationId],
+  @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d")
+  questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "e65fb52e-6438-4074-a79f-adb38fdee544")
+  themeId: Option[ThemeId],
+  @(ApiModelProperty @field)(dataType = "string", example = "Activated") status: IdeaStatus
+)
+
+object IdeaResponse {
+  implicit val encoder: ObjectEncoder[IdeaResponse] = deriveEncoder[IdeaResponse]
+  implicit val decoder: Decoder[IdeaResponse] = deriveDecoder[IdeaResponse]
+
+  def apply(idea: Idea): IdeaResponse = {
+    IdeaResponse(
+      id = idea.ideaId,
+      name = idea.name,
+      language = idea.language,
+      country = idea.country,
+      operationId = idea.operationId,
+      questionId = idea.questionId,
+      themeId = idea.themeId,
+      status = idea.status
+    )
+  }
+
+  def apply(idea: IndexedIdea): IdeaResponse = {
+    IdeaResponse(
+      id = idea.ideaId,
+      name = idea.name,
+      language = idea.language,
+      country = idea.country,
+      operationId = idea.operationId,
+      questionId = idea.questionId,
+      themeId = idea.themeId,
+      status = idea.status
+    )
+  }
 }

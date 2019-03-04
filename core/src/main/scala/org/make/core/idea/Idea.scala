@@ -23,7 +23,6 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
-import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -32,31 +31,18 @@ import org.make.core.{CirceFormatters, MakeSerializable, StringValue, Timestampe
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
-import scala.annotation.meta.field
-
-final case class Idea(
-  @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") ideaId: IdeaId,
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country] = None,
-  question: Option[String] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "f4767b7b-06c1-479d-8bc1-6e2a2de97f22") operationId: Option[
-    OperationId
-  ] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d") questionId: Option[
-    QuestionId
-  ] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "e65fb52e-6438-4074-a79f-adb38fdee544") themeId: Option[
-    ThemeId
-  ] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "Activated") status: IdeaStatus = IdeaStatus.Activated,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z") override val createdAt: Option[
-    ZonedDateTime
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z") override val updatedAt: Option[
-    ZonedDateTime
-  ]
-) extends MakeSerializable
+final case class Idea(ideaId: IdeaId,
+                      name: String,
+                      language: Option[Language] = None,
+                      country: Option[Country] = None,
+                      question: Option[String] = None,
+                      operationId: Option[OperationId] = None,
+                      questionId: Option[QuestionId] = None,
+                      themeId: Option[ThemeId] = None,
+                      status: IdeaStatus = IdeaStatus.Activated,
+                      override val createdAt: Option[ZonedDateTime],
+                      override val updatedAt: Option[ZonedDateTime])
+    extends MakeSerializable
     with Timestamped
 
 object Idea extends CirceFormatters {

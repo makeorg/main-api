@@ -32,7 +32,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.DateHelper
 import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
-import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
+import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -155,8 +155,9 @@ class ModerationIdeaApiTest
   when(ideaService.insert(ArgumentMatchers.eq(fooIdeaText), ArgumentMatchers.any[Question]))
     .thenReturn(Future.successful(fooIdea))
 
-  when(ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String]))
-    .thenReturn(Future.successful(1))
+  when(
+    ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String], ArgumentMatchers.any[IdeaStatus])
+  ).thenReturn(Future.successful(1))
 
   when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(fooIdeaText)))
     .thenReturn(Future.successful(None))
@@ -228,8 +229,8 @@ class ModerationIdeaApiTest
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
-        val idea: Idea = entityAs[Idea]
-        idea.ideaId.value should be(fooIdeaId.value)
+        val idea: IdeaResponse = entityAs[IdeaResponse]
+        idea.id.value should be(fooIdeaId.value)
       }
     }
 
@@ -300,7 +301,7 @@ class ModerationIdeaApiTest
       Then("the idea should be saved if valid")
 
       Put(s"/moderation/ideas/${fooIdeaId.value}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText", "status": "Activated"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val ideaId: IdeaIdResponse = entityAs[IdeaIdResponse]
@@ -361,10 +362,8 @@ class ModerationIdeaApiTest
       Get("/moderation/ideas")
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val ideas: IdeaSearchResult = entityAs[IdeaSearchResult]
-        ideas should be(IdeaSearchResult.empty)
-        ideas.total should be(0)
-        ideas.results.size should be(0)
+        val ideas: Seq[IdeaResponse] = entityAs[Seq[IdeaResponse]]
+        ideas should be(Seq.empty)
       }
     }
   }
