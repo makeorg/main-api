@@ -255,7 +255,7 @@ object Contact {
 
 case class ContactList(listId: String, action: ManageContactAction)
 object ContactList {
-  implicit val encoder: Encoder[ContactList] = Encoder.forProduct2("ListID", "action") { contactList: ContactList =>
+  implicit val encoder: Encoder[ContactList] = Encoder.forProduct2("ListID", "Action") { contactList: ContactList =>
     (contactList.listId, contactList.action)
   }
 }
