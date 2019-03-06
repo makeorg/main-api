@@ -126,7 +126,8 @@ class ModerationSequenceApiTest
                                                   |  "ideaCompetitionControversialCount": 0,
                                                   |  "maxTestedProposalCount": 1000,
                                                   |  "sequenceSize": 12,
-                                                  |  "maxVotes": 1500
+                                                  |  "maxVotes": 1500,
+                                                  |  "selectionAlgorithmName": "Bandit"
                                                   |}""".stripMargin
 
   val routes: Route = sealRoute(moderationSequenceApi.routes)
@@ -210,6 +211,16 @@ class ModerationSequenceApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("set sequence config as admin with wrong selectionAlgorithmName") {
+      Put("/moderation/sequences/mySequence/myQuestion/configuration")
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid"))
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
   }

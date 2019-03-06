@@ -20,6 +20,7 @@
 package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.{Decoder, Encoder, Json}
 import org.make.api.sequence.SequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
@@ -38,6 +39,12 @@ trait ProposalChooser {
 object OldestProposalChooser extends ProposalChooser {
   override def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals.minBy(_.createdAt)
+  }
+}
+
+object RoundRobin extends ProposalChooser {
+  override def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
+    proposals.minBy(_.votesCount)
   }
 }
 
@@ -86,12 +93,31 @@ object UniformRandom extends ProposalChooser with StrictLogging {
 
 }
 
+sealed trait SelectionAlgorithmName { val shortName: String }
+object SelectionAlgorithmName {
+  final case object Bandit extends SelectionAlgorithmName { override val shortName: String = "Bandit" }
+  final case object RoundRobin extends SelectionAlgorithmName { override val shortName: String = "RoundRobin" }
+
+  val selectionAlgorithms: Map[String, SelectionAlgorithmName] =
+    Map(Bandit.shortName -> Bandit, RoundRobin.shortName -> RoundRobin)
+
+  implicit val encoder: Encoder[SelectionAlgorithmName] = (name: SelectionAlgorithmName) =>
+    Json.fromString(name.shortName)
+  implicit val decoder: Decoder[SelectionAlgorithmName] =
+    Decoder.decodeString.emap(
+      name => selectionAlgorithms.get(name).map(Right.apply).getOrElse(Left(s"$name is not a SelectionAlgorithmName"))
+    )
+}
+
 trait SelectionAlgorithmComponent {
-  val selectionAlgorithm: SelectionAlgorithm
+  val banditSelectionAlgorithm: SelectionAlgorithm
+  val roundRobinSelectionAlgorithm: SelectionAlgorithm
 }
 
 trait SelectionAlgorithm {
   var random: Random = MakeRandom.random
+
+  def name: SelectionAlgorithmName
 
   def selectProposalsForSequence(sequenceConfiguration: SequenceConfiguration,
                                  includedProposals: Seq[IndexedProposal],
@@ -102,7 +128,8 @@ trait SelectionAlgorithm {
 
 trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent with StrictLogging {
 
-  override val selectionAlgorithm: DefaultSelectionAlgorithm = new DefaultSelectionAlgorithm
+  override val banditSelectionAlgorithm: BanditSelectionAlgorithm = new BanditSelectionAlgorithm
+  override val roundRobinSelectionAlgorithm: RoundRobinSelectionAlgorithm = new RoundRobinSelectionAlgorithm
 
   def isSameIdea(ideaOption1: Option[IdeaId], ideaOption2: Option[IdeaId]): Boolean = {
     (ideaOption1, ideaOption2) match {
@@ -111,7 +138,9 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
   }
 
-  class DefaultSelectionAlgorithm extends SelectionAlgorithm {
+  class BanditSelectionAlgorithm extends SelectionAlgorithm {
+
+    override val name: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
     /*
     Returns the list of proposal to display in the sequence
     The proposals are chosen such that:
@@ -318,6 +347,72 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
       // and finally pick the requested number of proposals
       chooseProposals(selectedProposals, testedProposalCount, SoftMinRandom)
+    }
+  }
+
+  class RoundRobinSelectionAlgorithm extends SelectionAlgorithm {
+
+    override val name: SelectionAlgorithmName = SelectionAlgorithmName.RoundRobin
+
+    /*
+    Returns the list of proposal to display in the sequence
+    The proposals are chosen such that:
+    - if they are imposed proposals (includeList) they will appear first
+    - the rest is only new proposals to test (less than newProposalVoteCount votes)
+    - new proposals are tested in a round robin mode until they reach newProposalVoteCount votes
+    - tested proposals are filtered out if their engagement rate is too low
+    - the non imposed proposals are ordered randomly
+     */
+    def selectProposalsForSequence(sequenceConfiguration: SequenceConfiguration,
+                                   includedProposals: Seq[IndexedProposal],
+                                   newProposals: Seq[IndexedProposal],
+                                   testedProposals: Seq[IndexedProposal],
+                                   votedProposals: Seq[ProposalId]): Seq[IndexedProposal] = {
+
+      val proposalsPool: Seq[IndexedProposal] =
+        (newProposals ++ testedProposals).filterNot(p => votedProposals.contains(p.id))
+
+      // balance proposals between new and tested
+      val sequenceSize: Int = sequenceConfiguration.sequenceSize
+      val includedSize: Int = includedProposals.size
+
+      val proposalsToChoose: Int = sequenceSize - includedSize
+
+      val proposals = chooseProposals(proposalsPool, proposalsToChoose, RoundRobin)
+
+      buildSequence(includedProposals, proposals)
+    }
+
+    /**
+      * Build the sequence
+      *
+      * first: included proposals OR most engaging
+      * finally: randomized new + tested proposals
+      *
+      */
+    def buildSequence(includedProposals: Seq[IndexedProposal],
+                      proposals: Seq[IndexedProposal]): Seq[IndexedProposal] = {
+
+      // build sequence
+      includedProposals ++ MakeRandom.random.shuffle(proposals)
+    }
+
+    @tailrec
+    final def chooseProposals(proposals: Seq[IndexedProposal],
+                              count: Int,
+                              algorithm: ProposalChooser,
+                              aggregator: Seq[IndexedProposal] = Seq.empty): Seq[IndexedProposal] = {
+      if (proposals.isEmpty || count <= 0) {
+        aggregator
+      } else {
+        val chosen: IndexedProposal = algorithm.choose(proposals)
+        chooseProposals(
+          proposals = proposals.filter(p => p.id != chosen.id),
+          count = count - 1,
+          algorithm = algorithm,
+          aggregator = aggregator ++ Seq(chosen)
+        )
+      }
     }
   }
 }

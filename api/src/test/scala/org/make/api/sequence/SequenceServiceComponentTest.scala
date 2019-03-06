@@ -67,7 +67,8 @@ class SequenceServiceComponentTest
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]
   override val makeSettings: MakeSettings = mock[MakeSettings]
-  override val selectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
+  override val banditSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
+  override val roundRobinSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
 

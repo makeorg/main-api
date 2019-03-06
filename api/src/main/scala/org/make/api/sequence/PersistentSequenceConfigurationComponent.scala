@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -105,6 +106,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
                 column.sequenceSize -> sequenceConfig.sequenceSize,
                 column.maxVotes -> sequenceConfig.maxVotes,
+                column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
                 column.createdAt -> DateHelper.now,
                 column.updatedAt -> DateHelper.now
               )
@@ -135,6 +137,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
                 column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
                 column.sequenceSize -> sequenceConfig.sequenceSize,
                 column.maxVotes -> sequenceConfig.maxVotes,
+                column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
                 column.updatedAt -> DateHelper.now
               )
               .where(
@@ -189,6 +192,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
                                              maxTestedProposalCount: Int,
                                              sequenceSize: Int,
                                              maxVotes: Int,
+                                             selectionAlgorithmName: String,
                                              createdAt: ZonedDateTime,
                                              updatedAt: ZonedDateTime) {
     def toSequenceConfiguration: SequenceConfiguration =
@@ -211,7 +215,8 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         ideaCompetitionControversialCount = ideaCompetitionControversialCount,
         maxTestedProposalCount = maxTestedProposalCount,
         sequenceSize = sequenceSize,
-        maxVotes = maxVotes
+        maxVotes = maxVotes,
+        selectionAlgorithmName = SelectionAlgorithmName.selectionAlgorithms(selectionAlgorithmName)
       )
   }
 
@@ -241,6 +246,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "max_tested_proposal_count",
         "sequence_size",
         "max_votes",
+        "selection_algorithm_name",
         "created_at",
         "updated_at"
       )
@@ -274,6 +280,7 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         maxTestedProposalCount = resultSet.int(resultName.maxTestedProposalCount),
         sequenceSize = resultSet.int(resultName.sequenceSize),
         maxVotes = resultSet.int(resultName.maxVotes),
+        selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
         createdAt = resultSet.zonedDateTime(resultName.createdAt),
         updatedAt = resultSet.zonedDateTime(resultName.updatedAt)
       )

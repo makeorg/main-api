@@ -139,14 +139,24 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         testedProposals = allTestedProposals.groupBy(_.userId).values.map(_.head).toSeq
         votes = allVotes.filter(id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id))
 
-        selectedProposals = selectionAlgorithm
-          .selectProposalsForSequence(
-            sequenceConfiguration = sequenceConfiguration,
-            includedProposals = includedProposals,
-            newProposals = newProposals,
-            testedProposals = testedProposals,
-            votedProposals = votes
-          )
+        selectedProposals = sequenceConfiguration.selectionAlgorithmName match {
+          case SelectionAlgorithmName.Bandit =>
+            banditSelectionAlgorithm.selectProposalsForSequence(
+              sequenceConfiguration = sequenceConfiguration,
+              includedProposals = includedProposals,
+              newProposals = newProposals,
+              testedProposals = testedProposals,
+              votedProposals = votes
+            )
+          case SelectionAlgorithmName.RoundRobin =>
+            roundRobinSelectionAlgorithm.selectProposalsForSequence(
+              sequenceConfiguration = sequenceConfiguration,
+              includedProposals = includedProposals,
+              newProposals = newProposals,
+              testedProposals = testedProposals,
+              votedProposals = votes
+            )
+        }
         sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.map(_.id))
       } yield {
         Some(
