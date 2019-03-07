@@ -396,8 +396,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       proposalCoordinatorService.getProposal(proposalId).flatMap {
         case None => Future.successful(None)
-        case Some(proposal) =>
-          (idea.orElse(proposal.idea), tags) match {
+        case Some(_) =>
+          (idea, tags) match {
             case (ideaId @ Some(_), _) => Future.successful(ideaId)
             case (_, Seq())            => Future.successful(None)
             case _ =>
