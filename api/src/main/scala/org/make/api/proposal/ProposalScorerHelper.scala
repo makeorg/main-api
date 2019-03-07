@@ -379,14 +379,20 @@ object ProposalScorerHelper extends StrictLogging {
     val engagementRate: Double = ProposalScorerHelper.engagementUpperBound(votes)
     val scoreRate: Double = ProposalScorerHelper.topScoreUpperBound(votes)
     val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(votes)
+    def isTestedFromScoreAndControversy: Boolean =
+      (sequenceConfiguration.testedProposalsScoreThreshold, sequenceConfiguration.testedProposalsControversyThreshold) match {
+        case (Some(scoreBase), Some(controversyBase)) => scoreRate >= scoreBase || controversyRate >= controversyBase
+        case (Some(scoreBase), _)                     => scoreRate >= scoreBase
+        case (_, Some(controversyBase))               => controversyRate >= controversyBase
+        case _                                        => true
+      }
 
     if (status == ProposalStatus.Accepted && votesCount < sequenceConfiguration.newProposalsVoteThreshold) {
       SequencePool.New
     } else if (status == ProposalStatus.Accepted &&
-               votesCount < sequenceConfiguration.testedProposalsMaxVotesThreshold &&
-               engagementRate > sequenceConfiguration.testedProposalsEngagementThreshold &&
-               (scoreRate >= sequenceConfiguration.testedProposalsScoreThreshold ||
-               controversyRate >= sequenceConfiguration.testedProposalsControversyThreshold)) {
+               sequenceConfiguration.testedProposalsMaxVotesThreshold.fold(true)(votesCount < _) &&
+               sequenceConfiguration.testedProposalsEngagementThreshold.fold(true)(engagementRate > _) &&
+               isTestedFromScoreAndControversy) {
       SequencePool.Tested
     } else {
       SequencePool.Excluded

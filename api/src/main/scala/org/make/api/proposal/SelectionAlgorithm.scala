@@ -283,12 +283,12 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       val proposalsScored: Seq[ScoredProposal] =
         proposals.map(p => ScoredProposal(p, ProposalScorerHelper.sampleTopScore(p.votes)))
 
-      val shortList = if (proposals.length < sequenceConfiguration.banditMinCount) {
+      val shortList = if (proposals.length < sequenceConfiguration.intraIdeaMinCount) {
         proposals
       } else {
         val count = math.max(
-          sequenceConfiguration.banditMinCount,
-          ceil(proposals.length * sequenceConfiguration.banditProposalsRatio).toInt
+          sequenceConfiguration.intraIdeaMinCount,
+          ceil(proposals.length * sequenceConfiguration.intraIdeaProposalsRatio).toInt
         )
         proposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
       }
@@ -320,12 +320,12 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                               testedProposalsByIdea: Map[IdeaId, Seq[IndexedProposal]],
                               testedProposalCount: Int): Seq[IndexedProposal] = {
       // select ideas
-      val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.ideaCompetitionEnabled) {
+      val selectedIdeas: Seq[IdeaId] = if (sequenceConfiguration.interIdeaCompetitionEnabled) {
         val champions: Map[IdeaId, IndexedProposal] = testedProposalsByIdea.mapValues(chooseChampion)
         val topIdeas: Seq[IdeaId] =
-          selectIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionTargetCount)
+          selectIdeasWithChampions(champions, sequenceConfiguration.interIdeaCompetitionTargetCount)
         val topControversial: Seq[IdeaId] =
-          selectControversialIdeasWithChampions(champions, sequenceConfiguration.ideaCompetitionControversialCount)
+          selectControversialIdeasWithChampions(champions, sequenceConfiguration.interIdeaCompetitionControversialCount)
         topIdeas ++ topControversial
       } else {
         testedProposalsByIdea.keys.toSeq
@@ -336,7 +336,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
         .filterKeys(selectedIdeas.contains)
         .mapValues(
           proposals =>
-            if (sequenceConfiguration.banditEnabled) {
+            if (sequenceConfiguration.intraIdeaEnabled) {
               chooseProposalBandit(sequenceConfiguration, proposals)
             } else {
               chooseProposals(proposals, 1, SoftMinRandom).head
