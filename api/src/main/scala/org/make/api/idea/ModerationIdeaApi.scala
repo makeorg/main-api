@@ -33,6 +33,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Order
 import org.make.core.idea._
 import org.make.core.idea.indexed.{IdeaSearchResult, IndexedIdea}
 import org.make.core.operation.OperationId
@@ -177,6 +178,42 @@ trait DefaultModerationIdeaApiComponent
                 makeOperation("GetAllIdeas") { requestContext =>
                   makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                     requireModerationRole(userAuth.user) {
+                      Validation.validate(
+                        Seq(
+                          sort.map { sortValue =>
+                            val choices =
+                              Seq(
+                                "ideaId",
+                                "name",
+                                "status",
+                                "createdAt",
+                                "updatedAt",
+                                "operationId",
+                                "questionId",
+                                "themeId",
+                                "question",
+                                "language",
+                                "country"
+                              )
+                            Validation.validChoices(
+                              fieldName = "_sort",
+                              message = Some(
+                                s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                              ),
+                              Seq(sortValue),
+                              choices
+                            )
+                          },
+                          order.map { orderValue =>
+                            Validation.validChoices(
+                              fieldName = "order",
+                              message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                              Seq(orderValue),
+                              Order.orders.keys.toSeq
+                            )
+                          }
+                        ).flatten: _*
+                      )
                       val filters: IdeaFiltersRequest =
                         IdeaFiltersRequest(
                           name = name,
