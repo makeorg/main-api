@@ -22,6 +22,7 @@ package org.make.api.sequence
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.proposal.SelectionAlgorithmName
 import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -150,7 +151,9 @@ final case class SequenceConfigurationRequest(maxAvailableProposals: Int,
                                               ideaCompetitionControversialCount: Int,
                                               maxTestedProposalCount: Int,
                                               sequenceSize: Int,
-                                              maxVotes: Int) {
+                                              maxVotes: Int,
+                                              @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+                                              selectionAlgorithmName: SelectionAlgorithmName) {
 
   def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
     SequenceConfiguration(
@@ -172,7 +175,8 @@ final case class SequenceConfigurationRequest(maxAvailableProposals: Int,
       ideaCompetitionControversialCount = ideaCompetitionControversialCount,
       maxTestedProposalCount = maxTestedProposalCount,
       sequenceSize = sequenceSize,
-      maxVotes = maxVotes
+      maxVotes = maxVotes,
+      selectionAlgorithmName = selectionAlgorithmName
     )
   }
 }

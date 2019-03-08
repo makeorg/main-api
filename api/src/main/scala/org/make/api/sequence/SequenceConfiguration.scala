@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.api.technical.TimeSettings
 import org.make.core.question.QuestionId
@@ -73,7 +74,9 @@ case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "int", example = "12")
   sequenceSize: Int = 12,
   @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  maxVotes: Int = 1500
+  maxVotes: Int = 1500,
+  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
 )
 
 object SequenceConfiguration {
@@ -99,7 +102,8 @@ object SequenceConfiguration {
     ideaCompetitionControversialCount = 0,
     maxTestedProposalCount = 1000,
     sequenceSize = 12,
-    maxVotes = 1500
+    maxVotes = 1500,
+    selectionAlgorithmName = SelectionAlgorithmName.Bandit
   )
 
 }
