@@ -152,8 +152,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             roundRobinSelectionAlgorithm.selectProposalsForSequence(
               sequenceConfiguration = sequenceConfiguration,
               includedProposals = includedProposals,
-              newProposals = newProposals,
-              testedProposals = testedProposals,
+              newProposals = allNewProposals,
+              testedProposals = allTestedProposals,
               votedProposals = votes
             )
         }
