@@ -48,7 +48,10 @@ trait DefaultMonitoringService extends MonitoringServiceComponent {
         val value =
           Kamon
             .histogram(name = "load_time", unit = MeasurementUnit.time.milliseconds, dynamicRange = Some(range))
-            .refine("application" -> histogramName.applicationName, "metric" -> histogramName.metricName)
+            .refine(
+              "application" -> MonitoringMessageHelper.format(histogramName.applicationName),
+              "metric" -> histogramName.metricName
+            )
 
         histograms += histogramName -> value
       }
@@ -68,4 +71,8 @@ trait DefaultMonitoringService extends MonitoringServiceComponent {
       getHistogram(HistogramName(applicationName, "transfer_time")).record(metrics.responseEnd - metrics.responseStart)
     }
   }
+}
+
+object MonitoringMessageHelper {
+  def format(value: String): String = value.filterNot(_ < ' ').replace("\"", "\\\"")
 }

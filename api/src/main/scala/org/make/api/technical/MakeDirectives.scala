@@ -30,6 +30,7 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -124,12 +125,12 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     Kamon
       .counter("api-requests")
       .refine(
-        "source" -> context.source.getOrElse("unknown"),
+        "source" -> MonitoringMessageHelper.format(context.source.getOrElse("unknown")),
         "operation" -> operationName,
-        "origin" -> origin.getOrElse("unknown"),
-        "application" -> context.applicationName.map(_.shortName).getOrElse("unknown"),
-        "location" -> context.location.getOrElse("unknown"),
-        "question" -> context.questionId.map(_.value).getOrElse("unknown")
+        "origin" -> MonitoringMessageHelper.format(origin.getOrElse("unknown")),
+        "application" -> MonitoringMessageHelper.format(context.applicationName.map(_.shortName).getOrElse("unknown")),
+        "location" -> MonitoringMessageHelper.format(context.location.getOrElse("unknown")),
+        "question" -> MonitoringMessageHelper.format(context.questionId.map(_.value).getOrElse("unknown"))
       )
       .increment()
   }
