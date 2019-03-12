@@ -26,6 +26,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.AvroSerializers
 import org.make.api.technical.crm.PublishedCrmContactEvent._
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -48,7 +49,8 @@ class CrmContactEventConsumerActorIt
     with ImplicitSender
     with AvroSerializers
     with UserServiceComponent
-    with CrmServiceComponent {
+    with CrmServiceComponent
+    with QuestionServiceComponent {
   override val kafkaName: String = "kafkacrmcontacteventconsumer"
   override val registryName: String = "registrycrmcontacteventconsumer"
   override val zookeeperName: String = "zookeepercrmcontacteventconsumer"
@@ -57,6 +59,7 @@ class CrmContactEventConsumerActorIt
   override val zookeeperExposedPort: Int = 22187
   override val userService: UserService = mock[UserService]
   override val crmService: CrmService = mock[CrmService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   implicit def toAnswerWithArguments[T](f: InvocationOnMock => T): Answer[T] =
     (invocation: InvocationOnMock) => f(invocation)
@@ -68,7 +71,8 @@ class CrmContactEventConsumerActorIt
 
       val probe = TestProbe()
       val consumer = system.actorOf(
-        CrmContactEventConsumerActor.props(userService = userService, crmService = crmService),
+        CrmContactEventConsumerActor
+          .props(userService = userService, crmService = crmService, questionService = questionService),
         "CrmContactNewEvent"
       )
       val format = RecordFormat[CrmContactEventWrapper]
@@ -122,7 +126,9 @@ class CrmContactEventConsumerActorIt
         .when(userService.getUser(ArgumentMatchers.eq(UserId("user1"))))
         .thenReturn(Future.successful(Some(newUserOptOut)))
       Mockito
-        .when(crmService.addUsersToUnsubscribeList(ArgumentMatchers.eq(Seq(newUserOptOut))))
+        .when(
+          crmService.addUsersToUnsubscribeList(ArgumentMatchers.eq(Seq.empty))(ArgumentMatchers.eq(Seq(newUserOptOut)))
+        )
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToUnsubscribeList called"
           Future.successful {}
@@ -149,7 +155,7 @@ class CrmContactEventConsumerActorIt
         .when(userService.getUser(ArgumentMatchers.eq(UserId("user2"))))
         .thenReturn(Future.successful(Some(newUserOptIn)))
       Mockito
-        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq(newUserOptIn))))
+        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq.empty))(ArgumentMatchers.eq(Seq(newUserOptIn))))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToOptInList called"
           Future.successful {}
@@ -255,7 +261,7 @@ class CrmContactEventConsumerActorIt
           Future.successful {}
         })
       Mockito
-        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq(subscribeUser))))
+        .when(crmService.addUsersToOptInList(ArgumentMatchers.eq(Seq.empty))(ArgumentMatchers.eq(Seq(subscribeUser))))
         .thenAnswer(() => {
           probe.ref ! "crmService.addUserToUnsubscribeList unsubscribe called"
           Future.successful {}

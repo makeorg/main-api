@@ -21,11 +21,14 @@ package org.make.api.technical
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
+import akka.persistence.query.EventEnvelope
+import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{
   CreateOperationOfQuestion,
@@ -39,6 +42,8 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.UserServiceComponent
+import org.make.api.userhistory.UserEvent.UserRegisteredEvent
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationOfQuestion
@@ -112,7 +117,22 @@ trait MigrationApi extends Directives {
   @Path(value = "/test-sequence-votes")
   def testSequenceVotes: Route
 
-  def routes: Route = emptyRoute ~ testSequence ~ testSequenceVotes
+  @ApiOperation(
+    value = "replay-user-registration-event",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/replay-user-registration")
+  def replayUserRegistrationEvent: Route
+
+  def routes: Route = emptyRoute ~ testSequence ~ testSequenceVotes ~ replayUserRegistrationEvent
 }
 
 trait MigrationApiComponent {
@@ -130,7 +150,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with SequenceConfigurationComponent
     with ProposalServiceComponent
     with UserServiceComponent
-    with SecurityConfigurationComponent =>
+    with SecurityConfigurationComponent
+    with UserHistoryCoordinatorServiceComponent
+    with ReadJournalComponent
+    with ActorSystemComponent =>
 
   override lazy val migrationApi: MigrationApi = new MigrationApi {
     override def emptyRoute: Route =
@@ -316,6 +339,49 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    }
+
+    override def replayUserRegistrationEvent: Route = post {
+      path("migrations" / "replay-user-registration") {
+        makeOperation("ReplayRegistrationEvent") { _ =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+              userJournal
+                .currentPersistenceIds()
+                .runForeach { id =>
+                  userJournal
+                    .currentEventsByPersistenceId(id, 0, Long.MaxValue)
+                    .filter {
+                      case EventEnvelope(_, _, _, _: UserRegisteredEvent) => true
+                      case _                                              => false
+                    }
+                    .runForeach { eventEnvelope =>
+                      val event = eventEnvelope.event.asInstanceOf[UserRegisteredEvent]
+                      if (event.registerQuestionId != event.requestContext.questionId) {
+                        userService.getUser(UserId(id)).map { maybeUser =>
+                          maybeUser.map { user =>
+                            userService.update(
+                              user.copy(
+                                profile = user.profile.map(
+                                  _.copy(
+                                    registerQuestionId =
+                                      event.registerQuestionId.orElse(event.requestContext.questionId)
+                                  )
+                                )
+                              ),
+                              RequestContext.empty
+                            )
+                          }
+                        }
+                      }
+                    }
+                }
+              complete(StatusCodes.NoContent)
             }
           }
         }
