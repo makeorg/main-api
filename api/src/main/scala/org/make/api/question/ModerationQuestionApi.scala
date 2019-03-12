@@ -31,8 +31,9 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ExhaustiveSearchRequest, ProposalServiceComponent, RefuseProposalRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.businessconfig.{BusinessConfig, FrontConfiguration}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.Validation.{requireValidSlug, validate, validateOptionalUserInput, validateUserInput}
+import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -40,7 +41,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{DateHelper, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -189,21 +190,26 @@ final case class ProposalIdResponse(
 
 object ProposalIdResponse {
   implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
+  implicit val decoder: Decoder[ProposalIdResponse] = deriveDecoder[ProposalIdResponse]
 }
 
 final case class AuthorRequest(@(ApiModelProperty @field)(dataType = "integer", example = "23")
                                age: Option[Int],
-                               firstName: Option[String],
+                               firstName: String,
                                lastName: Option[String],
                                postalCode: Option[String],
                                profession: Option[String]) {
   validate(
-    validateOptionalUserInput("firstName", firstName, None),
+    validateAge("age", age.map(DateHelper.computeBirthDate)),
+    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
+    validateUserInput("firstName", firstName, None),
+    validateField("firstName", firstName.nonEmpty, "firstName should not be empty"),
     validateOptionalUserInput("lastName", lastName, None),
     validateOptionalUserInput("postalCode", postalCode, None),
     validateOptionalUserInput("profession", profession, None)
   )
 }
+
 object AuthorRequest {
   implicit val decoder: Decoder[AuthorRequest] = deriveDecoder[AuthorRequest]
 }
@@ -211,7 +217,13 @@ object AuthorRequest {
 final case class CreateInitialProposalRequest(content: String,
                                               author: AuthorRequest,
                                               @(ApiModelProperty @field)(dataType = "list[string]") tags: Seq[TagId]) {
-  validate(validateUserInput("content", content, None))
+  private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
+  private val minProposalLength = FrontConfiguration.defaultProposalMinLength
+  validate(
+    validateUserInput("content", content, None),
+    maxLength("content", maxProposalLength, content),
+    minLength("content", minProposalLength, content)
+  )
 }
 
 object CreateInitialProposalRequest {

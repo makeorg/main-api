@@ -629,7 +629,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 password = None,
                 lastIp = None,
                 dateOfBirth = dateOfBirth,
-                firstName = userInfo.firstName,
+                firstName = Some(userInfo.firstName),
                 lastName = userInfo.lastName,
                 profession = userInfo.profession,
                 country = country,

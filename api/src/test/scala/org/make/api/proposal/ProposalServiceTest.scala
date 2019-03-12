@@ -832,7 +832,7 @@ class ProposalServiceTest
         Seq(TagId("my-tag")),
         moderator = moderatorId,
         moderatorRequestContext = RequestContext.empty,
-        author = AuthorRequest(None, None, None, None, None)
+        author = AuthorRequest(None, "firstName", None, None, None)
       )
 
       whenReady(result, Timeout(5.seconds)) { proposalId =>

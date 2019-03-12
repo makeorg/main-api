@@ -860,7 +860,7 @@ class UserServiceTest
       val request: AuthorRequest =
         AuthorRequest(
           age = Some(20),
-          firstName = Some("who cares anyway"),
+          firstName = "who cares anyway",
           lastName = None,
           postalCode = None,
           profession = None
@@ -870,7 +870,7 @@ class UserServiceTest
       val user = User(
         userId = UserId("existing-user-id"),
         email = "yopmail+some-hash@make.org",
-        firstName = request.firstName,
+        firstName = Some(request.firstName),
         lastName = None,
         lastIp = None,
         hashedPassword = None,
@@ -904,7 +904,7 @@ class UserServiceTest
       val request: AuthorRequest =
         AuthorRequest(
           age = Some(20),
-          firstName = Some("who cares anyway"),
+          firstName = "who cares anyway",
           lastName = None,
           postalCode = None,
           profession = None

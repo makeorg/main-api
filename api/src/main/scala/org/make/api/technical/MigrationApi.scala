@@ -187,7 +187,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         for {
           user <- userService
             .retrieveOrCreateVirtualUser(
-              AuthorRequest(None, Some(s"author-$it"), None, None, None),
+              AuthorRequest(None, s"author-$it", None, None, None),
               question.country,
               question.language
             )

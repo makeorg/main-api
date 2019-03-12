@@ -37,10 +37,11 @@ import org.make.api.user.UserResponse
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal._
+import org.make.core.proposal.{ProposalId, _}
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -351,6 +352,107 @@ class ModerationQuestionApiTest
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
+      }
+    }
+  }
+
+  feature("create initial proposals") {
+    val uri = "/moderation/questions/question-id/initial-proposals"
+    val request =
+      """
+      |{
+      | "content": "Il faut test",
+      | "author":
+      | {
+      |  "age": "42",
+      |  "firstName": "name"
+      | },
+      | "tags": []
+      |}
+    """.stripMargin
+
+    val badRequest1 =
+      """
+        |{
+        | "content": "Il faut test",
+        | "author":
+        | {
+        |  "age": "42",
+        |  "lastName": "name"
+        | },
+        | "tags": []
+        |}
+      """.stripMargin
+
+    val badRequest2 =
+      """
+        |{
+        | "content": "Il faut test",
+        | "author":
+        | {
+        |  "age": "42",
+        |  "firstName": "",
+        |  "lastName": "name"
+        | },
+        | "tags": []
+        |}
+      """.stripMargin
+
+    when(questionService.getQuestion(QuestionId("question-id")))
+      .thenReturn(Future.successful(Some(baseQuestion)))
+
+    when(
+      proposalService.createInitialProposal(
+        any[String],
+        any[Question],
+        any[Seq[TagId]],
+        any[AuthorRequest],
+        any[UserId],
+        any[RequestContext]
+      )
+    ).thenReturn(Future.successful(ProposalId("proposal-id")))
+
+    scenario("authenticated create proposal") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Created)
+        val proposalIdResponse: ProposalIdResponse = entityAs[ProposalIdResponse]
+        proposalIdResponse.proposalId.value should be("proposal-id")
+      }
+    }
+    scenario("unauthorized create proposal") {
+      Post(uri)
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+    scenario("forbidden create proposal (citizen)") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("forbidden create proposal (moderator)") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("bad request create proposal: firstName None") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest1)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+    scenario("bad request create proposal: firstName empty string") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
   }
