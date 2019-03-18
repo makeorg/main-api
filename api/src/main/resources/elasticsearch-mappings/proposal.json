@@ -885,6 +885,10 @@
               "type": "integer",
               "index": true
             },
+            "countVerified": {
+              "type": "integer",
+              "index": true
+            },
             "selected": {
               "type": "boolean",
               "index": true
@@ -899,12 +903,20 @@
                 "count": {
                   "type": "integer",
                   "index": true
+                },
+                "countVerified": {
+                  "type": "integer",
+                  "index": true
                 }
               }
             }
           }
         },
         "votesCount": {
+          "type": "integer",
+          "index": true
+        },
+        "votesVerifiedCount": {
           "type": "integer",
           "index": true
         },
@@ -923,11 +935,19 @@
               "type": "double",
               "index": true
             },
+            "agreement": {
+              "type": "double",
+              "index": true
+            },
             "adhesion": {
               "type": "double",
               "index": true
             },
             "realistic": {
+              "type": "double",
+              "index": true
+            },
+            "platitude": {
               "type": "double",
               "index": true
             },
@@ -944,14 +964,6 @@
               "index": true
             },
             "scoreUpperBound": {
-              "type": "double",
-              "index": true
-            },
-            "platitude": {
-              "type": "double",
-              "index": true
-            },
-            "agreement": {
               "type": "double",
               "index": true
             }

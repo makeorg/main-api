@@ -114,6 +114,14 @@ object ValidateProposalRequest {
   implicit val encoder: ObjectEncoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
 }
 
+final case class UpdateProposalVotesVerifiedRequest(votesVerified: Seq[Vote])
+
+object UpdateProposalVotesVerifiedRequest {
+  implicit val decoder: Decoder[UpdateProposalVotesVerifiedRequest] = deriveDecoder[UpdateProposalVotesVerifiedRequest]
+  implicit val encoder: ObjectEncoder[UpdateProposalVotesVerifiedRequest] =
+    deriveEncoder[UpdateProposalVotesVerifiedRequest]
+}
+
 final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {
   validate(Validation.mandatoryField("refusalReason", refusalReason))
   validate(refusalReason.map(value => validateUserInput("refusalReason", value, None)))
@@ -260,10 +268,9 @@ object ExhaustiveSearchRequest extends CirceFormatters {
 }
 
 @ApiModel
-final case class VoteProposalRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "agree")
-  voteKey: VoteKey
-)
+final case class VoteProposalRequest(@(ApiModelProperty @field)(dataType = "string", example = "agree")
+                                     voteKey: VoteKey,
+                                     proposalKey: Option[String])
 
 object VoteProposalRequest {
   implicit val decoder: Decoder[VoteProposalRequest] = deriveDecoder[VoteProposalRequest]
@@ -273,7 +280,8 @@ object VoteProposalRequest {
 final case class QualificationProposalRequest(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
                                               qualificationKey: QualificationKey,
                                               @(ApiModelProperty @field)(dataType = "string", example = "agree")
-                                              voteKey: VoteKey)
+                                              voteKey: VoteKey,
+                                              proposalKey: Option[String])
 
 object QualificationProposalRequest {
   implicit val decoder: Decoder[QualificationProposalRequest] = deriveDecoder[QualificationProposalRequest]

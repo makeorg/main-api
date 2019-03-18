@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.userhistory.StartSequenceParameters
 import org.make.core.RequestContext
+import org.make.core.history.HistoryActions.Trusted
 import org.make.core.proposal._
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
@@ -58,7 +59,7 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = SessionAction(
         date = eventDate,
         actionType = ProposalVoteAction.name,
-        arguments = SessionVote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Disagree)
+        arguments = SessionVote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Disagree, Trusted)
       )
     )
 
@@ -68,7 +69,7 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = SessionAction(
         date = eventDate,
         actionType = ProposalUnvoteAction.name,
-        arguments = SessionUnvote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Disagree)
+        arguments = SessionUnvote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Disagree, Trusted)
       )
     )
 
@@ -78,8 +79,11 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = SessionAction(
         date = eventDate,
         actionType = ProposalQualifyAction.name,
-        arguments =
-          SessionQualification(proposalId = ProposalId("proposal-id"), qualificationKey = QualificationKey.LikeIt)
+        arguments = SessionQualification(
+          proposalId = ProposalId("proposal-id"),
+          qualificationKey = QualificationKey.LikeIt,
+          Trusted
+        )
       )
     )
 
@@ -89,8 +93,11 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = SessionAction(
         date = eventDate,
         actionType = ProposalUnqualifyAction.name,
-        arguments =
-          SessionUnqualification(proposalId = ProposalId("proposal-id"), qualificationKey = QualificationKey.LikeIt)
+        arguments = SessionUnqualification(
+          proposalId = ProposalId("proposal-id"),
+          qualificationKey = QualificationKey.LikeIt,
+          Trusted
+        )
       )
     )
 

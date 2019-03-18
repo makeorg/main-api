@@ -40,7 +40,7 @@ import org.make.api.userhistory.UserEvent.{
 }
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, SequencePool}
@@ -402,6 +402,7 @@ class OrganisationServiceTest
           updatedAt = None,
           votes = Seq.empty,
           votesCount = 0,
+          votesVerifiedCount = 0,
           toEnrich = false,
           scores = IndexedScores.empty,
           context = None,
@@ -439,13 +440,15 @@ class OrganisationServiceTest
             Map(
               ProposalId("proposal2") -> VoteAndQualifications(
                 Agree,
-                Seq.empty,
-                ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
+                Map.empty,
+                ZonedDateTime.parse("2018-03-01T16:09:30.441Z"),
+                Trusted
               ),
               ProposalId("proposal1") -> VoteAndQualifications(
                 Disagree,
-                Seq.empty,
-                ZonedDateTime.parse("2018-03-02T16:09:30.441Z")
+                Map.empty,
+                ZonedDateTime.parse("2018-03-02T16:09:30.441Z"),
+                Trusted
               )
             )
           )

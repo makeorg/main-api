@@ -162,7 +162,7 @@ class PersistentTagServiceIT
                |label = ${greyjoy.label}, tagId = ${greyjoy.tagId.value}
         """.stripMargin)
       val futurePersistedTagList: Future[Seq[Tag]] = for {
-        tagTargaryen <- persistentTagService.persist(targaryen)
+        _            <- persistentTagService.persist(targaryen)
         tagLannister <- persistentTagService.persist(lannister)
         tagBolton    <- persistentTagService.persist(bolton)
         tagGreyjoy   <- persistentTagService.persist(greyjoy)

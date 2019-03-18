@@ -59,6 +59,7 @@ class ProposalEmailConsumer(userService: UserService,
       case event: ProposalPostponed            => handleProposalPostponed(event)
       case event: ProposalViewed               => doNothing(event)
       case event: ProposalUpdated              => doNothing(event)
+      case event: ProposalVotesVerifiedUpdated => doNothing(event)
       case event: ReindexProposal              => doNothing(event)
       case event: ProposalProposed             => doNothing(event)
       case event: ProposalVoted                => doNothing(event)

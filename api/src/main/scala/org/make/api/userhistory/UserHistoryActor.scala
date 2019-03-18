@@ -110,13 +110,17 @@ class UserHistoryActor
   def applyEventOnState(
     userHistoryState: Option[UserVotesAndQualifications]
   ): PartialFunction[UserHistoryEvent[_], Option[UserVotesAndQualifications]] = {
-    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey))) =>
-      applyVoteEvent(userHistoryState, proposalId, voteKey, date)
-    case LogUserUnvoteEvent(_, _, UserAction(_, _, UserUnvote(proposalId, voteKey))) =>
+    case LogUserVoteEvent(_, _, UserAction(date, _, UserVote(proposalId, voteKey, voteTrust))) =>
+      applyVoteEvent(userHistoryState, proposalId, voteKey, date, voteTrust)
+    case LogUserUnvoteEvent(_, _, UserAction(_, _, UserUnvote(proposalId, voteKey, _))) =>
       applyUnvoteEvent(userHistoryState, proposalId, voteKey)
-    case LogUserQualificationEvent(_, _, UserAction(_, _, UserQualification(proposalId, qualificationKey))) =>
-      applyQualificationEvent(userHistoryState, proposalId, qualificationKey)
-    case LogUserUnqualificationEvent(_, _, UserAction(_, _, UserUnqualification(proposalId, qualificationKey))) =>
+    case LogUserQualificationEvent(
+        _,
+        _,
+        UserAction(_, _, UserQualification(proposalId, qualificationKey, voteTrust))
+        ) =>
+      applyQualificationEvent(userHistoryState, proposalId, qualificationKey, voteTrust)
+    case LogUserUnqualificationEvent(_, _, UserAction(_, _, UserUnqualification(proposalId, qualificationKey, _))) =>
       applyUnqualificationEvent(userHistoryState, proposalId, qualificationKey)
     case _ => userHistoryState
   }
@@ -124,7 +128,8 @@ class UserHistoryActor
   def applyVoteEvent(userHistoryState: Option[UserVotesAndQualifications],
                      proposalId: ProposalId,
                      voteKey: VoteKey,
-                     voteDate: ZonedDateTime): Option[UserVotesAndQualifications] = {
+                     voteDate: ZonedDateTime,
+                     voteTrust: VoteTrust): Option[UserVotesAndQualifications] = {
     var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     if (nextState.votesAndQualifications.contains(proposalId)) {
       nextState = nextState.copy(votesAndQualifications = nextState.votesAndQualifications - proposalId)
@@ -132,8 +137,9 @@ class UserHistoryActor
     nextState = nextState.copy(
       votesAndQualifications = nextState.votesAndQualifications + (proposalId -> VoteAndQualifications(
         voteKey,
-        Seq.empty,
-        voteDate
+        Map.empty,
+        voteDate,
+        voteTrust
       ))
     )
     Some(nextState)
@@ -141,11 +147,13 @@ class UserHistoryActor
 
   def applyQualificationEvent(userHistoryState: Option[UserVotesAndQualifications],
                               proposalId: ProposalId,
-                              qualificationKey: QualificationKey): Option[UserVotesAndQualifications] = {
+                              qualificationKey: QualificationKey,
+                              voteTrust: VoteTrust): Option[UserVotesAndQualifications] = {
 
     var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     val newVoteAndQualifications = nextState.votesAndQualifications.get(proposalId).map { voteAndQualifications =>
-      voteAndQualifications.copy(qualificationKeys = voteAndQualifications.qualificationKeys :+ qualificationKey)
+      voteAndQualifications
+        .copy(qualificationKeys = voteAndQualifications.qualificationKeys + (qualificationKey -> voteTrust))
     }
     newVoteAndQualifications.foreach { voteAndQualifications =>
       nextState = nextState.copy(
@@ -162,7 +170,9 @@ class UserHistoryActor
     var nextState = userHistoryState.getOrElse(UserVotesAndQualifications(Map.empty))
     val newVoteAndQualifications = nextState.votesAndQualifications.get(proposalId).map { voteAndQualifications =>
       voteAndQualifications
-        .copy(qualificationKeys = voteAndQualifications.qualificationKeys.filter(_ != qualificationKey))
+        .copy(qualificationKeys = voteAndQualifications.qualificationKeys.filter {
+          case (key, _) => key != qualificationKey
+        })
     }
     newVoteAndQualifications.foreach { voteAndQualifications =>
       nextState = nextState.copy(
@@ -221,7 +231,9 @@ class UserHistoryActor
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     sender() ! state
-      .map(_.votesAndQualifications.filter { case (proposalId, _) => proposalIds.contains(proposalId) })
+      .map(_.votesAndQualifications.filter {
+        case (proposalId, _) => proposalIds.contains(proposalId)
+      })
       .getOrElse(Map.empty)
   }
 
@@ -232,8 +244,8 @@ class UserHistoryActor
         case (_, votesAndQualifications) =>
           (filterVotes.isEmpty || filterVotes.forall(_.contains(votesAndQualifications.voteKey))) &&
             (filterQualifications.isEmpty || filterQualifications.exists { qualifications =>
-              votesAndQualifications.qualificationKeys.exists(value => qualifications.contains(value))
-            })
+              votesAndQualifications.qualificationKeys.exists { case (value, _) => qualifications.contains(value) }
+            }) && votesAndQualifications.trust.isTrusted
       })
       .getOrElse(Map.empty)
       .keys

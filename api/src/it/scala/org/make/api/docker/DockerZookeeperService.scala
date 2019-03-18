@@ -20,13 +20,13 @@
 package org.make.api.docker
 
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientConfig}
-import com.github.dockerjava.jaxrs.JerseyDockerCmdExecFactory
+import com.github.dockerjava.netty.NettyDockerCmdExecFactory
 import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}
 import com.whisk.docker.{DockerContainer, DockerFactory, DockerKit, DockerReadyChecker}
 
 trait DockerZookeeperService extends DockerKit {
   private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
-  private val client: Docker = new Docker(dockerClientConfig, new JerseyDockerCmdExecFactory())
+  private val client: Docker = new Docker(dockerClientConfig, new NettyDockerCmdExecFactory())
   override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
 
   final val zookeeperInternalPort: Int = 2181

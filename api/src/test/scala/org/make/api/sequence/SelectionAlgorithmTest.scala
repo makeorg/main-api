@@ -90,11 +90,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       createdAt = createdAt,
       updatedAt = None,
       votes = votes.map {
-        case (k, amount) => IndexedVote(key = k, count = amount, qualifications = Seq.empty)
+        case (k, amount) => IndexedVote(key = k, count = amount, countVerified = amount, qualifications = Seq.empty)
       }.toSeq,
       votesCount = votes.values.sum,
+      votesVerifiedCount = votes.values.sum,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq.empty,
@@ -128,13 +129,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       updatedAt = None,
       votes = votes.map {
         case (k, (amount, qualifs)) =>
-          IndexedVote(key = k, count = amount, qualifications = qualifs.map {
-            case (qualifKey, count) => IndexedQualification(key = qualifKey, count = count)
+          IndexedVote(key = k, countVerified = amount, qualifications = qualifs.map {
+            case (qualifKey, count) => IndexedQualification(key = qualifKey, countVerified = count)
           }.toSeq)
       }.toSeq,
       votesCount = votes.values.map(_._1).sum,
+      votesVerifiedCount = votes.values.map(_._1).sum,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+      scores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq.empty,
@@ -733,9 +735,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       ProposalScorerHelper.random = new MersenneTwister(0)
       val trials = 1000
-      val samples = (1 to trials).map(i => ProposalScorerHelper.sampleTopScore(testProposal.votes))
+      val samples = (1 to trials).map(_ => ProposalScorerHelper.sampleTopScore(testProposal.votes))
 
-      testProposal.votes.map(_.count).sum should be(100)
+      testProposal.votes.map(_.countVerified).sum should be(100)
       samples.max should be > testProposalScore + 0.1
       samples.min should be < testProposalScore - 0.1
       samples.sum / trials should be(testProposalScore +- 0.05)
@@ -787,7 +789,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 10000)
-          .map(i => banditSelectionAlgorithm.chooseProposalBandit(banditSequenceConfiguration, testedProposals).id -> 1)
+          .map(_ => banditSelectionAlgorithm.chooseProposalBandit(banditSequenceConfiguration, testedProposals).id -> 1)
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
           .toSeq

@@ -235,94 +235,94 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       case (proposalId, voteAction) =>
         proposalId -> VoteAndQualifications(
           voteAction.key,
-          qualifications(voteRelatedActions).getOrElse(proposalId, Seq.empty).sortBy(_.shortName),
-          voteAction.date
+          qualifications(voteRelatedActions).getOrElse(proposalId, Map.empty),
+          voteAction.date,
+          voteAction.trust
         )
     }
     sender() ! voteAndQualifications
   }
 
   private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
-    case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey)))
+    case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey, trust)))
         if proposalIds.contains(proposalId) =>
-      Some(VoteAction(proposalId, date, voteKey))
-    case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey)))
+      Some(VoteAction(proposalId, date, voteKey, trust))
+    case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey, trust)))
         if proposalIds.contains(proposalId) =>
-      Some(UnvoteAction(proposalId, date, voteKey))
-    case LogSessionQualificationEvent(_, _, SessionAction(date, _, SessionQualification(proposalId, qualificationKey)))
-        if proposalIds.contains(proposalId) =>
-      Some(QualificationAction(proposalId, date, qualificationKey))
+      Some(UnvoteAction(proposalId, date, voteKey, trust))
+    case LogSessionQualificationEvent(
+        _,
+        _,
+        SessionAction(date, _, SessionQualification(proposalId, qualificationKey, trust))
+        ) if proposalIds.contains(proposalId) =>
+      Some(QualificationAction(proposalId, date, qualificationKey, trust))
     case LogSessionUnqualificationEvent(
         _,
         _,
-        SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey))
+        SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey, trust))
         ) if proposalIds.contains(proposalId) =>
-      Some(UnqualificationAction(proposalId, date, qualificationKey))
+      Some(UnqualificationAction(proposalId, date, qualificationKey, trust))
     case _ => None
   }
 
   private def voteActions(): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
-    case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey))) =>
-      Some(VoteAction(proposalId, date, voteKey))
-    case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey))) =>
-      Some(UnvoteAction(proposalId, date, voteKey))
+    case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey, trust))) =>
+      Some(VoteAction(proposalId, date, voteKey, trust))
+    case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey, trust))) =>
+      Some(UnvoteAction(proposalId, date, voteKey, trust))
     case LogSessionQualificationEvent(
         _,
         _,
-        SessionAction(date, _, SessionQualification(proposalId, qualificationKey))
+        SessionAction(date, _, SessionQualification(proposalId, qualificationKey, trust))
         ) =>
-      Some(QualificationAction(proposalId, date, qualificationKey))
+      Some(QualificationAction(proposalId, date, qualificationKey, trust))
     case LogSessionUnqualificationEvent(
         _,
         _,
-        SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey))
+        SessionAction(date, _, SessionUnqualification(proposalId, qualificationKey, trust))
         ) =>
-      Some(UnqualificationAction(proposalId, date, qualificationKey))
+      Some(UnqualificationAction(proposalId, date, qualificationKey, trust))
     case _ => None
   }
 
-  private def voteByProposalId(actions: Seq[VoteRelatedAction]) = {
+  private def voteByProposalId(actions: Seq[VoteRelatedAction]): Map[ProposalId, VoteAction] = {
     actions.filter {
       case _: GenericVoteAction => true
       case _                    => false
     }.groupBy(_.proposalId)
       .map {
-        case (proposalId, voteActions) => proposalId -> voteActions.maxBy(_.date.toString)
+        case (proposalId, voteActions) =>
+          proposalId -> voteActions.maxBy(_.date.toString).asInstanceOf[GenericVoteAction]
       }
       .filter {
-        case (_, _: VoteAction) => true
-        case _                  => false
+        case (_, value) => value.isInstanceOf[VoteAction]
       }
       .map {
-        case (proposalId, action) => proposalId -> action.asInstanceOf[VoteAction]
+        case (k, value) => k -> value.asInstanceOf[VoteAction]
       }
   }
 
-  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Seq[QualificationKey]] = {
+  private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Map[QualificationKey, VoteTrust]] = {
     actions.filter {
       case _: GenericQualificationAction => true
       case _                             => false
-    }.groupBy(action => (action.proposalId, action.asInstanceOf[GenericQualificationAction].key))
-      .map {
-        case (groupKey, qualificationAction) => groupKey -> qualificationAction.maxBy(_.date.toString)
-      }
-      .filter {
-        case (_, _: QualificationAction) => true
-        case _                           => false
-      }
-      .toList
-      .map {
-        case ((proposalId, key), _) => proposalId -> key
-      }
-      .groupBy {
-        case (proposalId, _) => proposalId
-      }
-      .map {
-        case (proposalId, qualificationList) =>
-          proposalId -> qualificationList.map {
-            case (_, key) => key
-          }
-      }
+    }.groupBy { action =>
+      val qualificationAction = action.asInstanceOf[GenericQualificationAction]
+      (qualificationAction.proposalId, qualificationAction.key)
+    }.map {
+      case (groupKey, qualificationAction) => groupKey -> qualificationAction.maxBy(_.date.toString)
+    }.filter {
+      case (_, v) => v.isInstanceOf[QualificationAction]
+    }.toList.map {
+      case ((proposalId, key), action) => proposalId -> (key -> action.trust)
+    }.groupBy {
+      case (proposalId, _) => proposalId
+    }.map {
+      case (proposalId, qualificationList) =>
+        proposalId -> qualificationList.map {
+          case (_, key) => key
+        }.toMap
+    }
   }
 
   override def persistenceId: String = sessionId.value

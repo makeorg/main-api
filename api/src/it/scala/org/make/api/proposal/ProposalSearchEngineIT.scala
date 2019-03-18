@@ -166,6 +166,7 @@ class ProposalSearchEngineIT
       )
     ),
     votesCount = 3,
+    votesVerifiedCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
     context = Some(Context(operation = None, location = None, question = None, source = None)),
@@ -233,8 +234,9 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 287,
+      votesVerifiedCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 84, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
       context = Some(Context(source = None, operation = None, location = None, question = None)),
       trending = None,
       labels = Seq(),
@@ -296,6 +298,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 310,
+      votesVerifiedCount = 310,
       toEnrich = true,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -359,6 +362,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 127,
+      votesVerifiedCount = 127,
       toEnrich = true,
       scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
@@ -424,6 +428,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 353,
+      votesVerifiedCount = 353,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -487,6 +492,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 368,
+      votesVerifiedCount = 368,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -552,6 +558,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 305,
+      votesVerifiedCount = 305,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -615,6 +622,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 286,
+      votesVerifiedCount = 286,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -678,6 +686,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 162,
+      votesVerifiedCount = 162,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -746,6 +755,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 178,
+      votesVerifiedCount = 178,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -811,6 +821,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 131,
+      votesVerifiedCount = 131,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -876,6 +887,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 356,
+      votesVerifiedCount = 356,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -941,6 +953,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 347,
+      votesVerifiedCount = 347,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -1004,6 +1017,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 267,
+      votesVerifiedCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -1067,6 +1081,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 204,
+      votesVerifiedCount = 204,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),
@@ -1131,6 +1146,7 @@ class ProposalSearchEngineIT
         )
       ),
       votesCount = 254,
+      votesVerifiedCount = 254,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(Context(source = None, operation = None, location = None, question = None)),

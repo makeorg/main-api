@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
+import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.session._
 import org.make.core.user.UserId
@@ -94,32 +95,32 @@ object SessionSearchParameters {
     DefaultJsonProtocol.jsonFormat1(SessionSearchParameters.apply)
 }
 
-final case class SessionVote(proposalId: ProposalId, voteKey: VoteKey)
+final case class SessionVote(proposalId: ProposalId, voteKey: VoteKey, trust: VoteTrust)
 
 object SessionVote {
   implicit val format: RootJsonFormat[SessionVote] =
-    DefaultJsonProtocol.jsonFormat2(SessionVote.apply)
+    DefaultJsonProtocol.jsonFormat3(SessionVote.apply)
 }
 
-final case class SessionUnvote(proposalId: ProposalId, voteKey: VoteKey)
+final case class SessionUnvote(proposalId: ProposalId, voteKey: VoteKey, trust: VoteTrust)
 
 object SessionUnvote {
   implicit val format: RootJsonFormat[SessionUnvote] =
-    DefaultJsonProtocol.jsonFormat2(SessionUnvote.apply)
+    DefaultJsonProtocol.jsonFormat3(SessionUnvote.apply)
 }
 
-final case class SessionQualification(proposalId: ProposalId, qualificationKey: QualificationKey)
+final case class SessionQualification(proposalId: ProposalId, qualificationKey: QualificationKey, trust: VoteTrust)
 
 object SessionQualification {
   implicit val format: RootJsonFormat[SessionQualification] =
-    DefaultJsonProtocol.jsonFormat2(SessionQualification.apply)
+    DefaultJsonProtocol.jsonFormat3(SessionQualification.apply)
 }
 
-final case class SessionUnqualification(proposalId: ProposalId, qualificationKey: QualificationKey)
+final case class SessionUnqualification(proposalId: ProposalId, qualificationKey: QualificationKey, trust: VoteTrust)
 
 object SessionUnqualification {
   implicit val format: RootJsonFormat[SessionUnqualification] =
-    DefaultJsonProtocol.jsonFormat2(SessionUnqualification.apply)
+    DefaultJsonProtocol.jsonFormat3(SessionUnqualification.apply)
 }
 
 final case class LogSessionVoteEvent(sessionId: SessionId,
@@ -134,7 +135,11 @@ final case class LogSessionVoteEvent(sessionId: SessionId,
       action = UserAction[UserVote](
         date = action.date,
         actionType = action.actionType,
-        arguments = UserVote(proposalId = action.arguments.proposalId, voteKey = action.arguments.voteKey)
+        arguments = UserVote(
+          proposalId = action.arguments.proposalId,
+          voteKey = action.arguments.voteKey,
+          trust = action.arguments.trust
+        )
       )
     )
   }
@@ -159,7 +164,11 @@ final case class LogSessionUnvoteEvent(sessionId: SessionId,
       action = UserAction[UserUnvote](
         date = action.date,
         actionType = action.actionType,
-        arguments = UserUnvote(proposalId = action.arguments.proposalId, voteKey = action.arguments.voteKey)
+        arguments = UserUnvote(
+          proposalId = action.arguments.proposalId,
+          voteKey = action.arguments.voteKey,
+          trust = action.arguments.trust
+        )
       )
     )
   }
@@ -186,7 +195,8 @@ final case class LogSessionQualificationEvent(sessionId: SessionId,
         actionType = action.actionType,
         arguments = UserQualification(
           proposalId = action.arguments.proposalId,
-          qualificationKey = action.arguments.qualificationKey
+          qualificationKey = action.arguments.qualificationKey,
+          trust = action.arguments.trust
         )
       )
     )
@@ -214,7 +224,8 @@ final case class LogSessionUnqualificationEvent(sessionId: SessionId,
         actionType = action.actionType,
         arguments = UserUnqualification(
           proposalId = action.arguments.proposalId,
-          qualificationKey = action.arguments.qualificationKey
+          qualificationKey = action.arguments.qualificationKey,
+          trust = action.arguments.trust
         )
       )
     )

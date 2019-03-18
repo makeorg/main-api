@@ -24,22 +24,52 @@ import java.time.ZonedDateTime
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
 
 object HistoryActions {
 
+  sealed trait VoteTrust {
+    def shortName: String
+    def isTrusted: Boolean
+  }
+  object VoteTrust {
+    val trustValue: Map[String, VoteTrust] = Map(Trusted.shortName -> Trusted, Troll.shortName -> Troll)
+
+    implicit val formatter: RootJsonFormat[VoteTrust] = new RootJsonFormat[VoteTrust] {
+      override def write(obj: VoteTrust): JsValue = JsString(obj.shortName)
+      override def read(json: JsValue): VoteTrust = {
+        json match {
+          case JsString(value) => trustValue(value)
+          case other           => throw new IllegalArgumentException(s"Unable to convert $other")
+        }
+      }
+    }
+  }
+
+  case object Trusted extends VoteTrust {
+    override val shortName: String = "trusted"
+    override val isTrusted: Boolean = true
+  }
+
+  case object Troll extends VoteTrust {
+    override val shortName: String = "troll"
+    override val isTrusted: Boolean = false
+  }
+
   final case class VoteAndQualifications(voteKey: VoteKey,
-                                         qualificationKeys: Seq[QualificationKey],
-                                         date: ZonedDateTime)
+                                         qualificationKeys: Map[QualificationKey, VoteTrust],
+                                         date: ZonedDateTime,
+                                         trust: VoteTrust)
 
   object VoteAndQualifications {
     implicit val formatter: RootJsonFormat[VoteAndQualifications] =
-      DefaultJsonProtocol.jsonFormat3(VoteAndQualifications.apply)
+      DefaultJsonProtocol.jsonFormat4(VoteAndQualifications.apply)
   }
 
   sealed trait VoteRelatedAction extends Product with Serializable {
     def proposalId: ProposalId
     def date: ZonedDateTime
+    def trust: VoteTrust
   }
 
   sealed trait GenericVoteAction extends VoteRelatedAction {
@@ -50,11 +80,19 @@ object HistoryActions {
     def key: QualificationKey
   }
 
-  final case class VoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey) extends GenericVoteAction
-  final case class UnvoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey) extends GenericVoteAction
-  final case class QualificationAction(proposalId: ProposalId, date: ZonedDateTime, key: QualificationKey)
+  final case class VoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey, trust: VoteTrust)
+      extends GenericVoteAction
+  final case class UnvoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey, trust: VoteTrust)
+      extends GenericVoteAction
+  final case class QualificationAction(proposalId: ProposalId,
+                                       date: ZonedDateTime,
+                                       key: QualificationKey,
+                                       trust: VoteTrust)
       extends GenericQualificationAction
-  final case class UnqualificationAction(proposalId: ProposalId, date: ZonedDateTime, key: QualificationKey)
+  final case class UnqualificationAction(proposalId: ProposalId,
+                                         date: ZonedDateTime,
+                                         key: QualificationKey,
+                                         trust: VoteTrust)
       extends GenericQualificationAction
 
 }

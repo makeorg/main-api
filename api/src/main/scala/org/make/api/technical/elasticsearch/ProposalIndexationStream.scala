@@ -174,17 +174,18 @@ trait ProposalIndexationStream
         updatedAt = proposal.updatedAt,
         votes = proposal.votes.map(IndexedVote.apply),
         votesCount = proposal.votes.map(_.count).sum,
+        votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
         toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
         scores = IndexedScores(
           engagement = ProposalScorerHelper.engagement(proposal.votes),
+          agreement = ProposalScorerHelper.agreement(proposal.votes),
           adhesion = ProposalScorerHelper.adhesion(proposal.votes),
           realistic = ProposalScorerHelper.realistic(proposal.votes),
+          platitude = ProposalScorerHelper.platitude(proposal.votes),
           topScore = ProposalScorerHelper.topScore(proposal.votes),
           controversy = ProposalScorerHelper.controversy(proposal.votes),
           rejection = ProposalScorerHelper.rejection(proposal.votes),
-          scoreUpperBound = ProposalScorerHelper.topScoreUpperBound(proposal.votes),
-          platitude = ProposalScorerHelper.platitude(proposal.votes),
-          agreement = ProposalScorerHelper.agreement(proposal.votes)
+          scoreUpperBound = ProposalScorerHelper.topScoreUpperBound(proposal.votes)
         ),
         context = Some(
           ProposalContext(

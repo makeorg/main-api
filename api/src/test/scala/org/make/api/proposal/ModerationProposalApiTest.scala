@@ -37,6 +37,18 @@ import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal.QualificationKey.{
+  DoNotCare,
+  DoNotUnderstand,
+  Doable,
+  Impossible,
+  LikeIt,
+  NoOpinion,
+  NoWay,
+  PlatitudeAgree,
+  PlatitudeDisagree
+}
+import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
@@ -1319,6 +1331,134 @@ class ModerationProposalApiTest
       Get("/moderation/proposals/invalid/predicted-tags")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
+      }
+    }
+  }
+
+  feature("update verified votes") {
+    scenario("unauthorized user") {
+      Put("/moderation/proposals/123456/votes-verified") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+    scenario("forbidden citizen") {
+      Put("/moderation/proposals/123456/votes-verified")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("forbidden moderator") {
+      Put("/moderation/proposals/123456/votes-verified")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("proposal not found") {
+      when(proposalCoordinatorService.getProposal(any[ProposalId]))
+        .thenReturn(Future.successful(None))
+
+      Get("/moderation/proposals/invalid/votes-verified")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+    scenario("allowed admin") {
+
+      val proposalCounts123: Proposal = Proposal(
+        proposalId = ProposalId("counts-123"),
+        slug = "a-song-of-fire-and-ice-2",
+        content = "A song of fire and ice 2",
+        author = UserId("Georges RR Martin"),
+        labels = Seq.empty,
+        votes = Seq(
+          Vote(
+            key = VoteKey.Agree,
+            count = 100,
+            countVerified = 100,
+            qualifications =
+              Seq(Qualification(LikeIt, 50, 50), Qualification(Doable, 50, 50), Qualification(PlatitudeAgree, 50, 50))
+          ),
+          Vote(
+            key = VoteKey.Disagree,
+            count = 100,
+            countVerified = 100,
+            qualifications = Seq(
+              Qualification(NoWay, 50, 50),
+              Qualification(Impossible, 50, 50),
+              Qualification(PlatitudeDisagree, 50, 50)
+            )
+          ),
+          Vote(
+            key = VoteKey.Neutral,
+            count = 100,
+            countVerified = 100,
+            qualifications = Seq(
+              Qualification(DoNotUnderstand, 50, 50),
+              Qualification(DoNotCare, 50, 50),
+              Qualification(NoOpinion, 50, 50)
+            )
+          )
+        ),
+        questionId = Some(QuestionId("to-be-or-not-to-be")),
+        creationContext = RequestContext.empty,
+        createdAt = Some(DateHelper.now()),
+        updatedAt = Some(DateHelper.now()),
+        events = Nil,
+        language = Some(Language("fr")),
+        country = Some(Country("FR"))
+      )
+      val hamlet = Question(
+        QuestionId("to-be-or-not-to-be"),
+        "hamlet",
+        Country("GB"),
+        Language("en"),
+        "To be or not to be ?",
+        None,
+        None
+      )
+      when(proposalCoordinatorService.getProposal(ProposalId("counts-123")))
+        .thenReturn(Future.successful(Some(proposalCounts123)))
+      when(questionService.getQuestion(QuestionId("to-be-or-not-to-be")))
+        .thenReturn(Future.successful(Some(hamlet)))
+      when(
+        proposalService
+          .updateVotesVerified(any[ProposalId], any[UserId], any[RequestContext], any[ZonedDateTime], any[Seq[Vote]])
+      ).thenReturn(Future.successful(Some(proposal(ProposalId("counts-123")))))
+      val verifiedVotesRequest = UpdateProposalVotesVerifiedRequest(
+        votesVerified = Seq(
+          Vote(
+            key = Agree,
+            countVerified = 12,
+            qualifications = Seq(
+              Qualification(LikeIt, countVerified = 1),
+              Qualification(Doable, countVerified = 2),
+              Qualification(PlatitudeAgree, countVerified = 3)
+            )
+          ),
+          Vote(
+            key = Disagree,
+            countVerified = 24,
+            qualifications = Seq(
+              Qualification(NoWay, countVerified = 4),
+              Qualification(Impossible, countVerified = 5),
+              Qualification(PlatitudeDisagree, countVerified = 6)
+            )
+          ),
+          Vote(
+            key = VoteKey.Neutral,
+            countVerified = 36,
+            qualifications = Seq(
+              Qualification(NoOpinion, countVerified = 7),
+              Qualification(DoNotUnderstand, countVerified = 8),
+              Qualification(DoNotCare, countVerified = 9)
+            )
+          )
+        )
+      )
+      Put("/moderation/proposals/counts-123/votes-verified")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
       }
     }
   }

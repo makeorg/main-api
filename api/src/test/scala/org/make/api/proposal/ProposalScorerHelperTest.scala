@@ -65,29 +65,34 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     votes = Seq(
       Vote(
         key = VoteKey.Agree,
-        count = nbVoteAgree,
+        countVerified = nbVoteAgree,
         qualifications = Seq(
-          Qualification(key = QualificationKey.LikeIt, count = nbQualificationLikeIt),
-          Qualification(key = QualificationKey.Doable, count = nbQualificationDoable),
-          Qualification(key = QualificationKey.PlatitudeAgree, count = nbQualificationPlatitudeAgree)
+          Qualification(
+            key = QualificationKey.LikeIt,
+            count = nbQualificationLikeIt,
+            countVerified = nbQualificationLikeIt
+          ),
+          Qualification(key = QualificationKey.Doable, countVerified = nbQualificationDoable),
+          Qualification(key = QualificationKey.PlatitudeAgree, countVerified = nbQualificationPlatitudeAgree)
         )
       ),
       Vote(
         key = VoteKey.Disagree,
-        count = nbVoteDisagree,
+        countVerified = nbVoteDisagree,
         qualifications = Seq(
-          Qualification(key = QualificationKey.NoWay, count = nbQualificationNoWay),
-          Qualification(key = QualificationKey.Impossible, count = nbQualificationImpossible),
-          Qualification(key = QualificationKey.PlatitudeDisagree, count = nbQualificationPlatitudeDisagree)
+          Qualification(key = QualificationKey.NoWay, countVerified = nbQualificationNoWay),
+          Qualification(key = QualificationKey.Impossible, countVerified = nbQualificationImpossible),
+          Qualification(key = QualificationKey.PlatitudeDisagree, countVerified = nbQualificationPlatitudeDisagree)
         )
       ),
       Vote(
         key = VoteKey.Neutral,
         count = nbVoteNeutral,
+        countVerified = nbVoteNeutral,
         qualifications = Seq(
-          Qualification(key = QualificationKey.DoNotUnderstand, count = nbQualificationDoNotUnderstand),
-          Qualification(key = QualificationKey.NoOpinion, count = nbQualificationNoOpinion),
-          Qualification(key = QualificationKey.DoNotCare, count = nbQualificationDoNotCare)
+          Qualification(key = QualificationKey.DoNotUnderstand, countVerified = nbQualificationDoNotUnderstand),
+          Qualification(key = QualificationKey.NoOpinion, countVerified = nbQualificationNoOpinion),
+          Qualification(key = QualificationKey.DoNotCare, countVerified = nbQualificationDoNotCare)
         )
       )
     ),
@@ -125,23 +130,23 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("count vote by voteKey") {
     scenario("count vote when proposal has no vote") {
-      ProposalScorerHelper.voteCounts(proposalWithoutvote.votes, VoteKey.Neutral) should be(0)
+      ProposalScorerHelper.voteCount(proposalWithoutvote.votes, VoteKey.Neutral) should be(0)
     }
 
     scenario("count vote when proposal has vote") {
-      ProposalScorerHelper.voteCounts(proposalWithVote.votes, VoteKey.Neutral) should be(20)
+      ProposalScorerHelper.voteCount(proposalWithVote.votes, VoteKey.Neutral) should be(20)
     }
   }
 
   feature("count qualification by voteKey and qualification key") {
     scenario("count qualification when proposal has no vote") {
-      ProposalScorerHelper.qualificationCounts(proposalWithoutvote.votes, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
+      ProposalScorerHelper.qualificationCount(proposalWithoutvote.votes, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
         0
       )
     }
 
     scenario("count vote when proposal has vote and qualification") {
-      ProposalScorerHelper.qualificationCounts(
+      ProposalScorerHelper.qualificationCount(
         proposalWithVoteandQualification.votes,
         VoteKey.Agree,
         QualificationKey.LikeIt

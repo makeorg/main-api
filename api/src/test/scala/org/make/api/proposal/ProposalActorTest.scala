@@ -26,9 +26,11 @@ import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
+import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
+import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
@@ -1392,6 +1394,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val voteAgree = Vote(
         key = VoteKey.Agree,
         count = 1,
+        countVerified = 1,
         qualifications = Seq(
           Qualification(key = QualificationKey.LikeIt),
           Qualification(key = QualificationKey.Doable),
@@ -1405,7 +1408,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty,
         voteKey = VoteKey.Agree,
         vote = None,
-        maybeOrganisationId = None
+        maybeOrganisationId = None,
+        voteTrust = Trusted
       )
 
       expectMsg(Right(Some(voteAgree)))
@@ -1413,6 +1417,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val voteDisagree = Vote(
         key = VoteKey.Disagree,
         count = 1,
+        countVerified = 1,
         qualifications = Seq(
           Qualification(key = QualificationKey.NoWay),
           Qualification(key = QualificationKey.Impossible),
@@ -1431,7 +1436,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty,
         voteKey = VoteKey.Disagree,
         vote = None,
-        maybeOrganisationId = None
+        maybeOrganisationId = None,
+        voteTrust = Trusted
       )
 
       expectMsg(Right(Some(voteDisagree)))
@@ -1638,6 +1644,947 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.content should be("DELETE_REQUESTED")
       proposal.status should be(Refused)
       proposal.refusalReason should be(Some("other"))
+    }
+  }
+
+  feature("update verified votes") {
+    val proposalId = ProposalId("updateCommand")
+    scenario("Update the verified votes of validated Proposal") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I accept the proposal")
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq.empty,
+        tags = Seq(TagId("some tag id")),
+        idea = Some(IdeaId("some-idea")),
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+
+      And("I update the verified votes for the Proposal")
+      val votesVerified = Seq(
+        Vote(
+          key = VoteKey.Agree,
+          countVerified = 12,
+          qualifications = Seq(
+            Qualification(QualificationKey.LikeIt, countVerified = 1),
+            Qualification(QualificationKey.Doable, countVerified = 2),
+            Qualification(QualificationKey.PlatitudeAgree, countVerified = 3)
+          )
+        ),
+        Vote(
+          key = VoteKey.Disagree,
+          countVerified = 24,
+          qualifications = Seq(
+            Qualification(QualificationKey.NoWay, countVerified = 4),
+            Qualification(QualificationKey.Impossible, countVerified = 5),
+            Qualification(QualificationKey.PlatitudeDisagree, countVerified = 6)
+          )
+        ),
+        Vote(
+          key = VoteKey.Neutral,
+          countVerified = 36,
+          qualifications = Seq(
+            Qualification(QualificationKey.NoOpinion, countVerified = 7),
+            Qualification(QualificationKey.DoNotUnderstand, countVerified = 8),
+            Qualification(QualificationKey.DoNotCare, countVerified = 9)
+          )
+        )
+      )
+
+      coordinator ! UpdateProposalVotesVerifiedCommand(
+        moderator = UserId("some user"),
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        votesVerified = votesVerified
+      )
+
+      Then("I should receive the updated proposal")
+
+      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+
+      response.proposalId should be(ProposalId("updateCommand"))
+      response.votes.filter(vote => vote.key == VoteKey.Agree).head.countVerified should be(12)
+      response.votes.filter(vote => vote.key == VoteKey.Disagree).head.countVerified should be(24)
+      response.votes.filter(vote => vote.key == VoteKey.Neutral).head.countVerified should be(36)
+    }
+
+  }
+
+  feature("update verified votes on refused proposal") {
+    val proposalId = ProposalId("update-on-refused")
+    scenario("Update the verified votes of refused Proposal") {
+      Given("a newly proposed Proposal")
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      When("I accept the proposal")
+      coordinator ! RefuseProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        refusalReason = None
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+
+      And("I update the verified votes for the Proposal")
+      val votesVerified = Seq(
+        Vote(
+          key = VoteKey.Agree,
+          countVerified = 12,
+          qualifications = Seq(
+            Qualification(QualificationKey.LikeIt, countVerified = 1),
+            Qualification(QualificationKey.Doable, countVerified = 2),
+            Qualification(QualificationKey.PlatitudeAgree, countVerified = 3)
+          )
+        ),
+        Vote(
+          key = VoteKey.Disagree,
+          countVerified = 24,
+          qualifications = Seq(
+            Qualification(QualificationKey.NoWay, countVerified = 4),
+            Qualification(QualificationKey.Impossible, countVerified = 5),
+            Qualification(QualificationKey.PlatitudeDisagree, countVerified = 6)
+          )
+        ),
+        Vote(
+          key = VoteKey.Neutral,
+          countVerified = 36,
+          qualifications = Seq(
+            Qualification(QualificationKey.NoOpinion, countVerified = 7),
+            Qualification(QualificationKey.DoNotUnderstand, countVerified = 8),
+            Qualification(QualificationKey.DoNotCare, countVerified = 9)
+          )
+        )
+      )
+
+      coordinator ! UpdateProposalVotesVerifiedCommand(
+        moderator = UserId("some user"),
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        updatedAt = mainUpdatedAt.get,
+        votesVerified = votesVerified
+      )
+
+      Then("I should receive an error")
+
+      expectMsgType[Exception]
+
+    }
+
+  }
+
+  feature("vote on proposal") {
+    val proposalId = ProposalId("proposal-id")
+    scenario("vote on a new proposal with the valid proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      response.isDefined should be(true)
+      response.get.key should be(VoteKey.Agree)
+      response.get.count should be(1)
+      response.get.countVerified should be(1)
+    }
+
+    scenario("vote on a new proposal with the wrong proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Troll
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      response.isDefined should be(true)
+      response.get.key should be(VoteKey.Agree)
+      response.get.count should be(1)
+      response.get.countVerified should be(0)
+    }
+  }
+
+  feature("unvote on proposal") {
+    val proposalId = ProposalId("proposal-id")
+    scenario("unvote on a new proposal with the valid proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Trusted
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      response.isDefined should be(true)
+      response.get.key should be(VoteKey.Agree)
+      response.get.count should be(0)
+      response.get.countVerified should be(0)
+    }
+
+    scenario("vote on a new proposal with the wrong proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Troll
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      response.isDefined should be(true)
+      response.get.key should be(VoteKey.Agree)
+      response.get.count should be(0)
+      response.get.countVerified should be(0)
+    }
+  }
+
+  feature("qualify on proposal") {
+    val proposalId = ProposalId("proposal-id")
+    scenario("qualify on a new proposal with the valid proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Trusted
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      response.isDefined should be(true)
+      response.get.key should be(QualificationKey.LikeIt)
+      response.get.count should be(1)
+      response.get.countVerified should be(1)
+    }
+
+    scenario("qualify on a new proposal with the wrong proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Troll
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Troll
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      response.isDefined should be(true)
+      response.get.key should be(QualificationKey.LikeIt)
+      response.get.count should be(1)
+      response.get.countVerified should be(0)
+    }
+  }
+
+  feature("unqualify on proposal") {
+    val proposalId = ProposalId("proposal-id")
+    scenario("unqualify on a new proposal with the valid proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(QualificationKey.LikeIt -> Trusted), DateHelper.now(), Trusted)),
+        voteTrust = Trusted
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      response.isDefined should be(true)
+      response.get.key should be(QualificationKey.LikeIt)
+      response.get.count should be(0)
+      response.get.countVerified should be(0)
+    }
+
+    scenario("unqualify on a new proposal with the wrong proposalKey") {
+      coordinator ! ProposeCommand(
+        proposalId = proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = mainCreatedAt.get,
+        content = "This is a proposal",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        None,
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        voteTrust = Trusted
+      )
+
+      expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        Some(UserId("user-id")),
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(QualificationKey.LikeIt -> Troll), DateHelper.now(), Troll)),
+        voteTrust = Troll
+      )
+
+      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      response.isDefined should be(true)
+      response.get.key should be(QualificationKey.LikeIt)
+      response.get.count should be(0)
+      response.get.countVerified should be(1)
+    }
+  }
+
+  feature("troll detection on votes") {
+    scenario("vote and unvote as a troll") {
+      val proposalId = ProposalId("vote and unvote as a troll")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "vote and unvote as a troll",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(0)
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
+        Troll
+      )
+      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to unvote"))
+        .getOrElse(fail("unable to unvote"))
+
+      unvote.count should be(0)
+      unvote.countVerified should be(0)
+
+    }
+
+    scenario("trusted vote and unvote as a troll") {
+      val proposalId = ProposalId("trusted vote and unvote as a troll")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "vote and unvote as a troll",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(1)
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        Troll
+      )
+      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to unvote"))
+        .getOrElse(fail("unable to unvote"))
+
+      unvote.count should be(0)
+      unvote.countVerified should be(0)
+    }
+
+    scenario("vote as a troll and trusted unvote") {
+      val proposalId = ProposalId("vote as a troll and trusted unvote")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "vote and unvote as a troll",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(0)
+
+      coordinator ! UnvoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
+        Troll
+      )
+      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to unvote"))
+        .getOrElse(fail("unable to unvote"))
+
+      unvote.count should be(0)
+      unvote.countVerified should be(0)
+    }
+  }
+
+  feature("troll detection on qualifications") {
+    scenario("qualify and unqualify as a troll") {
+      val proposalId = ProposalId("qualify and unqualify as a troll")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "qualify and unqualify as a troll",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(1)
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        Troll
+      )
+
+      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to qualify"))
+        .getOrElse(fail("unable to qualify"))
+
+      qualification.count should be(1)
+      qualification.countVerified should be(0)
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Trusted)),
+        Troll
+      )
+
+      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to unqualify"))
+        .getOrElse(fail("unable to unqualify"))
+
+      unqualification.count should be(0)
+      unqualification.countVerified should be(0)
+    }
+
+    scenario("trusted qualify and unqualify as a troll") {
+      val proposalId = ProposalId("trusted qualify and unqualify as a troll")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "trusted qualify and unqualify as a troll",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(1)
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        Trusted
+      )
+
+      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to qualify"))
+        .getOrElse(fail("unable to qualify"))
+
+      qualification.count should be(1)
+      qualification.countVerified should be(1)
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Trusted), DateHelper.now(), Trusted)),
+        Troll
+      )
+
+      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to unqualify"))
+        .getOrElse(fail("unable to unqualify"))
+
+      unqualification.count should be(0)
+      unqualification.countVerified should be(0)
+    }
+
+    scenario("qualify as a troll and trusted unqualify") {
+      val proposalId = ProposalId("qualify as a troll and trusted unqualify")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "qualify as a troll and truste unqualify",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(1)
+
+      coordinator ! QualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        Troll
+      )
+
+      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to qualify"))
+        .getOrElse(fail("unable to qualify"))
+
+      qualification.count should be(1)
+      qualification.countVerified should be(0)
+
+      coordinator ! UnqualifyVoteCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Agree,
+        QualificationKey.LikeIt,
+        Some(VoteAndQualifications(VoteKey.Agree, Map(LikeIt -> Troll), DateHelper.now(), Trusted)),
+        Trusted
+      )
+
+      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
+        .getOrElse(fail("unable to unqualify"))
+        .getOrElse(fail("unable to unqualify"))
+
+      unqualification.count should be(0)
+      unqualification.countVerified should be(0)
     }
   }
 }

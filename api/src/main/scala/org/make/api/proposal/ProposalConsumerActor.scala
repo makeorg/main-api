@@ -59,6 +59,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
       case event: ProposalViewed               => doNothing(event)
       case event: ReindexProposal              => onCreateOrUpdate(event)
       case event: ProposalUpdated              => onCreateOrUpdate(event)
+      case event: ProposalVotesVerifiedUpdated => onCreateOrUpdate(event)
       case event: ProposalProposed             => onCreateOrUpdate(event)
       case event: ProposalAccepted             => onCreateOrUpdate(event)
       case event: ProposalRefused              => onCreateOrUpdate(event)

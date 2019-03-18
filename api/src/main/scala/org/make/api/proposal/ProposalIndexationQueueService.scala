@@ -44,7 +44,9 @@ trait DefaultProposalIndexerServiceComponent
     with ProposalIndexationStream {
   this: ActorSystemComponent =>
 
-  override def proposalIndexerService: ProposalIndexerService = new ProposalIndexerService {
+  override lazy val proposalIndexerService: DefaultProposalIndexerService = new DefaultProposalIndexerService
+
+  class DefaultProposalIndexerService extends ProposalIndexerService {
 
     lazy val bufferSize: Int =
       elasticsearchConfiguration.entityBufferSize * elasticsearchConfiguration.entityBulkSize

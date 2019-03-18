@@ -25,6 +25,7 @@ import org.make.api.proposal.ProposalActor.{Lock, ProposalState}
 import org.make.api.proposal.ProposalEvent.{SimilarProposalRemoved, SimilarProposalsCleared}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.RequestContext
+import org.make.core.history.HistoryActions.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
@@ -113,7 +114,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       maybeOrganisationId = None,
       requestContext = requestContext,
       maybeUserId = Some(userId),
-      voteKey = VoteKey.Disagree
+      voteKey = VoteKey.Disagree,
+      voteTrust = Trusted
     )
 
     val proposalVotedOrganisations = ProposalVoted(
@@ -123,7 +125,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       maybeOrganisationId = Some(UserId("my-user-id")),
       requestContext = requestContext,
       maybeUserId = Some(userId),
-      voteKey = VoteKey.Disagree
+      voteKey = VoteKey.Disagree,
+      voteTrust = Trusted
     )
 
     val proposalUnvoted = ProposalUnvoted(
@@ -134,7 +137,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
-      selectedQualifications = Seq(QualificationKey.LikeIt)
+      selectedQualifications = Seq(QualificationKey.LikeIt),
+      voteTrust = Trusted
     )
 
     val proposalUnvotedOrganisations = ProposalUnvoted(
@@ -145,7 +149,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
-      selectedQualifications = Seq(QualificationKey.LikeIt)
+      selectedQualifications = Seq(QualificationKey.LikeIt),
+      voteTrust = Trusted
     )
 
     val proposalQualified = ProposalQualified(
@@ -154,7 +159,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Agree,
-      qualificationKey = QualificationKey.Doable
+      qualificationKey = QualificationKey.Doable,
+      voteTrust = Trusted
     )
 
     val proposalUnqualified = ProposalUnqualified(
@@ -163,7 +169,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       requestContext = requestContext,
       maybeUserId = Some(userId),
       voteKey = VoteKey.Neutral,
-      qualificationKey = QualificationKey.NoOpinion
+      qualificationKey = QualificationKey.NoOpinion,
+      voteTrust = Trusted
     )
 
     val proposalLocked = ProposalLocked(
@@ -230,7 +237,8 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
         Vote(
           key = VoteKey.Agree,
           count = 20,
-          qualifications = Seq(Qualification(key = QualificationKey.Doable, count = 12))
+          countVerified = 20,
+          qualifications = Seq(Qualification(key = QualificationKey.Doable, count = 12, countVerified = 12))
         )
       ),
       events = List(

@@ -22,9 +22,9 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import org.make.core.RequestContext
-import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal.{ProposalId, QualificationKey, Vote, VoteKey}
 import org.make.core.question.Question
 import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
@@ -53,6 +53,13 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        tags: Seq[TagId],
                                        idea: Option[IdeaId],
                                        question: Question)
+    extends ProposalCommand
+
+final case class UpdateProposalVotesVerifiedCommand(moderator: UserId,
+                                                    proposalId: ProposalId,
+                                                    requestContext: RequestContext,
+                                                    updatedAt: ZonedDateTime,
+                                                    votesVerified: Seq[Vote])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
@@ -87,7 +94,8 @@ final case class VoteProposalCommand(proposalId: ProposalId,
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
                                      maybeOrganisationId: Option[UserId],
-                                     vote: Option[VoteAndQualifications])
+                                     vote: Option[VoteAndQualifications],
+                                     voteTrust: VoteTrust)
     extends ProposalCommand
 
 final case class UnvoteProposalCommand(proposalId: ProposalId,
@@ -95,7 +103,8 @@ final case class UnvoteProposalCommand(proposalId: ProposalId,
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
                                        maybeOrganisationId: Option[UserId],
-                                       vote: Option[VoteAndQualifications])
+                                       vote: Option[VoteAndQualifications],
+                                       voteTrust: VoteTrust)
     extends ProposalCommand
 
 final case class QualifyVoteCommand(proposalId: ProposalId,
@@ -103,7 +112,8 @@ final case class QualifyVoteCommand(proposalId: ProposalId,
                                     requestContext: RequestContext,
                                     voteKey: VoteKey,
                                     qualificationKey: QualificationKey,
-                                    vote: Option[VoteAndQualifications])
+                                    vote: Option[VoteAndQualifications],
+                                    voteTrust: VoteTrust)
     extends ProposalCommand
 
 final case class UnqualifyVoteCommand(proposalId: ProposalId,
@@ -111,7 +121,8 @@ final case class UnqualifyVoteCommand(proposalId: ProposalId,
                                       requestContext: RequestContext,
                                       voteKey: VoteKey,
                                       qualificationKey: QualificationKey,
-                                      vote: Option[VoteAndQualifications])
+                                      vote: Option[VoteAndQualifications],
+                                      voteTrust: VoteTrust)
     extends ProposalCommand
 
 final case class LockProposalCommand(proposalId: ProposalId,
