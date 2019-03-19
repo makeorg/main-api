@@ -49,7 +49,7 @@ tests-coverage:
       if [[ $SEARCH_CODE == "404" ]];then
         sbt clean coverage test it:test
         sbt coverageReport coverageAggregate
-        sbt swiftSendReports
+        sbt swiftSendReports codacyCoverage
       fi
 
 build-image:
