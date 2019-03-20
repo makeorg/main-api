@@ -31,7 +31,6 @@ import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent._
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.userhistory.UserEvent._
@@ -81,10 +80,10 @@ trait UserService extends ShortenedNames {
   def getOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
-  def anonymize(user: User): Future[Unit]
+  def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
-  def followUser(followedUserId: UserId, userId: UserId): Future[UserId]
-  def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId]
+  def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
+  def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
   def countModerators(email: Option[String], firstName: Option[String]): Future[Int]
 }
@@ -177,11 +176,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         availableQuestions = userRegisterData.availableQuestions
       )
 
-      val futureUser: Future[User] = persistentUserService.persist(user)
-      futureUser.map { user =>
-        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
-        user
-      }
+      persistentUserService.persist(user)
     }
 
     private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
@@ -225,7 +220,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield user
 
       result.map { user =>
-        eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
         eventBusService.publish(
           UserRegisteredEvent(
             connectedUserId = Some(user.userId),
@@ -368,7 +362,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def publishCreateEventsFromSocial(user: User, requestContext: RequestContext): Unit = {
-      eventBusService.publish(UserCreatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
       eventBusService.publish(
         UserRegisteredEvent(
           connectedUserId = Some(user.userId),
@@ -414,13 +407,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean] = {
-      val futureResult: Future[Boolean] = persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
-      futureResult.map { result =>
-        if (result) {
-          eventBusService.publish(UserUpdatedPasswordEvent(userId = Some(userId), eventDate = DateHelper.now()))
-        }
-        result
-      }
+      persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
     }
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
@@ -428,13 +415,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {
-      val futureResult: Future[Boolean] = persistentUserService.updateOptInNewsletter(userId, optInNewsletter)
-      futureResult.map { result =>
+      persistentUserService.updateOptInNewsletter(userId, optInNewsletter).map { result =>
         if (result) {
           eventBusService.publish(
             UserUpdatedOptInNewsletterEvent(
-              userId = Some(userId),
-              eventDate = DateHelper.now(),
+              connectedUserId = Some(userId),
+              userId = userId,
+              requestContext = RequestContext.empty,
               optInNewsletter = optInNewsletter
             )
           )
@@ -444,41 +431,30 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean] = {
-      val futureResult: Future[Boolean] = persistentUserService.updateIsHardBounce(userId, isHardBounce)
-
-      futureResult.map { result =>
-        if (result && isHardBounce) {
-          eventBusService.publish(UserUpdatedHardBounceEvent(userId = Some(userId), eventDate = DateHelper.now()))
-        }
-        result
-      }
+      persistentUserService.updateIsHardBounce(userId, isHardBounce)
     }
 
     override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
-      val futureResult = persistentUserService.updateOptInNewsletter(email, optInNewsletter)
-      futureResult.map { result =>
-        if (result) {
-          eventBusService.publish(
-            UserUpdatedOptInNewsletterEvent(
-              email = Some(email),
-              eventDate = DateHelper.now(),
-              optInNewsletter = optInNewsletter
+      getUserByEmail(email).flatMap { maybeUser =>
+        persistentUserService.updateOptInNewsletter(email, optInNewsletter).map { result =>
+          if (maybeUser.isDefined && result) {
+            val userId = maybeUser.get.userId
+            eventBusService.publish(
+              UserUpdatedOptInNewsletterEvent(
+                connectedUserId = Some(userId),
+                userId = userId,
+                requestContext = RequestContext.empty,
+                optInNewsletter = optInNewsletter
+              )
             )
-          )
+          }
+          result
         }
-        result
       }
     }
 
     override def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean] = {
-      val futureResult: Future[Boolean] = persistentUserService.updateIsHardBounce(email, isHardBounce)
-
-      futureResult.map { result =>
-        if (result) {
-          eventBusService.publish(UserUpdatedHardBounceEvent(email = Some(email), eventDate = DateHelper.now()))
-        }
-        result
-      }
+      persistentUserService.updateIsHardBounce(email, isHardBounce)
     }
 
     override def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
@@ -556,8 +532,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield updatedUser
     }
 
-    override def anonymize(user: User): Future[Unit] = {
-      val email = user.email
+    override def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit] = {
       val anonymizedUser: User = user.copy(
         email = s"yopmail+${user.userId.value}@make.org",
         firstName = Some("DELETE_REQUESTED"),
@@ -581,13 +556,22 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         publicProfile = false
       )
       val futureDelete: Future[Unit] = for {
-        _ <- persistentUserToAnonymizeService.create(email)
+        _ <- persistentUserToAnonymizeService.create(user.email)
         _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
         _ <- proposalService.anonymizeByUserId(user.userId)
       } yield {}
       futureDelete.map { _ =>
-        eventBusService.publish(UserAnonymizedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
+        eventBusService.publish(
+          UserAnonymizedEvent(
+            connectedUserId = Some(adminId),
+            userId = user.userId,
+            requestContext = requestContext,
+            country = user.country,
+            language = user.language,
+            adminId = adminId
+          )
+        )
       }
     }
 
@@ -595,19 +579,31 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.getFollowedUsers(userId).map(_.map(UserId(_)))
     }
 
-    override def followUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
+    override def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId] = {
       persistentUserService.followUser(followedUserId, userId).map(_ => followedUserId).map { value =>
         eventBusService.publish(
-          UserFollowEvent(userId = Some(userId), followedUserId = followedUserId, eventDate = DateHelper.now())
+          UserFollowEvent(
+            connectedUserId = Some(userId),
+            userId = userId,
+            requestContext = requestContext,
+            followedUserId = followedUserId
+          )
         )
         value
       }
     }
 
-    override def unfollowUser(followedUserId: UserId, userId: UserId): Future[UserId] = {
+    override def unfollowUser(followedUserId: UserId,
+                              userId: UserId,
+                              requestContext: RequestContext): Future[UserId] = {
       persistentUserService.unfollowUser(followedUserId, userId).map(_ => followedUserId).map { value =>
         eventBusService.publish(
-          UserUnfollowEvent(userId = Some(userId), followedUserId = followedUserId, eventDate = DateHelper.now())
+          UserUnfollowEvent(
+            connectedUserId = Some(userId),
+            userId = userId,
+            requestContext = requestContext,
+            unfollowedUserId = followedUserId
+          )
         )
         value
       }

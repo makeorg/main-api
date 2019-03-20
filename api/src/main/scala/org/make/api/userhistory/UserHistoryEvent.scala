@@ -82,9 +82,12 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserCreateSequenceEvent"))       => json.convertTo[LogUserCreateSequenceEvent]
           case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) =>
             json.convertTo[LogUserRemoveProposalsSequenceEvent]
-          case Seq(JsString("LogUserUpdateSequenceEvent"))  => json.convertTo[LogUserUpdateSequenceEvent]
-          case Seq(JsString("LogUserSearchSequencesEvent")) => json.convertTo[LogUserSearchSequencesEvent]
-          case Seq(JsString("LogUserStartSequenceEvent"))   => json.convertTo[LogUserStartSequenceEvent]
+          case Seq(JsString("LogUserUpdateSequenceEvent"))   => json.convertTo[LogUserUpdateSequenceEvent]
+          case Seq(JsString("LogUserSearchSequencesEvent"))  => json.convertTo[LogUserSearchSequencesEvent]
+          case Seq(JsString("LogUserStartSequenceEvent"))    => json.convertTo[LogUserStartSequenceEvent]
+          case Seq(JsString("LogUserAnonymizedEvent"))       => json.convertTo[LogUserAnonymizedEvent]
+          case Seq(JsString("LogUserOptInNewsletterEvent"))  => json.convertTo[LogUserOptInNewsletterEvent]
+          case Seq(JsString("LogUserOptOutNewsletterEvent")) => json.convertTo[LogUserOptOutNewsletterEvent]
         }
       }
 
@@ -108,6 +111,9 @@ object UserHistoryEvent {
           case event: LogUserUpdateSequenceEvent          => event.toJson
           case event: LogUserSearchSequencesEvent         => event.toJson
           case event: LogUserStartSequenceEvent           => event.toJson
+          case event: LogUserAnonymizedEvent              => event.toJson
+          case event: LogUserOptInNewsletterEvent         => event.toJson
+          case event: LogUserOptOutNewsletterEvent        => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -515,4 +521,71 @@ object SequenceUpdated {
 
   implicit val sequenceUpdated: RootJsonFormat[SequenceUpdated] =
     DefaultJsonProtocol.jsonFormat9(SequenceUpdated.apply)
+}
+
+final case class LogUserAnonymizedEvent(userId: UserId,
+                                        requestContext: RequestContext,
+                                        action: UserAction[UserAnonymized])
+    extends UserHistoryEvent[UserAnonymized] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserAnonymizedEvent {
+  val action: String = "anonymize-user"
+
+  implicit val logUserAnonymizedEventFormatted: RootJsonFormat[LogUserAnonymizedEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserAnonymizedEvent.apply, "userId", "context", "action")
+
+}
+
+final case class UserAnonymized(userId: UserId, adminId: UserId) {
+  def version(): Int = MakeSerializable.V1
+}
+
+object UserAnonymized {
+  val actionType: String = "user-anonymized"
+
+  implicit val userAnonymized: RootJsonFormat[UserAnonymized] =
+    DefaultJsonProtocol.jsonFormat2(UserAnonymized.apply)
+}
+
+final case class LogUserOptInNewsletterEvent(userId: UserId,
+                                             requestContext: RequestContext,
+                                             action: UserAction[UserUpdatedOptIn])
+    extends UserHistoryEvent[UserUpdatedOptIn] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserOptInNewsletterEvent {
+  val action: String = "opt-in-user"
+
+  implicit val logUserOptInNewsletterEventFormatted: RootJsonFormat[LogUserOptInNewsletterEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserOptInNewsletterEvent.apply, "userId", "context", "action")
+
+}
+
+final case class LogUserOptOutNewsletterEvent(userId: UserId,
+                                              requestContext: RequestContext,
+                                              action: UserAction[UserUpdatedOptIn])
+    extends UserHistoryEvent[UserUpdatedOptIn] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserOptOutNewsletterEvent {
+  val action: String = "opt-out-user"
+
+  implicit val logUserOptOutNewsletterEventFormatted: RootJsonFormat[LogUserOptOutNewsletterEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserOptOutNewsletterEvent.apply, "userId", "context", "action")
+
+}
+
+final case class UserUpdatedOptIn(newOptIn: Boolean) {
+  def version(): Int = MakeSerializable.V1
+}
+
+object UserUpdatedOptIn {
+  val actionType: String = "user-updated-opt-in"
+
+  implicit val userAnonymized: RootJsonFormat[UserUpdatedOptIn] =
+    DefaultJsonProtocol.jsonFormat1(UserUpdatedOptIn.apply)
 }

@@ -65,6 +65,10 @@ class UserEmailConsumerActor(userService: UserService,
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationInitializationEvent => handleOrganisationAskPassword(event)
+      case event: UserUpdatedOptInNewsletterEvent => doNothing(event)
+      case event: UserAnonymizedEvent             => doNothing(event)
+      case event: UserFollowEvent                 => doNothing(event)
+      case event: UserUnfollowEvent               => doNothing(event)
     }
   }
 

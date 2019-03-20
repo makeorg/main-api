@@ -1504,7 +1504,10 @@ class UserApiTest
         .thenReturn(Future.successful(Some(sylvain)))
 
       Mockito
-        .when(userService.anonymize(ArgumentMatchers.any[User]))
+        .when(
+          userService
+            .anonymize(ArgumentMatchers.any[User], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
+        )
         .thenReturn(Future.successful({}))
 
       Mockito
@@ -1554,7 +1557,13 @@ class UserApiTest
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
         .thenReturn(Future.successful(Seq(fakeUser.userId)))
       Mockito
-        .when(userService.followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .when(
+          userService.followUser(
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
         .thenReturn(Future.successful(fakeUser.userId))
       Post("/user/ABCD/follow")
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
@@ -1570,7 +1579,13 @@ class UserApiTest
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
         .thenReturn(Future.successful(Seq.empty))
       Mockito
-        .when(userService.followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .when(
+          userService.followUser(
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
         .thenReturn(Future.successful(fakeUser.userId))
       Post("/user/ABCD/follow")
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
@@ -1617,7 +1632,13 @@ class UserApiTest
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
         .thenReturn(Future.successful(Seq(UserId("ABCD"))))
       Mockito
-        .when(userService.unfollowUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId]))
+        .when(
+          userService.unfollowUser(
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[UserId],
+            ArgumentMatchers.any[RequestContext]
+          )
+        )
         .thenReturn(Future.successful(fakeUser.userId))
       Post("/user/ABCD/unfollow")
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {

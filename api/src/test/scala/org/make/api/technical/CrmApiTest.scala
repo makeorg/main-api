@@ -19,26 +19,44 @@
 
 package org.make.api.technical
 
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import java.util.Date
+
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.circe._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.auth._
-import org.make.api.technical.crm.{DefaultCrmApiComponent, MailJetBaseEvent, MailJetEvent}
+import org.make.api.technical.crm._
+import org.make.core.auth.UserRights
+import org.make.core.question.Question
 import org.make.core.session.VisitorId
+import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.user.UserId
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
+import scalaoauth2.provider.{AccessToken, AuthInfo}
+import scala.concurrent.duration.DurationInt
+import akka.testkit.TestDuration
+
+import scala.concurrent.Future
 
 class CrmApiTest
     extends MakeApiTestBase
     with DefaultCrmApiComponent
+    with CrmServiceComponent
+    with QuestionServiceComponent
     with MailJetConfigurationComponent
     with ShortenedNames
     with MakeAuthentication {
 
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
+  override val crmService: CrmService = mock[CrmService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
@@ -50,9 +68,59 @@ class CrmApiTest
   when(mailJetConfiguration.userListBatchSize).thenReturn(100)
   when(mailJetConfiguration.url).thenReturn("http://fakeurl.com")
   when(idGenerator.nextId()).thenReturn("some-id")
-  when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
+  when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-visitor-id"))
 
   val routes: Route = sealRoute(crmApi.routes)
+
+  val validCitizenAccessToken = "my-valid-citizen-access-token"
+  val validModeratorAccessToken = "my-valid-moderator-access-token"
+  val validAdminAccessToken = "my-valid-admin-access-token"
+
+  val tokenCreationDate = new Date()
+  private val citizenAccessToken =
+    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
+  private val moderatorAccessToken =
+    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
+  private val adminAccessToken =
+    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
+
+  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
+    .thenReturn(Future.successful(Some(citizenAccessToken)))
+  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
+    .thenReturn(Future.successful(Some(moderatorAccessToken)))
+  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
+    .thenReturn(Future.successful(Some(adminAccessToken)))
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(citizenAccessToken)))
+    .thenReturn(
+      Future.successful(
+        Some(
+          AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty), None, Some("citizen"), None)
+        )
+      )
+    )
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
+    .thenReturn(
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator), Seq.empty),
+            None,
+            Some("moderator"),
+            None
+          )
+        )
+      )
+    )
+
+  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
+    .thenReturn(
+      Future
+        .successful(
+          Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin), Seq.empty), None, Some("admin"), None))
+        )
+    )
 
   val requestMultipleEvents: String =
     """
@@ -165,6 +233,38 @@ class CrmApiTest
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(eventBusService, times(3)).publish(any[AnyRef])
+      }
+    }
+  }
+
+  feature("crm synchro") {
+    when(questionService.searchQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(Seq.empty))
+    when(crmService.startCrmContactSynchronization(any[Seq[Question]])).thenReturn(Future.successful(()))
+    scenario("admin triggers sync") {
+      implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
+
+      Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+        verify(questionService, times(1)).searchQuestion(any[SearchQuestionRequest])
+        verify(crmService, times(1)).startCrmContactSynchronization(any[Seq[Question]])
+      }
+    }
+    scenario("moderator triggers sync") {
+      Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("user triggers sync") {
+      Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+    scenario("non connected triggers sync") {
+      Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
       }
     }
   }

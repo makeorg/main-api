@@ -20,19 +20,19 @@
 package org.make.api.technical.crm
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
+import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.api.technical.crm.PublishedCrmContactEvent.CrmContactListSync
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.{DateHelper, HttpCodes, Validation}
+import org.make.core.{HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "CRM")
@@ -80,6 +80,8 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
   this: MakeDataHandlerComponent
     with EventBusServiceComponent
     with MailJetConfigurationComponent
+    with CrmServiceComponent
+    with QuestionServiceComponent
     with EventBusServiceComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
@@ -161,8 +163,12 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             makeOperation("SyncCrmData") { _ =>
-              eventBusService.publish(CrmContactListSync(id = auth.user.userId, eventDate = DateHelper.now()))
-              complete(StatusCodes.NoContent)
+              provideAsync(questionService.searchQuestion(SearchQuestionRequest())) { questions =>
+                provideAsync(crmService.startCrmContactSynchronization(questions)) { _ =>
+                  complete(StatusCodes.NoContent)
+
+                }
+              }
             }
           }
         }

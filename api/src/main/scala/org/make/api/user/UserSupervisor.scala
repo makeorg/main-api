@@ -46,26 +46,12 @@ class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervi
         .actorOf(UserProducerActor.props, UserProducerActor.name)
     )
 
-    context.watch(
-      context
-        .actorOf(UserUpdateProducerActor.props, UserUpdateProducerActor.name)
-    )
-
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
           UserEmailConsumerActor
             .props(dependencies.userService, dependencies.questionService, dependencies.operationOfQuestionService),
           UserEmailConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          UserCrmConsumerActor.props(dependencies.userService).withDispatcher(kafkaDispatcher),
-          UserCrmConsumerActor.name
         )
       context.actorOf(props, name)
     }

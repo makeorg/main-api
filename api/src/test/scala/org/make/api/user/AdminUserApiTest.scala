@@ -554,7 +554,9 @@ class AdminUserApiTest
       Delete(s"/admin/users/$moderatorId")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
-        Mockito.when(userService.anonymize(newModerator)).thenReturn(Future.successful({}))
+        Mockito
+          .when(userService.anonymize(newModerator, adminId, RequestContext.empty))
+          .thenReturn(Future.successful({}))
         Mockito.when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       }
     }
@@ -596,7 +598,11 @@ class AdminUserApiTest
 
     scenario("admin user") {
       Mockito.when(userService.getUserByEmail(newModerator.email)).thenReturn(Future.successful(Some(newModerator)))
-      Mockito.when(userService.anonymize(newModerator)).thenReturn(Future.successful({}))
+      Mockito
+        .when(
+          userService.anonymize(ArgumentMatchers.eq(newModerator), ArgumentMatchers.eq(adminId), any[RequestContext])
+        )
+        .thenReturn(Future.successful({}))
       Mockito.when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {

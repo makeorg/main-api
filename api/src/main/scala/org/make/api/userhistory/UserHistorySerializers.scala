@@ -199,6 +199,15 @@ object UserHistorySerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('action / 'arguments / 'includedProposals ! set[Seq[String]](Seq.empty)))
     )
 
+  private val logUserAnonymizedEventSerializer: JsonPersister[LogUserAnonymizedEvent, V1] =
+    json.persister[LogUserAnonymizedEvent]("user-anonymized")
+
+  private val logUserOptInNewsletterEventSerializer: JsonPersister[LogUserOptInNewsletterEvent, V1] =
+    json.persister[LogUserOptInNewsletterEvent]("user-opt-in-newsletter")
+
+  private val logUserOptOutNewsletterEventSerializer: JsonPersister[LogUserOptOutNewsletterEvent, V1] =
+    json.persister[LogUserOptOutNewsletterEvent]("user-opt-out-newsletter")
+
   val defaultVoteDate: ZonedDateTime = ZonedDateTime.parse("2018-10-10T00:00:00Z")
   private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V3] =
     json.persister[UserVotesAndQualifications, V3](
@@ -247,6 +256,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logGetProposalDuplicatesEventSerializer,
       logUserSearchSequencesEventSerializer,
       logUserStartSequenceEventSerializer,
-      userVotesAndQualifications
+      userVotesAndQualifications,
+      logUserAnonymizedEventSerializer,
+      logUserOptInNewsletterEventSerializer,
+      logUserOptOutNewsletterEventSerializer
     )
 }
