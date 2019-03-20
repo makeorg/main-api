@@ -28,7 +28,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.proposal.{ExhaustiveSearchRequest, ProposalServiceComponent, RefuseProposalRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
@@ -113,6 +113,22 @@ trait ModerationQuestionApi extends Directives {
   def addInitialProposal: Route
 
   @ApiOperation(
+    value = "moderation-refuse-initial-proposal",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @Path(value = "/{questionId}/initial-proposals/refuse")
+  def refuseInitialProposals: Route
+
+  @ApiOperation(
     value = "get-question",
     httpMethod = "GET",
     code = HttpCodes.OK,
@@ -158,7 +174,7 @@ trait ModerationQuestionApi extends Directives {
   @Path(value = "/")
   def createQuestion: Route
 
-  def routes: Route = listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal
+  def routes: Route = listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals
 
 }
 
@@ -240,6 +256,35 @@ trait DefaultModerationQuestionComponent
                       complete(StatusCodes.Created -> ProposalIdResponse(proposalId))
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def refuseInitialProposals: Route = post {
+      path("moderation" / "questions" / questionId / "initial-proposals" / "refuse") { questionId =>
+        makeOperation("ModerationRefuseInitialProposals") { requestContext =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              val query = ExhaustiveSearchRequest(questionIds = Some(Seq(questionId)), initialProposal = Some(true))
+                .toSearchQuery(requestContext)
+              provideAsync(
+                proposalService
+                  .search(userId = Some(userAuth.user.userId), query = query, requestContext = requestContext)
+              ) { proposals =>
+                provideAsync(Future.traverse(proposals.results.map(_.id)) { proposalId =>
+                  proposalService
+                    .refuseProposal(
+                      proposalId,
+                      userAuth.user.userId,
+                      requestContext,
+                      RefuseProposalRequest(sendNotificationEmail = false, refusalReason = Some("Other"))
+                    )
+                }) { _ =>
+                  complete(StatusCodes.NoContent)
                 }
               }
             }

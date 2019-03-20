@@ -25,10 +25,20 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
+import org.make.api.proposal.{
+  ModerationProposalResponse,
+  ProposalService,
+  ProposalServiceComponent,
+  RefuseProposalRequest
+}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.user.UserResponse
+import org.make.core.{DateHelper, RequestContext}
 import org.make.core.auth.UserRights
+import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
@@ -137,7 +147,7 @@ class ModerationQuestionApiTest
   }
 
   feature("get question") {
-    def uri(id: String = "question-id") = s"/moderation/questions/$id"
+    def uri(id: String = "question-id"): String = s"/moderation/questions/$id"
 
     when(questionService.getQuestion(any[QuestionId]))
       .thenReturn(Future.successful(None))
@@ -213,6 +223,134 @@ class ModerationQuestionApiTest
     scenario("bad request create question") {
       Post(uri).withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
+
+  feature("refuse initial proposals") {
+    val uri: String = "/moderation/questions/question-id/initial-proposals/refuse"
+
+    scenario("unauthorized refuse proposals") {
+      Post(uri) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("forbidden refuse proposal (citizen)") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("forbidden create question (moderator)") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("authenticated refuse initial proposals") {
+      when(proposalService.search(any[Option[UserId]], any[SearchQuery], any[RequestContext])).thenReturn(
+        Future.successful(
+          ProposalsSearchResult(
+            total = 1,
+            results = Seq(
+              IndexedProposal(
+                id = ProposalId("aaa-bbb-ccc"),
+                userId = UserId("foo-bar"),
+                content = "il faut fou",
+                slug = "il-faut-fou",
+                status = ProposalStatus.Accepted,
+                createdAt = DateHelper.now(),
+                updatedAt = None,
+                votes = Seq.empty,
+                context = None,
+                trending = None,
+                labels = Seq.empty,
+                author = Author(None, None, None, None, None, None),
+                organisations = Seq.empty,
+                country = Country("FR"),
+                language = Language("fr"),
+                themeId = None,
+                tags = Seq.empty,
+                votesCount = 0,
+                votesVerifiedCount = 0,
+                toEnrich = true,
+                operationId = None,
+                questionId = None,
+                initialProposal = true,
+                ideaId = None,
+                refusalReason = None,
+                scores = IndexedScores.empty,
+                sequencePool = SequencePool.New
+              )
+            )
+          )
+        )
+      )
+
+      when(
+        proposalService
+          .refuseProposal(
+            matches(ProposalId("aaa-bbb-ccc")),
+            any[UserId],
+            any[RequestContext],
+            any[RefuseProposalRequest]
+          )
+      ).thenReturn(
+        Future.successful(
+          Some(
+            ModerationProposalResponse(
+              proposalId = ProposalId("aaa-bbb-ccc"),
+              content = "il faut fou",
+              slug = "il-faut-fou",
+              author = UserResponse(
+                UserId("Georges RR Martin"),
+                email = "g@rr.martin",
+                firstName = Some("Georges"),
+                lastName = Some("Martin"),
+                organisationName = None,
+                enabled = true,
+                emailVerified = true,
+                isOrganisation = false,
+                lastConnection = DateHelper.now(),
+                roles = Seq.empty,
+                None,
+                country = Country("FR"),
+                language = Language("fr"),
+                isHardBounce = false,
+                lastMailingError = None,
+                hasPassword = false,
+                followedUsers = Seq.empty
+              ),
+              labels = Seq(),
+              theme = None,
+              status = Accepted,
+              tags = Seq(),
+              votes = Seq(
+                Vote(key = VoteKey.Agree, qualifications = Seq.empty),
+                Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
+                Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+              ),
+              context = RequestContext.empty,
+              createdAt = Some(DateHelper.now()),
+              updatedAt = Some(DateHelper.now()),
+              events = Nil,
+              idea = None,
+              ideaProposals = Seq.empty,
+              operationId = None,
+              language = Some(Language("fr")),
+              country = Some(Country("FR")),
+              questionId = Some(QuestionId("my-question"))
+            )
+          )
+        )
+      )
+
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
       }
     }
   }
