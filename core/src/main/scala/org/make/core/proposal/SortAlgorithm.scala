@@ -87,6 +87,8 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
             functionScoreQuery()
               .query(query)
               .functions(scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)))
+              .scoreMode("sum")
+              .boostMode(CombineFunction.Sum)
           )
       )
     }.getOrElse(request)
