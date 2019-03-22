@@ -173,14 +173,32 @@ trait AdminUserApi extends Directives {
       )
     )
   )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModeratorResponse]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "/users/{userId}")
   def anonymizeUser: Route
 
+  @ApiOperation(
+    value = "admin-anonymize-user-by-email",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.AnonymizeUserRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/users/anonymize")
+  def anonymizeUserByEmail: Route
+
   def routes: Route =
-    getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser
+    getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
 }
 
 trait AdminUserApiComponent {
@@ -366,6 +384,28 @@ trait DefaultAdminUserApiComponent
         }
       }
     }
+
+    override def anonymizeUserByEmail: Route = post {
+      path("admin" / "users" / "anonymize") {
+        makeOperation("anonymizeUserByEmail") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[AnonymizeUserRequest]) { request =>
+                  provideAsyncOrNotFound(userService.getUserByEmail(request.email)) { user =>
+                    provideAsync(userService.anonymize(user)) { _ =>
+                      provideAsync(oauth2DataHandler.removeTokenByUserId(user.userId)) { _ =>
+                        complete(StatusCodes.OK)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -442,6 +482,14 @@ object UpdateModeratorRequest {
       case value    => value
     }
   }
+}
+
+final case class AnonymizeUserRequest(email: String) {
+  validate(validateUserInput("email", email, None), validateEmail("email", email, None))
+}
+
+object AnonymizeUserRequest {
+  implicit val decoder: Decoder[AnonymizeUserRequest] = deriveDecoder[AnonymizeUserRequest]
 }
 
 case class ModeratorResponse(

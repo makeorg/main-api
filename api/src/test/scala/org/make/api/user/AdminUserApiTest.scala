@@ -528,4 +528,87 @@ class AdminUserApiTest
     }
 
   }
+
+  feature("anonymize user by id") {
+    scenario("unauthenticated user") {
+      Delete("/admin/users/user-id") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("citizen user") {
+      Delete("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("moderator user") {
+      Delete("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("admin user") {
+      Delete(s"/admin/users/$moderatorId")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
+        Mockito.when(userService.anonymize(newModerator)).thenReturn(Future.successful({}))
+        Mockito.when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
+      }
+    }
+  }
+
+  feature("anonymize user by email") {
+
+    val request =
+      """{
+        |  "email": "mod.erator@modo.com"
+        |}
+      """.stripMargin
+
+    val badRequest =
+      """{
+        |  "email": "bad-email"
+        |}
+      """.stripMargin
+
+    scenario("unauthenticated user") {
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("citizen user") {
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("moderator user") {
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("admin user") {
+      Mockito.when(userService.getUserByEmail(newModerator.email)).thenReturn(Future.successful(Some(newModerator)))
+      Mockito.when(userService.anonymize(newModerator)).thenReturn(Future.successful({}))
+      Mockito.when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("bad request") {
+      Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, badRequest))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
 }
