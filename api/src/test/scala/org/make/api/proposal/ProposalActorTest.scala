@@ -1510,7 +1510,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           ipAddress = Some("1.2.3.4"),
           getParameters = Some(Map("parameter" -> "value")),
           userAgent = Some("my-user-agent"),
-          applicationName = None
+          applicationName = None,
+          referrer = None
         )
       )
     }

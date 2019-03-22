@@ -170,6 +170,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeUser            <- optionalMakeOAuth2
       maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
       maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
+      maybeReferrer        <- optionalHeaderValueByName(ReferrerHeader.name)
     } yield {
       val requestContext = RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -198,7 +199,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         ),
         userAgent = maybeUserAgent.map(_.toString),
         questionId = maybeQuestionId.map(QuestionId.apply),
-        applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get)
+        applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get),
+        referrer = maybeReferrer
       )
       logRequest(name, requestContext, origin)
       connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId))
@@ -535,4 +537,15 @@ final case class ApplicationNameHeader(override val value: String) extends Model
 object ApplicationNameHeader extends ModeledCustomHeaderCompanion[ApplicationNameHeader] {
   override val name: String = "x-make-app-name"
   override def parse(value: String): Try[ApplicationNameHeader] = Success(new ApplicationNameHeader(value))
+}
+
+final case class ReferrerHeader(override val value: String) extends ModeledCustomHeader[ReferrerHeader] {
+  override def companion: ModeledCustomHeaderCompanion[ReferrerHeader] = ReferrerHeader
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object ReferrerHeader extends ModeledCustomHeaderCompanion[ReferrerHeader] {
+  override val name: String = "x-make-referrer"
+  override def parse(value: String): Try[ReferrerHeader] = Success(new ReferrerHeader(value))
 }
