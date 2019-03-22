@@ -27,13 +27,10 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{tag, HttpCodes, ParameterExtractors}
 
-import scala.concurrent.Future
 import scala.util.Try
 
 @Api(value = "Tags")
@@ -51,11 +48,7 @@ trait TagApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "start", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "end", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[tag.Tag]])))
@@ -93,56 +86,22 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     override def listTags: Route = get {
       path("tags") {
         makeOperation("Search") { _ =>
-          parameters(
-            (
-              'start.as[Int].?,
-              'end.as[Int].?,
-              'operationId.as[OperationId].?,
-              'questionId.as[QuestionId].?,
-              'themeId.as[ThemeId].?,
-              'country.as[Country].?,
-              'language.as[Language].?
-            )
-          ) { (start, end, maybeOperationId, maybeQuestionId, maybeThemeId, maybeCountry, maybeLanguage) =>
-            maybeCountry.foreach { country =>
-              Validation.validate(
-                Validation.validMatch("country", country.value, Some("Invalid country"), "^[a-zA-Z]{2,3}$".r)
-              )
-            }
-            maybeLanguage.foreach { language =>
-              Validation.validate(
-                Validation.validMatch("language", language.value, Some("Invalid language"), "^[a-zA-Z]{2,3}$".r)
-              )
-            }
-            provideAsync {
-              (for {
-                country  <- maybeCountry
-                language <- maybeLanguage
-              } yield {
-                questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                  maybeQuestionId,
-                  maybeThemeId,
-                  maybeOperationId,
-                  country,
-                  language
-                )
-              }).getOrElse(Future.successful(None))
-            } { maybeQuestion =>
+          parameters(('start.as[Int].?, 'end.as[Int].?, 'questionId.as[QuestionId].?)) {
+            (start, end, maybeQuestionId) =>
               onSuccess(
                 tagService.find(
                   start = start.getOrElse(0),
                   end = end,
                   onlyDisplayed = true,
-                  tagFilter = TagFilter(questionId = maybeQuestion.map(_.questionId))
+                  tagFilter = TagFilter(questionId = maybeQuestionId)
                 )
               ) { tags =>
                 complete(tags)
               }
-            }
           }
         }
       }
     }
-
   }
+
 }

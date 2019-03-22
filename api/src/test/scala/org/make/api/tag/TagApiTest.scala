@@ -27,8 +27,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationId
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.Role.RoleCitizen
@@ -125,22 +124,6 @@ class TagApiTest
       Then("I get a list of all tags")
 
       when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(OperationId("foo"))),
-          ArgumentMatchers.eq(Country("FR")),
-          ArgumentMatchers.eq(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(QuestionId("foo"), "foo", Country("FR"), Language("fr"), "Foo?", Some(OperationId("foo")), None)
-          )
-        )
-      )
-
-      when(
         tagService.find(
           ArgumentMatchers.eq(0),
           ArgumentMatchers.eq(Some(2)),
@@ -151,7 +134,7 @@ class TagApiTest
         )
       ).thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 
-      Get("/tags?start=0&end=2&operationId=foo&country=FR&language=fr") ~> routes ~> check {
+      Get("/tags?start=0&end=2&questionId=foo") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tags: Seq[Tag] = entityAs[Seq[Tag]]
         tags.size should be(2)
