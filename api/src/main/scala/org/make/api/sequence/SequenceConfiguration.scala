@@ -35,46 +35,79 @@ import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+/**
+  * SequenceConfiguration fields are used to configure the selection algorithms of one sequence `sequenceId`.
+  * Here is a documentation on each and every fields of the SequenceConfiguration. For a more detailed and mathematical
+  * explanation, check:
+  *  - questionId: The related question.
+  *  - newProposalsRatio: Ratio of new proposals to be found in the generated sequence. If this ratio cannot be acheived
+  *     (e.g.: user already voted on most new proposals) then a rebalancing occurs to add more tested proposals in the sequence.
+  *  - newProposalsVoteThreshold: Number of votes treshold for a proposal to reach to get out of the "new" proposal pool.
+  *  - testedProposalsEngagementThreshold: _facultative_ Number of votes treshold for a tested proposal to be above in
+  *     order to stay in the engagement competition (i.e.: emergence).
+  *  - testedProposalsScoreThreshold: _facultative_ Emergence score treshold for a tested proposal to be above in
+  *     order to stay in the engagement competition (i.e.: emergence).
+  *  - testedProposalsControversyThreshold: _facultative_ Controversy score treshold for a tested proposal to be above in
+  *     order to stay in the engagement competition (i.e.: emergence).
+  *  - testedProposalsMaxVotesThreshold: _facultative_ Number of votes treshold for a tested proposal to be below in
+  *     order to stay in the engagement competition (i.e.: emergence).
+  *  - intraIdeaEnabled: Boolean to use the competition or not inside every ideas. If false: SoftMin on votes inside every ideas.
+  *  - intraIdeaMinCount: The minimum number of proposals needed to apply the bandit algorithm.
+  *  - intraIdeaProposalsRatio: Ratio of proposal chose by the bandit algorithm
+  *  - interIdeaCompetitionEnabled: Boolean to use the competition or not between every ideas.
+  *  - interIdeaCompetitionTargetCount: Number of proposal to chose from the inter ideas score competition.
+  *  - interIdeaCompetitionControversialRatio: Ratio of controversy proposal to chose from the inter ideas competition.
+  *  - interIdeaCompetitionControversialCount: Number of proposal to chose from the inter ideas controversy score competition.
+  *  - maxTestedProposalCount: Max size of the tested pool to fetch from ES.
+  *  - sequenceSize: Max size of the sequence.
+  *  - selectionAlgorithmName: Name of the selection algorithm to use. At the moment, this can be "Bandit" or "RoundRobin"
+  *
+  * Additional informations:
+  *  - The proposal "pool" is defined at indexation time in `ProposalScorerHelper.sequencePool`.
+  *  - A new proposal is a proposal in the "new" pool.
+  *  - A tested proposal is a proposal in the "tested" pool.
+  *  - A excluded proposal is a proposal in the "excluded" pool.
+  *  - If both `testedProposalsScoreThreshold` and `testedProposalsControversyThreshold` are defined, a proposal will be
+  *     in the "tested" proposal pool if only one of the two tresholds is surpassed. I.e. the logical condition is an OR.
+  *
+  **/
+
 @ApiModel
 case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   sequenceId: SequenceId,
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "int", example = "1000")
-  maxAvailableProposals: Int = 1000,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
   newProposalsRatio: Double = 0.5,
   @(ApiModelProperty @field)(dataType = "int", example = "100")
   newProposalsVoteThreshold: Int = 100,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.8")
+  testedProposalsEngagementThreshold: Option[Double] = Some(0.8),
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsEngagementThreshold: Double = 0.0,
+  testedProposalsScoreThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsScoreThreshold: Double = 0.0,
-  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  testedProposalsControversyThreshold: Double = 0.0,
+  testedProposalsControversyThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  testedProposalsMaxVotesThreshold: Int = 1500,
+  testedProposalsMaxVotesThreshold: Option[Int] = Some(1500),
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  banditEnabled: Boolean = false,
+  intraIdeaEnabled: Boolean = false,
   @(ApiModelProperty @field)(dataType = "int", example = "1")
-  banditMinCount: Int = 1,
+  intraIdeaMinCount: Int = 1,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  banditProposalsRatio: Double = 0.0,
+  intraIdeaProposalsRatio: Double = 0.0,
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  ideaCompetitionEnabled: Boolean = false,
+  interIdeaCompetitionEnabled: Boolean = false,
   @(ApiModelProperty @field)(dataType = "int", example = "50")
-  ideaCompetitionTargetCount: Int = 50,
+  interIdeaCompetitionTargetCount: Int = 50,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
-  ideaCompetitionControversialRatio: Double = 0.0,
+  interIdeaCompetitionControversialRatio: Double = 0.0,
   @(ApiModelProperty @field)(dataType = "int", example = "0")
-  ideaCompetitionControversialCount: Int = 0,
+  interIdeaCompetitionControversialCount: Int = 0,
   @(ApiModelProperty @field)(dataType = "int", example = "1000")
   maxTestedProposalCount: Int = 1000,
   @(ApiModelProperty @field)(dataType = "int", example = "12")
   sequenceSize: Int = 12,
-  @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  maxVotes: Int = 1500,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
 )
@@ -86,23 +119,21 @@ object SequenceConfiguration {
   val default: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("default-sequence"),
     questionId = QuestionId("default-question"),
-    maxAvailableProposals = 1000,
     newProposalsRatio = 0.5,
     newProposalsVoteThreshold = 100,
-    testedProposalsEngagementThreshold = 0.8,
-    testedProposalsScoreThreshold = 0.0,
-    testedProposalsControversyThreshold = 0.0,
-    testedProposalsMaxVotesThreshold = 1500,
-    banditEnabled = true,
-    banditMinCount = 1,
-    banditProposalsRatio = 0.0,
-    ideaCompetitionEnabled = false,
-    ideaCompetitionTargetCount = 50,
-    ideaCompetitionControversialRatio = 0.0,
-    ideaCompetitionControversialCount = 0,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = None,
+    testedProposalsControversyThreshold = None,
+    testedProposalsMaxVotesThreshold = Some(1500),
+    intraIdeaEnabled = true,
+    intraIdeaMinCount = 1,
+    intraIdeaProposalsRatio = 0.0,
+    interIdeaCompetitionEnabled = false,
+    interIdeaCompetitionTargetCount = 50,
+    interIdeaCompetitionControversialRatio = 0.0,
+    interIdeaCompetitionControversialCount = 0,
     maxTestedProposalCount = 1000,
     sequenceSize = 12,
-    maxVotes = 1500,
     selectionAlgorithmName = SelectionAlgorithmName.Bandit
   )
 

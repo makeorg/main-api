@@ -135,47 +135,48 @@ object SearchStartSequenceRequest {
   implicit val decoder: Decoder[SearchStartSequenceRequest] = deriveDecoder[SearchStartSequenceRequest]
 }
 
-final case class SequenceConfigurationRequest(maxAvailableProposals: Int,
-                                              newProposalsRatio: Double,
-                                              newProposalsVoteThreshold: Int,
-                                              testedProposalsEngagementThreshold: Double,
-                                              testedProposalsScoreThreshold: Double,
-                                              testedProposalsControversyThreshold: Double,
-                                              testedProposalsMaxVotesThreshold: Int,
-                                              banditEnabled: Boolean,
-                                              banditMinCount: Int,
-                                              banditProposalsRatio: Double,
-                                              ideaCompetitionEnabled: Boolean,
-                                              ideaCompetitionTargetCount: Int,
-                                              ideaCompetitionControversialRatio: Double,
-                                              ideaCompetitionControversialCount: Int,
-                                              maxTestedProposalCount: Int,
-                                              sequenceSize: Int,
-                                              maxVotes: Int,
-                                              @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-                                              selectionAlgorithmName: SelectionAlgorithmName) {
+final case class SequenceConfigurationRequest(
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  newProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "100") newProposalsVoteThreshold: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.8")
+  testedProposalsEngagementThreshold: Option[Double],
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0")
+  testedProposalsScoreThreshold: Option[Double],
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0") testedProposalsControversyThreshold: Option[Double],
+  @(ApiModelProperty @field)(dataType = "int", example = "1500") testedProposalsMaxVotesThreshold: Option[Int],
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false") intraIdeaEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "1") intraIdeaMinCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0") intraIdeaProposalsRatio: Double,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "false") interIdeaCompetitionEnabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "int", example = "50") interIdeaCompetitionTargetCount: Int,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.0") interIdeaCompetitionControversialRatio: Double,
+  @(ApiModelProperty @field)(dataType = "int", example = "0") interIdeaCompetitionControversialCount: Int,
+  @(ApiModelProperty @field)(dataType = "int", example = "1000") maxTestedProposalCount: Int,
+  @(ApiModelProperty @field)(dataType = "int", example = "12") sequenceSize: Int,
+  @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
+  selectionAlgorithmName: SelectionAlgorithmName
+) {
 
   def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
     SequenceConfiguration(
       sequenceId = sequenceId,
       questionId = questionId,
-      maxAvailableProposals = maxAvailableProposals,
       newProposalsRatio = newProposalsRatio,
       newProposalsVoteThreshold = newProposalsVoteThreshold,
       testedProposalsEngagementThreshold = testedProposalsEngagementThreshold,
       testedProposalsScoreThreshold = testedProposalsScoreThreshold,
       testedProposalsControversyThreshold = testedProposalsControversyThreshold,
       testedProposalsMaxVotesThreshold = testedProposalsMaxVotesThreshold,
-      banditEnabled = banditEnabled,
-      banditMinCount = banditMinCount,
-      banditProposalsRatio = banditProposalsRatio,
-      ideaCompetitionEnabled = ideaCompetitionEnabled,
-      ideaCompetitionTargetCount = ideaCompetitionTargetCount,
-      ideaCompetitionControversialRatio = ideaCompetitionControversialRatio,
-      ideaCompetitionControversialCount = ideaCompetitionControversialCount,
+      intraIdeaEnabled = intraIdeaEnabled,
+      intraIdeaMinCount = intraIdeaMinCount,
+      intraIdeaProposalsRatio = intraIdeaProposalsRatio,
+      interIdeaCompetitionEnabled = interIdeaCompetitionEnabled,
+      interIdeaCompetitionTargetCount = interIdeaCompetitionTargetCount,
+      interIdeaCompetitionControversialRatio = interIdeaCompetitionControversialRatio,
+      interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount,
       maxTestedProposalCount = maxTestedProposalCount,
       sequenceSize = sequenceSize,
-      maxVotes = maxVotes,
       selectionAlgorithmName = selectionAlgorithmName
     )
   }

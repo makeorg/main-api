@@ -45,13 +45,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     questionId = QuestionId("test-question"),
     newProposalsRatio = 0.5,
     newProposalsVoteThreshold = 100,
-    testedProposalsEngagementThreshold = 0.8,
-    testedProposalsScoreThreshold = 0.0,
-    testedProposalsControversyThreshold = 0.0,
-    banditEnabled = true,
-    banditMinCount = 3,
-    banditProposalsRatio = 1.0 / 3.0,
-    ideaCompetitionEnabled = false,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = Some(0.0),
+    testedProposalsControversyThreshold = Some(0.0),
+    intraIdeaEnabled = true,
+    intraIdeaMinCount = 3,
+    intraIdeaProposalsRatio = 1.0 / 3.0,
+    interIdeaCompetitionEnabled = false,
     selectionAlgorithmName = SelectionAlgorithmName.Bandit
   )
 
@@ -61,13 +61,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     sequenceSize = 20,
     newProposalsRatio = 1.0,
     newProposalsVoteThreshold = 100,
-    testedProposalsEngagementThreshold = 0.8,
-    testedProposalsScoreThreshold = 0.0,
-    testedProposalsControversyThreshold = 0.0,
-    banditEnabled = false,
-    banditMinCount = 0,
-    banditProposalsRatio = 0,
-    ideaCompetitionEnabled = false,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = Some(0.0),
+    testedProposalsControversyThreshold = Some(0.0),
+    intraIdeaEnabled = false,
+    intraIdeaMinCount = 0,
+    intraIdeaProposalsRatio = 0,
+    interIdeaCompetitionEnabled = false,
     selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
   )
 
@@ -302,7 +302,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       val selectedProposals =
         banditSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = banditSequenceConfiguration.copy(banditEnabled = false),
+          sequenceConfiguration = banditSequenceConfiguration.copy(intraIdeaEnabled = false),
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
@@ -336,7 +336,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
       val selectedProposals =
         banditSelectionAlgorithm.selectProposalsForSequence(
-          sequenceConfiguration = banditSequenceConfiguration.copy(banditEnabled = false),
+          sequenceConfiguration = banditSequenceConfiguration.copy(intraIdeaEnabled = false),
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = Seq.empty,
@@ -847,12 +847,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         questionId = QuestionId("test-question"),
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 100,
-        testedProposalsEngagementThreshold = 0.8,
-        testedProposalsScoreThreshold = 1.2,
-        testedProposalsControversyThreshold = 0.1,
-        banditEnabled = false,
-        banditMinCount = 3,
-        banditProposalsRatio = 1.0 / 3.0
+        testedProposalsEngagementThreshold = Some(0.8),
+        testedProposalsScoreThreshold = Some(1.2),
+        testedProposalsControversyThreshold = Some(0.1),
+        intraIdeaEnabled = false,
+        intraIdeaMinCount = 3,
+        intraIdeaProposalsRatio = 1.0 / 3.0
       )
 
       val random = new Random(0)
@@ -899,12 +899,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         questionId = QuestionId("test-question"),
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 100,
-        testedProposalsEngagementThreshold = 0.8,
-        testedProposalsScoreThreshold = 0.0,
-        testedProposalsControversyThreshold = 0.0,
-        banditEnabled = true,
-        banditMinCount = 3,
-        banditProposalsRatio = 0.0
+        testedProposalsEngagementThreshold = Some(0.8),
+        testedProposalsScoreThreshold = Some(0.0),
+        testedProposalsControversyThreshold = Some(0.0),
+        intraIdeaEnabled = true,
+        intraIdeaMinCount = 3,
+        intraIdeaProposalsRatio = 0.0
       )
 
       val random = new Random(0)
@@ -1067,16 +1067,16 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         questionId = QuestionId("test-question"),
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 10,
-        testedProposalsEngagementThreshold = 0.0,
-        testedProposalsScoreThreshold = 0.0,
-        testedProposalsControversyThreshold = 0.0,
-        banditEnabled = true,
-        banditMinCount = 1,
-        banditProposalsRatio = 0.0,
-        ideaCompetitionEnabled = true,
-        ideaCompetitionTargetCount = 20,
-        ideaCompetitionControversialRatio = 0.0,
-        ideaCompetitionControversialCount = 2
+        testedProposalsEngagementThreshold = Some(0.0),
+        testedProposalsScoreThreshold = Some(0.0),
+        testedProposalsControversyThreshold = Some(0.0),
+        intraIdeaEnabled = true,
+        intraIdeaMinCount = 1,
+        intraIdeaProposalsRatio = 0.0,
+        interIdeaCompetitionEnabled = true,
+        interIdeaCompetitionTargetCount = 20,
+        interIdeaCompetitionControversialRatio = 0.0,
+        interIdeaCompetitionControversialCount = 2
       )
 
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
@@ -1133,13 +1133,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         questionId = QuestionId("test-question"),
         newProposalsRatio = 0.5,
         newProposalsVoteThreshold = 100,
-        testedProposalsEngagementThreshold = 0.8,
-        testedProposalsScoreThreshold = 0.0,
-        testedProposalsControversyThreshold = 0.0,
-        banditEnabled = true,
-        banditMinCount = 3,
-        banditProposalsRatio = 1.0 / 3.0,
-        ideaCompetitionEnabled = false,
+        testedProposalsEngagementThreshold = Some(0.8),
+        testedProposalsScoreThreshold = Some(0.0),
+        testedProposalsControversyThreshold = Some(0.0),
+        intraIdeaEnabled = true,
+        intraIdeaMinCount = 3,
+        intraIdeaProposalsRatio = 1.0 / 3.0,
+        interIdeaCompetitionEnabled = false,
         sequenceSize = 10
       )
 
