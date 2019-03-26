@@ -131,7 +131,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
   }
 
-  when(operationOfQuestionService.update(any[OperationOfQuestion])).thenAnswer { invocation =>
+  when(operationOfQuestionService.update(any[OperationOfQuestion], any[Question])).thenAnswer { invocation =>
     Future.successful(invocation.getArgument[OperationOfQuestion](0))
   }
 
@@ -400,8 +400,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           ModifyOperationOfQuestionRequest(
             startDate = Some(LocalDate.parse("2018-12-01")),
             endDate = None,
-            operationTitle = "my-operation",
-            canPropose = true
+            canPropose = true,
+            question = "question ?"
           ).asJson.toString()
         ) ~> routes ~> check {
 

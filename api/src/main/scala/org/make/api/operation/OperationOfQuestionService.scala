@@ -40,7 +40,7 @@ trait OperationOfQuestionService {
              sort: Option[String],
              order: Option[String],
              request: SearchOperationsOfQuestions): Future[Seq[OperationOfQuestion]]
-  def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
+  def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
   def count(request: SearchOperationsOfQuestions): Future[Int]
 
   /**
@@ -121,8 +121,11 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       }
     }
 
-    override def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
-      persistentOperationOfQuestionService.modify(operationOfQuestion)
+    override def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion] = {
+      for {
+        _       <- persistentQuestionService.modify(question)
+        updated <- persistentOperationOfQuestionService.modify(operationOfQuestion)
+      } yield updated
     }
 
     /**
