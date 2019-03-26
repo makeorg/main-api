@@ -128,7 +128,9 @@ final case class RequestContext(
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "main-front")
-  applicationName: Option[ApplicationName] = None
+  applicationName: Option[ApplicationName] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "main-front")
+  referrer: Option[String] = None
 )
 
 object RequestContext {
@@ -155,10 +157,11 @@ object RequestContext {
       getParameters = None,
       userAgent = None,
       questionId = None,
-      applicationName = None
+      applicationName = None,
+      referrer = None
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat19(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat20(RequestContext.apply)
 
 }
