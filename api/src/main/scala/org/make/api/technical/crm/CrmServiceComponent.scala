@@ -39,10 +39,12 @@ import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
+import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.userhistory._
 import org.make.core.DateHelper
 import org.make.core.operation.Operation
+import org.make.core.question.Question
 import org.make.core.user.{User, UserId}
 
 import scala.collection.immutable
@@ -59,11 +61,11 @@ trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
   def updateUserProperties(user: User): Future[Unit]
 
-  def addUsersToOptInList(users: Seq[User]): Future[Unit]
-  def addUsersToUnsubscribeList(users: Seq[User]): Future[Unit]
-  def addUsersToHardBounceList(users: Seq[User]): Future[Unit]
+  def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
+  def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
+  def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
 
-  def getPropertiesFromUser(user: User): Future[ContactProperties]
+  def getPropertiesFromUser(user: User, questions: Seq[Question]): Future[ContactProperties]
 }
 trait CrmServiceComponent {
   def crmService: CrmService
@@ -73,6 +75,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   self: MailJetConfigurationComponent
     with ActorSystemComponent
     with OperationServiceComponent
+    with QuestionServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent =>
 
@@ -167,17 +170,19 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   override lazy val crmService: CrmService = new CrmService {
 
     override def addUserToOptInList(user: User): Future[Unit] = {
-      getPropertiesFromUser(user).flatMap { properties =>
-        manageContactMailJetRequest(
-          listId = mailJetConfiguration.optInListId,
-          manageContact = ManageContact(
-            user.email,
-            user.fullName.getOrElse(user.email),
-            action = ManageContactAction.AddNoForce,
-            properties = Some(properties)
-          )
-        ).map { response =>
-          logMailjetResponse(response, "Add single to optin list", Some(user.email))
+      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
+        getPropertiesFromUser(user, questions).flatMap { properties =>
+          manageContactMailJetRequest(
+            listId = mailJetConfiguration.optInListId,
+            manageContact = ManageContact(
+              user.email,
+              user.fullName.getOrElse(user.email),
+              action = ManageContactAction.AddNoForce,
+              properties = Some(properties)
+            )
+          ).map { response =>
+            logMailjetResponse(response, "Add single to optin list", Some(user.email))
+          }
         }
       }
     }
@@ -193,33 +198,37 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
 
     override def addUserToHardBounceList(user: User): Future[Unit] = {
-      getPropertiesFromUser(user).flatMap { properties =>
-        manageContactMailJetRequest(
-          listId = mailJetConfiguration.hardBounceListId,
-          manageContact = ManageContact(
-            user.email,
-            user.fullName.getOrElse(user.email),
-            action = ManageContactAction.AddNoForce,
-            properties = Some(properties)
-          )
-        ).map { response =>
-          logMailjetResponse(response, "Add single to hardbounce list", Some(user.email))
+      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
+        getPropertiesFromUser(user, questions).flatMap { properties =>
+          manageContactMailJetRequest(
+            listId = mailJetConfiguration.hardBounceListId,
+            manageContact = ManageContact(
+              user.email,
+              user.fullName.getOrElse(user.email),
+              action = ManageContactAction.AddNoForce,
+              properties = Some(properties)
+            )
+          ).map { response =>
+            logMailjetResponse(response, "Add single to hardbounce list", Some(user.email))
+          }
         }
       }
     }
 
     override def addUserToUnsubscribeList(user: User): Future[Unit] = {
-      getPropertiesFromUser(user).flatMap { properties =>
-        manageContactMailJetRequest(
-          listId = mailJetConfiguration.unsubscribeListId,
-          manageContact = ManageContact(
-            user.email,
-            user.fullName.getOrElse(user.email),
-            action = ManageContactAction.AddNoForce,
-            properties = Some(properties)
-          )
-        ).map { response =>
-          logMailjetResponse(response, "Add single to unsubscribe list", Some(user.email))
+      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
+        getPropertiesFromUser(user, questions).flatMap { properties =>
+          manageContactMailJetRequest(
+            listId = mailJetConfiguration.unsubscribeListId,
+            manageContact = ManageContact(
+              user.email,
+              user.fullName.getOrElse(user.email),
+              action = ManageContactAction.AddNoForce,
+              properties = Some(properties)
+            )
+          ).map { response =>
+            logMailjetResponse(response, "Add single to unsubscribe list", Some(user.email))
+          }
         }
       }
     }
@@ -251,14 +260,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def addUsersToOptInList(users: Seq[User]): Future[Unit] = {
+    override def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       if (users.isEmpty) {
         Future.successful {}
       }
 
       val properties: Future[Map[UserId, ContactProperties]] = Future
         .traverse(users) { user =>
-          getPropertiesFromUser(user).map { properties =>
+          getPropertiesFromUser(user, questions).map { properties =>
             user.userId -> properties
           }
         }
@@ -286,10 +295,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def addUsersToUnsubscribeList(users: Seq[User]): Future[Unit] = {
+    override def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       val properties: Future[Map[UserId, ContactProperties]] = Future
         .traverse(users) { user =>
-          getPropertiesFromUser(user).map { properties =>
+          getPropertiesFromUser(user, questions).map { properties =>
             user.userId -> properties
           }
         }
@@ -317,10 +326,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def addUsersToHardBounceList(users: Seq[User]): Future[Unit] = {
+    override def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       val properties: Future[Map[UserId, ContactProperties]] = Future
         .traverse(users) { user =>
-          getPropertiesFromUser(user).map { properties =>
+          getPropertiesFromUser(user, questions).map { properties =>
             user.userId -> properties
           }
         }
@@ -350,16 +359,17 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
 
     override def updateUserProperties(user: User): Future[Unit] = {
+      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
+        getPropertiesFromUser(user, questions).flatMap { properties =>
+          val contactData = properties.toContactPropertySeq
 
-      getPropertiesFromUser(user).flatMap { properties =>
-        val contactData = properties.toContactPropertySeq
-
-        updateContactProperties(ContactData(data = contactData), user.email).map { response =>
-          logMailjetResponse(response, "Update user properties", Some(user.email))
+          updateContactProperties(ContactData(data = contactData), user.email).map { response =>
+            logMailjetResponse(response, "Update user properties", Some(user.email))
+          }
         }
-      }
 
-      Future.successful {}
+        Future.successful {}
+      }
     }
 
     private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
@@ -372,7 +382,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       date.isAfter(DateHelper.now().minusDays(days))
     }
 
-    override def getPropertiesFromUser(user: User): Future[ContactProperties] = {
+    override def getPropertiesFromUser(user: User, questions: Seq[Question]): Future[ContactProperties] = {
 
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
@@ -384,7 +394,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
 
       val userProperties: Future[UserProperties] = events
-        .runFold(userPropertiesFromUser(user)) { (accumulator: UserProperties, envelope: EventEnvelope) =>
+        .runFold(userPropertiesFromUser(user, questions)) { (accumulator: UserProperties, envelope: EventEnvelope) =>
           accumulateEvent(accumulator, envelope)
         }
 
@@ -396,7 +406,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def userPropertiesFromUser(user: User): UserProperties = {
+    private def userPropertiesFromUser(user: User, questions: Seq[Question]): UserProperties = {
+      val question =
+        questions.find(question => user.profile.flatMap(_.registerQuestionId).contains(question.questionId))
       UserProperties(
         userId = user.userId,
         firstname = user.firstName.getOrElse(""),
@@ -412,7 +424,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = Some(user.language.value),
         lastCountryActivity = Some(user.country.value),
         countriesActivity = Seq(user.country.value),
-        accountCreationOperation = user.profile.flatMap(_.registerQuestionId.map(_.value))
+        accountCreationOperation = question.flatMap(_.operationId.map(_.value))
       )
     }
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {

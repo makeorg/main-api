@@ -27,15 +27,17 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.{KafkaConfigurationExtension, MailJetConfiguration, MailJetConfigurationComponent}
+import org.make.api.question.{QuestionService, SearchQuestionRequest}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.crm.PublishedCrmContactEvent._
 import org.make.api.user.UserService
+import org.make.core.question.Question
 import org.make.core.user.User
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class CrmContactEventConsumerActor(userService: UserService, crmService: CrmService)
+class CrmContactEventConsumerActor(userService: UserService, crmService: CrmService, questionService: QuestionService)
     extends KafkaConsumerActor[CrmContactEventWrapper]
     with KafkaConfigurationExtension
     with MailJetConfigurationComponent
@@ -78,8 +80,8 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       .getUser(event.id)
       .map(_.map { user =>
         user.profile match {
-          case Some(profile) if !profile.optInNewsletter => crmService.addUsersToUnsubscribeList(Seq(user))
-          case _                                         => crmService.addUsersToOptInList(Seq(user))
+          case Some(profile) if !profile.optInNewsletter => crmService.addUsersToUnsubscribeList(Seq.empty)(Seq(user))
+          case _                                         => crmService.addUsersToOptInList(Seq.empty)(Seq(user))
         }
       })
   }
@@ -118,7 +120,7 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       .flatMap(_.map { user =>
         val removeFromUnsubscribe: Future[Unit] = crmService.removeUserFromUnsubscribeList(user)
         val addToOptIn = if (!user.isHardBounce) {
-          crmService.addUsersToOptInList(Seq(user))
+          crmService.addUsersToOptInList(Seq.empty)(Seq(user))
         } else {
           Future.successful {}
         }
@@ -155,20 +157,24 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
 
     val startTime: Long = System.currentTimeMillis()
 
-    val optOut: Future[Done] = asyncPageToPageSource(getOptOutUsers)
-      .mapAsync(1)(crmService.addUsersToUnsubscribeList)
-      .runForeach(_ => {})
-    val hardBounce: Future[Done] = asyncPageToPageSource(getHardBounceUsers)
-      .mapAsync(1)(crmService.addUsersToHardBounceList)
-      .runForeach(_ => {})
-    val optIn: Future[Done] = asyncPageToPageSource(getOptInUsers)
-      .mapAsync(1)(crmService.addUsersToOptInList)
-      .runForeach(_ => {})
+    def optOut(questions: Seq[Question]): Future[Done] =
+      asyncPageToPageSource(getOptOutUsers)
+        .mapAsync(1)(crmService.addUsersToUnsubscribeList(questions))
+        .runForeach(_ => {})
+    def hardBounce(questions: Seq[Question]): Future[Done] =
+      asyncPageToPageSource(getHardBounceUsers)
+        .mapAsync(1)(crmService.addUsersToHardBounceList(questions))
+        .runForeach(_ => {})
+    def optIn(questions: Seq[Question]): Future[Done] =
+      asyncPageToPageSource(getOptInUsers)
+        .mapAsync(1)(crmService.addUsersToOptInList(questions))
+        .runForeach(_ => {})
 
     (for {
-      _ <- optOut
-      _ <- hardBounce
-      _ <- optIn
+      questions <- questionService.searchQuestion(SearchQuestionRequest())
+      _         <- optOut(questions)
+      _         <- hardBounce(questions)
+      _         <- optIn(questions)
     } yield {}).onComplete {
       case Failure(exception) => log.error(s"Mailjet synchro failed:", exception)
       case Success(_)         => log.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
@@ -193,7 +199,7 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
 }
 
 object CrmContactEventConsumerActor {
-  def props(userService: UserService, crmService: CrmService): Props =
-    Props(new CrmContactEventConsumerActor(userService, crmService))
+  def props(userService: UserService, crmService: CrmService, questionService: QuestionService): Props =
+    Props(new CrmContactEventConsumerActor(userService, crmService, questionService))
   val name: String = "crm-contact-events-consumer"
 }

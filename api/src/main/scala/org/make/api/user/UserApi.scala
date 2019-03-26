@@ -56,7 +56,6 @@ import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
-import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
@@ -633,8 +632,8 @@ trait DefaultUserApiComponent
 
               val futureMaybeQuestion: Future[Option[Question]] =
                 questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                  maybeOperationId = request.operationId.orElse(requestContext.operationId),
-                  maybeQuestionId = request.questionId.orElse(requestContext.questionId),
+                  maybeOperationId = None,
+                  maybeQuestionId = request.questionId,
                   maybeThemeId = None,
                   country = country,
                   language = language
@@ -1135,9 +1134,6 @@ case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
     SocioProfessionalCategory
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "618e22f9-9f3b-4b25-9788-cd4eb44f016d") operationId: Option[
-    OperationId
   ],
   @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") questionId: Option[
     QuestionId

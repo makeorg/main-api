@@ -28,6 +28,7 @@ import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.userhistory._
@@ -36,6 +37,7 @@ import org.make.core.history.HistoryActions.Trusted
 import org.make.core.operation.{Operation, OperationId, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
@@ -50,6 +52,7 @@ class CrmServiceComponentTest
     extends MakeUnitTest
     with DefaultCrmServiceComponent
     with OperationServiceComponent
+    with QuestionServiceComponent
     with MailJetConfigurationComponent
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
@@ -67,6 +70,7 @@ class CrmServiceComponentTest
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val operationService: OperationService = mock[OperationService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
@@ -307,7 +311,8 @@ class CrmServiceComponentTest
     scenario("users properties are normalized when user has no register event") {
       Given("a registered user without register event")
       When("I get user properties")
-      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEvent)
+
+      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEvent, Seq.empty)
       Then("data are normalized")
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
@@ -336,7 +341,7 @@ class CrmServiceComponentTest
         maybeProperties.numberOfThemes shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
-        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
 
@@ -346,7 +351,7 @@ class CrmServiceComponentTest
 
       val dateFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
-      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEventAfterDateFix)
+      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEventAfterDateFix, Seq.empty)
       Then("data are not normalized")
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
@@ -375,7 +380,7 @@ class CrmServiceComponentTest
         maybeProperties.numberOfThemes shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
-        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
   }
@@ -385,9 +390,39 @@ class CrmServiceComponentTest
       Given("a registred user")
 
       When("I add a user into optInList")
+
+      when(questionService.searchQuestion(any[SearchQuestionRequest])).thenReturn(
+        Future.successful(
+          Seq(
+            Question(
+              QuestionId("question-id"),
+              "question",
+              Country("FR"),
+              Language("fr"),
+              "question ?",
+              Some(OperationId("999-99-99")),
+              None
+            )
+          )
+        )
+      )
+
       Then("The properties are calculated from UserHistory")
 
-      val futureProperties = crmService.getPropertiesFromUser(fooUser)
+      val futureProperties = crmService.getPropertiesFromUser(
+        fooUser,
+        Seq(
+          Question(
+            QuestionId("question-id"),
+            "question",
+            Country("FR"),
+            Language("fr"),
+            "question ?",
+            Some(OperationId("999-99-99")),
+            None
+          )
+        )
+      )
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("1"))
         maybeProperties.firstName shouldBe Some("Foo")
@@ -419,7 +454,7 @@ class CrmServiceComponentTest
         maybeProperties.numberOfThemes shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
-        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe (true)
+        updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
   }
