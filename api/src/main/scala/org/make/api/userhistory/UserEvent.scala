@@ -234,7 +234,7 @@ object UserEvent {
   }
 
   case class OrganisationInitializationEvent(override val connectedUserId: Option[UserId] = None,
-                                             override val eventDate: ZonedDateTime = DateHelper.now(),
+                                             override val eventDate: ZonedDateTime = defaultDate,
                                              override val userId: UserId,
                                              override val requestContext: RequestContext,
                                              override val country: Country = defaultCountry,
