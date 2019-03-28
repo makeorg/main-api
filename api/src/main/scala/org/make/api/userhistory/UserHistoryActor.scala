@@ -29,6 +29,7 @@ import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.technical.{ActorReadJournalComponent, MakePersistentActor}
+import org.make.api.userhistory.UserEvent.SnapshotUser
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._
@@ -65,6 +66,8 @@ class UserHistoryActor
     case RequestUserVotedProposals(_, filterVotes, filterQualifications) =>
       retrieveUserVotedProposals(filterVotes, filterQualifications)
     case Snapshot => saveSnapshot()
+    //TODO: remove
+    case SnapshotUser(_) => saveSnapshot()
     case command: TransactionalUserHistoryEvent[_] =>
       persistEvent(command) { _ =>
         sender() ! LogAcknowledged

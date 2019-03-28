@@ -24,8 +24,8 @@ import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
@@ -42,9 +42,13 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.UserEvent.UserRegisteredEvent
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.{DateHelper, HttpCodes, RequestContext}
+import org.make.api.userhistory.UserEvent.{SnapshotUser, UserRegisteredEvent}
+import org.make.api.userhistory.{
+  LogUserSearchSequencesEvent,
+  LogUserUpdateSequenceEvent,
+  UserHistoryCoordinatorComponent,
+  UserHistoryCoordinatorServiceComponent
+}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal._
@@ -55,12 +59,13 @@ import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
 import org.make.core.tag.{Tag => _}
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 @Api(value = "Migrations")
@@ -132,7 +137,23 @@ trait MigrationApi extends Directives {
   @Path(value = "/replay-user-registration")
   def replayUserRegistrationEvent: Route
 
-  def routes: Route = emptyRoute ~ testSequence ~ testSequenceVotes ~ replayUserRegistrationEvent
+  @ApiOperation(
+    value = "replay-user-history-event",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @Path(value = "/replay-user-history")
+  def replayUserHistoryEvent: Route
+
+  def routes: Route =
+    emptyRoute ~ testSequence ~ testSequenceVotes ~ replayUserRegistrationEvent ~ replayUserHistoryEvent
 }
 
 trait MigrationApiComponent {
@@ -152,6 +173,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with UserServiceComponent
     with SecurityConfigurationComponent
     with UserHistoryCoordinatorServiceComponent
+    with UserHistoryCoordinatorComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
 
@@ -380,6 +402,42 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                         }
                       }
                     }
+                }
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+      }
+    }
+
+    override def replayUserHistoryEvent: Route = post {
+      path("migrations" / "replay-user-history") {
+        makeOperation("ReplayHistoryEvent") { _ =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+              userJournal
+                .currentPersistenceIds()
+                .runForeach { id =>
+                  userJournal
+                    .currentEventsByPersistenceId(id, 0, Long.MaxValue)
+                    .filter {
+                      case EventEnvelope(_, _, _, _: LogUserUpdateSequenceEvent)  => true
+                      case EventEnvelope(_, _, _, _: LogUserSearchSequencesEvent) => true
+                      case _                                                      => false
+                    }
+                    .runForeach {
+                      case EventEnvelope(_, persistenceId, sequenceNr, _: LogUserUpdateSequenceEvent) =>
+                        logger.warn(
+                          s"Event of type LogUserUpdateSequenceEvent with persistenceId=$persistenceId and sequenceNr=$sequenceNr"
+                        )
+                      case EventEnvelope(_, persistenceId, sequenceNr, _: LogUserSearchSequencesEvent) =>
+                        logger.warn(
+                          s"Event of type LogUserSearchSequencesEvent with persistenceId=$persistenceId and sequenceNr=$sequenceNr"
+                        )
+                      case _ => ()
+                    }
+                  userHistoryCoordinator ! SnapshotUser(UserId(id))
                 }
               complete(StatusCodes.NoContent)
             }
