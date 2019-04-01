@@ -65,8 +65,8 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
     extends SortAlgorithm
     with RandomBaseAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].values.size()"
-    val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
+    val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].size()"
+    val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size()"
     val orderingByActorVoteAndTagsCountScript =
       s"($scriptActorVoteCount > 0 && $scriptTagsCount > 0) ? ($scriptActorVoteCount * 50 + $scriptTagsCount) * 100 :" +
         s"$scriptActorVoteCount > 0 ? $scriptActorVoteCount * 100 :" +
@@ -87,6 +87,8 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
             functionScoreQuery()
               .query(query)
               .functions(scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)))
+              .scoreMode("sum")
+              .boostMode(CombineFunction.Sum)
           )
       )
     }.getOrElse(request)
@@ -100,7 +102,7 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
     extends SortAlgorithm
     with RandomBaseAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val scriptActorVoteNumber = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].values.size()"
+    val scriptActorVoteNumber = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size()"
     val actorVoteScript = s"$scriptActorVoteNumber > 0 ? ($scriptActorVoteNumber + 1) * 10 : 1"
     request.query.map { query =>
       maybeSeed.map { seed =>
@@ -118,6 +120,8 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
             functionScoreQuery()
               .query(query)
               .functions(scriptScore(Script(script = actorVoteScript)))
+              .scoreMode("sum")
+              .boostMode(CombineFunction.Sum)
           )
       )
     }.getOrElse(request)
