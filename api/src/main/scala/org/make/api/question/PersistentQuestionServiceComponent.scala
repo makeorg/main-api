@@ -45,6 +45,7 @@ trait PersistentQuestionService {
   def getByIds(questionIds: Seq[QuestionId]): Future[Seq[Question]]
   def getByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]
   def persist(question: Question): Future[Question]
+  def modify(question: Question): Future[Question]
   def delete(question: QuestionId): Future[Unit]
 }
 
@@ -171,6 +172,26 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               column.themeId -> question.themeId.map(_.value),
               column.operationId -> question.operationId.map(_.value)
             )
+        }.execute().apply()
+      }).map(_ => question)
+    }
+
+    override def modify(question: Question): Future[Question] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          val now = DateHelper.now()
+          update(PersistentQuestion)
+            .set(
+              PersistentQuestion.column.country -> question.country.value,
+              PersistentQuestion.column.language -> question.language.value,
+              PersistentQuestion.column.question -> question.question,
+              PersistentQuestion.column.slug -> question.slug,
+              PersistentQuestion.column.operationId -> question.operationId.map(_.value),
+              PersistentQuestion.column.themeId -> question.themeId.map(_.value),
+              PersistentQuestion.column.updatedAt -> now
+            )
+            .where(sqls.eq(PersistentQuestion.column.questionId, question.questionId.value))
         }.execute().apply()
       }).map(_ => question)
     }

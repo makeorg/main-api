@@ -150,7 +150,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         Timeout(2.seconds)
       ) { results =>
         results.size should be(3)
-        results(0).question should be("some question4")
+        results.head.question should be("some question4")
         results(1).question should be("some question3")
         results(2).question should be("some question2")
       }
@@ -164,7 +164,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         results.size should be(3)
         results(2).question should be("some question")
         results(1).question should be("some question4")
-        results(0).question should be("some question3")
+        results.head.question should be("some question3")
       }
 
     }
@@ -257,6 +257,51 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         Timeout(5.seconds)
       ) { maybeQuestion =>
         maybeQuestion should be(Some(question2))
+      }
+    }
+  }
+
+  feature("update question") {
+    scenario("update question") {
+      val questionToUpdate = Question(
+        questionId = QuestionId("some-new-question-to-update"),
+        slug = "some-new-question-to-update",
+        country = Country("FR"),
+        language = Language("fr"),
+        question = "some question ?",
+        operationId = Some(OperationId("operation-id")),
+        themeId = None
+      )
+
+      whenReady(persistentQuestionService.persist(questionToUpdate), Timeout(5.seconds)) { _ =>
+        ()
+      }
+
+      whenReady(
+        persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some(questionToUpdate.slug))),
+        Timeout(5.seconds)
+      ) { maybeQuestion =>
+        maybeQuestion.contains(questionToUpdate) should be(true)
+      }
+
+      whenReady(
+        persistentQuestionService.modify(
+          questionToUpdate.copy(
+            slug = "question-updated",
+            country = Country("GB"),
+            language = Language("en"),
+            question = "new question ?"
+          )
+        ),
+        Timeout(5.seconds)
+      ) { question =>
+        question.questionId should be(QuestionId("some-new-question-to-update"))
+        question.slug should be("question-updated")
+        question.country should be(Country("GB"))
+        question.language should be(Language("en"))
+        question.question should be("new question ?")
+        question.operationId should be(Some(OperationId("operation-id")))
+        question.themeId should be(None)
       }
     }
   }

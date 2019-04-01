@@ -331,18 +331,19 @@ trait DefaultModerationOperationOfQuestionApiComponent
                     provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
                       provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
                         operationOfQuestion =>
+                          val updatedQuestion = question.copy(question = request.question)
                           onSuccess(
                             operationOfQuestionService.update(
                               operationOfQuestion
                                 .copy(
                                   startDate = request.startDate,
                                   endDate = request.endDate,
-                                  operationTitle = request.operationTitle,
                                   canPropose = request.canPropose
-                                )
+                                ),
+                              updatedQuestion
                             )
                           ) { result =>
-                            complete(StatusCodes.OK -> OperationOfQuestionResponse(result, question))
+                            complete(StatusCodes.OK -> OperationOfQuestionResponse(result, updatedQuestion))
                           }
                       }
                     }
@@ -409,9 +410,9 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   startDate: Option[LocalDate],
                                                   @(ApiModelProperty @field)(example = "2019-03-23")
                                                   endDate: Option[LocalDate],
-                                                  operationTitle: String,
+                                                  question: String,
                                                   canPropose: Boolean) {
-  validate(validateUserInput("operationTitle", operationTitle, None))
+  validate(validateUserInput("question", question, None))
 }
 
 object ModifyOperationOfQuestionRequest extends CirceFormatters {
