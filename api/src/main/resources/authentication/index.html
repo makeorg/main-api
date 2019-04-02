@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-client_id" content="810331964280-qtdupbrjusihad3b5da51i5p66qpmhmr.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js?onload=init" async defer></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Authenticate with Make API</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <style>
+        .main {
+          border-radius: 20px;
+          margin: 50px;
+          padding: 20px;
+          background-color: white;
+        }
+
+        .dark {
+          background-color: #777;
+        }
+    </style>
+
+
+</head>
+<body onload="init()" class="dark">
+
+<div class="main">
+    <h1>Connect on Make SSO</h1>
+    <hr />
+    <h2>Connect with Google</h2>
+
+    <div id="my-signin2"></div>
+    <hr />
+    <h2>Connect with your make account</h2>
+    <form method="POST" enctype="application/x-www-form-urlencoded" action="/oauth/make_access_token">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" name="username" id="email">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" name="password" id="password">
+        </div>
+        <input type="hidden" value="" name="redirect_uri" />
+        <input type="hidden" value="" name="state" />
+        <input type="hidden" value="password" name="grant_type" />
+        <input type="submit" value="Connect" class="btn btn-primary" />
+    </form>
+</div>
+<script>
+  function onSignIn(googleUser) {
+    var id_token = googleUser.getAuthResponse().id_token;
+
+    var payload = {
+                     method: 'POST',
+                     body: JSON.stringify({ provider: 'google', token: id_token, country: 'FR', language: 'fr' }),
+                     headers: {'Content-Type': 'application/json'}
+                   };
+
+    var request = new Request('/user/login/social', payload);
+
+    fetch(request)
+      .then(function(response) {
+        if(response.ok ) {
+          response.json().then (function(json){
+            var token = json.access_token;
+            var parameters = getJsonFromUrl();
+            var redirectUri = parameters.redirect_uri;
+            if(!redirectUri) {
+              alert('Unable to find a url to redirect tpo, check your redirect_uri parameter');
+            }
+            redirectUri = redirectUri + '#';
+            if(parameters.state) {
+              redirectUri = redirectUri + 'state=' + parameters.state + '&'
+            }
+            window.location.href = redirectUri + 'access_token=' + token;
+          });
+        } else {
+          console.log('error when connecting', response.json())
+          alert('Connection failed')
+        }
+      });
+  }
+
+  function init() {
+
+    gapi.load('auth2', function() {
+      gapi.auth2.init().then(function() {
+        // Always log out to make sure the user will not be logged in without choosing how
+        gapi.auth2.getAuthInstance().signOut().then(function () {
+          gapi.signin2.render('my-signin2', {
+            'scope': 'profile email',
+            'width': 240,
+            'height': 50,
+            'longtitle': true,
+            'theme': 'dark',
+            'onsuccess': onSignIn
+          });
+        });
+      });
+    });
+
+
+    var parameters = getJsonFromUrl();
+
+    if(parameters.redirect_uri) {
+      document.forms[0].redirect_uri.value = parameters.redirect_uri;
+    }
+
+    if(parameters.state) {
+      document.forms[0].state.value = parameters.state;
+    }
+  }
+
+
+  function getJsonFromUrl(url) {
+    if(!url) url = location.search;
+    var query = url.substr(1);
+    var result = {};
+    query.split("&").forEach(function(part) {
+      var item = part.split("=");
+      result[item[0]] = decodeURIComponent(item[1]);
+    });
+    return result;
+  }
+
+</script>
+</body>
+</html>

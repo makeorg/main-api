@@ -87,102 +87,102 @@ import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 trait MakeApi
-    extends DefaultIdGeneratorComponent
+    extends ActorSystemComponent
+    with AvroSerializers
+    with BuildInfoRoutes
+    with DefaultAdminIdeaMappingApiComponent
+    with DefaultAdminUserApiComponent
+    with DefaultAuthenticationApiComponent
+    with DefaultConfigurationsApiComponent
+    with DefaultCrmApiComponent
+    with DefaultCrmServiceComponent
+    with DefaultElasticSearchApiComponent
+    with DefaultElasticsearchClientComponent
+    with DefaultElasticsearchConfigurationComponent
+    with DefaultEventBusServiceComponent
+    with DefaultFacebookApiComponent
+    with DefaultGoogleApiComponent
+    with DefaultHealthCheckApiComponent
+    with DefaultHealthCheckServiceComponent
+    with DefaultIdeaMappingServiceComponent
+    with DefaultIdeaSearchEngineComponent
+    with DefaultIdeaServiceComponent
+    with DefaultIdGeneratorComponent
+    with DefaultIndexationComponent
+    with DefaultMailJetConfigurationComponent
+    with DefaultMakeDataHandlerComponent
+    with DefaultMakeSettingsComponent
+    with DefaultMigrationApiComponent
+    with DefaultModerationIdeaApiComponent
+    with DefaultModerationOperationApiComponent
+    with DefaultModerationOperationOfQuestionApiComponent
+    with DefaultModerationOrganisationApiComponent
+    with DefaultModerationProposalApiComponent
+    with DefaultModerationQuestionComponent
+    with DefaultModerationSequenceApiComponent
+    with DefaultModerationTagApiComponent
+    with DefaultModerationTagTypeApiComponent
+    with DefaultMonitoringService
+    with DefaultOauthTokenGeneratorComponent
+    with DefaultOperationApiComponent
+    with DefaultOperationOfQuestionServiceComponent
+    with DefaultOperationServiceComponent
+    with DefaultOrganisationApiComponent
+    with DefaultOrganisationSearchEngineComponent
+    with DefaultOrganisationServiceComponent
     with DefaultPersistentClientServiceComponent
+    with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
-    with DefaultPersistentOperationServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
+    with DefaultPersistentOperationServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent
+    with DefaultPersistentTagTypeServiceComponent
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentUserServiceComponent
-    with DefaultUserServiceComponent
-    with DefaultAdminUserApiComponent
-    with DefaultTagServiceComponent
-    with DefaultTagTypeServiceComponent
-    with DefaultIdeaServiceComponent
-    with DefaultThemeServiceComponent
+    with DefaultProposalApiComponent
+    with DefaultProposalCoordinatorServiceComponent
+    with DefaultProposalIndexerServiceComponent
+    with DefaultProposalSearchEngineComponent
     with DefaultProposalServiceComponent
-    with DefaultSequenceServiceComponent
-    with DefaultSocialServiceComponent
-    with DefaultGoogleApiComponent
-    with DefaultFacebookApiComponent
-    with DefaultSequenceConfigurationComponent
+    with DefaultQuestionApiComponent
     with DefaultQuestionService
-    with DefaultOperationOfQuestionServiceComponent
-    with SequenceConfigurationActorComponent
+    with DefaultReadJournalComponent
+    with DefaultSecurityApiComponent
+    with DefaultSecurityConfigurationComponent
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
     with DefaultSemanticConfigurationComponent
-    with DefaultMakeDataHandlerComponent
-    with DefaultMakeSettingsComponent
-    with DefaultEventBusServiceComponent
-    with DefaultTokenGeneratorComponent
-    with DefaultUserTokenGeneratorComponent
-    with DefaultOauthTokenGeneratorComponent
-    with DefaultProposalSearchEngineComponent
-    with DefaultIdeaSearchEngineComponent
-    with DefaultOrganisationSearchEngineComponent
-    with DefaultUserHistoryCoordinatorServiceComponent
-    with DefaultSessionHistoryCoordinatorServiceComponent
-    with DefaultProposalCoordinatorServiceComponent
-    with DefaultProposalIndexerServiceComponent
-    with DefaultOperationServiceComponent
-    with DefaultReadJournalComponent
-    with DefaultHealthCheckServiceComponent
-    with DefaultCrmServiceComponent
-    with DefaultOrganisationServiceComponent
-    with DefaultElasticsearchConfigurationComponent
-    with DefaultElasticsearchClientComponent
-    with DefaultSwiftClientComponent
-    with DefaultStorageServiceComponent
-    with DefaultStorageConfigurationComponent
-    with DefaultQuestionApiComponent
-    with DefaultModerationQuestionComponent
-    with DefaultMonitoringService
-    with DefaultModerationOperationOfQuestionApiComponent
-    with DefaultPersistentIdeaMappingServiceComponent
-    with DefaultIdeaMappingServiceComponent
-    with DefaultAdminIdeaMappingApiComponent
-    with ProposalCoordinatorComponent
-    with UserHistoryCoordinatorComponent
-    with SessionHistoryCoordinatorComponent
-    with DefaultIndexationComponent
-    with DefaultPersistentTagTypeServiceComponent
-    with HealthCheckComponent
-    with MakeDBExecutionContextComponent
-    with DefaultElasticSearchApiComponent
-    with DefaultOperationApiComponent
-    with DefaultProposalApiComponent
     with DefaultSequenceApiComponent
-    with DefaultModerationSequenceApiComponent
-    with DefaultCrmApiComponent
-    with DefaultAuthenticationApiComponent
-    with DefaultConfigurationsApiComponent
-    with DefaultUserApiComponent
+    with DefaultSequenceConfigurationComponent
+    with DefaultSequenceServiceComponent
+    with DefaultSessionHistoryCoordinatorServiceComponent
+    with DefaultSocialServiceComponent
+    with DefaultStorageConfigurationComponent
+    with DefaultStorageServiceComponent
+    with DefaultSwiftClientComponent
     with DefaultTagApiComponent
-    with DefaultModerationTagApiComponent
-    with DefaultModerationTagTypeApiComponent
-    with DefaultModerationIdeaApiComponent
+    with DefaultTagServiceComponent
+    with DefaultTagTypeServiceComponent
+    with DefaultThemeServiceComponent
+    with DefaultTokenGeneratorComponent
     with DefaultTrackingApiComponent
-    with DefaultMigrationApiComponent
-    with DefaultHealthCheckApiComponent
-    with DefaultModerationOperationApiComponent
-    with DefaultModerationOrganisationApiComponent
-    with DefaultOrganisationApiComponent
-    with DefaultModerationProposalApiComponent
-    with DefaultSecurityApiComponent
-    with DefaultSecurityConfigurationComponent
+    with DefaultUserApiComponent
+    with DefaultUserHistoryCoordinatorServiceComponent
+    with DefaultUserServiceComponent
+    with DefaultUserTokenGeneratorComponent
     with DefaultWidgetApiComponent
     with DefaultWidgetServiceComponent
-    with BuildInfoRoutes
-    with DefaultMailJetConfigurationComponent
-    with StrictLogging
-    with AvroSerializers
+    with HealthCheckComponent
     with MakeAuthentication
-    with ActorSystemComponent {
+    with MakeDBExecutionContextComponent
+    with ProposalCoordinatorComponent
+    with SequenceConfigurationActorComponent
+    with SessionHistoryCoordinatorComponent
+    with StrictLogging
+    with UserHistoryCoordinatorComponent {
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
@@ -283,35 +283,35 @@ trait MakeApi
     documentation ~
       swagger ~
       optionsCors ~
-      buildRoutes ~
-      elasticSearchApi.routes ~
-      userApi.routes ~
-      adminUserApi.routes ~
-      tagApi.routes ~
-      moderationTagApi.routes ~
-      moderationTagTypeApi.routes ~
-      proposalApi.routes ~
-      moderationProposalApi.routes ~
-      sequenceApi.routes ~
-      moderationSequenceApi.routes ~
       optionsAuthorized ~
-      crmApi.routes ~
+      buildRoutes ~
+      adminIdeaMappingApi.routes ~
+      adminUserApi.routes ~
       authenticationApi.routes ~
       configurationsApi.routes ~
-      moderationIdeaApi.routes ~
-      operationApi.routes ~
-      moderationOperationApi.routes ~
-      trackingApi.routes ~
-      migrationApi.routes ~
+      crmApi.routes ~
+      elasticSearchApi.routes ~
       healthCheckApi.routes ~
-      moderationOrganisationApi.routes ~
-      organisationApi.routes ~
-      widgetApi.routes ~
-      questionApi.routes ~
-      moderationQuestionApi.routes ~
+      migrationApi.routes ~
+      moderationIdeaApi.routes ~
+      moderationOperationApi.routes ~
       moderationOperationOfQuestionApi.routes ~
-      adminIdeaMappingApi.routes ~
-      securityApi.routes
+      moderationOrganisationApi.routes ~
+      moderationProposalApi.routes ~
+      moderationQuestionApi.routes ~
+      moderationSequenceApi.routes ~
+      moderationTagApi.routes ~
+      moderationTagTypeApi.routes ~
+      operationApi.routes ~
+      organisationApi.routes ~
+      proposalApi.routes ~
+      questionApi.routes ~
+      securityApi.routes ~
+      sequenceApi.routes ~
+      tagApi.routes ~
+      trackingApi.routes ~
+      userApi.routes ~
+      widgetApi.routes
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {

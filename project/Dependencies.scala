@@ -36,7 +36,7 @@ object Dependencies {
   private val kamonPrometheusVersion = "1.1.1"
   private val circeVersion = "0.9.3"
   val aspectJVersion: String = "1.8.13"
-  val swaggerUiVersion: String = "3.14.0"
+  val swaggerUiVersion: String = "3.20.9"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.0"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.11.0"

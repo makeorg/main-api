@@ -19,7 +19,6 @@
 
 package org.make.api.technical.auth
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
@@ -28,17 +27,18 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.ObjectEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
+import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scalaoauth2.provider._
 
 @Api(value = "Authentication")
 @Path(value = "/")
@@ -103,7 +103,9 @@ trait AuthenticationApi extends Directives {
   @Path(value = "/logout")
   def logoutRoute: Route
 
-  def routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
+  def form: Route
+
+  def routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form
 }
 
 object AuthenticationApi {
@@ -245,6 +247,12 @@ trait DefaultAuthenticationApiComponent
           ) {
             complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
           }
+      }
+    }
+
+    override def form: Route = get {
+      path("oauth" / "authenticate") {
+        getFromResource("authentication/index.html")
       }
     }
 

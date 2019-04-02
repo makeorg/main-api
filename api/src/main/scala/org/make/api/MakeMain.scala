@@ -146,25 +146,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
   val migrations: Seq[Migration] =
     Seq(
       CreateQuestions,
-      G9Operation,
-      G9ImportTagsData,
-      G9Data,
-      MIPIMOperation,
-      MIPIMFrImportTagsData,
-      MIPIMFrData,
-      HdfOperation,
-      HdfImportTagsData,
-      HdfData,
-      G9OperationDe,
-      G9ImportTagsDataDe,
-      G9DataDe,
-      DITPOperation,
-      DITPImportTagsData,
-      DITPdata,
-      MIPIMGbOperation,
-      MIPIMGbImportTagsData,
-      MIPIMGbData,
-      WeEuropeansOperation,
       CreateSequenceConfigurations,
       // ReloadSequences should always be the last in this list
       ReloadSequences
