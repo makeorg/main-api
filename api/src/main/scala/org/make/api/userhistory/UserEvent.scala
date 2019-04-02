@@ -243,4 +243,6 @@ object UserEvent {
     override def version(): Int = MakeSerializable.V1
   }
 
+  //TODO: remove
+  case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
 }
