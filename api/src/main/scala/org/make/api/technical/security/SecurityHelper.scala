@@ -57,7 +57,7 @@ object SecurityHelper extends StrictLogging {
   def validateSecureHash(hash: String, value: String, salt: String): Boolean = {
     hash.split(HASH_SEPARATOR) match {
       case Array(base64Date, hashedValue) =>
-        val deprecatedCheck = sha256(s"${sha256(s"$value${base64Decode(base64Date)}")}$salt") == hashedValue
+        val deprecatedCheck = sha256(s"${sha256(s"$value")}${base64Decode(base64Date)}$salt") == hashedValue
         if (deprecatedCheck) {
           logger.warn(s"Use of deprecated hash function (sha256) on value $value")
         }

@@ -72,7 +72,7 @@ class SecurityHelperTest extends MakeUnitTest {
       val salt = "salt"
       val base64 = "base64"
       val deprecatedHash =
-        s"${base64Encode(base64)}$HASH_SEPARATOR${SecurityHelper.sha256(s"${SecurityHelper.sha256(s"$value$base64")}$salt")}"
+        s"${base64Encode(base64)}$HASH_SEPARATOR${SecurityHelper.sha256(s"${SecurityHelper.sha256(s"$value")}$base64$salt")}"
       val hash = s"${base64Encode(base64)}$HASH_SEPARATOR${SecurityHelper.generateHash(s"$value$base64", salt)}"
 
       SecurityHelper.validateSecureHash(deprecatedHash, value, salt) shouldBe true
