@@ -377,7 +377,7 @@ object PublishedProposalEvent {
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
                                      qualificationKey: QualificationKey,
-                                     voteTrust: VoteTrust)
+                                     voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -396,7 +396,7 @@ object PublishedProposalEvent {
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
                                        qualificationKey: QualificationKey,
-                                       voteTrust: VoteTrust)
+                                       voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
