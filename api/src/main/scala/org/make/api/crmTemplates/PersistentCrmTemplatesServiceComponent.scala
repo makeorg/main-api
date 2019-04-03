@@ -17,9 +17,9 @@
  *
  */
 
-package org.make.api.crmTemplate
+package org.make.api.crmTemplates
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.crmTemplate.DefaultPersistentCrmTemplatesServiceComponent.PersistentCrmTemplates
+import org.make.api.crmTemplates.DefaultPersistentCrmTemplatesServiceComponent.PersistentCrmTemplates
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames

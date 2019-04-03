@@ -27,6 +27,12 @@ import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
+import org.make.api.crmTemplates.{
+  AdminCrmTemplateApi,
+  DefaultAdminCrmTemplatesApiComponent,
+  DefaultCrmTemplatesServiceComponent,
+  DefaultPersistentCrmTemplatesServiceComponent
+}
 import org.make.api.extensions._
 import org.make.api.idea._
 import org.make.api.operation._
@@ -91,12 +97,14 @@ trait MakeApi
     extends ActorSystemComponent
     with AvroSerializers
     with BuildInfoRoutes
+    with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAuthenticationApiComponent
     with DefaultConfigurationsApiComponent
     with DefaultCrmApiComponent
     with DefaultCrmServiceComponent
+    with DefaultCrmTemplatesServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent
     with DefaultElasticsearchConfigurationComponent
@@ -133,6 +141,7 @@ trait MakeApi
     with DefaultOrganisationServiceComponent
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
+    with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
@@ -249,6 +258,7 @@ trait MakeApi
 
   private lazy val apiClasses: Set[Class[_]] =
     Set(
+      classOf[AdminCrmTemplateApi],
       classOf[AuthenticationApi],
       classOf[UserApi],
       classOf[TagApi],
@@ -293,11 +303,13 @@ trait MakeApi
   private lazy val documentation = new MakeDocumentation(apiClasses, makeSettings.Http.ssl).routes
 
   lazy val makeRoutes: Route =
-    documentation ~
+    (documentation ~
       swagger ~
       optionsCors ~
       optionsAuthorized ~
       buildRoutes ~
+
+      adminCrmTemplateApi.routes ~
       adminIdeaMappingApi.routes ~
       adminUserApi.routes ~
       authenticationApi.routes ~
@@ -324,7 +336,7 @@ trait MakeApi
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~
-      widgetApi.routes
+      widgetApi.routes)
 }
 
 object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
