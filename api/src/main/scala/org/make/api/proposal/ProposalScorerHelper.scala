@@ -95,7 +95,7 @@ object ProposalScorerHelper extends StrictLogging {
       loveCount = verifiedQualificationCount(votes, Agree, LikeIt),
       hateCount = verifiedQualificationCount(votes, Disagree, NoWay),
       doableCount = verifiedQualificationCount(votes, Agree, Doable),
-      impossibleCount = verifiedQualificationCount(votes, Agree, Impossible)
+      impossibleCount = verifiedQualificationCount(votes, Disagree, Impossible)
     )
   }
 
@@ -293,7 +293,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   /*
    * Note on confidence intervals:
-   * For a normal (gausssian) random variable, the 95% confidence interval is mean +/- 2 * standard error
+   * For a normal (gaussian) random variable, the 95% confidence interval is mean +/- 2 * standard error
    */
   val ConfidenceInterval95Percent = 2
 
