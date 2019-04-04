@@ -35,7 +35,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   val topScoreComponents: Seq[ScoreComponent] = Seq(
     ScoreComponent("engagement", 1, 0.8, 0.1),
-    ScoreComponent("agreement", 1, 0.75, 0.1),
+    ScoreComponent("agreement", 1, 0.75, 0.15),
     ScoreComponent("adhesion", 1, 0.075, 0.07),
     ScoreComponent("realistic", 2, 0.1, 0.07),
     ScoreComponent("platitude", -2, 0.05, 0.05)
