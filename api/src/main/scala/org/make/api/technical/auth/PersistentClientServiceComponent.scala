@@ -28,6 +28,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
+import org.make.core.user.UserId
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -46,7 +47,8 @@ object PersistentClientServiceComponent {
                               scope: Option[String],
                               redirectUri: Option[String],
                               createdAt: ZonedDateTime,
-                              updatedAt: ZonedDateTime) {
+                              updatedAt: ZonedDateTime,
+                              defaultUserId: Option[String]) {
     def toClient: Client =
       Client(
         clientId = ClientId(uuid),
@@ -55,14 +57,24 @@ object PersistentClientServiceComponent {
         scope = scope,
         redirectUri = redirectUri,
         createdAt = Some(createdAt),
-        updatedAt = Some(updatedAt)
+        updatedAt = Some(updatedAt),
+        defaultUserId = defaultUserId.map(UserId(_))
       )
   }
 
   object PersistentClient extends SQLSyntaxSupport[PersistentClient] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("uuid", "secret", "allowed_grant_types", "scope", "redirect_uri", "created_at", "updated_at")
+      Seq(
+        "uuid",
+        "secret",
+        "allowed_grant_types",
+        "scope",
+        "redirect_uri",
+        "created_at",
+        "updated_at",
+        "default_user_id"
+      )
 
     override val tableName: String = "oauth_client"
 
@@ -78,7 +90,8 @@ object PersistentClientServiceComponent {
         scope = resultSet.stringOpt(clientResultName.secret),
         redirectUri = resultSet.stringOpt(clientResultName.redirectUri),
         createdAt = resultSet.zonedDateTime(clientResultName.createdAt),
-        updatedAt = resultSet.zonedDateTime(clientResultName.updatedAt)
+        updatedAt = resultSet.zonedDateTime(clientResultName.updatedAt),
+        defaultUserId = resultSet.stringOpt(clientResultName.defaultUserId)
       )
     }
   }
@@ -94,7 +107,9 @@ trait PersistentClientService {
 trait DefaultPersistentClientServiceComponent extends PersistentClientServiceComponent {
   self: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentClientService = new PersistentClientService with ShortenedNames with StrictLogging {
+  override lazy val persistentClientService: DefaultPersistentClientService = new DefaultPersistentClientService
+
+  class DefaultPersistentClientService extends PersistentClientService with ShortenedNames with StrictLogging {
 
     private val clientAlias = PersistentClient.clientAlias
     private val column = PersistentClient.column
@@ -145,7 +160,8 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.redirectUri -> client.redirectUri,
               column.scope -> client.scope,
               column.createdAt -> DateHelper.now(),
-              column.updatedAt -> DateHelper.now()
+              column.updatedAt -> DateHelper.now(),
+              column.defaultUserId -> client.defaultUserId.map(_.value)
             )
         }.execute().apply()
       }).map(_ => client)

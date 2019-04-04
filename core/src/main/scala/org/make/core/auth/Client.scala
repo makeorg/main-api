@@ -21,6 +21,8 @@ package org.make.core.auth
 
 import java.time.ZonedDateTime
 
+import io.circe.{Decoder, Encoder, Json}
+import org.make.core.user.UserId
 import org.make.core.{StringValue, Timestamped}
 
 case class Client(clientId: ClientId,
@@ -29,7 +31,15 @@ case class Client(clientId: ClientId,
                   scope: Option[String],
                   redirectUri: Option[String],
                   override val createdAt: Option[ZonedDateTime] = None,
-                  override val updatedAt: Option[ZonedDateTime] = None)
+                  override val updatedAt: Option[ZonedDateTime] = None,
+                  defaultUserId: Option[UserId])
     extends Timestamped
 
 case class ClientId(value: String) extends StringValue
+
+object ClientId {
+  implicit lazy val proposalIdEncoder: Encoder[ClientId] =
+    (a: ClientId) => Json.fromString(a.value)
+  implicit lazy val proposalIdDecoder: Decoder[ClientId] =
+    Decoder.decodeString.map(ClientId(_))
+}

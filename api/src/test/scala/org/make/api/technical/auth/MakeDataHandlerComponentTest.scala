@@ -34,10 +34,10 @@ import org.make.core.user.{Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, ClientCredential}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
-import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, ClientCredential}
 
 class MakeDataHandlerComponentTest
     extends MakeUnitTest
@@ -48,12 +48,14 @@ class MakeDataHandlerComponentTest
     with PersistentClientServiceComponent
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent
+    with PersistentAuthCodeServiceComponent
     with ShortenedNames {
 
   implicit val someExecutionContext: EC = ECGlobal
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
+  override val persistentAuthCodeService: PersistentAuthCodeService = mock[PersistentAuthCodeService]
 
   val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
   val secret = Some("secret")
@@ -87,7 +89,8 @@ class MakeDataHandlerComponentTest
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
     secret = secret,
     scope = None,
-    redirectUri = None
+    redirectUri = None,
+    defaultUserId = None
   )
 
   val validUsername = "john.doe@example.com"

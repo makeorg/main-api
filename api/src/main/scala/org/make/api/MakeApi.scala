@@ -81,6 +81,7 @@ import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceCompo
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
+import scalaoauth2.provider.OAuthGrantType
 import scalaoauth2.provider._
 
 import scala.concurrent.Await
@@ -130,6 +131,7 @@ trait MakeApi
     with DefaultOrganisationApiComponent
     with DefaultOrganisationSearchEngineComponent
     with DefaultOrganisationServiceComponent
+    with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
@@ -223,7 +225,17 @@ trait MakeApi
   override lazy val writeExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).writeThreadPool
 
   override lazy val tokenEndpoint: TokenEndpoint = new TokenEndpoint {
-    override val handlers: Map[String, Password] = Map(OAuthGrantType.PASSWORD -> new Password)
+
+    private val password: Password = new Password {
+      override val clientCredentialRequired = false
+    }
+
+    override val handlers: Map[String, GrantHandler] =
+      Map[String, GrantHandler](
+        OAuthGrantType.AUTHORIZATION_CODE -> new AuthorizationCode,
+        OAuthGrantType.PASSWORD -> password,
+        OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
+      )
   }
 
   private lazy val swagger: Route =
