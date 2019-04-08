@@ -1,6 +1,7 @@
 {
   "settings": {
     "number_of_shards": 5,
+    "max_result_window":  20000,
     "analysis": {
       "filter": {
         "french_elision": {
