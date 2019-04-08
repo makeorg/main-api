@@ -233,6 +233,7 @@ trait MakeApi
     override val handlers: Map[String, GrantHandler] =
       Map[String, GrantHandler](
         OAuthGrantType.AUTHORIZATION_CODE -> new AuthorizationCode,
+        OAuthGrantType.CLIENT_CREDENTIALS -> new ClientCredentials,
         OAuthGrantType.PASSWORD -> password,
         OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
       )

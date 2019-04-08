@@ -70,7 +70,8 @@ class PersistentTokenServiceIT
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
     secret = Some("secret"),
     scope = None,
-    redirectUri = None
+    redirectUri = None,
+    defaultUserId = None
   )
   val exampleToken = Token(
     accessToken = "ACCESS_TOKEN",

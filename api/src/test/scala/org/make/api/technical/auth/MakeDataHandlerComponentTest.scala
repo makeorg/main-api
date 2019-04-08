@@ -34,8 +34,9 @@ import org.make.core.user.{Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import scalaoauth2.provider.{AccessToken, AuthInfo, AuthorizationRequest, ClientCredential}
+import scalaoauth2.provider._
 
+import scala.collection.immutable.TreeMap
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
 
@@ -101,7 +102,6 @@ class MakeDataHandlerComponentTest
   val persistentClientService: PersistentClientService = mock[PersistentClientService]
   val request: AuthorizationRequest = mock[AuthorizationRequest]
   val exampleUser: User = mock[User]
-  val mockMap: Map[String, Seq[String]] = mock[Map[String, Seq[String]]]
   val exampleToken = Token(
     accessToken = "access_token",
     refreshToken = Some("refresh_token"),
@@ -134,9 +134,8 @@ class MakeDataHandlerComponentTest
     .thenReturn(Future.successful(None))
 
   //A valid request
-  when(mockMap.apply(ArgumentMatchers.eq("username"))).thenReturn(Seq(validUsername))
-  when(mockMap.apply(ArgumentMatchers.eq("password"))).thenReturn(Seq(validHashedPassword))
-  when(request.params).thenReturn(mockMap)
+  when(request.params).thenReturn(Map("username" -> Seq(validUsername), "password" -> Seq(validHashedPassword)))
+  when(request.headers).thenReturn(TreeMap[String, Seq[String]]())
 
   //A valid user impl
   when(persistentUserService.persist(exampleUser))
@@ -153,7 +152,8 @@ class MakeDataHandlerComponentTest
       And("a valid user in a valid request")
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
 
       Then("the User is returned")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -167,7 +167,8 @@ class MakeDataHandlerComponentTest
       And("a valid user in a valid request")
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -183,7 +184,8 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(None))
 
       When("findUser is called")
-      val futureMaybeUser: Future[Option[UserRights]] = oauth2DataHandler.findUser(Some(clientCredential), request)
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
